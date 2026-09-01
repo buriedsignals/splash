@@ -2714,23 +2714,34 @@
   const webbedOut = () => (window.__webOutK === undefined) || window.__webOutK >= 0.999;
   const webbedIn  = () => (window.__webOutK === undefined) || window.__webOutK <= 0.001;
 
+  /* LE TEXTE EST LÀ AVANT QUE LE PAPIER PARTE, et c'est le papier qui le
+   * découvre. Le trajet se faisait après la sortie du papier, donc on quittait
+   * un cadre vide pour arriver sur une section vide qui se remplissait ensuite
+   * — deux temps morts et aucune révélation.
+   *
+   * La toile est fixe et les sections passent DEVANT elle, alors la page peut
+   * voyager pendant que le papier est encore debout : le titre du hero s'en va,
+   * l'intro de la section monte et se pose PAR-DESSUS les journaux, et c'est
+   * seulement là que les journaux se retirent par le haut et la laissent seule
+   * sur le fond. Le module tient le cadre pendant tout ça — sa propre section
+   * est hors champ à ce moment-là, donc sans ce verrou Stage lui retirerait la
+   * toile au milieu du geste. */
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
+    window.__heroHold = 1;
     hero.classList.add('gone');
-    window.__webOut = 1;
-    // .46s d'animation plus .09s de retard sur la dernière ligne du titre :
-    // le titre part pendant que le papier descend, ce sont les mêmes 1,7 s
-    await until(webbedOut, 4000);
-
-    /* Le cadre est vide : le trajet n'a plus rien à couvrir, donc il est court
-       — assez pour que ce soit un déplacement et pas une coupure. */
-    await glide(firstTop, 380);
-
-    /* L'intro se pose À L'ARRIVÉE, pas pendant le trajet : montée avec la
-       page, on l'aurait vue venir d'en bas au lieu de la voir se poser. */
     if (cstage) cstage.classList.add('in');
+
+    // 1. la page voyage, papier debout : le texte arrive sur les journaux
+    await glide(firstTop, 620);
+    await wait(120);
+
+    // 2. et le papier se retire, ce qui découvre ce qui est déjà en place
+    window.__webOut = 1;
+    await until(webbedOut, 4000);
+    window.__heroHold = 0;
 
     running = false;
     await wait(80);
@@ -2749,13 +2760,18 @@
     running = true; freeBack = false;
 
     window.__rewind = 1;
-    if (cstage) cstage.classList.remove('in');
-    await glide(0, 380);
-    hero.classList.remove('gone');
+    window.__heroHold = 1;
 
-    // et il remonte par le même chemin, à l'envers — pas une seconde animation
+    // 1. le papier redescend et recouvre la section — l'aller finissait par
+    //    son retrait, donc le retour commence par son retour
     window.__webOut = 0;
     await until(webbedIn, 4000);
+
+    // 2. puis la page rentre, derrière le papier
+    if (cstage) cstage.classList.remove('in');
+    await glide(0, 620);
+    hero.classList.remove('gone');
+    window.__heroHold = 0;
 
     running = false; armed = true;
     entryK = 0; stack();
@@ -3428,6 +3444,7 @@
     } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
       armed = true; hero.classList.remove('gone');
       window.__webOut = 0;                   // et le papier revient avec lui
+      window.__heroHold = 0;                 // sans laisser le verrou derrière
       trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });

@@ -8573,7 +8573,8 @@ void main(){
        * backward the retraction needs the frame for exactly as long. */
       hold: () =>
         (tumbT >= 0 && tumbT < EXIT_END) ||
-        (outSec > 0.001 && outSec < OUT_SPAN),
+        (outSec > 0.001 && outSec < OUT_SPAN) ||
+        !!window.__heroHold,
 
       init(api) {
         gl = api.gl;
@@ -9605,7 +9606,14 @@ void main(){
          * away. Held longer and a web sits behind the plates it has already
          * become; released sooner and there is a gap where the hero is
          * nothing at all. */
-        const webFade = (1 - sm(0.0, 0.22, burst)) * presence * ctx.vis;
+        /* HELD MEANS ON SCREEN. Stage measures a section's coverage to
+         * decide what the canvas is for, and while the page is being carried
+         * onto the section BELOW the hero, the hero's own section is entirely
+         * above the frame: its coverage is nothing, so the paper it is still
+         * holding the frame for would be drawn at nothing. A page that says it
+         * is holding is saying the paper is what the reader is looking at. */
+        const vis = window.__heroHold ? 1 : ctx.vis;
+        const webFade = (1 - sm(0.0, 0.22, burst)) * presence * vis;
         // Nothing moves while the paper is not on screen: the cost is real,
         // small, and pointless against a web nobody can see.
         if (webFade > 0.002) liveTick(ctx.t, ctx.dt);
@@ -9622,7 +9630,7 @@ void main(){
           gl.uniform3f(uq.uBG, ground[0], ground[1], ground[2]);
           gl.uniform1f(uq.uRoom, P.room);
           gl.uniform1f(uq.uExposure, P.exposure);
-          gl.uniform1f(uq.uPresence, presence * ctx.vis);
+          gl.uniform1f(uq.uPresence, presence * vis);
           gl.uniform1f(uq.uAlpha, webFade);
           gl.uniform1f(uq.uLift, P.paper * P.webLift);
           gl.activeTexture(gl.TEXTURE0);
