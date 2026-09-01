@@ -3452,9 +3452,12 @@ Stage.register(
       review: 1.3,
       pictorial: 1.36,
       modern: 1.55,
-      leading: 1.5,
-      colour: 1.5,
-      spot: 1.5,
+      // The made pages are shorter than a newspaper's: they carry a made
+      // amount of text, and stretched to a broadsheet's format their bottom
+      // half was empty.
+      leading: 1.32,
+      colour: 1.2,
+      spot: 1.2,
       landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
@@ -4324,11 +4327,16 @@ const flowCol = (A, o) => {
           for (let c = 0; c < 2; c++) {
             const cx = left + c * (colW + 9);
             let ly = y;
-            // a chart the size of a paragraph, a few lines in
+            /* A chart the size of a paragraph, a few lines in. The line it
+             * lands on is CROSSED, not landed on exactly: the loop advances by
+             * a whole line each time, so a window one pixel wide is stepped
+             * over and the chart was never drawn once. */
             const t = M.tiles[c % M.tiles.length];
             const at = y + lh * (c === 0 ? 4 : 9);
+            let placed = false;
             while (ly < bot) {
-              if (panelSheet && ly >= at && ly < at + 1) {
+              if (panelSheet && !placed && ly >= at) {
+                placed = true;
                 const h = colW * 0.74;
                 g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
                             R(cx), R(ly - fs), R(colW), R(h));

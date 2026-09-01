@@ -3452,9 +3452,12 @@ Stage.register(
       review: 1.3,
       pictorial: 1.36,
       modern: 1.55,
-      leading: 1.5,
-      colour: 1.5,
-      spot: 1.5,
+      // The made pages are shorter than a newspaper's: they carry a made
+      // amount of text, and stretched to a broadsheet's format their bottom
+      // half was empty.
+      leading: 1.32,
+      colour: 1.2,
+      spot: 1.2,
       landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
@@ -3468,6 +3471,7 @@ Stage.register(
      * cuts on these and nothing else — a cut that lands mid-page is a jump,
      * not an edit. */
     const CUTS = [];
+    const PAGES = [];
 
     /* The photographs. Every one of these is a real plate belonging to the
      * story it sits in, public domain, and served with an open CORS header —
@@ -4324,11 +4328,16 @@ const flowCol = (A, o) => {
           for (let c = 0; c < 2; c++) {
             const cx = left + c * (colW + 9);
             let ly = y;
-            // a chart the size of a paragraph, a few lines in
+            /* A chart the size of a paragraph, a few lines in. The line it
+             * lands on is CROSSED, not landed on exactly: the loop advances by
+             * a whole line each time, so a window one pixel wide is stepped
+             * over and the chart was never drawn once. */
             const t = M.tiles[c % M.tiles.length];
             const at = y + lh * (c === 0 ? 4 : 9);
+            let placed = false;
             while (ly < bot) {
-              if (panelSheet && ly >= at && ly < at + 1) {
+              if (panelSheet && !placed && ly >= at) {
+                placed = true;
                 const h = colW * 0.74;
                 g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
                             R(cx), R(ly - fs), R(colW), R(h));
@@ -4710,6 +4719,7 @@ const flowCol = (A, o) => {
       // The run: every paper by its dateline, then the modern pages.
       const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
       CUTS.length = 0;
+      PAGES.length = 0;
       REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
         .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
         .concat(COLOUR.map((C) => ({ colour: C, year: C.year })))
@@ -4779,8 +4789,35 @@ const flowCol = (A, o) => {
         }
         g.restore();
         CUTS.push(y / GALLEY_H);
+        /* The bench publishes what it composed: which rung each page is on,
+         * what it is, and where it sits on the sheet. The catalogue page reads
+         * this to cut the reel up and lay it out. Only this parked copy does
+         * it — the delivered module publishes nothing. */
+        PAGES.push({
+          rung: E.modern || E.leading ? 5 : E.spot ? 4 : E.colour ? 3
+            : E.landmark ? (E.year >= 1885 ? 2 : 1)
+            : E.A.cut ? 2 : 1,
+          year: E.modern ? "today" : String(E.year),
+          what: E.modern
+            ? E.modern.forms.join(" ")
+            : E.leading
+              ? E.leading.forms.join(" ")
+              : E.spot
+                ? E.spot.forms.join(" ")
+                : E.colour
+                  ? E.colour.forms.join(" ")
+                  : E.landmark
+                    ? E.landmark.src + " — " + E.landmark.by
+                    : E.A.paper,
+          tpl: E.modern ? "modern" : E.leading ? "leading" : E.spot ? "spot"
+            : E.colour ? "colour" : E.landmark ? "landmark" : E.A.tpl,
+          y,
+          h,
+        });
         y += h;
       }
+      window.__galleySheet = cv;
+      window.__galleyPages = PAGES;
       return cv;
     }
 
@@ -5895,7 +5932,7 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
         loadPressImages(uploadGalley);
-        buildWebTuner();
+        if (!window.__noTuner) buildWebTuner();
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
