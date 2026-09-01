@@ -4500,40 +4500,33 @@ void main(){
       // the three webs. Widths and heights are fractions of what the camera
       // can see at the webs' own depth, so the composition holds on any frame
       // rather than being a set of world units tuned to one window.
-      // and wider on paper: 400 texels of column shown across 300 pixels is a
-      // minification the type does not survive. At 0.24 it is near enough
-      // one to one.
-      webW: ARC0 ? 0.17 : 0.24,
+      // 400 texels of column shown across 300 pixels is a minification the
+      // type does not survive; at 0.21 it is close to one to one.
+      webW: 0.21,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
-      // wider apart on paper, so the ground still shows between the webs —
-      // at 0.6 the three columns closed up into one sheet
-      webSpread: ARC0 ? 0.6 : 0.68,
+      // far enough apart that the ground still shows between the webs
+      webSpread: 0.64,
       // The height at which the paper starts going back into the machine. On
       // ink a long fade reads as the web leaving; on paper it reads as a
       // gradient, so on paper it is held much later.
-      /* And on paper it comes back to 0.66. At 0.82 the webs ran to the top
-       * of the frame and the navigation sat on dense body type; the fade frees
-       * the header band and the foot without reading as a gradient. */
-      webEdge: ARC0 ? 0.5 : 0.66,
+      // the height at which the paper goes back into the machine, which also
+      // frees the header band from running over dense body type
+      webEdge: 0.6,
       webSpeed: 0.052, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
-      // On ink the webs are the light in the frame and are lifted to it. On
-      // paper they are ON the light, and lifted the same they blew out to
-      // white — the ground and the web became one surface.
-      webLift: ARC0 ? 1.34 : 1.0,
-      /* WHERE THE CURVE SPLITS INK FROM PAPER, and it is not a taste value.
-       *
-       * The ground mapping sends any sample above 0.577 toward WHITE and
-       * anything below it toward the ink. After the mipmap has averaged a line
-       * of nine-point type with the paper around it, that line arrives at
-       * about 0.7 — above the threshold, so it was being drawn LIGHTER than
-       * the ground it sits on. That is why it could not be read, and no gain
-       * would have fixed it: the pivot was on the wrong side. At 0.84 the
-       * averaged type lands under the threshold and goes dark, while the
-       * paper, which arrives at 1.0, still clears it. */
+      // The webs are the light in the frame, and are lifted to it.
+      webLift: 1.34,
+      /* The ink curve belonged to a paper ground. There, the mapping sent any
+       * sample above 0.577 toward white, and a line of nine-point type
+       * averaged by the mipmap arrives at about 0.7 — so the type came out
+       * LIGHTER than the ground and could not be read at all. On ink that
+       * threshold works for the webs rather than against them: the paper of
+       * the web clears it and lights up, the type falls under it and darkens.
+       * The curve is off, and only the mip bias is kept — a sharper level than
+       * the card picks, which the type wants on any ground. */
       inkPivot: 0.84,
-      inkGain: ARC0 ? 0.0 : 2.0,
-      inkBias: ARC0 ? 0.0 : -0.65, // half a mip sharper, for the type's edges
+      inkGain: 0.0,
+      inkBias: -0.65,
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,

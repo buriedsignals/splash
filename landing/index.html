@@ -282,35 +282,31 @@
   .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.11);
              font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.36}
 
-  /* --- LES QUATRE PREUVES, sur papier ------------------------------------
+  /* --- LES QUATRE PREUVES ------------------------------------------------
      Les tuiles de l'ancien chapitre, avec EXACTEMENT leur comportement : la
      même scène collée au cadre, les mêmes pavés superposés dans la même case
      de grille, la même montée pilotée par `stack()`. Rien de la mécanique n'a
      changé — elle se mesure seulement sur cette section-ci au lieu du
      chapitre, qui est sorti avec le hero.
 
-     Ce qui change est la VALEUR. Elles étaient posées sur l'encre ; elles sont
-     sur le papier. Un pavé sombre y ferait un trou, donc le pavé est clair et
-     l'encre passe dedans. Et l'ambre de la maison ne traverse pas : sur ce
-     fond elle donne 1,46:1, ce qui n'est pas lisible, alors le numéro de
-     chaque preuve est tiré vers l'encre jusqu'à 4,92:1. Même couleur, autre
-     valeur — et la valeur est ce qu'un lecteur voit. */
-  /* ELLE MONTE PAR-DESSUS LE DERNIER ÉCRAN DU MOT.
-     La piste finit sa course à `p = 1`, c'est-à-dire au dernier pixel où la
-     scène du mot est encore collée — après quoi cette scène, vide, défile
-     encore d'un écran avant que la section suivante n'arrive. Personne ne
-     voyait jamais cet écran : le rideau vers l'orchestration prenait la page
-     exactement à la fin de la course. En m'intercalant j'ai repoussé ce rideau
-     et découvert le blanc. Un écran de marge négative remet la section de
-     papier là où le rideau prenait la main : le mot sort, le papier est déjà
-     là. */
-  .proof{background:var(--paper);color:var(--ink);
+     Et sur le même sol qu'elles avaient : l'encre. Elles y sont nées, le pavé
+     sombre en est fait, et les bobines de journal qui passent derrière sont
+     de la lumière sur ce fond — c'est ce pour quoi elles ont été écrites.
+
+     ELLE MONTE PAR-DESSUS LE DERNIER ÉCRAN DU MOT. La piste finit sa course à
+     `p = 1`, c'est-à-dire au dernier pixel où la scène du mot est encore
+     collée — après quoi cette scène, vide, défile encore d'un écran avant que
+     la section suivante n'arrive. Personne ne voyait jamais cet écran : le
+     rideau vers l'orchestration prenait la page exactement à la fin de la
+     course. En m'intercalant j'ai repoussé ce rideau et découvert le blanc. Un
+     écran de marge négative remet la section là où le rideau prenait la main :
+     le mot sort, l'encre est déjà là. */
+  .proof{background:var(--ink);color:var(--paper);
          padding:0 var(--gut);position:relative;
          margin-top:-100vh;z-index:1}
-  .proof .card{background:var(--table);border-color:rgba(20,20,28,.11)}
-  .proof .card .meta{color:#7a5a12}
-  .proof .card p{opacity:.68}
-  .proof .card .src{border-top-color:rgba(20,20,28,.13);opacity:.44}
+  /* l'ambre de la maison, qui est la couleur du numéro d'une preuve depuis le
+     début — elle était portée en style en ligne sur l'ancien balisage */
+  .proof .card .meta{color:var(--amber)}
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
   #hsec{height:520vh;position:relative}
@@ -1788,7 +1784,7 @@
   </div>
 </section>
 
-<section class="proof" id="proof" data-ground="#edeae3">
+<section class="proof" id="proof" data-ground="#14141c">
   <div class="cstage">
     <div class="pile"><div class="card"><div class="meta">01 &middot; The evidence</div>
     <h3>Visual journalism makes reporting easier to inspect.</h3>
