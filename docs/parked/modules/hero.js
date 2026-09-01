@@ -4275,11 +4275,14 @@ Stage.register(
       chrome(w, h, "Each dot, one district", "Two measures, Lorem Ipsum Office",
         (pw, ph) => {
           const n = pw < 130 ? 16 : 34,
-            gut = pw < 130 ? 0 : GUT;
-          let out = "";
-          for (let i = 0; i <= 2; i++)
-            out += '<path d="M' + gut + " " + (ph - (i / 2) * (ph - 8)).toFixed(1) +
-              " H" + pw + '" stroke="' + GRID + '" stroke-width="1" fill="none"/>';
+            gut = pw < 130 ? 0 : GUT,
+            top = 30 + Math.round(rnd() * 50);
+          /* The gutter is for the FIGURES, and this one drew its own bare
+           * rules and never wrote any — twenty-six pixels of white down the
+           * left of every scatter, held for nothing. It uses the same axis
+           * the other charts use, which is what the gutter was reserved for
+           * in the first place. */
+          let out = yAxis(pw, ph, top, gut);
           for (let i = 0; i < n; i++) {
             const k = sweep(i, n, p, q, 1.35);
             const x = gut + 4 + rnd() * (pw - gut - 8),
@@ -4747,12 +4750,29 @@ Stage.register(
     const GROUNDED = ["places", "flows", "route", "rings"];
     const GROUND = new Map();
 
+    /* DRAWN AT TWICE THE SIZE IT IS LAID OUT AT.
+     *
+     * The layers of a map are composed into a canvas, and a canvas is a
+     * bitmap: made at the raster width and then drawn into a hole wider than
+     * that — or onto a screen at two device pixels to one — it is upscaled,
+     * and upscaling a bitmap is exactly what pixelation is. The choropleth
+     * escaped it because it is a single SVG image and the browser
+     * re-rasterises those at whatever size they are drawn; the four maps
+     * that carry marks did not, and looked it.
+     *
+     * The fix is at the source: the SVG keeps a viewBox of the layout size,
+     * so everything inside it is composed at exactly the same measurements,
+     * and is given twice that in width and height. Same drawing, four times
+     * the pixels, and the composite has resolution to spare wherever it
+     * lands. */
+    const RSCALE = 2;
     function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
       const body = (LIVE_ART[kind] || LIVE_ART.bars)(
         w, h, p, q, v, tone, seeded(seed), layer,
       );
       const svg =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w * RSCALE +
+        '" height="' + h * RSCALE + '" viewBox="0 0 ' + w + " " + h + '">' +
         '<foreignObject width="100%" height="100%">' +
         '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + w + "px;height:" + h +
         "px;background:" + (layer === 2 ? "transparent" : "#ffffff") +
@@ -4782,13 +4802,13 @@ Stage.register(
       const marks = await rasterOne(kind, w, h, p, q, v, tone, sd, 2);
       if (!ground && !marks) return null;
       const c = document.createElement("canvas");
-      c.width = w;
-      c.height = h;
+      c.width = w * RSCALE;
+      c.height = h * RSCALE;
       const g = c.getContext("2d");
       g.fillStyle = "#ffffff";
-      g.fillRect(0, 0, w, h);
-      if (ground) g.drawImage(ground, 0, 0);
-      if (marks) g.drawImage(marks, 0, 0);
+      g.fillRect(0, 0, c.width, c.height);
+      if (ground) g.drawImage(ground, 0, 0, c.width, c.height);
+      if (marks) g.drawImage(marks, 0, 0, c.width, c.height);
       return c;
     }
 
