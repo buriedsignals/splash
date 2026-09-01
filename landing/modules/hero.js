@@ -3882,7 +3882,12 @@ Stage.register(
      * They are files, carried by the page rather than fetched, because a
      * canvas that has drawn a cross-origin image cannot be uploaded as a
      * texture and a capture has no CORS header to give. */
-    const PRESS_BASE = "../press/";
+    /* Relative to the DOCUMENT, not to this file: an <img> src resolves
+     * against the page's own URL, never against the script's. The delivered
+     * page is landing/index.html, so the folder beside it is "press/". The
+     * bench pages sit two levels down under docs/, and their copy of this
+     * module climbs back out. */
+    const PRESS_BASE = "press/";
     const PRESS_ASSETS = {
       photo: [
         "photo-1015.jpg", "photo-1016.jpg", "photo-1043.jpg", "photo-1044.jpg",
@@ -5402,14 +5407,9 @@ const flowCol = (A, o) => {
           (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
         }
         g.restore();
-        (window.__reel = window.__reel || []).push({ y, h,
-          kind: E.modern ? "modern" : E.landmark ? "landmark" : E.A.tpl,
-          name: E.modern ? E.modern.era : E.landmark ? String(E.landmark.year) : E.A.paper,
-          year: E.year || "" }); // SONDE
         CUTS.push(y / GALLEY_H);
         y += h;
       }
-      window.__galley = cv; // SONDE
       return cv;
     }
 

@@ -3883,7 +3883,12 @@ Stage.register(
      * They are files, carried by the page rather than fetched, because a
      * canvas that has drawn a cross-origin image cannot be uploaded as a
      * texture and a capture has no CORS header to give. */
-    const PRESS_BASE = "../../../landing/press/";
+    /* Relative to the DOCUMENT, not to this file: an <img> src resolves
+     * against the page's own URL, never against the script's. These bench
+     * pages live in docs/parked/, so the climb is two levels and then back
+     * down into the delivered page's own folder — one copy of the captures,
+     * not two. */
+    const PRESS_BASE = "../../landing/press/";
     const PRESS_ASSETS = {
       photo: [
         "photo-1015.jpg", "photo-1016.jpg", "photo-1043.jpg", "photo-1044.jpg",
