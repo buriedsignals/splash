@@ -3532,6 +3532,8 @@ Stage.register(
       {
     rung: 4,
     name: "Two charts down the second column",
+    live: 0,
+    anim: "bars",
     head: "centre",
     cols: 3,
     tone: "#b3402a",
@@ -3565,6 +3567,8 @@ Stage.register(
       {
     rung: 4,
     name: "One measure, a chart and a map in it",
+    live: 0,
+    anim: "bars",
     head: "tracked",
     cols: 1,
     tone: "#b3402a",
@@ -3624,6 +3628,8 @@ Stage.register(
       {
     rung: 5,
     name: "The chart, and a column beside it",
+    live: 0,
+    anim: "bars",
     head: "left",
     cols: 3,
     tone: "#1a2ffb",
@@ -3646,6 +3652,8 @@ Stage.register(
       {
     rung: 6,
     name: "One chart, and nothing else",
+    live: 0,
+    anim: "bars",
     head: "centre",
     cols: 1,
     tone: "#1a2ffb",
@@ -3664,6 +3672,8 @@ Stage.register(
       {
     rung: 6,
     name: "Two charts, stacked",
+    live: 0,
+    anim: "bars",
     head: "tracked",
     cols: 1,
     tone: "#b3402a",
@@ -3917,6 +3927,11 @@ Stage.register(
      * would have cost.
      */
     const LIVE_FRAMES = 24;
+    /* The phases are rasterised no wider than this and scaled up into the
+     * hole. Six flipbooks at full page width is tens of megabytes of decoded
+     * bitmap, and the webs read the reel through a mip bias — the paper is
+     * softening these long before a reader could tell them from sharp. */
+    const LIVE_RASTER = 220;
     const LIVE_HZ = 12; // the press is not a screen; it does not need sixty
     let LIVE_HOLES = []; // filled by the painter, in galley coordinates
     let galleyCv = null;
@@ -3935,9 +3950,16 @@ Stage.register(
      * single loose character yields a blank image rather than an error. */
     const LIVE_ART = {
       bars(w, h, t, tone) {
-        const n = 15,
-          floor = 26,
-          room = h - floor - 16;
+        /* Adapts to the hole rather than assuming a big one. A chart the
+         * size of a paragraph on the fourth rung is forty pixels tall: give
+         * it the same caption and baseline as a full-measure lead and the
+         * room left for the bars themselves goes NEGATIVE, which CSS
+         * discards, and the block comes out empty. Under ninety pixels it
+         * loses its furniture and is only the bars. */
+        const small = h < 90,
+          n = small ? 11 : 15,
+          floor = small ? 3 : 26,
+          room = Math.max(6, h - floor - (small ? 2 : 16));
         let out = "";
         for (let i = 0; i < n; i++) {
           // each bar starts a little after the one before it, so the chart
@@ -3952,9 +3974,12 @@ Stage.register(
         return (
           '<div style="height:' + (h - floor) + 'px;display:flex;align-items:flex-end;' +
           'justify-content:space-between">' + out + "</div>" +
-          '<div style="height:2px;background:#161616;margin-top:5px"></div>' +
-          '<div style="font:8px Georgia,serif;color:#555;margin-top:5px;' +
-          'letter-spacing:.06em">LOREM IPSUM STATISTICAL OFFICE</div>'
+          '<div style="height:' + (small ? 1 : 2) + 'px;background:#161616;margin-top:' +
+          (small ? 2 : 5) + 'px"></div>' +
+          (small
+            ? ""
+            : '<div style="font:8px Georgia,serif;color:#555;margin-top:5px;' +
+              'letter-spacing:.06em">LOREM IPSUM STATISTICAL OFFICE</div>')
         );
       },
       grid(w, h, t, tone) {
@@ -4007,10 +4032,12 @@ Stage.register(
         const key = bookKey(hole);
         if (LIVE_BOOK.has(key)) continue;
         LIVE_BOOK.set(key, null); // claimed, so a second pass does not redo it
+        const rw = Math.min(hole.w, LIVE_RASTER),
+          rh = Math.round((hole.h * rw) / hole.w);
         const reel = [];
         for (let f = 0; f < LIVE_FRAMES; f++) {
           const im = await rasterise(
-            hole.anim, hole.w, hole.h, f / LIVE_FRAMES, hole.tone,
+            hole.anim, rw, rh, f / LIVE_FRAMES, hole.tone,
           );
           if (!im) return LIVE_BOOK.delete(key);
           reel.push(im);
@@ -4039,7 +4066,7 @@ Stage.register(
         if (!book) continue;
         book.g.fillStyle = "#ffffff";
         book.g.fillRect(0, 0, k.w, k.h);
-        book.g.drawImage(book.reel[f], 0, 0);
+        book.g.drawImage(book.reel[f], 0, 0, k.w, k.h);
         g2.drawImage(book.scratch, k.x, k.y);
         gl.texSubImage2D(
           gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, book.scratch,
