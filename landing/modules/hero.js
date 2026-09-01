@@ -7389,7 +7389,7 @@ void main(){
      * the page being lifted. The soft one was right — it was only ever
      * WRONGLY SHAPED, stretched two and a half times up the sheet because
      * p runs -1..1 on both axes whatever proportion the sheet is. */
-    float e = exp(-dot(q, q) * 2.0);
+    float e = exp(-dot(q, q) * 1.6);
     bulge = e;
     float g = -4.0 * e / max(uPtrK.y, 1e-3);
     bdx = q.x * g;
@@ -7656,17 +7656,20 @@ void main(){
        * fastest is three presses running at three rates, which is what it
        * is. The lag between any two of them now turns over in under a
        * minute rather than in five. */
-      webSpd0: 0.0165,
-      webSpd1: 0.0128,
-      webSpd2: 0.0201,
+      webSpd0: 0.02,
+      webSpd1: 0.015,
+      webSpd2: 0.025,
       // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
       // how far the paper lifts under the pointer, in half-heights
       ptrLift: 0.16,
-      // and how wide the thing under it is, in half-WIDTHS of the sheet
-      ptrSize: 0.5,
+      /* HOW WIDE, in half-widths of a sheet. Past one it reaches across
+       * the gap and takes the sheet beside it too, which is what a hand
+       * under a run of paper would do — the three webs are one web of
+       * paper cut into columns, not three separate objects. */
+      ptrSize: 1.35,
       // the mark shown while the room is being made: the word, or the
       // rosette turning
       markLogo: 1,
