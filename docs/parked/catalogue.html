@@ -1917,9 +1917,14 @@
       const grid = document.createElement('div');
       grid.className = 'grid';
       for (const p of mine) {
+        /* The sheet carries three columns now — one per web — and it is
+           stored at several texels to the page unit. A page is the first
+           column's measure, at that scale. */
+        const S = window.__galleyScale || 1;
+        const cw = (window.__galleyCol || sheet.width) * S, ch = p.h * S;
         const c = document.createElement('canvas');
-        c.width = sheet.width; c.height = p.h;
-        c.getContext('2d').drawImage(sheet, 0, p.y, sheet.width, p.h, 0, 0, sheet.width, p.h);
+        c.width = cw; c.height = ch;
+        c.getContext('2d').drawImage(sheet, 0, p.y * S, cw, ch, 0, 0, cw, ch);
         const fig = document.createElement('figure');
         const im = new Image(); im.src = c.toDataURL('image/png'); im.alt = p.what;
         const cap = document.createElement('figcaption');

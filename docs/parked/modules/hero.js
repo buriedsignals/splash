@@ -3923,24 +3923,33 @@ Stage.register(
      * than being there already when it lifts — a beat apart, because three
      * sheets appearing together is a slide changing and three arriving one
      * after another is a press starting. */
-    // left, then right, then the middle — the outside of the frame fills
-    // first and the eye is brought inward, rather than swept across it
-    const WEB_IN = [0, 0.52, 0.26];
+    // the middle first, then the left, then the right: the sheet that covers
+    // the boot's mark is the one that arrives on it, and the frame fills
+    // outward from there rather than closing in on it
+    const WEB_IN = [0.26, 0, 0.52];
     let bootAt = null;
+    /* The boot screen is clipped by where the paper actually is, so the web
+     * loop hands it the middle sheet's leading edge. Looked up until the
+     * screen has gone and then never again. */
+    let bootMark = true;
     const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
-    const STORY_COLS = [1, 2, 3, 2, 3, 1, 3, 1, 2];
-    const STORY_PAPERS = STORY_COLS.map((_, i) => {
-      const r = seeded(LOAD_SALT + i * 5197);
-      return {
-        rung: 1,
-        story: true,
-        name: "The article, and what the desk makes of it",
-        head: HEAD_SET[Math.floor(r() * HEAD_SET.length)],
-        // one, two or three columns, and not in a fixed rotation
-        cols: 1 + Math.floor(r() * 3),
-        tone: inkFor(r),
-      };
-    });
+    /* A COLUMN OF THE REEL, cast from its own salt. Each web reads one of
+     * these and only that one, so the three can never hold the same page —
+     * and therefore never the same drawing — however far their speeds pull
+     * their offsets apart. */
+    const storyPapers = (n, col) =>
+      Array.from({ length: n }, (_, i) => {
+        const r = seeded(LOAD_SALT + col * 104729 + i * 5197);
+        return {
+          rung: 1,
+          story: true,
+          name: "The article, and what the desk makes of it",
+          head: HEAD_SET[Math.floor(r() * HEAD_SET.length)],
+          // one, two or three columns, and not in a fixed rotation
+          cols: 1 + Math.floor(r() * 3),
+          tone: inkFor(r),
+        };
+      });
 
 
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
@@ -4060,13 +4069,46 @@ Stage.register(
      * than guessed — add a page and the reel shrinks to make room by itself
      * instead of going dark. */
     let GALLEY_COL = 400;
-    /* ONE column, and the three webs read it at three different heights.
-     * Three columns side by side cost three times the width for no gain the
-     * moment the reel became a timeline: what the webs must never do is show
-     * the same page, and three offsets into one chronology guarantee that far
-     * better than three orders of the same eleven papers did — they show three
-     * DIFFERENT ERAS. The width saved is spent on the length of the run. */
     const GALLEY_GAP = 0;
+    /* THREE COLUMNS, ONE PER WEB — and this is a correctness fix, not a
+     * decoration.
+     *
+     * One shared column was defensible while the three webs sat a fixed
+     * third of the reel apart: three offsets into one chronology showed
+     * three different pages, and that was the guarantee. It stopped being
+     * one the moment the webs were given DIFFERENT SPEEDS. The offsets are
+     * no longer fixed — they drift by the difference in rate, half a page a
+     * minute — so the windows slide into each other, and when they overlap
+     * the same page is on two webs at once. That is both faults the reel is
+     * supposed to make impossible: the same drawing twice on the screen,
+     * and a page arriving in one web already half drawn because the other
+     * web opened it a while ago.
+     *
+     * A column each removes the possibility rather than managing it. No
+     * page is ever in two windows, whatever the speeds do, because no page
+     * is in two columns. */
+    const GALLEY_COLS = 3;
+    /* HOW MANY DEVICE TEXELS TO ONE UNIT OF THE PAGE.
+     *
+     * The pages are set in a coordinate system where the measure is four
+     * hundred units, and they were STORED at four hundred texels — then
+     * magnified onto a sheet a third of the frame wide, which on a retina
+     * screen is nearer a thousand device pixels. Nine-unit body type
+     * arriving as twenty-two pixels drawn from nine is exactly what the
+     * newsprint looked like, and no filter fixes it: the resolution was
+     * never there.
+     *
+     * The fix is a transform on the galley's context and nothing else. Every
+     * press still draws in the same units at the same sizes; the canvas
+     * underneath is twice as big in each direction, so the type is RASTERISED
+     * at twice the resolution rather than resampled up to it. */
+    let GALLEY_SS = 2;
+    /* The reel the tuned speeds were set against. A web's speed on screen is
+     * its rate over the fraction of the reel in shot, and that fraction is
+     * one over the number of pages — so shortening the reel would quietly
+     * slow the paper down. The rate is normalised by this instead, and the
+     * numbers in the panel keep meaning what they meant. */
+    const REEL_REF = 9;
     /* A PAGE IS A PAGE. Its depth is the sheet its press printed on, as a
      * ratio of the measure — a broadsheet is a tall thin thing, a monthly is
      * nearly square — and never how much of the article happened to be set.
@@ -4170,14 +4212,21 @@ Stage.register(
      * strength and inside the frame. A page starts its telling when it
      * reaches that, and is only let go once it is well clear of it. */
     const BAND = 0.26; // trimmed off each end of a web's window
-    const inShot = (y0, y1, pad) => {
+    /* ASKED OF ONE WEB, not of all three. A page belongs to the column its
+     * web reads, so the only window that can ever show it is that web's —
+     * and it is that web's REAL position, written by the draw a frame ago,
+     * which is what makes the three different speeds account for
+     * themselves rather than be assumed away. */
+    const inShot = (y0, y1, pad, col) => {
       const m = pad === undefined ? 0.02 : pad,
         a = y0 / GALLEY_H,
         b = y1 / GALLEY_H,
         dv = WEB_WIN[3],
         lo = dv * BAND,
         hi = dv * (1 - BAND);
-      for (let k = 0; k < 3; k++) {
+      const k0 = col === undefined ? 0 : col,
+        k1 = col === undefined ? 2 : col;
+      for (let k = k0; k <= k1; k++) {
         // the window wraps, so it is tested against three copies of the reel
         const v = WEB_WIN[k];
         for (let o = -1; o <= 1; o++)
@@ -5060,7 +5109,10 @@ Stage.register(
      * pixelation this was raised to fix: the composite is a bitmap, and
      * what it needs is to be made larger than the hole it lands in, not
      * twice as large. */
-    const RSCALE = 1.6;
+    /* And never coarser than the sheet it lands on: the galley is stored at
+     * GALLEY_SS texels to the unit, so a drawing rasterised at 1.6 would be
+     * the one soft thing on a page of sharp type. Settled with the sheet. */
+    let RSCALE = 1.6;
     /* And no more than two drawings are ever being made at once. The pages
      * are staggered so this is usually true anyway, but usually is not a
      * bound — three arrivals landing together put three decodes in three
@@ -5339,6 +5391,42 @@ Stage.register(
       ptr.k += (want - ptr.k) * Math.min(1, dt * 3.5);
     }
 
+    /* WRITING A RECTANGLE OF THE REEL BACK TO THE CARD.
+     *
+     * The page is drawn in logical units and stored at GALLEY_SS device
+     * texels to the unit, so a rectangle is scaled on its way to the card.
+     * One scratch canvas for the whole module, grown to the largest write
+     * there has been and never shrunk: texSubImage2D is told the width and
+     * height it is to read, so a scratch bigger than the write is simply not
+     * read past. A canvas per hole was three megabytes each at this
+     * resolution, and there are eighteen holes. */
+    let galleyScratch = null,
+      galleyScratchG = null;
+    function putGalley(x, y, w, h) {
+      const S = GALLEY_SS;
+      const dx = Math.max(0, Math.round(x * S)),
+        dy = Math.max(0, Math.round(y * S));
+      const dw = Math.min(galleyCv.width - dx, Math.round(w * S)),
+        dh = Math.min(galleyCv.height - dy, Math.round(h * S));
+      if (dw <= 0 || dh <= 0) return;
+      if (!galleyScratch) {
+        galleyScratch = document.createElement("canvas");
+        galleyScratch.width = dw;
+        galleyScratch.height = dh;
+        galleyScratchG = galleyScratch.getContext("2d");
+      } else if (galleyScratch.width < dw || galleyScratch.height < dh) {
+        galleyScratch.width = Math.max(dw, galleyScratch.width);
+        galleyScratch.height = Math.max(dh, galleyScratch.height);
+        galleyScratchG = galleyScratch.getContext("2d");
+      }
+      galleyScratchG.clearRect(0, 0, dw, dh);
+      galleyScratchG.drawImage(galleyCv, dx, dy, dw, dh, 0, 0, dw, dh);
+      gl.texSubImage2D(
+        gl.TEXTURE_2D, 0, dx, dy, dw, dh, gl.RGBA, gl.UNSIGNED_BYTE,
+        galleyScratch,
+      );
+    }
+
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
@@ -5355,6 +5443,9 @@ Stage.register(
 
       let wrote = false;
       const g2 = galleyCv.getContext("2d");
+      // the presses draw in page units; the sheet under them is GALLEY_SS
+      // times that in each direction, and this is the only place that knows
+      g2.setTransform(GALLEY_SS, 0, 0, GALLEY_SS, 0, 0);
       gl.bindTexture(gl.TEXTURE_2D, galleyTex);
 
       /* Closed and put back the way it was printed. Only ever run on a page
@@ -5369,16 +5460,7 @@ Stage.register(
         g2.textBaseline = "alphabetic";
         k.paint(0);
         g2.restore();
-        if (!k.scratch) {
-          k.scratch = document.createElement("canvas");
-          k.scratch.width = k.w;
-          k.scratch.height = k.h;
-          k.sg = k.scratch.getContext("2d");
-        }
-        k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
-        gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
-        );
+        putGalley(k.x, k.y, k.w, k.h);
       };
 
       for (const k of LIVE_HOLES) {
@@ -5392,7 +5474,7 @@ Stage.register(
          * a frame, which is a page that never gets to open. */
         // the give is a fifth of a PAGE, not a tenth of the reel: at nine
         // pages the old figure was most of a page and nothing ever left
-        const vis = inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0);
+        const vis = inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0, k.col);
         let open = 1,
           draw = 1;
         if (k.story) {
@@ -5520,6 +5602,11 @@ Stage.register(
         /* Repainted only when the picture would actually differ. A story
          * page holds still for half of every telling, and setting the same
          * type again for those seconds is a cost with nothing to show. */
+        // what of the reel this hole is about to change, in page units
+        let wx = k.x,
+          wy = k.y,
+          ww = k.w,
+          wh = k.h;
         if (k.story) {
           if (t - (k.lastPaint || -9) < 1 / PAINT_HZ) continue;
           // while the word is on the page it is moving, so the page is
@@ -5532,27 +5619,47 @@ Stage.register(
            * bar chart is a few pixels at the foot of the plot. No mixing,
            * because they are never both there. */
           const waiting = k.markAt > 0;
+          const dOpen = Math.abs(
+            open - (k.lastOpen === undefined ? -9 : k.lastOpen),
+          );
           if (
             !waiting &&
-            Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
+            dOpen < 0.0015 &&
             Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
             Math.abs(k.leave - (k.lastGone === undefined ? -9 : k.lastGone)) < 0.004 &&
             !k.fresh
           )
             continue;
+          /* ONLY WHAT MOVED IS SET AGAIN, AND ONLY IT IS SENT.
+           *
+           * The type on a story page is a function of `open` and of nothing
+           * else. While the room is being made, the whole band changes and
+           * the whole band goes to the card. Once the room IS made — which
+           * is most of every telling — `open` holds at one and the only
+           * thing still changing is the drawing inside the hole. Setting a
+           * page of type again for that, and sending a page-sized rectangle
+           * of it, is the same picture typeset and uploaded sixty times a
+           * second for nothing.
+           *
+           * It was affordable while the reel was stored at the size it was
+           * drawn at. At two device texels to the unit it is four times the
+           * bytes, and four times nothing is still too much. */
+          const moved = dOpen > 0.0015 || k.lastOpen === undefined;
           k.lastOpen = open;
           k.lastDraw = draw;
           k.lastGone = k.leave;
           k.lastPaint = t;
           k.fresh = false;
-          g2.save();
-          g2.beginPath();
-          g2.rect(k.x, k.y, k.w, k.h);
-          g2.clip();
-          g2.fillStyle = "#ffffff";
-          g2.fillRect(k.x, k.y, k.w, k.h);
-          g2.textBaseline = "alphabetic";
-          k.paint(open);
+          if (moved) {
+            g2.save();
+            g2.beginPath();
+            g2.rect(k.x, k.y, k.w, k.h);
+            g2.clip();
+            g2.fillStyle = "#ffffff";
+            g2.fillRect(k.x, k.y, k.w, k.h);
+            g2.textBaseline = "alphabetic";
+            k.paint(open);
+          }
           /* THE ARRIVAL, AS A CLIP. Two shapes, and each is the direction
            * its drawing is read in: a ring is swept round from twelve
            * o'clock, everything else is opened from the left, which is how
@@ -5560,6 +5667,22 @@ Stage.register(
            * purpose — a soft one reads as a fade, and a fade says nothing.
            */
           const inner = k.inner();
+          /* THE HOLE ALONE, when the page around it has not moved. Exactly
+           * the hole and no margin: the rule drawn round it sits one unit
+           * outside, and a padded clear would take it off. */
+          if (!moved) {
+            if (!inner) continue;
+            wx = inner.x;
+            wy = inner.y;
+            ww = inner.w;
+            wh = inner.h;
+            g2.save();
+            g2.beginPath();
+            g2.rect(wx, wy, ww, wh);
+            g2.clip();
+            g2.fillStyle = "#ffffff";
+            g2.fillRect(wx, wy, ww, wh);
+          }
           if (inner && k.img && draw > 0) {
             /* Straight down. The picture already IS the drawing at this
              * stage of being made, so there is nothing left to hide. */
@@ -5582,20 +5705,15 @@ Stage.register(
           g2.drawImage(k.img, k.x, k.y, k.w, k.h);
         }
 
-        if (!k.scratch) {
-          k.scratch = document.createElement("canvas");
-          k.scratch.width = k.w;
-          k.scratch.height = k.h;
-          k.sg = k.scratch.getContext("2d");
-        }
-        k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
-        gl.texSubImage2D(
-          gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
-        );
+        putGalley(wx, wy, ww, wh);
         wrote = true;
       }
+      /* NO MIPMAP. It used to be rebuilt on every frame a hole wrote, which
+       * on a sheet this size is tens of milliseconds of nothing anyone can
+       * see: the webs MAGNIFY the reel — that is the whole reason it is
+       * stored at twice the size — so the minified levels were built every
+       * frame and sampled by nothing. */
       if (!wrote) return;
-      gl.generateMipmap(gl.TEXTURE_2D);
     }
 
     const PRESS_IMG = new Map();
@@ -6894,7 +7012,7 @@ const flowCol = (A, o) => {
               kind: "bars",
               tone: S.tone || "#b3402a",
               phase: S.phase || 0,
-              slot: S.i || 0,
+              slot: S.slot === undefined ? S.i || 0 : S.slot,
               seed: (S.i || 0) * 131 + 7,
               recast,
               // the drawing is always asked for at the hole's FULL size, so
@@ -7249,9 +7367,38 @@ const flowCol = (A, o) => {
        * repeat inside a rung is now impossible rather than merely unintended. */
       /* The column, capped so the run fits one texture. */
       const maxTex = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 16384;
-      const fits = Math.floor((maxTex - 8) / (SPECS.length * PAGE_RATIO));
+      /* HOW MANY PAGES A WEB GETS. Six rather than nine because there are
+       * three columns of them now and the sheet is stored at twice the
+       * size: nine each would be ninety megabytes of texture. Eighteen
+       * distinct pages across the three is twice the variety the one shared
+       * column of nine had, and no web can repeat another's. */
+      const PER_COL = 6;
+      /* The supersample, and then the measure, both capped by the card in
+       * both directions — three columns across and the reel down. Guessed
+       * rather than measured, this fails SILENTLY: the upload is refused and
+       * the webs read a texture that was never there. */
+      /* TWO TEXELS TO THE UNIT ON A RETINA SCREEN, one on a plain one — and
+       * the point is that both ends are wrong the other way round. A sheet
+       * is about a third of the frame wide, so at two device pixels to the
+       * CSS pixel a four-hundred-unit column is magnified two and a half
+       * times, and at one device pixel an eight-hundred-texel column would
+       * be MINIFIED — which without a mipmap chain is aliasing on every
+       * hairline. The sheet is stored at the resolution it is looked at. */
+      GALLEY_SS = Math.max(
+        1,
+        Math.min(
+          (window.devicePixelRatio || 1) >= 1.5 ? 2 : 1,
+          Math.floor((maxTex - 8) / (400 * GALLEY_COLS)),
+          Math.floor((maxTex - 8) / (400 * PAGE_RATIO * PER_COL)),
+        ),
+      );
+      RSCALE = Math.max(1.6, GALLEY_SS);
+      const fits = Math.floor(
+        (maxTex - 8) /
+          (GALLEY_SS * Math.max(GALLEY_COLS, PER_COL * PAGE_RATIO)),
+      );
       GALLEY_COL = Math.max(240, Math.min(400, fits));
-      GALLEY_W = GALLEY_COL;
+      GALLEY_W = GALLEY_COL * GALLEY_COLS;
 
       const HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
       const seen = {};
@@ -7287,11 +7434,18 @@ const flowCol = (A, o) => {
        * pure dataviz, in the order it happened, which is what the reel is
        * otherwise for. */
       const REEL_STORY = true;
-      if (REEL_STORY) {
-        REEL = STORY_PAPERS.map((S, n) => ({
-          spec: { ...S, i: n, phase: n / STORY_PAPERS.length },
+      /* A column of the reel, cast for one web. `i` is unique across the
+       * three, because it is what seeds the page's cast and its place in
+       * the opening cascade — three columns sharing an index would be three
+       * webs opening the same drawing at the same instant, which is the
+       * fault this was built to remove. */
+      const storyReel = (c) =>
+        storyPapers(PER_COL, c).map((S, n) => ({
+          // `i` is unique across the sheet and seeds the page; `slot` is its
+          // place in ITS OWN column, which is what the opening cascade counts
+          spec: { ...S, i: c * PER_COL + n, slot: n, phase: n / PER_COL },
         }));
-      }
+      if (REEL_STORY) REEL = storyReel(0);
       PAGE_STEP = 1 / Math.max(1, REEL.length);
       GALLEY_H = REEL.reduce(
         (a, E) =>
@@ -7305,20 +7459,33 @@ const flowCol = (A, o) => {
       );
 
       LIVE_HOLES = [];
+      const SS = GALLEY_SS;
       const cv = document.createElement("canvas");
-      cv.width = GALLEY_W;
-      cv.height = GALLEY_H;
+      cv.width = GALLEY_W * SS;
+      cv.height = GALLEY_H * SS;
       const g = cv.getContext("2d");
+      /* THE ONLY LINE THAT KNOWS. Every press below draws in page units at
+       * the sizes it always drew at; the sheet under them is SS times bigger
+       * in each direction, so the type is rasterised at that resolution
+       * instead of being resampled up to it on the way to the screen. */
+      g.setTransform(SS, 0, 0, SS, 0, 0);
       g.fillStyle = "#ffffff";
       g.fillRect(0, 0, GALLEY_W, GALLEY_H);
       g.textBaseline = "alphabetic";
       const PRESS = galleyPresses(g);
 
+      /* THREE COLUMNS, SIDE BY SIDE, one for each web. They are laid out
+       * one after another so a hole knows which column it is in, and the
+       * frame loop asks about a hole against that web's window alone. */
+      for (let c = 0; c < GALLEY_COLS; c++) {
+      const COLUMN = c === 0 ? REEL : storyReel(c);
+      const x0 = c * GALLEY_COL;
+      const hole0 = LIVE_HOLES.length;
       /* The run, in the order it was printed. The papers first, by their own
        * datelines, then what the desk makes. */
       let y = 0;
-      for (let k = 0; k < REEL.length; k++) {
-        const E = REEL[k];
+      for (let k = 0; k < COLUMN.length; k++) {
+        const E = COLUMN[k];
         const h = E.spec || E.blank
           ? Math.round(GALLEY_COL * PAGE_RATIO)
           : E.landmark
@@ -7326,33 +7493,33 @@ const flowCol = (A, o) => {
             : pageH();
         g.save();
         g.beginPath();
-        g.rect(0, y, GALLEY_COL, h);
+        g.rect(x0, y, GALLEY_COL, h);
         g.clip();
         g.fillStyle = "#111111";
         g.textAlign = "left";
         if (E.spec) {
-          PRESS.spec(E.spec, 0, y, h);
+          PRESS.spec(E.spec, x0, y, h);
         } else if (E.blank) {
-          PRESS.blank(E.blank, 0, y, h);
+          PRESS.blank(E.blank, x0, y, h);
         } else if (E.landmark) {
-          PRESS.landmark(E.landmark, 0, y, h);
+          PRESS.landmark(E.landmark, x0, y, h);
         } else {
           // what the page carries on when the story runs out: the papers that
           // follow it on the reel, so a column never has a hole in it
           const fill = [];
           for (let n = 1; n <= 3; n++) {
-            const F = REEL[(k + n) % REEL.length];
+            const F = COLUMN[(k + n) % COLUMN.length];
             if (F && !F.modern) fill.push(F.A);
           }
-          (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
+          (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, x0, y, h, fill);
         }
         g.restore();
-        CUTS.push(y / GALLEY_H);
+        if (c === 0) CUTS.push(y / GALLEY_H);
         /* The bench publishes what it composed: which rung each page is on,
          * what it is, and where it sits on the sheet. The catalogue page reads
          * this to cut the reel up and lay it out. Only this parked copy does
          * it — the delivered module publishes nothing. */
-        PAGES.push({
+        if (c === 0) PAGES.push({
           /* The rung is what the page IS, never when it was printed. A
            * founding plate is an image whatever its year, so it says which
            * rung it belongs to itself: Snow is one ink, the other four were
@@ -7388,10 +7555,20 @@ const flowCol = (A, o) => {
         });
         y += h;
       }
+      // every hole this column just laid down belongs to the web that reads
+      // it, and to no other
+      for (let i = hole0; i < LIVE_HOLES.length; i++) LIVE_HOLES[i].col = c;
+      }
       window.__specs = SPECS; // the bench publishes them so they can be checked
       window.__galleySheet = cv;
       window.__liveHoles = LIVE_HOLES; // the bench, again
       window.__galleyPages = PAGES;
+      /* The page rectangles above are in PAGE UNITS and describe the first
+       * column only; the sheet is three columns wide and stored at this many
+       * texels to the unit. The catalogue needs both numbers to cut a page
+       * out of it. */
+      window.__galleyScale = GALLEY_SS;
+      window.__galleyCol = GALLEY_COL;
       // kept, because the moving blocks write back into it: a page has to
       // stay correct if the whole reel is ever uploaded again
       galleyCv = cv;
@@ -7535,10 +7712,11 @@ void main(){
     // column can never bleed into the one set beside it.
     st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
-  /* A sharper mip than the card would pick. It chooses one from the rate the
-   * coordinates change, which is right for a photograph and wrong for type:
-   * the level it lands on has already averaged the ink away. Half a level
-   * back costs some aliasing on the rules and gives the type its edges. */
+  /* The bias is spent. It asked for a sharper mip than the card would pick,
+   * because the level chosen from the rate the coordinates change had already
+   * averaged the ink away — a workaround for a reel stored at less resolution
+   * than it was looked at. The reel is stored at the resolution it is looked
+   * at now and carries no mip chain at all, so this samples the sheet. */
   vec3 base = texture(uTex, st, uInkC.z).rgb;
   if(uInkC.y > 0.0) base = clamp((base - uInkC.x) * uInkC.y + uInkC.x, 0.0, 1.0);
   vec3 col = base * uLift * vShade;
@@ -8672,15 +8850,15 @@ void main(){
             gl.UNSIGNED_BYTE,
             buildGalley(),
           );
-          gl.generateMipmap(gl.TEXTURE_2D);
         };
         galleyTex = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, galleyTex);
-        gl.texParameteri(
-          gl.TEXTURE_2D,
-          gl.TEXTURE_MIN_FILTER,
-          gl.LINEAR_MIPMAP_LINEAR,
-        );
+        /* NO MIPMAP CHAIN. The webs magnify the reel — the sheet is a third
+         * of the frame wide and the column behind it is four hundred units
+         * — so the minified levels were never sampled, while rebuilding them
+         * cost a pass over the whole sheet on every frame a page wrote back
+         * to it. A linear filter is the whole of what is used. */
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         // u clamps so a column cannot bleed into the one set beside it; v
         // repeats, because a web scrolls for ever
@@ -9581,10 +9759,10 @@ void main(){
           gl.uniform1f(uq.uEdge, P.webEdge);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
-          // one column, so every web reads the whole width of the sheet and
-          // they differ only by where they are in the run
-          const du = 1,
-            gutter = 0;
+          // a column each: web k reads the kth third of the sheet, and no
+          // page it shows exists anywhere else on the reel
+          const du = 1 / GALLEY_COLS,
+            gutter = du;
           /* How much of a lap is in shot is NOT a taste decision — it is
            * whatever keeps a texel square. Choose it by hand and the type is
            * stretched or squeezed by however wrong the guess was, and it goes
@@ -9594,7 +9772,14 @@ void main(){
            * one image cut into three; a few per cent apart and the gap between
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
-            const rate = P["webSpd" + k];
+            /* NORMALISED BY THE LENGTH OF THE REEL. A web's speed on screen
+             * is its rate over the fraction of the reel in shot, and that
+             * fraction is one over the number of pages — so cutting the
+             * column from nine pages to six would have slowed the paper by
+             * half again, silently, and made every tuned number in the panel
+             * mean something else. */
+            const rate =
+              P["webSpd" + k] * (REEL_REF / Math.max(1, REEL.length));
             /* EACH WEB CLIMBS INTO PLACE, and it does not fade. Paper fed off
              * a press arrives from below at full ink; a sheet that appears
              * by getting less transparent is a layer being switched on. It
@@ -9659,6 +9844,12 @@ void main(){
             }
             const cxw = (k - 1) * nw * P.webSpread + nw * P.webX,
               cyw = webNH * P.webY;
+            /* HOW FAR BELOW IT STARTS: exactly its own half-height plus the
+             * frame's, so its top edge begins ON the bottom of the frame and
+             * the whole climb is on screen. It used to start twice that far
+             * down, which spent the first half of the ramp out of sight —
+             * and left the boot's mark standing on nothing while it did. */
+            const rise = (1 - inE) * (cyw + hh + webNH);
             gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
@@ -9690,7 +9881,23 @@ void main(){
             // and the waves are out of phase too, or the three sheets ripple
             // in lockstep and the eye reads one sheet again
             gl.uniform1f(uq.uAlpha, webFade);
-            gl.uniform3f(uq.uC, cxw, cyw - (1 - inE) * (hh + webNH) * 2.05, 0);
+            gl.uniform3f(uq.uC, cxw, cyw - rise, 0);
+            /* WHERE THE LEADING EDGE IS, IN THE PAGE'S UNITS. The vertex
+             * shader puts a point at clip.y = (P.y*2.05/d + uCentre.y)*2, so
+             * the sheet's top edge runs back through that to a viewport
+             * pixel — and the boot screen clips itself to it. The mark is
+             * not taken off by a timer that happens to run near the paper;
+             * it is taken off by the paper. */
+            if (k === 1 && bootMark) {
+              if (!document.getElementById("boot")) bootMark = false;
+              else {
+                const r = canvas.getBoundingClientRect();
+                const cy =
+                  ((cyw + hh - rise) * 2.05) / Math.max(0.08, zoom) +
+                  centre[1];
+                window.__webTop = r.top + ((1 - cy * 2) / 2) * r.height;
+              }
+            }
             gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
             // what this web is showing, kept for the frame loop: repainting a
             // page no web has in shot is work nobody can see

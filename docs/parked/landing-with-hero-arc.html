@@ -118,19 +118,22 @@
      by the group changing width — a width transition squeezes the letters
      as it opens, which is the one thing type must never do.
 
-     And the mark is not faded out at the end. The paper comes up from the
-     bottom of the frame and covers it: the ground goes transparent the
-     moment the webs start, and the mark is clipped away from below at the
-     rate they climb, so what takes it off the screen is the newsprint. */
+     And the mark does not go away. It is not faded, and it is not clipped on
+     a timer of its own — a timer is a guess that happens to run near the
+     paper, and the eye reads the mark leaving under its own steam.
+
+     The module publishes where the middle web's leading edge actually is, in
+     viewport pixels, and the WHOLE SCREEN is clipped to that line every
+     frame: the black ground and the mark standing on it, taken off together
+     from below. The mark holds still at full strength until the newsprint
+     reaches it, because the newsprint's own position is the number doing the
+     clipping. */
   #boot{position:fixed;inset:0;z-index:9999;background:var(--ink);
     display:grid;place-items:center;pointer-events:none}
-  #boot.lift{background:transparent}
   #boot .bt-grp{position:relative;display:inline-flex;align-items:center;
     font-family:var(--D);font-weight:800;font-size:44px;letter-spacing:-.035em;
     color:var(--paper);background:none;
-    transition:transform .62s cubic-bezier(.24,.62,.28,1),
-               clip-path 1.05s cubic-bezier(.4,0,.5,1)}
-  #boot.lift .bt-grp{clip-path:inset(0 0 100% 0)}
+    transition:transform .62s cubic-bezier(.24,.62,.28,1)}
   /* Turned about its CENTRE OF MASS, not the middle of its box. The two
      are not the same point on this mark: the bounding box is centred at
      32,32 of the viewBox but the ink sits at 31.9,27.2 — three drops round
@@ -4600,14 +4603,31 @@
     setTimeout(cover, 900);
   }
 
+  /* THE PAPER TAKES IT OFF, and the number that does the clipping is the
+   * paper's own. The module puts the middle web's leading edge on
+   * window.__webTop in viewport pixels; the screen is clipped to it every
+   * frame, ground and mark together. Nothing here fades and nothing moves.
+   *
+   * The clock is a FLOOR, not the mechanism: on a page where the hero never
+   * runs — reduced motion, no WebGL, a card that refused the context — no
+   * edge is ever published, and the same clip is driven by the clock instead
+   * so the screen still hands over. */
   function cover(){
     window.__bootDone = true;   // the webs start climbing on this
-    el.classList.add('lift');   // ground away at once, mark clipped from below
-    setTimeout(function(){
-      el.remove();
-      document.body.classList.remove('booting');
-      document.body.classList.add('settling');
-    }, 1150);
+    var t1 = Date.now();
+    (function eat(){
+      var H = innerHeight, edge = window.__webTop, gone = Date.now() - t1;
+      if (typeof edge !== 'number') edge = H * (1 - Math.min(1, gone / 1150));
+      var cut = Math.max(0, Math.min(H, edge));
+      el.style.clipPath = 'inset(0 0 ' + (H - cut) + 'px 0)';
+      if (cut <= 0.5 || gone > 4200) {
+        el.remove();
+        document.body.classList.remove('booting');
+        document.body.classList.add('settling');
+        return;
+      }
+      requestAnimationFrame(eat);
+    })();
   }
 
   (function step(){
