@@ -3918,6 +3918,15 @@ Stage.register(
      * different those pages were. This moves the whole set and leaves the
      * spacing between the webs exactly as it was. */
     const WEB_PHASE = Math.random();
+    /* WHEN EACH WEB COMES IN. The boot screen hands over to the paper, not
+     * to the page's furniture, so the three arrive under its fade rather
+     * than being there already when it lifts — a beat apart, because three
+     * sheets appearing together is a slide changing and three arriving one
+     * after another is a press starting. */
+    // left, then right, then the middle — the outside of the frame fills
+    // first and the eye is brought inward, rather than swept across it
+    const WEB_IN = [0, 0.52, 0.26];
+    let bootAt = null;
     const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
     const STORY_COLS = [1, 2, 3, 2, 3, 1, 3, 1, 2];
     const STORY_PAPERS = STORY_COLS.map((_, i) => {
@@ -5264,10 +5273,15 @@ Stage.register(
        * of saying the same thing. */
       if (P.markLogo > 0.5 && ROSETTE) {
         const sz = 22;
+        /* About its CENTRE OF MASS, not the middle of its box. They are
+         * different points on this mark — the box is centred at 32,32 of
+         * the viewBox and the ink at 31.9,27.2, because three drops round a
+         * triangular void carry their weight high. Spun about the box it
+         * swings; spun about its mass it turns. */
         g2.translate(cx, cy);
         g2.rotate(t * 1.6);
         g2.scale(sz / 64, sz / 64);
-        g2.translate(-32, -32);
+        g2.translate(-31.93, -27.21);
         // pale: it is a placeholder, and a placeholder that holds the
         // eye is competing with the thing it is holding a place for
         g2.fillStyle = "#d2cdc4";
@@ -8793,6 +8807,14 @@ void main(){
       frame(ctx) {
         clock += reduced ? 0 : ctx.dt;
         ptrStep(Math.min(0.1, ctx.dt));
+        /* The page says when the mark has gone. A page that has no boot
+         * screen at all never would — and waiting for a signal nobody is
+         * going to send is a web that never arrives — so the absence of the
+         * screen IS the signal, checked once. */
+        if (bootAt === null) {
+          if (window.__bootDone) bootAt = clock;
+          else if (!document.getElementById("boot")) bootAt = 0;
+        }
 
         // adaptive resolution: this march cannot hold sixty frames at native
         // It drops fast when frames are late and climbs back quickly when they
@@ -9640,6 +9662,17 @@ void main(){
             );
             // and the waves are out of phase too, or the three sheets ripple
             // in lockstep and the eye reads one sheet again
+            /* EACH WEB CLIMBS INTO PLACE, and it does not fade. Paper being
+             * fed off a press arrives from below at full ink; a sheet that
+             * appears by getting less transparent is a layer being switched
+             * on. It starts a whole frame below where it belongs, so the
+             * boot's mark is covered by newsprint rather than by nothing. */
+            const inK = clamp01(
+              (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.05,
+            );
+            const inE = 1 - Math.pow(1 - inK, 3);
+            gl.uniform1f(uq.uAlpha, webFade);
+            gl.uniform3f(uq.uC, cxw, cyw - (1 - inE) * (hh + webNH) * 2.05, 0);
             gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
             // what this web is showing, kept for the frame loop: repainting a
             // page no web has in shot is work nobody can see
