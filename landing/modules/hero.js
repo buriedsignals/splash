@@ -3297,6 +3297,52 @@ Stage.register(
      * in canvas — copied a tile at a time onto the paper. What the reel ends
      * on is literally what the tool makes.
      */
+    /* THE PIECES THAT FOUNDED THE FORM.
+     *
+     * Five plates, in the years they were printed, set into the reel among
+     * the papers of their own decade. They are not decoration and they are
+     * not invented: each is the real sheet, public domain, and each is
+     * captioned with what it is and who drew it. They are also the argument
+     * the whole reel makes — that what a desk does now has a lineage, and
+     * that the lineage is a hundred and forty years long. */
+    const LANDMARKS = [
+      {
+        year: 1786,
+        src: "The Commercial and Political Atlas",
+        by: "William Playfair",
+        what: "Imports and exports to and from England, 1700 to 1782 — the first time a quantity over time was drawn as a line.",
+        img: "https://upload.wikimedia.org/wikipedia/commons/4/4f/1786_Playfair_-_1_Chart_of_all_the_import_and_exports_to_and_from_England_from_the_year_1700_to_1782.jpg",
+      },
+      {
+        year: 1854,
+        src: "On the Mode of Communication of Cholera",
+        by: "Dr John Snow",
+        what: "Deaths from cholera around Broad Street, Soho — a map that found a pump.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Snow-cholera-map-1.jpg/1280px-Snow-cholera-map-1.jpg",
+      },
+      {
+        year: 1858,
+        src: "Notes on Matters Affecting the Health of the British Army",
+        by: "Florence Nightingale",
+        what: "Diagram of the causes of mortality in the army in the East — the blue is what killed more than the fighting.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Nightingale-mortality.jpg/1280px-Nightingale-mortality.jpg",
+      },
+      {
+        year: 1869,
+        src: "Tableaux graphiques et cartes figuratives",
+        by: "Charles Joseph Minard",
+        what: "The Russian campaign of 1812: six variables in one figure, and the width of the band is the army.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg/1280px-Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg",
+      },
+      {
+        year: 1900,
+        src: "The Exhibit of American Negroes, Paris Exposition",
+        by: "W. E. B. Du Bois",
+        what: "Occupations of Negroes and whites in Georgia — drawn by hand, in gouache, to be argued with.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif/lossy-page1-1280px-The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif.jpg",
+      },
+    ];
+
     const MODERN = [
       { era: "1970s", forms: ["The first newsroom charts"], tiles: [3, 8] },
       { era: "1990s", forms: ["Print infographics"], tiles: [12, 17] },
@@ -3341,6 +3387,7 @@ Stage.register(
       review: 1.3,
       pictorial: 1.36,
       modern: 1.55,
+      landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
 
@@ -3361,7 +3408,13 @@ Stage.register(
      */
     const PRESS_IMG = new Map();
     function loadPressImages(done) {
-      const urls = [...new Set(ARTICLES.map((a) => a.img).filter(Boolean))];
+      const urls = [
+        ...new Set(
+          ARTICLES.map((a) => a.img)
+            .concat(LANDMARKS.map((k) => k.img))
+            .filter(Boolean),
+        ),
+      ];
       let left = urls.length;
       if (!left) return;
       for (const u of urls) {
@@ -3763,6 +3816,21 @@ const flowCol = (A, o) => {
 };
 
       const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
+      const wrapTo = (text, w, font) => {
+        g.font = font;
+        const out = [];
+        let line = [];
+        for (const t of text.split(/\s+/)) {
+          line.push(t);
+          if (g.measureText(line.join(" ")).width > w) {
+            line.pop();
+            if (line.length) out.push(line.join(" "));
+            line = [t];
+          }
+        }
+        if (line.length) out.push(line.join(" "));
+        return out;
+      };
 
       return {
         // one name across the top under a double rule, a centred headline, and
@@ -4010,6 +4078,58 @@ const flowCol = (A, o) => {
           });
           diamond(mid, end + 9, 2.2);
           return end + 24;
+        },
+
+        /* A FOUNDING PLATE. Not a newspaper page — a sheet out of a book or
+         * a report, which is what these were: a date, the plate itself at its
+         * own shape, and under a rule what it is and who drew it. */
+        landmark(K, x0, top, capH) {
+          const M = 20,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 30;
+          g.font = "11px " + SERIF;
+          track(String(K.year), mid, y, 11 * 0.5);
+          y += 12;
+          rule(left, y, meas, 1);
+          y += 22;
+          const im = K.img ? PRESS_IMG.get(K.img) : null;
+          if (im && im.width) {
+            const b = plateBox(left, y, meas, capH * 0.46, im);
+            g.save();
+            g.beginPath();
+            g.rect(R(b.x), R(b.y), R(b.w), R(b.h));
+            g.clip();
+            g.drawImage(im, R(b.x), R(b.y), R(b.w), R(b.h));
+            g.restore();
+            g.fillStyle = "rgba(20,20,28,.16)";
+            g.strokeRect(R(b.x) + 0.5, R(b.y) + 0.5, R(b.w) - 1, R(b.h) - 1);
+            g.fillStyle = "#111111";
+            y = b.y + b.h + 14;
+          }
+          rule(mid - meas * 0.16, y, meas * 0.32, 1);
+          y += 18;
+          let hs = 17;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(K.src).width <= meas * 0.94 || hs < 9) break;
+            hs *= 0.94;
+          }
+          track(K.src, mid, y, hs * 0.03);
+          y += 16;
+          g.font = "7.5px " + SERIF;
+          track(K.by.toUpperCase(), mid, y, 7.5 * 0.6);
+          y += 22;
+          g.textAlign = "left";
+          g.font = "9.5px " + SERIF;
+          for (const line of wrapTo(K.what, meas, "9.5px " + SERIF)) {
+            g.fillText(line, left, y);
+            y += 14;
+          }
+          diamond(mid, y + 8, 2.2);
+          return top + capH;
         },
 
         /* WHAT THE DESK MAKES NOW. The last pages of the reel, and the only
@@ -4298,15 +4418,19 @@ const flowCol = (A, o) => {
 
     function buildGalley() {
       // The run: every paper by its dateline, then the modern pages.
-      REEL = CHRONO()
-        .map((A) => ({ A }))
+      const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+      REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
+        .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
+        .sort((a, b) => a.year - b.year)
         .concat(MODERN.map((m) => ({ modern: m })));
       GALLEY_H = REEL.reduce(
         (a, E) =>
           a +
           (E.modern
             ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-            : pageH(E.A)),
+            : E.landmark
+              ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
+              : pageH(E.A)),
         0,
       );
 
@@ -4326,7 +4450,9 @@ const flowCol = (A, o) => {
         const E = REEL[k];
         const h = E.modern
           ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-          : pageH(E.A);
+          : E.landmark
+            ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
+            : pageH(E.A);
         g.save();
         g.beginPath();
         g.rect(0, y, GALLEY_COL, h);
@@ -4335,6 +4461,8 @@ const flowCol = (A, o) => {
         g.textAlign = "left";
         if (E.modern) {
           PRESS.modern(E.modern, 0, y, h);
+        } else if (E.landmark) {
+          PRESS.landmark(E.landmark, 0, y, h);
         } else {
           // what the page carries on when the story runs out: the papers that
           // follow it on the reel, so a column never has a hole in it
