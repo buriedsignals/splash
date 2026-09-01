@@ -3407,10 +3407,10 @@ Stage.register(
       },
       {
     rung: 2,
-    name: "Plate inset, mid-column",
+    name: "One measure, plate set into it",
     head: "band",
-    cols: 3,
-    blocks: [{ kind: "photo", col: 1, span: 1, at: 7, lines: 8 }],
+    cols: 1,
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 6, lines: 9 }],
       },
       {
     rung: 2,
@@ -3460,13 +3460,11 @@ Stage.register(
       },
       {
     rung: 3,
-    name: "Colour plate, one column",
+    name: "One measure, colour plate on top",
     head: "centre",
-    cols: 3,
+    cols: 1,
     tone: "#b3402a",
-    blocks: [
-      { kind: "photo", col: 2, span: 1, at: 0, lines: 12, colour: true },
-    ],
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 0, lines: 11, colour: true }],
       },
       {
     rung: 3,
@@ -3558,25 +3556,25 @@ Stage.register(
       },
       {
     rung: 4,
-    name: "A chart the size of a paragraph, twice",
+    name: "One measure, a chart and a map in it",
     head: "tracked",
-    cols: 2,
+    cols: 1,
     tone: "#b3402a",
     blocks: [
-      { kind: "chart", col: 0, span: 1, at: 5, lines: 5 },
-      { kind: "map", col: 1, span: 1, at: 10, lines: 5 },
+      { kind: "chart", col: 0, span: 1, at: 4, lines: 6 },
+      { kind: "map", col: 0, span: 1, at: 15, lines: 6 },
     ],
       },
 
       // ---- 5 · the drawing is the page
       {
     rung: 5,
-    name: "One chart, the whole measure",
+    name: "One measure, one chart",
     head: "tracked",
-    cols: 2,
+    cols: 1,
     tone: "#b3402a",
     lead: true,
-    blocks: [{ kind: "chart", col: 0, span: 2, at: 0, lines: 20 }],
+    blocks: [{ kind: "chart", col: 0, span: 1, at: 0, lines: 20 }],
       },
       {
     rung: 5,
@@ -4203,7 +4201,8 @@ const flowCol = (A, o) => {
        * where each kind of thing sits — so a chart placeholder has bars, a map
        * has a coast and some marks on it, and a photograph is a plate with a
        * subject in it. None of them is data; all of them are shapes. */
-      const placeholder = (kind, x, y, w, h, tint) => {
+      const PALETTE = ["#1a2ffb", "#f2b13c", "#b3402a", "#1a7a4a", "#6b4ea8"];
+      const placeholder = (kind, x, y, w, h, tint, rich) => {
         if (w <= 2 || h <= 2) return;
         g.save();
         g.beginPath();
@@ -4225,7 +4224,11 @@ const flowCol = (A, o) => {
           const bw = (w * 0.86) / n;
           for (let i = 0; i < n; i++) {
             const v = 0.28 + 0.66 * Math.abs(Math.sin(i * 1.7 + w));
-            g.fillStyle = tint && i === Math.floor(n * 0.62) ? tint : "#3a3833";
+            g.fillStyle = rich
+              ? PALETTE[i % PALETTE.length]
+              : tint && i === Math.floor(n * 0.62)
+                ? tint
+                : "#3a3833";
             g.fillRect(
               R(x + w * 0.07 + i * bw),
               R(y + h * 0.82 - v * h * 0.66),
@@ -4238,7 +4241,7 @@ const flowCol = (A, o) => {
         } else {
           g.fillStyle = "rgba(20,20,28,.055)";
           g.fillRect(R(x), R(y), R(w), R(h));
-          g.strokeStyle = "#3a3833";
+          g.strokeStyle = rich ? "#5b5852" : "#3a3833";
           g.lineWidth = 1;
           g.beginPath();
           g.moveTo(x + w * 0.12, y + h * 0.68);
@@ -4256,13 +4259,17 @@ const flowCol = (A, o) => {
             x + w * 0.84, y + h * 0.62,
           );
           g.stroke();
-          for (let i = 0; i < 6; i++) {
-            g.fillStyle = tint && i % 3 === 0 ? tint : "#3a3833";
+          for (let i = 0; i < (rich ? 9 : 6); i++) {
+            g.fillStyle = rich
+              ? PALETTE[i % PALETTE.length]
+              : tint && i % 3 === 0
+                ? tint
+                : "#3a3833";
             g.beginPath();
             g.arc(
-              x + w * (0.2 + 0.12 * i),
-              y + h * (0.4 + 0.24 * Math.sin(i * 2.1)),
-              Math.max(1.4, w * 0.012),
+              x + w * (0.16 + 0.085 * i),
+              y + h * (0.4 + 0.26 * Math.sin(i * 2.1)),
+              Math.max(1.6, w * (rich ? 0.018 : 0.012)),
               0,
               7,
             );
@@ -4746,7 +4753,12 @@ const flowCol = (A, o) => {
               bw = colW * b.span + gut * (b.span - 1),
               by = y - fs + b.at * lh + AIR_T,
               bh = b.lines * lh - AIR_T - AIR_B;
-            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null);
+            /* On the fifth rung a drawing carries COLOUR — several of them.
+             * The rungs under it are a press with one ink, or one that bought
+             * a second for a photograph; a chart made at a desk today has a
+             * palette, and drawing rung five in the same grey as rung two says
+             * the opposite of what the page is for. */
+            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null, S.rung === 5);
           }
 
           // the words, flowing round them
