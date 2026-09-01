@@ -3304,8 +3304,8 @@ Stage.register(
      * as an empty page, so the work still to be done is visible in the reel
      * and countable in the catalogue rather than hidden behind filler. */
     const EMPTIES = [
-      { year: 1938, rung: 3, need: "A page where the second ink arrives" },
-      { year: 1958, rung: 3, need: "A map carrying a place and a value at once" },
+      { year: 1938, rung: 3, need: "A news page carrying a photograph in colour" },
+      { year: 1958, rung: 3, need: "Colour photography across the whole measure" },
       { year: 1972, rung: 4, need: "A chart the size of a paragraph, set in the measure" },
       { year: 1979, rung: 4, need: "The locator map, inset in a column" },
       { year: 1986, rung: 4, need: "A chart sent down the wire" },
@@ -3417,7 +3417,11 @@ Stage.register(
       // amount of text, and stretched to a broadsheet's format their bottom
       // half was empty.
       blank: 1.34,
-      landmark: 1.5,
+      /* A plate's page is not a broadsheet. It carries a picture and three
+       * lines about it; given a newspaper's format its bottom two thirds were
+       * empty, which is what "it is missing text" looks like when the fault is
+       * really that the page is too tall. */
+      landmark: 1.12,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
 
@@ -4178,7 +4182,7 @@ const flowCol = (A, o) => {
           y += 22;
           const im = K.img ? PRESS_IMG.get(K.img) : null;
           if (im && im.width) {
-            const b = plateBox(left, y, meas, capH * 0.46, im);
+            const b = plateBox(left, y, meas, capH * 0.62, im);
             g.save();
             g.beginPath();
             g.rect(R(b.x), R(b.y), R(b.w), R(b.h));
@@ -4274,14 +4278,9 @@ const flowCol = (A, o) => {
           const ms = fit(nm, "400", 9.5, meas * 0.66);
           g.font = ms + "px " + SERIF;
           track(nm, mid, y, ms * 0.48);
-          y += 14;
-          // the headpiece, before anything else on the page
-          if (A.cut) {
-            const p = plateBox(left + meas * 0.17, y, meas * 0.66, 150, imgOf(A));
-            y = cut(p.x, p.y, p.w, p.h, A.cap, imgOf(A), "centre") + 12;
-          }
+          y += 13;
           rule(left, y, meas, 1);
-          y += 34;
+          y += 32;
           let hs = 24;
           for (const l of A.head)
             hs = Math.min(hs, fit(l, "700", 24, meas * 0.92));
@@ -4299,7 +4298,14 @@ const flowCol = (A, o) => {
           y += 17;
           g.font = "7.5px " + SERIF;
           track(A.by, mid, y, 7.5 * 0.6);
-          y += 22;
+          y += 20;
+          /* The picture, AFTER the title it belongs to. It led the page before
+           * this, which put it in front of the thing it illustrates — a reader
+           * met the building before being told whose building it was. */
+          if (A.cut) {
+            const b = plateBox(left + meas * 0.17, y, meas * 0.66, 150, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A), "centre") + 14;
+          }
           g.textAlign = "left";
           const end = flowCol(A, {
             left, meas, top: y, bot: top + capH - 20,
