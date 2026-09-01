@@ -3304,8 +3304,13 @@ Stage.register(
      * as an empty page, so the work still to be done is visible in the reel
      * and countable in the catalogue rather than hidden behind filler. */
     const EMPTIES = [
-      { year: 1938, rung: 3, need: "A news page carrying a photograph in colour" },
-      { year: 1958, rung: 3, need: "Colour photography across the whole measure" },
+      { year: 1931, rung: 2, need: "One more page of text with a black-and-white plate" },
+      { year: 1938, rung: 3, need: "The first colour photograph on a news page" },
+      { year: 1948, rung: 3, need: "Colour on a magazine cover" },
+      { year: 1955, rung: 3, need: "A colour photograph across the whole measure" },
+      { year: 1962, rung: 3, need: "Colour off the wire, the same day" },
+      { year: 1969, rung: 3, need: "Colour on the front page of a daily" },
+      { year: 1975, rung: 3, need: "Colour through the whole paper" },
       { year: 1972, rung: 4, need: "A chart the size of a paragraph, set in the measure" },
       { year: 1979, rung: 4, need: "The locator map, inset in a column" },
       { year: 1986, rung: 4, need: "A chart sent down the wire" },
@@ -3331,7 +3336,9 @@ Stage.register(
     const LANDMARKS = [
       {
         year: 1786,
-        rung: 3,
+        rung: 0,
+        body: "Playfair engraved the trade of a century as a shape. Two lines run across eighty-two years, imports and exports, and the space between them is filled and labelled — the balance, in favour of England or against it, read off as an area rather than counted out of a table. He had to explain in the text that the bottom of the plate was years and the side was millions of pounds, because no reader had seen a quantity drawn against time before. The Commercial and Political Atlas carried forty-four such plates and one bar chart, made because Scotland's trade for a single year had no time to run along.", // outside the ramp
+        was: 3,
         src: "The Commercial and Political Atlas",
         by: "William Playfair",
         what: "Imports and exports to and from England, 1700 to 1782 — the first time a quantity over time was drawn as a line.",
@@ -3339,7 +3346,9 @@ Stage.register(
       },
       {
         year: 1854,
-        rung: 2,
+        rung: 0,
+        body: "In the ten days after the last day of August 1854, more than five hundred people died within a few streets of Golden Square. Snow marked every death as a bar against the house it happened in, and the bars gathered around one thing: the public pump in Broad Street. The map is an argument rather than an illustration — it shows the deaths thinning with distance from that pump, and the households that drew their water elsewhere standing clear in the middle of them. He put it before the parish board, the handle was taken off, and the map went into the second edition of his essay the following year.", // outside the ramp
+        was: 2,
         src: "On the Mode of Communication of Cholera",
         by: "Dr John Snow",
         what: "Deaths from cholera around Broad Street, Soho — a map that found a pump.",
@@ -3347,7 +3356,9 @@ Stage.register(
       },
       {
         year: 1858,
-        rung: 3,
+        rung: 0,
+        body: "Each wedge is a month of the war in the Crimea, and its area is the men who died in it. Blue is preventable disease, red is wounds, black is everything else — and the blue is most of the figure. Nightingale drew it for a royal commission and for readers who would not sit through a table, and she was right about them: the diagram was reprinted, argued over and acted on, and the sanitary commissions that followed it were the reason the second winter looks like the small figure beside the first.", // outside the ramp
+        was: 3,
         src: "Notes on Matters Affecting the Health of the British Army",
         by: "Florence Nightingale",
         what: "Diagram of the causes of mortality in the army in the East — the blue is what killed more than the fighting.",
@@ -3355,7 +3366,9 @@ Stage.register(
       },
       {
         year: 1869,
-        rung: 3,
+        rung: 0,
+        body: "Six things at once, on one sheet: the size of the army as the width of the band, where it went, which way it was going, the places it passed, the dates, and the temperature on the retreat drawn underneath. Four hundred and twenty-two thousand men go into Russia as a broad tan river and ten thousand come back as a black thread. Minard was seventy-eight and had been drawing flows of goods and passengers for thirty years; this is the one that is still taught, because nothing in it is decoration.", // outside the ramp
+        was: 3,
         src: "Tableaux graphiques et cartes figuratives",
         by: "Charles Joseph Minard",
         what: "The Russian campaign of 1812: six variables in one figure, and the width of the band is the army.",
@@ -3363,7 +3376,9 @@ Stage.register(
       },
       {
         year: 1900,
-        rung: 3,
+        rung: 0,
+        body: "Du Bois took a set of hand-drawn charts to the Exposition Universelle in Paris and hung them in the Palace of Social Economy. He and his students at Atlanta University had made them in ink and gouache — bars, spirals, fans, a map of Georgia by county — out of census returns and their own surveys, to answer a question the fair itself was asking badly. The plates are a century ahead of their look: the colour is doing work, the forms are chosen for what they have to say, and every one of them carries the number it was drawn from.", // outside the ramp
+        was: 3,
         src: "The Exhibit of American Negroes, Paris Exposition",
         by: "W. E. B. Du Bois",
         what: "Occupations of Negroes and whites in Georgia — drawn by hand, in gouache, to be argued with.",
@@ -3403,27 +3418,16 @@ Stage.register(
      * nearly square — and never how much of the article happened to be set.
      * Measuring the text instead gave eleven pages of eleven different heights
      * with no reason behind any of them, and a short piece produced a stub. */
-    const PAGE_RATIO = {
-      broadsheet: 1.5,
-      tabloid: 1.44,
-      penny: 1.56,
-      rail: 1.48,
-      monthly: 1.42,
-      illustrated: 1.35,
-      review: 1.3,
-      pictorial: 1.36,
-      modern: 1.55,
-      // The made pages are shorter than a newspaper's: they carry a made
-      // amount of text, and stretched to a broadsheet's format their bottom
-      // half was empty.
-      blank: 1.34,
-      /* A plate's page is not a broadsheet. It carries a picture and three
-       * lines about it; given a newspaper's format its bottom two thirds were
-       * empty, which is what "it is missing text" looks like when the fault is
-       * really that the page is too tall. */
-      landmark: 1.12,
-    };
-    const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
+    /* ONE FORMAT, for every page on the reel.
+     *
+     * Each press used to print on its own sheet — a broadsheet tall and
+     * narrow, a monthly nearly square — which is true of the presses and wrong
+     * for this. Nothing lined up with anything: the webs never showed two
+     * pages at the same height, a cut landed somewhere different on every one,
+     * and each new template had its height tuned by hand against the last. The
+     * realism cost more than it bought. */
+    const PAGE_RATIO = 1.4;
+    const pageH = () => Math.round(GALLEY_COL * PAGE_RATIO);
 
     const GALLEY_W = GALLEY_COL;
     // Settled by the measuring pass, and read by the frame to size the window
@@ -4166,55 +4170,81 @@ const flowCol = (A, o) => {
           return top + capH;
         },
 
-        /* A FOUNDING PLATE. Not a newspaper page — a sheet out of a book or
-         * a report, which is what these were: a date, the plate itself at its
-         * own shape, and under a rule what it is and who drew it. */
+        /* A FOUNDING PLATE. A page of TEXT about a sheet, with the sheet set
+         * into it — not a picture with a caption, which is what it was and
+         * what made it read as a page with something left out. The plate takes
+         * one column; the words take the page. */
         landmark(K, x0, top, capH) {
-          const M = 20,
+          const M = 18,
             meas = GALLEY_COL - M * 2,
             left = x0 + M,
             mid = x0 + GALLEY_COL / 2;
           g.textAlign = "center";
-          let y = top + 30;
-          g.font = "11px " + SERIF;
-          track(String(K.year), mid, y, 11 * 0.5);
-          y += 12;
+          let y = top + 26;
+          g.font = "9px " + SERIF;
+          track(String(K.year), mid, y, 9 * 0.5);
+          y += 11;
           rule(left, y, meas, 1);
+          y += 26;
+          let hs = 19;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(K.src).width <= meas * 0.9 || hs < 9) break;
+            hs *= 0.94;
+          }
+          for (const l of wrapTo(K.src, meas * 0.9, "400 " + R(hs) + "px " + SERIF)) {
+            track(l, mid, y, hs * 0.03);
+            y += R(hs * 1.16);
+          }
+          y += 6;
+          g.font = "7.5px " + SERIF;
+          track(K.by.toUpperCase(), mid, y, 7.5 * 0.6);
+          y += 10;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
           y += 22;
+
+          const fs = 9,
+            lh = 12.4,
+            gut = 9,
+            colW = (meas - gut) / 2;
+          const bot = top + capH - 16;
           const im = K.img ? PRESS_IMG.get(K.img) : null;
+          let after = y;
           if (im && im.width) {
-            const b = plateBox(left, y, meas, capH * 0.62, im);
+            const b = plateBox(left + colW + gut, y - fs, colW, colW * 1.15, im);
             g.save();
             g.beginPath();
             g.rect(R(b.x), R(b.y), R(b.w), R(b.h));
             g.clip();
             g.drawImage(im, R(b.x), R(b.y), R(b.w), R(b.h));
+            g.globalCompositeOperation = "saturation";
+            g.fillStyle = "#808080";
+            g.fillRect(R(b.x), R(b.y), R(b.w), R(b.h));
+            g.globalCompositeOperation = "source-over";
             g.restore();
             g.fillStyle = "rgba(20,20,28,.16)";
-            g.strokeRect(R(b.x) + 0.5, R(b.y) + 0.5, R(b.w) - 1, R(b.h) - 1);
+            g.fillRect(R(b.x), R(b.y + b.h), R(b.w), 1);
             g.fillStyle = "#111111";
-            y = b.y + b.h + 14;
+            g.font = "7px " + SERIF;
+            g.textAlign = "left";
+            let cy = b.y + b.h + 10;
+            for (const l of wrapTo(K.what, colW, "7px " + SERIF)) {
+              g.fillText(l, b.x, cy);
+              cy += 9;
+            }
+            after = cy + 8;
           }
-          rule(mid - meas * 0.16, y, meas * 0.32, 1);
-          y += 18;
-          let hs = 17;
-          for (;;) {
-            g.font = "400 " + R(hs) + "px " + SERIF;
-            if (g.measureText(K.src).width <= meas * 0.94 || hs < 9) break;
-            hs *= 0.94;
-          }
-          track(K.src, mid, y, hs * 0.03);
-          y += 16;
-          g.font = "7.5px " + SERIF;
-          track(K.by.toUpperCase(), mid, y, 7.5 * 0.6);
-          y += 22;
           g.textAlign = "left";
-          g.font = "9.5px " + SERIF;
-          for (const line of wrapTo(K.what, meas, "9.5px " + SERIF)) {
-            g.fillText(line, left, y);
-            y += 14;
+          const lines = wrapTo(K.body, colW, fs + "px " + SERIF);
+          let li = 0;
+          for (let c = 0; c < 2; c++) {
+            const cx = left + c * (colW + gut);
+            let ly = c === 1 ? after : y;
+            while (ly < bot && li < lines.length) {
+              g.fillText(lines[li++], cx, ly);
+              ly += lh;
+            }
           }
-          diamond(mid, y + 8, 2.2);
           return top + capH;
         },
 
@@ -4428,12 +4458,16 @@ const flowCol = (A, o) => {
            * a single-column measure the text could not run beside it — it
            * jumped the whole line — and left an L of white with an orphan
            * stranded under the picture. */
-          // the cut opens the body here too, for the same reason
-          if (A.cut) {
-            const b = plateBox(left, y, meas, 182, imgOf(A));
-            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 9;
-          }
-          const plate = null;
+          /* The cut heads the SECOND column rather than opening the whole
+           * measure. At full measure a portrait engraving is enormous and sits
+           * ON the page rather than in it; a column is the size it wants. */
+          const colW2 = (meas - 9) / 2;
+          const plate = A.cut
+            ? plateBox(left + colW2 + 9, y - fs, colW2, colW2 * 1.3, imgOf(A))
+            : null;
+          if (plate)
+            plate.h =
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) - plate.y;
           return (
             flowCol(A, {
               left,
@@ -4442,7 +4476,7 @@ const flowCol = (A, o) => {
               bot: top + capH - 12,
               fs,
               lh,
-              cols: 1,
+              cols: 2,
               fill,
               plate,
             }) + 12
@@ -4464,10 +4498,10 @@ const flowCol = (A, o) => {
         (a, E) =>
           a +
           (E.blank
-            ? Math.round(GALLEY_COL * PAGE_RATIO.blank)
+            ? Math.round(GALLEY_COL * PAGE_RATIO)
             : E.landmark
-                ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
-                : pageH(E.A)),
+                ? Math.round(GALLEY_COL * PAGE_RATIO)
+                : pageH()),
         0,
       );
 
@@ -4486,10 +4520,10 @@ const flowCol = (A, o) => {
       for (let k = 0; k < REEL.length; k++) {
         const E = REEL[k];
         const h = E.blank
-          ? Math.round(GALLEY_COL * PAGE_RATIO.blank)
+          ? Math.round(GALLEY_COL * PAGE_RATIO)
           : E.landmark
-            ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
-            : pageH(E.A);
+            ? Math.round(GALLEY_COL * PAGE_RATIO)
+            : pageH();
         g.save();
         g.beginPath();
         g.rect(0, y, GALLEY_COL, h);
