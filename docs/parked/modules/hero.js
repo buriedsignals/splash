@@ -4479,13 +4479,13 @@ void main(){
       // the three webs. Widths and heights are fractions of what the camera
       // can see at the webs' own depth, so the composition holds on any frame
       // rather than being a set of world units tuned to one window.
-      webW: 0.17, // half-width, as a fraction of the visible half-width
+      webW: 0.35, // half-width, as a fraction of the visible half-width
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
-      webSpread: 0.6, // where the outer two sit, in visible half-widths
+      webSpread: 0.71, // where the outer two sit, in visible half-widths
       webEdge: 0.5, // the height at which the paper starts going back in
-      webSpeed: 0.052, // laps per second
+      webSpeed: 0.048, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
-      webLift: 1.0,
+      webLift: 0.92,
       webX: 0, // the whole set, sideways and up, in visible half-measures
       webY: 0,
       // the field: changing any of these reseeds the plates
