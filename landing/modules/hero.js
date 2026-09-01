@@ -4293,17 +4293,52 @@ Stage.register(
           return svgWrap(pw, ph, out);
         });
 
+    /* A RING IS A CIRCLE, and a circle in a box that is not square leaves
+     * the rest of the box empty. It was drawn against min(w,h) and pinned to
+     * the left, so a wide short block put a small ring in one corner with a
+     * third of the plot blank beside it, and a tall narrow one put it in the
+     * middle of a column of nothing.
+     *
+     * The layout is chosen from the proportion of the block instead. Wide:
+     * the ring takes the height and the key stands beside it. Tall: the ring
+     * takes the width and the key lies under it in a row. Square: the ring
+     * is centred and the key only appears if there is width to spare. In
+     * every case the ring is centred in the space it is actually given. */
     LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
       chrome(w, h, "Of the whole", "Per cent, Lorem Ipsum Office",
         (pw, ph) => {
-          const keyed = pw >= 190 && ph >= 74;
-          const box = keyed ? Math.min(ph, pw * 0.55) : Math.min(pw, ph);
-          const cx = keyed ? box / 2 : pw / 2,
-            cy = ph / 2,
-            R0 = box / 2 - 1,
-            R1 = R0 * 0.6;
           const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
           const shade = [tone, DINK, "#565350", "#9c9891", PALE];
+          const ar = pw / ph;
+
+          let box, cx, cy, key = "";
+          const KEYW = 74,
+            KEYH = 14;
+          if (ar > 1.45 && pw - KEYW > 46 && ph >= 46) {
+            // beside: the ring takes the height, the key the strip to its right
+            box = Math.min(ph, pw - KEYW - 10);
+            cx = (pw - KEYW - 10) / 2;
+            cy = ph / 2;
+            key = "side";
+          } else if (ar < 0.78 && ph - KEYH * 3 > 46) {
+            // under: the ring takes the width, the key three rows beneath it
+            box = Math.min(pw, ph - KEYH * 3 - 8);
+            cx = pw / 2;
+            // the RING AND ITS KEY are one object, and it is that object
+            // which is centred — centring the ring alone leaves the key
+            // hanging and half the block empty under it
+            cy = (ph - (box + 8 + KEYH * 3)) / 2 + box / 2;
+            key = "under";
+          } else {
+            box = Math.min(pw, ph);
+            cx = pw / 2;
+            cy = ph / 2;
+            key = pw - box > 84 && ph >= 46 ? "side" : "";
+            if (key === "side") cx = (pw - KEYW - 10) / 2;
+          }
+          const R0 = box / 2 - 1,
+            R1 = R0 * 0.6;
+
           const arc = (a0, a1, fill) => {
             const P = (a, r) => [
               (cx + r * Math.cos(a)).toFixed(1),
@@ -4316,26 +4351,31 @@ Stage.register(
               big + " 1 " + x1 + " " + y1 + " L" + x2 + " " + y2 + " A" + R1 +
               " " + R1 + " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill + '"/>';
           };
+
           // one sweep round the ring: p is its leading edge, q its trailing
           const TAU = Math.PI * 2;
           const lead = clamp01(p) * TAU,
             trail = clamp01(q) * TAU;
-          let a = 0, out = "", key = "";
+          const swatch = (x, y, i) =>
+            '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+            '" width="8" height="8" rx="1.5" fill="' + shade[i] + '"/>' +
+            '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 7.6).toFixed(1) +
+            '" font-family="' + SANS + '" font-size="8" fill="' + AXIS + '">' +
+            Math.round(parts[i] * 100) + "%</text>";
+
+          let a = 0, out = "", keys = "";
           for (let i = 0; i < parts.length; i++) {
             const s0 = Math.max(a, trail),
               s1 = Math.min(a + parts[i] * TAU, lead);
-            if (s1 - s0 > 0.005)
-              out += arc(s0 - Math.PI / 2, s1 - Math.PI / 2, shade[i]);
+            if (s1 - s0 > 0.005) out += arc(s0 - Math.PI / 2, s1 - Math.PI / 2, shade[i]);
             a += parts[i] * TAU;
-            if (keyed && i < 3)
-              key +=
-                '<rect x="' + (box + 14) + '" y="' + (cy - 22 + i * 15) +
-                '" width="8" height="8" rx="1.5" fill="' + shade[i] + '"/>' +
-                '<text x="' + (box + 27) + '" y="' + (cy - 14.5 + i * 15) +
-                '" font-family="' + SANS + '" font-size="8.5" fill="' + AXIS + '">' +
-                Math.round(parts[i] * 100) + "%</text>";
+            if (i > 2) continue;
+            if (key === "side")
+              keys += swatch(pw - KEYW, cy - 22 + i * KEYH + 2, i);
+            else if (key === "under")
+              keys += swatch(pw / 2 - 22, cy + box / 2 + 8 + i * KEYH, i);
           }
-          return svgWrap(pw, ph, out + key);
+          return svgWrap(pw, ph, out + keys);
         });
 
     // ---- maps, on real geography -------------------------------------

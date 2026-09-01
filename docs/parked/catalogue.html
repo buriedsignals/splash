@@ -1728,6 +1728,8 @@
     background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
     border-radius:5px;padding:7px 12px}
   .boardbar button:hover{background:var(--amber);color:#14141c;border-color:var(--amber)}
+  .boardbar button.on{background:var(--amber);color:#14141c;border-color:var(--amber)}
+  .boardbar .sep{opacity:.45}
   .rung h2{font:600 22px/1.15 var(--D);margin:0 0 4px;color:var(--paper)}
   .rung p{margin:0 0 20px;color:#8c8899;font-size:13.5px}
   .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
@@ -1823,6 +1825,10 @@
   it again.</p>
   <div class="boardbar">
     <button id="again">play them all again</button>
+    <span class="sep">shape</span>
+    <button class="ar on" data-ar="0.7">wide</button>
+    <button class="ar" data-ar="1">square</button>
+    <button class="ar" data-ar="1.7">column</button>
     <span id="bstat"></span>
   </div>
   <div class="board" id="board"></div>
@@ -1934,11 +1940,15 @@
 
     /* Sized once the grid has settled, and again if the window changes:
      * a canvas is bitmap, and a bitmap that does not match its box is soft. */
-    const size = () => {
+    /* THE SAME DRAWINGS AT THREE PROPORTIONS. A hole on the reel is a
+     * column, or two columns short, or a paragraph — and a graphic that
+     * only works at one of those only works in some articles. */
+    let AR = 0.7;
+    const size = (force) => {
       const box = Math.max(180, Math.round(tiles[0].c.clientWidth || W));
-      if (box === W && tiles[0].c.width) return;
+      if (box === W && tiles[0].c.width && !force) return;
       W = box;
-      H = Math.round(W * 0.7);
+      H = Math.round(W * AR);
       for (const t of tiles) {
         t.c.width = W * DPR;
         t.c.height = H * DPR;
@@ -1950,6 +1960,14 @@
     for (const t of tiles) t.c.style.height = H + 'px';
     requestAnimationFrame(size);
     addEventListener('resize', () => requestAnimationFrame(size));
+
+    for (const b of document.querySelectorAll('.boardbar .ar'))
+      b.onclick = () => {
+        for (const o of document.querySelectorAll('.boardbar .ar')) o.classList.remove('on');
+        b.classList.add('on');
+        AR = parseFloat(b.dataset.ar);
+        size(true);
+      };
 
     document.getElementById('again').onclick = () => {
       const now = performance.now();
