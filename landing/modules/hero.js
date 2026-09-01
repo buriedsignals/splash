@@ -7602,13 +7602,31 @@ void main(){
    * gradient by uBend, which is fine until uBend is zero — then the term
    * goes to infinity and the shading clamps across the whole sheet. A
    * scale that has to be divided out is a scale in the wrong place. */
+  /* ONE WAVE FIELD, NOT THREE. The ripple used to be a function of the
+   * sheet's OWN coordinates, so each of the three carried a private copy of
+   * the same shape — and they had to be pushed out of phase with each other
+   * or the set read as one image cut into three. That was the right fix for
+   * three separate sheets. It is the wrong one now the three lie on a single
+   * curved surface: a crest reaching the edge of the middle column stopped
+   * dead there, and the next column started its own somewhere else.
+   *
+   * The field is world-anchored instead. p is the sheet's own -1..1, and the
+   * sheet's centre expressed in those same units is uC over its half-axis —
+   * so adding the two gives a coordinate that is continuous across the whole
+   * set, at exactly the wavelength a sheet had before. A crest leaving one
+   * column arrives on the next where it should, gap included.
+   *
+   * The slopes are untouched by this: the offset is a constant per sheet, so
+   * the derivative with respect to p is what it always was. */
+  vec2 g = p + vec2(uC.x / max(abs(uAx.x), 1e-4),
+                    uC.y / max(abs(uAy.y), 1e-4));
   float w = 0.0, sh = 1.0;
   float wdx = 0.0, wdy = 0.0;
   if(uBend > 0.0001){
-    w  = sin(p.x*3.1 + uT*0.9)*0.45 + sin(p.y*2.3 - uT*0.7)*0.32
-       + sin((p.x + p.y)*1.9 + uT*1.3)*0.23;
-    wdx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    wdy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
+    w  = sin(g.x*3.1 + uT*0.9)*0.45 + sin(g.y*2.3 - uT*0.7)*0.32
+       + sin((g.x + g.y)*1.9 + uT*1.3)*0.23;
+    wdx = cos(g.x*3.1 + uT*0.9)*3.1*0.45 + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23;
+    wdy = cos(g.y*2.3 - uT*0.7)*2.3*0.32 + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23;
   }
   /* A HAND UNDER THE SHEET. The paper lifts where the pointer is and falls
    * away from it — one soft bell, not a ripple, because a ripple is water
@@ -9756,8 +9774,6 @@ void main(){
               du,
               dv,
             );
-            // and the waves are out of phase too, or the three sheets ripple
-            // in lockstep and the eye reads one sheet again
             gl.uniform1f(uq.uAlpha, webFade);
             gl.uniform3f(uq.uC, cxw, cyw - rise, 0);
             /* WHERE THE LEADING EDGE IS, IN THE PAGE'S UNITS. The vertex
@@ -9774,7 +9790,11 @@ void main(){
                 window.__webTop = r.top + ((1 - cy * 2) / 2) * r.height;
               }
             }
-            gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
+            // ONE CLOCK FOR THE THREE. The field they read is shared and
+            // world-anchored, so a phase per web would make each column
+            // sample the same water at a different moment — which is the
+            // seam the shared field exists to remove.
+            gl.uniform1f(uq.uT, clock * 0.55);
             // what this web is showing, kept for the frame loop: repainting a
             // page no web has in shot is work nobody can see
             WEB_WIN[k] = v;
