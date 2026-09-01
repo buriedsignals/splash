@@ -3641,6 +3641,76 @@ Stage.register(
       { kind: "chart", col: 2, span: 1, at: 0, lines: 10 },
     ],
       },
+      {
+    rung: 6,
+    name: "One chart, and nothing else",
+    head: "centre",
+    cols: 1,
+    tone: "#1a2ffb",
+    bare: true,
+    blocks: [{ kind: "chart", col: 0, span: 1, at: 0, lines: 22 }],
+      },
+      {
+    rung: 6,
+    name: "A map, and nothing else",
+    head: "band",
+    cols: 1,
+    tone: "#1a7a4a",
+    bare: true,
+    blocks: [{ kind: "map", col: 0, span: 1, at: 0, lines: 22 }],
+      },
+      {
+    rung: 6,
+    name: "Two charts, stacked",
+    head: "tracked",
+    cols: 1,
+    tone: "#b3402a",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 10 },
+      { kind: "chart", col: 0, span: 1, at: 11, lines: 10 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "Six small multiples",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 1, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 0, span: 1, at: 13, lines: 12 },
+      { kind: "chart", col: 1, span: 1, at: 13, lines: 12 },
+      { kind: "chart", col: 2, span: 1, at: 13, lines: 12 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "The chart, and its key beside it",
+    head: "boxed",
+    cols: 3,
+    tone: "#6b4ea8",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 2, at: 0, lines: 22 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 22 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "A map over a chart",
+    head: "shoulder",
+    cols: 1,
+    tone: "#1a7a4a",
+    bare: true,
+    blocks: [
+      { kind: "map", col: 0, span: 1, at: 0, lines: 14 },
+      { kind: "chart", col: 0, span: 1, at: 15, lines: 7 },
+    ],
+      },
     ];
 
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
@@ -4743,7 +4813,7 @@ const flowCol = (A, o) => {
             colW = (meas - gut * (cols - 1)) / cols;
           const fs = cols >= 3 ? 7.6 : 9,
             lh = cols >= 3 ? 10.4 : 12.4;
-          const bot = top + capH - 14;
+          const bot = top + capH - (S.bare ? 34 : 14);
           const depth = Math.floor((bot - y) / lh);
 
           /* The rung, enforced. A spec cannot put a picture on rung one, and
@@ -4770,12 +4840,33 @@ const flowCol = (A, o) => {
               bw = colW * b.span + gut * (b.span - 1),
               by = y - fs + b.at * lh + AIR_T,
               bh = b.lines * lh - AIR_T - AIR_B;
-            /* On the fifth rung a drawing carries COLOUR — several of them.
-             * The rungs under it are a press with one ink, or one that bought
-             * a second for a photograph; a chart made at a desk today has a
-             * palette, and drawing rung five in the same grey as rung two says
-             * the opposite of what the page is for. */
-            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null, S.rung === 5);
+            /* From the fifth rung up a drawing carries COLOUR — several of
+             * them. The rungs under it are a press with one ink, or one that
+             * bought a second for a photograph; a chart made at a desk today
+             * has a palette, and drawing the top of the ramp in the same grey
+             * as rung two says the opposite of what the page is for. The
+             * sixth rung is the end of that ramp, not a step back off it. */
+            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null, S.rung >= 5);
+          }
+
+          /* A BARE PAGE STOPS HERE. On the sixth rung the drawing IS the
+           * article: there is no body to flow, so the blocks take the page and
+           * the only words under them are the ones a graphic cannot do without
+           * — where the numbers came from, and who made it. Running the text
+           * loop anyway would have set lorem in the gaps between the charts,
+           * which is exactly the thing this rung is defined by not having. */
+          if (S.bare) {
+            const fy = top + capH - 22;
+            g.fillStyle = ink;
+            g.fillRect(R(left), R(fy), R(meas * 0.14), 2);
+            g.fillStyle = "#111111";
+            g.font = "7px " + SERIF;
+            g.textAlign = "left";
+            g.fillText("SOURCE · LOREM IPSUM STATISTICAL OFFICE, 2026", left, fy + 12);
+            g.textAlign = "right";
+            g.fillText("GRAPHIC BY THE DESK", left + meas, fy + 12);
+            g.textAlign = "left";
+            return top + capH;
           }
 
           // the words, flowing round them
