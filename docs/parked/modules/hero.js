@@ -6490,13 +6490,13 @@ const flowCol = (A, o) => {
             y += 16;
           } else if (S.head === "boxed") {
             g.textAlign = "center";
-            const ms = fit("THE STONE &amp; THE SPIKE", "700", 15, meas * 0.62);
+            const ms = fit("THE STONE & THE SPIKE", "700", 15, meas * 0.62);
             const bh = R(ms * 0.74) + 18;
             g.strokeStyle = "#111111";
             g.lineWidth = 1;
             g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE STONE &amp; THE SPIKE", mid, y + bh - 9);
+            g.fillText("THE STONE & THE SPIKE", mid, y + bh - 9);
             y += bh + 12;
             g.fillStyle = ink;
             rule(left, y, meas, 1);
