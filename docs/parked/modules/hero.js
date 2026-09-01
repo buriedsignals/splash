@@ -5392,6 +5392,15 @@ Stage.register(
           draw = storyDraw(u);
           k.leave = 0;
           k.draw = draw;
+          /* THE MARK IS OFF THE PAGE BEFORE THE DRAWING IS ON IT.
+           *
+           * It used to fade on the drawing's own progress, so for a moment
+           * a bar was up while the rosette was still going — faint, but
+           * both there, which is the mixing. The drawing starts at 0.24 of
+           * the telling; the mark is gone by 0.23. There is a breath of
+           * empty frame between them, and that breath is the point: the
+           * room is made, the mark leaves, then the drawing begins. */
+          k.markAt = 1 - clamp01((u - 0.12) / 0.11);
         } else if (!vis) continue;
 
         // ask for the next picture of THIS hole
@@ -5477,7 +5486,7 @@ Stage.register(
            * is a tenth made, the mark has already gone, and a tenth of a
            * bar chart is a few pixels at the foot of the plot. No mixing,
            * because they are never both there. */
-          const waiting = draw < 0.05;
+          const waiting = k.markAt > 0;
           if (
             !waiting &&
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
@@ -5517,11 +5526,8 @@ Stage.register(
            * registers what changed. It is held over the drawing and taken
            * off across a third of a second, which is long enough to be a
            * handover and short enough not to be a wait. */
-          // and it goes at a twentieth rather than a tenth: by then the
-          // drawing has one bar out of thirteen, which is enough to be the
-          // thing on the page
-          if (inner && inner.h > 34 && inner.w > 70 && draw < 0.05)
-            mark(g2, inner, t, 1 - clamp01(draw / 0.05));
+          if (inner && inner.h > 34 && inner.w > 70 && k.markAt > 0)
+            mark(g2, inner, t, k.markAt);
           g2.restore();
         } else {
           if (!k.fresh || !k.img) continue;
