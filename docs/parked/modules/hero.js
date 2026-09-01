@@ -8065,16 +8065,16 @@ void main(){
        * is the ripple in a sheet of paper, the other is where that sheet is
        * standing — and tying them together meant flattening the light on the
        * outer columns could only be done by flattening the ripple as well. */
-      webCurveSh: 6.0,
+      webCurveSh: 7.4,
       /* And how much of it is carried in the vertical: 1 is a sphere — the
        * top and foot of a sheet fall away exactly as its sides do — and 0 is
        * a cylinder, curved across and dead flat up and down. */
       webDome: 0.38,
-      webShade: 0.70,
-      webBend: 0.55, // how far the paper leaves its plane, relative to bend
+      webShade: 0.78,
+      webBend: 0.35, // how far the paper leaves its plane, relative to bend
       // how tight the ripple is, and how fast it travels across the set
-      webWaveF: 1.0,
-      webWaveSpd: 1.0,
+      webWaveF: 1.1,
+      webWaveSpd: 1.78,
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.12,
       /* The ink curve belonged to a paper ground. There, the mapping sent any
