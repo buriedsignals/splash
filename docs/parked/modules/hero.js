@@ -3742,7 +3742,16 @@ Stage.register(
 
     let panelSheet = null; // the atlas canvas, kept so the reel can read it
 
-    const GALLEY_COL = 400; // the measure of one web, in texels
+    /* THE MEASURE OF ONE WEB, in texels — and it is CAPPED by the card.
+     *
+     * A texture has a maximum side, and on this machine it is 16384. Thirty
+     * pages of 560 rows come to 16800, so the upload failed and failed
+     * SILENTLY: no error, no warning, just three webs with nothing to read and
+     * a black frame where the hero should be. The column is therefore narrowed
+     * until the whole run fits, and it is measured against the card rather
+     * than guessed — add a page and the reel shrinks to make room by itself
+     * instead of going dark. */
+    let GALLEY_COL = 400;
     /* ONE column, and the three webs read it at three different heights.
      * Three columns side by side cost three times the width for no gain the
      * moment the reel became a timeline: what the webs must never do is show
@@ -3766,7 +3775,7 @@ Stage.register(
     const PAGE_RATIO = 1.4;
     const pageH = () => Math.round(GALLEY_COL * PAGE_RATIO);
 
-    const GALLEY_W = GALLEY_COL;
+    let GALLEY_W = GALLEY_COL;
     // Settled by the measuring pass, and read by the frame to size the window
     // it slides down the web. Never a literal.
     let GALLEY_H = 4400;
@@ -5152,6 +5161,12 @@ const flowCol = (A, o) => {
        * cannot have six different tops if there are only four tops and a
        * person picking them. The nth page of a rung takes the nth head, so a
        * repeat inside a rung is now impossible rather than merely unintended. */
+      /* The column, capped so the run fits one texture. */
+      const maxTex = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 16384;
+      const fits = Math.floor((maxTex - 8) / (SPECS.length * PAGE_RATIO));
+      GALLEY_COL = Math.max(240, Math.min(400, fits));
+      GALLEY_W = GALLEY_COL;
+
       const HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
       const seen = {};
       REEL = SPECS.map((S, i) => {
