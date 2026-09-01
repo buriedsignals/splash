@@ -4479,6 +4479,18 @@ Stage.register(
      * at once would show a graphic growing while the text retreated from it,
      * which reads as the drawing shoving the words aside. */
     const storySecs = () => Math.max(2, P.storySecs || 8.5);
+    /* AND THEN THE PAGE IS LEFT ALONE. Without a rest the text closes over
+     * one graphic and opens for the next in the same breath, which reads as
+     * a slot machine rather than as a desk working — the article never gets
+     * to be an article. The rest is the page as printed, and it is the state
+     * a reader should find it in most of the time.
+     *
+     * It is also the cheapest state there is: nothing to rasterise, nothing
+     * to set again, nothing written back to the reel. With six pages spread
+     * evenly through the cycle it means two or three are ever doing
+     * anything at once. */
+    const storyRest = () =>
+      Math.max(0, P.storyRest === undefined ? 7 : P.storyRest);
     const ease = (u) => u * u * (3 - 2 * u);
     const storyOpen = (u) =>
       u < 0.05 ? 0
@@ -4519,14 +4531,21 @@ Stage.register(
         let open = 1,
           draw = 1;
         if (k.story) {
-          const u = (((t / storySecs() + k.phase) % 1) + 1) % 1;
-          // a fresh cast at the top of every telling: another drawing, and
-          // somewhere else on the page for it to go
-          if (k.lastU !== undefined && u < k.lastU) k.recast();
-          k.lastU = u;
-          open = storyOpen(u);
-          draw = storyDraw(u);
-          k.gone = storyGone(u);
+          /* The cycle is the telling PLUS the rest, and the copies are
+           * spread through the whole of it. Past the end of the telling the
+           * page is simply itself: closed, nothing drawn, nothing asked for.
+           *
+           * A fresh cast at the top of every cycle: another drawing, and
+           * somewhere else on the page for it to go. */
+          const period = storySecs() + storyRest();
+          const uu = (((t / period + k.phase) % 1) + 1) % 1;
+          if (k.lastU !== undefined && uu < k.lastU) k.recast();
+          k.lastU = uu;
+          const u = (uu * period) / storySecs();
+          const resting = u >= 1;
+          open = resting ? 0 : storyOpen(u);
+          draw = resting ? 0 : storyDraw(u);
+          k.gone = resting ? 1 : storyGone(u);
           k.draw = draw;
         }
 
@@ -6656,8 +6675,10 @@ void main(){
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
-      // seconds of one telling: printed, opening, drawn into, done
+      // seconds of one telling: opening, drawn into, held, lifted away
       storySecs: 8.5,
+      // and seconds the page is left as printed before the next one
+      storyRest: 7,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.34,

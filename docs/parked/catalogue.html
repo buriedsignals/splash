@@ -1701,6 +1701,33 @@
   .lede.src a{color:var(--amber);text-decoration:none;border-bottom:1px solid rgba(242,177,60,.4)}
   .lede{margin:0 0 8px;color:#8c8899;font-size:15px;max-width:64ch}
   .rung{border-top:1px solid #33333f;margin-top:44px;padding-top:22px}
+  /* the drawings board: the twelve, out of the paper, so they can be judged
+     as drawings rather than as things half-hidden in a column of type */
+  .board{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    margin:26px 0 0}
+  /* A grid item is min-width:auto by default, so a canvas carrying an
+     intrinsic width pushes its own column wider — which makes the card wider,
+     which makes the next measurement larger again. The board grew off the
+     side of the page by feeding on itself. */
+  .board>*{min-width:0}
+  .dcard{background:#fff;border-radius:3px;overflow:hidden;cursor:pointer;
+    box-shadow:0 1px 0 rgba(255,255,255,.08),0 10px 26px rgba(0,0,0,.34);
+    transition:transform .18s ease}
+  .dcard:hover{transform:translateY(-2px)}
+  .dcard canvas{display:block;width:100%;height:auto;min-width:0}
+  .dcard{min-width:0}
+  .dcard .lab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+    padding:8px 10px 9px;background:#14141c;border-top:1px solid rgba(255,255,255,.08)}
+  .dcard .lab b{font:500 13px/1.2 var(--D);color:var(--paper)}
+  .dcard .lab i{font:500 10px/1 var(--C);letter-spacing:.12em;text-transform:uppercase;
+    font-style:normal;color:#7d7a8c}
+  .dcard .lab i.map{color:var(--amber)}
+  .boardbar{display:flex;align-items:center;gap:14px;margin:14px 0 0;
+    font:500 11px/1 var(--C);letter-spacing:.12em;text-transform:uppercase;color:#8c8899}
+  .boardbar button{font:inherit;letter-spacing:.12em;color:#e8e8e8;cursor:pointer;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+    border-radius:5px;padding:7px 12px}
+  .boardbar button:hover{background:var(--amber);color:#14141c;border-color:var(--amber)}
   .rung h2{font:600 22px/1.15 var(--D);margin:0 0 4px;color:var(--paper)}
   .rung p{margin:0 0 20px;color:#8c8899;font-size:13.5px}
   .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
@@ -1788,7 +1815,19 @@
 </div>
 
 <div class="wrap">
-  <h1>The reel, page by page</h1>
+  <h1 style="margin-top:0">The drawings, out of the paper</h1>
+  <p class="lede">The twelve the desk can make, on a board of their own so they can be
+  looked at as drawings rather than as something half-hidden in a column of type. This is
+  the same code the reel runs, not a copy of it — a change here is a change there.
+  Each one arrives by its own gesture, holds still, and is lifted off. Click one to play
+  it again.</p>
+  <div class="boardbar">
+    <button id="again">play them all again</button>
+    <span id="bstat"></span>
+  </div>
+  <div class="board" id="board"></div>
+
+  <h1 style="margin-top:56px">The reel, page by page</h1>
   <p class="lede">Every page the webs carry, cut out of the sheet they are composed on and grouped by rung. This is the bench, not the site: it boots the hero off screen only to get the reel built, then lays it out.</p>
   <p class="lede src">Nothing in the picture holes was drawn here. The built graphics are captures from <a href="https://informationisbeautiful.net/">Information is Beautiful</a> (<i>Major LLMs ranked by performance</i>, <i>Billions</i>, <i>Four Years of the Russia–Ukraine War</i>, <i>Vaccines &amp; autism</i>, <i>Left vs. Right</i>), the choropleths from <a href="https://ourworldindata.org/">Our World in Data</a> (<i>Life expectancy</i>, <i>Share of electricity from renewables</i>), and the photographs are Unsplash. They stand in for work Splash has not made yet — IiB is CC BY-NC, so they are bench material, not something the delivered page can carry as it is.</p>
   <div id="out"><p id="wait">composing…</p></div>
@@ -1844,6 +1883,117 @@
     }
     return true;
   };
+
+  /* ---------------------------------------------------------- the board
+   * The twelve drawings, each on its own loop and each staggered, so the
+   * page is not twelve things pulsing in unison. They run the same arrival,
+   * hold and departure the reel does, and are rasterised by the module's own
+   * function — what is on this board is exactly what reaches the paper.
+   */
+  (function board() {
+    const A = window.__liveArt, K = window.__liveKinds, MAPS = window.__liveMaps || [];
+    if (!A || !K) { setTimeout(board, 400); return; }
+    const host = document.getElementById('board');
+    const stat = document.getElementById('bstat');
+    /* The drawing is made at the size the card actually IS, measured after
+     * the grid has laid out, not at a size guessed beforehand. A raster made
+     * at 268 and stretched into a 340-wide column is a graphic whose rules
+     * are 1.27 pixels thick and whose type is 27 per cent wide of what it
+     * was set at — which is exactly the thing this board exists to catch. */
+    let W = 268, H = 190;
+    const DPR = Math.min(devicePixelRatio || 1, 2);
+    const TONES = ['#b3402a', '#1a2ffb', '#1a7a4a'];
+    const IN = 2.2, HOLD = 2.6, OUT = 0.7, REST = 1.1;
+    const SPAN = IN + HOLD + OUT + REST;
+    const ease = u => u * u * (3 - 2 * u);
+    const clamp01 = u => Math.max(0, Math.min(1, u));
+
+    const tiles = K.map((kind, i) => {
+      const card = document.createElement('div');
+      card.className = 'dcard';
+      const c = document.createElement('canvas');
+      const lab = document.createElement('div');
+      lab.className = 'lab';
+      const isMap = MAPS.indexOf(kind) >= 0;
+      lab.innerHTML = '<b>' + kind + '</b><i class="' + (isMap ? 'map' : '') + '">' +
+        (isMap ? 'map' : 'chart') + '</i>';
+      card.append(c, lab);
+      host.appendChild(card);
+      const t = {
+        kind, c, g: c.getContext('2d'),
+        tone: TONES[i % TONES.length],
+        // staggered, so twelve tiles are not one animation shown twelve times
+        t0: performance.now() - (i / K.length) * SPAN * 1000,
+        seed: i * 977 + 41, vals: null, img: null, pending: false, asked: -1,
+      };
+      card.onclick = () => { t.t0 = performance.now(); t.asked = -1; t.img = null;
+        t.vals = null; t.seed = (Math.random() * 1e9) | 0; };
+      return t;
+    });
+
+    /* Sized once the grid has settled, and again if the window changes:
+     * a canvas is bitmap, and a bitmap that does not match its box is soft. */
+    const size = () => {
+      const box = Math.max(180, Math.round(tiles[0].c.clientWidth || W));
+      if (box === W && tiles[0].c.width) return;
+      W = box;
+      H = Math.round(W * 0.7);
+      for (const t of tiles) {
+        t.c.width = W * DPR;
+        t.c.height = H * DPR;
+        t.c.style.height = H + 'px';
+        t.asked = -1;
+        t.img = null;
+      }
+    };
+    for (const t of tiles) t.c.style.height = H + 'px';
+    requestAnimationFrame(size);
+    addEventListener('resize', () => requestAnimationFrame(size));
+
+    document.getElementById('again').onclick = () => {
+      const now = performance.now();
+      tiles.forEach((t, i) => {
+        t.t0 = now - (i / tiles.length) * 260;
+        t.asked = -1; t.img = null; t.vals = null;
+      });
+    };
+    stat.textContent = tiles.length + ' drawings · ' +
+      tiles.filter(t => MAPS.indexOf(t.kind) >= 0).length + ' maps';
+
+    const cast = window.__castValues
+      ? window.__castValues
+      : rnd => Array.from({ length: 16 }, () => 0.14 + rnd() * 0.82);
+
+    function frame(now) {
+      for (const t of tiles) {
+        const s = ((now - t.t0) / 1000) % SPAN;
+        if (s < 0.05 && t.vals && t.asked !== -1) { t.asked = -1; t.img = null; t.vals = null; }
+        if (!t.vals) t.vals = cast(window.__seeded(t.seed));
+        const p = s < IN ? ease(clamp01(s / IN)) : 1;
+        const gone = s < IN + HOLD ? 0 : ease(clamp01((s - IN - HOLD) / OUT));
+        const want = Math.round(p * 40);
+        if (!t.pending && want !== t.asked && gone < 1) {
+          t.asked = want; t.pending = true;
+          window.__rasterise(t.kind, W, H, p, t.vals, t.tone,
+              window.__seeded(t.seed + 7))
+            .then(im => { t.pending = false; if (im) t.img = im; });
+        }
+        const g = t.g;
+        g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        g.fillStyle = '#ffffff';
+        g.fillRect(0, 0, W, H);
+        if (t.img && gone < 1) {
+          g.save();
+          g.globalAlpha = 1 - gone;
+          g.drawImage(t.img, 0, -gone * 12, W, H);
+          g.restore();
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
   const tick = setInterval(() => { if (draw()) clearInterval(tick); }, 400);
   // once more when the photographs and the atlas have landed
   setTimeout(draw, 4000);
