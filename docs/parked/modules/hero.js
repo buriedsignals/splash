@@ -3927,11 +3927,12 @@ Stage.register(
     // the boot's mark is the one that arrives on it, and the frame fills
     // outward from there rather than closing in on it
     const WEB_IN = [0.26, 0, 0.52];
-    /* AND HOW THEY LEAVE: the same move, downward. A sheet that arrived from
-     * below and then dissolved would be two different objects; a sheet that
-     * goes back the way it came is the press stopping. Same stagger, same
-     * quintic, a shade quicker because the reader has already asked to go and
-     * is being held while it plays. */
+    /* AND HOW THEY LEAVE: on up and off the top. The paper does not come in
+     * from below and then back out below — it keeps going, and it is taken
+     * off bottom edge first, top edge last, which is the same direction it
+     * has been travelling since it arrived. Same stagger, same quintic, a
+     * shade quicker because the reader has already asked to go and is being
+     * held while it plays. */
     const OUT_RAMP = 1.2;
     const OUT_SPAN = OUT_RAMP + Math.max.apply(null, WEB_IN);
     let outSec = 0;
@@ -9939,10 +9940,13 @@ void main(){
              * the whole climb is on screen. It used to start twice that far
              * down, which spent the first half of the ramp out of sight —
              * and left the boot's mark standing on nothing while it did. */
-            /* Arrival and departure are the SAME offset. Both put the sheet
-             * below the frame, so one is the other counted the other way —
-             * there is no separate exit to keep in step with the entrance. */
-            const rise = ((1 - inE) + outE) * (cyw + hh + webNH);
+            /* ONE OFFSET, TWO ENDS OF THE FRAME. The arrival brings the
+             * sheet up from below; the departure CARRIES ON UP and takes it
+             * off the top, so the paper never reverses — it comes in from the
+             * bottom, runs, and leaves through the top, which is what a web
+             * on a press does. The whole move is one signed number, so the
+             * exit cannot drift out of step with the entrance. */
+            const rise = ((1 - inE) - outE) * (cyw + hh + webNH);
             gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
