@@ -82,7 +82,8 @@
          justify-content:space-between;align-items:center;height:var(--bar);
          padding:0 var(--gut);color:#fff;
          font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.15em;
-         text-transform:uppercase;mix-blend-mode:difference}
+         text-transform:uppercase;mix-blend-mode:difference;
+         transition:filter .34s ease}
   /* LE HEADER EST CELUI DU SITE, repris tel quel de la galerie : c'est la
      même barre sur la landing, les études de cas et l'inspiration, et une
      barre qui change d'une page à l'autre n'est plus une barre.
@@ -170,10 +171,15 @@
   body.booting section,
   body.booting footer,
   body.booting > svg{opacity:0 !important}
+  /* `filter` est listé ici aussi, et il le faut : cette règle est plus
+     spécifique que `header{}`, donc c'est ELLE qui décide des transitions de
+     l'en-tête une fois le boot passé — et sans la mentionner, la transition
+     posée sur l'en-tête lui-même était simplement écrasée. Une transition
+     déclarée à un endroit et gagnée à un autre ne transite pas. */
   body.settling header,
   body.settling section,
   body.settling footer,
-  body.settling > svg{opacity:1;transition:opacity .7s ease}
+  body.settling > svg{opacity:1;transition:opacity .7s ease, filter .34s ease}
   @media (prefers-reduced-motion:reduce){
     #boot .bt-mark{animation:none}
     #boot .bt-grp,#boot .bt-nm{transition:none}
@@ -347,10 +353,21 @@
   .chapter.behind{clip-path:polygon(0 100%,100% 100%,100% 100%,0 100%)}
   /* ET L'UI SE RETIRE PENDANT LA TRAVERSÉE. Un en-tête qui flotte au-dessus
      d'un geste qui prend tout le cadre est la seule chose immobile de l'image,
-     donc la seule qu'on regarde. !important pour la même raison que le boot :
-     l'en-tête porte sa propre animation d'entrée, et une propriété animée
-     l'emporte sur une déclaration simple quelle que soit la spécificité. */
-  body.crossing header{opacity:0 !important;transition:opacity .3s ease}
+     donc la seule qu'on regarde.
+
+     PAR LE FILTRE, ET PAS PAR L'OPACITÉ. L'en-tête porte son animation
+     d'entrée, `riseC`, en fill both : `opacity` reste donc sous le contrôle
+     d'une animation pour toujours. Une déclaration !important gagne bien la
+     cascade — mais aucune transition ne peut démarrer sur une propriété
+     animée, alors la valeur SAUTE. C'est ce saut, et il était là aux deux
+     bouts du geste. `filter` n'est touché par aucune animation, donc il
+     transite, dans les deux sens, sans rien disputer à personne. */
+  /* La transition est sur l'en-tête LUI-MÊME et pas sur l'état traversée :
+     posée sur l'état, elle n'existe qu'à l'aller — au retour la déclaration
+     s'en va avec la classe, et avec elle la transition qui aurait dû la
+     ramener. La valeur repassait à rien d'un coup, ce qui est le même saut à
+     l'autre bout du geste. */
+  body.crossing header{filter:opacity(0);pointer-events:none}
   /* La pile. Une seule scène collée au cadre, et TOUS les pavés superposés
      dedans — même case de grille, donc même place. Aucun n'est dans le flux :
      leur position vient entièrement du script, ce qui permet de les faire
