@@ -3283,6 +3283,8 @@ Stage.register(
      * The rates must be EQUAL for that to hold. A tenth of drift is invisible
      * for a few seconds and has the columns out of order a minute later. */
     const WEB_SPD = [1, 1, 1];
+    // how far out of step each web sits, in pages
+    const WEB_LAG = [0, 0.37, 0.71];
     let PAGE_STEP = 1 / 30; // one page, as a fraction of the reel
 
     /* ------------------------------------------------------------ the reel
@@ -8258,7 +8260,15 @@ void main(){
               const j = ((i % n) + n) % n;
               v = CUTS[j];
             } else {
-              v = (clock * rate + k * PAGE_STEP) % 1;
+              /* A WHOLE PAGE APART IS STILL IN STEP. Offsetting each web by
+               * exactly one page put a different page in each column, which
+               * was the point — but it also put every page BOUNDARY at the
+               * same height, so the three mastheads sat in a row and the
+               * webs read as one grid rather than as three sheets coming off
+               * a press. Broken by a third of a page and two thirds, which
+               * are not multiples of each other or of a page, so no two
+               * columns ever line up. */
+              v = (clock * rate + k * PAGE_STEP + WEB_LAG[k] * PAGE_STEP) % 1;
             }
             gl.uniform3f(
               uq.uC,
