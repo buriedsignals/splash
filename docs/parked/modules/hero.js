@@ -3288,10 +3288,9 @@ Stage.register(
      * does. A few per cent apart is enough: near enough that no column
      * looks like it is racing, far enough that the set never settles into a
      * pattern — the lag between any two of them is always changing, so an
-     * alignment that happens once does not happen again on the next lap. */
-    const WEB_SPD = [1, 0.93, 1.061];
-    // and where each one starts, in pages
-    const WEB_LAG = [0, 0.37, 0.71];
+     * alignment that happens once does not happen again on the next lap.
+     * They live in P rather than here so the bench can move them: what a
+     * set of three should be is a thing to look at, not to reason about. */
     let PAGE_STEP = 1 / 30; // one page, as a fraction of the reel
 
     /* ------------------------------------------------------------ the reel
@@ -4371,7 +4370,7 @@ Stage.register(
      * replace the article, it makes space in it. A single curve doing both
      * at once would show a graphic growing while the text retreated from it,
      * which reads as the drawing shoving the words aside. */
-    const STORY_SECS = 8.5;
+    const storySecs = () => Math.max(2, P.storySecs || 8.5);
     const ease = (u) => u * u * (3 - 2 * u);
     const clamp01 = (u) => Math.max(0, Math.min(1, u));
     const storyOpen = (u) =>
@@ -4408,7 +4407,7 @@ Stage.register(
         let open = 1,
           draw = 1;
         if (k.story) {
-          const u = (((t / STORY_SECS + k.phase) % 1) + 1) % 1;
+          const u = (((t / storySecs() + k.phase) % 1) + 1) % 1;
           // a fresh cast at the top of every telling: another drawing, and
           // somewhere else on the page for it to go
           if (k.lastU !== undefined && u < k.lastU) k.recast();
@@ -6542,7 +6541,16 @@ void main(){
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
       webEdge: 0.5,
-      webSpeed: 0.01, // laps per second
+      webSpeed: 0.01, // laps per second, before each web's own share of it
+      // what each web does with that speed, and where it starts, in pages
+      webSpd0: 1,
+      webSpd1: 0.93,
+      webSpd2: 1.061,
+      webLag0: 0,
+      webLag1: 0.37,
+      webLag2: 0.71,
+      // seconds of one telling: printed, opening, drawn into, done
+      storySecs: 8.5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 0.92,
@@ -6604,12 +6612,23 @@ void main(){
         ],
       ],
       [
+        "the three webs",
+        [
+          ["webSpd0", 0.6, 1.4, 0.002, "left · share of the speed"],
+          ["webSpd1", 0.6, 1.4, 0.002, "middle · share of the speed"],
+          ["webSpd2", 0.6, 1.4, 0.002, "right · share of the speed"],
+          ["webLag1", 0, 1, 0.01, "middle · where it starts, in pages"],
+          ["webLag2", 0, 1, 0.01, "right · where it starts, in pages"],
+        ],
+      ],
+      [
         "the press",
         [
           ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
           ["webSpeed", 0, 0.25, 0.002, "laps of the galley per second"],
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
+          ["storySecs", 3, 24, 0.5, "seconds of one telling"],
         ],
       ],
       [
@@ -6665,7 +6684,15 @@ void main(){
           const row = document.createElement("div");
           row.className = "r";
           const lab = document.createElement("label");
-          lab.textContent = key.replace(/^(web|ink)/, "").toLowerCase() || key;
+          /* The label is the key with its prefix off — but "webSpd0" would
+           * come out "spd0", and three rows called spd0/1/2 say nothing about
+           * which column they move. The three-web rows name their side. */
+          const SIDE = { 0: "left", 1: "middle", 2: "right" };
+          const NAMED = { storySecs: "telling" };
+          const m = /^web(Spd|Lag)([012])$/.exec(key);
+          lab.textContent = m
+            ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
+            : NAMED[key] || key.replace(/^(web|ink)/, "").toLowerCase() || key;
           lab.title = why;
           const inp = document.createElement("input");
           inp.type = "range";
@@ -8253,7 +8280,7 @@ void main(){
            * one image cut into three; a few per cent apart and the gap between
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
-            const rate = P.webSpeed * WEB_SPD[k];
+            const rate = P.webSpeed * P["webSpd" + k];
             /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
              * the web stops running and starts EDITING: it holds on a page for
              * a beat and cuts to the next, three pages apart from its
@@ -8275,7 +8302,7 @@ void main(){
                * a press. Broken by a third of a page and two thirds, which
                * are not multiples of each other or of a page, so no two
                * columns ever line up. */
-              v = (clock * rate + k * PAGE_STEP + WEB_LAG[k] * PAGE_STEP) % 1;
+              v = (clock * rate + k * PAGE_STEP + P["webLag" + k] * PAGE_STEP) % 1;
             }
             gl.uniform3f(
               uq.uC,
