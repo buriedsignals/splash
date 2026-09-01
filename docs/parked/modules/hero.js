@@ -3730,16 +3730,22 @@ Stage.register(
      * rung is — and then the desk makes room in it and puts a drawing there.
      * It is the whole proposition in one page, and the only page on the reel
      * that changes while you watch it. */
-    const STORY = {
+    const STORY_HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+    const STORY_TONES = ["#b3402a", "#1a2ffb", "#1a7a4a", "#b3402a", "#1a2ffb", "#1a7a4a"];
+    /* One, two or three columns. Every full-text paper on the first rung is
+     * one of those measures, and the room the desk makes has to work in all
+     * three — a chart that only fits a three-column page is a chart that
+     * only fits some articles. Four columns is left out on purpose: at that
+     * measure a block wide enough to read takes the whole page. */
+    const STORY_COLS = [1, 2, 3, 2, 3, 1];
+    const STORY_PAPERS = STORY_COLS.map((cols, i) => ({
       rung: 1,
       story: true,
       name: "The article, and what the desk makes of it",
-      head: "centre",
-      cols: 3,
-      tone: "#b3402a",
-      anim: "bars",
-      blocks: [{ kind: "chart", col: 0, span: 2, at: 7, lines: 13 }],
-    };
+      head: STORY_HEADS[i],
+      cols,
+      tone: STORY_TONES[i],
+    }));
 
 
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
@@ -3926,36 +3932,40 @@ Stage.register(
      * A block on the page whose contents are HTML, rendered LIVE.
      *
      * The paper is a canvas that becomes a texture, so nothing on it can be
-     * a live document — but real HTML can be rasterised into it, through an
-     * <foreignObject> in an SVG carried as a data URI. Measured: real
+     * a live document — but real markup can be rasterised into it, through
+     * an <foreignObject> in an SVG carried as a data URI. Measured: real
      * layout, no tainting, 0.46ms for the whole round trip of a block this
-     * size — markup, data URI, decode, draw.
+     * size, and an <svg> nested inside the HTML renders too, which is what
+     * makes a line or an arc possible at all.
      *
      * What that route cannot do is move by ITSELF. An SVG loaded as an image
      * runs in secure static mode, and the probe says so plainly: a CSS
      * animation sat at 10px at t=0 and at t=900ms, and a webfont was ignored
-     * for the system fallback. So the motion has to be composed outside the
-     * markup — and it is composed FRESH, every cycle, rather than baked into
-     * a set of phases played back. A flipbook is cheaper and, for a fixed
-     * loop, indistinguishable; it cannot carry numbers that are decided as
-     * they are drawn, and these are.
-     *
-     * The round trip is asynchronous, so the pipeline is: one rasterisation
-     * of each distinct drawing in flight at a time, and whatever has landed
-     * goes onto the paper. The picture is therefore always one rasterisation
-     * behind the numbers, which at this rate is under a frame.
+     * for the system fallback. So the motion is composed outside the markup,
+     * and composed FRESH — not baked into phases and played back, because
+     * these numbers are decided as they are drawn.
      */
-    const LIVE_RASTER = 220; // the widest a phase is drawn; scaled into the hole
-    const LIVE_HZ = 24; // how often new numbers are asked for
-    let LIVE_HOLES = []; // filled by the painter, in galley coordinates
+    const LIVE_RASTER = 240; // the widest a drawing is made; scaled into the hole
+    const LIVE_HZ = 26; // how often a new picture is asked for
+    let LIVE_HOLES = [];
     let galleyCv = null;
 
-    /* THE NUMBERS, AND THEY ARE NOT A LOOP. Each bar holds a value and a
-     * target, walks towards the target, and takes a new one at random when
-     * it arrives. Nothing repeats, and nothing jumps: a chart that redrew
-     * itself from fresh random numbers every cycle would strobe rather than
-     * animate, which reads as noise and not as data. */
-    const LIVE_N = 15;
+    /* A SEEDED SOURCE, so that a page's drawing is its own and does not
+     * change identity between two frames of the same telling — but differs
+     * from the page above it. Math.random() would reshuffle the chart on
+     * every raster, which is not a graphic, it is static. */
+    const seeded = (a) => () => {
+      a = (a + 0x6d2b79f5) | 0;
+      let x = Math.imul(a ^ (a >>> 15), 1 | a);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+
+    /* THE NUMBERS, AND THEY ARE NOT A LOOP. Each value holds a target, walks
+     * towards it, and takes a new one at random on arrival. Nothing repeats
+     * and nothing jumps: a chart redrawn from fresh random numbers every
+     * cycle strobes, which reads as noise and not as data. */
+    const LIVE_N = 16;
     const liveNow = [],
       liveTo = [];
     for (let i = 0; i < LIVE_N; i++) {
@@ -3965,81 +3975,378 @@ Stage.register(
     function liveStep(dt) {
       for (let i = 0; i < LIVE_N; i++) {
         const d = liveTo[i] - liveNow[i];
-        liveNow[i] += d * Math.min(1, dt * 1.9);
+        liveNow[i] += d * Math.min(1, dt * 2.4);
         if (Math.abs(d) < 0.015) liveTo[i] = 0.12 + Math.random() * 0.85;
       }
     }
 
-
-    /* HOW THE STORY IS TOLD, as two curves over one turn of it.
+    /* ---------------------------------------------------- the drawings
+     * Six charts and six maps, each with its own way of arriving: a bar
+     * grows, a line is traced, a map fills in. `p` is how far in the drawing
+     * is, `v` the walking numbers, `rnd` the page's own source. All of them
+     * are markup — divs where a rectangle is a rectangle, nested SVG where a
+     * curve is a curve.
      *
-     * They are separate on purpose. The room is made FIRST and the drawing
-     * arrives INTO it — that order is the whole claim: the desk does not
-     * replace the article, it makes space in it. A single curve doing both
-     * at once would show a graphic growing and the text retreating from it,
-     * which reads as the drawing shoving the words out of the way. */
-    const STORY_SECS = 16;
-    const ease = (u) => u * u * (3 - 2 * u);
-    const clamp01 = (u) => Math.max(0, Math.min(1, u));
-    // the hole opening in the text, and closing again at the end
-    const storyOpen = (u) =>
-      u < 0.16 ? 0
-        : u < 0.40 ? ease((u - 0.16) / 0.24)
-        : u < 0.92 ? 1
-        : 1 - ease((u - 0.92) / 0.08);
-    // the drawing coming in, after the room for it exists
-    const storyDraw = (u) =>
-      u < 0.38 ? 0
-        : u < 0.60 ? ease((u - 0.38) / 0.22)
-        : u < 0.88 ? 1
-        : clamp01(1 - (u - 0.88) / 0.05);
+     * Every one of them is drawn small. Under a hundred pixels of height a
+     * drawing loses its caption and its baseline and is only itself: the
+     * fourth rung's chart-the-size-of-a-paragraph has no room for furniture,
+     * and giving it some pushes the drawing itself out of the block.
+     */
+    const CHARTS = ["bars", "line", "area", "stack", "scatter", "donut"];
+    const MAPS = ["units", "choro", "places", "flows", "hexes", "rings"];
+    const LIVE_KINDS = CHARTS.concat(MAPS);
 
-    /* The drawing, as markup. Well-formed XHTML with every attribute quoted
-     * and no bare ampersand, because this is parsed as XML and one loose
-     * character yields a blank image rather than an error. */
-    const LIVE_ART = {
-      bars(w, h, v, tone) {
-        /* Adapts to the hole rather than assuming a big one. A chart the
-         * size of a paragraph on the fourth rung is forty pixels tall: give
-         * it the same caption and baseline as a full-measure lead and the
-         * room left for the bars themselves goes NEGATIVE, which CSS
-         * discards, and the block comes out empty. Under ninety pixels it
-         * loses its furniture and is only the bars. */
-        const small = h < 90,
-          n = small ? 11 : LIVE_N,
-          floor = small ? 3 : 26,
-          room = Math.max(6, h - floor - (small ? 2 : 16));
-        let out = "";
-        for (let i = 0; i < n; i++) {
-          const tall = Math.max(1, v[i] * room);
-          out +=
-            '<i style="width:' + (100 / n - 1.1) + "%;height:" + tall.toFixed(1) +
-            "px;background:" + (i % 4 === 3 ? tone : "#161616") + '"></i>';
+    /* DEALT, NOT DRAWN. Six pages each picking a drawing at random gave
+     * three the same one — independent draws collide, and two webs showing
+     * the same chart at once is exactly the redundancy this is meant to
+     * avoid. The kinds are a deck instead: shuffled, dealt one at a time,
+     * and reshuffled only when it runs out. Twelve drawings and six pages
+     * means no page can repeat another until every one has been seen. */
+    let KIND_DECK = [];
+    function dealKind(rnd) {
+      if (!KIND_DECK.length) {
+        KIND_DECK = LIVE_KINDS.slice();
+        for (let i = KIND_DECK.length - 1; i > 0; i--) {
+          const j = Math.floor(rnd() * (i + 1));
+          const t = KIND_DECK[i];
+          KIND_DECK[i] = KIND_DECK[j];
+          KIND_DECK[j] = t;
         }
+      }
+      return KIND_DECK.pop();
+    }
+
+    const svgWrap = (w, h, body) =>
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+      '" viewBox="0 0 ' + w + " " + h + '">' + body + "</svg>";
+    const foot = (small, w, label) =>
+      small
+        ? ""
+        : '<div style="height:1px;background:#161616;margin-top:4px"></div>' +
+          '<div style="font:8px Georgia,serif;color:#555;margin-top:4px;' +
+          'letter-spacing:.06em;overflow:hidden;white-space:nowrap">' + label + "</div>";
+
+    const LIVE_ART = {};
+
+    // ---- charts
+    LIVE_ART.bars = (w, h, p, v, tone, rnd, small) => {
+      const n = small ? 9 : 14,
+        room = Math.max(6, h - (small ? 4 : 24));
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        const k = Math.max(0, Math.min(1, p * 2.2 - (i / n) * 1.1));
+        const tall = Math.max(1, v[i % v.length] * room * k);
+        out +=
+          '<i style="width:' + (100 / n - 1.2) + "%;height:" + tall.toFixed(1) +
+          "px;background:" + (i % 4 === 3 ? tone : "#161616") + '"></i>';
+      }
+      return (
+        '<div style="height:' + room + 'px;display:flex;align-items:flex-end;' +
+        'justify-content:space-between">' + out + "</div>" +
+        foot(small, w, "LOREM IPSUM STATISTICAL OFFICE")
+      );
+    };
+
+    LIVE_ART.line = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24)),
+        n = 13;
+      const pt = (i) => [
+        (i / (n - 1)) * (w - 4) + 2,
+        H - 4 - v[(i * 3) % v.length] * (H - 12),
+      ];
+      const upto = Math.max(1, Math.round(p * (n - 1)));
+      let d = "";
+      for (let i = 0; i <= upto; i++) {
+        const [x, y] = pt(i);
+        d += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+      }
+      const grid = small
+        ? ""
+        : '<path d="M2 ' + (H - 4) + " H" + (w - 2) +
+          '" stroke="#161616" stroke-width="1" fill="none"/>' +
+          '<path d="M2 ' + (H * 0.5).toFixed(0) + " H" + (w - 2) +
+          '" stroke="#161616" stroke-width=".5" opacity=".22" fill="none"/>';
+      const head = pt(upto);
+      return (
+        svgWrap(w, H,
+          grid +
+          '<path d="' + d + '" fill="none" stroke="' + tone +
+          '" stroke-width="2" stroke-linejoin="round"/>' +
+          '<circle cx="' + head[0].toFixed(1) + '" cy="' + head[1].toFixed(1) +
+          '" r="2.6" fill="#161616"/>') +
+        foot(small, w, "LOREM IPSUM, ANNUAL SERIES")
+      );
+    };
+
+    LIVE_ART.area = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24)),
+        n = 15;
+      const upto = Math.max(1, Math.round(p * (n - 1)));
+      let d = "M2 " + (H - 3);
+      for (let i = 0; i <= upto; i++) {
+        const x = (i / (n - 1)) * (w - 4) + 2,
+          y = H - 3 - v[(i * 5) % v.length] * (H - 14);
+        d += " L" + x.toFixed(1) + " " + y.toFixed(1);
+      }
+      d += " L" + ((upto / (n - 1)) * (w - 4) + 2).toFixed(1) + " " + (H - 3) + " Z";
+      return (
+        svgWrap(w, H,
+          '<path d="' + d + '" fill="' + tone + '" opacity=".82"/>' +
+          '<path d="M2 ' + (H - 3) + " H" + (w - 2) +
+          '" stroke="#161616" stroke-width="1" fill="none"/>') +
+        foot(small, w, "SHARE OF TOTAL, PER CENT")
+      );
+    };
+
+    LIVE_ART.stack = (w, h, p, v, tone, rnd, small) => {
+      const rows = small ? 4 : 7,
+        rh = Math.max(4, (h - (small ? 4 : 24)) / rows - 3);
+      let out = "";
+      for (let r = 0; r < rows; r++) {
+        const k = Math.max(0, Math.min(1, p * 2 - (r / rows) * 0.9));
+        const a = v[r % v.length] * 55 * k,
+          b = v[(r + 4) % v.length] * 28 * k,
+          c = v[(r + 8) % v.length] * 14 * k;
+        out +=
+          '<div style="display:flex;height:' + rh.toFixed(1) + 'px;margin-bottom:3px">' +
+          '<u style="width:' + a.toFixed(1) + '%;background:#161616"></u>' +
+          '<u style="width:' + b.toFixed(1) + '%;background:' + tone + '"></u>' +
+          '<u style="width:' + c.toFixed(1) + '%;background:#161616;opacity:.35"></u>' +
+          "</div>";
+      }
+      return out + foot(small, w, "BY CATEGORY, LOREM IPSUM");
+    };
+
+    LIVE_ART.scatter = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24)),
+        n = small ? 14 : 30;
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        const k = Math.max(0, Math.min(1, p * 2.4 - (i / n) * 1.2));
+        if (k <= 0) continue;
+        const x = 4 + rnd() * (w - 8),
+          y = 4 + rnd() * (H - 8),
+          r = (1.4 + rnd() * 2.6) * k;
+        out +=
+          '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
+          r.toFixed(1) + '" fill="' + (i % 5 === 2 ? tone : "#161616") +
+          '" opacity=".85"/>';
+      }
+      return (
+        svgWrap(w, H,
+          '<path d="M2 ' + (H - 3) + " H" + (w - 2) + " M2 3 V" + (H - 3) +
+          '" stroke="#161616" stroke-width="1" fill="none" opacity=".55"/>' + out) +
+        foot(small, w, "EACH DOT, ONE OBSERVATION")
+      );
+    };
+
+    LIVE_ART.donut = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const cx = w / 2,
+        cy = H / 2,
+        R0 = Math.min(w, H) / 2 - 4,
+        R1 = R0 * 0.56;
+      const arc = (a0, a1, fill) => {
+        const P = (a, r) => [
+          (cx + r * Math.cos(a)).toFixed(1),
+          (cy + r * Math.sin(a)).toFixed(1),
+        ];
+        const big = a1 - a0 > Math.PI ? 1 : 0;
+        const [x0, y0] = P(a0, R0),
+          [x1, y1] = P(a1, R0),
+          [x2, y2] = P(a1, R1),
+          [x3, y3] = P(a0, R1);
         return (
-          '<div style="height:' + (h - floor) + 'px;display:flex;align-items:flex-end;' +
-          'justify-content:space-between">' + out + "</div>" +
-          '<div style="height:' + (small ? 1 : 2) + 'px;background:#161616;margin-top:' +
-          (small ? 2 : 5) + 'px"></div>' +
-          (small
-            ? ""
-            : '<div style="font:8px Georgia,serif;color:#555;margin-top:5px;' +
-              'letter-spacing:.06em">LOREM IPSUM STATISTICAL OFFICE</div>')
+          '<path d="M' + x0 + " " + y0 + " A" + R0 + " " + R0 + " 0 " + big +
+          " 1 " + x1 + " " + y1 + " L" + x2 + " " + y2 + " A" + R1 + " " + R1 +
+          " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill + '"/>'
         );
-      },
+      };
+      const parts = [0.34, 0.26, 0.19, 0.13, 0.08];
+      let a = -Math.PI / 2,
+        out = "";
+      for (let i = 0; i < parts.length; i++) {
+        const sweep = parts[i] * Math.PI * 2 * Math.min(1, p * 1.35);
+        if (sweep > 0.01)
+          out += arc(a, a + sweep, i === 1 ? tone : i % 2 ? "#161616" : "#3a3a3a");
+        a += parts[i] * Math.PI * 2;
+      }
+      return svgWrap(w, H, out) + foot(small, w, "OF THE WHOLE, PER CENT");
+    };
+
+    // ---- maps
+    LIVE_ART.units = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const cols = small ? 12 : 22,
+        cell = w / cols,
+        rows = Math.max(2, Math.floor(H / cell));
+      let out = "";
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          const at = (r * cols + c) / (rows * cols);
+          const on = p * 1.6 > at;
+          out +=
+            '<i style="width:' + (cell - 1.1).toFixed(2) + "px;height:" +
+            (cell - 1.1).toFixed(2) + "px;margin:.55px;background:" +
+            (on ? (at > 0.66 ? tone : "#161616") : "#e6e4df") + '"></i>';
+        }
+      return (
+        '<div style="display:flex;flex-wrap:wrap;align-content:flex-start;width:' +
+        w + "px;height:" + H + 'px;overflow:hidden">' + out + "</div>" +
+        foot(small, w, "ONE SQUARE, ONE THOUSAND")
+      );
+    };
+
+    LIVE_ART.choro = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const cols = small ? 9 : 15,
+        cell = w / cols,
+        rows = Math.max(2, Math.floor(H / cell));
+      let out = "";
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          // a coarse landmass rather than a full rectangle, so it reads as
+          // somewhere rather than as a table
+          const land =
+            Math.sin(c * 0.7 + r * 0.4) + Math.cos(c * 0.31 - r * 0.83) > -0.35;
+          const at = rnd();
+          const on = land && p * 1.5 > at * 0.9;
+          const shade = v[(r * cols + c) % v.length];
+          out +=
+            '<i style="width:' + (cell - 0.6).toFixed(2) + "px;height:" +
+            (cell - 0.6).toFixed(2) + "px;margin:.3px;background:" +
+            (on ? tone : land ? "#eeece7" : "transparent") + ";opacity:" +
+            (on ? (0.3 + shade * 0.7).toFixed(2) : "1") + '"></i>';
+        }
+      return (
+        '<div style="display:flex;flex-wrap:wrap;align-content:flex-start;width:' +
+        w + "px;height:" + H + 'px;overflow:hidden">' + out + "</div>" +
+        foot(small, w, "BY DISTRICT, LOREM IPSUM")
+      );
+    };
+
+    LIVE_ART.places = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      let g = "";
+      for (let i = 1; i < 4; i++)
+        g += '<path d="M0 ' + ((i * H) / 4).toFixed(0) + " H" + w +
+          '" stroke="#161616" stroke-width=".5" opacity=".16"/>';
+      for (let i = 1; i < 5; i++)
+        g += '<path d="M' + ((i * w) / 5).toFixed(0) + ' 0 V' + H +
+          '" stroke="#161616" stroke-width=".5" opacity=".16"/>';
+      const n = small ? 6 : 13;
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        const k = Math.max(0, Math.min(1, p * 2.6 - (i / n) * 1.4));
+        if (k <= 0) continue;
+        const x = 6 + rnd() * (w - 12),
+          y = 6 + rnd() * (H - 12),
+          r = (2 + v[i % v.length] * 5) * k;
+        out +=
+          '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
+          r.toFixed(1) + '" fill="' + tone + '" opacity=".75"/>' +
+          '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) +
+          '" r="1.2" fill="#161616"/>';
+      }
+      return svgWrap(w, H, g + out) + foot(small, w, "REPORTED INCIDENTS");
+    };
+
+    LIVE_ART.flows = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const hx = w * 0.22,
+        hy = H * 0.62;
+      const n = small ? 4 : 8;
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        const k = Math.max(0, Math.min(1, p * 2.3 - (i / n) * 1.3));
+        if (k <= 0) continue;
+        const tx = w * (0.45 + rnd() * 0.5),
+          ty = H * (0.12 + rnd() * 0.76);
+        const mx = (hx + tx) / 2,
+          my = Math.min(hy, ty) - H * 0.22;
+        const ex = hx + (tx - hx) * k,
+          ey = hy + (ty - hy) * k;
+        out +=
+          '<path d="M' + hx.toFixed(1) + " " + hy.toFixed(1) + " Q" +
+          mx.toFixed(1) + " " + my.toFixed(1) + " " + ex.toFixed(1) + " " +
+          ey.toFixed(1) + '" fill="none" stroke="' + tone +
+          '" stroke-width="' + (0.8 + v[i % v.length] * 2).toFixed(1) +
+          '" opacity=".8"/>' +
+          (k > 0.96
+            ? '<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) +
+              '" r="2.2" fill="#161616"/>'
+            : "");
+      }
+      return (
+        svgWrap(w, H,
+          out + '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) +
+          '" r="3.4" fill="#161616"/>') +
+        foot(small, w, "ORIGIN AND DESTINATION")
+      );
+    };
+
+    LIVE_ART.hexes = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const cols = small ? 7 : 12,
+        rw = w / (cols + 0.5),
+        rh = rw * 0.86,
+        rows = Math.max(2, Math.floor(H / rh));
+      let out = "";
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++) {
+          const at = (r * cols + c) / (rows * cols);
+          if (p * 1.5 <= at) continue;
+          const x = c * rw + (r % 2 ? rw / 2 : 0),
+            y = r * rh;
+          const s = v[(r * cols + c) % v.length];
+          const pts = [];
+          for (let a = 0; a < 6; a++) {
+            const th = (Math.PI / 3) * a + Math.PI / 6;
+            pts.push(
+              (x + rw / 2 + (rw / 2 - 0.7) * Math.cos(th)).toFixed(1) + "," +
+              (y + rh / 2 + (rh / 2 - 0.7) * Math.sin(th)).toFixed(1),
+            );
+          }
+          out +=
+            '<polygon points="' + pts.join(" ") + '" fill="' +
+            (s > 0.62 ? tone : "#161616") + '" opacity="' +
+            (0.24 + s * 0.72).toFixed(2) + '"/>';
+        }
+      return svgWrap(w, H, out) + foot(small, w, "EQUAL-AREA CARTOGRAM");
+    };
+
+    LIVE_ART.rings = (w, h, p, v, tone, rnd, small) => {
+      const H = Math.max(6, h - (small ? 4 : 24));
+      const cx = w * 0.5,
+        cy = H * 0.52,
+        max = Math.min(w, H) * 0.46;
+      const n = small ? 4 : 7;
+      let out = "";
+      for (let i = n - 1; i >= 0; i--) {
+        const k = Math.max(0, Math.min(1, p * 2 - ((n - 1 - i) / n) * 1.1));
+        if (k <= 0) continue;
+        const r = max * ((i + 1) / n) * k;
+        const wob = 0.82 + v[i % v.length] * 0.3;
+        out +=
+          '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" rx="' +
+          (r * wob).toFixed(1) + '" ry="' + r.toFixed(1) + '" fill="' +
+          (i === 0 ? tone : "none") + '" stroke="' + (i % 2 ? tone : "#161616") +
+          '" stroke-width="1.2" opacity="' + (0.35 + (1 - i / n) * 0.6).toFixed(2) +
+          '"/>';
+      }
+      return svgWrap(w, H, out) + foot(small, w, "CONTOURS, LOREM IPSUM");
     };
 
     /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
      * size of the drawing, handed to an Image as a data URI, and decoded. */
-    function rasterise(kind, w, h, v, tone) {
-      const body = LIVE_ART[kind](w, h, v, tone);
+    function rasterise(kind, w, h, p, v, tone, rnd) {
+      const body = (LIVE_ART[kind] || LIVE_ART.bars)(w, h, p, v, tone, rnd, h < 96);
       const svg =
         '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
         '<foreignObject width="100%" height="100%">' +
         '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + w + "px;height:" + h +
-        'px;background:#ffffff;font:10px Georgia,serif;color:#161616">' +
-        body +
-        "</div></foreignObject></svg>";
+        'px;background:#ffffff;font:10px Georgia,serif;color:#161616;' +
+        'overflow:hidden">' + body + "</div></foreignObject></svg>";
       return new Promise((res) => {
         const im = new Image();
         im.onload = () => res(im);
@@ -4048,99 +4355,90 @@ Stage.register(
       });
     }
 
-    /* One job per distinct drawing — what it is, and at what size — rather
-     * than one per hole. Copies of the same page ask for the same picture,
-     * and rasterising it once per copy would be that many times the work for
-     * one result. */
-    const LIVE_JOBS = new Map();
-    /* The four copies of a story page are at four different points in it, so
-     * they do not want the same picture: one is holding a finished chart
-     * while another is halfway through drawing one. How far in the drawing
-     * is therefore part of what identifies it, quantised so that the cache
-     * is a handful of entries and not one per frame. */
-    const LIVE_STEPS = 20;
-    const jobKey = (anim, w, h, tone, lvl) => {
-      const rw = Math.min(w, LIVE_RASTER),
-        rh = Math.max(8, Math.round((h * rw) / w));
-      return anim + "|" + rw + "|" + rh + "|" + tone + "|" + lvl;
-    };
-    const jobOf = (anim, w, h, tone, lvl) => {
-      const key = jobKey(anim, w, h, tone, lvl);
-      let job = LIVE_JOBS.get(key);
-      if (!job) {
-        const rw = Math.min(w, LIVE_RASTER),
-          rh = Math.max(8, Math.round((h * rw) / w));
-        job = {
-          anim, w: rw, h: rh, tone,
-          at: lvl / LIVE_STEPS,
-          img: null, pending: false, fresh: false, stamp: 0,
-        };
-        LIVE_JOBS.set(key, job);
-      }
-      return job;
-    };
+    /* HOW THE STORY IS TOLD, as two curves over one turn of it.
+     *
+     * They are separate on purpose. The room is made FIRST and the drawing
+     * arrives INTO it — that order is the whole claim: the desk does not
+     * replace the article, it makes space in it. A single curve doing both
+     * at once would show a graphic growing while the text retreated from it,
+     * which reads as the drawing shoving the words aside. */
+    const STORY_SECS = 8.5;
+    const ease = (u) => u * u * (3 - 2 * u);
+    const clamp01 = (u) => Math.max(0, Math.min(1, u));
+    const storyOpen = (u) =>
+      u < 0.05 ? 0
+        : u < 0.24 ? ease((u - 0.05) / 0.19)
+        : u < 0.90 ? 1
+        : 1 - ease((u - 0.9) / 0.1);
+    const storyDraw = (u) =>
+      u < 0.19 ? 0
+        : u < 0.44 ? ease((u - 0.19) / 0.25)
+        : u < 0.86 ? 1
+        : clamp01(1 - (u - 0.86) / 0.05);
+
+    /* ONE JOB PER HOLE, not one per drawing. Sharing them was a real bug:
+     * four copies of a page are at four different points in the telling, so
+     * a shared picture showed one page the chart belonging to another, and
+     * a cached half-drawn level kept numbers from whenever it was first
+     * made — the bars jumped around as the graphic grew instead of rising.
+     * A hole owns its picture, and asks for a new one when it wants it. */
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
-
-      // ask for new numbers, and keep one drawing of each kind in flight
-      if (t - liveLast >= 1 / LIVE_HZ) {
+      const ask = t - liveLast >= 1 / LIVE_HZ;
+      if (ask) {
         liveStep(Math.min(0.12, liveLast < 0 ? 1 / LIVE_HZ : t - liveLast));
         liveLast = t;
-        for (const k of LIVE_HOLES) {
-          const size = k.story ? k.full : k;
-          if (!size || size.w < 8 || size.h < 8) continue;
-          const lvl = k.story ? Math.round((k.draw || 0) * LIVE_STEPS) : LIVE_STEPS;
-          if (!lvl) continue; // nothing drawn yet, nothing to ask for
-          const job = jobOf(k.anim, size.w, size.h, k.tone, lvl);
-          if (job.pending) continue;
-          job.pending = true;
-          const v = liveNow.map((x) => x * job.at);
-          rasterise(job.anim, job.w, job.h, v, job.tone).then((im) => {
-            job.pending = false;
-            if (im) {
-              job.img = im;
-              job.fresh = true;
-              job.stamp = (job.stamp || 0) + 1;
-            }
-          });
-        }
       }
 
-      /* Put it on the paper. A story page is REPAINTED — the band of text is
-       * cleared and set again with the hole at its new size, because that is
-       * the animation — and every other hole only has its own rectangle
-       * written. Either way the mip chain is rebuilt once at the end: the
-       * webs read the reel through a LOD bias, and a stale chain shows as a
-       * block that will not sharpen. */
       let wrote = false;
       const g2 = galleyCv.getContext("2d");
       gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+
       for (const k of LIVE_HOLES) {
+        let open = 1,
+          draw = 1;
         if (k.story) {
-          const u = ((t / STORY_SECS + k.phase) % 1 + 1) % 1;
-          const open = storyOpen(u);
-          k.draw = storyDraw(u);
-          /* Repainted whenever the picture would actually differ — the hole
-           * moved by half a pixel, or the drawing in it changed — and not
-           * otherwise. The page holds still for half of every telling, and
-           * setting the same type again for those seconds is a cost with
-           * nothing to show for it. */
-          const jobNow = LIVE_JOBS.get(
-            jobKey(k.anim, k.full.w, k.full.h, k.tone,
-              Math.round((k.draw || 0) * LIVE_STEPS)),
-          );
-          const stamp = (jobNow && jobNow.stamp) || 0;
+          const u = (((t / STORY_SECS + k.phase) % 1) + 1) % 1;
+          // a fresh cast at the top of every telling: another drawing, and
+          // somewhere else on the page for it to go
+          if (k.lastU !== undefined && u < k.lastU) k.recast();
+          k.lastU = u;
+          open = storyOpen(u);
+          draw = storyDraw(u);
+          k.draw = draw;
+        }
+
+        // ask for the next picture of THIS hole
+        const size = k.story ? k.full() : k;
+        if (ask && size && size.w >= 8 && size.h >= 8 && draw > 0 && !k.pending) {
+          const rw = Math.min(size.w, LIVE_RASTER),
+            rh = Math.max(8, Math.round((size.h * rw) / size.w));
+          k.pending = true;
+          rasterise(k.kind, rw, rh, draw, liveNow.slice(), k.tone, seeded(k.seed))
+            .then((im) => {
+              k.pending = false;
+              if (im) {
+                k.img = im;
+                k.fresh = true;
+              }
+            });
+        }
+        if (draw <= 0) k.img = null;
+
+        /* Repainted only when the picture would actually differ. A story
+         * page holds still for half of every telling, and setting the same
+         * type again for those seconds is a cost with nothing to show. */
+        if (k.story) {
           if (
-            Math.abs(open - (k.lastOpen || 0)) < 0.0015 &&
-            Math.abs(k.draw - (k.lastDraw || 0)) < 0.004 &&
-            stamp === k.lastStamp &&
-            k.lastImg === (jobNow && jobNow.img ? jobNow.img : k.lastImg)
+            Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
+            Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
+            !k.fresh
           )
             continue;
           k.lastOpen = open;
-          k.lastDraw = k.draw;
-          k.lastStamp = stamp;
+          k.lastDraw = draw;
+          k.fresh = false;
           g2.save();
           g2.beginPath();
           g2.rect(k.x, k.y, k.w, k.h);
@@ -4149,51 +4447,31 @@ Stage.register(
           g2.fillRect(k.x, k.y, k.w, k.h);
           g2.textBaseline = "alphabetic";
           k.paint(open);
-          /* The last picture that arrived, kept. While the drawing comes in
-           * it passes through twenty sizes of itself, each of which has to be
-           * rasterised, and a level whose decode has not landed yet has no
-           * image at all — drawing nothing for those frames would flicker the
-           * chart on and off as it grew. So the newest one that exists is
-           * held, and replaced the moment a newer one lands. */
           const inner = k.inner();
-          if (jobNow && jobNow.img) k.lastImg = jobNow.img;
-          if (k.draw <= 0) k.lastImg = null;
-          if (inner && k.lastImg && k.draw > 0)
-            g2.drawImage(k.lastImg, inner.x, inner.y, inner.w, inner.h);
+          if (inner && k.img && draw > 0)
+            g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
           g2.restore();
-          if (!k.scratch) {
-            k.scratch = document.createElement("canvas");
-            k.scratch.width = k.w;
-            k.scratch.height = k.h;
-            k.sg = k.scratch.getContext("2d");
-          }
-          k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
-          gl.texSubImage2D(
-            gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
-          );
-          wrote = true;
-          continue;
+        } else {
+          if (!k.fresh || !k.img) continue;
+          k.fresh = false;
+          g2.fillStyle = "#ffffff";
+          g2.fillRect(k.x, k.y, k.w, k.h);
+          g2.drawImage(k.img, k.x, k.y, k.w, k.h);
         }
 
-        const job = LIVE_JOBS.get(jobKey(k.anim, k.w, k.h, k.tone, LIVE_STEPS));
-        if (!job || !job.fresh || !job.img) continue;
         if (!k.scratch) {
           k.scratch = document.createElement("canvas");
           k.scratch.width = k.w;
           k.scratch.height = k.h;
           k.sg = k.scratch.getContext("2d");
         }
-        k.sg.fillStyle = "#ffffff";
-        k.sg.fillRect(0, 0, k.w, k.h);
-        k.sg.drawImage(job.img, 0, 0, k.w, k.h);
-        g2.drawImage(k.scratch, k.x, k.y);
+        k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
         gl.texSubImage2D(
           gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
         );
         wrote = true;
       }
       if (!wrote) return;
-      for (const job of LIVE_JOBS.values()) job.fresh = false;
       gl.generateMipmap(gl.TEXTURE_2D);
     }
 
@@ -5346,26 +5624,26 @@ const flowCol = (A, o) => {
           /* A STORY PAGE DOES NOT REFLOW. It slides.
            *
            * Opening the hole by whole line-slots is what the flow already
-           * knew how to do, and it is visibly stepped: thirteen jumps of a
-           * line each over four seconds reads as a stutter, not as paper
-           * making room. So the story page does not use the slot flow at
-           * all. The words are broken ONCE — the same words, the same
-           * measure, so re-breaking them every frame would be work for
-           * nothing — and the lines below the hole are simply drawn lower,
-           * by a number of pixels that can be any number. The gap opens
-           * continuously and the type slides with it.
+           * knew how to do, and it is visibly stepped: a jump of a line at a
+           * time reads as a stutter, not as paper making room. So a story
+           * page does not use the slot flow at all. The words are broken
+           * ONCE — the same words in the same measure, so re-breaking them
+           * every frame would be work for nothing — and the lines below the
+           * hole are drawn lower, by a number of pixels that can be any
+           * number. The gap opens continuously and the type slides with it.
            *
            * The columns the block does not cross never move: that is what
-           * makes it read as room being made IN the article rather than the
-           * article being pushed aside. */
+           * makes it read as room made IN the article rather than the
+           * article shoved aside.
+           *
+           * WHERE the room is made, and WHAT goes in it, are drawn again at
+           * the top of every telling. Twelve drawings and a page that can
+           * take one in any of its columns is a lot of pages; the same chart
+           * arriving in the same corner every time is one. */
           if (S.story) {
-            const b0 = (S.blocks || [])[0] || { col: 0, span: 2, at: 7, lines: 13 };
             const AIR_T = 5,
               AIR_B = 8;
-            const bx = left + b0.col * (colW + gut),
-              bw = colW * b0.span + gut * (b0.span - 1),
-              byTop = y - fs + b0.at * lh + AIR_T,
-              fullPx = b0.lines * lh;
+            const rnd = seeded((S.i || 0) * 7919 + 13);
 
             // the words, broken once
             g.font = fs + "px " + SERIF;
@@ -5390,48 +5668,79 @@ const flowCol = (A, o) => {
               COL.push(col);
             }
 
+            /* The cast. A drawing, a measure to give it, and a place in the
+             * article to open. Held on the page rather than recomputed while
+             * painting, because a chart that changed identity between two
+             * frames of the same telling is not a graphic. */
+            let B = null;
+            const recast = () => {
+              const kind = dealKind(rnd);
+              // a map wants width; a chart is happy in a column
+              const wide = MAPS.indexOf(kind) >= 0;
+              const span = Math.max(
+                1,
+                Math.min(cols, wide ? Math.round(1 + rnd() * (cols - 1)) + 0 : 1 + Math.floor(rnd() * cols)),
+              );
+              const col = Math.floor(rnd() * (cols - span + 1));
+              const lines = Math.max(
+                5,
+                Math.min(depth - 3, Math.round(depth * (0.3 + rnd() * 0.34))),
+              );
+              const at = 2 + Math.floor(rnd() * Math.max(1, depth - lines - 3));
+              B = {
+                kind, col, span, at, lines,
+                bx: left + col * (colW + gut),
+                bw: colW * span + gut * (span - 1),
+                byTop: y - fs + at * lh + AIR_T,
+                fullPx: lines * lh,
+              };
+              hole.kind = kind;
+              hole.seed = Math.floor(rnd() * 1e9);
+            };
+
             let inner = null;
             const paint = (open) => {
-              const px = open * fullPx;
+              if (!B) recast();
+              const px = open * B.fullPx;
               const holeH = px - AIR_T - AIR_B;
-              inner = px > AIR_T + AIR_B + 2
-                ? { x: R(bx) + 1, y: R(byTop) + 1, w: R(bw) - 2, h: R(holeH) - 2 }
-                : null;
+              inner =
+                holeH > 6
+                  ? { x: R(B.bx) + 1, y: R(B.byTop) + 1, w: R(B.bw) - 2, h: R(holeH) - 2 }
+                  : null;
 
               g.fillStyle = "#111111";
               g.font = fs + "px " + SERIF;
               g.textAlign = "left";
               for (let c = 0; c < cols; c++) {
                 const cx = left + c * (colW + gut);
-                const crossed = c >= b0.col && c < b0.col + b0.span;
+                const crossed = c >= B.col && c < B.col + B.span;
                 for (let r = 0; r < depth; r++) {
-                  const shift = crossed && r >= b0.at ? px : 0;
-                  const ly = y + r * lh + shift;
+                  const ly = y + r * lh + (crossed && r >= B.at ? px : 0);
                   if (ly > bot) break; // pushed off the foot of the page
                   g.fillText(COL[c][r], cx, ly);
                 }
               }
 
-              /* The frame, and the hairlines broken around it. A rule belongs
-               * between two columns of type; where the hole bridges them
-               * there are no two columns to separate. */
               if (inner) {
                 g.save();
-                g.strokeStyle = "rgba(20,20,28,.5)";
+                g.strokeStyle = "rgba(20,20,28,.45)";
                 g.lineWidth = 1;
-                g.strokeRect(R(bx) + 0.5, R(byTop) + 0.5, R(bw) - 1, R(holeH) - 1);
+                g.strokeRect(R(B.bx) + 0.5, R(B.byTop) + 0.5, R(B.bw) - 1, R(holeH) - 1);
                 g.restore();
               }
+
+              /* The hairlines, broken around the hole. A rule belongs between
+               * two columns of type; where the hole bridges them there are no
+               * two columns to separate. */
               g.fillStyle = "#111111";
+              const top0 = R(y - fs);
               for (let c = 1; c < cols; c++) {
                 const lx = R(left + c * (colW + gut) - gut / 2);
-                const bridged = b0.col < c && b0.col + b0.span > c && inner;
-                const top0 = R(y - fs);
-                if (!bridged) {
+                if (!(B.col < c && B.col + B.span > c && inner)) {
                   g.fillRect(lx, top0, 1, R(bot - (y - fs)));
                 } else {
-                  g.fillRect(lx, top0, 1, Math.max(0, R(byTop - AIR_T - (y - fs))));
-                  const under = R(byTop + holeH + AIR_B);
+                  g.fillRect(lx, top0, 1, Math.max(0, R(B.byTop - AIR_T - (y - fs))));
+                  const under = R(B.byTop + holeH + AIR_B);
                   if (under < bot) g.fillRect(lx, under, 1, R(bot - under));
                 }
               }
@@ -5439,19 +5748,23 @@ const flowCol = (A, o) => {
 
             const bandY = R(y - fs - 3),
               bandH = R(bot - bandY + 5);
-            paint(0);
-            LIVE_HOLES.push({
+            const hole = {
               story: true,
               x: R(x0), y: bandY, w: GALLEY_COL, h: bandH,
-              anim: S.anim || "bars",
+              kind: "bars",
               tone: S.tone || "#b3402a",
               phase: S.phase || 0,
+              seed: (S.i || 0) * 131 + 7,
+              recast,
               // the drawing is always asked for at the hole's FULL size, so
-              // there is one of it rather than one per height it passes
-              full: { w: R(bw) - 2, h: R(fullPx - AIR_T - AIR_B) - 2 },
+              // it is not remade at every height it passes through
+              full: () => ({ w: R(B.bw) - 2, h: R(B.fullPx - AIR_T - AIR_B) - 2 }),
               paint,
               inner: () => inner,
-            });
+            };
+            recast();
+            paint(0);
+            LIVE_HOLES.push(hole);
           } else {
             body(1);
           }
@@ -5833,11 +6146,10 @@ const flowCol = (A, o) => {
        * pure dataviz, in the order it happened, which is what the reel is
        * otherwise for. */
       const REEL_STORY = true;
-      const STORY_COPIES = 4;
       if (REEL_STORY) {
-        REEL = [];
-        for (let n = 0; n < STORY_COPIES; n++)
-          REEL.push({ spec: { ...STORY, i: n, phase: n / STORY_COPIES } });
+        REEL = STORY_PAPERS.map((S, n) => ({
+          spec: { ...S, i: n, phase: n / STORY_PAPERS.length },
+        }));
       }
       PAGE_STEP = 1 / Math.max(1, REEL.length);
       GALLEY_H = REEL.reduce(
