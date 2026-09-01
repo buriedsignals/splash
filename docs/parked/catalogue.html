@@ -1747,6 +1747,10 @@
     text-transform:uppercase;font-style:normal;color:#7d7a8c;margin-top:5px}
   .sheet td.k i.map{color:var(--amber)}
   .sheet canvas{display:block;background:#fff}
+  .sheet td.no div{display:flex;align-items:center;justify-content:center;text-align:center;
+    border:1px dashed rgba(255,255,255,.13);border-radius:2px;box-sizing:border-box;
+    padding:4px;font:500 9px/1.3 var(--C);letter-spacing:.09em;text-transform:uppercase;
+    color:#4f4c5c}
   .rung h2{font:600 22px/1.15 var(--D);margin:0 0 4px;color:var(--paper)}
   .rung p{margin:0 0 20px;color:#8c8899;font-size:13.5px}
   .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
@@ -1855,7 +1859,10 @@
 
   <h1 style="margin-top:56px">Every drawing, at every hole</h1>
   <p class="lede">The sizes are not invented: they are what a story page actually gives a
-  graphic. A column of a three-column page is ninety-one texels wide; the full measure is
+  graphic. A cell struck out is a shape that drawing does not accept, and the reel will
+  not deal it one — of the charts only the unit square works upright, and the ring wants a
+  square whichever way you turn it. The maps take any shape, which is what choosing the
+  crop by proportion is for. A column of a three-column page is ninety-one texels wide; the full measure is
   two hundred and ninety-two, which the rasteriser caps at two hundred and forty. Depth is
   whatever the opening takes. Each is drawn arrived and still, so the twelve can be
   compared rather than watched — the board above is where they move.</p>
@@ -2073,6 +2080,17 @@
       tr.appendChild(td0);
       CASES.forEach(([W, H], ci) => {
         const td = document.createElement('td');
+        /* A cell the reel would never ask for is shown struck out rather
+           than left off: the point of the sheet is that the constraint is
+           visible, not that the awkward sizes are quietly hidden. */
+        if (window.__fits && !window.__fits(kind, W / H)) {
+          td.className = 'no';
+          td.style.width = W + 'px'; td.style.height = H + 'px';
+          td.innerHTML = '<div style="width:' + W + 'px;height:' + H +
+            'px">not at this shape</div>';
+          tr.appendChild(td);
+          return;
+        }
         const c = document.createElement('canvas');
         c.width = W * DPR; c.height = H * DPR;
         c.style.width = W + 'px'; c.style.height = H + 'px';

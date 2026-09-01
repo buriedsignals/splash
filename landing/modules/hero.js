@@ -4481,8 +4481,17 @@ Stage.register(
               for (const k of ISOS())
                 out += '<path d="' + G.c[k] + '" fill="' + LAND +
                   '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            /* A CIRCLE HAS TO FIT INSIDE THE WINDOW, not just its centre. A
+             * city sitting a pixel from the edge of the crop was given a
+             * ten-pixel bubble and the bubble was cut in half by the frame,
+             * which reads as a rendering fault rather than as a place. The
+             * margin is the largest mark this drawing can make, so the
+             * cities near the edge are simply not among the ones it uses. */
+            const M = (2.4 + 7 + 1.2) * u;
             const here = G.cities.filter(
-              (c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh,
+              (c) =>
+                c[1] > vx + M && c[1] < vx + vw - M &&
+                c[2] > vy + M && c[2] < vy + vh - M,
             );
             const n = Math.min(here.length, 22);
             for (let i = 0; i < n; i++) {
@@ -4511,8 +4520,14 @@ Stage.register(
               for (const k of ISOS())
                 out += '<path d="' + G.c[k] + '" fill="' + LAND +
                   '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            // the arc rises above the higher of its two ends, so the window
+            // has to hold the crown as well as the endpoints
+            const M = 6 * u,
+              CROWN = vh * 0.3;
             const here = G.cities.filter(
-              (c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh,
+              (c) =>
+                c[1] > vx + M && c[1] < vx + vw - M &&
+                c[2] > vy + CROWN && c[2] < vy + vh - M,
             );
             if (here.length < 3) return out;
             const hub = here[Math.floor(rnd() * here.length)];
@@ -4523,7 +4538,11 @@ Stage.register(
               const kk = sweep(i, n, p, q, 1.25);
               if (kk <= 0 || c === hub || layer === 1) continue;
               const mx = (hub[1] + c[1]) / 2,
-                my = (hub[2] + c[2]) / 2 - Math.hypot(c[1] - hub[1], c[2] - hub[2]) * 0.3;
+                my = Math.max(
+                  vy + M,
+                  (hub[2] + c[2]) / 2 -
+                    Math.hypot(c[1] - hub[1], c[2] - hub[2]) * 0.3,
+                );
               const ex = hub[1] + (c[1] - hub[1]) * kk,
                 ey = hub[2] + (c[2] - hub[2]) * kk;
               out +=
@@ -4554,8 +4573,13 @@ Stage.register(
               for (const k of ISOS())
                 out += '<path d="' + G.c[k] + '" fill="' + LAND +
                   '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const M = 5 * u;
             const here = G.cities
-              .filter((c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh)
+              .filter(
+                (c) =>
+                  c[1] > vx + M && c[1] < vx + vw - M &&
+                  c[2] > vy + M && c[2] < vy + vh - M,
+              )
               .sort((a, b) => a[1] - b[1]);
             if (here.length < 4) return out;
             const n = Math.min(7, here.length);
@@ -4606,8 +4630,21 @@ Stage.register(
             );
             const c = here.length ? here[Math.floor(rnd() * here.length)]
               : [null, vx + vw / 2, vy + vh / 2];
+            /* The OUTERMOST BAND is what has to fit. Sized off the window and
+             * drawn round a centre anywhere in it, the widest ring ran off
+             * two sides at once — a set of contours cut by the frame is not
+             * a reading of distance, it is a mistake. It is the smallest
+             * distance from the centre to an edge instead. */
             const n = 5,
-              max = Math.min(vw, vh) * 0.42;
+              max =
+                Math.min(
+                  Math.min(vw, vh) * 0.44,
+                  c[1] - vx,
+                  vx + vw - c[1],
+                  c[2] - vy,
+                  vy + vh - c[2],
+                ) *
+                0.97;
             if (layer === 1) return out;
             for (let i = n - 1; i >= 0; i--) {
               const k = sweep(n - 1 - i, n, p, q, 1.2);
@@ -4647,24 +4684,59 @@ Stage.register(
         });
 
 
+    /* WHAT SHAPE OF HOLE EACH DRAWING WILL ACCEPT.
+     *
+     * Not every drawing survives every block. A bar chart standing in a
+     * single column of a three-column page has bars a pixel and a half wide
+     * against an axis it cannot afford; a line has three points of run for
+     * two hundred of fall. Of the charts only the unit square works upright,
+     * because a grid does not care which way it is longer. A ring is worse
+     * still: it is a circle, so anything but a square wastes the block on
+     * either side of it however the key is placed.
+     *
+     * The maps take any shape, which is the whole point of choosing the crop
+     * by proportion — there is always a piece of the world that is the shape
+     * of the hole. */
+    const PORTRAIT = 0.95;
+    const FITS = {
+      bars: (ar) => ar >= PORTRAIT,
+      line: (ar) => ar >= PORTRAIT,
+      area: (ar) => ar >= PORTRAIT,
+      stack: (ar) => ar >= PORTRAIT,
+      scatter: (ar) => ar >= PORTRAIT,
+      donut: (ar) => ar > 0.82 && ar < 1.28,
+    };
+    const fits = (kind, ar) => !FITS[kind] || FITS[kind](ar);
+
     /* DEALT, NOT DRAWN. Six pages each picking a drawing at random gave
      * three the same one — independent draws collide, and two webs showing
      * the same chart at once is exactly the redundancy this is meant to
      * avoid. The kinds are a deck instead: shuffled, dealt one at a time,
-     * and reshuffled only when it runs out. Twelve drawings and six pages
-     * means no page can repeat another until every one has been seen. */
+     * and reshuffled only when it runs out, so no page can repeat another
+     * until every one has been seen.
+     *
+     * The deal now takes the shape of the hole with it and passes over any
+     * card that will not go in it, leaving those cards in the deck for a
+     * block that suits them. */
     let KIND_DECK = [];
-    function dealKind(rnd) {
-      if (!KIND_DECK.length) {
-        KIND_DECK = LIVE_KINDS.slice();
-        for (let i = KIND_DECK.length - 1; i > 0; i--) {
-          const j = Math.floor(rnd() * (i + 1));
-          const t = KIND_DECK[i];
-          KIND_DECK[i] = KIND_DECK[j];
-          KIND_DECK[j] = t;
-        }
+    const cut = (rnd) => {
+      KIND_DECK = LIVE_KINDS.slice();
+      for (let i = KIND_DECK.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        const t = KIND_DECK[i];
+        KIND_DECK[i] = KIND_DECK[j];
+        KIND_DECK[j] = t;
       }
-      return KIND_DECK.pop();
+    };
+    function dealKind(rnd, ar) {
+      for (let pass = 0; pass < 3; pass++) {
+        if (!KIND_DECK.length) cut(rnd);
+        for (let i = KIND_DECK.length - 1; i >= 0; i--)
+          if (fits(KIND_DECK[i], ar)) return KIND_DECK.splice(i, 1)[0];
+        // nothing left in this deck goes in this hole: cut a fresh one
+        KIND_DECK.length = 0;
+      }
+      return "units"; // the one drawing that goes in anything
     }
 
     /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
@@ -6088,20 +6160,23 @@ const flowCol = (A, o) => {
              * painting, because a chart that changed identity between two
              * frames of the same telling is not a graphic. */
             let B = null;
+            /* THE HOLE IS DECIDED FIRST, and the drawing is dealt to it.
+             * It used to run the other way — deal a drawing, then make a
+             * hole — which meant a bar chart could be handed a single
+             * column of a three-column page and simply not work there.
+             * The room a page has to give is a fact about the page; what
+             * goes in it is the choice. */
             const recast = () => {
-              const kind = dealKind(rnd);
-              // a map wants width; a chart is happy in a column
-              const wide = MAPS.indexOf(kind) >= 0;
-              const span = Math.max(
-                1,
-                Math.min(cols, wide ? Math.round(1 + rnd() * (cols - 1)) + 0 : 1 + Math.floor(rnd() * cols)),
-              );
+              const span = 1 + Math.floor(rnd() * cols);
               const col = Math.floor(rnd() * (cols - span + 1));
               const lines = Math.max(
                 5,
                 Math.min(depth - 3, Math.round(depth * (0.3 + rnd() * 0.34))),
               );
               const at = 2 + Math.floor(rnd() * Math.max(1, depth - lines - 3));
+              const bwNow = colW * span + gut * (span - 1),
+                bhNow = lines * lh - AIR_T - AIR_B;
+              const kind = dealKind(rnd, bwNow / Math.max(1, bhNow));
               B = {
                 kind, col, span, at, lines,
                 bx: left + col * (colW + gut),
