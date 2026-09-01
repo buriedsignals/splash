@@ -4057,7 +4057,7 @@ Stage.register(
     const DINK = "#171717",
       GRID = "#e8e6e2",
       AXIS = "#a6a29b",
-      MUTE = "#8d8981",
+      MUTE = "#9b978f",
       PALE = "#eceae5",
       /* Land has to be darker than you think. At a quarter of a page the map
        * is competing with a column of nine-point type beside it, and a fill
@@ -4090,26 +4090,34 @@ Stage.register(
      * and nothing else. Everything is inset, because a rule that touches the
      * edge of its block reads as a crop rather than as a chart. */
     const chrome = (w, h, title, note, draw) => {
-      const pad = h < 74 ? 4 : h < 116 ? 7 : 10;
+      const pad = h < 74 ? 4 : h < 118 ? 7 : 11;
       const iw = Math.max(20, w - pad * 2);
-      const titled = h >= 88 && w >= 96;
-      const noted = h >= 116 && w >= 120;
-      const tH = titled ? 15 : 0,
-        nH = noted ? 19 : 0;
-      const ph = Math.max(12, h - pad * 2 - tH - nH);
+      const titled = h >= 90 && w >= 96;
+      const noted = h >= 124 && w >= 120;
+      /* The title needs AIR UNDER IT. Set flush, the first gridline starts a
+       * pixel below the descenders and the label reads as part of the chart
+       * rather than as its name. The gap is a third of the title's own line,
+       * which is what the eye takes as a break. */
+      const tH = 14,
+        TGAP = 9,
+        // margin 9, rule 1, space 5, and a line of 9 — the block the source
+        // occupies, reserved before the plot is given what is left
+        nH = 24;
+      const ph = Math.max(12, h - pad * 2 - (titled ? tH + TGAP : 0) - (noted ? nH : 0));
       return (
         '<div style="box-sizing:border-box;width:' + w + "px;height:" + h +
         "px;padding:" + pad + 'px;font-family:' + SANS + '">' +
         (titled
-          ? '<div style="font:600 10.5px/15px ' + SANS + ";color:" + DINK +
-            ";height:15px;letter-spacing:-.004em;overflow:hidden;" +
+          ? '<div style="font:600 10.5px/' + tH + "px " + SANS + ";color:" + DINK +
+            ";height:" + tH + "px;margin-bottom:" + TGAP +
+            'px;letter-spacing:-.004em;overflow:hidden;' +
             'white-space:nowrap;text-overflow:ellipsis">' + esc(title) + "</div>"
           : "") +
         draw(iw, ph) +
         (noted
-          ? '<div style="height:19px;padding-top:6px;margin-top:5px;' +
-            "border-top:1px solid " + GRID + ";font:400 8.5px/8px " + SANS +
-            ";color:" + MUTE + ";letter-spacing:.01em;overflow:hidden;" +
+          ? '<div style="height:9px;margin-top:9px;padding-top:5px;' +
+            "border-top:1px solid " + GRID + ";font:400 7.5px/9px " + SANS +
+            ";color:" + MUTE + ";letter-spacing:.005em;overflow:hidden;" +
             'white-space:nowrap;text-overflow:ellipsis">' + esc(note) + "</div>"
           : "") +
         "</div>"
