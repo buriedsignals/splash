@@ -3954,9 +3954,31 @@ Stage.register(
      * these numbers are decided as they are drawn.
      */
     const LIVE_RASTER = 240; // the widest a drawing is made; scaled into the hole
-    const LIVE_HZ = 26; // how often a new picture is asked for
+    const LIVE_HZ = 16; // how often a new picture is asked for
+    /* AND HOW OFTEN A PAGE IS SET AGAIN. It was every frame the hole had
+     * moved at all, which is sixty times a second and 88 megabytes a second
+     * of texture going back up the bus for text that slides an inch in a
+     * second and a half. Thirty is above what the eye resolves in a slide
+     * that slow, and it halves the traffic. */
+    const PAINT_HZ = 30;
     let LIVE_HOLES = [];
     let galleyCv = null;
+    /* Where each of the three webs currently is in the lap, and how much of
+     * it is in shot. Written by the draw, read by the frame loop — one frame
+     * stale, which at a hundredth of a lap a second is nothing. */
+    const WEB_WIN = [0, 0, 0, 0.2];
+    const inShot = (y0, y1) => {
+      const a = y0 / GALLEY_H,
+        b = y1 / GALLEY_H,
+        dv = WEB_WIN[3];
+      for (let k = 0; k < 3; k++) {
+        // the window wraps, so it is tested against three copies of the reel
+        const v = WEB_WIN[k];
+        for (let o = -1; o <= 1; o++)
+          if (a < v + dv + 0.02 + o && b > v - 0.02 + o) return true;
+      }
+      return false;
+    };
 
     /* A SEEDED SOURCE, so that a page's drawing is its own and does not
      * change identity between two frames of the same telling — but differs
@@ -4001,7 +4023,7 @@ Stage.register(
      * and giving it some pushes the drawing itself out of the block.
      */
     const CHARTS = ["bars", "line", "area", "stack", "scatter", "donut"];
-    const MAPS = ["units", "choro", "places", "flows", "hexes", "rings"];
+    const MAPS = ["units", "choro", "places", "flows", "route", "rings"];
     const LIVE_KINDS = CHARTS.concat(MAPS);
 
     /* DEALT, NOT DRAWN. Six pages each picking a drawing at random gave
@@ -4249,12 +4271,13 @@ Stage.register(
         if (k <= 0) continue;
         const x = 6 + rnd() * (w - 12),
           y = 6 + rnd() * (H - 12),
-          r = (2 + v[i % v.length] * 5) * k;
+          r = (3.4 + v[i % v.length] * 6) * k;
         out +=
           '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
-          r.toFixed(1) + '" fill="' + tone + '" opacity=".75"/>' +
+          r.toFixed(1) + '" fill="' + tone + '" opacity=".85" ' +
+          'stroke="#161616" stroke-width="1.1"/>' +
           '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) +
-          '" r="1.2" fill="#161616"/>';
+          '" r="1.6" fill="#161616"/>';
       }
       return svgWrap(w, H, g + out) + foot(small, w, "REPORTED INCIDENTS");
     };
@@ -4278,8 +4301,8 @@ Stage.register(
           '<path d="M' + hx.toFixed(1) + " " + hy.toFixed(1) + " Q" +
           mx.toFixed(1) + " " + my.toFixed(1) + " " + ex.toFixed(1) + " " +
           ey.toFixed(1) + '" fill="none" stroke="' + tone +
-          '" stroke-width="' + (0.8 + v[i % v.length] * 2).toFixed(1) +
-          '" opacity=".8"/>' +
+          '" stroke-width="' + (1.8 + v[i % v.length] * 3).toFixed(1) +
+          '" opacity=".9"/>' +
           (k > 0.96
             ? '<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) +
               '" r="2.2" fill="#161616"/>'
@@ -4288,39 +4311,64 @@ Stage.register(
       return (
         svgWrap(w, H,
           out + '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) +
-          '" r="3.4" fill="#161616"/>') +
+          '" r="4.6" fill="#161616"/>') +
         foot(small, w, "ORIGIN AND DESTINATION")
       );
     };
 
-    LIVE_ART.hexes = (w, h, p, v, tone, rnd, small) => {
+    /* A ROUTE. A line that goes somewhere and stops on the way — a journey,
+     * a front, a river. It is the one map here with a DIRECTION, which is
+     * what makes it draw well: it advances stop by stop rather than fading
+     * up, and the eye follows it rather than scanning it.
+     *
+     * The faint land behind is not decoration. A route with nothing under it
+     * is a line chart; the land is the only thing saying the line goes
+     * through somewhere. */
+    LIVE_ART.route = (w, h, p, v, tone, rnd, small) => {
       const H = Math.max(6, h - (small ? 4 : 24));
-      const cols = small ? 7 : 12,
-        rw = w / (cols + 0.5),
-        rh = rw * 0.86,
-        rows = Math.max(2, Math.floor(H / rh));
-      let out = "";
-      for (let r = 0; r < rows; r++)
-        for (let c = 0; c < cols; c++) {
-          const at = (r * cols + c) / (rows * cols);
-          if (p * 1.5 <= at) continue;
-          const x = c * rw + (r % 2 ? rw / 2 : 0),
-            y = r * rh;
-          const s = v[(r * cols + c) % v.length];
-          const pts = [];
-          for (let a = 0; a < 6; a++) {
-            const th = (Math.PI / 3) * a + Math.PI / 6;
-            pts.push(
-              (x + rw / 2 + (rw / 2 - 0.7) * Math.cos(th)).toFixed(1) + "," +
-              (y + rh / 2 + (rh / 2 - 0.7) * Math.sin(th)).toFixed(1),
-            );
-          }
-          out +=
-            '<polygon points="' + pts.join(" ") + '" fill="' +
-            (s > 0.62 ? tone : "#161616") + '" opacity="' +
-            (0.24 + s * 0.72).toFixed(2) + '"/>';
-        }
-      return svgWrap(w, H, out) + foot(small, w, "EQUAL-AREA CARTOGRAM");
+      const n = small ? 5 : 8;
+      const stop = [];
+      for (let i = 0; i < n; i++)
+        stop.push([
+          9 + (i / (n - 1)) * (w - 18),
+          9 + (0.12 + v[(i * 3) % v.length] * 0.74) * (H - 18),
+        ]);
+
+      let land = "M0 " + (H * (0.55 + rnd() * 0.2)).toFixed(1);
+      for (let i = 1; i <= 6; i++)
+        land +=
+          " Q" + ((i - 0.5) * (w / 6)).toFixed(1) + " " +
+          (H * (0.28 + rnd() * 0.5)).toFixed(1) + " " +
+          (i * (w / 6)).toFixed(1) + " " +
+          (H * (0.35 + rnd() * 0.45)).toFixed(1);
+      land += " V" + H + " H0 Z";
+
+      const upto = p * (n - 1);
+      let d = "M" + stop[0][0].toFixed(1) + " " + stop[0][1].toFixed(1);
+      let last = 0;
+      for (let i = 1; i < n; i++) {
+        const k = Math.max(0, Math.min(1, upto - (i - 1)));
+        if (k <= 0) break;
+        d +=
+          " L" + (stop[i - 1][0] + (stop[i][0] - stop[i - 1][0]) * k).toFixed(1) +
+          " " + (stop[i - 1][1] + (stop[i][1] - stop[i - 1][1]) * k).toFixed(1);
+        if (k >= 1) last = i;
+      }
+      let dots = "";
+      for (let i = 0; i <= last; i++)
+        dots +=
+          '<circle cx="' + stop[i][0].toFixed(1) + '" cy="' + stop[i][1].toFixed(1) +
+          '" r="' + (small ? 2.4 : 3.4) +
+          '" fill="#ffffff" stroke="#161616" stroke-width="1.6"/>';
+
+      return (
+        svgWrap(w, H,
+          '<path d="' + land + '" fill="#161616" opacity=".1"/>' +
+          '<path d="' + d + '" fill="none" stroke="' + tone +
+          '" stroke-width="' + (small ? 2.4 : 3.4) +
+          '" stroke-linejoin="round" stroke-linecap="round"/>' + dots) +
+        foot(small, w, "THE ROUTE, STOP BY STOP")
+      );
     };
 
     LIVE_ART.rings = (w, h, p, v, tone, rnd, small) => {
@@ -4339,7 +4387,7 @@ Stage.register(
           '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" rx="' +
           (r * wob).toFixed(1) + '" ry="' + r.toFixed(1) + '" fill="' +
           (i === 0 ? tone : "none") + '" stroke="' + (i % 2 ? tone : "#161616") +
-          '" stroke-width="1.2" opacity="' + (0.35 + (1 - i / n) * 0.6).toFixed(2) +
+          '" stroke-width="2.2" opacity="' + (0.5 + (1 - i / n) * 0.5).toFixed(2) +
           '"/>';
       }
       return svgWrap(w, H, out) + foot(small, w, "CONTOURS, LOREM IPSUM");
@@ -4404,6 +4452,7 @@ Stage.register(
       gl.bindTexture(gl.TEXTURE_2D, galleyTex);
 
       for (const k of LIVE_HOLES) {
+        if (!inShot(k.y, k.y + k.h)) continue;
         let open = 1,
           draw = 1;
         if (k.story) {
@@ -4438,6 +4487,7 @@ Stage.register(
          * page holds still for half of every telling, and setting the same
          * type again for those seconds is a cost with nothing to show. */
         if (k.story) {
+          if (t - (k.lastPaint || -9) < 1 / PAINT_HZ) continue;
           if (
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
             Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
@@ -4446,6 +4496,7 @@ Stage.register(
             continue;
           k.lastOpen = open;
           k.lastDraw = draw;
+          k.lastPaint = t;
           k.fresh = false;
           g2.save();
           g2.beginPath();
@@ -6437,6 +6488,12 @@ float wallAt(vec2 uv, out float n){
 }
 
 void main(){
+  /* NOTHING TO DO IS THE COMMON CASE. Outside the break uAmt is zero, and
+   * everything below — the wall field, the dispersion, the sheen, the rim —
+   * multiplies by it and comes out as the buffer, unchanged. It was still
+   * being evaluated for every pixel of the frame, sixty times a second, to
+   * arrive at a copy. One fetch instead. */
+  if (uAmt < 0.0015) { outColor = vec4(texture(uTex, vUv).rgb, 1.0); return; }
   vec2 p = vUv * 2.0 - 1.0;
   p.x *= uAspect;
   float r = length(p) / 1.42;                  // 1 at the corner of the frame
@@ -6541,11 +6598,15 @@ void main(){
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
       webEdge: 0.5,
-      webSpeed: 0.01, // laps per second, before each web's own share of it
-      // what each web does with that speed, and where it starts, in pages
-      webSpd0: 1,
-      webSpd1: 0.93,
-      webSpd2: 1.061,
+      /* HOW FAST EACH WEB UNROLLS, in laps of the galley per second, one
+       * number each. They were a shared speed and three multipliers of it,
+       * which is the wrong shape for a control: reading 0.930 tells you a
+       * web is seven per cent slower than something, and not how fast it is
+       * going. Three speeds say what they are. */
+      webSpd0: 0.01,
+      webSpd1: 0.0093,
+      webSpd2: 0.0106,
+      // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
@@ -6614,9 +6675,9 @@ void main(){
       [
         "the three webs",
         [
-          ["webSpd0", 0.6, 1.4, 0.002, "left · share of the speed"],
-          ["webSpd1", 0.6, 1.4, 0.002, "middle · share of the speed"],
-          ["webSpd2", 0.6, 1.4, 0.002, "right · share of the speed"],
+          ["webSpd0", 0, 0.06, 0.0005, "left · laps of the galley per second"],
+          ["webSpd1", 0, 0.06, 0.0005, "middle · laps of the galley per second"],
+          ["webSpd2", 0, 0.06, 0.0005, "right · laps of the galley per second"],
           ["webLag1", 0, 1, 0.01, "middle · where it starts, in pages"],
           ["webLag2", 0, 1, 0.01, "right · where it starts, in pages"],
         ],
@@ -6626,7 +6687,6 @@ void main(){
         [
           ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
-          ["webSpeed", 0, 0.25, 0.002, "laps of the galley per second"],
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
           ["storySecs", 3, 24, 0.5, "seconds of one telling"],
         ],
@@ -6728,10 +6788,11 @@ void main(){
           inp.value = P[key];
           const out = document.createElement("span");
           out.className = "v";
-          out.textContent = (+P[key]).toFixed(3);
+          const dp = /^webSpd/.test(key) ? 4 : 3;
+          out.textContent = (+P[key]).toFixed(dp);
           inp.addEventListener("input", () => {
             P[key] = parseFloat(inp.value);
-            out.textContent = P[key].toFixed(3);
+            out.textContent = P[key].toFixed(dp);
           });
           row.append(lab, inp, out);
           box.appendChild(row);
@@ -6743,7 +6804,11 @@ void main(){
       btn.onclick = () => {
         const txt = WEB_TUNE.map(([, rows]) =>
           rows
-            .map(([k]) => "      " + k + ": " + (+P[k]).toFixed(3) + ",")
+            .map(
+              ([k]) =>
+                "      " + k + ": " +
+                (+P[k]).toFixed(/^webSpd/.test(k) ? 4 : 3) + ",",
+            )
             .join("\n"),
         ).join("\n");
         (navigator.clipboard
@@ -8229,7 +8294,14 @@ void main(){
          * is no glass pass — so there is nothing to copy the buffer out, and
          * painting into it would put the webs somewhere no one ever sees. They
          * go straight onto the canvas instead. */
-        if (WEBS_ONLY) {
+        /* AND WHEN THE GLASS IS IDLE, straight onto the canvas as well.
+         * Everything else that wants the buffer — the plates, the sheet, the
+         * flood — is inside `burst > 0.001`, and outside the break the glass
+         * pass reads the buffer and writes it back unchanged. That was a
+         * full screen written and a full screen read, at device pixels,
+         * sixty times a second, to arrive at what was already there. */
+        const glassIdle = burst <= 0.001 && washG <= 0.001;
+        if (WEBS_ONLY || glassIdle) {
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);
         } else {
@@ -8306,7 +8378,7 @@ void main(){
            * one image cut into three; a few per cent apart and the gap between
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
-            const rate = P.webSpeed * P["webSpd" + k];
+            const rate = P["webSpd" + k];
             /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
              * the web stops running and starts EDITING: it holds on a page for
              * a beat and cuts to the next, three pages apart from its
@@ -8346,6 +8418,10 @@ void main(){
             // and the waves are out of phase too, or the three sheets ripple
             // in lockstep and the eye reads one sheet again
             gl.uniform1f(uq.uT, clock * 0.55 + k * 7.3);
+            // what this web is showing, kept for the frame loop: repainting a
+            // page no web has in shot is work nobody can see
+            WEB_WIN[k] = v;
+            WEB_WIN[3] = dv;
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
           }
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
@@ -8520,7 +8596,7 @@ void main(){
 
         gl.bindVertexArray(null);
 
-        if (!OFF.inside && !WEBS_ONLY) {
+        if (!OFF.inside && !WEBS_ONLY && !glassIdle) {
           // out of the buffer and through the glass we are now standing in
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);
