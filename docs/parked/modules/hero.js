@@ -4053,18 +4053,28 @@ Stage.register(
      * and rasterising it once per copy would be that many times the work for
      * one result. */
     const LIVE_JOBS = new Map();
-    const jobKey = (anim, w, h, tone) => {
+    /* The four copies of a story page are at four different points in it, so
+     * they do not want the same picture: one is holding a finished chart
+     * while another is halfway through drawing one. How far in the drawing
+     * is therefore part of what identifies it, quantised so that the cache
+     * is a handful of entries and not one per frame. */
+    const LIVE_STEPS = 20;
+    const jobKey = (anim, w, h, tone, lvl) => {
       const rw = Math.min(w, LIVE_RASTER),
         rh = Math.max(8, Math.round((h * rw) / w));
-      return anim + "|" + rw + "|" + rh + "|" + tone;
+      return anim + "|" + rw + "|" + rh + "|" + tone + "|" + lvl;
     };
-    const jobOf = (anim, w, h, tone) => {
-      const key = jobKey(anim, w, h, tone);
+    const jobOf = (anim, w, h, tone, lvl) => {
+      const key = jobKey(anim, w, h, tone, lvl);
       let job = LIVE_JOBS.get(key);
       if (!job) {
         const rw = Math.min(w, LIVE_RASTER),
           rh = Math.max(8, Math.round((h * rw) / w));
-        job = { anim, w: rw, h: rh, tone, img: null, pending: false, fresh: false };
+        job = {
+          anim, w: rw, h: rh, tone,
+          at: lvl / LIVE_STEPS,
+          img: null, pending: false, fresh: false, stamp: 0,
+        };
         LIVE_JOBS.set(key, job);
       }
       return job;
@@ -4078,17 +4088,20 @@ Stage.register(
         liveStep(Math.min(0.12, liveLast < 0 ? 1 / LIVE_HZ : t - liveLast));
         liveLast = t;
         for (const k of LIVE_HOLES) {
-          const inner = k.story ? k.inner() : k;
-          if (!inner || inner.w < 8 || inner.h < 8) continue;
-          const job = jobOf(k.anim, inner.w, inner.h, k.tone);
+          const size = k.story ? k.full : k;
+          if (!size || size.w < 8 || size.h < 8) continue;
+          const lvl = k.story ? Math.round((k.draw || 0) * LIVE_STEPS) : LIVE_STEPS;
+          if (!lvl) continue; // nothing drawn yet, nothing to ask for
+          const job = jobOf(k.anim, size.w, size.h, k.tone, lvl);
           if (job.pending) continue;
           job.pending = true;
-          const v = liveNow.map((x) => x * (k.story ? k.draw || 0 : 1));
+          const v = liveNow.map((x) => x * job.at);
           rasterise(job.anim, job.w, job.h, v, job.tone).then((im) => {
             job.pending = false;
             if (im) {
               job.img = im;
               job.fresh = true;
+              job.stamp = (job.stamp || 0) + 1;
             }
           });
         }
@@ -4108,13 +4121,26 @@ Stage.register(
           const u = ((t / STORY_SECS + k.phase) % 1 + 1) % 1;
           const open = storyOpen(u);
           k.draw = storyDraw(u);
-          // the text is only re-set when the hole actually changed size, and
-          // it changes in whole lines: a repaint that lands on the same line
-          // count is the same picture for a real cost
-          const lines = Math.round(open * 100);
-          if (lines === k.lastLines && !k.dirty) continue;
-          k.lastLines = lines;
-          k.dirty = false;
+          /* Repainted whenever the picture would actually differ — the hole
+           * moved by half a pixel, or the drawing in it changed — and not
+           * otherwise. The page holds still for half of every telling, and
+           * setting the same type again for those seconds is a cost with
+           * nothing to show for it. */
+          const jobNow = LIVE_JOBS.get(
+            jobKey(k.anim, k.full.w, k.full.h, k.tone,
+              Math.round((k.draw || 0) * LIVE_STEPS)),
+          );
+          const stamp = (jobNow && jobNow.stamp) || 0;
+          if (
+            Math.abs(open - (k.lastOpen || 0)) < 0.0015 &&
+            Math.abs(k.draw - (k.lastDraw || 0)) < 0.004 &&
+            stamp === k.lastStamp &&
+            k.lastImg === (jobNow && jobNow.img ? jobNow.img : k.lastImg)
+          )
+            continue;
+          k.lastOpen = open;
+          k.lastDraw = k.draw;
+          k.lastStamp = stamp;
           g2.save();
           g2.beginPath();
           g2.rect(k.x, k.y, k.w, k.h);
@@ -4123,12 +4149,17 @@ Stage.register(
           g2.fillRect(k.x, k.y, k.w, k.h);
           g2.textBaseline = "alphabetic";
           k.paint(open);
+          /* The last picture that arrived, kept. While the drawing comes in
+           * it passes through twenty sizes of itself, each of which has to be
+           * rasterised, and a level whose decode has not landed yet has no
+           * image at all — drawing nothing for those frames would flicker the
+           * chart on and off as it grew. So the newest one that exists is
+           * held, and replaced the moment a newer one lands. */
           const inner = k.inner();
-          const job = inner && inner.w >= 8 && inner.h >= 8
-            ? LIVE_JOBS.get(jobKey(k.anim, inner.w, inner.h, k.tone))
-            : null;
-          if (job && job.img && k.draw > 0)
-            g2.drawImage(job.img, inner.x, inner.y, inner.w, inner.h);
+          if (jobNow && jobNow.img) k.lastImg = jobNow.img;
+          if (k.draw <= 0) k.lastImg = null;
+          if (inner && k.lastImg && k.draw > 0)
+            g2.drawImage(k.lastImg, inner.x, inner.y, inner.w, inner.h);
           g2.restore();
           if (!k.scratch) {
             k.scratch = document.createElement("canvas");
@@ -4144,7 +4175,7 @@ Stage.register(
           continue;
         }
 
-        const job = LIVE_JOBS.get(jobKey(k.anim, k.w, k.h, k.tone));
+        const job = LIVE_JOBS.get(jobKey(k.anim, k.w, k.h, k.tone, LIVE_STEPS));
         if (!job || !job.fresh || !job.img) continue;
         if (!k.scratch) {
           k.scratch = document.createElement("canvas");
@@ -5312,22 +5343,114 @@ const flowCol = (A, o) => {
             }
           };
 
-          /* A STORY PAGE is composed CLOSED — the article as it was filed,
-           * with no room made in it yet — and hands the frame loop the band
-           * it may repaint, the closure that repaints it, and where in the
-           * telling this copy starts. */
+          /* A STORY PAGE DOES NOT REFLOW. It slides.
+           *
+           * Opening the hole by whole line-slots is what the flow already
+           * knew how to do, and it is visibly stepped: thirteen jumps of a
+           * line each over four seconds reads as a stutter, not as paper
+           * making room. So the story page does not use the slot flow at
+           * all. The words are broken ONCE — the same words, the same
+           * measure, so re-breaking them every frame would be work for
+           * nothing — and the lines below the hole are simply drawn lower,
+           * by a number of pixels that can be any number. The gap opens
+           * continuously and the type slides with it.
+           *
+           * The columns the block does not cross never move: that is what
+           * makes it read as room being made IN the article rather than the
+           * article being pushed aside. */
           if (S.story) {
-            const bandY = R(y - fs - 2),
-              bandH = R(bot - bandY + 4);
-            body(0);
+            const b0 = (S.blocks || [])[0] || { col: 0, span: 2, at: 7, lines: 13 };
+            const AIR_T = 5,
+              AIR_B = 8;
+            const bx = left + b0.col * (colW + gut),
+              bw = colW * b0.span + gut * (b0.span - 1),
+              byTop = y - fs + b0.at * lh + AIR_T,
+              fullPx = b0.lines * lh;
+
+            // the words, broken once
+            g.font = fs + "px " + SERIF;
+            const words = LOREM.split(" ");
+            let wi = 0;
+            const COL = [];
+            for (let c = 0; c < cols; c++) {
+              const col = [];
+              for (let r = 0; r < depth; r++) {
+                const out = [];
+                let acc = 0;
+                while (wi < words.length) {
+                  const add = g.measureText((out.length ? " " : "") + words[wi]).width;
+                  if (acc + add > colW && out.length) break;
+                  out.push(words[wi]);
+                  acc += add;
+                  wi++;
+                }
+                if (wi >= words.length) wi = 0;
+                col.push(out.join(" "));
+              }
+              COL.push(col);
+            }
+
+            let inner = null;
+            const paint = (open) => {
+              const px = open * fullPx;
+              const holeH = px - AIR_T - AIR_B;
+              inner = px > AIR_T + AIR_B + 2
+                ? { x: R(bx) + 1, y: R(byTop) + 1, w: R(bw) - 2, h: R(holeH) - 2 }
+                : null;
+
+              g.fillStyle = "#111111";
+              g.font = fs + "px " + SERIF;
+              g.textAlign = "left";
+              for (let c = 0; c < cols; c++) {
+                const cx = left + c * (colW + gut);
+                const crossed = c >= b0.col && c < b0.col + b0.span;
+                for (let r = 0; r < depth; r++) {
+                  const shift = crossed && r >= b0.at ? px : 0;
+                  const ly = y + r * lh + shift;
+                  if (ly > bot) break; // pushed off the foot of the page
+                  g.fillText(COL[c][r], cx, ly);
+                }
+              }
+
+              /* The frame, and the hairlines broken around it. A rule belongs
+               * between two columns of type; where the hole bridges them
+               * there are no two columns to separate. */
+              if (inner) {
+                g.save();
+                g.strokeStyle = "rgba(20,20,28,.5)";
+                g.lineWidth = 1;
+                g.strokeRect(R(bx) + 0.5, R(byTop) + 0.5, R(bw) - 1, R(holeH) - 1);
+                g.restore();
+              }
+              g.fillStyle = "#111111";
+              for (let c = 1; c < cols; c++) {
+                const lx = R(left + c * (colW + gut) - gut / 2);
+                const bridged = b0.col < c && b0.col + b0.span > c && inner;
+                const top0 = R(y - fs);
+                if (!bridged) {
+                  g.fillRect(lx, top0, 1, R(bot - (y - fs)));
+                } else {
+                  g.fillRect(lx, top0, 1, Math.max(0, R(byTop - AIR_T - (y - fs))));
+                  const under = R(byTop + holeH + AIR_B);
+                  if (under < bot) g.fillRect(lx, under, 1, R(bot - under));
+                }
+              }
+            };
+
+            const bandY = R(y - fs - 3),
+              bandH = R(bot - bandY + 5);
+            paint(0);
             LIVE_HOLES.push({
               story: true,
               x: R(x0), y: bandY, w: GALLEY_COL, h: bandH,
               anim: S.anim || "bars",
               tone: S.tone || "#b3402a",
               phase: S.phase || 0,
-              paint: body,
-              inner: () => liveInner,
+              // the drawing is always asked for at the hole's FULL size, so
+              // there is one of it rather than one per height it passes
+              full: { w: R(bw) - 2, h: R(fullPx - AIR_T - AIR_B) - 2 },
+              paint,
+              inner: () => inner,
             });
           } else {
             body(1);
