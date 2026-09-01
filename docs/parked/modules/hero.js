@@ -3937,6 +3937,7 @@ Stage.register(
     const OUT_SPAN = OUT_RAMP + Math.max.apply(null, WEB_IN);
     let outSec = 0;
     let bootAt = null;
+    let waveT = 0;
     /* The boot screen is clipped by where the paper actually is, so the web
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
@@ -7632,6 +7633,10 @@ in vec2 p;
 uniform vec3 uC, uAx, uAy, uAz;  // centre, half-axes, and the sheet's normal
 uniform vec2 uRes, uCentre;
 uniform float uZoom, uBend, uT;
+/* HOW TIGHT THE RIPPLE IS. One number over the whole field, so the three
+ * components keep their relation to each other — a wave is the sum of those
+ * three and pulling them apart would be three controls for one shape. */
+uniform float uWaveF;
 /* Where the pointer falls on THIS sheet, in the sheet's own coordinates,
  * and how hard it presses. Sent per web because each one is at its own
  * place and depth, so the same cursor is somewhere different on each. */
@@ -7682,15 +7687,19 @@ void main(){
    *
    * The slopes are untouched by this: the offset is a constant per sheet, so
    * the derivative with respect to p is what it always was. */
-  vec2 g = p + vec2(uC.x / max(abs(uAx.x), 1e-4),
-                    uC.y / max(abs(uAy.y), 1e-4));
+  vec2 g = (p + vec2(uC.x / max(abs(uAx.x), 1e-4),
+                     uC.y / max(abs(uAy.y), 1e-4))) * uWaveF;
   float w = 0.0, sh = 1.0;
   float wdx = 0.0, wdy = 0.0;
   if(uBend > 0.0001){
     w  = sin(g.x*3.1 + uT*0.9)*0.45 + sin(g.y*2.3 - uT*0.7)*0.32
        + sin((g.x + g.y)*1.9 + uT*1.3)*0.23;
-    wdx = cos(g.x*3.1 + uT*0.9)*3.1*0.45 + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23;
-    wdy = cos(g.y*2.3 - uT*0.7)*2.3*0.32 + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23;
+    // the slopes are with respect to p, and g is p scaled — so they carry
+    // the scale too, or tightening the ripple would light it as if it had not
+    wdx = (cos(g.x*3.1 + uT*0.9)*3.1*0.45
+         + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23) * uWaveF;
+    wdy = (cos(g.y*2.3 - uT*0.7)*2.3*0.32
+         + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23) * uWaveF;
   }
   /* A HAND UNDER THE SHEET. The paper lifts where the pointer is and falls
    * away from it — one soft bell, not a ripple, because a ripple is water
@@ -8063,6 +8072,9 @@ void main(){
       webDome: 0.38,
       webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
+      // how tight the ripple is, and how fast it travels across the set
+      webWaveF: 1.0,
+      webWaveSpd: 1.0,
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.12,
       /* The ink curve belonged to a paper ground. There, the mapping sent any
@@ -8132,6 +8144,17 @@ void main(){
           ["webLag2", 0, 1, 0.01, "right · where it starts, in pages"],
         ],
       ],
+      /* The ripple in the paper itself — one sheet's worth of behaviour,
+       * which is a different thing from where the three are standing. */
+      [
+        "the wave in the paper",
+        [
+          ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
+          ["webWaveF", 0.15, 3.5, 0.01, "how tight the ripple is"],
+          ["webWaveSpd", 0, 4, 0.02, "how fast it travels across the set"],
+          ["webShade", 0, 1.4, 0.01, "how hard the ripple shades the sheet"],
+        ],
+      ],
       /* The curve of the SET, kept apart from the press's own controls. It is
        * not a property of one sheet — it is where the three are standing — and
        * a slider filed under the thing it is not is a slider nobody finds. */
@@ -8148,8 +8171,6 @@ void main(){
         [
           ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
-          ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
-          ["webShade", 0, 1.4, 0.01, "how hard the WAVE shades the sheet"],
           ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
           ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
           ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
@@ -8291,7 +8312,7 @@ void main(){
            * come out "spd0", and three rows called spd0/1/2 say nothing about
            * which column they move. The three-web rows name their side. */
           const SIDE = { 0: "left", 1: "middle", 2: "right" };
-          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey", markLogo: "mark", ptrLift: "touch", ptrSize: "touch size", webCurve: "wrap", webDome: "dome", webCurveSh: "wrap shade", webShade: "wave shade" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey", markLogo: "mark", ptrLift: "touch", ptrSize: "touch size", webCurve: "wrap", webDome: "dome", webCurveSh: "wrap shade", webShade: "shade", webBend: "bend", webWaveF: "ripple", webWaveSpd: "drift" };
           const m = /^web(Spd|Lag)([012])$/.exec(key);
           lab.textContent = m
             ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
@@ -8906,6 +8927,7 @@ void main(){
           "uEdge",
           "uShade",
           "uCurve",
+          "uWaveF",
           "uInkC",
         ]);
         ui = api.uniforms(inside, [
@@ -9150,6 +9172,12 @@ void main(){
 
       frame(ctx) {
         clock += reduced ? 0 : ctx.dt;
+        /* THE WAVE HAS ITS OWN CLOCK, accumulated rather than multiplied out
+         * of the scene's. Read as clock * speed, every change of speed
+         * rewrites the whole history of the phase and the ripple jumps to
+         * somewhere else on the sheet — which makes the control unusable for
+         * the one thing it is for, which is watching the change. */
+        waveT += (reduced ? 0 : ctx.dt) * 0.55 * P.webWaveSpd;
         ptrStep(Math.min(0.1, ctx.dt));
         /* The page says when the mark has gone. A page that has no boot
          * screen at all never would — and waiting for a signal nobody is
@@ -9936,6 +9964,7 @@ void main(){
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
           gl.uniform1f(uq.uShade, P.webShade);
+          gl.uniform1f(uq.uWaveF, P.webWaveF);
           /* THE RADIUS, FROM THE ANGLE AND THE FRAME. The control is the wrap
            * at the edge of the frame, so the radius follows the window: the
            * three keep the same curvature to the eye whatever the page is
@@ -10110,7 +10139,7 @@ void main(){
             // world-anchored, so a phase per web would make each column
             // sample the same water at a different moment — which is the
             // seam the shared field exists to remove.
-            gl.uniform1f(uq.uT, clock * 0.55);
+            gl.uniform1f(uq.uT, waveT);
             // what this web is showing, kept for the frame loop: repainting a
             // page no web has in shot is work nobody can see
             WEB_WIN[k] = v;
@@ -10284,7 +10313,7 @@ void main(){
             );
             gl.uniform3f(uq.uAz, plateM[2], plateM[5], plateM[8]);
             gl.uniform1f(uq.uBend, P.bend * hy * (1 - washG));
-            gl.uniform1f(uq.uT, clock * 0.55);
+            gl.uniform1f(uq.uT, waveT);
             gl.bindVertexArray(pageVao);
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
           }
