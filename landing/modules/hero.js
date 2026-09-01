@@ -4183,8 +4183,19 @@ Stage.register(
           const n = 13,
             gut = pw < 130 ? 0 : GUT,
             top = 60 + Math.round(rnd() * 40);
-          const X = (i) => gut + (i / (n - 1)) * (pw - gut);
-          const Y = (i) => ph - 3 - v[(i * 3) % v.length] * (ph - 12);
+          /* THE HEAD IS PART OF THE LINE, and it is the widest part of it.
+           * The last point sat exactly on the right edge of the plot, so the
+           * ring that marks it was cut in half by the frame at the moment
+           * the drawing finished arriving — the one frame anybody looks at.
+           * The run is shortened by the head's own radius, and the fall is
+           * held inside it too, so the mark always lands whole. */
+          const HEAD = 4.4;
+          const X = (i) => gut + (i / (n - 1)) * (pw - gut - HEAD);
+          const Y = (i) =>
+            Math.max(
+              HEAD,
+              Math.min(ph - HEAD, ph - 3 - v[(i * 3) % v.length] * (ph - 12)),
+            );
           const [from, to] = span(n, p, q);
           if (to <= from) return svgWrap(pw, ph, yAxis(pw, ph, top, gut));
           const at = (f) => {
