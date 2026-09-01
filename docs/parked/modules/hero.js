@@ -3873,12 +3873,44 @@ Stage.register(
      * fails, or the header ever goes away, the press keeps the drawn plate it
      * had before and nothing else changes.
      */
+    /* WHAT ACTUALLY GOES IN THE HOLES. Not drawings of charts: real ones,
+     * captured off the pages that published them — Information is Beautiful
+     * for the built graphics, Our World in Data for the choropleths — and
+     * real photographs. Nothing in this list was made here, which is the
+     * point: the reel is showing what the form looks like, so a chart on it
+     * has to be a chart somebody actually published.
+     *
+     * They are files, carried by the page rather than fetched, because a
+     * canvas that has drawn a cross-origin image cannot be uploaded as a
+     * texture and a capture has no CORS header to give. */
+    const PRESS_BASE = "../../../landing/press/";
+    const PRESS_ASSETS = {
+      photo: [
+        "photo-1015.jpg", "photo-1016.jpg", "photo-1043.jpg", "photo-1044.jpg",
+        "photo-1051.jpg", "photo-1074.jpg", "photo-1080.jpg", "photo-219.jpg",
+        "photo-326.jpg", "photo-429.jpg", "photo-447.jpg", "photo-494.jpg",
+      ],
+      chart: [
+        "shot-llms.png",      // Major LLMs ranked by performance — IiB
+        "shot-billions.png",  // Billions — IiB
+        "shot-war.png",       // Four years of the Russia-Ukraine war — IiB
+        "shot-vax.png",       // Vaccines & autism — IiB
+        "shot-leftright.png", // Left vs. Right — IiB
+      ],
+      map: ["shot-owidlife.png", "shot-owidren.png"],
+    };
+
     const PRESS_IMG = new Map();
     function loadPressImages(done) {
       const urls = [
         ...new Set(
           ARTICLES.map((a) => a.img)
             .concat(LANDMARKS.map((k) => k.img))
+            .concat(
+              Object.values(PRESS_ASSETS)
+                .flat()
+                .map((f) => PRESS_BASE + f),
+            )
             .filter(Boolean),
         ),
       ];
@@ -4289,12 +4321,51 @@ const flowCol = (A, o) => {
        * has a coast and some marks on it, and a photograph is a plate with a
        * subject in it. None of them is data; all of them are shapes. */
       const PALETTE = ["#1a2ffb", "#f2b13c", "#b3402a", "#1a7a4a", "#6b4ea8"];
-      const placeholder = (kind, x, y, w, h, tint, rich) => {
+      const placeholder = (kind, x, y, w, h, tint, rich, seed, mono) => {
         if (w <= 2 || h <= 2) return;
         g.save();
         g.beginPath();
         g.rect(R(x), R(y), R(w), R(h));
         g.clip();
+
+        /* THE REAL ONE, IF IT ARRIVED. The galley is composed twice — once
+         * before the files are in, once after — so this is the only place
+         * that decides between a captured graphic and the shape that stands
+         * in for it while the page is still loading.
+         *
+         * Cropped to fill rather than fitted, because a hole in a page has
+         * the proportion the layout gave it and a letterboxed chart in a
+         * newspaper column reads as a mistake. Rung two desaturates: that
+         * press had one ink, and the whole ramp says so. */
+        const list = PRESS_ASSETS[kind];
+        const real =
+          list && PRESS_IMG.get(PRESS_BASE + list[(seed || 0) % list.length]);
+        if (real) {
+          const br = w / h;
+          let sw = real.width,
+            sh = real.height,
+            sx = 0,
+            sy = 0;
+          if (sw / sh > br) {
+            sw = sh * br;
+            sx = (real.width - sw) / 2;
+          } else {
+            sh = sw / br;
+            sy = (real.height - sh) / 2;
+          }
+          g.drawImage(real, sx, sy, sw, sh, R(x), R(y), R(w), R(h));
+          if (mono) {
+            g.globalCompositeOperation = "saturation";
+            g.fillStyle = "#808080";
+            g.fillRect(R(x), R(y), R(w), R(h));
+            g.globalCompositeOperation = "source-over";
+          }
+          g.strokeStyle = "rgba(20,20,28,.28)";
+          g.lineWidth = 1;
+          g.strokeRect(R(x) + 0.5, R(y) + 0.5, R(w) - 1, R(h) - 1);
+          g.restore();
+          return;
+        }
         if (kind === "photo") {
           g.fillStyle = tint || "#5c5a55";
           g.fillRect(R(x), R(y), R(w), R(h));
@@ -4835,7 +4906,8 @@ const flowCol = (A, o) => {
            * white above and below, which is what the eye is measuring. */
           const AIR_T = 5,
             AIR_B = 8;
-          for (const b of blocks) {
+          for (let bi = 0; bi < blocks.length; bi++) {
+            const b = blocks[bi];
             const bx = left + b.col * (colW + gut),
               bw = colW * b.span + gut * (b.span - 1),
               by = y - fs + b.at * lh + AIR_T,
@@ -4846,7 +4918,13 @@ const flowCol = (A, o) => {
              * has a palette, and drawing the top of the ramp in the same grey
              * as rung two says the opposite of what the page is for. The
              * sixth rung is the end of that ramp, not a step back off it. */
-            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null, S.rung >= 5);
+            placeholder(
+              b.kind, bx, by, bw, bh,
+              b.colour ? ink : null,
+              S.rung >= 5,
+              (S.i || 0) * 3 + bi,
+              S.rung === 2,
+            );
           }
 
           /* A BARE PAGE STOPS HERE. On the sixth rung the drawing IS the
