@@ -3738,14 +3738,26 @@ Stage.register(
      * rung is — and then the desk makes room in it and puts a drawing there.
      * It is the whole proposition in one page, and the only page on the reel
      * that changes while you watch it. */
-    const STORY_HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
-    const STORY_TONES = ["#b3402a", "#1a2ffb", "#1a7a4a", "#b3402a", "#1a2ffb", "#1a7a4a"];
+    const STORY_HEADS = [
+      "centre", "band", "tracked", "left", "boxed", "shoulder",
+      "centre", "tracked", "left",
+    ];
+    const STORY_TONES = [
+      "#b3402a", "#1a2ffb", "#1a7a4a", "#b3402a", "#1a2ffb", "#1a7a4a",
+      "#1a2ffb", "#1a7a4a", "#b3402a",
+    ];
     /* One, two or three columns. Every full-text paper on the first rung is
      * one of those measures, and the room the desk makes has to work in all
      * three — a chart that only fits a three-column page is a chart that
      * only fits some articles. Four columns is left out on purpose: at that
      * measure a block wide enough to read takes the whole page. */
-    const STORY_COLS = [1, 2, 3, 2, 3, 1];
+    /* NINE, not six. Each web shows about a fifth of the reel, and the
+     * three are spaced a third of it apart — so with nine pages no two webs
+     * can have the same page in frame at once, even after their different
+     * speeds have drifted them a lap out of step. At six the windows were
+     * wider than the spacing and adjacent webs shared a quarter of a page,
+     * which is the same drawing in two columns however the deal behaves. */
+    const STORY_COLS = [1, 2, 3, 2, 3, 1, 3, 1, 2];
     const STORY_PAPERS = STORY_COLS.map((cols, i) => ({
       rung: 1,
       story: true,
@@ -4743,15 +4755,20 @@ Stage.register(
         KIND_DECK[j] = t;
       }
     };
-    function dealKind(rnd, ar) {
+    function dealKind(rnd, ar, taken) {
+      const free = (kind) =>
+        fits(kind, ar) && (!taken || taken.indexOf(kind) < 0);
       for (let pass = 0; pass < 3; pass++) {
         if (!KIND_DECK.length) cut(rnd);
         for (let i = KIND_DECK.length - 1; i >= 0; i--)
-          if (fits(KIND_DECK[i], ar)) return KIND_DECK.splice(i, 1)[0];
+          if (free(KIND_DECK[i])) return KIND_DECK.splice(i, 1)[0];
         // nothing left in this deck goes in this hole: cut a fresh one
         KIND_DECK.length = 0;
       }
-      return "units"; // the one drawing that goes in anything
+      // last resort: anything that fits, even if it is already on a web
+      for (let i = 0; i < LIVE_KINDS.length; i++)
+        if (fits(LIVE_KINDS[i], ar)) return LIVE_KINDS[i];
+      return "units";
     }
 
     /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
@@ -4863,7 +4880,10 @@ Stage.register(
      * shot: a moment as printed, so a reader meets the article before the
      * desk starts working on it. */
     const storyRest = () =>
-      Math.max(0, P.storyRest === undefined ? 2.5 : P.storyRest);
+      Math.max(0, P.storyRest === undefined ? 1.5 : P.storyRest);
+    // and how far apart the pages take their turns
+    const storySpread = () =>
+      Math.max(0, P.storySpread === undefined ? 14 : P.storySpread);
     const ease = (u) => u * u * (3 - 2 * u);
     /* THE TELLING ONLY GOES ONE WAY. The room is made, the drawing arrives,
      * and it STAYS — for as long as the page is on screen, which is as long
@@ -4928,13 +4948,26 @@ Stage.register(
          * Leaving is wider than entering by design: a page sitting exactly
          * on the edge would otherwise flicker between recast and closed once
          * a frame, which is a page that never gets to open. */
-        const vis = inShot(k.y, k.y + k.h, k.seen ? 0.09 : 0);
+        // the give is a fifth of a PAGE, not a tenth of the reel: at nine
+        // pages the old figure was most of a page and nothing ever left
+        const vis = inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0);
         let open = 1,
           draw = 1;
         if (k.story) {
           if (vis && !k.seen) {
             k.seen = true;
             k.t0 = t;
+            /* THEY DO NOT ALL OPEN AT ONCE. The three webs between them hold
+             * most of the reel, so when the hero arrives every page comes
+             * into shot in the same frame — and with one wait for all of
+             * them the whole set opened together, which is a machine
+             * starting, not a desk working. Each page waits its own turn: an
+             * ordered share of the spread by its place on the reel, jittered
+             * so the cascade is not a metronome either. */
+            k.wait =
+              storyRest() +
+              ((k.slot + seeded(k.seed)() * 0.7) / Math.max(1, REEL.length)) *
+                storySpread();
             k.recast();
             k.lastOpen = undefined;
             k.lastDraw = undefined;
@@ -4951,7 +4984,7 @@ Stage.register(
             }
             continue;
           }
-          const u = clamp01((t - k.t0 - storyRest()) / storySecs());
+          const u = clamp01((t - k.t0 - (k.wait || 0)) / storySecs());
           open = storyOpen(u);
           draw = storyDraw(u);
           k.leave = 0;
@@ -6276,7 +6309,16 @@ const flowCol = (A, o) => {
               const at = 2 + Math.floor(rnd() * Math.max(1, depth - lines - 3));
               const bwNow = colW * span + gut * (span - 1),
                 bhNow = lines * lh - AIR_T - AIR_B;
-              const kind = dealKind(rnd, bwNow / Math.max(1, bhNow));
+              /* NOT ONE ANOTHER WEB IS ALREADY SHOWING. The deck alone only
+               * guarantees that six pages differ, and the pages recast one
+               * at a time as each comes into the frame — so a page dealt a
+               * bar chart could open beside another still holding one from
+               * the pass before. What is on screen is the constraint, so it
+               * is what the deal is told about. */
+              const busy = [];
+              for (const o of LIVE_HOLES)
+                if (o !== hole && o.seen && o.kind) busy.push(o.kind);
+              const kind = dealKind(rnd, bwNow / Math.max(1, bhNow), busy);
               B = {
                 kind, col, span, at, lines,
                 bx: left + col * (colW + gut),
@@ -6347,6 +6389,7 @@ const flowCol = (A, o) => {
               kind: "bars",
               tone: S.tone || "#b3402a",
               phase: S.phase || 0,
+              slot: S.i || 0,
               seed: (S.i || 0) * 131 + 7,
               recast,
               // the drawing is always asked for at the hole's FULL size, so
@@ -7147,7 +7190,9 @@ void main(){
       // seconds of one telling: opening, drawn into, held, lifted away
       storySecs: 8.5,
       // and seconds it is left as printed after coming into shot
-      storyRest: 2.5,
+      storyRest: 1.5,
+      // and the spread of their turns, so they never open together
+      storySpread: 14,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 0.92,
@@ -7226,6 +7271,7 @@ void main(){
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
           ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
           ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
+          ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
         ],
       ],
       [
@@ -7344,7 +7390,7 @@ void main(){
            * come out "spd0", and three rows called spd0/1/2 say nothing about
            * which column they move. The three-web rows name their side. */
           const SIDE = { 0: "left", 1: "middle", 2: "right" };
-          const NAMED = { storySecs: "telling", storyRest: "wait" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread" };
           const m = /^web(Spd|Lag)([012])$/.exec(key);
           lab.textContent = m
             ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
@@ -8979,7 +9025,13 @@ void main(){
                * a press. Broken by a third of a page and two thirds, which
                * are not multiples of each other or of a page, so no two
                * columns ever line up. */
-              v = (clock * rate + k * PAGE_STEP + P["webLag" + k] * PAGE_STEP) % 1;
+              /* A THIRD OF THE REEL APART, not a page. A page is what the
+               * offset used to be, and a web shows nearly two of them — so
+               * the windows overlapped and the column beside you was partly
+               * reading the same paper. The lag is a fine adjustment on top
+               * of that third, in pages, which is what it is good for. */
+              v =
+                (clock * rate + k / 3 + P["webLag" + k] * PAGE_STEP * 0.5) % 1;
             }
             gl.uniform3f(
               uq.uC,
