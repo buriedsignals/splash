@@ -5268,7 +5268,9 @@ Stage.register(
         g2.rotate(t * 1.6);
         g2.scale(sz / 64, sz / 64);
         g2.translate(-32, -32);
-        g2.fillStyle = "#b0aba2";
+        // pale: it is a placeholder, and a placeholder that holds the
+        // eye is competing with the thing it is holding a place for
+        g2.fillStyle = "#d2cdc4";
         g2.fill(ROSETTE);
         g2.restore();
         return;
@@ -5282,11 +5284,11 @@ Stage.register(
       const sweep = (((t * 0.75) % 1.9) / 1.9) * 2.4 - 0.7;
       const grd = g2.createLinearGradient(cx - half, 0, cx + half, 0);
       const at = (u) => Math.max(0, Math.min(1, u));
-      grd.addColorStop(0, "#b9b4ab");
-      grd.addColorStop(at(sweep - 0.22), "#b9b4ab");
-      grd.addColorStop(at(sweep), "#efece5");
-      grd.addColorStop(at(sweep + 0.22), "#b9b4ab");
-      grd.addColorStop(1, "#b9b4ab");
+      grd.addColorStop(0, "#d2cdc4");
+      grd.addColorStop(at(sweep - 0.22), "#d2cdc4");
+      grd.addColorStop(at(sweep), "#f4f2ec");
+      grd.addColorStop(at(sweep + 0.22), "#d2cdc4");
+      grd.addColorStop(1, "#d2cdc4");
       g2.fillStyle = grd;
       g2.fillText("Splash", cx, cy);
       g2.restore();
@@ -5475,7 +5477,7 @@ Stage.register(
            * is a tenth made, the mark has already gone, and a tenth of a
            * bar chart is a few pixels at the foot of the plot. No mixing,
            * because they are never both there. */
-          const waiting = draw < 0.1;
+          const waiting = draw < 0.05;
           if (
             !waiting &&
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
@@ -5515,8 +5517,11 @@ Stage.register(
            * registers what changed. It is held over the drawing and taken
            * off across a third of a second, which is long enough to be a
            * handover and short enough not to be a wait. */
-          if (inner && inner.h > 34 && inner.w > 70 && draw < 0.1)
-            mark(g2, inner, t, 1 - clamp01(draw / 0.1));
+          // and it goes at a twentieth rather than a tenth: by then the
+          // drawing has one bar out of thirteen, which is enough to be the
+          // thing on the page
+          if (inner && inner.h > 34 && inner.w > 70 && draw < 0.05)
+            mark(g2, inner, t, 1 - clamp01(draw / 0.05));
           g2.restore();
         } else {
           if (!k.fresh || !k.img) continue;
