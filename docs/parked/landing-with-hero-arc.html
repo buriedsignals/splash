@@ -335,6 +335,14 @@
      dedans. marks() la repose de toute façon à chaque mise en page — c'est
      ici pour que la première ne parte pas de 438vh de vide. */
   .chapter{color:var(--paper);padding:0 var(--gut);position:relative;height:100vh}
+  /* DERRIÈRE LA TOILE, le temps de la passation. Les sections passent devant
+     le canevas, donc le texte se posait PAR-DESSUS les journaux : il était
+     bien là avant qu'ils partent, mais c'est lui qui les couvrait et non
+     l'inverse. Le temps du geste il passe derrière, et pendant ce temps-là le
+     canevas est effacé à zéro — donc le cadre a la forme des feuilles et de
+     rien d'autre, et le texte sort de dessous à mesure qu'elles s'en vont.
+     Retiré à la fin du geste, quand il n'y a plus de papier pour le cacher. */
+  .chapter.behind{z-index:-1}
   /* La pile. Une seule scène collée au cadre, et TOUS les pavés superposés
      dedans — même case de grille, donc même place. Aucun n'est dans le flux :
      leur position vient entièrement du script, ce qui permet de les faire
@@ -2731,6 +2739,7 @@
     armed = false; running = true;
 
     window.__heroHold = 1;
+    chapter.classList.add('behind');
     hero.classList.add('gone');
     if (cstage) cstage.classList.add('in');
 
@@ -2741,7 +2750,10 @@
     // 2. et le papier se retire, ce qui découvre ce qui est déjà en place
     window.__webOut = 1;
     await until(webbedOut, 4000);
+    // le papier est sorti du cadre : plus rien ne peut le cacher, donc il
+    // remonte devant la toile sans que ça se voie
     window.__heroHold = 0;
+    chapter.classList.remove('behind');
 
     running = false;
     await wait(80);
@@ -2761,6 +2773,7 @@
 
     window.__rewind = 1;
     window.__heroHold = 1;
+    chapter.classList.add('behind');
 
     // 1. le papier redescend et recouvre la section — l'aller finissait par
     //    son retrait, donc le retour commence par son retour
@@ -2772,6 +2785,7 @@
     await glide(0, 620);
     hero.classList.remove('gone');
     window.__heroHold = 0;
+    chapter.classList.remove('behind');
 
     running = false; armed = true;
     entryK = 0; stack();
@@ -3445,6 +3459,7 @@
       armed = true; hero.classList.remove('gone');
       window.__webOut = 0;                   // et le papier revient avec lui
       window.__heroHold = 0;                 // sans laisser le verrou derrière
+      if (chapter) chapter.classList.remove('behind');
       trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });

@@ -3938,6 +3938,12 @@ Stage.register(
     let outSec = 0;
     let bootAt = null;
     let waveT = 0;
+    /* WHAT THE FRAME IS CLEARED TO, and the only copy of the answer. The
+     * module clears again itself — it has to, because it may be drawing into
+     * its own buffer rather than to the screen — so a value settled in the
+     * stage and re-settled here is a value that disagrees with itself on
+     * every frame. Both read this. */
+    const clearA = () => (window.__heroHold ? 0 : 1);
     /* The boot screen is clipped by where the paper actually is, so the web
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
@@ -5355,19 +5361,46 @@ Stage.register(
       g2.save();
       g2.globalAlpha = alpha;
 
-      /* THE ROSETTE, TURNING. Three drops around a triangular void, which
-       * is a shape that says something while it moves and nothing while it
-       * sits still — so it turns, and the turning is the wait. It is the
-       * mark itself rather than a word about it, which is the shorter way
-       * of saying the same thing. */
-      if (P.markLogo > 0.5 && ROSETTE) {
-        const sz = 22;
+      /* THE MARK AND THE NAME, TOGETHER — the same lockup the page opens
+       * on, so the wait inside a page and the wait in front of the whole
+       * document are recognisably the same thing rather than two different
+       * placeholders that happen to belong to the same product. The rosette
+       * turns; the name takes the light across it.
+       *
+       * SET TO THE HOLE, because a hole is whatever size the page gave it.
+       * The pair is measured and, if it will not sit inside three quarters
+       * of the width, everything in it is scaled by the same factor — type,
+       * mark and the gap between them — so it is the same lockup smaller
+       * and not a different arrangement.
+       *
+       * markLogo drops the rosette and leaves the name alone. */
+      const wantLogo = P.markLogo > 0.5 && !!ROSETTE;
+      let fs = fs2 * 1.25;
+      g2.font = "600 " + fs + "px " + SANS;
+      let wd = g2.measureText("Splash").width;
+      let sz = wantLogo ? fs * 1.15 : 0;
+      let gap = wantLogo ? fs * 0.42 : 0;
+      let total = sz + gap + wd;
+      const room = inner.w * 0.74;
+      if (total > room) {
+        const k = room / total;
+        fs *= k;
+        sz *= k;
+        gap *= k;
+        wd *= k;
+        total = room;
+        g2.font = "600 " + fs + "px " + SANS;
+      }
+      const x0 = cx - total / 2;
+
+      if (wantLogo) {
+        g2.save();
         /* About its CENTRE OF MASS, not the middle of its box. They are
          * different points on this mark — the box is centred at 32,32 of
          * the viewBox and the ink at 31.9,27.2, because three drops round a
          * triangular void carry their weight high. Spun about the box it
          * swings; spun about its mass it turns. */
-        g2.translate(cx, cy);
+        g2.translate(x0 + sz / 2, cy);
         g2.rotate(t * 1.6);
         g2.scale(sz / 64, sz / 64);
         g2.translate(-31.93, -27.21);
@@ -5376,16 +5409,13 @@ Stage.register(
         g2.fillStyle = "#d2cdc4";
         g2.fill(ROSETTE);
         g2.restore();
-        return;
       }
 
-      g2.textAlign = "center";
+      g2.textAlign = "left";
       g2.textBaseline = "middle";
-      g2.font = "600 " + fs2 + "px " + SANS;
-      const half = g2.measureText("Splash").width / 2 + fs2;
-      // the light travels across the word and rests before it returns
+      // the light travels across the whole lockup and rests before it returns
       const sweep = (((t * 0.75) % 1.9) / 1.9) * 2.4 - 0.7;
-      const grd = g2.createLinearGradient(cx - half, 0, cx + half, 0);
+      const grd = g2.createLinearGradient(x0 - fs, 0, x0 + total + fs, 0);
       const at = (u) => Math.max(0, Math.min(1, u));
       grd.addColorStop(0, "#d2cdc4");
       grd.addColorStop(at(sweep - 0.22), "#d2cdc4");
@@ -5393,7 +5423,7 @@ Stage.register(
       grd.addColorStop(at(sweep + 0.22), "#d2cdc4");
       grd.addColorStop(1, "#d2cdc4");
       g2.fillStyle = grd;
-      g2.fillText("Splash", cx, cy);
+      g2.fillText("Splash", x0 + sz + gap, cy);
       g2.restore();
     }
 
@@ -8889,6 +8919,14 @@ void main(){
         (outSec > 0.001 && outSec < OUT_SPAN) ||
         !!window.__heroHold,
 
+      /* AND WHILE IT IS HELD FOR THE HANDOVER, THE FRAME IS THE PAPER AND
+       * NOTHING ELSE. The section under the hero is put behind the canvas for
+       * those two seconds, so the paper is what covers its text; a frame that
+       * clears to the ground colour would cover it just as thoroughly and
+       * never let go. Cleared to nothing, the canvas is the shape of the
+       * sheets, and what is behind them comes out as they leave. */
+      clearAlpha: clearA,
+
       init(api) {
         gl = api.gl;
         canvas = api.canvas;
@@ -9909,7 +9947,7 @@ void main(){
           gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
           gl.viewport(0, 0, fw, fh);
         }
-        gl.clearColor(ground[0], ground[1], ground[2], 1);
+        gl.clearColor(ground[0], ground[1], ground[2], clearA());
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         /* ---- the three webs ---------------------------------------------
