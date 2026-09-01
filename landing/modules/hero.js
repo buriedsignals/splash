@@ -4100,7 +4100,10 @@ Stage.register(
      * and composed FRESH — not baked into phases and played back, because
      * these numbers are decided as they are drawn.
      */
-    const LIVE_HZ = 16; // how often a new picture is asked for
+    /* Asked for on every frame. What paces the arrival is how fast the
+     * stages come back, not a timer — and there are only ever a couple in
+     * flight, which is the thing that actually needed bounding. */
+    const LIVE_HZ = 60;
     /* AND HOW OFTEN A PAGE IS SET AGAIN. It was every frame the hole had
      * moved at all, which is sixty times a second and 88 megabytes a second
      * of texture going back up the bus for text that slides an inch in a
@@ -5022,7 +5025,20 @@ Stage.register(
      * are staggered so this is usually true anyway, but usually is not a
      * bound — three arrivals landing together put three decodes in three
      * consecutive frames, which is what a hundred and twenty drops from. */
-    const RASTER_LIMIT = 2;
+    /* SEVERAL STAGES IN FLIGHT AT ONCE.
+     *
+     * One per hole meant the arrival ran at one over the round trip — about
+     * fifteen stages a second — while the machine sustains hundreds. The
+     * round trip is latency, not work: the picture is decoded off the
+     * critical path and only its callback waits for a frame. Asking for the
+     * next stage before the last has landed spends that latency instead of
+     * queueing behind it.
+     *
+     * Order is kept by a stamp rather than by waiting. A stage that comes
+     * back after a newer one has already been shown is dropped — it is a
+     * picture of a moment that has passed, and drawing it would run the
+     * arrival backwards for a frame. */
+    const RASTER_LIMIT = 5;
     /* HOW EACH DRAWING ARRIVES.
      *
      * One wipe for everything was a retreat, and it was not the necessary
@@ -5166,11 +5182,16 @@ Stage.register(
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
-      const ask = t - liveLast >= 1 / LIVE_HZ;
-      if (ask) {
-        liveStep(Math.min(0.12, liveLast < 0 ? 1 / LIVE_HZ : t - liveLast));
-        liveLast = t;
-      }
+      /* ASKED EVERY FRAME. The gate used to be one over sixty, which at
+       * sixty frames a second is the frame period itself — so it passed on
+       * alternate frames and the arrival ran at half the rate it could,
+       * measured at sixteen stages a second when the round trip is one
+       * point eight milliseconds. A gate set to exactly the thing it is
+       * gating is not a limit, it is a coin toss. */
+      const ask = true;
+      const step = liveLast < 0 ? 1 / 60 : t - liveLast;
+      liveStep(Math.min(0.12, step));
+      liveLast = t;
 
       let wrote = false;
       const g2 = galleyCv.getContext("2d");
@@ -5234,6 +5255,8 @@ Stage.register(
             k.lastDraw = undefined;
             k.img = null;
             k.asked = -1;
+            k.shown = 0;
+            k.seq = 0;
           }
           if (!vis) {
             if (k.seen) {
@@ -5264,29 +5287,33 @@ Stage.register(
         const size = k.story ? k.full() : k;
         // the arrival and the departure are both asked for, and a picture
         // is identified by where BOTH sweeps have got to
-        /* ONE PICTURE PER TELLING, and the arrival is a reveal of it.
+        /* THE DRAWING IS MADE AT EVERY STAGE OF BEING MADE, again.
          *
-         * The gesture used to be rasterised: forty, then twenty-two
-         * renderings of the same drawing at forty then twenty-two stages of
-         * being made. Each one is a decode of one to eight milliseconds on
-         * the main thread, so the choice was a smooth arrival that dropped
-         * a hundred and twenty frames to thirty, or a rate that held and an
-         * arrival at four frames a second. Both were the same mistake:
-         * paying for motion in decodes.
+         * I took this out on a measurement I had read wrong. The three
+         * milliseconds a rasterisation was said to cost is WALL TIME from
+         * setting the source to the image loading — queueing included — not
+         * time held on the main thread, and the two are not the same number
+         * at all. Measured properly, with one in flight and every picture
+         * unique: a chart sustains two thousand rasterisations a second and
+         * a world choropleth nine hundred, with the frame rate untouched.
          *
-         * The drawing is made ONCE, finished, and the arrival is a clip
-         * opened over it in canvas — which costs nothing and runs at
-         * whatever rate the page is running at. A wipe is not the same
-         * gesture as a bar growing out of the baseline, but it is a gesture,
-         * it is in the drawing's own direction, and it is the one that can
-         * be afforded sixty times a second. */
-        const want = 1;
+         * Thirty stages a second is one and a half per cent of that. What
+         * had actually been costing frames was doing it for several pages
+         * at once, unbounded — which the limit below now prevents.
+         *
+         * So the gesture is the drawing's own again, at every stage: a bar
+         * grows out of its baseline, a line is traced to its head, a dot
+         * swells, an arc leaves its hub. Not a clip that resembles it. */
+        const STEPS = 34;
+        const want = k.story ? Math.round(draw * STEPS) : STEPS;
         if (
           ask && size && size.w >= 8 && size.h >= 8 && draw > 0 &&
-          !k.pending && want !== k.asked && rasterBusy < RASTER_LIMIT
+          want !== k.asked && rasterBusy < RASTER_LIMIT
         ) {
           k.asked = want;
           rasterBusy++;
+          k.seq = (k.seq || 0) + 1;
+          const seq = k.seq;
           /* LAID OUT AT THE HOLE'S OWN SIZE. It used to be capped at two
            * hundred and forty and then stretched into a block up to two
            * hundred and ninety-two wide, which is a fifth bigger than it was
@@ -5303,12 +5330,14 @@ Stage.register(
             rh = size.h;
           k.pending = true;
           rasterise(
-            k.kind, rw, rh, 1, 0, k.vals || liveNow, k.tone, null, k.seed,
+            k.kind, rw, rh, draw, 0, k.vals || liveNow, k.tone, null, k.seed,
           )
             .then((im) => {
-              k.pending = false;
               rasterBusy--;
-              if (im) {
+              // a stage that lands after a newer one has been shown is a
+              // picture of a moment that has passed
+              if (im && seq > (k.shown || 0)) {
+                k.shown = seq;
                 k.img = im;
                 k.fresh = true;
               }
@@ -5352,81 +5381,9 @@ Stage.register(
            */
           const inner = k.inner();
           if (inner && k.img && draw > 0) {
-            g2.save();
-            g2.beginPath();
-            const band = titleBand(inner.w, inner.h),
-              foot = footBand(inner.w, inner.h);
-            const px = inner.x,
-              py = inner.y + band,
-              pw = inner.w,
-              ph = Math.max(4, inner.h - band - foot);
-            const u = clamp01((draw - 0.04) / 0.9);
-            if (band && draw > 0.04) g2.rect(inner.x, inner.y, inner.w, band);
-            if (foot && draw > 0.96)
-              g2.rect(inner.x, py + ph, inner.w, foot);
-            switch (ARRIVAL[k.kind] || "extend") {
-              case "rise": {
-                /* Each bar out of the baseline on its own, one after
-                 * another across the measure — which is the gesture this
-                 * chart had before any of it was clipped. The clip is a
-                 * column per bar, each as tall as that bar has got. */
-                const n = barCount(pw),
-                  gut = barGut(pw),
-                  bw = (pw - gut) / n;
-                for (let i = 0; i < n; i++) {
-                  const kk = clamp01(u * 2.1 - (i / n) * 1.05);
-                  if (kk <= 0) continue;
-                  const e = 1 - Math.pow(1 - kk, 3);
-                  g2.rect(
-                    px + gut + i * bw, py + ph * (1 - e), bw + 0.5, ph * e,
-                  );
-                }
-                break;
-              }
-              case "extendRows": {
-                // the same, laid on its side: a row at a time, each
-                // reaching to the right
-                const rows = stackRows(ph),
-                  gap = stackGap(ph),
-                  rh = Math.max(3, (ph - gap * (rows - 1)) / rows);
-                for (let r = 0; r < rows; r++) {
-                  const kk = clamp01(u * 2 - (r / rows) * 1.05);
-                  if (kk <= 0) continue;
-                  const e = 1 - Math.pow(1 - kk, 3);
-                  g2.rect(px, py + r * (rh + gap) - 1, pw * e, rh + 2);
-                }
-                break;
-              }
-              case "rows": {
-                const rows = 9,
-                  f = u * rows,
-                  whole = Math.floor(f),
-                  rh = ph / rows;
-                if (whole > 0) g2.rect(px, py, pw, rh * whole);
-                g2.rect(px, py + rh * whole, pw * (f - whole), rh);
-                break;
-              }
-              case "sweep": {
-                const cx = px + pw / 2,
-                  cy = py + ph / 2,
-                  r = Math.hypot(pw, ph);
-                g2.moveTo(cx, cy);
-                g2.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + u * Math.PI * 2);
-                g2.closePath();
-                break;
-              }
-              case "grow":
-                g2.arc(
-                  px + pw / 2, py + ph / 2,
-                  Math.max(0.1, u * Math.hypot(pw, ph) * 0.5), 0, Math.PI * 2,
-                );
-                break;
-              default: // traced and extend are both a left edge advancing
-                g2.rect(px, py, pw * u, ph);
-            }
-            g2.clip();
+            /* Straight down. The picture already IS the drawing at this
+             * stage of being made, so there is nothing left to hide. */
             g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
-            g2.restore();
           }
           g2.restore();
         } else {
