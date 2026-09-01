@@ -6675,6 +6675,32 @@ void main(){
       head.textContent = "the webs";
       box.appendChild(head);
 
+      /* THE RATE, READ OFF THE STAGE ITSELF. Not this panel's own rAF —
+       * that would measure the browser handing out frames, which keeps
+       * ticking perfectly while the scene inside it stalls. The stage counts
+       * the frames it actually draws, so a repaint that overruns shows up
+       * here and nowhere else.
+       *
+       * Amber under fifty, because a number nobody reads is not a
+       * diagnostic. */
+      const fps = document.createElement("div");
+      fps.className = "t";
+      fps.style.cssText =
+        "margin-top:7px;opacity:.85;font-variant-numeric:tabular-nums";
+      box.appendChild(fps);
+      let f0 = window.__frames || 0,
+        t0 = performance.now();
+      setInterval(() => {
+        const f = window.__frames || 0,
+          t = performance.now();
+        const v = ((f - f0) * 1000) / Math.max(1, t - t0);
+        f0 = f;
+        t0 = t;
+        fps.style.color = v < 50 ? "#f2b13c" : "#e8e8e8";
+        fps.textContent =
+          v.toFixed(0) + " fps · " + (1000 / Math.max(v, 0.001)).toFixed(1) + " ms";
+      }, 500);
+
       for (const [group, rows] of WEB_TUNE) {
         const g = document.createElement("div");
         g.className = "g";
