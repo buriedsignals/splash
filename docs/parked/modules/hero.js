@@ -4329,15 +4329,35 @@ Stage.register(
       ]);
     const NEAR_WHITE = [246, 244, 240],
       NEAR_BLACK = [18, 18, 18];
+    /* IT STOPS SHORT OF BLACK, AND ITS STEPS ARE EQUAL.
+     *
+     * The darkest class used to be solid ink, and on a web that is a hole:
+     * the sheet arrives at about a twelfth of white, so anything past the
+     * middle of the scale lands on the ground itself and a map, a grid or a
+     * field of dots comes out as one black shape. It runs to a mid-dark
+     * grey instead — still the heaviest thing on the page, still four to
+     * one against paper on the bench, and far enough off the ground that
+     * the class below it has room.
+     *
+     * And it is linear. A bent ladder put its classes forty-six levels
+     * apart at one end and nineteen at the other, and nineteen levels of
+     * grey is a difference the eye will not go looking for. Five classes
+     * now land thirty-four apart, every step the same as the one before —
+     * the only arrangement where no two neighbours are harder to tell apart
+     * than any other two.
+     */
+    const VALUE_LIGHTEST = 0.03,
+      VALUE_DARKEST = 0.7;
     const value = (t, tone) => {
       const k = clamp01(t);
-      if (isNeutral(tone)) return mixRGB(NEAR_WHITE, NEAR_BLACK, 0.05 + k * 0.95);
+      const m = VALUE_LIGHTEST + k * (VALUE_DARKEST - VALUE_LIGHTEST);
+      if (isNeutral(tone)) return mixRGB(NEAR_WHITE, NEAR_BLACK, m);
       const rgb = [
         parseInt(tone.slice(1, 3), 16),
         parseInt(tone.slice(3, 5), 16),
         parseInt(tone.slice(5, 7), 16),
       ];
-      return mixRGB(NEAR_WHITE, rgb, 0.16 + k * 0.84);
+      return mixRGB(NEAR_WHITE, rgb, 0.14 + k * 0.72);
     };
 
     const LIVE_ART = {};
@@ -4361,7 +4381,7 @@ Stage.register(
               '" height="' + Math.max(0.6, tall).toFixed(1) + '" rx="1" fill="' +
               // read off its own height: the tallest bar is the darkest,
               // which is the whole of what a value scale is for
-              value(0.26 + v[i % v.length] * 0.74, tone) + '"/>';
+              value(0.2 + v[i % v.length] * 0.8, tone) + '"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -4468,7 +4488,7 @@ Stage.register(
                   '" width="' + Math.max(0.5, sw - 1.2).toFixed(1) + '" height="' +
                   rh.toFixed(1) + '" fill="' + value(t, tone) + '"/>';
             out +=
-              seg(lab, a, 1) + seg(lab + a, b, 0.5) + seg(lab + a + b, c, 0.17);
+              seg(lab, a, 1) + seg(lab + a, b, 0.56) + seg(lab + a + b, c, 0.14);
           }
           return svgWrap(pw, ph, out);
         });
@@ -4495,7 +4515,7 @@ Stage.register(
               '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
               (r0 * k).toFixed(1) + '" fill="' +
               // a dot's value is its size, which is the second measure
-              value(0.42 + ((r0 - 1.8) / 2.8) * 0.58, tone) + '" opacity=".9"/>';
+              value(0.34 + ((r0 - 1.8) / 2.8) * 0.66, tone) + '" opacity=".95"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -4516,7 +4536,7 @@ Stage.register(
         (pw, ph) => {
           const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
           // five classes over the whole spectrum, biggest darkest
-          const shade = [1, 0.72, 0.48, 0.29, 0.13].map((t) => value(t, tone));
+          const shade = [1, 0.78, 0.56, 0.34, 0.12].map((t) => value(t, tone));
           const ar = pw / ph;
 
           let box, cx, cy, key = "";
@@ -4656,7 +4676,7 @@ Stage.register(
           // a real sequential ramp, not one ink at five opacities
           // paper to ink in five steps, so a country's class can be read off
           // the map without going back to a key
-          const ramp = (t) => value(0.12 + Math.round(t * 4) * 0.22, tone);
+          const ramp = (t) => value(0.1 + Math.round(t * 4) * 0.225, tone);
           return mapBase(pw, ph, rnd, (u) => {
             let out = "";
             for (let i = 0; i < iso.length; i++) {
@@ -4887,7 +4907,7 @@ Stage.register(
                 (oy + r * cell + gap / 2).toFixed(2) + '" width="' +
                 (cell - gap).toFixed(2) + '" height="' + (cell - gap).toFixed(2) +
                 '" fill="' +
-                (k > 0.5 ? value(i / n > 0.72 ? 0.3 : 0.78, tone) : PALE) + '"/>';
+                (k > 0.5 ? value(i / n > 0.72 ? 0.26 : 0.86, tone) : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
@@ -4975,7 +4995,24 @@ Stage.register(
      * and is given twice that in width and height. Same drawing, four times
      * the pixels, and the composite has resolution to spare wherever it
      * lands. */
-    const RSCALE = 2;
+    /* A DECODE IS A FRAME. Measured: rasterising one of these costs between
+     * one and eight milliseconds on the main thread, and at a hundred and
+     * twenty frames a second the whole budget is eight point three. Chrome
+     * will not decode an SVG off-thread — createImageBitmap refuses the
+     * blob outright — so the only levers are how big each one is and how
+     * many there are.
+     *
+     * 1.6 rather than 2 is a third fewer pixels and still well clear of the
+     * pixelation this was raised to fix: the composite is a bitmap, and
+     * what it needs is to be made larger than the hole it lands in, not
+     * twice as large. */
+    const RSCALE = 1.6;
+    /* And no more than two drawings are ever being made at once. The pages
+     * are staggered so this is usually true anyway, but usually is not a
+     * bound — three arrivals landing together put three decodes in three
+     * consecutive frames, which is what a hundred and twenty drops from. */
+    const RASTER_LIMIT = 2;
+    let rasterBusy = 0;
     function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
       const body = (LIVE_ART[kind] || LIVE_ART.bars)(
         w, h, p, q, v, tone, seeded(seed), layer,
@@ -5185,14 +5222,20 @@ Stage.register(
         const size = k.story ? k.full() : k;
         // the arrival and the departure are both asked for, and a picture
         // is identified by where BOTH sweeps have got to
+        /* Twenty-two steps of arrival, not forty. Over an opening of five
+         * seconds that is a new picture every quarter second, which is what
+         * the eye reads as a drawing being made; forty was twice the
+         * decodes for a difference nobody could see. */
+        const STEPS = 22;
         const want = k.story
-          ? Math.round(draw * 40) * 64 + Math.round((k.leave || 0) * 40)
-          : 40;
+          ? Math.round(draw * STEPS) * 64 + Math.round((k.leave || 0) * STEPS)
+          : STEPS;
         if (
           ask && size && size.w >= 8 && size.h >= 8 && draw > 0 &&
-          !k.pending && want !== k.asked
+          !k.pending && want !== k.asked && rasterBusy < RASTER_LIMIT
         ) {
           k.asked = want;
+          rasterBusy++;
           /* LAID OUT AT THE HOLE'S OWN SIZE. It used to be capped at two
            * hundred and forty and then stretched into a block up to two
            * hundred and ninety-two wide, which is a fifth bigger than it was
@@ -5214,6 +5257,7 @@ Stage.register(
           )
             .then((im) => {
               k.pending = false;
+              rasterBusy--;
               if (im) {
                 k.img = im;
                 k.fresh = true;
