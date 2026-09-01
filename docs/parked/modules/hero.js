@@ -4733,11 +4733,19 @@ const flowCol = (A, o) => {
             colour: S.rung >= 3 && b.colour,
           }));
 
+          /* A block takes the line-slots it is given, MINUS the air it owes
+           * the type around it. Set flush to its slots it began exactly where
+           * the line above it ended — a pixel and a half under that line's
+           * descenders — and the picture read as if it were glued to the text.
+           * Five rows off the top and eight off the foot leave about the same
+           * white above and below, which is what the eye is measuring. */
+          const AIR_T = 5,
+            AIR_B = 8;
           for (const b of blocks) {
             const bx = left + b.col * (colW + gut),
               bw = colW * b.span + gut * (b.span - 1),
-              by = y - fs + b.at * lh,
-              bh = b.lines * lh - 6;
+              by = y - fs + b.at * lh + AIR_T,
+              bh = b.lines * lh - AIR_T - AIR_B;
             placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null);
           }
 
@@ -4788,7 +4796,8 @@ const flowCol = (A, o) => {
               .sort((a, b) => a[0] - b[0]);
             let r = 0;
             for (const [g0, g1] of gaps) {
-              if (g0 > r) g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh));
+              if (g0 > r)
+                g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh - AIR_B));
               r = Math.max(r, g1);
             }
             if (r < depth) g.fillRect(lx, R(y - fs + r * lh), 1, R((depth - r) * lh));
