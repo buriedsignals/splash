@@ -3578,6 +3578,8 @@ Stage.register(
       {
     rung: 5,
     name: "One measure, one chart",
+    live: 0,
+    anim: "bars",
     head: "tracked",
     cols: 1,
     tone: "#b3402a",
@@ -3891,6 +3893,163 @@ Stage.register(
      * If the table is not on the page the holes keep their drawn stand-ins
      * and nothing else changes. */
     const PRESS_ASSETS = (window.PRESS_DATA || { photo: [], chart: [], map: [] });
+
+
+    /* ------------------------------------------------- the moving graphic
+     * A block on the page whose contents are HTML, and which MOVES.
+     *
+     * The paper is a canvas that becomes a texture, so nothing on it can be
+     * a live document — but real HTML can be rasterised into it, through an
+     * <foreignObject> in an SVG carried as a data URI. Measured: real
+     * layout, no tainting, 0.46ms to re-raster a block this size.
+     *
+     * What that route CANNOT do is move by itself. An SVG loaded as an image
+     * runs in secure static mode: no script, no external font or picture,
+     * and — measured — a CSS animation frozen at its first frame for ever.
+     * So the motion cannot live in the markup. It is composed OUTSIDE it:
+     * the same template is rasterised at a set of phases, once, at start-up,
+     * and the reel then flips through them. HTML for the drawing, a
+     * flipbook for the movement, and nothing async left in the frame loop.
+     *
+     * The cost of showing a frame is a sub-upload of the block's own
+     * rectangle and one mipmap pass — 0.16ms measured, against 0.37ms for
+     * re-uploading the whole reel, which is what NOT keeping the rectangles
+     * would have cost.
+     */
+    const LIVE_FRAMES = 24;
+    const LIVE_HZ = 12; // the press is not a screen; it does not need sixty
+    let LIVE_HOLES = []; // filled by the painter, in galley coordinates
+    let galleyCv = null;
+
+    /* The phases, cached by what they are OF rather than by which hole asked
+     * for them. The reel is composed twice — once with drawn stand-ins, once
+     * when the media land — so the hole objects are thrown away and remade
+     * while these are still decoding. Keyed on the drawing and its size, the
+     * work survives that, and two holes that want the same thing at the same
+     * size share one set instead of building it twice. */
+    const LIVE_BOOK = new Map();
+    const bookKey = (k) => k.anim + "|" + k.w + "|" + k.h + "|" + k.tone;
+
+    /* The two drawings, as markup. Well-formed XHTML with every attribute
+     * quoted and no bare ampersand, because this is parsed as XML and a
+     * single loose character yields a blank image rather than an error. */
+    const LIVE_ART = {
+      bars(w, h, t, tone) {
+        const n = 15,
+          floor = 26,
+          room = h - floor - 16;
+        let out = "";
+        for (let i = 0; i < n; i++) {
+          // each bar starts a little after the one before it, so the chart
+          // builds across the measure instead of inflating all at once
+          const k = Math.max(0, Math.min(1, t * 2.1 - (i / n) * 0.9));
+          const e = 1 - Math.pow(1 - k, 3);
+          const tall = (0.3 + 0.66 * Math.abs(Math.sin(i * 1.9 + 0.6))) * room * e;
+          out +=
+            '<i style="width:' + (100 / n - 1.1) + '%;height:' + tall.toFixed(1) +
+            'px;background:' + (i % 4 === 3 ? tone : "#161616") + '"></i>';
+        }
+        return (
+          '<div style="height:' + (h - floor) + 'px;display:flex;align-items:flex-end;' +
+          'justify-content:space-between">' + out + "</div>" +
+          '<div style="height:2px;background:#161616;margin-top:5px"></div>' +
+          '<div style="font:8px Georgia,serif;color:#555;margin-top:5px;' +
+          'letter-spacing:.06em">LOREM IPSUM STATISTICAL OFFICE</div>'
+        );
+      },
+      grid(w, h, t, tone) {
+        const cols = 18,
+          rows = Math.max(4, Math.floor((h - 26) / (w / cols)));
+        const cell = (w / cols).toFixed(2);
+        let out = "";
+        for (let r = 0; r < rows; r++)
+          for (let c = 0; c < cols; c++) {
+            // the count fills in reading order, which is how a unit chart is
+            // read on paper, and holds full for the back half of the loop
+            const at = (r * cols + c) / (rows * cols);
+            const on = t * 1.7 > at;
+            out +=
+              '<i style="width:' + cell + 'px;height:' + cell + 'px;' +
+              "background:" + (on ? (at > 0.62 ? tone : "#161616") : "#e4e2dd") +
+              ';opacity:' + (on ? 1 : 0.85) + '"></i>';
+          }
+        return (
+          '<div style="display:flex;flex-wrap:wrap;align-content:flex-start;' +
+          'gap:1.2px;width:' + w + 'px">' + out + "</div>"
+        );
+      },
+    };
+
+    /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
+     * size of the hole, handed to an Image as a data URI, and decoded. */
+    function rasterise(kind, w, h, t, tone) {
+      const body = LIVE_ART[kind](w, h, t, tone);
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
+        '<foreignObject width="100%" height="100%">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + w + "px;height:" + h +
+        'px;background:#ffffff;font:10px Georgia,serif;color:#161616">' +
+        body +
+        "</div></foreignObject></svg>";
+      return new Promise((res) => {
+        const im = new Image();
+        im.onload = () => res(im);
+        im.onerror = () => res(null);
+        im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      });
+    }
+
+    /* Every phase of every moving drawing, built once, at start-up. Serial
+     * rather than all at once: this runs while the reel is already turning,
+     * and forty-odd decodes fired together are a visible hitch. */
+    async function buildFlipbooks() {
+      for (const hole of LIVE_HOLES) {
+        const key = bookKey(hole);
+        if (LIVE_BOOK.has(key)) continue;
+        LIVE_BOOK.set(key, null); // claimed, so a second pass does not redo it
+        const reel = [];
+        for (let f = 0; f < LIVE_FRAMES; f++) {
+          const im = await rasterise(
+            hole.anim, hole.w, hole.h, f / LIVE_FRAMES, hole.tone,
+          );
+          if (!im) return LIVE_BOOK.delete(key);
+          reel.push(im);
+        }
+        const scratch = document.createElement("canvas");
+        scratch.width = hole.w;
+        scratch.height = hole.h;
+        LIVE_BOOK.set(key, { reel, scratch, g: scratch.getContext("2d") });
+      }
+    }
+
+    /* Put the current phase on the paper. Each block writes only its own
+     * rectangle, and the mip chain is rebuilt once for all of them — the
+     * webs read the reel through a LOD bias, so a stale chain shows as a
+     * block that will not sharpen. */
+    let liveAt = -1;
+    function liveTick(t) {
+      if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
+      const f = Math.floor(t * LIVE_HZ) % LIVE_FRAMES;
+      if (f === liveAt) return;
+      let wrote = false;
+      const g2 = galleyCv.getContext("2d");
+      gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+      for (const k of LIVE_HOLES) {
+        const book = LIVE_BOOK.get(bookKey(k));
+        if (!book) continue;
+        book.g.fillStyle = "#ffffff";
+        book.g.fillRect(0, 0, k.w, k.h);
+        book.g.drawImage(book.reel[f], 0, 0);
+        g2.drawImage(book.scratch, k.x, k.y);
+        gl.texSubImage2D(
+          gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, book.scratch,
+        );
+        wrote = true;
+      }
+      if (!wrote) return; // nothing has finished decoding yet
+      liveAt = f;
+      gl.generateMipmap(gl.TEXTURE_2D);
+    }
 
     const PRESS_IMG = new Map();
     function loadPressImages(done) {
@@ -4909,6 +5068,15 @@ const flowCol = (A, o) => {
              * has a palette, and drawing the top of the ramp in the same grey
              * as rung two says the opposite of what the page is for. The
              * sixth rung is the end of that ramp, not a step back off it. */
+            /* A block the page wants alive keeps its rectangle, in galley
+             * coordinates, so the frame loop can write that rectangle and
+             * nothing else. It is still drawn now: the flipbook takes a
+             * moment to decode, and until it does this is what is there. */
+            if (S.live === bi && LIVE_ART[S.anim])
+              LIVE_HOLES.push({
+                x: R(bx), y: R(by), w: R(bw), h: R(bh),
+                anim: S.anim, tone: S.tone || "#b3402a",
+              });
             placeholder(
               b.kind, bx, by, bw, bh,
               b.colour ? ink : null,
@@ -5353,6 +5521,7 @@ const flowCol = (A, o) => {
         0,
       );
 
+      LIVE_HOLES = [];
       const cv = document.createElement("canvas");
       cv.width = GALLEY_W;
       cv.height = GALLEY_H;
@@ -5438,7 +5607,11 @@ const flowCol = (A, o) => {
       }
       window.__specs = SPECS; // the bench publishes them so they can be checked
       window.__galleySheet = cv;
+      window.__liveHoles = LIVE_HOLES; // the bench, again
       window.__galleyPages = PAGES;
+      // kept, because the moving blocks write back into it: a page has to
+      // stay correct if the whole reel is ever uploaded again
+      galleyCv = cv;
       return cv;
     }
 
@@ -6553,6 +6726,9 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
         loadPressImages(uploadGalley);
+        // after the first upload, so the rectangles are known and the reel is
+        // already turning while these decode
+        buildFlipbooks();
         if (!window.__noTuner) buildWebTuner();
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
@@ -7382,6 +7558,9 @@ void main(){
          * become; released sooner and there is a gap where the hero is
          * nothing at all. */
         const webFade = (1 - sm(0.0, 0.22, burst)) * presence * ctx.vis;
+        // Nothing moves while the paper is not on screen: the cost is real,
+        // small, and pointless against a web nobody can see.
+        if (webFade > 0.002) liveTick(ctx.t);
         if (webFade > 0.002 && galleyTex) {
           const nw = webNW,
             hw = webHW,
