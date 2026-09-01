@@ -7471,7 +7471,7 @@ void main(){
       storySpread: 5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
-      webLift: 1.34,
+      webLift: 1.13,
       /* The ink curve belonged to a paper ground. There, the mapping sent any
        * sample above 0.577 toward white, and a line of nine-point type
        * averaged by the mipmap arrives at about 0.7 — so the type came out
