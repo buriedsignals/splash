@@ -7634,18 +7634,25 @@ void main(){
       // rather than being a set of world units tuned to one window.
       // 400 texels of column shown across 300 pixels is a minification the
       // type does not survive; at 0.21 it is close to one to one.
-      webW: 0.21,
+      webW: 0.35,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
       // far enough apart that the ground still shows between the webs
       webCut: 0, // 0 the press runs, 1 the montage cuts
       webBeat: 0.9, // seconds a page is held before the cut
-      webSpread: 0.64,
+      webSpread: 0.71,
+      /* The whole set, sideways and up, in visible half-measures. These
+       * existed only on the bench, so a value tuned there could not be
+       * carried across — and the two modules had already drifted apart on
+       * three others. A knob the delivered page does not have is a knob
+       * that lies about what is being judged. */
+      webX: 0,
+      webY: 0,
       // The height at which the paper starts going back into the machine. On
       // ink a long fade reads as the web leaving; on paper it reads as a
       // gradient, so on paper it is held much later.
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
-      webEdge: 0.6,
+      webEdge: 0.5,
       /* HOW FAST EACH WEB UNROLLS, in laps of the galley per second, one
        * number each. They were a shared speed and three multipliers of it,
        * which is the wrong shape for a control: reading 0.930 tells you a
@@ -7664,12 +7671,12 @@ void main(){
       webLag1: 0.37,
       webLag2: 0.71,
       // how far the paper lifts under the pointer, in half-heights
-      ptrLift: 0.16,
+      ptrLift: 0.2,
       /* HOW WIDE, in half-widths of a sheet. Past one it reaches across
        * the gap and takes the sheet beside it too, which is what a hand
        * under a run of paper would do — the three webs are one web of
        * paper cut into columns, not three separate objects. */
-      ptrSize: 1.35,
+      ptrSize: 2.5,
       // the mark shown while the room is being made: the word, or the
       // rosette turning
       markLogo: 1,
@@ -7683,7 +7690,7 @@ void main(){
       storySpread: 5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
-      webLift: 1.13,
+      webLift: 1.12,
       /* The ink curve belonged to a paper ground. There, the mapping sent any
        * sample above 0.577 toward white, and a line of nine-point type
        * averaged by the mipmap arrives at about 0.7 — so the type came out
@@ -9307,8 +9314,9 @@ void main(){
                 (clock * rate + WEB_PHASE + k / 3 +
                   P["webLag" + k] * PAGE_STEP * 0.5 + 1) % 1;
             }
-            const cxw = (k - 1) * nw * P.webSpread;
-            gl.uniform3f(uq.uC, cxw, 0, 0);
+            const cxw = (k - 1) * nw * P.webSpread + nw * P.webX,
+              cyw = webNH * P.webY;
+            gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
              * running that backwards from a clip position gives the point on
@@ -9321,7 +9329,7 @@ void main(){
             gl.uniform2f(
               uq.uPtr,
               (((uvx - centre[0]) * dz) / 2.05 - cxw) / Math.max(1e-4, hw),
-              (((uvy - centre[1]) * dz) / 2.05) / Math.max(1e-4, hh),
+              (((uvy - centre[1]) * dz) / 2.05 - cyw) / Math.max(1e-4, hh),
             );
             gl.uniform3f(
               uq.uPtrK,

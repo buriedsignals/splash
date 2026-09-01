@@ -7724,12 +7724,12 @@ void main(){
       webLag1: 0.37,
       webLag2: 0.71,
       // how far the paper lifts under the pointer, in half-heights
-      ptrLift: 0.16,
+      ptrLift: 0.2,
       /* HOW WIDE, in half-widths of a sheet. Past one it reaches across
        * the gap and takes the sheet beside it too, which is what a hand
        * under a run of paper would do — the three webs are one web of
        * paper cut into columns, not three separate objects. */
-      ptrSize: 1.35,
+      ptrSize: 2.5,
       // the mark shown while the room is being made: the word, or the
       // rosette turning
       markLogo: 1,
@@ -7743,7 +7743,7 @@ void main(){
       storySpread: 5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
-      webLift: 1.13,
+      webLift: 1.12,
       /* The ink curve belonged to a paper ground. There, the mapping sent any
        * sample above 0.577 toward white, and a line of nine-point type
        * averaged by the mipmap arrives at about 0.7 — so the type came out
