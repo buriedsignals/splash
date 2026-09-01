@@ -7925,12 +7925,12 @@ void main(){
       // rather than being a set of world units tuned to one window.
       // 400 texels of column shown across 300 pixels is a minification the
       // type does not survive; at 0.21 it is close to one to one.
-      webW: 0.35,
+      webW: 0.36,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
       // far enough apart that the ground still shows between the webs
       webCut: 0, // 0 the press runs, 1 the montage cuts
       webBeat: 0.9, // seconds a page is held before the cut
-      webSpread: 0.71,
+      webSpread: 0.74,
       /* The whole set, sideways and up, in visible half-measures. These
        * existed only on the bench, so a value tuned there could not be
        * carried across — and the two modules had already drifted apart on
@@ -7943,7 +7943,7 @@ void main(){
       // gradient, so on paper it is held much later.
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
-      webEdge: 0.5,
+      webEdge: 0.69,
       /* HOW FAST EACH WEB UNROLLS, in laps of the galley per second, one
        * number each. They were a shared speed and three multipliers of it,
        * which is the wrong shape for a control: reading 0.930 tells you a
@@ -7991,17 +7991,17 @@ void main(){
        * the frame. It is an angle rather than a radius because a radius means
        * nothing without knowing how wide the frame is, and the frame changes
        * with the window; the angle is what the eye reads. Zero is a flat row. */
-      webCurve: 0.55,
+      webCurve: 0.10,
       /* And how much a sheet loses by turning away. It is its OWN number, not
        * a share of the wave's shading: they are two different surfaces — one
        * is the ripple in a sheet of paper, the other is where that sheet is
        * standing — and tying them together meant flattening the light on the
        * outer columns could only be done by flattening the ripple as well. */
-      webCurveSh: 2.1,
+      webCurveSh: 6.0,
       /* And how much of it is carried in the vertical: 1 is a sphere — the
        * top and foot of a sheet fall away exactly as its sides do — and 0 is
        * a cylinder, curved across and dead flat up and down. */
-      webDome: 1.0,
+      webDome: 0.38,
       webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
