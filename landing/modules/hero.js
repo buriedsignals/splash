@@ -3396,6 +3396,10 @@ Stage.register(
     // it slides down the web. Never a literal.
     let GALLEY_H = 4400;
     let REEL = [];
+    /* Where every page of the reel begins, as a fraction of it. The montage
+     * cuts on these and nothing else — a cut that lands mid-page is a jump,
+     * not an edit. */
+    const CUTS = [];
 
     /* The photographs. Every one of these is a real plate belonging to the
      * story it sits in, public domain, and served with an open CORS header —
@@ -4419,6 +4423,7 @@ const flowCol = (A, o) => {
     function buildGalley() {
       // The run: every paper by its dateline, then the modern pages.
       const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+      CUTS.length = 0;
       REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
         .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
         .sort((a, b) => a.year - b.year)
@@ -4474,6 +4479,7 @@ const flowCol = (A, o) => {
           (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
         }
         g.restore();
+        CUTS.push(y / GALLEY_H);
         y += h;
       }
       return cv;
@@ -4744,6 +4750,8 @@ void main(){
       webW: 0.21,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
       // far enough apart that the ground still shows between the webs
+      webCut: 0, // 0 the press runs, 1 the montage cuts
+      webBeat: 0.9, // seconds a page is held before the cut
       webSpread: 0.64,
       // The height at which the paper starts going back into the machine. On
       // ink a long fade reads as the web leaving; on paper it reads as a
@@ -6330,11 +6338,26 @@ void main(){
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
             const rate = P.webSpeed * WEB_SPD[k];
+            /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
+             * the web stops running and starts EDITING: it holds on a page for
+             * a beat and cuts to the next, three pages apart from its
+             * neighbours, and the later pages come faster — the compression a
+             * title sequence uses to cross an age in thirty seconds. */
+            let v;
+            if (P.webCut > 0.5 && CUTS.length) {
+              const n = CUTS.length;
+              const t = clock / Math.max(0.12, P.webBeat);
+              const i = Math.floor(t) + k * 3;
+              const j = ((i % n) + n) % n;
+              v = CUTS[j];
+            } else {
+              v = (clock * rate + WEB_PHASE[k]) % 1;
+            }
             gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
             gl.uniform4f(
               uq.uWin,
               k * gutter,
-              (clock * rate + WEB_PHASE[k]) % 1,
+              v,
               du,
               dv,
             );

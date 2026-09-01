@@ -26,6 +26,10 @@ Stage.register(
     // The ground is a design decision, so it stays in the document: the module
     // reads data-ground off the section and falls back to the house ink. The
     // render is referenced to it, so the two can never drift apart.
+    // Is the hero's own arc in the document at all? Read once, here, because
+    // the camera and the webs are set up long before the module is returned.
+    const ARC0 = !!document.querySelector("#hero-arc");
+
     const INK = [0.078, 0.078, 0.11]; // #14141c
     const ground = INK.slice();
     function readGround(el) {
@@ -3272,8 +3276,102 @@ Stage.register(
     const WEB_SPD = [1.0, 0.912, 1.068];
     const WEB_PHASE = [0.0, 0.37, 0.71];
 
+    /* ------------------------------------------------------------ the reel
+     * The webs used to carry eleven papers dealt into three columns by three
+     * strides. They carry a TIMELINE now: one column that runs through the
+     * history of the form, from a penny paper of 1835 that had no pictures at
+     * all, through the presses that learned to print a photograph, to what a
+     * desk makes today — and the three webs read that one column at three
+     * different heights, so three eras are always in the frame at once.
+     *
+     * It loops. At the end of the run the press starts again at 1835, which is
+     * a seam, and an accepted one: the alternative is a reel long enough that
+     * a lap never comes round, and that reel is a hundred megabytes of
+     * texture. One column instead of three is what pays for the length there
+     * is — a third of the width buys three times the history for the same
+     * bytes, and it is also what guarantees the three webs are never showing
+     * the same page.
+     *
+     * The modern end is not invented journalism. It is the atlas hero.js
+     * already paints for the field of plates — real charts, real maps, drawn
+     * in canvas — copied a tile at a time onto the paper. What the reel ends
+     * on is literally what the tool makes.
+     */
+    /* THE PIECES THAT FOUNDED THE FORM.
+     *
+     * Five plates, in the years they were printed, set into the reel among
+     * the papers of their own decade. They are not decoration and they are
+     * not invented: each is the real sheet, public domain, and each is
+     * captioned with what it is and who drew it. They are also the argument
+     * the whole reel makes — that what a desk does now has a lineage, and
+     * that the lineage is a hundred and forty years long. */
+    const LANDMARKS = [
+      {
+        year: 1786,
+        src: "The Commercial and Political Atlas",
+        by: "William Playfair",
+        what: "Imports and exports to and from England, 1700 to 1782 — the first time a quantity over time was drawn as a line.",
+        img: "https://upload.wikimedia.org/wikipedia/commons/4/4f/1786_Playfair_-_1_Chart_of_all_the_import_and_exports_to_and_from_England_from_the_year_1700_to_1782.jpg",
+      },
+      {
+        year: 1854,
+        src: "On the Mode of Communication of Cholera",
+        by: "Dr John Snow",
+        what: "Deaths from cholera around Broad Street, Soho — a map that found a pump.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Snow-cholera-map-1.jpg/1280px-Snow-cholera-map-1.jpg",
+      },
+      {
+        year: 1858,
+        src: "Notes on Matters Affecting the Health of the British Army",
+        by: "Florence Nightingale",
+        what: "Diagram of the causes of mortality in the army in the East — the blue is what killed more than the fighting.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Nightingale-mortality.jpg/1280px-Nightingale-mortality.jpg",
+      },
+      {
+        year: 1869,
+        src: "Tableaux graphiques et cartes figuratives",
+        by: "Charles Joseph Minard",
+        what: "The Russian campaign of 1812: six variables in one figure, and the width of the band is the army.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg/1280px-Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg",
+      },
+      {
+        year: 1900,
+        src: "The Exhibit of American Negroes, Paris Exposition",
+        by: "W. E. B. Du Bois",
+        what: "Occupations of Negroes and whites in Georgia — drawn by hand, in gouache, to be argued with.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif/lossy-page1-1280px-The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif.jpg",
+      },
+    ];
+
+    const MODERN = [
+      { era: "1970s", forms: ["The first newsroom charts"], tiles: [3, 8] },
+      { era: "1990s", forms: ["Print infographics"], tiles: [12, 17] },
+      { era: "2010s", forms: ["Interactive, on the page"], tiles: [1, 21] },
+      {
+    era: "Today",
+    forms: ["Made at the desk, by the assistant"],
+    tiles: [6, 14, 19],
+      },
+    ];
+
+    /* The papers in the order they were printed, which is the order the reel
+     * runs in. Their own datelines decide it — nothing here is a choice. */
+    const CHRONO = () =>
+      ARTICLES.slice().sort((a, b) => {
+    const y = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+    return y(a) - y(b);
+      });
+
+    let panelSheet = null; // the atlas canvas, kept so the reel can read it
+
     const GALLEY_COL = 400; // the measure of one web, in texels
-    const GALLEY_GAP = 16; // dead paper between two columns of the atlas
+    /* ONE column, and the three webs read it at three different heights.
+     * Three columns side by side cost three times the width for no gain the
+     * moment the reel became a timeline: what the webs must never do is show
+     * the same page, and three offsets into one chronology guarantee that far
+     * better than three orders of the same eleven papers did — they show three
+     * DIFFERENT ERAS. The width saved is spent on the length of the run. */
+    const GALLEY_GAP = 0;
     /* A PAGE IS A PAGE. Its depth is the sheet its press printed on, as a
      * ratio of the measure — a broadsheet is a tall thin thing, a monthly is
      * nearly square — and never how much of the article happened to be set.
@@ -3288,13 +3386,20 @@ Stage.register(
       illustrated: 1.35,
       review: 1.3,
       pictorial: 1.36,
+      modern: 1.55,
+      landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
 
-    const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
+    const GALLEY_W = GALLEY_COL;
     // Settled by the measuring pass, and read by the frame to size the window
     // it slides down the web. Never a literal.
     let GALLEY_H = 4400;
+    let REEL = [];
+    /* Where every page of the reel begins, as a fraction of it. The montage
+     * cuts on these and nothing else — a cut that lands mid-page is a jump,
+     * not an edit. */
+    const CUTS = [];
 
     /* The photographs. Every one of these is a real plate belonging to the
      * story it sits in, public domain, and served with an open CORS header —
@@ -3307,7 +3412,13 @@ Stage.register(
      */
     const PRESS_IMG = new Map();
     function loadPressImages(done) {
-      const urls = [...new Set(ARTICLES.map((a) => a.img).filter(Boolean))];
+      const urls = [
+        ...new Set(
+          ARTICLES.map((a) => a.img)
+            .concat(LANDMARKS.map((k) => k.img))
+            .filter(Boolean),
+        ),
+      ];
       let left = urls.length;
       if (!left) return;
       for (const u of urls) {
@@ -3709,6 +3820,21 @@ const flowCol = (A, o) => {
 };
 
       const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
+      const wrapTo = (text, w, font) => {
+        g.font = font;
+        const out = [];
+        let line = [];
+        for (const t of text.split(/\s+/)) {
+          line.push(t);
+          if (g.measureText(line.join(" ")).width > w) {
+            line.pop();
+            if (line.length) out.push(line.join(" "));
+            line = [t];
+          }
+        }
+        if (line.length) out.push(line.join(" "));
+        return out;
+      };
 
       return {
         // one name across the top under a double rule, a centred headline, and
@@ -3958,6 +4084,111 @@ const flowCol = (A, o) => {
           return end + 24;
         },
 
+        /* A FOUNDING PLATE. Not a newspaper page — a sheet out of a book or
+         * a report, which is what these were: a date, the plate itself at its
+         * own shape, and under a rule what it is and who drew it. */
+        landmark(K, x0, top, capH) {
+          const M = 20,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 30;
+          g.font = "11px " + SERIF;
+          track(String(K.year), mid, y, 11 * 0.5);
+          y += 12;
+          rule(left, y, meas, 1);
+          y += 22;
+          const im = K.img ? PRESS_IMG.get(K.img) : null;
+          if (im && im.width) {
+            const b = plateBox(left, y, meas, capH * 0.46, im);
+            g.save();
+            g.beginPath();
+            g.rect(R(b.x), R(b.y), R(b.w), R(b.h));
+            g.clip();
+            g.drawImage(im, R(b.x), R(b.y), R(b.w), R(b.h));
+            g.restore();
+            g.fillStyle = "rgba(20,20,28,.16)";
+            g.strokeRect(R(b.x) + 0.5, R(b.y) + 0.5, R(b.w) - 1, R(b.h) - 1);
+            g.fillStyle = "#111111";
+            y = b.y + b.h + 14;
+          }
+          rule(mid - meas * 0.16, y, meas * 0.32, 1);
+          y += 18;
+          let hs = 17;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(K.src).width <= meas * 0.94 || hs < 9) break;
+            hs *= 0.94;
+          }
+          track(K.src, mid, y, hs * 0.03);
+          y += 16;
+          g.font = "7.5px " + SERIF;
+          track(K.by.toUpperCase(), mid, y, 7.5 * 0.6);
+          y += 22;
+          g.textAlign = "left";
+          g.font = "9.5px " + SERIF;
+          for (const line of wrapTo(K.what, meas, "9.5px " + SERIF)) {
+            g.fillText(line, left, y);
+            y += 14;
+          }
+          diamond(mid, y + 8, 2.2);
+          return top + capH;
+        },
+
+        /* WHAT THE DESK MAKES NOW. The last pages of the reel, and the only
+         * ones that are not a newspaper: a tracked date, a rule, and the work
+         * itself — chart tiles lifted whole out of the atlas hero.js already
+         * paints for the field of plates. Nothing is drawn twice and nothing
+         * is invented; the reel ends on the tool's own output.
+         *
+         * Before the atlas exists the page is composed empty but for its head,
+         * and the galley is uploaded again when the atlas arrives — the same
+         * two-pass arrangement the photographs use. */
+        modern(M, x0, top, capH) {
+          const Mg = 22,
+            meas = GALLEY_COL - Mg * 2,
+            left = x0 + Mg,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 30;
+          const ms = fit(M.era.toUpperCase(), "400", 10, meas * 0.6);
+          g.font = ms + "px " + SERIF;
+          track(M.era.toUpperCase(), mid, y, ms * 0.5);
+          y += 13;
+          rule(left, y, meas, 1);
+          y += 30;
+
+          let hs = 22;
+          for (const l of M.forms) hs = Math.min(hs, fit(l, "400", 22, meas * 0.9));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of M.forms) {
+            track(l, mid, y, hs * 0.03);
+            y += R(hs * 1.2);
+          }
+          y += 22;
+
+          /* The tiles, stacked down the measure at their own square. The atlas
+           * is ten by ten of PANEL_S, and a still is its index in that grid. */
+          if (panelSheet) {
+            const S = PANEL_S,
+              N = PANEL_N;
+            for (const t of M.tiles) {
+              if (y + meas > top + capH - 26) break;
+              const sx = (t % N) * S,
+                sy = Math.floor(t / N) * S;
+              g.drawImage(panelSheet, sx, sy, S, S, R(left), R(y), R(meas), R(meas));
+              g.fillStyle = "rgba(20,20,28,.14)";
+              g.fillRect(R(left), R(y), R(meas), 1);
+              g.fillRect(R(left), R(y + meas), R(meas), 1);
+              g.fillStyle = "#111111";
+              y += meas + 16;
+            }
+          }
+          diamond(mid, Math.min(y + 4, top + capH - 16), 2.2);
+          return top + capH;
+        },
+
         /* THE MASSES. A radical arts monthly of 1917, and nothing about it is
          * genteel: everything ranged LEFT, a heavy rule, the title big and
          * flush, no ornament, no initial, and a great deal of air above it.
@@ -4190,9 +4421,23 @@ const flowCol = (A, o) => {
     }
 
     function buildGalley() {
-      // The three columns hold the same eleven papers, so their totals agree
-      // and a lap is exactly the eleven page depths whatever order they run in.
-      GALLEY_H = ARTICLES.reduce((a, A) => a + pageH(A), 0);
+      // The run: every paper by its dateline, then the modern pages.
+      const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+      CUTS.length = 0;
+      REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
+        .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
+        .sort((a, b) => a.year - b.year)
+        .concat(MODERN.map((m) => ({ modern: m })));
+      GALLEY_H = REEL.reduce(
+        (a, E) =>
+          a +
+          (E.modern
+            ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
+            : E.landmark
+              ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
+              : pageH(E.A)),
+        0,
+      );
 
       const cv = document.createElement("canvas");
       cv.width = GALLEY_W;
@@ -4203,35 +4448,39 @@ const flowCol = (A, o) => {
       g.textBaseline = "alphabetic";
       const PRESS = galleyPresses(g);
 
-      /* Three columns, three orders. ARTICLES.length is prime, so any stride
-       * walks the whole list, and three different strides mean no two webs can
-       * be showing the same paper at the same height however long the press
-       * runs. The slots differ in height, so the three also stop breaking at
-       * the same places — which is the other half of not reading as a machine
-       * stamping identical blocks. */
-      const STRIDE = [1, 4, 7],
-        START = [0, 5, 9];
-      for (let c = 0; c < 3; c++) {
-        const x0 = c * (GALLEY_COL + GALLEY_GAP);
-        let y = 0;
-        for (let k = 0; k < ARTICLES.length; k++) {
-          const at = (n) =>
-            ARTICLES[(START[c] + n * STRIDE[c]) % ARTICLES.length];
-          const A = at(k);
-          // what the page carries on after this story runs out: the next two
-          // papers on this column, in this column's own order
-          const fill = [at(k + 1), at(k + 2)];
-          const h = pageH(A);
-          g.save();
-          g.beginPath();
-          g.rect(x0, y, GALLEY_COL, h);
-          g.clip();
-          g.fillStyle = "#111111";
-          g.textAlign = "left";
-          (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h, fill);
-          g.restore();
-          y += h;
+      /* The run, in the order it was printed. The papers first, by their own
+       * datelines, then what the desk makes. */
+      let y = 0;
+      for (let k = 0; k < REEL.length; k++) {
+        const E = REEL[k];
+        const h = E.modern
+          ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
+          : E.landmark
+            ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
+            : pageH(E.A);
+        g.save();
+        g.beginPath();
+        g.rect(0, y, GALLEY_COL, h);
+        g.clip();
+        g.fillStyle = "#111111";
+        g.textAlign = "left";
+        if (E.modern) {
+          PRESS.modern(E.modern, 0, y, h);
+        } else if (E.landmark) {
+          PRESS.landmark(E.landmark, 0, y, h);
+        } else {
+          // what the page carries on when the story runs out: the papers that
+          // follow it on the reel, so a column never has a hole in it
+          const fill = [];
+          for (let n = 1; n <= 3; n++) {
+            const F = REEL[(k + n) % REEL.length];
+            if (F && !F.modern) fill.push(F.A);
+          }
+          (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
         }
+        g.restore();
+        CUTS.push(y / GALLEY_H);
+        y += h;
       }
       return cv;
     }
@@ -4286,6 +4535,17 @@ uniform float uTile, uTiles, uAlpha, uLift, uSpin;
 // coordinates. Zero span means "no window" — every plate takes that path and
 // samples the atlas exactly as before.
 uniform vec4 uWin;
+/* THE INK CURVE, on the webs only.
+ *
+ * A column of newsprint four hundred texels wide is shown about two hundred
+ * and fifty wide, so every texel the card sees is a MIPMAP AVERAGE of ink and
+ * paper. Nine-point type averaged with the paper around it is grey, and on a
+ * paper ground grey type on near-white paper is what "not readable" looks
+ * like. The curve pushes the two apart again before the ground mapping: what
+ * was below the pivot goes to black, what was above it stays paper. x is the
+ * pivot, y the steepness; a zero y leaves the sample alone, which is what
+ * every plate passes. */
+uniform vec3 uInkC;   // pivot, gain, mip bias
 uniform vec3 uBG;
 uniform float uRoom, uExposure, uPresence;
 // The flood at the end of the chapter: the sheet is taken to one flat colour
@@ -4322,7 +4582,13 @@ void main(){
     // column can never bleed into the one set beside it.
     st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
-  vec3 col = texture(uTex, st).rgb * uLift * vShade;
+  /* A sharper mip than the card would pick. It chooses one from the rate the
+   * coordinates change, which is right for a photograph and wrong for type:
+   * the level it lands on has already averaged the ink away. Half a level
+   * back costs some aliasing on the rules and gives the type its edges. */
+  vec3 base = texture(uTex, st, uInkC.z).rgb;
+  if(uInkC.y > 0.0) base = clamp((base - uInkC.x) * uInkC.y + uInkC.x, 0.0, 1.0);
+  vec3 col = base * uLift * vShade;
   col = 1.0 - exp(-col * uExposure);
   float R = 1.0 - exp(-uRoom*uExposure);
   vec3  up = clamp((col - R)/max(1.0 - R, 1e-3), 0.0, 1.0);
@@ -4479,15 +4745,37 @@ void main(){
       // the three webs. Widths and heights are fractions of what the camera
       // can see at the webs' own depth, so the composition holds on any frame
       // rather than being a set of world units tuned to one window.
-      webW: 0.35, // half-width, as a fraction of the visible half-width
+      // 400 texels of column shown across 300 pixels is a minification the
+      // type does not survive; at 0.21 it is close to one to one.
+      webW: 0.35,
       webH: 1.35, // half-height — over one, so no end of paper is ever in shot
-      webSpread: 0.71, // where the outer two sit, in visible half-widths
-      webEdge: 0.5, // the height at which the paper starts going back in
-      webSpeed: 0.048, // laps per second
-      webBend: 0.55, // how far the paper leaves its plane, relative to bend
-      webLift: 0.92,
+      // far enough apart that the ground still shows between the webs
+      webCut: 0, // 0 the press runs, 1 the montage cuts
+      webBeat: 0.9, // seconds a page is held before the cut
+      webSpread: 0.71,
       webX: 0, // the whole set, sideways and up, in visible half-measures
       webY: 0,
+      // The height at which the paper starts going back into the machine. On
+      // ink a long fade reads as the web leaving; on paper it reads as a
+      // gradient, so on paper it is held much later.
+      // the height at which the paper goes back into the machine, which also
+      // frees the header band from running over dense body type
+      webEdge: 0.5,
+      webSpeed: 0.048, // laps per second
+      webBend: 0.55, // how far the paper leaves its plane, relative to bend
+      // The webs are the light in the frame, and are lifted to it.
+      webLift: 0.92,
+      /* The ink curve belonged to a paper ground. There, the mapping sent any
+       * sample above 0.577 toward white, and a line of nine-point type
+       * averaged by the mipmap arrives at about 0.7 — so the type came out
+       * LIGHTER than the ground and could not be read at all. On ink that
+       * threshold works for the webs rather than against them: the paper of
+       * the web clears it and lights up, the type falls under it and darkens.
+       * The curve is off, and only the mip bias is kept — a sharper level than
+       * the card picks, which the type wants on any ground. */
+      inkPivot: 0.84,
+      inkGain: 0.0,
+      inkBias: -0.65,
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -4537,6 +4825,8 @@ void main(){
       [
         "the press",
         [
+          ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
+          ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
           ["webSpeed", 0, 0.25, 0.002, "laps of the galley per second"],
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
         ],
@@ -5059,7 +5349,12 @@ void main(){
     let FLY = 2.8; // seconds of flight, braking the whole way
     // the plate stops following the body the moment it breaks
     let plateA = [0, 0, 0];
-    let centre = [0.3, 0.06],
+    /* Where the camera looks. Off to the right and a touch up, because the
+     * block had to sit clear of the hero's headline. The paper section has its
+     * own contents in the middle of the frame, so there the webs are centred:
+     * pushed right they left a bare band down the left and cut a column off
+     * against the right edge. */
+    let centre = ARC0 ? [0.3, 0.06] : [0, 0],
       presence = 1,
       scale = 0.9; // reset from the
     // canvas on first resize: a fixed start is either wasteful on a small
@@ -5115,11 +5410,23 @@ void main(){
       );
     }
 
+    /* WHERE THE WEBS ARE DRAWN.
+     *
+     * The arc when it is in the document: the hero and the chapter it breaks
+     * into, measured as one, because owning only the hero would hand the
+     * canvas away mid-explosion.
+     *
+     * When it is not — it has been lifted out — the webs still have work: they
+     * are the ground of the paper section that took its place. There they run
+     * and nothing else does. No wind, no break, no field of plates, no glass
+     * to stand inside: those are the arc's second act, and the section has its
+     * own contents to carry. */
+    const ARC = !!document.querySelector("#hero-arc");
+    const WEBS_ONLY = !ARC;
+
     return {
       name: "hero",
-      // Stage measures the pair: the hero and the chapter it breaks into.
-      // Owning only the hero would hand the canvas away mid-explosion.
-      section: "#hero-arc",
+      section: ARC ? "#hero-arc" : "#proof",
       field: ground,
 
       /* The exit keeps the frame until it is finished. It floods the journal
@@ -5165,6 +5472,7 @@ void main(){
           "uWashC",
           "uWin",
           "uEdge",
+          "uInkC",
         ]);
         ui = api.uniforms(inside, [
           "uTex",
@@ -5296,8 +5604,15 @@ void main(){
         // panels are not needed until the break, so they are built once the
         // page is already running.
         const buildAtlas = () => {
-          panelTex = api.texFromCanvas(paintPanels());
+          /* The sheet is KEPT, not thrown away with the upload: the reel's
+           * modern pages read tiles straight off it. And the galley is
+           * composed again once it exists — until then those pages carry
+           * their head and nothing under it, the same two-pass arrangement
+           * the photographs use. */
+          panelSheet = paintPanels();
+          panelTex = api.texFromCanvas(panelSheet);
           panelsOn = 1;
+          uploadGalley();
         };
         if (window.requestIdleCallback)
           requestIdleCallback(buildAtlas, { timeout: 2500 });
@@ -5328,7 +5643,7 @@ void main(){
             ".gl-field{background:transparent!important}";
           document.head.appendChild(st);
         }
-        section = document.querySelector("#hero");
+        section = document.querySelector(ARC ? "#hero" : "#proof");
         // the fixed stage carries the ground now; neither section paints it
         if (section) section.classList.add("gl-field");
         const chap = document.querySelector("#chapter");
@@ -5666,6 +5981,8 @@ void main(){
           const u = Math.min(1, (tB - SQUASH) / FLY);
           burst = 1 - Math.pow(1 - u, 5); // flies out, then all but stops
         }
+        // the paper section wants the webs and nothing after them
+        if (WEBS_ONLY) burst = 0;
 
         // the section's own interface waits for the field to settle
         const chap = document.querySelector("#chapter");
@@ -6071,8 +6388,20 @@ void main(){
          * travelling lobes, four refraction indices marched twice each and
          * fanned into fourteen spectral samples. It went with the block.
          */
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.viewport(0, 0, fw, fh);
+        /* Where the webs are painted.
+         *
+         * Into the buffer when the arc is here, because the glass pass reads
+         * that buffer back and is what puts it on screen. With webs only there
+         * is no glass pass — so there is nothing to copy the buffer out, and
+         * painting into it would put the webs somewhere no one ever sees. They
+         * go straight onto the canvas instead. */
+        if (WEBS_ONLY) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, cw, ch);
+        } else {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+          gl.viewport(0, 0, fw, fh);
+        }
         gl.clearColor(ground[0], ground[1], ground[2], 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -6111,7 +6440,7 @@ void main(){
           gl.uniform1f(uq.uExposure, P.exposure);
           gl.uniform1f(uq.uPresence, presence * ctx.vis);
           gl.uniform1f(uq.uAlpha, webFade);
-          gl.uniform1f(uq.uLift, P.paper * 1.34 * P.webLift);
+          gl.uniform1f(uq.uLift, P.paper * P.webLift);
           gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, galleyTex);
           gl.uniform1i(uq.uTex, 0);
@@ -6125,9 +6454,12 @@ void main(){
           gl.uniform3f(uq.uAy, 0, hh, 0);
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
+          gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
-          const du = GALLEY_COL / GALLEY_W,
-            gutter = (GALLEY_COL + GALLEY_GAP) / GALLEY_W;
+          // one column, so every web reads the whole width of the sheet and
+          // they differ only by where they are in the run
+          const du = 1,
+            gutter = 0;
           /* How much of a lap is in shot is NOT a taste decision — it is
            * whatever keeps a texel square. Choose it by hand and the type is
            * stretched or squeezed by however wrong the guess was, and it goes
@@ -6138,6 +6470,21 @@ void main(){
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
             const rate = P.webSpeed * WEB_SPD[k];
+            /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
+             * the web stops running and starts EDITING: it holds on a page for
+             * a beat and cuts to the next, three pages apart from its
+             * neighbours, and the later pages come faster — the compression a
+             * title sequence uses to cross an age in thirty seconds. */
+            let v;
+            if (P.webCut > 0.5 && CUTS.length) {
+              const n = CUTS.length;
+              const t = clock / Math.max(0.12, P.webBeat);
+              const i = Math.floor(t) + k * 3;
+              const j = ((i % n) + n) % n;
+              v = CUTS[j];
+            } else {
+              v = (clock * rate + WEB_PHASE[k]) % 1;
+            }
             gl.uniform3f(
               uq.uC,
               (k - 1) * nw * P.webSpread + nw * P.webX,
@@ -6147,7 +6494,7 @@ void main(){
             gl.uniform4f(
               uq.uWin,
               k * gutter,
-              (clock * rate + WEB_PHASE[k]) % 1,
+              v,
               du,
               dv,
             );
@@ -6195,6 +6542,7 @@ void main(){
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
           gl.uniform1f(uq.uEdge, 0);
+          gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);
           gl.uniform1f(uq.uWash, 0);
@@ -6327,7 +6675,7 @@ void main(){
 
         gl.bindVertexArray(null);
 
-        if (!OFF.inside) {
+        if (!OFF.inside && !WEBS_ONLY) {
           // out of the buffer and through the glass we are now standing in
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);
