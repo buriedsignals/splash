@@ -7564,8 +7564,17 @@ void main(){
         f0 = f;
         t0 = t;
         fps.style.color = v < 50 ? "#f2b13c" : "#e8e8e8";
+        /* BOTH NUMBERS, because one of them alone means nothing. The left
+         * is what the browser handed out; the right is what the scene spent
+         * inside its own frame. A low rate with a small cost is a browser
+         * running at half vsync — a display, a power setting, another tab —
+         * and no amount of work here will move it. A cost near the budget
+         * is ours. */
+        const cost = window.__frameMs || 0;
+        fps.style.color = cost > 9 ? "#f2b13c" : v < 50 ? "#8d8d96" : "#e8e8e8";
         fps.textContent =
-          v.toFixed(0) + " fps · " + (1000 / Math.max(v, 0.001)).toFixed(1) + " ms";
+          v.toFixed(0) + " fps · scene " + cost.toFixed(1) + " ms of " +
+          (1000 / Math.max(v, 0.001)).toFixed(1);
       }, 500);
 
       for (const [group, rows] of WEB_TUNE) {
