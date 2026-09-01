@@ -336,8 +336,27 @@
      amène. Empilés par le flux, un pavé n'apparaissait que sur les cent
      derniers pixels de son écran de scroll, et la pile ne se lisait pas.
      L'ordre du document suffit à décider qui passe devant. */
-  .cstage{position:sticky;top:0;height:100vh;height:100dvh;
-          display:grid;place-items:center;padding:var(--vs-s) 0}
+  /* --- la première section : une intro, puis la pile qui vient à vous ----
+     Tout est dans la même cellule de grille du plateau collé — l'intro et les
+     quatre pavés au même point — et le script ne donne à chacun que sa
+     profondeur. Le plateau COUPE : un pavé qui monte vient de sous le cadre,
+     celui qui recule sort par le haut, et ni l'un ni l'autre ne doit se voir
+     déborder sur la section voisine. La perspective est sur le plateau, donc
+     partagée : les pavés reculent vers le même point de fuite. */
+  .cstage{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
+          display:grid;place-items:center;padding:var(--vs-s) 0;
+          perspective:1500px}
+  .cintro{grid-area:1/1;max-width:min(780px,80vw);text-align:center;
+          will-change:transform,opacity;opacity:0;transform:translateY(26px)}
+  .cstage.in .cintro{opacity:1;transform:none;
+          transition:opacity .62s cubic-bezier(.24,.62,.28,1) .06s,
+                     transform .72s cubic-bezier(.24,.62,.28,1)}
+  .ckick{font-size:9.5px;font-weight:500;letter-spacing:.17em;
+         text-transform:uppercase;color:var(--amber)}
+  .cintro h2{margin:15px 0 0;font-family:var(--D);font-weight:800;
+             letter-spacing:-.03em;line-height:1.02;text-wrap:balance;
+             font-size:clamp(34px,5.2vw,70px)}
+  .cintro p{margin:20px auto 0;max-width:54ch;font-size:15px;opacity:.6}
   .pile{grid-area:1/1;will-change:transform,opacity}
   /* Les pavés n'ont plus d'état d'apparition en CSS : ils montent depuis sous
      le cadre, et c'est le script qui les place. Le premier compris — il
@@ -352,10 +371,14 @@
      lire le texte de celui de dessous à travers celui de dessus. La couleur
      est celle que donnait rgba(17,17,24,.74) sur le sol — même aplat, sans
      la transparence. */
-  .card{width:min(620px,54vw);background:#11121a;
+  /* Plus large qu'avant, et posé : un pavé qui vient vers vous doit avoir la
+     taille d'une page, pas d'un encart, et une ombre pour qu'on lise
+     l'épaisseur de la pile derrière lui. */
+  .card{width:min(880px,72vw);background:#11121a;
         border:1px solid rgba(237,234,227,.13);
         border-radius:var(--rad-l);
-        padding:clamp(24px,2.4vw,38px) clamp(26px,2.6vw,40px)}
+        box-shadow:0 40px 90px -30px rgba(0,0,0,.72);
+        padding:clamp(28px,2.8vw,44px) clamp(30px,3vw,48px)}
   .card h3{margin:16px 0 0;font-size:clamp(25px,2.5vw,38px);line-height:1.04}
   .card p{margin:16px 0 0;font-size:14px;opacity:.62}
   .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.11);
@@ -1843,7 +1866,29 @@
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
 <section class="chapter" data-ground="#14141c">
-  <div class="cstage"></div>
+  <div class="cstage">
+    <div class="cintro">
+      <div class="ckick">The case</div>
+      <h2>A story people can see is a story people can check.</h2>
+      <p>Four findings, from the desks that publish and the readers who read them — the reason a graphic is reporting and not decoration.</p>
+    </div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">01 · The evidence</div>
+    <h3>Visual journalism makes reporting easier to inspect.</h3>
+    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
+    <div class="src">Source · EJC State of Data Journalism Survey, 2023</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">02 · Trust</div>
+    <h3>Good design helps readers trust the work.</h3>
+    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
+    <div class="src">Source · Information Design Journal · ACM CHI, 2024–25</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">03 · The AI shift</div>
+    <h3>When articles become inputs, visual form becomes identity.</h3>
+    <p>AI turns fixed articles into “liquid information” that machines break apart and recompose.</p>
+    <div class="src">Source · Reuters Institute, 2025</div></div></div>
+    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">04 · Discovery</div>
+    <h3>Visuals create another way for the story to travel.</h3>
+    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
+    <div class="src">Source · Google AI Search documentation</div></div></div>
+  </div>
 </section>
 </div>
 
@@ -2677,6 +2722,10 @@
        — assez pour que ce soit un déplacement et pas une coupure. */
     await glide(firstTop, 380);
 
+    /* L'intro se pose À L'ARRIVÉE, pas pendant le trajet : montée avec la
+       page, on l'aurait vue venir d'en bas au lieu de la voir se poser. */
+    if (cstage) cstage.classList.add('in');
+
     running = false;
     await wait(80);
     lock(false);
@@ -2694,6 +2743,7 @@
     running = true; freeBack = false;
 
     window.__rewind = 1;
+    if (cstage) cstage.classList.remove('in');
     await glide(0, 380);
     hero.classList.remove('gone');
 
@@ -2712,7 +2762,7 @@
    * section suivante — et le mot y entre à l'arrivée, comme la première tuile
    * se posait à la sienne. Jamais deux mouvements en même temps.
    */
-  const cards = [...document.querySelectorAll('.card')];
+  const cards = [...document.querySelectorAll('.chapter .card')];
   const lastCard = cards[cards.length - 1];
   const word = document.querySelector('.pmark');
 
@@ -2741,14 +2791,14 @@
        * et on n'avait pas le temps de le lire. Le chapitre est donc allongé
        * d'un temps mort, et le plafond descend d'autant — la scène reste
        * collée exactement jusque-là, les deux mesures ne peuvent pas diverger. */
-      /* Une section VIDE tient un écran, et sa porte est son sommet : il n'y
-         a rien à faire défiler dedans, donc le premier geste vers le bas la
-         quitte — la même règle que toutes les autres portes de la page. Avec
-         des pavés, la hauteur et la porte restent ce qu'elles étaient. */
+      /* Un écran pour l'intro, puis un par pavé, plus le temps mort du
+         dernier. Une section VIDE tient un écran et sa porte est son sommet :
+         il n'y a rien à faire défiler dedans, donc le premier geste vers le
+         bas la quitte — la même règle que toutes les autres portes. */
       const N = piles.length;
-      chapter.style.height = ((N ? N + DWELL : 1) * slotH) + 'px';
+      chapter.style.height = ((N ? INTRO + N + DWELL : 1) * slotH) + 'px';
       firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + Math.round((N ? N - 1 + DWELL : 0) * slotH);
+      exitY = firstTop + Math.round((N ? INTRO + N - 1 + DWELL : 0) * slotH);
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -2845,29 +2895,65 @@
    *
    * L'avancement se calcule sur les repères, jamais sur un rectangle mesuré :
    * une fois collé, un pavé rapporte sa position collée et non la sienne. */
-  const piles = [...document.querySelectorAll('.pile')];
+  const piles = [...document.querySelectorAll('.chapter .pile')];
+  const intro = document.querySelector('.chapter .cintro');
+  const cstage = document.querySelector('.chapter .cstage');
   const rises = [];       // la distance qu'un pavé parcourt, la sienne
+  /* L'intro tient le premier écran de la section : on la lit, PUIS la pile
+   * commence. Un pavé qui monterait pendant qu'on lit, c'est l'intro qu'on ne
+   * lit pas. */
+  const INTRO = 1;
   /* Le temps mort. Un pavé posé garde le cadre pendant les 38 premiers pour
    * cent de son écran de scroll : on a le temps de le lire avant que quoi que
    * ce soit ne bouge. Le suivant fait tout son chemin sur les 62 % restants. */
   const DWELL = 0.38, TRIP = 1 - DWELL;
   let pileQ = false, piled = false, entryK = 0;
+  const cl = (v) => Math.max(0, Math.min(1, v));
+  /* LA PILE VIENT À VOUS.
+   *
+   * Un pavé fait deux choses, jamais en même temps : il MONTE depuis sous le
+   * cadre en grandissant jusqu'à sa taille pleine, puis — un temps mort plus
+   * tard — il RECULE, remonte de peu, rapetisse et s'incline en arrière
+   * pendant que le suivant passe devant lui. `up` finit exactement là où
+   * `off` commence, donc les deux gestes se succèdent au lieu de se disputer
+   * la même transformation.
+   *
+   * L'ordre de profondeur ne se calcule pas : les pavés partagent une cellule
+   * de grille, donc c'est l'ordre du document qui empile, et le suivant est
+   * toujours écrit après. */
   const stack = () => {
     pileQ = false;
     if (!slotH) return;
+    // l'intro s'efface sur son propre écran, avant que le premier pavé bouge
+    if (intro) {
+      const p0 = cl((scrollY - firstTop) / slotH);
+      intro.style.opacity = (1 - cl(p0 * 1.7)).toFixed(3);
+      intro.style.transform = 'translate3d(0,' + (-p0 * 54).toFixed(1) + 'px,0)';
+    }
     for (let i = 0; i < piles.length; i++) {
-      const q = (scrollY - (firstTop + i * slotH)) / slotH;
-      // sa montée, puis — un temps mort plus tard — son effacement
-      const up = Math.max(0, Math.min(1, (q - DWELL + 1) / TRIP));
-      const off = Math.max(0, Math.min(1, (q - DWELL) / TRIP));
-      /* entryK est la montée que le défilement ne peut pas donner. À l'arrivée
-       * sur le premier pavé la page est déjà à sa place — q vaut zéro — donc
-       * sans lui il se poserait sans être monté : il apparaîtrait. */
-      const y = (1 - up + entryK) * rises[i] - off * 30;
-      piles[i].style.transform = 'translate3d(0,' + y.toFixed(1) + 'px,0)';
-      // tant que le bloc se casse, la page lui appartient : un pavé posé
-      // par-dessus l'explosion, c'est deux choses à regarder en même temps
-      piles[i].style.opacity = piled ? (1 - off).toFixed(3) : '0';
+      const q = (scrollY - (firstTop + (INTRO + i) * slotH)) / slotH;
+      const up = cl((q - DWELL + 1) / TRIP);
+      /* LA PROFONDEUR N'EST PAS BORNÉE À UN ÉCRAN. Coupée à un, tous les
+       * pavés déjà passés se retrouvaient au même endroit, à la même taille :
+       * la pile n'avait qu'une seule épaisseur derrière le pavé de devant.
+       * Elle se compte en écrans, sans plafond, et chaque écran de plus
+       * rapproche le pavé de son point de fuite sans jamais l'atteindre —
+       * l'écart entre deux pavés diminue à mesure qu'ils s'éloignent, ce qui
+       * est le propre d'une perspective. */
+      const d = Math.max(0, q - DWELL) / TRIP;
+      const k = 1 - Math.pow(0.55, d);
+      /* entryK est la montée que le défilement ne peut pas donner, pour un
+       * pavé qui doit se poser alors que la page est déjà à sa place. */
+      const y = (1 - up + entryK) * rises[i] - k * slotH * 0.34;
+      const sc = 0.9 + 0.1 * up - k * 0.26;
+      piles[i].style.transform =
+        'translate3d(0,' + y.toFixed(1) + 'px,0) scale(' + sc.toFixed(4) +
+        ') rotateX(' + (k * 9).toFixed(2) + 'deg)';
+      /* ASSOMBRI, PAS RENDU TRANSLUCIDE. Deux pavés translucides empilés
+       * laissent lire le texte de celui de dessous à travers celui de
+       * dessus, et c'est illisible des deux côtés. Un pavé qui recule reste
+       * opaque et perd de la lumière, ce qui est ce que fait la profondeur. */
+      piles[i].style.filter = 'brightness(' + (1 - k * 0.5).toFixed(3) + ')';
     }
   };
   addEventListener('scroll', () => {

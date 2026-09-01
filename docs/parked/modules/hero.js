@@ -8140,7 +8140,9 @@ void main(){
       tab.id = "web-tune-tab";
       tab.textContent = "the webs";
       tab.style.cssText =
-        "position:fixed;top:12px;right:12px;z-index:99998;display:none;" +
+        // en bas à droite : en haut il se posait sur la navigation, et un
+        // outil de réglage ne doit pas couvrir un lien de la page
+        "position:fixed;bottom:12px;right:12px;z-index:99998;display:none;" +
         "padding:7px 11px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;" +
         "color:#e8e8e8;cursor:pointer;background:rgba(14,14,18,.9);" +
         "border:1px solid rgba(255,255,255,.16);border-radius:8px;" +
@@ -8751,14 +8753,18 @@ void main(){
      * own contents to carry. */
     const ARC = !!document.querySelector("#hero-arc");
     const WEBS_ONLY = !ARC;
-    /* AND THE SECOND ACT ONLY EXISTS IF THE SECTION UNDER THE HERO HAS
-     * SOMETHING IN IT. The wind-up, the break and the field of plates were
-     * choreography for four tiles coming up the page; with the section
-     * emptied they are a break played over nothing, on a screen the reader
-     * crosses in one gesture. The exit flood is NOT part of this — the page
-     * cues that one by hand, and it is what carries the ground into the
-     * section below. */
-    const ARC_ACT = ARC && !!document.querySelector(".chapter .pile");
+    /* AND THE SECOND ACT IS OPT-IN, on the arc's own element. The wind-up,
+     * the break and the field of plates were choreography for four tiles
+     * coming up the page, and the section under the hero does something else
+     * now — so they are off unless the arc asks for them by name. Inferred
+     * from the presence of a tile it would come back on by accident the day
+     * that section has tiles again for a different reason, which is exactly
+     * the kind of coupling that makes a page behave differently for no
+     * visible cause. The exit flood is NOT part of this: the page cues that
+     * one by hand, and it is what carries the ground into the section
+     * below. */
+    const ARC_ACT = ARC &&
+      document.querySelector("#hero-arc").dataset.act === "break";
 
     return {
       name: "hero",
