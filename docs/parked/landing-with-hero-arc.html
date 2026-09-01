@@ -342,7 +342,13 @@
      canevas est effacé à zéro — donc le cadre a la forme des feuilles et de
      rien d'autre, et le texte sort de dessous à mesure qu'elles s'en vont.
      Retiré à la fin du geste, quand il n'y a plus de papier pour le cacher. */
-  .chapter.behind{z-index:-1}
+  .chapter.behind{clip-path:inset(var(--cut,100vh) 0 0 0)}
+  /* ET L'UI SE RETIRE PENDANT LA TRAVERSÉE. Un en-tête qui flotte au-dessus
+     d'un geste qui prend tout le cadre est la seule chose immobile de l'image,
+     donc la seule qu'on regarde. !important pour la même raison que le boot :
+     l'en-tête porte sa propre animation d'entrée, et une propriété animée
+     l'emporte sur une déclaration simple quelle que soit la spécificité. */
+  body.crossing header{opacity:0 !important;transition:opacity .3s ease}
   /* La pile. Une seule scène collée au cadre, et TOUS les pavés superposés
      dedans — même case de grille, donc même place. Aucun n'est dans le flux :
      leur position vient entièrement du script, ce qui permet de les faire
@@ -2722,38 +2728,57 @@
   const webbedOut = () => (window.__webOutK === undefined) || window.__webOutK >= 0.999;
   const webbedIn  = () => (window.__webOutK === undefined) || window.__webOutK <= 0.001;
 
-  /* LE TEXTE EST LÀ AVANT QUE LE PAPIER PARTE, et c'est le papier qui le
-   * découvre. Le trajet se faisait après la sortie du papier, donc on quittait
-   * un cadre vide pour arriver sur une section vide qui se remplissait ensuite
-   * — deux temps morts et aucune révélation.
+  /* LA COUPE, POSÉE À CHAQUE FRAME. Le module publie le pied le plus bas des
+   * trois feuilles ; la section est coupée à cette hauteur, donc elle n'existe
+   * que SOUS le papier — et sous le papier veut dire sous tout le cadre, pas
+   * seulement sous les feuilles. Tant qu'aucune valeur n'est publiée la coupe
+   * vaut tout l'écran, c'est-à-dire rien de visible : jamais l'inverse. */
+  let cutRaf = 0;
+  const cutOn = () => {
+    chapter.classList.add('behind');
+    const step = () => {
+      if (!window.__heroHold) return;
+      const v = window.__webCut;
+      chapter.style.setProperty('--cut',
+        (typeof v === 'number' ? Math.max(0, Math.min(innerHeight, v)) : innerHeight) + 'px');
+      cutRaf = requestAnimationFrame(step);
+    };
+    step();
+  };
+  const cutOff = () => {
+    cancelAnimationFrame(cutRaf);
+    chapter.classList.remove('behind');
+    chapter.style.removeProperty('--cut');
+  };
+
+  /* LA TRAVERSÉE, dans l'ordre : la page est tenue, l'ui se retire, la page est
+   * portée jusqu'à la section, son contenu est mis sous le papier, le papier
+   * s'en va, et la main est rendue.
    *
-   * La toile est fixe et les sections passent DEVANT elle, alors la page peut
-   * voyager pendant que le papier est encore debout : le titre du hero s'en va,
-   * l'intro de la section monte et se pose PAR-DESSUS les journaux, et c'est
-   * seulement là que les journaux se retirent par le haut et la laissent seule
-   * sur le fond. Le module tient le cadre pendant tout ça — sa propre section
-   * est hors champ à ce moment-là, donc sans ce verrou Stage lui retirerait la
-   * toile au milieu du geste. */
+   * La coupe est posée AVANT le voyage et non après. Le canevas est fixe, donc
+   * pendant le trajet c'est la section qui passe devant les journaux : sans
+   * elle on verrait le texte monter par-dessus le papier au lieu de le voir
+   * sortir de dessous. */
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
-    chapter.classList.add('behind');
+    document.body.classList.add('crossing');
     hero.classList.add('gone');
     if (cstage) cstage.classList.add('in');
+    cutOn();
+    await wait(300);
 
-    // 1. la page voyage, papier debout : le texte arrive sur les journaux
     await glide(firstTop, 620);
     await wait(120);
 
-    // 2. et le papier se retire, ce qui découvre ce qui est déjà en place
     window.__webOut = 1;
     await until(webbedOut, 4000);
-    // le papier est sorti du cadre : plus rien ne peut le cacher, donc il
-    // remonte devant la toile sans que ça se voie
+
+    cutOff();
     window.__heroHold = 0;
-    chapter.classList.remove('behind');
+    document.body.classList.remove('crossing');
 
     running = false;
     await wait(80);
@@ -2773,7 +2798,8 @@
 
     window.__rewind = 1;
     window.__heroHold = 1;
-    chapter.classList.add('behind');
+    document.body.classList.add('crossing');
+    cutOn();
 
     // 1. le papier redescend et recouvre la section — l'aller finissait par
     //    son retrait, donc le retour commence par son retour
@@ -2784,8 +2810,9 @@
     if (cstage) cstage.classList.remove('in');
     await glide(0, 620);
     hero.classList.remove('gone');
+    cutOff();
     window.__heroHold = 0;
-    chapter.classList.remove('behind');
+    document.body.classList.remove('crossing');
 
     running = false; armed = true;
     entryK = 0; stack();
@@ -3459,7 +3486,8 @@
       armed = true; hero.classList.remove('gone');
       window.__webOut = 0;                   // et le papier revient avec lui
       window.__heroHold = 0;                 // sans laisser le verrou derrière
-      if (chapter) chapter.classList.remove('behind');
+      document.body.classList.remove('crossing');
+      cutOff();
       trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });

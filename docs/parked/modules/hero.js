@@ -3938,12 +3938,12 @@ Stage.register(
     let outSec = 0;
     let bootAt = null;
     let waveT = 0;
-    /* WHAT THE FRAME IS CLEARED TO, and the only copy of the answer. The
-     * module clears again itself — it has to, because it may be drawing into
-     * its own buffer rather than to the screen — so a value settled in the
-     * stage and re-settled here is a value that disagrees with itself on
-     * every frame. Both read this. */
-    const clearA = () => (window.__heroHold ? 0 : 1);
+    /* WHERE THE LOWEST EDGE OF THE PAPER IS, in viewport pixels, while the
+     * page is being handed over. The frame is opaque — the gaps between the
+     * columns are ground, not a window onto the section below — so what
+     * uncovers the text is this ONE line rising: everything above it is still
+     * the press, everything under it is the page. */
+    let webCut = 0;
     /* The boot screen is clipped by where the paper actually is, so the web
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
@@ -8919,14 +8919,6 @@ void main(){
         (outSec > 0.001 && outSec < OUT_SPAN) ||
         !!window.__heroHold,
 
-      /* AND WHILE IT IS HELD FOR THE HANDOVER, THE FRAME IS THE PAPER AND
-       * NOTHING ELSE. The section under the hero is put behind the canvas for
-       * those two seconds, so the paper is what covers its text; a frame that
-       * clears to the ground colour would cover it just as thoroughly and
-       * never let go. Cleared to nothing, the canvas is the shape of the
-       * sheets, and what is behind them comes out as they leave. */
-      clearAlpha: clearA,
-
       init(api) {
         gl = api.gl;
         canvas = api.canvas;
@@ -9947,7 +9939,7 @@ void main(){
           gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
           gl.viewport(0, 0, fw, fh);
         }
-        gl.clearColor(ground[0], ground[1], ground[2], clearA());
+        gl.clearColor(ground[0], ground[1], ground[2], 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         /* ---- the three webs ---------------------------------------------
@@ -10032,6 +10024,7 @@ void main(){
           /* The three do not run at the same rate. Identical speeds read as
            * one image cut into three; a few per cent apart and the gap between
            * two mastheads keeps changing, which is what says three presses. */
+          webCut = Infinity;
           for (let k = 0; k < 3; k++) {
             /* NORMALISED BY THE LENGTH OF THE REEL. A web's speed on screen
              * is its rate over the fraction of the reel in shot, and that
@@ -10122,6 +10115,9 @@ void main(){
              * on a press does. The whole move is one signed number, so the
              * exit cannot drift out of step with the entrance. */
             const rise = ((1 - inE) - outE) * (cyw + hh + webNH);
+            // and the foot of this sheet, for the line that uncovers the page
+            const foot = cyw - hh - rise;
+            if (foot < webCut) webCut = foot;
             gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
@@ -10191,6 +10187,17 @@ void main(){
             WEB_WIN[k] = v;
             WEB_WIN[3] = dv;
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
+          }
+          /* THE LINE THE PAGE IS UNCOVERED BY. The lowest foot of the three,
+           * projected back to a viewport pixel and biased a few pixels DOWN:
+           * a line placed too high leaves a strip of the page's text standing
+           * over paper, which is the one thing it must never do, while a line
+           * placed too low hides a strip of ground that has nothing on it. */
+          if (window.__heroHold && webCut < Infinity) {
+            const r = canvas.getBoundingClientRect();
+            const cyc =
+              (webCut * 2.05) / Math.max(0.08, zoom) + centre[1];
+            window.__webCut = r.top + ((1 - cyc * 2) / 2) * r.height + 10;
           }
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
           // the plates are flat, and they are drawn with the same program

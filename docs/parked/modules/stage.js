@@ -181,15 +181,12 @@ const Stage = (() => {
     gl = canvas.getContext("webgl2", {
       antialias: true,
       alpha: true,
-      /* PREMULTIPLIED, because that is what the framebuffer actually holds.
-       * The blend is SRC_ALPHA / ONE_MINUS_SRC_ALPHA, which writes colour
-       * already multiplied by its coverage; declaring it straight told the
-       * compositor to divide by an alpha that had never been divided out. It
-       * never showed, because the clear was opaque and nothing partly
-       * transparent ever reached the screen. A scene that clears to nothing
-       * does reach it, and it would have arrived twice as dark at every
-       * feathered edge. */
-      premultipliedAlpha: true,
+      /* Straight, and it does not matter: every scene clears opaque, so no
+       * partly transparent pixel ever reaches the compositor. It mattered for
+       * one afternoon, when a scene cleared to nothing so the page could show
+       * through the gaps between its sheets — and showing through the gaps
+       * turned out to be the wrong thing to want. */
+      premultipliedAlpha: false,
     });
     if (!gl) {
       console.warn("[stage] no webgl2 — DOM fallback stays visible");
@@ -310,14 +307,7 @@ const Stage = (() => {
 
     if (active) {
       const [r, g, b] = active.field;
-      /* A SCENE MAY ASK TO CLEAR TO NOTHING. The canvas is one opaque layer
-       * under the whole document, so what a scene draws is always in front of
-       * the page — which is right until a scene wants the page BEHIND it,
-       * uncovered as the scene gets out of the way. Clearing to zero alpha
-       * makes the frame the scene's own shape and nothing else, and the
-       * sections below show through wherever it has not drawn. Opaque unless
-       * a module says otherwise, which is every module but one. */
-      gl.clearColor(r, g, b, active.clearAlpha ? active.clearAlpha() : 1);
+      gl.clearColor(r, g, b, 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.BLEND);
       gl.blendFuncSeparate(
