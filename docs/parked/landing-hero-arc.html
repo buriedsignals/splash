@@ -1,13 +1,33 @@
-<!-- PARKED, not served.
-     The hero arc lifted out of landing/index.html on request: the three webs of
-     newsprint and the chapter they break into. Both are ONE gesture in two
-     acts, driven by one module (landing/modules/hero.js, which stays on disk
-     and is simply no longer loaded) and one scroll sequence, so neither could
-     be taken out without the other.
+<!-- PARKED, not served. Lives outside landing/, which is the only directory
+     the Pages workflow publishes.
 
-     To put it back: paste this block above <section id="hsec"> in
-     landing/index.html and restore the <script src="modules/hero.js"></script>
-     line beside the other modules.
+     The hero arc, lifted out of landing/index.html on request: the three webs
+     of newsprint, and the chapter they break into. Both are ONE gesture in two
+     acts — one module, one scroll sequence, the chapter born of the hero
+     tearing — so neither could be taken out without the other.
+
+     TO PUT IT BACK, paste this block above <section id="hsec"> in
+     landing/index.html. That is the whole operation; nothing else has to be
+     touched, because everything that was made conditional keys off the arc's
+     own presence in the document:
+
+       · landing/modules/hero.js is loaded and running either way. With no arc
+         it registers on #proof and draws the webs alone — no wind, no break,
+         no field of plates, no glass. With the arc back it registers on
+         #hero-arc again and every value it tunes (the lift, the camera's
+         offset, the columns' width and spacing, the edge fade) returns to what
+         the arc wants, because each is written as `ARC0 ? … : …`.
+       · the two safety nets in index.html's scroll handler are guarded on
+         `chapter`, and the page's boot branches on it: with an arc the hero
+         holds the page from load, without one the page starts in the state the
+         hero's exit used to leave behind.
+       · the pile that carries the four tiles measures itself against
+         `pileHost`, which is the chapter when it is here and the paper section
+         when it is not.
+
+     Two things to decide when it comes back, because both sections would then
+     hold the same four tiles: whether #proof keeps them or gives them up, and
+     whether it keeps the webs behind it or lets the hero have them alone.
 -->
 <div id="hero-arc">
 <section class="hero" data-ground="#14141c">
