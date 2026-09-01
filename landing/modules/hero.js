@@ -3270,12 +3270,20 @@ Stage.register(
      * exactly the texture's height however the measuring comes out. That is
      * what keeps the loop seamless.
      */
-    // A rate and a starting height per web. The rates are within a tenth of
-    // each other so the three stay a set, and apart enough that the gap
-    // between two mastheads keeps changing — which is what says three presses
-    // rather than one image cut into three.
-    const WEB_SPD = [1.0, 0.912, 1.068];
-    const WEB_PHASE = [0.0, 0.37, 0.71];
+    /* THE THREE WEBS RUN AS ONE, A PAGE APART.
+     *
+     * They used to run at rates a tenth apart and start a third of the reel
+     * apart, so at any moment the frame held three eras at once — 1835 beside
+     * 1900 beside today. That reads as a spread of dates and not as an
+     * evolution, which is the whole thing the reel is for. Set one page apart
+     * and driven at one rate, the frame carries pages n, n+1 and n+2: the
+     * order is legible across the frame, and the whole of it moves through the
+     * ramp together.
+     *
+     * The rates must be EQUAL for that to hold. A tenth of drift is invisible
+     * for a few seconds and has the columns out of order a minute later. */
+    const WEB_SPD = [1, 1, 1];
+    let PAGE_STEP = 1 / 30; // one page, as a fraction of the reel
 
     /* ------------------------------------------------------------ the reel
      * The webs used to carry eleven papers dealt into three columns by three
@@ -5171,6 +5179,7 @@ const flowCol = (A, o) => {
         const k = (seen[S.rung] = (seen[S.rung] || 0) + 1) - 1;
         return { spec: { ...S, i, head: HEADS[k % HEADS.length] } };
       });
+      PAGE_STEP = 1 / Math.max(1, REEL.length);
       GALLEY_H = REEL.reduce(
         (a, E) =>
           a +
@@ -7101,7 +7110,7 @@ void main(){
               const j = ((i % n) + n) % n;
               v = CUTS[j];
             } else {
-              v = (clock * rate + WEB_PHASE[k]) % 1;
+              v = (clock * rate + k * PAGE_STEP) % 1;
             }
             gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
             gl.uniform4f(
