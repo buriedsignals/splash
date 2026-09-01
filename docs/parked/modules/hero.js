@@ -4179,7 +4179,7 @@ Stage.register(
         });
 
     LIVE_ART.line = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "The series, year by year", "Annual, Lorem Ipsum Office",
+      chrome(w, h, "The series, by year", "Annual, Lorem Ipsum Office",
         (pw, ph) => {
           const n = 13,
             gut = pw < 130 ? 0 : GUT,
@@ -4389,13 +4389,25 @@ Stage.register(
      * a strip of grey nothing. That is what responsive means for a map. */
     const geo = () => (typeof window !== "undefined" && window.GEO) || null;
     const ISOS = () => Object.keys(geo().c);
+    /* The crop is chosen by PROPORTION, not by a threshold. Fitting a
+     * hemisphere into a hole two columns wide and a paragraph deep sizes the
+     * map by its height and leaves it occupying a third of the width, with
+     * the rest white — the map was there and the block still read as empty.
+     * The one whose shape is nearest the hole's wins, on a log ratio so that
+     * being twice too wide costs the same as being twice too tall; among
+     * those close enough to be interchangeable the page's own source picks,
+     * so two pages do not open on the same continent. */
     const cropFor = (w, h, rnd) => {
       const G = geo(),
         ar = w / h;
-      if (ar > 1.75) return G.crops.world;
-      const near = ["europe", "africa", "asia", "americas"];
-      const k = near[Math.floor(rnd() * near.length)];
-      return G.crops[k];
+      const keys = Object.keys(G.crops);
+      const cost = (k) => {
+        const c = G.crops[k];
+        return Math.abs(Math.log((c[2] - c[0]) / (c[3] - c[1]) / ar));
+      };
+      const best = Math.min.apply(null, keys.map(cost));
+      const near = keys.filter((k) => cost(k) < best + 0.28);
+      return G.crops[near[Math.floor(rnd() * near.length)]];
     };
     /* A MAP IS TWO LAYERS, and only one of them moves.
      *
@@ -4460,7 +4472,7 @@ Stage.register(
         });
 
     LIVE_ART.places = (w, h, p, q, v, tone, rnd, layer) =>
-      chrome(w, h, "Where they were reported", "One circle, one city",
+      chrome(w, h, "Where reported", "One circle, one city",
         (pw, ph) => {
           const G = geo();
           if (!G) return "";
@@ -4613,7 +4625,7 @@ Stage.register(
         });
 
     LIVE_ART.units = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "One square, one thousand", "Counted, not estimated",
+      chrome(w, h, "One square, a thousand", "Counted, not estimated",
         (pw, ph) => {
           const cols = pw < 130 ? 14 : 24,
             cell = pw / cols,

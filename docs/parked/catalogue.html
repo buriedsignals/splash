@@ -1730,6 +1730,20 @@
   .boardbar button:hover{background:var(--amber);color:#14141c;border-color:var(--amber)}
   .boardbar button.on{background:var(--amber);color:#14141c;border-color:var(--amber)}
   .boardbar .sep{opacity:.45}
+  /* the size sheet: every drawing against every hole the reel can give it */
+  .sheet{margin:24px 0 0;overflow-x:auto}
+  .sheet table{border-collapse:collapse}
+  .sheet th{font:500 10px/1.3 var(--C);letter-spacing:.1em;text-transform:uppercase;
+    color:#8c8899;text-align:left;padding:0 12px 10px 0;vertical-align:bottom;font-weight:500}
+  .sheet th span{display:block;color:#5f5c6b;letter-spacing:.06em;text-transform:none;
+    font-size:10px;margin-top:3px}
+  .sheet td{padding:0 12px 12px 0;vertical-align:bottom}
+  .sheet td.k{font:500 13px/1 var(--D);color:var(--paper);padding-right:18px;
+    vertical-align:middle;white-space:nowrap}
+  .sheet td.k i{display:block;font:500 9px/1 var(--C);letter-spacing:.12em;
+    text-transform:uppercase;font-style:normal;color:#7d7a8c;margin-top:5px}
+  .sheet td.k i.map{color:var(--amber)}
+  .sheet canvas{display:block;background:#fff}
   .rung h2{font:600 22px/1.15 var(--D);margin:0 0 4px;color:var(--paper)}
   .rung p{margin:0 0 20px;color:#8c8899;font-size:13.5px}
   .grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
@@ -1832,6 +1846,14 @@
     <span id="bstat"></span>
   </div>
   <div class="board" id="board"></div>
+
+  <h1 style="margin-top:56px">Every drawing, at every hole</h1>
+  <p class="lede">The sizes are not invented: they are what a story page actually gives a
+  graphic. A column of a three-column page is ninety-one texels wide; the full measure is
+  two hundred and ninety-two, which the rasteriser caps at two hundred and forty. Depth is
+  whatever the opening takes. Each is drawn arrived and still, so the twelve can be
+  compared rather than watched — the board above is where they move.</p>
+  <div class="sheet" id="sheet"></div>
 
   <h1 style="margin-top:56px">The reel, page by page</h1>
   <p class="lede">Every page the webs carry, cut out of the sheet they are composed on and grouped by rung. This is the bench, not the site: it boots the hero off screen only to get the reel built, then lays it out.</p>
@@ -2006,6 +2028,58 @@
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
+  })();
+
+
+  /* ------------------------------------------------------- the size sheet
+   * The same twelve against the holes a page can actually make. A graphic
+   * that only holds at one proportion only holds in some articles, and the
+   * only way to know is to put them side by side at the real numbers.
+   */
+  (function sheet() {
+    if (!window.__rasterise || !window.__liveKinds) { setTimeout(sheet, 400); return; }
+    const K = window.__liveKinds, MAPS = window.__liveMaps || [];
+    const DPR = Math.min(devicePixelRatio || 1, 2);
+    // width, height, and what that hole IS on a page
+    const CASES = [
+      [91, 62, '1 of 3 cols', 'shallow'],
+      [91, 200, '1 of 3 cols', 'deep'],
+      [142, 118, '1 of 2 cols', 'half'],
+      [192, 100, '2 of 3 cols', 'wide'],
+      [240, 62, 'full measure', 'a paragraph'],
+      [240, 196, 'full measure', 'the lead'],
+    ];
+    const t = document.createElement('table');
+    const head = document.createElement('tr');
+    head.innerHTML = '<th></th>' + CASES.map(
+      c => '<th>' + c[0] + '&times;' + c[1] + '<span>' + c[2] + ' &middot; ' + c[3] +
+        '</span></th>').join('');
+    t.appendChild(head);
+    const v = Array.from({ length: 16 }, (_, j) => 0.18 + ((j * 7) % 11) / 13);
+    const TONES = ['#b3402a', '#1a2ffb', '#1a7a4a'];
+    K.forEach((kind, i) => {
+      const tr = document.createElement('tr');
+      const td0 = document.createElement('td');
+      td0.className = 'k';
+      const isMap = MAPS.indexOf(kind) >= 0;
+      td0.innerHTML = kind + '<i class="' + (isMap ? 'map' : '') + '">' +
+        (isMap ? 'map' : 'chart') + '</i>';
+      tr.appendChild(td0);
+      CASES.forEach(([W, H], ci) => {
+        const td = document.createElement('td');
+        const c = document.createElement('canvas');
+        c.width = W * DPR; c.height = H * DPR;
+        c.style.width = W + 'px'; c.style.height = H + 'px';
+        td.appendChild(c); tr.appendChild(td);
+        const g = c.getContext('2d');
+        g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+        window.__rasterise(kind, W, H, 1, 0, v, TONES[i % 3], 41 + ci * 13)
+          .then(im => { if (im) g.drawImage(im, 0, 0, W, H); });
+      });
+      t.appendChild(tr);
+    });
+    document.getElementById('sheet').appendChild(t);
   })();
 
   const tick = setInterval(() => { if (draw()) clearInterval(tick); }, 400);
