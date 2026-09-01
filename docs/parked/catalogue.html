@@ -1707,6 +1707,10 @@
   figcaption{margin:9px 0 0;font-size:12px;line-height:1.45;color:#8c8899}
   figcaption b{display:block;color:var(--paper);font-weight:500;font-size:13px}
   figcaption i{font-style:normal;opacity:.6}
+  .todo img{opacity:.42}
+  .todo figcaption b{color:var(--amber)}
+  .rung h2 span{font:500 12px/1 var(--C);letter-spacing:.14em;text-transform:uppercase;
+                color:#8c8899;margin-left:12px}
   #wait{padding:60px 0;color:#8c8899}
 </style>
 
@@ -1811,7 +1815,11 @@
       if (!mine.length) continue;
       const sec = document.createElement('section');
       sec.className = 'rung';
-      sec.innerHTML = '<h2>' + n + ' · ' + title + '</h2><p>' + note + '</p>';
+      const todo = mine.filter(p => p.todo).length;
+      sec.innerHTML = '<h2>' + n + ' · ' + title +
+        '<span>' + mine.length + ' pages' +
+        (todo ? ' · ' + todo + ' to produce' : ' · all made') + '</span></h2>' +
+        '<p>' + note + '</p>';
       const grid = document.createElement('div');
       grid.className = 'grid';
       for (const p of mine) {
@@ -1822,6 +1830,7 @@
         const im = new Image(); im.src = c.toDataURL('image/png'); im.alt = p.what;
         const cap = document.createElement('figcaption');
         cap.innerHTML = '<b>' + p.what + '</b>' + p.year + ' · <i>' + p.tpl + '</i>';
+        if (p.todo) fig.classList.add('todo');
         fig.append(im, cap); grid.appendChild(fig);
       }
       sec.appendChild(grid); out.appendChild(sec);

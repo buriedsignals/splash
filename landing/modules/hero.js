@@ -3298,6 +3298,28 @@ Stage.register(
      * in canvas — copied a tile at a time onto the paper. What the reel ends
      * on is literally what the tool makes.
      */
+    /* THE HOLES. Six to a rung was reached by writing pages from nothing —
+     * decade labels and paragraphs I made up — and they are out again. What
+     * the reel wants at each of these years is named here instead, and drawn
+     * as an empty page, so the work still to be done is visible in the reel
+     * and countable in the catalogue rather than hidden behind filler. */
+    const EMPTIES = [
+      { year: 1938, rung: 3, need: "A page where the second ink arrives" },
+      { year: 1958, rung: 3, need: "A map carrying a place and a value at once" },
+      { year: 1972, rung: 4, need: "A chart the size of a paragraph, set in the measure" },
+      { year: 1979, rung: 4, need: "The locator map, inset in a column" },
+      { year: 1986, rung: 4, need: "A chart sent down the wire" },
+      { year: 1991, rung: 4, need: "A house style: one idea a chart" },
+      { year: 1998, rung: 4, need: "Small multiples across a grid" },
+      { year: 2001, rung: 4, need: "The same piece, published on paper and on a screen" },
+      { year: 2004, rung: 5, need: "The graphic takes the top of the page" },
+      { year: 2014, rung: 5, need: "Built rather than drawn, at every size" },
+      { year: 2016, rung: 5, need: "A piece that answers to the reader" },
+      { year: 2018, rung: 5, need: "The story told by scrolling" },
+      { year: 2022, rung: 5, need: "Motion, out of the same data" },
+      { year: 2026, rung: 5, need: "Made at the desk, by the assistant" },
+    ];
+
     /* THE PIECES THAT FOUNDED THE FORM.
      *
      * Five plates, in the years they were printed, set into the reel among
@@ -3354,127 +3376,9 @@ Stage.register(
      * not by an invented story — the same honesty the modern pages keep. */
     /* 3 and 4 of the ramp. Labelled by what the FORM did in the decade, never
      * by an invented story — the same rule the other made pages keep. */
-    const COLOUR = [
-      {
-        year: 1938,
-        era: "1930s",
-        paper: "The Picture Page",
-        kicker: "In colour",
-        forms: ["The second ink"],
-        cap: "A chart, printed in two inks",
-        body: "For a century a page had one ink and everything in it was black. A second colour changed what a drawing could say: two quantities at once, or one quantity and the thing it should be compared with, without a key to hold in your head.",
-        ink: "#b3402a",
-        tiles: [4],
-      },
-      {
-        year: 1958,
-        era: "1950s",
-        paper: "The Sunday Review",
-        kicker: "Four colours",
-        forms: ["Maps that carry two things"],
-        cap: "Where it happened, and how much",
-        body: "Colour separation reached the daily page. A map could hold a place and a value at the same time, and an editor could start asking what the second colour was for — which is the question that made the desk a desk.",
-        ink: "#1a2ffb",
-        tiles: [11],
-      },
-    ];
 
-    const SPOT = [
-      {
-        year: 1972,
-        era: "1970s",
-        kicker: "Graphics desk",
-        forms: ["A chart the size of", "a paragraph"],
-        body: "The words stop for the drawing and start again under it. Two or three to a page, set into the measure rather than given the top of it — the arrangement that let a reporter and an artist work on the same story without either giving way.",
-        ink: "#b3402a",
-        tiles: [7, 13],
-      },
-      {
-        year: 1979,
-        era: "1970s",
-        kicker: "Two inks",
-        forms: ["The locator, inset"],
-        body: "A map the size of a stamp, dropped into the second column, telling a reader where the place in the headline is. The cheapest graphic a desk ever made and the one it made most.",
-        ink: "#b3402a",
-        tiles: [5, 10],
-      },
-      {
-        year: 1986,
-        era: "1980s",
-        kicker: "Wire graphics",
-        forms: ["Sent down the wire"],
-        body: "Charts arrived with the copy, drawn once and printed in fifty papers. The form spread faster than the craft did, which is the argument every desk has had since.",
-        ink: "#1a2ffb",
-        tiles: [16, 20],
-      },
-      {
-        year: 1998,
-        era: "1990s",
-        kicker: "Small multiples",
-        forms: ["The same chart, twelve times"],
-        body: "One shape repeated across a grid, so a reader compares by looking rather than by remembering. It costs a column of space and saves a paragraph of explanation.",
-        ink: "#b3402a",
-        tiles: [24, 8],
-      },
-      {
-        year: 2001,
-        era: "2000s",
-        kicker: "On the page and the screen",
-        forms: ["Published twice"],
-        body: "The same drawing, set once for paper at a fixed size and once for a screen that could be any size at all — and the second one had to be built rather than drawn.",
-        ink: "#1a2ffb",
-        tiles: [3, 21],
-      },
-      {
-        year: 1991,
-        era: "1990s",
-        kicker: "House style",
-        forms: ["One idea a chart"],
-        body: "A style sheet of its own: the source named under every figure, the baseline at zero, one idea to a drawing, and no drawing without a number behind it. Most of what a desk argues about today was settled here.",
-        ink: "#1a2ffb",
-        tiles: [18, 23],
-      },
-    ];
 
-    const LEADING = [
-      {
-        year: 2004,
-        era: "2000s",
-        forms: ["The graphic takes the top"],
-        body: "The drawing stops illustrating the article and starts being it: first on the page, largest on the page, with the words underneath explaining what it shows rather than the other way round.",
-        tiles: [2],
-      },
-      {
-        year: 2014,
-        era: "2010s",
-        forms: ["Built, not drawn"],
-        body: "The same piece published at every size at once, so it has to be built rather than drawn — and the desk that builds it needs the reporting, the data and the form to arrive together.",
-        tiles: [15],
-      },
-    ];
 
-    const MODERN = [
-      {
-        era: "2016",
-        forms: ["Every reader gets their own"],
-        tiles: [1, 11],
-      },
-      {
-        era: "2018",
-        forms: ["The story, told by scrolling"],
-        tiles: [12, 17],
-      },
-      {
-        era: "2022",
-        forms: ["Motion, from the same data"],
-        tiles: [9, 22],
-      },
-      {
-        era: "Today",
-        forms: ["Made at the desk, by the assistant"],
-        tiles: [6, 14, 19],
-      },
-    ];
 
     /* The papers in the order they were printed, which is the order the reel
      * runs in. Their own datelines decide it — nothing here is a choice. */
@@ -3512,9 +3416,7 @@ Stage.register(
       // The made pages are shorter than a newspaper's: they carry a made
       // amount of text, and stretched to a broadsheet's format their bottom
       // half was empty.
-      leading: 1.32,
-      colour: 1.2,
-      spot: 1.2,
+      blank: 1.34,
       landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
@@ -4212,6 +4114,53 @@ const flowCol = (A, o) => {
           return end + 24;
         },
 
+        /* A SLOT NOT YET FILLED. Everything on rungs three to five was written
+         * by me from nothing — invented decade labels over invented paragraphs
+         * — so it is taken out and the hole it leaves is drawn instead: the
+         * rung, the year the reel wants, and what has to go there. The reel
+         * runs with gaps in it, which is the honest state of the work.
+         *
+         * Nothing else in the reel is made up. The eleven papers are real
+         * articles and the five plates are real sheets. */
+        blank(B, x0, top, capH) {
+          const M = 22,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.save();
+          g.setLineDash([7, 6]);
+          g.strokeStyle = "rgba(20,20,28,.32)";
+          g.lineWidth = 1;
+          g.strokeRect(R(left) + 0.5, R(top + 24) + 0.5, R(meas), R(capH - 52));
+          g.restore();
+          g.textAlign = "center";
+          let y = top + capH * 0.42;
+          g.font = "9px " + SERIF;
+          track("RUNG " + B.rung, mid, y, 9 * 0.5);
+          y += 30;
+          let hs = 21;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(B.need).width <= meas * 0.86 || hs < 10) break;
+            hs *= 0.94;
+          }
+          const lines = wrapTo(B.need, meas * 0.86, "400 " + R(hs) + "px " + SERIF);
+          for (const l of lines) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.18);
+          }
+          y += 16;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
+          y += 18;
+          g.font = "8px " + SERIF;
+          track(String(B.year).toUpperCase(), mid, y, 8 * 0.5);
+          y += 22;
+          g.font = "italic 8.5px " + SERIF;
+          g.fillText("to produce", mid, y);
+          g.textAlign = "left";
+          return top + capH;
+        },
+
         /* A FOUNDING PLATE. Not a newspaper page — a sheet out of a book or
          * a report, which is what these were: a date, the plate itself at its
          * own shape, and under a rule what it is and who drew it. */
@@ -4261,282 +4210,6 @@ const flowCol = (A, o) => {
             y += 14;
           }
           diamond(mid, y + 8, 2.2);
-          return top + capH;
-        },
-
-        /* 3 · COLOUR ARRIVES. The same page as the decade before it — a
-         * masthead, a headline, columns of type — with one difference that
-         * changed everything about how a page was read: the plate is no longer
-         * held to one ink. The cut keeps its colour here, and a spot of it
-         * reaches the furniture: the rule under the masthead, and the number of
-         * the story. Nothing else moves. */
-        colour(M, x0, top, capH) {
-          const Mg = 16,
-            meas = GALLEY_COL - Mg * 2,
-            left = x0 + Mg,
-            mid = x0 + GALLEY_COL / 2;
-          let y = top + 24;
-          g.fillStyle = M.ink;
-          g.fillRect(R(left), R(y), R(meas), 3);
-          g.fillStyle = "#111111";
-          y += 24;
-          g.textAlign = "center";
-          const ms = fit(M.paper, "700", 22, meas * 0.88);
-          g.font = "700 " + ms + "px " + SERIF;
-          g.fillText(M.paper, mid, y);
-          y += 9;
-          rule(left, y, meas, 1);
-          y += 13;
-          g.font = "8px " + SERIF;
-          g.textAlign = "left";
-          g.fillText(M.era, left, y);
-          g.textAlign = "right";
-          g.fillStyle = M.ink;
-          g.fillText(M.kicker.toUpperCase(), left + meas, y);
-          g.fillStyle = "#111111";
-          y += 7;
-          rule(left, y, meas, 1);
-          y += 26;
-          g.textAlign = "center";
-          let hs = 26;
-          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 26, meas));
-          g.font = "700 " + hs + "px " + SERIF;
-          for (const l of M.forms) {
-            g.fillText(l, mid, y);
-            y += R(hs * 1.06);
-          }
-          y += 14;
-          // the plate, in colour — the whole point of the decade
-          if (panelSheet && M.tiles.length) {
-            const S = PANEL_S,
-              N = PANEL_N,
-              t = M.tiles[0];
-            const h = Math.min(meas * 0.62, capH * 0.3);
-            g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
-                        R(left), R(y), R(meas), R(h));
-            y += h + 6;
-            g.fillStyle = "rgba(20,20,28,.14)";
-            g.fillRect(R(left), R(y - 4), R(meas), 1);
-            g.fillStyle = "#111111";
-            g.font = "7px " + SERIF;
-            g.textAlign = "left";
-            g.fillText(M.cap.toUpperCase(), left, y + 6);
-            y += 20;
-          }
-          g.textAlign = "left";
-          const fs = 9,
-            lh = 12.4,
-            colW = (meas - 9) / 2;
-          const lines = wrapTo(M.body, colW, fs + "px " + SERIF);
-          const per = Math.ceil(lines.length / 2);
-          for (let c = 0; c < 2; c++) {
-            let ly = y;
-            for (let i = c * per; i < Math.min(lines.length, (c + 1) * per); i++) {
-              if (ly > top + capH - 16) break;
-              g.fillText(lines[i], left + c * (colW + 9), ly);
-              ly += lh;
-            }
-          }
-          return top + capH;
-        },
-
-        /* 4 · SMALL ONES, HERE AND THERE. Still a page of words — but the
-         * words now stop for a chart the size of a paragraph, and start again
-         * under it. Two or three to a page, set into the measure rather than
-         * given the top of it, which is what a newsroom did for thirty years
-         * before it let a graphic lead. */
-        spot(M, x0, top, capH) {
-          const Mg = 16,
-            meas = GALLEY_COL - Mg * 2,
-            left = x0 + Mg,
-            mid = x0 + GALLEY_COL / 2;
-          let y = top + 22;
-          rule(left, y, meas, 2);
-          y += 20;
-          g.textAlign = "left";
-          g.font = "8px " + SERIF;
-          g.fillText(M.era, left, y);
-          g.textAlign = "right";
-          g.fillStyle = M.ink;
-          g.fillText(M.kicker.toUpperCase(), left + meas, y);
-          g.fillStyle = "#111111";
-          y += 6;
-          rule(left, y, meas, 1);
-          y += 24;
-          g.textAlign = "left";
-          let hs = 24;
-          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 24, meas));
-          g.font = "700 " + hs + "px " + SERIF;
-          for (const l of M.forms) {
-            g.fillText(l, left, y);
-            y += R(hs * 1.04);
-          }
-          y += 16;
-
-          const fs = 9,
-            lh = 12.4,
-            colW = (meas - 9) / 2;
-          const lines = wrapTo(M.body + " " + M.body, colW, fs + "px " + SERIF);
-          const bot = top + capH - 14;
-          const S = PANEL_S,
-            N = PANEL_N;
-          let li = 0;
-          for (let c = 0; c < 2; c++) {
-            const cx = left + c * (colW + 9);
-            let ly = y;
-            /* A chart the size of a paragraph, a few lines in. The line it
-             * lands on is CROSSED, not landed on exactly: the loop advances by
-             * a whole line each time, so a window one pixel wide is stepped
-             * over and the chart was never drawn once. */
-            const t = M.tiles[c % M.tiles.length];
-            const at = y + lh * (c === 0 ? 4 : 9);
-            let placed = false;
-            while (ly < bot) {
-              if (panelSheet && !placed && ly >= at) {
-                placed = true;
-                const h = colW * 0.74;
-                g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
-                            R(cx), R(ly - fs), R(colW), R(h));
-                g.fillStyle = "rgba(20,20,28,.14)";
-                g.fillRect(R(cx), R(ly - fs + h), R(colW), 1);
-                g.fillStyle = "#111111";
-                ly += h + 10;
-                continue;
-              }
-              if (li >= lines.length) break;
-              g.fillText(lines[li++], cx, ly);
-              ly += lh;
-            }
-          }
-          return top + capH;
-        },
-
-        /* THE PAGE WHERE THE GRAPHIC LEADS. The step the reel was missing.
-         *
-         * It went from text with a photograph in it, which is 1890, straight
-         * to a page that is nothing but charts, which is now — and a reader
-         * feels that as a jump because it IS one. Here the graphic is the
-         * first thing on the page and takes the top half of it; the words are
-         * under it and explain it, which is the arrangement a newsroom
-         * arrived at somewhere between the wars and kept.
-         *
-         * Two-thirds of the way toward what the tool makes. */
-        leading(M, x0, top, capH) {
-          const Mg = 20,
-            meas = GALLEY_COL - Mg * 2,
-            left = x0 + Mg,
-            mid = x0 + GALLEY_COL / 2;
-          g.textAlign = "center";
-          let y = top + 26;
-          g.font = "9px " + SERIF;
-          track(M.era.toUpperCase(), mid, y, 9 * 0.5);
-          y += 11;
-          rule(left, y, meas, 1);
-          y += 16;
-
-          // the graphic first, and big
-          if (panelSheet && M.tiles && M.tiles.length) {
-            const S = PANEL_S,
-              N = PANEL_N,
-              t = M.tiles[0];
-            const h = Math.min(meas, capH * 0.42);
-            g.drawImage(
-              panelSheet,
-              (t % N) * S,
-              Math.floor(t / N) * S,
-              S,
-              S,
-              R(left),
-              R(y),
-              R(meas),
-              R(h),
-            );
-            g.fillStyle = "rgba(20,20,28,.16)";
-            g.fillRect(R(left), R(y + h), R(meas), 1);
-            g.fillStyle = "#111111";
-            y += h + 12;
-          }
-
-          // then the headline, then the words that explain it
-          let hs = 20;
-          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 20, meas));
-          g.font = "700 " + hs + "px " + SERIF;
-          for (const l of M.forms) {
-            g.fillText(l, mid, y);
-            y += R(hs * 1.1);
-          }
-          y += 8;
-          rule(mid - meas * 0.13, y, meas * 0.26, 1);
-          y += 18;
-          g.textAlign = "left";
-          const bot = top + capH - 16;
-          const fs = 9,
-            lh = 12.6;
-          const colW = (meas - 9) / 2;
-          const lines = wrapTo(M.body, colW, fs + "px " + SERIF);
-          const per = Math.ceil(lines.length / 2);
-          for (let c = 0; c < 2; c++) {
-            let ly = y;
-            for (let i = c * per; i < Math.min(lines.length, (c + 1) * per); i++) {
-              if (ly > bot) break;
-              g.fillText(lines[i], left + c * (colW + 9), ly);
-              ly += lh;
-            }
-            if (c === 0) g.fillRect(R(left + colW + 4), R(y - fs), 1, R(per * lh));
-          }
-          return top + capH;
-        },
-
-        /* WHAT THE DESK MAKES NOW. The last pages of the reel, and the only
-         * ones that are not a newspaper: a tracked date, a rule, and the work
-         * itself — chart tiles lifted whole out of the atlas hero.js already
-         * paints for the field of plates. Nothing is drawn twice and nothing
-         * is invented; the reel ends on the tool's own output.
-         *
-         * Before the atlas exists the page is composed empty but for its head,
-         * and the galley is uploaded again when the atlas arrives — the same
-         * two-pass arrangement the photographs use. */
-        modern(M, x0, top, capH) {
-          const Mg = 22,
-            meas = GALLEY_COL - Mg * 2,
-            left = x0 + Mg,
-            mid = x0 + GALLEY_COL / 2;
-          g.textAlign = "center";
-          let y = top + 30;
-          const ms = fit(M.era.toUpperCase(), "400", 10, meas * 0.6);
-          g.font = ms + "px " + SERIF;
-          track(M.era.toUpperCase(), mid, y, ms * 0.5);
-          y += 13;
-          rule(left, y, meas, 1);
-          y += 30;
-
-          let hs = 22;
-          for (const l of M.forms) hs = Math.min(hs, fit(l, "400", 22, meas * 0.9));
-          g.font = "400 " + hs + "px " + SERIF;
-          for (const l of M.forms) {
-            track(l, mid, y, hs * 0.03);
-            y += R(hs * 1.2);
-          }
-          y += 22;
-
-          /* The tiles, stacked down the measure at their own square. The atlas
-           * is ten by ten of PANEL_S, and a still is its index in that grid. */
-          if (panelSheet) {
-            const S = PANEL_S,
-              N = PANEL_N;
-            for (const t of M.tiles) {
-              if (y + meas > top + capH - 26) break;
-              const sx = (t % N) * S,
-                sy = Math.floor(t / N) * S;
-              g.drawImage(panelSheet, sx, sy, S, S, R(left), R(y), R(meas), R(meas));
-              g.fillStyle = "rgba(20,20,28,.14)";
-              g.fillRect(R(left), R(y), R(meas), 1);
-              g.fillRect(R(left), R(y + meas), R(meas), 1);
-              g.fillStyle = "#111111";
-              y += meas + 16;
-            }
-          }
-          diamond(mid, Math.min(y + 4, top + capH - 16), 2.2);
           return top + capH;
         },
 
@@ -4777,19 +4450,14 @@ const flowCol = (A, o) => {
       CUTS.length = 0;
       REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
         .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
-        .concat(COLOUR.map((C) => ({ colour: C, year: C.year })))
-        .concat(SPOT.map((S) => ({ spot: S, year: S.year })))
-        .concat(LEADING.map((L) => ({ leading: L, year: L.year })))
-        .sort((a, b) => a.year - b.year)
-        .concat(MODERN.map((m) => ({ modern: m })));
+        .concat(EMPTIES.map((B) => ({ blank: B, year: B.year })))
+        .sort((a, b) => a.year - b.year);
       GALLEY_H = REEL.reduce(
         (a, E) =>
           a +
-          (E.modern
-            ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-            : E.colour || E.spot || E.leading
-              ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
-              : E.landmark
+          (E.blank
+            ? Math.round(GALLEY_COL * PAGE_RATIO.blank)
+            : E.landmark
                 ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
                 : pageH(E.A)),
         0,
@@ -4809,11 +4477,9 @@ const flowCol = (A, o) => {
       let y = 0;
       for (let k = 0; k < REEL.length; k++) {
         const E = REEL[k];
-        const h = E.modern
-          ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-          : E.colour || E.spot || E.leading
-            ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
-            : E.landmark
+        const h = E.blank
+          ? Math.round(GALLEY_COL * PAGE_RATIO.blank)
+          : E.landmark
             ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
             : pageH(E.A);
         g.save();
@@ -4822,14 +4488,8 @@ const flowCol = (A, o) => {
         g.clip();
         g.fillStyle = "#111111";
         g.textAlign = "left";
-        if (E.modern) {
-          PRESS.modern(E.modern, 0, y, h);
-        } else if (E.colour) {
-          PRESS.colour(E.colour, 0, y, h);
-        } else if (E.spot) {
-          PRESS.spot(E.spot, 0, y, h);
-        } else if (E.leading) {
-          PRESS.leading(E.leading, 0, y, h);
+        if (E.blank) {
+          PRESS.blank(E.blank, 0, y, h);
         } else if (E.landmark) {
           PRESS.landmark(E.landmark, 0, y, h);
         } else {
