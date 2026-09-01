@@ -7569,6 +7569,11 @@ uniform vec2 uPtr;
  * in p is an ellipse two and a half times too tall in the world, which is
  * why the lift looked like a ridge and not like something under the page. */
 uniform vec3 uPtrK;
+/* HOW HARD THE SLOPE SHADES. The wave and the pointer both carry their own
+ * amplitude already; this is the strength of the shading they cause, and it
+ * scales the clamp with it — at zero the sheet is evenly lit however far it
+ * bends, at one it is the full contrast the surface can make. */
+uniform float uShade;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7613,8 +7618,8 @@ void main(){
   }
   sh = clamp(
     1.0 - ((wdx*uBend + bdx*uPtrK.x) * 0.20
-         + (wdy*uBend + bdy*uPtrK.x) * 0.13) * 2.6,
-    0.62, 1.34);
+         + (wdy*uBend + bdy*uPtrK.x) * 0.13) * 2.6 * uShade,
+    mix(1.0, 0.62, uShade), mix(1.0, 1.34, uShade));
   vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK.x);
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
@@ -7908,6 +7913,12 @@ void main(){
       storyRest: 1.5,
       // and the spread of their turns, so they never open together
       storySpread: 5,
+      /* The shading the bend causes, which is not the same control as the
+       * bend. The paper wants to keep its curve and lose some of the
+       * contrast the curve was printing on it: at full strength the troughs
+       * came down to two thirds of the ground and read as shadows thrown on
+       * the sheet rather than as the sheet turning. */
+      webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.12,
@@ -8491,6 +8502,7 @@ void main(){
           "uPtr",
           "uPtrK",
           "uEdge",
+          "uShade",
           "uInkC",
         ]);
         ui = api.uniforms(inside, [
@@ -9496,6 +9508,7 @@ void main(){
           gl.uniform3f(uq.uAy, 0, hh, 0);
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
+          gl.uniform1f(uq.uShade, P.webShade);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
           // a column each: web k reads the kth third of the sheet, and no
