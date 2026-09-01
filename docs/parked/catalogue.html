@@ -1730,6 +1730,9 @@
   .boardbar button:hover{background:var(--amber);color:#14141c;border-color:var(--amber)}
   .boardbar button.on{background:var(--amber);color:#14141c;border-color:var(--amber)}
   .boardbar .sep{opacity:.45}
+  .boardbar .jump{margin-left:auto;color:var(--amber);text-decoration:none;
+    border-bottom:1px solid rgba(242,177,60,.4);padding-bottom:2px}
+  .boardbar .jump:hover{border-bottom-color:var(--amber)}
   /* the size sheet: every drawing against every hole the reel can give it */
   .sheet{margin:24px 0 0;overflow-x:auto}
   .sheet table{border-collapse:collapse}
@@ -1836,7 +1839,9 @@
   looked at as drawings rather than as something half-hidden in a column of type. This is
   the same code the reel runs, not a copy of it — a change here is a change there.
   Each one arrives by its own gesture, holds still, and is lifted off. Click one to play
-  it again.</p>
+  it again. The three shape buttons change all twelve at once — this board is where they
+  MOVE. For the six sizes a page can actually give a graphic, drawn still and side by
+  side, see the sheet below.</p>
   <div class="boardbar">
     <button id="again">play them all again</button>
     <span class="sep">shape</span>
@@ -1844,6 +1849,7 @@
     <button class="ar" data-ar="1">square</button>
     <button class="ar" data-ar="1.7">column</button>
     <span id="bstat"></span>
+    <a class="jump" href="#sheet">the six real sizes &darr;</a>
   </div>
   <div class="board" id="board"></div>
 
@@ -1853,7 +1859,7 @@
   two hundred and ninety-two, which the rasteriser caps at two hundred and forty. Depth is
   whatever the opening takes. Each is drawn arrived and still, so the twelve can be
   compared rather than watched — the board above is where they move.</p>
-  <div class="sheet" id="sheet"></div>
+  <div class="sheet" id="sheet" style="scroll-margin-top:24px"></div>
 
   <h1 style="margin-top:56px">The reel, page by page</h1>
   <p class="lede">Every page the webs carry, cut out of the sheet they are composed on and grouped by rung. This is the bench, not the site: it boots the hero off screen only to get the reel built, then lays it out.</p>
