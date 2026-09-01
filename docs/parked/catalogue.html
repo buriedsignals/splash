@@ -1944,7 +1944,10 @@
      * was set at — which is exactly the thing this board exists to catch. */
     let W = 268, H = 190;
     const DPR = Math.min(devicePixelRatio || 1, 2);
-    const TONES = ['#b3402a', '#1a2ffb', '#1a7a4a'];
+    /* The bench prints what the reel prints. Fixed colours here while the
+       reel ran in one ink made the board look like a different piece of
+       software from the thing it is meant to show. */
+    const TONES = ['#3a3a3a', '#4c4c4c', '#5c5c5c'];
     const IN = 2.2, HOLD = 2.6, OUT = 0.7, REST = 1.1;
     const SPAN = IN + HOLD + OUT + REST;
     const ease = u => u * u * (3 - 2 * u);
@@ -2069,7 +2072,7 @@
         '</span></th>').join('');
     t.appendChild(head);
     const v = Array.from({ length: 16 }, (_, j) => 0.18 + ((j * 7) % 11) / 13);
-    const TONES = ['#b3402a', '#1a2ffb', '#1a7a4a'];
+    const TONES = ['#3a3a3a', '#4c4c4c', '#5c5c5c'];
     K.forEach((kind, i) => {
       const tr = document.createElement('tr');
       const td0 = document.createElement('td');

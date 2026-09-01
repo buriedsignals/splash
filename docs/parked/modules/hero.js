@@ -3801,27 +3801,50 @@ Stage.register(
      * has never seen a newspaper. About a third print that way — dark enough
      * to hold against the paper, light enough to be told from the black
      * beside it, which is the same pair of tests the hues have to pass. */
-    const GREY_SHARE = 0.34;
+    /* HOW MANY PAGES PRINT IN GREY. A third meant most pages were still
+     * coloured and which ones you saw was luck — two loads running could
+     * look like a colour supplement or like a broadsheet. It is a number
+     * with a slider on it now, read at each recast so moving it takes hold
+     * on the next page that opens: nought is every page coloured, one is
+     * the whole reel in one ink and a grey. */
+    /* EVERY PAGE, BY DEFAULT. Greyscale means black and white — not a
+     * palette with some grey in it — so the share starts at one and the
+     * whole reel prints in one ink. The hues are still there and still
+     * measured; the slider is what lets them back in. */
+    const GREY_DEFAULT = 1;
+    const GREY_SHARE = () => {
+      /* P is declared further down, and the papers are built at module
+       * level — so this runs while P is in its dead zone. `typeof P` does
+       * NOT make that safe: typeof only swallows the error for an
+       * UNDECLARED name, and for a const before its declaration it throws
+       * like any other read. That threw the whole module before Stage saw
+       * it, silently, for the second time today. */
+      try {
+        return P.greyShare === undefined ? GREY_DEFAULT : P.greyShare;
+      } catch (e) {
+        return GREY_DEFAULT;
+      }
+    };
     function greyFor(rnd) {
       /* The valid band collected, and one taken from it at RANDOM. Keeping
        * the most balanced lightness is the argmax again: every grey came out
        * the same grey, which is one ink and not a range of them. */
+      /* NEUTRAL, and dark. A grey with a hue in it is a colour that has
+       * been talked down. This one is the ink a line or a route is drawn
+       * in and it has to hold on its own — the SPREAD from white to black
+       * is not here, it belongs to the drawings, which is where a scale of
+       * values actually means something. */
       const ok = [];
-      for (let l = 0.6; l >= 0.18; l -= 0.01) {
-        // a trace of warmth, because a newspaper grey is ink on paper and
-        // not a screen neutral
-        const rgb = hsl2rgb(28 + rnd() * 14, 0.03 + rnd() * 0.05, l);
-        if (
-          ratio(rgb, PAPER_RGB) >= INK_ON_PAPER &&
-          ratio(rgb, BLACK_RGB) >= INK_ON_BLACK
-        )
-          ok.push(hexOf(rgb));
+      for (let l = 0.42; l >= 0.13; l -= 0.01) {
+        const g = Math.round(255 * l);
+        const rgb = [g, g, g];
+        if (ratio(rgb, PAPER_RGB) >= INK_ON_PAPER) ok.push(hexOf(rgb));
       }
-      return ok.length ? ok[Math.floor(rnd() * ok.length)] : "#5b5751";
+      return ok.length ? ok[Math.floor(rnd() * ok.length)] : "#5a5a5a";
     }
 
     function inkFor(rnd) {
-      if (rnd() < GREY_SHARE) return greyFor(rnd);
+      if (rnd() < GREY_SHARE()) return greyFor(rnd);
       /* A HUE FIRST, then the lightness that suits it — and the first hue
        * that works, not the best of many tries. Scoring sixty hues and
        * keeping the winner is an argmax and not a draw: the same few win
@@ -4283,6 +4306,39 @@ Stage.register(
       parseInt(hx.slice(5, 7), 16),
     ];
 
+    /* A SCALE OF VALUES, WHITE TO BLACK.
+     *
+     * A black-and-white chart is not one grey used everywhere: it is the
+     * whole spectrum, from paper showing through to solid ink, and a reader
+     * tells one class from another by how dark it is. A single mid grey
+     * standing in for a colour is a chart with its scale thrown away.
+     *
+     * On a coloured page the same call runs from the paper to that page's
+     * own ink, which is the same idea said in one hue. Every drawing with
+     * more than one class in it asks this rather than choosing for itself,
+     * so the two read as one desk working in two inks.
+     */
+    const isNeutral = (hx) =>
+      hx.slice(1, 3) === hx.slice(3, 5) && hx.slice(3, 5) === hx.slice(5, 7);
+    const mixRGB = (a, b, k) =>
+      hexOf([
+        Math.round(a[0] + (b[0] - a[0]) * k),
+        Math.round(a[1] + (b[1] - a[1]) * k),
+        Math.round(a[2] + (b[2] - a[2]) * k),
+      ]);
+    const NEAR_WHITE = [246, 244, 240],
+      NEAR_BLACK = [18, 18, 18];
+    const value = (t, tone) => {
+      const k = clamp01(t);
+      if (isNeutral(tone)) return mixRGB(NEAR_WHITE, NEAR_BLACK, 0.05 + k * 0.95);
+      const rgb = [
+        parseInt(tone.slice(1, 3), 16),
+        parseInt(tone.slice(3, 5), 16),
+        parseInt(tone.slice(5, 7), 16),
+      ];
+      return mixRGB(NEAR_WHITE, rgb, 0.16 + k * 0.84);
+    };
+
     const LIVE_ART = {};
 
     // ---- charts -------------------------------------------------------
@@ -4431,8 +4487,9 @@ Stage.register(
             if (k <= 0) continue;
             out +=
               '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
-              (r0 * k).toFixed(1) + '" fill="' + (i % 5 === 2 ? tone : DINK) +
-              '" opacity=".82"/>';
+              (r0 * k).toFixed(1) + '" fill="' +
+              // a dot's value is its size, which is the second measure
+              value(0.42 + ((r0 - 1.8) / 2.8) * 0.58, tone) + '" opacity=".9"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -7312,6 +7369,8 @@ void main(){
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
+      // the share of pages that print in one ink and a grey
+      greyShare: 1,
       // seconds of one telling: opening, drawn into, held, lifted away
       storySecs: 8.5,
       // and seconds it is left as printed after coming into shot
@@ -7397,6 +7456,7 @@ void main(){
           ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
           ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
           ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
+          ["greyShare", 0, 1, 0.05, "share of pages that print in a grey"],
         ],
       ],
       [
@@ -7515,7 +7575,7 @@ void main(){
            * come out "spd0", and three rows called spd0/1/2 say nothing about
            * which column they move. The three-web rows name their side. */
           const SIDE = { 0: "left", 1: "middle", 2: "right" };
-          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey" };
           const m = /^web(Spd|Lag)([012])$/.exec(key);
           lab.textContent = m
             ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
