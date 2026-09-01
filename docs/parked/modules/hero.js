@@ -3966,15 +3966,16 @@ Stage.register(
      * it is in shot. Written by the draw, read by the frame loop — one frame
      * stale, which at a hundredth of a lap a second is nothing. */
     const WEB_WIN = [0, 0, 0, 0.2];
-    const inShot = (y0, y1) => {
-      const a = y0 / GALLEY_H,
+    const inShot = (y0, y1, pad) => {
+      const m = pad === undefined ? 0.02 : pad,
+        a = y0 / GALLEY_H,
         b = y1 / GALLEY_H,
         dv = WEB_WIN[3];
       for (let k = 0; k < 3; k++) {
         // the window wraps, so it is tested against three copies of the reel
         const v = WEB_WIN[k];
         for (let o = -1; o <= 1; o++)
-          if (a < v + dv + 0.02 + o && b > v - 0.02 + o) return true;
+          if (a < v + dv + m + o && b > v - m + o) return true;
       }
       return false;
     };
@@ -4858,23 +4859,22 @@ Stage.register(
      * to set again, nothing written back to the reel. With six pages spread
      * evenly through the cycle it means two or three are ever doing
      * anything at once. */
+    /* And the rest is what the page waits before it opens, once it is in
+     * shot: a moment as printed, so a reader meets the article before the
+     * desk starts working on it. */
     const storyRest = () =>
-      Math.max(0, P.storyRest === undefined ? 7 : P.storyRest);
+      Math.max(0, P.storyRest === undefined ? 2.5 : P.storyRest);
     const ease = (u) => u * u * (3 - 2 * u);
-    const storyOpen = (u) =>
-      u < 0.05 ? 0
-        : u < 0.24 ? ease((u - 0.05) / 0.19)
-        : u < 0.88 ? 1
-        : 1 - ease((u - 0.88) / 0.12);
-    const storyDraw = (u) =>
-      u < 0.19 ? 0 : u < 0.44 ? ease((u - 0.19) / 0.25) : 1;
-    /* THE DEPARTURE IS NOT THE ARRIVAL BACKWARDS. Running the gesture in
-     * reverse un-draws the graphic — bars sinking, a line retracting — which
-     * reads as a mistake being undone. It is lifted off the page instead:
-     * it goes with the light, rising a few pixels as it thins, and the text
-     * closes over where it was. Both are done to the composite rather than
-     * to the markup, so a departure costs no rasterisation at all. */
-    const storyGone = (u) => (u < 0.76 ? 0 : ease(clamp01((u - 0.76) / 0.16)));
+    /* THE TELLING ONLY GOES ONE WAY. The room is made, the drawing arrives,
+     * and it STAYS — for as long as the page is on screen, which is as long
+     * as anybody could be reading it. Nothing is taken away in front of a
+     * reader; a graphic that leaves while you are looking at it is one you
+     * were not allowed to finish. The page is closed and recast only after
+     * it has run out of shot, so what comes back round is a fresh article
+     * that opens again. There is no departure curve any more, because there
+     * is no departure. */
+    const storyOpen = (u) => (u < 0.04 ? 0 : ease(clamp01((u - 0.04) / 0.3)));
+    const storyDraw = (u) => (u < 0.24 ? 0 : ease(clamp01((u - 0.24) / 0.42)));
 
     /* ONE JOB PER HOLE, not one per drawing. Sharing them was a real bug:
      * four copies of a page are at four different points in the telling, so
@@ -4895,29 +4895,68 @@ Stage.register(
       const g2 = galleyCv.getContext("2d");
       gl.bindTexture(gl.TEXTURE_2D, galleyTex);
 
+      /* Closed and put back the way it was printed. Only ever run on a page
+       * that has left the frame, which is the whole point of it. */
+      const shut = (k) => {
+        g2.save();
+        g2.beginPath();
+        g2.rect(k.x, k.y, k.w, k.h);
+        g2.clip();
+        g2.fillStyle = "#ffffff";
+        g2.fillRect(k.x, k.y, k.w, k.h);
+        g2.textBaseline = "alphabetic";
+        k.paint(0);
+        g2.restore();
+        if (!k.scratch) {
+          k.scratch = document.createElement("canvas");
+          k.scratch.width = k.w;
+          k.scratch.height = k.h;
+          k.sg = k.scratch.getContext("2d");
+        }
+        k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
+        gl.texSubImage2D(
+          gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
+        );
+      };
+
       for (const k of LIVE_HOLES) {
-        if (!inShot(k.y, k.y + k.h)) continue;
+        /* IN SHOT IS THE CLOCK. The telling ran on a global cycle, so a page
+         * opened and closed on its own schedule whether or not anyone could
+         * see it — and it took the graphic away in front of a reader. It
+         * starts when the page comes into the frame and it does not end.
+         *
+         * Leaving is wider than entering by design: a page sitting exactly
+         * on the edge would otherwise flicker between recast and closed once
+         * a frame, which is a page that never gets to open. */
+        const vis = inShot(k.y, k.y + k.h, k.seen ? 0.09 : 0);
         let open = 1,
           draw = 1;
         if (k.story) {
-          /* The cycle is the telling PLUS the rest, and the copies are
-           * spread through the whole of it. Past the end of the telling the
-           * page is simply itself: closed, nothing drawn, nothing asked for.
-           *
-           * A fresh cast at the top of every cycle: another drawing, and
-           * somewhere else on the page for it to go. */
-          const period = storySecs() + storyRest();
-          const uu = (((t / period + k.phase) % 1) + 1) % 1;
-          if (k.lastU !== undefined && uu < k.lastU) k.recast();
-          k.lastU = uu;
-          const u = (uu * period) / storySecs();
-          const resting = u >= 1;
-          open = resting ? 0 : storyOpen(u);
-          draw = resting ? 0 : storyDraw(u);
-          // the same sweep coming round again, which is the departure
-          k.leave = resting ? 1 : storyGone(u);
+          if (vis && !k.seen) {
+            k.seen = true;
+            k.t0 = t;
+            k.recast();
+            k.lastOpen = undefined;
+            k.lastDraw = undefined;
+            k.img = null;
+            k.asked = -1;
+          }
+          if (!vis) {
+            if (k.seen) {
+              k.seen = false;
+              k.img = null;
+              k.asked = -1;
+              shut(k);
+              wrote = true;
+            }
+            continue;
+          }
+          const u = clamp01((t - k.t0 - storyRest()) / storySecs());
+          open = storyOpen(u);
+          draw = storyDraw(u);
+          k.leave = 0;
           k.draw = draw;
-        }
+        } else if (!vis) continue;
 
         // ask for the next picture of THIS hole
         /* A drawing is asked for only while it is still ARRIVING. Once it is
@@ -7107,8 +7146,8 @@ void main(){
       webLag2: 0.71,
       // seconds of one telling: opening, drawn into, held, lifted away
       storySecs: 8.5,
-      // and seconds the page is left as printed before the next one
-      storyRest: 7,
+      // and seconds it is left as printed after coming into shot
+      storyRest: 2.5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 0.92,
@@ -7185,8 +7224,8 @@ void main(){
           ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
-          ["storySecs", 3, 24, 0.5, "seconds of one telling"],
-          ["storyRest", 0, 40, 0.5, "seconds of plain text between two"],
+          ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
+          ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
         ],
       ],
       [
@@ -7305,7 +7344,7 @@ void main(){
            * come out "spd0", and three rows called spd0/1/2 say nothing about
            * which column they move. The three-web rows name their side. */
           const SIDE = { 0: "left", 1: "middle", 2: "right" };
-          const NAMED = { storySecs: "telling", storyRest: "rest" };
+          const NAMED = { storySecs: "telling", storyRest: "wait" };
           const m = /^web(Spd|Lag)([012])$/.exec(key);
           lab.textContent = m
             ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
