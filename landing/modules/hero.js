@@ -3738,34 +3738,106 @@ Stage.register(
      * rung is — and then the desk makes room in it and puts a drawing there.
      * It is the whole proposition in one page, and the only page on the reel
      * that changes while you watch it. */
-    const STORY_HEADS = [
-      "centre", "band", "tracked", "left", "boxed", "shoulder",
-      "centre", "tracked", "left",
-    ];
-    const STORY_TONES = [
-      "#b3402a", "#1a2ffb", "#1a7a4a", "#b3402a", "#1a2ffb", "#1a7a4a",
-      "#1a2ffb", "#1a7a4a", "#b3402a",
-    ];
-    /* One, two or three columns. Every full-text paper on the first rung is
-     * one of those measures, and the room the desk makes has to work in all
-     * three — a chart that only fits a three-column page is a chart that
-     * only fits some articles. Four columns is left out on purpose: at that
-     * measure a block wide enough to read takes the whole page. */
-    /* NINE, not six. Each web shows about a fifth of the reel, and the
-     * three are spaced a third of it apart — so with nine pages no two webs
-     * can have the same page in frame at once, even after their different
-     * speeds have drifted them a lap out of step. At six the windows were
-     * wider than the spacing and adjacent webs shared a quarter of a page,
-     * which is the same drawing in two columns however the deal behaves. */
+    /* A SEEDED SOURCE, so that a page's drawing is its own and does not
+     * change identity between two frames of the same telling — but differs
+     * from the page above it. Math.random() would reshuffle the chart on
+     * every raster, which is not a graphic, it is static. */
+    const seeded = (a) => () => {
+      a = (a + 0x6d2b79f5) | 0;
+      let x = Math.imul(a ^ (a >>> 15), 1 | a);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+
+    /* ------------------------------------------------------------- the ink
+     * A second colour, drawn at random and CHECKED before it is used.
+     *
+     * Three fixed inks meant every page on the reel was one of three, and a
+     * hand-picked set is also a set somebody has to keep picking. A hue is
+     * taken at random instead — the whole circle, not the primaries — and
+     * then it has to earn its place: measured against the paper it is
+     * printed on and against the black it shares the page with.
+     *
+     * Both tests matter and they pull opposite ways. Too light and the
+     * drawing disappears into the page; too dark and it stops reading as a
+     * second colour at all, and the chart may as well have been one ink.
+     */
+    const srgb = (c) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = (rgb) =>
+      0.2126 * srgb(rgb[0]) + 0.7152 * srgb(rgb[1]) + 0.0722 * srgb(rgb[2]);
+    const ratio = (a, b) => {
+      const x = lum(a) + 0.05,
+        y = lum(b) + 0.05;
+      return x > y ? x / y : y / x;
+    };
+    const hsl2rgb = (h, s, l) => {
+      const k = (n) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) =>
+        Math.round(
+          255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))),
+        );
+      return [f(0), f(8), f(4)];
+    };
+    const hexOf = (rgb) =>
+      "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
+    const PAPER_RGB = [255, 255, 255],
+      BLACK_RGB = [23, 23, 23];
+    function inkFor(rnd) {
+      /* A HUE FIRST, then the lightness that suits it — and the first hue
+       * that works, not the best of many tries. Scoring sixty hues and
+       * keeping the winner is an argmax and not a draw: the same few win
+       * every time, and a palette meant to be the whole circle came out red
+       * and violet with no green, no teal and no ochre in it.
+       *
+       * The lightness is searched because hues do not carry luminance alike.
+       * A blue at half lightness is already dark enough for the paper; a
+       * yellow at the same number is nowhere near, and has to come down to
+       * an ochre before it reads — which is a real printing ink, and exactly
+       * the kind this was throwing away. */
+      for (let tries = 0; tries < 40; tries++) {
+        const h = rnd() * 360,
+          sat = 0.38 + rnd() * 0.5;
+        let best = null;
+        for (let l = 0.58; l >= 0.16; l -= 0.015) {
+          const rgb = hsl2rgb(h, sat, l);
+          const onPaper = ratio(rgb, PAPER_RGB),
+            onBlack = ratio(rgb, BLACK_RGB);
+          if (onPaper < 3.3 || onBlack < 1.75) continue;
+          // the most BALANCED lightness that works: far enough from the
+          // paper to be seen, far enough from the black to be a colour
+          const bal = Math.min(onPaper / 4.5, 1) * Math.min(onBlack / 2.4, 1);
+          if (!best || bal > best[0]) best = [bal, hexOf(rgb)];
+        }
+        if (best) return best[1];
+      }
+      return "#b3402a";
+    }
+
+    /* A DIFFERENT PAPER EVERY LOAD. The heads, the measures and the inks
+     * were fixed lists, so the reel was the same nine papers in the same
+     * order every time the page opened — and a reel that is always the same
+     * is a picture of a press, not a press. The salt is drawn once at load
+     * and everything downstream derives from it, so a session is consistent
+     * with itself and no two sessions agree. */
+    const LOAD_SALT = (Math.random() * 1e9) | 0;
+    const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
     const STORY_COLS = [1, 2, 3, 2, 3, 1, 3, 1, 2];
-    const STORY_PAPERS = STORY_COLS.map((cols, i) => ({
-      rung: 1,
-      story: true,
-      name: "The article, and what the desk makes of it",
-      head: STORY_HEADS[i],
-      cols,
-      tone: STORY_TONES[i],
-    }));
+    const STORY_PAPERS = STORY_COLS.map((_, i) => {
+      const r = seeded(LOAD_SALT + i * 5197);
+      return {
+        rung: 1,
+        story: true,
+        name: "The article, and what the desk makes of it",
+        head: HEAD_SET[Math.floor(r() * HEAD_SET.length)],
+        // one, two or three columns, and not in a fixed rotation
+        cols: 1 + Math.floor(r() * 3),
+        tone: inkFor(r),
+      };
+    });
 
 
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
@@ -3989,17 +4061,6 @@ Stage.register(
           if (a < v + dv + m + o && b > v - m + o) return true;
       }
       return false;
-    };
-
-    /* A SEEDED SOURCE, so that a page's drawing is its own and does not
-     * change identity between two frames of the same telling — but differs
-     * from the page above it. Math.random() would reshuffle the chart on
-     * every raster, which is not a graphic, it is static. */
-    const seeded = (a) => () => {
-      a = (a + 0x6d2b79f5) | 0;
-      let x = Math.imul(a ^ (a >>> 15), 1 | a);
-      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
     };
 
     /* THE NUMBERS, CAST ONCE AND HELD.
@@ -4254,7 +4315,7 @@ Stage.register(
             a[0].toFixed(1) + " " + ph + " Z";
           return svgWrap(pw, ph,
             yAxis(pw, ph, 100, gut) +
-            '<path d="' + fill + '" fill="' + tone + '" opacity=".22"/>' +
+            '<path d="' + fill + '" fill="' + tone + '" opacity=".3"/>' +
             '<path d="' + top + '" fill="none" stroke="' + tone +
             '" stroke-width="2" stroke-linejoin="round"/>');
         });
@@ -4473,7 +4534,9 @@ Stage.register(
           const ramp = (t) => {
             const a = [237, 234, 229],
               b = hexRGB(tone);
-            const k = 0.12 + t * 0.88;
+            // the ramp's foot was so near the land colour that the lowest
+            // class could not be told from a country with no value at all
+            const k = 0.24 + t * 0.76;
             return (
               "rgb(" +
               Math.round(a[0] + (b[0] - a[0]) * k) + "," +
@@ -4528,7 +4591,7 @@ Stage.register(
               if (layer === 1) continue;
               out +=
                 '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(2) +
-                '" fill="' + tone + '" fill-opacity=".42" stroke="' + tone +
+                '" fill="' + tone + '" fill-opacity=".55" stroke="' + tone +
                 '" stroke-width="' + (1.1 * u).toFixed(2) + '"/>';
             }
             return out;
@@ -4679,7 +4742,7 @@ Stage.register(
               out += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(1) +
                 '" fill="' + tone + '" fill-opacity="' + (0.05).toFixed(2) +
                 '" stroke="' + tone + '" stroke-width="' + (1.2 * u).toFixed(2) +
-                '" stroke-opacity="' + (0.4 + (1 - i / n) * 0.55).toFixed(2) + '"/>';
+                '" stroke-opacity="' + (0.55 + (1 - i / n) * 0.45).toFixed(2) + '"/>';
             }
             return out + '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' +
               (2.6 * u).toFixed(2) + '" fill="' + DINK + '"/>';
@@ -6248,7 +6311,7 @@ const flowCol = (A, o) => {
           if (S.story) {
             const AIR_T = 5,
               AIR_B = 8;
-            const rnd = seeded((S.i || 0) * 7919 + 13);
+            const rnd = seeded(LOAD_SALT + (S.i || 0) * 7919 + 13);
 
             // the words, broken once
             g.font = fs + "px " + SERIF;
@@ -6314,6 +6377,8 @@ const flowCol = (A, o) => {
               hole.kind = kind;
               hole.seed = Math.floor(rnd() * 1e9);
               // one set of numbers for this telling, and they do not move
+              // and a new ink each time, so a page is not one colour for ever
+              hole.tone = inkFor(rnd);
               hole.vals = castValues(rnd);
               hole.asked = -1;
             };
