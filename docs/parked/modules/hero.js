@@ -7647,6 +7647,12 @@ uniform vec3 uPtrK;
  * scales the clamp with it — at zero the sheet is evenly lit however far it
  * bends, at one it is the full contrast the surface can make. */
 uniform float uShade;
+/* THE RADIUS OF THE SURFACE ALL THREE SHEETS LIE ON, in world units, or zero
+ * for a flat one. The per-sheet wave is what a single sheet of paper does;
+ * this is what the SET does — the three are laid on one cylinder about the
+ * vertical, so the outer two turn toward the middle and fall away behind it
+ * instead of standing in a flat row beside it. */
+uniform float uCurve;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7694,6 +7700,22 @@ void main(){
          + (wdy*uBend + bdy*uPtrK.x) * 0.13) * 2.6 * uShade,
     mix(1.0, 0.62, uShade), mix(1.0, 1.34, uShade));
   vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK.x);
+  /* ONE CURVE UNDER ALL THREE. Read as polar coordinates about the vertical
+   * axis: x becomes an angle and z becomes a distance from it, so a point far
+   * to the side swings back AND turns to face the middle. Applied after the
+   * wave, so a sheet's own lift stays perpendicular to the curved surface it
+   * is lifting off rather than to the flat one it used to be on.
+   *
+   * And it shades. A surface turning away from the camera catches less light
+   * whatever its own local slope is doing; without this the three read as one
+   * flat row that has merely been moved, which is the thing being fixed. */
+  if (uCurve > 0.0) {
+    float a = P.x / uCurve;
+    float ca = cos(a);
+    float r = uCurve + P.z;
+    P = vec3(sin(a) * r, P.y, ca * r - uCurve);
+    sh *= 1.0 - (1.0 - ca) * 3.0 * uShade;
+  }
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
   gl_Position = vec4(uvp.x * 2.0 * uRes.y / uRes.x, uvp.y * 2.0, 0.0, 1.0);
@@ -7986,6 +8008,11 @@ void main(){
        * contrast the curve was printing on it: at full strength the troughs
        * came down to two thirds of the ground and read as shadows thrown on
        * the sheet rather than as the sheet turning. */
+      /* HOW FAR THE THREE WRAP ROUND THE READER, in radians at the edge of
+       * the frame. It is an angle rather than a radius because a radius means
+       * nothing without knowing how wide the frame is, and the frame changes
+       * with the window; the angle is what the eye reads. Zero is a flat row. */
+      webCurve: 0.55,
       webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
@@ -8064,6 +8091,7 @@ void main(){
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
           ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
           ["webShade", 0, 1.4, 0.01, "how hard the curve shades it"],
+          ["webCurve", 0, 1.4, 0.01, "how far the three wrap round you"],
           ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
           ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
           ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
@@ -8819,6 +8847,7 @@ void main(){
           "uPtrK",
           "uEdge",
           "uShade",
+          "uCurve",
           "uInkC",
         ]);
         ui = api.uniforms(inside, [
@@ -9849,6 +9878,12 @@ void main(){
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
           gl.uniform1f(uq.uShade, P.webShade);
+          /* THE RADIUS, FROM THE ANGLE AND THE FRAME. The control is the wrap
+           * at the edge of the frame, so the radius follows the window: the
+           * three keep the same curvature to the eye whatever the page is
+           * resized to, which a fixed radius would not. */
+          const curveR = P.webCurve > 1e-3 ? nw / P.webCurve : 0;
+          gl.uniform1f(uq.uCurve, curveR);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
           // a column each: web k reads the kth third of the sheet, and no
@@ -9960,12 +9995,23 @@ void main(){
              * the sheet's plane — and dividing by the half-axes gives it in
              * the sheet's own -1..1. Done here rather than in the shader
              * because it is three numbers a frame, not one per vertex. */
-            const dz = Math.max(0.08, zoom);
+            /* WHERE THE SHEET ACTUALLY IS, once the set is curved. Its
+             * centre has swung back and sideways and its width has
+             * foreshortened by the cosine of its own angle — inverting the
+             * projection against the flat position it no longer occupies put
+             * the bell somewhere the cursor was not, and further out the
+             * further the sheet sits from the middle. */
+            const a0 = curveR > 0 ? cxw / curveR : 0;
+            const ca0 = Math.cos(a0);
+            const xC = curveR > 0 ? Math.sin(a0) * curveR : cxw;
+            const zC = curveR > 0 ? ca0 * curveR - curveR : 0;
+            const dz = Math.max(0.08, zoom - zC);
             const uvx = (ptr.x * cw) / (2 * ch),
               uvy = ptr.y / 2;
             gl.uniform2f(
               uq.uPtr,
-              (((uvx - centre[0]) * dz) / 2.05 - cxw) / Math.max(1e-4, hw),
+              (((uvx - centre[0]) * dz) / 2.05 - xC) /
+                Math.max(1e-4, hw * ca0),
               (((uvy - centre[1]) * dz) / 2.05 - cyw) / Math.max(1e-4, hh),
             );
             gl.uniform3f(
@@ -9995,9 +10041,7 @@ void main(){
               if (!document.getElementById("boot")) bootMark = false;
               else {
                 const r = canvas.getBoundingClientRect();
-                const cy =
-                  ((cyw + hh - rise) * 2.05) / Math.max(0.08, zoom) +
-                  centre[1];
+                const cy = ((cyw + hh - rise) * 2.05) / dz + centre[1];
                 window.__webTop = r.top + ((1 - cy * 2) / 2) * r.height;
               }
             }
@@ -10009,6 +10053,8 @@ void main(){
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
           }
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
+          // the plates are flat, and they are drawn with the same program
+          gl.uniform1f(uq.uCurve, 0);
           gl.bindVertexArray(null);
         }
 
