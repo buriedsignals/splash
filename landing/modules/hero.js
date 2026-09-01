@@ -8394,6 +8394,11 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
+        /* THE ONE SIGNAL THE PAGE CAN WAIT ON. Not "the script ran" and not
+         * "a frame was drawn" — the reel exists and is on the card, which is
+         * the moment there is something to show. The boot screen holds until
+         * this, and nothing else in the module publishes anything. */
+        window.__heroReady = true;
         loadPressImages(uploadGalley);
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop

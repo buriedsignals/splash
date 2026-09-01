@@ -102,6 +102,35 @@
      than in pixels, so the two stay in proportion at every breakpoint —
      and set in currentColor, which is what makes it a piece of type
      rather than a picture that has to be re-made for a dark ground. */
+  /* ---------------------------------------------------------- the boot
+     The page holds on its own mark until there is something to show. The
+     ground is the page's own ink, so when the screen goes there is no
+     colour change underneath it — the overlay dissolves rather than
+     cutting.
+
+     The mark then walks to the header rather than being swapped for the
+     one that lives there: measured at the moment it moves, so it lands on
+     the real wordmark at whatever size the breakpoint has made it, and the
+     handover is a transform finishing rather than two things trading
+     places. */
+  #boot{position:fixed;inset:0;z-index:9999;background:var(--ink);
+    display:grid;place-items:center;transition:opacity .45s ease}
+  #boot.done{opacity:0;pointer-events:none}
+  #boot .grp{display:flex;align-items:center;gap:.42em;
+    font-family:var(--D);font-weight:800;font-size:44px;letter-spacing:-.035em;
+    color:var(--paper);transform-origin:0 50%;
+    transition:transform .72s cubic-bezier(.22,.61,.36,1)}
+  #boot .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block;
+    animation:bootspin 1.5s linear infinite}
+  #boot.named .rosette{animation-duration:2.6s}
+  #boot .nm{max-width:0;overflow:hidden;white-space:nowrap;opacity:0;
+    transition:max-width .5s cubic-bezier(.22,.61,.36,1),opacity .4s ease .1s}
+  #boot.named .nm{max-width:5em;opacity:1}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){
+    #boot .rosette{animation:none}
+    #boot .grp,#boot .nm{transition:none}
+  }
   .wordmark{display:inline-flex;align-items:center;gap:.42em}
   .wordmark .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block}
   .wordmark{font-family:var(--D);font-weight:800;font-size:22px;
@@ -1722,6 +1751,10 @@
 </style>
 </head>
 <body>
+<div id="boot" role="status" aria-label="Loading">
+  <div class="grp"><svg class="rosette" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span class="nm">Splash</span></div>
+</div>
+
 
 <header class="rise" style="--d:.10s">
   <a class="wordmark" href="https://splash.buriedsignals.com/"><svg class="rosette" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span>Splash</span></a>
@@ -4525,6 +4558,47 @@
   const veil = document.getElementById('veil');
   if (veil) veil.style.background = sec.dataset.ground;
   if (typeof Stage !== 'undefined') Stage.boot();
+})();
+</script>
+<script>
+/* The boot screen, in four moves: turn, be named, walk to the header, go.
+ * It waits on the reel actually existing rather than on a timer — a timer
+ * is a guess that is wrong on both a fast machine and a slow one — with a
+ * ceiling so a page that never gets there is not held for ever. */
+(function boot(){
+  var el = document.getElementById('boot');
+  if (!el) return;
+  var grp = el.querySelector('.grp');
+  var target = document.querySelector('header .wordmark');
+    /* The floor is not politeness, it is the point. The reel is on the card
+   * in a few hundred milliseconds on this machine, so without a minimum
+   * the mark is named and gone before anyone has seen it turn — and a
+   * loading screen nobody sees is a loading screen that does no work. The
+   * cap is the other end: a page that never gets there is not held. */
+  var t0 = Date.now(), CAP = 9000, FLOOR = 1250;
+  function ready(){ return window.__heroReady === true; }
+  function step(){
+    var waited = Date.now() - t0;
+    if (!(ready() && waited > FLOOR) && waited < CAP) return requestAnimationFrame(step);
+    el.classList.add('named');
+    setTimeout(walk, 620);
+  }
+  function walk(){
+    if (target){
+      /* Measured now, not written down: the header's mark is a different
+       * size at every breakpoint, and the whole point is that this one
+       * lands ON it. */
+      var a = grp.getBoundingClientRect(), b = target.getBoundingClientRect();
+      var k = b.height / Math.max(1, a.height);
+      grp.style.transform =
+        'translate(' + (b.left - a.left) + 'px,' + (b.top + b.height/2 - (a.top + a.height/2)) + 'px) scale(' + k + ')';
+    }
+    setTimeout(function(){
+      el.classList.add('done');
+      setTimeout(function(){ el.remove(); }, 520);
+    }, 560);
+  }
+  requestAnimationFrame(step);
 })();
 </script>
 </body>
