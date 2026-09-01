@@ -3952,7 +3952,6 @@ Stage.register(
      * and composed FRESH — not baked into phases and played back, because
      * these numbers are decided as they are drawn.
      */
-    const LIVE_RASTER = 240; // the widest a drawing is made; scaled into the hole
     const LIVE_HZ = 16; // how often a new picture is asked for
     /* AND HOW OFTEN A PAGE IS SET AGAIN. It was every frame the hole had
      * moved at all, which is sixty times a second and 88 megabytes a second
@@ -4807,6 +4806,10 @@ Stage.register(
       let ground = GROUND.get(key);
       if (ground === undefined) {
         ground = await rasterOne(kind, w, h, 1, 0, v, tone, sd, 1);
+        /* Bounded, because the hole is cut afresh at the top of every
+         * telling and each new size is a new world. Oldest out first: a
+         * ground from four tellings ago will not be asked for again. */
+        if (GROUND.size > 24) GROUND.delete(GROUND.keys().next().value);
         GROUND.set(key, ground);
       }
       const marks = await rasterOne(kind, w, h, p, q, v, tone, sd, 2);
@@ -4917,8 +4920,20 @@ Stage.register(
           !k.pending && want !== k.asked
         ) {
           k.asked = want;
-          const rw = Math.min(size.w, LIVE_RASTER),
-            rh = Math.max(8, Math.round((size.h * rw) / size.w));
+          /* LAID OUT AT THE HOLE'S OWN SIZE. It used to be capped at two
+           * hundred and forty and then stretched into a block up to two
+           * hundred and ninety-two wide, which is a fifth bigger than it was
+           * composed at — so a title set at ten and a half point arrived on
+           * the paper at nearly thirteen, and every rule and every mark came
+           * up with it. The graphic did not look wrong on its own; it looked
+           * ENLARGED, because next to nine-point body type it was.
+           *
+           * There is no need for the cap now that the SVG carries a viewBox:
+           * the layout is the hole and the pixels are twice it, so the
+           * resolution comes from the raster and the SIZE comes from the
+           * page, which is where it belongs. */
+          const rw = size.w,
+            rh = size.h;
           k.pending = true;
           rasterise(
             k.kind, rw, rh, draw, k.leave || 0, k.vals || liveNow, k.tone,
