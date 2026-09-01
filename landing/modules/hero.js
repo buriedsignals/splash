@@ -3298,6 +3298,345 @@ Stage.register(
      * in canvas — copied a tile at a time onto the paper. What the reel ends
      * on is literally what the tool makes.
      */
+    /* ------------------------------------------------------- the templates
+     * Thirty page layouts, six to a rung, drawn with placeholder copy and
+     * placeholder pictures so the STRUCTURE can be judged before any content
+     * goes near it.
+     *
+     * One painter, thirty specifications. Thirty functions would be thirty
+     * places to fix the same spacing bug, and the six pages of a rung have to
+     * differ by their skeleton — where the name sits, how many columns, what
+     * shape the block is and where it falls — not by their words.
+     *
+     * The rungs are constraints, and the painter enforces them rather than
+     * trusting the specs: rung one may carry no block at all, rung two's
+     * blocks are one ink, rung three's may have colour, rung four's charts are
+     * held to a column, and rung five is where a block may take the measure.
+     */
+    const LOREM = (
+      "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse " +
+      "quam nihil molestiae consequatur vel illum qui dolorem eum fugiat quo " +
+      "voluptas nulla pariatur at vero eos et accusamus et iusto odio " +
+      "dignissimos ducimus qui blanditiis praesentium voluptatum deleniti " +
+      "atque corrupti quos dolores et quas molestias excepturi sint occaecati " +
+      "cupiditate non provident similique sunt in culpa qui officia deserunt " +
+      "mollitia animi id est laborum et dolorum fuga et harum quidem rerum " +
+      "facilis est et expedita distinctio nam libero tempore cum soluta nobis " +
+      "est eligendi optio cumque nihil impedit quo minus id quod maxime " +
+      "placeat facere possimus omnis voluptas assumenda est omnis dolor "
+    ).repeat(6);
+
+    const LOREM_HEAD = [
+      "Nam libero tempore",
+      "Soluta nobis est",
+      "Omnis voluptas assumenda",
+      "Quis autem vel eum",
+      "Temporibus autem quibusdam",
+      "Itaque earum rerum hic",
+    ];
+
+    /* head — where the paper's name goes and what it does to the page.
+     * cols  — the measure, divided.
+     * drop  — a decorated initial on the first paragraph.
+     * blocks— rectangles the text flows around. col and span are in columns,
+     *         at and lines are in lines of the column they sit in.
+     * kind  — photo, chart or map, which is what the placeholder draws.
+     * tone  — ink for one colour, or a hex for a page that has a second.
+     */
+    const SPECS = [
+      // ---- 1 · text alone. No block may appear on any of these.
+      {
+    rung: 1,
+    name: "Single measure, centred name",
+    head: "centre",
+    cols: 1,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Two columns under a banner",
+    head: "band",
+    cols: 2,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Three columns, hairlines",
+    head: "centre",
+    cols: 3,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Two columns, decorated initial",
+    head: "tracked",
+    cols: 2,
+    drop: true,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "One column, all air",
+    head: "tracked",
+    cols: 1,
+    drop: true,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Four columns, six point",
+    head: "left",
+    cols: 4,
+    blocks: [],
+      },
+
+      // ---- 2 · text and a black-and-white
+      {
+    rung: 2,
+    name: "Plate across the measure",
+    head: "centre",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 0, span: 2, at: 0, lines: 9 }],
+      },
+      {
+    rung: 2,
+    name: "Plate heads the second column",
+    head: "centre",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 1, span: 1, at: 0, lines: 11 }],
+      },
+      {
+    rung: 2,
+    name: "Plate inset, mid-column",
+    head: "band",
+    cols: 3,
+    blocks: [{ kind: "photo", col: 1, span: 1, at: 7, lines: 8 }],
+      },
+      {
+    rung: 2,
+    name: "Portrait beside the opening",
+    head: "left",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 3, lines: 13 }],
+      },
+      {
+    rung: 2,
+    name: "Two plates, one over the other",
+    head: "tracked",
+    cols: 2,
+    blocks: [
+      { kind: "photo", col: 1, span: 1, at: 0, lines: 7 },
+      { kind: "photo", col: 1, span: 1, at: 12, lines: 7 },
+    ],
+      },
+      {
+    rung: 2,
+    name: "Plate at the foot, full measure",
+    head: "centre",
+    cols: 3,
+    blocks: [{ kind: "photo", col: 0, span: 3, at: 14, lines: 8 }],
+      },
+
+      // ---- 3 · the same, with a second ink
+      {
+    rung: 3,
+    name: "Colour plate across the measure",
+    head: "centre",
+    cols: 2,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 10, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour cover, name reversed",
+    head: "band",
+    cols: 2,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 13, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour plate, one column",
+    head: "centre",
+    cols: 3,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 2, span: 1, at: 0, lines: 12, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Two colour plates",
+    head: "left",
+    cols: 2,
+    tone: "#1a7a4a",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 2, lines: 8, colour: true },
+      { kind: "photo", col: 1, span: 1, at: 9, lines: 8, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour at the foot",
+    head: "tracked",
+    cols: 2,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 13, lines: 9, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour plate, portrait, ranged left",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 1, lines: 14, colour: true },
+    ],
+      },
+
+      // ---- 4 · text, a picture, and small charts kept in their place
+      {
+    rung: 4,
+    name: "Photograph up, chart down a column",
+    head: "centre",
+    cols: 3,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 8, colour: true },
+      { kind: "chart", col: 2, span: 1, at: 6, lines: 6 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Locator map, inset",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 2, lines: 9, colour: true },
+      { kind: "map", col: 2, span: 1, at: 4, lines: 5 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Two charts down the second column",
+    head: "centre",
+    cols: 3,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "chart", col: 1, span: 1, at: 3, lines: 5 },
+      { kind: "chart", col: 1, span: 1, at: 12, lines: 5 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Chart at the foot of the measure",
+    head: "band",
+    cols: 2,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 1, lines: 8, colour: true },
+      { kind: "chart", col: 0, span: 2, at: 16, lines: 6 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Map and photograph, side by side",
+    head: "centre",
+    cols: 2,
+    tone: "#1a7a4a",
+    blocks: [
+      { kind: "map", col: 0, span: 1, at: 0, lines: 8 },
+      { kind: "photo", col: 1, span: 1, at: 0, lines: 8, colour: true },
+    ],
+      },
+      {
+    rung: 4,
+    name: "A chart the size of a paragraph, twice",
+    head: "tracked",
+    cols: 2,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 5, lines: 5 },
+      { kind: "map", col: 1, span: 1, at: 10, lines: 5 },
+    ],
+      },
+
+      // ---- 5 · the drawing is the page
+      {
+    rung: 5,
+    name: "One chart, the whole measure",
+    head: "tracked",
+    cols: 2,
+    tone: "#b3402a",
+    lead: true,
+    blocks: [{ kind: "chart", col: 0, span: 2, at: 0, lines: 20 }],
+      },
+      {
+    rung: 5,
+    name: "A map, edge to edge",
+    head: "tracked",
+    cols: 2,
+    tone: "#1a7a4a",
+    lead: true,
+    blocks: [{ kind: "map", col: 0, span: 2, at: 0, lines: 22 }],
+      },
+      {
+    rung: 5,
+    name: "Four charts on a grid",
+    head: "centre",
+    cols: 2,
+    tone: "#1a2ffb",
+    lead: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 9 },
+      { kind: "chart", col: 1, span: 1, at: 0, lines: 9 },
+      { kind: "chart", col: 0, span: 1, at: 11, lines: 9 },
+      { kind: "chart", col: 1, span: 1, at: 11, lines: 9 },
+    ],
+      },
+      {
+    rung: 5,
+    name: "Map over chart",
+    head: "left",
+    cols: 2,
+    tone: "#b3402a",
+    lead: true,
+    blocks: [
+      { kind: "map", col: 0, span: 2, at: 0, lines: 13 },
+      { kind: "chart", col: 0, span: 2, at: 15, lines: 8 },
+    ],
+      },
+      {
+    rung: 5,
+    name: "The chart, and a column beside it",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    lead: true,
+    blocks: [{ kind: "chart", col: 0, span: 2, at: 0, lines: 24 }],
+      },
+      {
+    rung: 5,
+    name: "Chart, map, chart",
+    head: "centre",
+    cols: 3,
+    tone: "#1a7a4a",
+    lead: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 10 },
+      { kind: "map", col: 1, span: 1, at: 0, lines: 10 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 10 },
+    ],
+      },
+    ];
+
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
      * decade labels and paragraphs I made up — and they are out again. What
      * the reel wants at each of these years is named here instead, and drawn
@@ -3857,6 +4196,85 @@ const flowCol = (A, o) => {
   return top + depth * lh;
 };
 
+      /* A PLACEHOLDER, and it says which KIND it stands in for. A black
+       * rectangle would do for a photograph and would say nothing at all for a
+       * chart or a map, and the whole point of these thirty pages is to judge
+       * where each kind of thing sits — so a chart placeholder has bars, a map
+       * has a coast and some marks on it, and a photograph is a plate with a
+       * subject in it. None of them is data; all of them are shapes. */
+      const placeholder = (kind, x, y, w, h, tint) => {
+        if (w <= 2 || h <= 2) return;
+        g.save();
+        g.beginPath();
+        g.rect(R(x), R(y), R(w), R(h));
+        g.clip();
+        if (kind === "photo") {
+          g.fillStyle = tint || "#5c5a55";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.fillStyle = "rgba(255,255,255,.22)";
+          g.beginPath();
+          g.ellipse(x + w * 0.36, y + h * 0.56, w * 0.16, h * 0.34, 0, 0, 7);
+          g.fill();
+          g.fillStyle = "rgba(20,20,28,.28)";
+          g.fillRect(R(x), R(y + h * 0.72), R(w), R(h * 0.28));
+        } else if (kind === "chart") {
+          g.fillStyle = "rgba(20,20,28,.055)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          const n = Math.max(5, Math.round(w / 16));
+          const bw = (w * 0.86) / n;
+          for (let i = 0; i < n; i++) {
+            const v = 0.28 + 0.66 * Math.abs(Math.sin(i * 1.7 + w));
+            g.fillStyle = tint && i === Math.floor(n * 0.62) ? tint : "#3a3833";
+            g.fillRect(
+              R(x + w * 0.07 + i * bw),
+              R(y + h * 0.82 - v * h * 0.66),
+              R(bw * 0.62),
+              R(v * h * 0.66),
+            );
+          }
+          g.fillStyle = "rgba(20,20,28,.42)";
+          g.fillRect(R(x + w * 0.07), R(y + h * 0.82), R(w * 0.86), 1);
+        } else {
+          g.fillStyle = "rgba(20,20,28,.055)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.strokeStyle = "#3a3833";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x + w * 0.12, y + h * 0.68);
+          g.bezierCurveTo(
+            x + w * 0.26, y + h * 0.22,
+            x + w * 0.62, y + h * 0.86,
+            x + w * 0.9, y + h * 0.3,
+          );
+          g.stroke();
+          g.beginPath();
+          g.moveTo(x + w * 0.2, y + h * 0.26);
+          g.bezierCurveTo(
+            x + w * 0.44, y + h * 0.52,
+            x + w * 0.5, y + h * 0.2,
+            x + w * 0.84, y + h * 0.62,
+          );
+          g.stroke();
+          for (let i = 0; i < 6; i++) {
+            g.fillStyle = tint && i % 3 === 0 ? tint : "#3a3833";
+            g.beginPath();
+            g.arc(
+              x + w * (0.2 + 0.12 * i),
+              y + h * (0.4 + 0.24 * Math.sin(i * 2.1)),
+              Math.max(1.4, w * 0.012),
+              0,
+              7,
+            );
+            g.fill();
+          }
+        }
+        g.restore();
+        g.fillStyle = "rgba(20,20,28,.2)";
+        g.strokeStyle = "rgba(20,20,28,.2)";
+        g.strokeRect(R(x) + 0.5, R(y) + 0.5, R(w) - 1, R(h) - 1);
+        g.fillStyle = "#111111";
+      };
+
       const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
       const wrapTo = (text, w, font) => {
         g.font = font;
@@ -4166,6 +4584,161 @@ const flowCol = (A, o) => {
           g.font = "italic 8.5px " + SERIF;
           g.fillText("to produce", mid, y);
           g.textAlign = "left";
+          return top + capH;
+        },
+
+        /* THE ONE PAINTER. Every template on the reel comes through here: it
+         * reads a spec and draws it, so a spacing fault is fixed in one place
+         * rather than in thirty.
+         *
+         * It also ENFORCES the rungs rather than trusting the specs. Rung one
+         * carries no block whatever a spec says, rung two's blocks are one ink
+         * however they are marked, and only rung five may let a block take the
+         * measure at the top of the page. A constraint a data table can break
+         * is not a constraint. */
+        spec(S, x0, top, capH) {
+          const M = 16,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          const ink = S.rung >= 3 && S.tone ? S.tone : "#111111";
+          let y = top + 20;
+
+          // ---- the name
+          if (S.head === "band") {
+            const band = 34;
+            g.fillStyle = "#111111";
+            g.fillRect(R(x0), R(top), GALLEY_COL, band);
+            g.fillStyle = "#ffffff";
+            g.textAlign = "center";
+            const ms = fit("THE DAILY LOREM", "700", 24, meas * 0.94);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("THE DAILY LOREM", mid, top + R(band * 0.72));
+            g.fillStyle = "#111111";
+            y = top + band + 18;
+          } else if (S.head === "tracked") {
+            g.textAlign = "center";
+            const ms = fit("THE LOREM REVIEW", "400", 9.5, meas * 0.7);
+            g.font = ms + "px " + SERIF;
+            track("THE LOREM REVIEW", mid, y + 8, ms * 0.46);
+            y += 18;
+            g.fillStyle = ink;
+            lozenge(mid, y, meas * 0.26);
+            g.fillStyle = "#111111";
+            y += 20;
+          } else if (S.head === "left") {
+            g.textAlign = "left";
+            const ms = fit("The Lorem Gazette", "700", 19, meas * 0.56);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("The Lorem Gazette", left, y + R(ms * 0.74) + 4);
+            g.textAlign = "right";
+            g.font = "7px " + SERIF;
+            g.fillStyle = ink;
+            g.fillText("LOREM · IPSUM", left + meas, y + 10);
+            g.fillStyle = "#111111";
+            y += R(ms * 0.74) + 14;
+            rule(left, y, meas, 2);
+            y += 16;
+          } else {
+            g.textAlign = "center";
+            const ms = fit("The Lorem Chronicle", "700", 21, meas * 0.82);
+            y += R(ms * 0.74) + 6;
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("The Lorem Chronicle", mid, y);
+            y += 11;
+            g.fillStyle = ink;
+            rule(left, y, meas, 2);
+            g.fillStyle = "#111111";
+            y += 5;
+            rule(left, y, meas, 1);
+            y += 14;
+            g.font = "7.5px " + SERIF;
+            g.textAlign = "left";
+            g.fillText("LOREM, 1900", left, y);
+            g.textAlign = "right";
+            g.fillText("IPSUM DOLOR", left + meas, y);
+            y += 6;
+            rule(left, y, meas, 1);
+            y += 16;
+          }
+
+          // ---- the headline and the deck
+          const title = LOREM_HEAD[(S.rung * 7 + (S.i || 0)) % LOREM_HEAD.length];
+          g.textAlign = S.head === "left" ? "left" : "center";
+          const hs = fit(title, S.head === "tracked" ? "400" : "700", 25, meas * 0.92);
+          y += R(hs * 0.74) + 10;
+          g.font = (S.head === "tracked" ? "400 " : "700 ") + hs + "px " + SERIF;
+          g.fillText(title, S.head === "left" ? left : mid, y);
+          y += 14;
+          g.font = "italic 9px " + SERIF;
+          g.fillText(
+            "Dolorem ipsum quia dolor sit amet consectetur",
+            S.head === "left" ? left : mid,
+            y,
+          );
+          y += 8;
+          if (S.head !== "left") rule(mid - meas * 0.13, y, meas * 0.26, 1);
+          y += 18;
+
+          // ---- the measure, and the blocks that sit in it
+          const cols = S.cols,
+            gut = 9,
+            colW = (meas - gut * (cols - 1)) / cols;
+          const fs = cols >= 3 ? 7.6 : 9,
+            lh = cols >= 3 ? 10.4 : 12.4;
+          const bot = top + capH - 14;
+          const depth = Math.floor((bot - y) / lh);
+
+          /* The rung, enforced. A spec cannot put a picture on rung one, and
+           * cannot give a block the measure at the top of the page below rung
+           * five, whatever it says. */
+          const blocks = (S.rung === 1 ? [] : S.blocks || []).map((b) => ({
+            ...b,
+            span: S.rung < 5 && b.span >= cols && b.at === 0 && cols > 1
+              ? Math.max(1, cols - 1)
+              : b.span,
+            colour: S.rung >= 3 && b.colour,
+          }));
+
+          for (const b of blocks) {
+            const bx = left + b.col * (colW + gut),
+              bw = colW * b.span + gut * (b.span - 1),
+              by = y - fs + b.at * lh,
+              bh = b.lines * lh - 6;
+            placeholder(b.kind, bx, by, bw, bh, b.colour ? ink : null);
+          }
+
+          // the words, flowing round them
+          g.font = fs + "px " + SERIF;
+          g.textAlign = "left";
+          const words = LOREM.split(" ");
+          let w = 0;
+          const line = () => {
+            const out = [];
+            let acc = 0;
+            while (w < words.length) {
+              const add = g.measureText((out.length ? " " : "") + words[w]).width;
+              if (acc + add > colW && out.length) break;
+              out.push(words[w]);
+              acc += add;
+              w++;
+            }
+            if (w >= words.length) w = 0;
+            return out.join(" ");
+          };
+          for (let c = 0; c < cols; c++) {
+            const cx = left + c * (colW + gut);
+            for (let r = 0; r < depth; r++) {
+              const ly = y + r * lh;
+              const hit = blocks.some(
+                (b) =>
+                  c >= b.col && c < b.col + b.span && r >= b.at && r < b.at + b.lines,
+              );
+              if (hit) continue;
+              g.fillText(line(), cx, ly);
+            }
+            if (c > 0) g.fillRect(R(cx - gut / 2), R(y - fs), 1, R(depth * lh));
+          }
           return top + capH;
         },
 
@@ -4494,14 +5067,15 @@ const flowCol = (A, o) => {
       // The run: every paper by its dateline, then the modern pages.
       const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
       CUTS.length = 0;
-      REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
-        .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
-        .concat(EMPTIES.map((B) => ({ blank: B, year: B.year })))
-        .sort((a, b) => a.year - b.year);
+      /* The reel is the thirty templates now, in rung order. The papers and
+       * the plates are still in this file and still composed by their own
+       * presses; they come back when there is content to put in them. What is
+       * being looked at first is the SHAPE of the pages. */
+      REEL = SPECS.map((S, i) => ({ spec: { ...S, i } }));
       GALLEY_H = REEL.reduce(
         (a, E) =>
           a +
-          (E.blank
+          (E.spec || E.blank
             ? Math.round(GALLEY_COL * PAGE_RATIO)
             : E.landmark
                 ? Math.round(GALLEY_COL * PAGE_RATIO)
@@ -4523,7 +5097,7 @@ const flowCol = (A, o) => {
       let y = 0;
       for (let k = 0; k < REEL.length; k++) {
         const E = REEL[k];
-        const h = E.blank
+        const h = E.spec || E.blank
           ? Math.round(GALLEY_COL * PAGE_RATIO)
           : E.landmark
             ? Math.round(GALLEY_COL * PAGE_RATIO)
@@ -4534,7 +5108,9 @@ const flowCol = (A, o) => {
         g.clip();
         g.fillStyle = "#111111";
         g.textAlign = "left";
-        if (E.blank) {
+        if (E.spec) {
+          PRESS.spec(E.spec, 0, y, h);
+        } else if (E.blank) {
           PRESS.blank(E.blank, 0, y, h);
         } else if (E.landmark) {
           PRESS.landmark(E.landmark, 0, y, h);
