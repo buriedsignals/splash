@@ -3276,8 +3276,56 @@ Stage.register(
     const WEB_SPD = [1.0, 0.912, 1.068];
     const WEB_PHASE = [0.0, 0.37, 0.71];
 
+    /* ------------------------------------------------------------ the reel
+     * The webs used to carry eleven papers dealt into three columns by three
+     * strides. They carry a TIMELINE now: one column that runs through the
+     * history of the form, from a penny paper of 1835 that had no pictures at
+     * all, through the presses that learned to print a photograph, to what a
+     * desk makes today — and the three webs read that one column at three
+     * different heights, so three eras are always in the frame at once.
+     *
+     * It loops. At the end of the run the press starts again at 1835, which is
+     * a seam, and an accepted one: the alternative is a reel long enough that
+     * a lap never comes round, and that reel is a hundred megabytes of
+     * texture. One column instead of three is what pays for the length there
+     * is — a third of the width buys three times the history for the same
+     * bytes, and it is also what guarantees the three webs are never showing
+     * the same page.
+     *
+     * The modern end is not invented journalism. It is the atlas hero.js
+     * already paints for the field of plates — real charts, real maps, drawn
+     * in canvas — copied a tile at a time onto the paper. What the reel ends
+     * on is literally what the tool makes.
+     */
+    const MODERN = [
+      { era: "1970s", forms: ["The first newsroom charts"], tiles: [3, 8] },
+      { era: "1990s", forms: ["Print infographics"], tiles: [12, 17] },
+      { era: "2010s", forms: ["Interactive, on the page"], tiles: [1, 21] },
+      {
+    era: "Today",
+    forms: ["Made at the desk, by the assistant"],
+    tiles: [6, 14, 19],
+      },
+    ];
+
+    /* The papers in the order they were printed, which is the order the reel
+     * runs in. Their own datelines decide it — nothing here is a choice. */
+    const CHRONO = () =>
+      ARTICLES.slice().sort((a, b) => {
+    const y = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+    return y(a) - y(b);
+      });
+
+    let panelSheet = null; // the atlas canvas, kept so the reel can read it
+
     const GALLEY_COL = 400; // the measure of one web, in texels
-    const GALLEY_GAP = 16; // dead paper between two columns of the atlas
+    /* ONE column, and the three webs read it at three different heights.
+     * Three columns side by side cost three times the width for no gain the
+     * moment the reel became a timeline: what the webs must never do is show
+     * the same page, and three offsets into one chronology guarantee that far
+     * better than three orders of the same eleven papers did — they show three
+     * DIFFERENT ERAS. The width saved is spent on the length of the run. */
+    const GALLEY_GAP = 0;
     /* A PAGE IS A PAGE. Its depth is the sheet its press printed on, as a
      * ratio of the measure — a broadsheet is a tall thin thing, a monthly is
      * nearly square — and never how much of the article happened to be set.
@@ -3292,13 +3340,15 @@ Stage.register(
       illustrated: 1.35,
       review: 1.3,
       pictorial: 1.36,
+      modern: 1.55,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
 
-    const GALLEY_W = GALLEY_COL * 3 + GALLEY_GAP * 2;
+    const GALLEY_W = GALLEY_COL;
     // Settled by the measuring pass, and read by the frame to size the window
     // it slides down the web. Never a literal.
     let GALLEY_H = 4400;
+    let REEL = [];
 
     /* The photographs. Every one of these is a real plate belonging to the
      * story it sits in, public domain, and served with an open CORS header —
@@ -3962,6 +4012,59 @@ const flowCol = (A, o) => {
           return end + 24;
         },
 
+        /* WHAT THE DESK MAKES NOW. The last pages of the reel, and the only
+         * ones that are not a newspaper: a tracked date, a rule, and the work
+         * itself — chart tiles lifted whole out of the atlas hero.js already
+         * paints for the field of plates. Nothing is drawn twice and nothing
+         * is invented; the reel ends on the tool's own output.
+         *
+         * Before the atlas exists the page is composed empty but for its head,
+         * and the galley is uploaded again when the atlas arrives — the same
+         * two-pass arrangement the photographs use. */
+        modern(M, x0, top, capH) {
+          const Mg = 22,
+            meas = GALLEY_COL - Mg * 2,
+            left = x0 + Mg,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 30;
+          const ms = fit(M.era.toUpperCase(), "400", 10, meas * 0.6);
+          g.font = ms + "px " + SERIF;
+          track(M.era.toUpperCase(), mid, y, ms * 0.5);
+          y += 13;
+          rule(left, y, meas, 1);
+          y += 30;
+
+          let hs = 22;
+          for (const l of M.forms) hs = Math.min(hs, fit(l, "400", 22, meas * 0.9));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of M.forms) {
+            track(l, mid, y, hs * 0.03);
+            y += R(hs * 1.2);
+          }
+          y += 22;
+
+          /* The tiles, stacked down the measure at their own square. The atlas
+           * is ten by ten of PANEL_S, and a still is its index in that grid. */
+          if (panelSheet) {
+            const S = PANEL_S,
+              N = PANEL_N;
+            for (const t of M.tiles) {
+              if (y + meas > top + capH - 26) break;
+              const sx = (t % N) * S,
+                sy = Math.floor(t / N) * S;
+              g.drawImage(panelSheet, sx, sy, S, S, R(left), R(y), R(meas), R(meas));
+              g.fillStyle = "rgba(20,20,28,.14)";
+              g.fillRect(R(left), R(y), R(meas), 1);
+              g.fillRect(R(left), R(y + meas), R(meas), 1);
+              g.fillStyle = "#111111";
+              y += meas + 16;
+            }
+          }
+          diamond(mid, Math.min(y + 4, top + capH - 16), 2.2);
+          return top + capH;
+        },
+
         /* THE MASSES. A radical arts monthly of 1917, and nothing about it is
          * genteel: everything ranged LEFT, a heavy rule, the title big and
          * flush, no ornament, no initial, and a great deal of air above it.
@@ -4194,9 +4297,18 @@ const flowCol = (A, o) => {
     }
 
     function buildGalley() {
-      // The three columns hold the same eleven papers, so their totals agree
-      // and a lap is exactly the eleven page depths whatever order they run in.
-      GALLEY_H = ARTICLES.reduce((a, A) => a + pageH(A), 0);
+      // The run: every paper by its dateline, then the modern pages.
+      REEL = CHRONO()
+        .map((A) => ({ A }))
+        .concat(MODERN.map((m) => ({ modern: m })));
+      GALLEY_H = REEL.reduce(
+        (a, E) =>
+          a +
+          (E.modern
+            ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
+            : pageH(E.A)),
+        0,
+      );
 
       const cv = document.createElement("canvas");
       cv.width = GALLEY_W;
@@ -4207,35 +4319,34 @@ const flowCol = (A, o) => {
       g.textBaseline = "alphabetic";
       const PRESS = galleyPresses(g);
 
-      /* Three columns, three orders. ARTICLES.length is prime, so any stride
-       * walks the whole list, and three different strides mean no two webs can
-       * be showing the same paper at the same height however long the press
-       * runs. The slots differ in height, so the three also stop breaking at
-       * the same places — which is the other half of not reading as a machine
-       * stamping identical blocks. */
-      const STRIDE = [1, 4, 7],
-        START = [0, 5, 9];
-      for (let c = 0; c < 3; c++) {
-        const x0 = c * (GALLEY_COL + GALLEY_GAP);
-        let y = 0;
-        for (let k = 0; k < ARTICLES.length; k++) {
-          const at = (n) =>
-            ARTICLES[(START[c] + n * STRIDE[c]) % ARTICLES.length];
-          const A = at(k);
-          // what the page carries on after this story runs out: the next two
-          // papers on this column, in this column's own order
-          const fill = [at(k + 1), at(k + 2)];
-          const h = pageH(A);
-          g.save();
-          g.beginPath();
-          g.rect(x0, y, GALLEY_COL, h);
-          g.clip();
-          g.fillStyle = "#111111";
-          g.textAlign = "left";
-          (PRESS[A.tpl] || PRESS.broadsheet)(A, x0, y, h, fill);
-          g.restore();
-          y += h;
+      /* The run, in the order it was printed. The papers first, by their own
+       * datelines, then what the desk makes. */
+      let y = 0;
+      for (let k = 0; k < REEL.length; k++) {
+        const E = REEL[k];
+        const h = E.modern
+          ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
+          : pageH(E.A);
+        g.save();
+        g.beginPath();
+        g.rect(0, y, GALLEY_COL, h);
+        g.clip();
+        g.fillStyle = "#111111";
+        g.textAlign = "left";
+        if (E.modern) {
+          PRESS.modern(E.modern, 0, y, h);
+        } else {
+          // what the page carries on when the story runs out: the papers that
+          // follow it on the reel, so a column never has a hole in it
+          const fill = [];
+          for (let n = 1; n <= 3; n++) {
+            const F = REEL[(k + n) % REEL.length];
+            if (F && !F.modern) fill.push(F.A);
+          }
+          (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
         }
+        g.restore();
+        y += h;
       }
       return cv;
     }
@@ -5225,8 +5336,15 @@ void main(){
         // panels are not needed until the break, so they are built once the
         // page is already running.
         const buildAtlas = () => {
-          panelTex = api.texFromCanvas(paintPanels());
+          /* The sheet is KEPT, not thrown away with the upload: the reel's
+           * modern pages read tiles straight off it. And the galley is
+           * composed again once it exists — until then those pages carry
+           * their head and nothing under it, the same two-pass arrangement
+           * the photographs use. */
+          panelSheet = paintPanels();
+          panelTex = api.texFromCanvas(panelSheet);
           panelsOn = 1;
+          uploadGalley();
         };
         if (window.requestIdleCallback)
           requestIdleCallback(buildAtlas, { timeout: 2500 });
@@ -6070,8 +6188,10 @@ void main(){
           gl.uniform1f(uq.uEdge, P.webEdge);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
-          const du = GALLEY_COL / GALLEY_W,
-            gutter = (GALLEY_COL + GALLEY_GAP) / GALLEY_W;
+          // one column, so every web reads the whole width of the sheet and
+          // they differ only by where they are in the run
+          const du = 1,
+            gutter = 0;
           /* How much of a lap is in shot is NOT a taste decision — it is
            * whatever keeps a texel square. Choose it by hand and the type is
            * stretched or squeezed by however wrong the guess was, and it goes
