@@ -4358,7 +4358,9 @@ Stage.register(
               '<rect x="' + (gut + i * bw + bw * 0.16).toFixed(1) + '" y="' +
               (ph - tall).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) +
               '" height="' + Math.max(0.6, tall).toFixed(1) + '" rx="1" fill="' +
-              (i === n - 1 ? tone : DINK) + '"/>';
+              // read off its own height: the tallest bar is the darkest,
+              // which is the whole of what a value scale is for
+              value(0.26 + v[i % v.length] * 0.74, tone) + '"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -4454,15 +4456,18 @@ Stage.register(
                 '<text x="0" y="' + (y + rh * 0.74).toFixed(1) +
                 '" font-family="' + SANS + '" font-size="8" fill="' + AXIS + '">' +
                 String.fromCharCode(65 + r) + "</text>";
+            /* A hairline of paper between the segments. Two greys that touch
+             * are read as one shape however far apart they are on the scale
+             * — the eye wants an edge before it will look for a difference,
+             * and on a web that edge is the only thing that survives. */
+            const seg = (sx, sw, t) =>
+              sw <= 0.5
+                ? ""
+                : '<rect x="' + sx.toFixed(1) + '" y="' + y.toFixed(1) +
+                  '" width="' + Math.max(0.5, sw - 1.2).toFixed(1) + '" height="' +
+                  rh.toFixed(1) + '" fill="' + value(t, tone) + '"/>';
             out +=
-              '<rect x="' + lab + '" y="' + y.toFixed(1) + '" width="' + a.toFixed(1) +
-              '" height="' + rh.toFixed(1) + '" fill="' + DINK + '"/>' +
-              '<rect x="' + (lab + a).toFixed(1) + '" y="' + y.toFixed(1) +
-              '" width="' + b.toFixed(1) + '" height="' + rh.toFixed(1) +
-              '" fill="' + tone + '"/>' +
-              '<rect x="' + (lab + a + b).toFixed(1) + '" y="' + y.toFixed(1) +
-              '" width="' + c.toFixed(1) + '" height="' + rh.toFixed(1) +
-              '" fill="' + PALE + '"/>';
+              seg(lab, a, 1) + seg(lab + a, b, 0.5) + seg(lab + a + b, c, 0.17);
           }
           return svgWrap(pw, ph, out);
         });
@@ -4509,7 +4514,8 @@ Stage.register(
       chrome(w, h, "Of the whole", "Per cent, Lorem Ipsum Office",
         (pw, ph) => {
           const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
-          const shade = [tone, DINK, "#565350", "#9c9891", PALE];
+          // five classes over the whole spectrum, biggest darkest
+          const shade = [1, 0.72, 0.48, 0.29, 0.13].map((t) => value(t, tone));
           const ar = pw / ph;
 
           let box, cx, cy, key = "";
@@ -4550,7 +4556,9 @@ Stage.register(
               [x2, y2] = P(a1, R1), [x3, y3] = P(a0, R1);
             return '<path d="M' + x0 + " " + y0 + " A" + R0 + " " + R0 + " 0 " +
               big + " 1 " + x1 + " " + y1 + " L" + x2 + " " + y2 + " A" + R1 +
-              " " + R1 + " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill + '"/>';
+              " " + R1 + " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill +
+              // the same hairline of paper the stack needs, for the same reason
+              '" stroke="#ffffff" stroke-width="1.4"/>';
           };
 
           // one sweep round the ring: p is its leading edge, q its trailing
@@ -4645,19 +4653,9 @@ Stage.register(
           if (!G) return "";
           const iso = ISOS();
           // a real sequential ramp, not one ink at five opacities
-          const ramp = (t) => {
-            const a = [237, 234, 229],
-              b = hexRGB(tone);
-            // the ramp's foot was so near the land colour that the lowest
-            // class could not be told from a country with no value at all
-            const k = 0.24 + t * 0.76;
-            return (
-              "rgb(" +
-              Math.round(a[0] + (b[0] - a[0]) * k) + "," +
-              Math.round(a[1] + (b[1] - a[1]) * k) + "," +
-              Math.round(a[2] + (b[2] - a[2]) * k) + ")"
-            );
-          };
+          // paper to ink in five steps, so a country's class can be read off
+          // the map without going back to a key
+          const ramp = (t) => value(0.12 + Math.round(t * 4) * 0.22, tone);
           return mapBase(pw, ph, rnd, (u) => {
             let out = "";
             for (let i = 0; i < iso.length; i++) {
@@ -4881,7 +4879,7 @@ Stage.register(
                 (oy + r * cell + 0.6).toFixed(2) + '" width="' + (cell - 1.2).toFixed(2) +
                 '" height="' + (cell - 1.2).toFixed(2) + '" rx="' +
                 Math.min(1, cell / 6).toFixed(2) + '" fill="' +
-                (k > 0.5 ? (i / n > 0.72 ? tone : "#4b4741") : PALE) + '"/>';
+                (k > 0.5 ? value(i / n > 0.72 ? 0.42 : 1, tone) : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
