@@ -3725,6 +3725,23 @@ Stage.register(
       },
     ];
 
+    /* ---- the story page. Not a rung: the argument.
+     * A paper of nothing but words — which is what every page on the first
+     * rung is — and then the desk makes room in it and puts a drawing there.
+     * It is the whole proposition in one page, and the only page on the reel
+     * that changes while you watch it. */
+    const STORY = {
+      rung: 1,
+      story: true,
+      name: "The article, and what the desk makes of it",
+      head: "centre",
+      cols: 3,
+      tone: "#b3402a",
+      anim: "bars",
+      blocks: [{ kind: "chart", col: 0, span: 2, at: 7, lines: 13 }],
+    };
+
+
     /* THE HOLES. Six to a rung was reached by writing pages from nothing —
      * decade labels and paragraphs I made up — and they are out again. What
      * the reel wants at each of these years is named here instead, and drawn
@@ -3952,6 +3969,30 @@ Stage.register(
       }
     }
 
+
+    /* HOW THE STORY IS TOLD, as two curves over one turn of it.
+     *
+     * They are separate on purpose. The room is made FIRST and the drawing
+     * arrives INTO it — that order is the whole claim: the desk does not
+     * replace the article, it makes space in it. A single curve doing both
+     * at once would show a graphic growing and the text retreating from it,
+     * which reads as the drawing shoving the words out of the way. */
+    const STORY_SECS = 16;
+    const ease = (u) => u * u * (3 - 2 * u);
+    const clamp01 = (u) => Math.max(0, Math.min(1, u));
+    // the hole opening in the text, and closing again at the end
+    const storyOpen = (u) =>
+      u < 0.16 ? 0
+        : u < 0.40 ? ease((u - 0.16) / 0.24)
+        : u < 0.92 ? 1
+        : 1 - ease((u - 0.92) / 0.08);
+    // the drawing coming in, after the room for it exists
+    const storyDraw = (u) =>
+      u < 0.38 ? 0
+        : u < 0.60 ? ease((u - 0.38) / 0.22)
+        : u < 0.88 ? 1
+        : clamp01(1 - (u - 0.88) / 0.05);
+
     /* The drawing, as markup. Well-formed XHTML with every attribute quoted
      * and no bare ampersand, because this is parsed as XML and one loose
      * character yields a blank image rather than an error. */
@@ -4007,22 +4048,26 @@ Stage.register(
     }
 
     /* One job per distinct drawing — what it is, and at what size — rather
-     * than one per hole. Thirty-six copies of the same page ask for the same
-     * picture, and rasterising it thirty-six times would be thirty-six times
-     * the work for one result. */
+     * than one per hole. Copies of the same page ask for the same picture,
+     * and rasterising it once per copy would be that many times the work for
+     * one result. */
     const LIVE_JOBS = new Map();
-    const jobOf = (k) => {
-      const rw = Math.min(k.w, LIVE_RASTER),
-        rh = Math.max(8, Math.round((k.h * rw) / k.w));
-      const key = k.anim + "|" + rw + "|" + rh + "|" + k.tone;
+    const jobKey = (anim, w, h, tone) => {
+      const rw = Math.min(w, LIVE_RASTER),
+        rh = Math.max(8, Math.round((h * rw) / w));
+      return anim + "|" + rw + "|" + rh + "|" + tone;
+    };
+    const jobOf = (anim, w, h, tone) => {
+      const key = jobKey(anim, w, h, tone);
       let job = LIVE_JOBS.get(key);
       if (!job) {
-        job = { anim: k.anim, w: rw, h: rh, tone: k.tone, img: null, pending: false, fresh: false };
+        const rw = Math.min(w, LIVE_RASTER),
+          rh = Math.max(8, Math.round((h * rw) / w));
+        job = { anim, w: rw, h: rh, tone, img: null, pending: false, fresh: false };
         LIVE_JOBS.set(key, job);
       }
       return job;
     };
-
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
@@ -4032,10 +4077,13 @@ Stage.register(
         liveStep(Math.min(0.12, liveLast < 0 ? 1 / LIVE_HZ : t - liveLast));
         liveLast = t;
         for (const k of LIVE_HOLES) {
-          const job = jobOf(k);
+          const inner = k.story ? k.inner() : k;
+          if (!inner || inner.w < 8 || inner.h < 8) continue;
+          const job = jobOf(k.anim, inner.w, inner.h, k.tone);
           if (job.pending) continue;
           job.pending = true;
-          rasterise(job.anim, job.w, job.h, liveNow.slice(), job.tone).then((im) => {
+          const v = liveNow.map((x) => x * (k.story ? k.draw || 0 : 1));
+          rasterise(job.anim, job.w, job.h, v, job.tone).then((im) => {
             job.pending = false;
             if (im) {
               job.img = im;
@@ -4045,16 +4093,58 @@ Stage.register(
         }
       }
 
-      // put whatever landed on the paper. Each hole writes only its own
-      // rectangle; the mip chain is rebuilt once for all of them, because
-      // the webs read the reel through a LOD bias and a stale chain shows
-      // as a block that will not sharpen.
+      /* Put it on the paper. A story page is REPAINTED — the band of text is
+       * cleared and set again with the hole at its new size, because that is
+       * the animation — and every other hole only has its own rectangle
+       * written. Either way the mip chain is rebuilt once at the end: the
+       * webs read the reel through a LOD bias, and a stale chain shows as a
+       * block that will not sharpen. */
       let wrote = false;
       const g2 = galleyCv.getContext("2d");
       gl.bindTexture(gl.TEXTURE_2D, galleyTex);
       for (const k of LIVE_HOLES) {
-        const job = jobOf(k);
-        if (!job.fresh || !job.img) continue;
+        if (k.story) {
+          const u = ((t / STORY_SECS + k.phase) % 1 + 1) % 1;
+          const open = storyOpen(u);
+          k.draw = storyDraw(u);
+          // the text is only re-set when the hole actually changed size, and
+          // it changes in whole lines: a repaint that lands on the same line
+          // count is the same picture for a real cost
+          const lines = Math.round(open * 100);
+          if (lines === k.lastLines && !k.dirty) continue;
+          k.lastLines = lines;
+          k.dirty = false;
+          g2.save();
+          g2.beginPath();
+          g2.rect(k.x, k.y, k.w, k.h);
+          g2.clip();
+          g2.fillStyle = "#ffffff";
+          g2.fillRect(k.x, k.y, k.w, k.h);
+          g2.textBaseline = "alphabetic";
+          k.paint(open);
+          const inner = k.inner();
+          const job = inner && inner.w >= 8 && inner.h >= 8
+            ? LIVE_JOBS.get(jobKey(k.anim, inner.w, inner.h, k.tone))
+            : null;
+          if (job && job.img && k.draw > 0)
+            g2.drawImage(job.img, inner.x, inner.y, inner.w, inner.h);
+          g2.restore();
+          if (!k.scratch) {
+            k.scratch = document.createElement("canvas");
+            k.scratch.width = k.w;
+            k.scratch.height = k.h;
+            k.sg = k.scratch.getContext("2d");
+          }
+          k.sg.drawImage(galleyCv, k.x, k.y, k.w, k.h, 0, 0, k.w, k.h);
+          gl.texSubImage2D(
+            gl.TEXTURE_2D, 0, k.x, k.y, gl.RGBA, gl.UNSIGNED_BYTE, k.scratch,
+          );
+          wrote = true;
+          continue;
+        }
+
+        const job = LIVE_JOBS.get(jobKey(k.anim, k.w, k.h, k.tone));
+        if (!job || !job.fresh || !job.img) continue;
         if (!k.scratch) {
           k.scratch = document.createElement("canvas");
           k.scratch.width = k.w;
@@ -5061,127 +5151,185 @@ const flowCol = (A, o) => {
           const bot = top + capH - (S.bare ? 34 : 14);
           const depth = Math.floor((bot - y) / lh);
 
-          /* The rung, enforced. A spec cannot put a picture on rung one, and
-           * cannot give a block the measure at the top of the page below rung
-           * five, whatever it says. */
-          const blocks = (S.rung === 1 ? [] : S.blocks || []).map((b) => ({
-            ...b,
-            span: S.rung < 5 && b.span >= cols && b.at === 0 && cols > 1
-              ? Math.max(1, cols - 1)
-              : b.span,
-            colour: S.rung >= 3 && b.colour,
-          }));
-
-          /* A block takes the line-slots it is given, MINUS the air it owes
-           * the type around it. Set flush to its slots it began exactly where
-           * the line above it ended — a pixel and a half under that line's
-           * descenders — and the picture read as if it were glued to the text.
-           * Five rows off the top and eight off the foot leave about the same
-           * white above and below, which is what the eye is measuring. */
-          const AIR_T = 5,
-            AIR_B = 8;
-          for (let bi = 0; bi < blocks.length; bi++) {
-            const b = blocks[bi];
-            const bx = left + b.col * (colW + gut),
-              bw = colW * b.span + gut * (b.span - 1),
-              by = y - fs + b.at * lh + AIR_T,
-              bh = b.lines * lh - AIR_T - AIR_B;
-            /* From the fifth rung up a drawing carries COLOUR — several of
-             * them. The rungs under it are a press with one ink, or one that
-             * bought a second for a photograph; a chart made at a desk today
-             * has a palette, and drawing the top of the ramp in the same grey
-             * as rung two says the opposite of what the page is for. The
-             * sixth rung is the end of that ramp, not a step back off it. */
-            /* A block the page wants alive keeps its rectangle, in galley
-             * coordinates, so the frame loop can write that rectangle and
-             * nothing else. It is still drawn now: the flipbook takes a
-             * moment to decode, and until it does this is what is there. */
-            if (S.live === bi && LIVE_ART[S.anim])
-              LIVE_HOLES.push({
-                x: R(bx), y: R(by), w: R(bw), h: R(bh),
-                anim: S.anim, tone: S.tone || "#b3402a",
-              });
-            placeholder(
-              b.kind, bx, by, bw, bh,
-              b.colour ? ink : null,
-              S.rung >= 5,
-              (S.i || 0) * 3 + bi,
-              S.rung === 2,
-            );
-          }
-
-          /* A BARE PAGE STOPS HERE. On the sixth rung the drawing IS the
-           * article: there is no body to flow, so the blocks take the page and
-           * the only words under them are the ones a graphic cannot do without
-           * — where the numbers came from, and who made it. Running the text
-           * loop anyway would have set lorem in the gaps between the charts,
-           * which is exactly the thing this rung is defined by not having. */
-          if (S.bare) {
-            const fy = top + capH - 22;
-            g.fillStyle = ink;
-            g.fillRect(R(left), R(fy), R(meas * 0.14), 2);
-            g.fillStyle = "#111111";
-            g.font = "7px " + SERIF;
-            g.textAlign = "left";
-            g.fillText("SOURCE · LOREM IPSUM STATISTICAL OFFICE, 2026", left, fy + 12);
-            g.textAlign = "right";
-            g.fillText("GRAPHIC BY THE DESK", left + meas, fy + 12);
-            g.textAlign = "left";
-            return top + capH;
-          }
-
-          // the words, flowing round them
-          g.font = fs + "px " + SERIF;
-          g.textAlign = "left";
-          const words = LOREM.split(" ");
-          let w = 0;
-          const line = () => {
-            const out = [];
-            let acc = 0;
-            while (w < words.length) {
-              const add = g.measureText((out.length ? " " : "") + words[w]).width;
-              if (acc + add > colW && out.length) break;
-              out.push(words[w]);
-              acc += add;
-              w++;
-            }
-            if (w >= words.length) w = 0;
-            return out.join(" ");
-          };
-          for (let c = 0; c < cols; c++) {
-            const cx = left + c * (colW + gut);
-            for (let r = 0; r < depth; r++) {
-              const ly = y + r * lh;
-              const hit = blocks.some(
-                (b) =>
-                  c >= b.col && c < b.col + b.span && r >= b.at && r < b.at + b.lines,
-              );
-              if (hit) continue;
-              g.fillText(line(), cx, ly);
-            }
-          }
-
-          /* THE HAIRLINES, BROKEN WHERE A BLOCK CROSSES THEM.
+          /* THE BODY, AS A FUNCTION OF HOW FAR THE HOLE HAS OPENED.
            *
-           * A rule between two columns was drawn down the whole depth of the
-           * page, and the blocks are painted before it — so any picture
-           * spanning that boundary got a line ruled straight through it. The
-           * line belongs between COLUMNS OF TYPE; where a block bridges them
-           * there are no two columns to separate. Each boundary is therefore
-           * drawn in the segments the blocks leave it. */
-          for (let c = 1; c < cols; c++) {
-            const lx = R(left + c * (colW + gut) - gut / 2);
-            const gaps = blocks
-              .filter((b) => b.col < c && b.col + b.span > c)
-              .map((b) => [b.at, b.at + b.lines])
-              .sort((a, b) => a[0] - b[0]);
-            let r = 0;
-            for (const [g0, g1] of gaps) {
-              if (g0 > r)
-                g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh - AIR_B));
-              r = Math.max(r, g1);
+           * It used to run once, inline. It is a closure now because a story
+           * page repaints it — the whole point of that page is that the text
+           * OPENS to make room, and text that opens has to be set again with
+           * the hole at its new size. The flow already avoided a block by
+           * line-slots, so growing the block from nothing is the entire
+           * animation: the lines above hold, the lines below are pushed down,
+           * and a gap appears between them.
+           *
+           * `grow` is 0 for the page as printed and 1 for the page with the
+           * graphic in it. The block's rectangle at the current size is left
+           * on `liveInner`, because that is where the drawing goes. */
+          let liveInner = null;
+          const body = (grow) => {
+            /* The rung, enforced. A spec cannot put a picture on rung one, and
+             * cannot give a block the measure at the top of the page below rung
+             * five, whatever it says. */
+            const blocks = (S.rung === 1 && !S.story ? [] : S.blocks || [])
+              .map((b) => ({
+                ...b,
+                lines: S.story ? Math.round(b.lines * grow) : b.lines,
+                span: S.rung < 5 && !S.story && b.span >= cols && b.at === 0 && cols > 1
+                  ? Math.max(1, cols - 1)
+                  : b.span,
+                colour: S.rung >= 3 && b.colour,
+              }))
+              .filter((b) => b.lines >= 1);
+
+            /* A block takes the line-slots it is given, MINUS the air it owes
+             * the type around it. Set flush to its slots it began exactly where
+             * the line above it ended — a pixel and a half under that line's
+             * descenders — and the picture read as if it were glued to the text.
+             * Five rows off the top and eight off the foot leave about the same
+             * white above and below, which is what the eye is measuring. */
+            const AIR_T = 5,
+              AIR_B = 8;
+            liveInner = null;
+            for (let bi = 0; bi < blocks.length; bi++) {
+              const b = blocks[bi];
+              const bx = left + b.col * (colW + gut),
+                bw = colW * b.span + gut * (b.span - 1),
+                by = y - fs + b.at * lh + AIR_T,
+                bh = b.lines * lh - AIR_T - AIR_B;
+              if (bh < 2) continue;
+
+              /* On a story page the block is not a picture yet. It is the room
+               * being made for one: a hairline frame that grows with the text,
+               * and the drawing arrives inside it afterwards. Painting a
+               * placeholder here would put a finished graphic in a hole that is
+               * still opening, which says the opposite of what the page is for. */
+              if (S.story) {
+                g.save();
+                g.strokeStyle = "rgba(20,20,28,.5)";
+                g.lineWidth = 1;
+                g.strokeRect(R(bx) + 0.5, R(by) + 0.5, R(bw) - 1, R(bh) - 1);
+                g.restore();
+                liveInner = { x: R(bx) + 1, y: R(by) + 1, w: R(bw) - 2, h: R(bh) - 2 };
+                continue;
+              }
+
+              /* From the fifth rung up a drawing carries COLOUR — several of
+               * them. The rungs under it are a press with one ink, or one that
+               * bought a second for a photograph; a chart made at a desk today
+               * has a palette, and drawing the top of the ramp in the same grey
+               * as rung two says the opposite of what the page is for. The
+               * sixth rung is the end of that ramp, not a step back off it. */
+              /* A block the page wants alive keeps its rectangle, in galley
+               * coordinates, so the frame loop can write that rectangle and
+               * nothing else. */
+              if (S.live === bi && LIVE_ART[S.anim])
+                LIVE_HOLES.push({
+                  x: R(bx), y: R(by), w: R(bw), h: R(bh),
+                  anim: S.anim, tone: S.tone || "#b3402a",
+                });
+              placeholder(
+                b.kind, bx, by, bw, bh,
+                b.colour ? ink : null,
+                S.rung >= 5,
+                (S.i || 0) * 3 + bi,
+                S.rung === 2,
+              );
             }
-            if (r < depth) g.fillRect(lx, R(y - fs + r * lh), 1, R((depth - r) * lh));
+
+            /* A BARE PAGE STOPS HERE. On the sixth rung the drawing IS the
+             * article: there is no body to flow, so the blocks take the page and
+             * the only words under them are the ones a graphic cannot do without
+             * — where the numbers came from, and who made it. Running the text
+             * loop anyway would have set lorem in the gaps between the charts,
+             * which is exactly the thing this rung is defined by not having. */
+            if (S.bare) {
+              const fy = top + capH - 22;
+              g.fillStyle = ink;
+              g.fillRect(R(left), R(fy), R(meas * 0.14), 2);
+              g.fillStyle = "#111111";
+              g.font = "7px " + SERIF;
+              g.textAlign = "left";
+              g.fillText("SOURCE · LOREM IPSUM STATISTICAL OFFICE, 2026", left, fy + 12);
+              g.textAlign = "right";
+              g.fillText("GRAPHIC BY THE DESK", left + meas, fy + 12);
+              g.textAlign = "left";
+              return;
+            }
+
+            // the words, flowing round them
+            g.fillStyle = "#111111";
+            g.font = fs + "px " + SERIF;
+            g.textAlign = "left";
+            const words = LOREM.split(" ");
+            let w = 0;
+            const line = () => {
+              const out = [];
+              let acc = 0;
+              while (w < words.length) {
+                const add = g.measureText((out.length ? " " : "") + words[w]).width;
+                if (acc + add > colW && out.length) break;
+                out.push(words[w]);
+                acc += add;
+                w++;
+              }
+              if (w >= words.length) w = 0;
+              return out.join(" ");
+            };
+            for (let c = 0; c < cols; c++) {
+              const cx = left + c * (colW + gut);
+              for (let r = 0; r < depth; r++) {
+                const ly = y + r * lh;
+                const hit = blocks.some(
+                  (b) =>
+                    c >= b.col && c < b.col + b.span && r >= b.at && r < b.at + b.lines,
+                );
+                if (hit) continue;
+                g.fillText(line(), cx, ly);
+              }
+            }
+
+            /* THE HAIRLINES, BROKEN WHERE A BLOCK CROSSES THEM.
+             *
+             * A rule between two columns was drawn down the whole depth of the
+             * page, and the blocks are painted before it — so any picture
+             * spanning that boundary got a line ruled straight through it. The
+             * line belongs between COLUMNS OF TYPE; where a block bridges them
+             * there are no two columns to separate. Each boundary is therefore
+             * drawn in the segments the blocks leave it. */
+            for (let c = 1; c < cols; c++) {
+              const lx = R(left + c * (colW + gut) - gut / 2);
+              const gaps = blocks
+                .filter((b) => b.col < c && b.col + b.span > c)
+                .map((b) => [b.at, b.at + b.lines])
+                .sort((a, b) => a[0] - b[0]);
+              let r = 0;
+              for (const [g0, g1] of gaps) {
+                if (g0 > r)
+                  g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh - AIR_B));
+                r = Math.max(r, g1);
+              }
+              if (r < depth) g.fillRect(lx, R(y - fs + r * lh), 1, R((depth - r) * lh));
+            }
+          };
+
+          /* A STORY PAGE is composed CLOSED — the article as it was filed,
+           * with no room made in it yet — and hands the frame loop the band
+           * it may repaint, the closure that repaints it, and where in the
+           * telling this copy starts. */
+          if (S.story) {
+            const bandY = R(y - fs - 2),
+              bandH = R(bot - bandY + 4);
+            body(0);
+            LIVE_HOLES.push({
+              story: true,
+              x: R(x0), y: bandY, w: GALLEY_COL, h: bandH,
+              anim: S.anim || "bars",
+              tone: S.tone || "#b3402a",
+              phase: S.phase || 0,
+              paint: body,
+              inner: () => liveInner,
+            });
+          } else {
+            body(1);
           }
           return top + capH;
         },
@@ -5546,12 +5694,25 @@ const flowCol = (A, o) => {
        * then a plate, then colour, then small charts, then the drawing
        * taking the page — only reads in order. Set this to false to have it
        * back. */
-      const REEL_ONE = true;
-      if (REEL_ONE) {
-        const alive =
-          REEL.find((E) => E.spec && E.spec.name === "One measure, one chart") ||
-          REEL.find((E) => E.spec && E.spec.live !== undefined);
-        if (alive) REEL = REEL.map(() => alive);
+      /* THE STORY, TOLD SEVERAL TIMES OVER. The reel becomes one page — an
+       * article of nothing but words — repeated, and each copy starts at a
+       * different point in the telling. So the paper running past carries the
+       * argument at four stages at once: printed, opening, being drawn into,
+       * done. Reading down a web reads it in that order.
+       *
+       * Four rather than thirty-six because a story page is REPAINTED, not
+       * blitted: its text is set again every cycle, and thirty-six pages of
+       * typesetting per cycle is not a frame budget, it is a job.
+       *
+       * Set this to false and the ramp comes back — text alone through to
+       * pure dataviz, in the order it happened, which is what the reel is
+       * otherwise for. */
+      const REEL_STORY = true;
+      const STORY_COPIES = 4;
+      if (REEL_STORY) {
+        REEL = [];
+        for (let n = 0; n < STORY_COPIES; n++)
+          REEL.push({ spec: { ...STORY, i: n, phase: n / STORY_COPIES } });
       }
       PAGE_STEP = 1 / Math.max(1, REEL.length);
       GALLEY_H = REEL.reduce(
@@ -5891,7 +6052,7 @@ void main(){
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
       webEdge: 0.6,
-      webSpeed: 0.052, // laps per second
+      webSpeed: 0.01, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.34,
