@@ -4359,14 +4359,26 @@ Stage.register(
       return mixRGB(NEAR_WHITE, rgb, 0.14 + k * 0.72);
     };
 
+    /* THE FEW NUMBERS THE REVEAL ALSO NEEDS.
+     *
+     * A clip can reproduce a staggered gesture — bars coming up one after
+     * another rather than together — but only if it knows where the bars
+     * are. Rather than let the reveal guess, the two counts that decide
+     * that live here and both the drawing and the clip read them. Guessing
+     * would work until somebody changed a chart. */
+    const barCount = (pw) => (pw < 130 ? 9 : 13);
+    const barGut = (pw) => (pw < 130 ? 0 : GUT);
+    const stackRows = (ph) => (ph < 90 ? 4 : 6);
+    const stackGap = (ph) => Math.max(3, ph * 0.06);
+
     const LIVE_ART = {};
 
     // ---- charts -------------------------------------------------------
     LIVE_ART.bars = (w, h, p, q, v, tone, rnd) =>
       chrome(w, h, "Output by quarter", "Lorem Ipsum Statistical Office, 2026",
         (pw, ph) => {
-          const n = pw < 130 ? 9 : 13,
-            gut = pw < 130 ? 0 : GUT,
+          const n = barCount(pw),
+            gut = barGut(pw),
             top = 40 + Math.round(rnd() * 60);
           const bw = (pw - gut) / n;
           let out = yAxis(pw, ph, top, gut);
@@ -4458,9 +4470,9 @@ Stage.register(
     LIVE_ART.stack = (w, h, p, q, v, tone, rnd) =>
       chrome(w, h, "By category", "Three parts of each, per cent",
         (pw, ph) => {
-          const rows = ph < 90 ? 4 : 6,
+          const rows = stackRows(ph),
             lab = pw < 130 ? 0 : 16,
-            gap = Math.max(3, ph * 0.06);
+            gap = stackGap(ph);
           const rh = Math.max(3, (ph - gap * (rows - 1)) / rows);
           const full = pw - lab;
           let out = "";
@@ -5036,7 +5048,7 @@ Stage.register(
      */
     const ARRIVAL = {
       bars: "rise",
-      stack: "extend",
+      stack: "extendRows",
       line: "traced",
       area: "traced",
       route: "traced",
@@ -5353,9 +5365,38 @@ Stage.register(
             if (foot && draw > 0.96)
               g2.rect(inner.x, py + ph, inner.w, foot);
             switch (ARRIVAL[k.kind] || "extend") {
-              case "rise":
-                g2.rect(px, py + ph * (1 - u), pw, ph * u);
+              case "rise": {
+                /* Each bar out of the baseline on its own, one after
+                 * another across the measure — which is the gesture this
+                 * chart had before any of it was clipped. The clip is a
+                 * column per bar, each as tall as that bar has got. */
+                const n = barCount(pw),
+                  gut = barGut(pw),
+                  bw = (pw - gut) / n;
+                for (let i = 0; i < n; i++) {
+                  const kk = clamp01(u * 2.1 - (i / n) * 1.05);
+                  if (kk <= 0) continue;
+                  const e = 1 - Math.pow(1 - kk, 3);
+                  g2.rect(
+                    px + gut + i * bw, py + ph * (1 - e), bw + 0.5, ph * e,
+                  );
+                }
                 break;
+              }
+              case "extendRows": {
+                // the same, laid on its side: a row at a time, each
+                // reaching to the right
+                const rows = stackRows(ph),
+                  gap = stackGap(ph),
+                  rh = Math.max(3, (ph - gap * (rows - 1)) / rows);
+                for (let r = 0; r < rows; r++) {
+                  const kk = clamp01(u * 2 - (r / rows) * 1.05);
+                  if (kk <= 0) continue;
+                  const e = 1 - Math.pow(1 - kk, 3);
+                  g2.rect(px, py + r * (rh + gap) - 1, pw * e, rh + 2);
+                }
+                break;
+              }
               case "rows": {
                 const rows = 9,
                   f = u * rows,
