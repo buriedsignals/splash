@@ -4106,7 +4106,7 @@ Stage.register(
      * of texture going back up the bus for text that slides an inch in a
      * second and a half. Thirty is above what the eye resolves in a slide
      * that slow, and it halves the traffic. */
-    const PAINT_HZ = 30;
+    const PAINT_HZ = 60;
     let LIVE_HOLES = [];
     let galleyCv = null;
     /* Where each of the three webs currently is in the lap, and how much of
@@ -5011,6 +5011,15 @@ Stage.register(
      * bound — three arrivals landing together put three decodes in three
      * consecutive frames, which is what a hundred and twenty drops from. */
     const RASTER_LIMIT = 2;
+    // the two whose reading order is round rather than across
+    const RADIAL = ["donut", "rings"];
+    /* Where the title sits, worked out the same way chrome() works it out.
+     * A wipe that starts at the very top cuts the title in half — and half
+     * a word reads as a fault, not as a gesture. The label lands whole and
+     * the plot is drawn in under it, which is also the order a desk does
+     * it in. */
+    const titleBand = (w, h) =>
+      h >= 90 && w >= 96 ? (h < 74 ? 4 : h < 118 ? 7 : 11) + 14 : 0;
     let rasterBusy = 0;
     function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
       const body = (LIVE_ART[kind] || LIVE_ART.bars)(
@@ -5207,14 +5216,23 @@ Stage.register(
         const size = k.story ? k.full() : k;
         // the arrival and the departure are both asked for, and a picture
         // is identified by where BOTH sweeps have got to
-        /* Twenty-two steps of arrival, not forty. Over an opening of five
-         * seconds that is a new picture every quarter second, which is what
-         * the eye reads as a drawing being made; forty was twice the
-         * decodes for a difference nobody could see. */
-        const STEPS = 22;
-        const want = k.story
-          ? Math.round(draw * STEPS) * 64 + Math.round((k.leave || 0) * STEPS)
-          : STEPS;
+        /* ONE PICTURE PER TELLING, and the arrival is a reveal of it.
+         *
+         * The gesture used to be rasterised: forty, then twenty-two
+         * renderings of the same drawing at forty then twenty-two stages of
+         * being made. Each one is a decode of one to eight milliseconds on
+         * the main thread, so the choice was a smooth arrival that dropped
+         * a hundred and twenty frames to thirty, or a rate that held and an
+         * arrival at four frames a second. Both were the same mistake:
+         * paying for motion in decodes.
+         *
+         * The drawing is made ONCE, finished, and the arrival is a clip
+         * opened over it in canvas — which costs nothing and runs at
+         * whatever rate the page is running at. A wipe is not the same
+         * gesture as a bar growing out of the baseline, but it is a gesture,
+         * it is in the drawing's own direction, and it is the one that can
+         * be afforded sixty times a second. */
+        const want = 1;
         if (
           ask && size && size.w >= 8 && size.h >= 8 && draw > 0 &&
           !k.pending && want !== k.asked && rasterBusy < RASTER_LIMIT
@@ -5237,8 +5255,7 @@ Stage.register(
             rh = size.h;
           k.pending = true;
           rasterise(
-            k.kind, rw, rh, draw, k.leave || 0, k.vals || liveNow, k.tone,
-            null, k.seed,
+            k.kind, rw, rh, 1, 0, k.vals || liveNow, k.tone, null, k.seed,
           )
             .then((im) => {
               k.pending = false;
@@ -5279,12 +5296,33 @@ Stage.register(
           g2.fillRect(k.x, k.y, k.w, k.h);
           g2.textBaseline = "alphabetic";
           k.paint(open);
-          /* Straight down, no alpha and no offset. The departure is drawn
-           * INTO the graphic now — the same sweep that brought it coming
-           * round to take it away — so the composite has nothing to fake. */
+          /* THE ARRIVAL, AS A CLIP. Two shapes, and each is the direction
+           * its drawing is read in: a ring is swept round from twelve
+           * o'clock, everything else is opened from the left, which is how
+           * a series runs and how a map is scanned. The edge is hard on
+           * purpose — a soft one reads as a fade, and a fade says nothing.
+           */
           const inner = k.inner();
-          if (inner && k.img && draw > 0 && k.leave < 1)
+          if (inner && k.img && draw > 0) {
+            g2.save();
+            g2.beginPath();
+            const band = titleBand(inner.w, inner.h);
+            if (band && draw > 0.04) g2.rect(inner.x, inner.y, inner.w, band);
+            if (RADIAL.indexOf(k.kind) >= 0) {
+              const cx = inner.x + inner.w / 2,
+                cy = inner.y + (band + inner.h) / 2,
+                r = Math.hypot(inner.w, inner.h);
+              g2.moveTo(cx, cy);
+              g2.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + draw * Math.PI * 2);
+              g2.closePath();
+            } else {
+              const wipe = clamp01((draw - 0.04) / 0.96);
+              g2.rect(inner.x, inner.y + band, inner.w * wipe, inner.h - band);
+            }
+            g2.clip();
             g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
+            g2.restore();
+          }
           g2.restore();
         } else {
           if (!k.fresh || !k.img) continue;
