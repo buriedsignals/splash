@@ -7583,12 +7583,13 @@ uniform vec3 uPtrK;
  * scales the clamp with it — at zero the sheet is evenly lit however far it
  * bends, at one it is the full contrast the surface can make. */
 uniform float uShade;
-/* THE RADIUS OF THE SURFACE ALL THREE SHEETS LIE ON, in world units, or zero
- * for a flat one. The per-sheet wave is what a single sheet of paper does;
- * this is what the SET does — the three are laid on one cylinder about the
- * vertical, so the outer two turn toward the middle and fall away behind it
- * instead of standing in a flat row beside it. */
-uniform float uCurve;
+/* THE SURFACE ALL THREE SHEETS LIE ON: the radius of it in world units, and
+ * how hard a sheet turning away from the camera loses its light. A radius of
+ * zero is a flat row. The per-sheet wave is what a single sheet of paper
+ * does; this is what the SET does — the three are laid on one cylinder about
+ * the vertical, so the outer two turn toward the middle and fall away behind
+ * it instead of standing in a row beside it. */
+uniform vec2 uCurve;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7645,12 +7646,12 @@ void main(){
    * And it shades. A surface turning away from the camera catches less light
    * whatever its own local slope is doing; without this the three read as one
    * flat row that has merely been moved, which is the thing being fixed. */
-  if (uCurve > 0.0) {
-    float a = P.x / uCurve;
+  if (uCurve.x > 0.0) {
+    float a = P.x / uCurve.x;
     float ca = cos(a);
-    float r = uCurve + P.z;
-    P = vec3(sin(a) * r, P.y, ca * r - uCurve);
-    sh *= 1.0 - (1.0 - ca) * 3.0 * uShade;
+    float r = uCurve.x + P.z;
+    P = vec3(sin(a) * r, P.y, ca * r - uCurve.x);
+    sh *= 1.0 - (1.0 - ca) * uCurve.y;
   }
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
@@ -7954,6 +7955,12 @@ void main(){
        * nothing without knowing how wide the frame is, and the frame changes
        * with the window; the angle is what the eye reads. Zero is a flat row. */
       webCurve: 0.55,
+      /* And how much a sheet loses by turning away. It is its OWN number, not
+       * a share of the wave's shading: they are two different surfaces — one
+       * is the ripple in a sheet of paper, the other is where that sheet is
+       * standing — and tying them together meant flattening the light on the
+       * outer columns could only be done by flattening the ripple as well. */
+      webCurveSh: 2.1,
       webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
@@ -9577,7 +9584,7 @@ void main(){
            * three keep the same curvature to the eye whatever the page is
            * resized to, which a fixed radius would not. */
           const curveR = P.webCurve > 1e-3 ? nw / P.webCurve : 0;
-          gl.uniform1f(uq.uCurve, curveR);
+          gl.uniform2f(uq.uCurve, curveR, P.webCurveSh);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
           // a column each: web k reads the kth third of the sheet, and no
@@ -9748,7 +9755,7 @@ void main(){
           }
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
           // the plates are flat, and they are drawn with the same program
-          gl.uniform1f(uq.uCurve, 0);
+          gl.uniform2f(uq.uCurve, 0, 0);
           gl.bindVertexArray(null);
         }
 
