@@ -3343,6 +3343,40 @@ Stage.register(
       },
     ];
 
+    /* The middle of the ramp: the decades when the graphic climbed to the top
+     * of the page and the words moved under it. Labelled by what the form did,
+     * not by an invented story — the same honesty the modern pages keep. */
+    const LEADING = [
+      {
+        year: 1935,
+        era: "1930s",
+        forms: ["The chart takes the top"],
+        body: "Statistical offices had been drawing for fifty years; the press began putting the drawing above the fold rather than in an appendix, and writing the paragraph underneath it.",
+        tiles: [2],
+      },
+      {
+        year: 1955,
+        era: "1950s",
+        forms: ["Maps, printed in colour"],
+        body: "Colour separation reached the daily page. A map could carry a second variable at last, and an editor could ask what the second colour was for.",
+        tiles: [9],
+      },
+      {
+        year: 1975,
+        era: "1970s",
+        forms: ["The graphics desk"],
+        body: "A desk of its own, between the newsroom and the composing room, and a house style to go with it: one idea a chart, the source named, the baseline at zero.",
+        tiles: [15],
+      },
+      {
+        year: 1995,
+        era: "1990s",
+        forms: ["The page becomes a screen"],
+        body: "The same drawing, published twice — once on paper at a fixed size, once on a screen that could be any size at all, and that second one had to be built rather than drawn.",
+        tiles: [22],
+      },
+    ];
+
     const MODERN = [
       { era: "1970s", forms: ["The first newsroom charts"], tiles: [3, 8] },
       { era: "1990s", forms: ["Print infographics"], tiles: [12, 17] },
@@ -3387,6 +3421,7 @@ Stage.register(
       review: 1.3,
       pictorial: 1.36,
       modern: 1.55,
+      leading: 1.5,
       landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
@@ -4136,6 +4171,82 @@ const flowCol = (A, o) => {
           return top + capH;
         },
 
+        /* THE PAGE WHERE THE GRAPHIC LEADS. The step the reel was missing.
+         *
+         * It went from text with a photograph in it, which is 1890, straight
+         * to a page that is nothing but charts, which is now — and a reader
+         * feels that as a jump because it IS one. Here the graphic is the
+         * first thing on the page and takes the top half of it; the words are
+         * under it and explain it, which is the arrangement a newsroom
+         * arrived at somewhere between the wars and kept.
+         *
+         * Two-thirds of the way toward what the tool makes. */
+        leading(M, x0, top, capH) {
+          const Mg = 20,
+            meas = GALLEY_COL - Mg * 2,
+            left = x0 + Mg,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 26;
+          g.font = "9px " + SERIF;
+          track(M.era.toUpperCase(), mid, y, 9 * 0.5);
+          y += 11;
+          rule(left, y, meas, 1);
+          y += 16;
+
+          // the graphic first, and big
+          if (panelSheet && M.tiles && M.tiles.length) {
+            const S = PANEL_S,
+              N = PANEL_N,
+              t = M.tiles[0];
+            const h = Math.min(meas, capH * 0.42);
+            g.drawImage(
+              panelSheet,
+              (t % N) * S,
+              Math.floor(t / N) * S,
+              S,
+              S,
+              R(left),
+              R(y),
+              R(meas),
+              R(h),
+            );
+            g.fillStyle = "rgba(20,20,28,.16)";
+            g.fillRect(R(left), R(y + h), R(meas), 1);
+            g.fillStyle = "#111111";
+            y += h + 12;
+          }
+
+          // then the headline, then the words that explain it
+          let hs = 20;
+          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 20, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of M.forms) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.1);
+          }
+          y += 8;
+          rule(mid - meas * 0.13, y, meas * 0.26, 1);
+          y += 18;
+          g.textAlign = "left";
+          const bot = top + capH - 16;
+          const fs = 9,
+            lh = 12.6;
+          const colW = (meas - 9) / 2;
+          const lines = wrapTo(M.body, colW, fs + "px " + SERIF);
+          const per = Math.ceil(lines.length / 2);
+          for (let c = 0; c < 2; c++) {
+            let ly = y;
+            for (let i = c * per; i < Math.min(lines.length, (c + 1) * per); i++) {
+              if (ly > bot) break;
+              g.fillText(lines[i], left + c * (colW + 9), ly);
+              ly += lh;
+            }
+            if (c === 0) g.fillRect(R(left + colW + 4), R(y - fs), 1, R(per * lh));
+          }
+          return top + capH;
+        },
+
         /* WHAT THE DESK MAKES NOW. The last pages of the reel, and the only
          * ones that are not a newspaper: a tracked date, a rule, and the work
          * itself — chart tiles lifted whole out of the atlas hero.js already
@@ -4426,6 +4537,7 @@ const flowCol = (A, o) => {
       CUTS.length = 0;
       REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
         .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
+        .concat(LEADING.map((L) => ({ leading: L, year: L.year })))
         .sort((a, b) => a.year - b.year)
         .concat(MODERN.map((m) => ({ modern: m })));
       GALLEY_H = REEL.reduce(
@@ -4433,9 +4545,11 @@ const flowCol = (A, o) => {
           a +
           (E.modern
             ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-            : E.landmark
-              ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
-              : pageH(E.A)),
+            : E.leading
+              ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
+              : E.landmark
+                ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
+                : pageH(E.A)),
         0,
       );
 
@@ -4455,7 +4569,9 @@ const flowCol = (A, o) => {
         const E = REEL[k];
         const h = E.modern
           ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-          : E.landmark
+          : E.leading
+            ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
+            : E.landmark
             ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
             : pageH(E.A);
         g.save();
@@ -4466,6 +4582,8 @@ const flowCol = (A, o) => {
         g.textAlign = "left";
         if (E.modern) {
           PRESS.modern(E.modern, 0, y, h);
+        } else if (E.leading) {
+          PRESS.leading(E.leading, 0, y, h);
         } else if (E.landmark) {
           PRESS.landmark(E.landmark, 0, y, h);
         } else {
@@ -4479,9 +4597,14 @@ const flowCol = (A, o) => {
           (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, 0, y, h, fill);
         }
         g.restore();
+        (window.__reel = window.__reel || []).push({ y, h,
+          kind: E.modern ? "modern" : E.landmark ? "landmark" : E.A.tpl,
+          name: E.modern ? E.modern.era : E.landmark ? String(E.landmark.year) : E.A.paper,
+          year: E.year || "" }); // SONDE
         CUTS.push(y / GALLEY_H);
         y += h;
       }
+      window.__galley = cv; // SONDE
       return cv;
     }
 
