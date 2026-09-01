@@ -3282,8 +3282,15 @@ Stage.register(
      *
      * The rates must be EQUAL for that to hold. A tenth of drift is invisible
      * for a few seconds and has the columns out of order a minute later. */
-    const WEB_SPD = [1, 1, 1];
-    // how far out of step each web sits, in pages
+    /* THE THREE WEBS DO NOT RUN AT THE SAME SPEED. A press is three
+     * separate reels through three sets of rollers, and holding them to the
+     * same rate to four decimal places is the one thing a real one never
+     * does. A few per cent apart is enough: near enough that no column
+     * looks like it is racing, far enough that the set never settles into a
+     * pattern — the lag between any two of them is always changing, so an
+     * alignment that happens once does not happen again on the next lap. */
+    const WEB_SPD = [1, 0.93, 1.061];
+    // and where each one starts, in pages
     const WEB_LAG = [0, 0.37, 0.71];
     let PAGE_STEP = 1 / 30; // one page, as a fraction of the reel
 
