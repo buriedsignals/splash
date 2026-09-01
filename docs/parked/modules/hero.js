@@ -4102,7 +4102,7 @@ Stage.register(
         TGAP = 9,
         // margin 9, rule 1, space 5, and a line of 9 — the block the source
         // occupies, reserved before the plot is given what is left
-        nH = 22;
+        nH = 20;
       const ph = Math.max(12, h - pad * 2 - (titled ? tH + TGAP : 0) - (noted ? nH : 0));
       return (
         '<div style="box-sizing:border-box;width:' + w + "px;height:" + h +
@@ -4115,8 +4115,8 @@ Stage.register(
           : "") +
         draw(iw, ph) +
         (noted
-          ? '<div style="height:8px;margin-top:9px;padding-top:5px;' +
-            "border-top:1px solid " + GRID + ";font:400 6.5px/8px " + SANS +
+          ? '<div style="height:7px;margin-top:9px;padding-top:4px;' +
+            "border-top:1px solid " + GRID + ";font:400 5.5px/7px " + SANS +
             ";color:" + MUTE + ";letter-spacing:.005em;overflow:hidden;" +
             'white-space:nowrap;text-overflow:ellipsis">' + esc(note) + "</div>"
           : "") +
