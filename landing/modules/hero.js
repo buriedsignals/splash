@@ -3933,20 +3933,41 @@ Stage.register(
      * screen has gone and then never again. */
     let bootMark = true;
     const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
-    /* A COLUMN OF THE REEL, cast from its own salt. Each web reads one of
-     * these and only that one, so the three can never hold the same page —
-     * and therefore never the same drawing — however far their speeds pull
-     * their offsets apart. */
+    /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
+     * drawings, and the same fix.
+     *
+     * A head picked at random per page and a measure picked at random per
+     * page put two identical skeletons side by side often enough to be the
+     * first thing the eye finds: three columns under a banner, twice, is one
+     * paper photocopied. Six heads by three measures is eighteen templates,
+     * and eighteen is exactly how many pages the sheet carries — so they are
+     * shuffled once and dealt out, and no two pages on the whole reel share
+     * a skeleton, let alone two that are up at the same moment. */
+    const TEMPLATE_DECK = (() => {
+      const d = [];
+      for (const h of HEAD_SET) for (let c = 1; c <= 3; c++) d.push({ head: h, cols: c });
+      const r = seeded(LOAD_SALT + 7717);
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(r() * (i + 1));
+        const t = d[i];
+        d[i] = d[j];
+        d[j] = t;
+      }
+      return d;
+    })();
+    /* A COLUMN OF THE REEL. Each web reads one of these and only that one,
+     * so the three can never hold the same page — and therefore never the
+     * same drawing — however far their speeds pull their offsets apart. */
     const storyPapers = (n, col) =>
       Array.from({ length: n }, (_, i) => {
         const r = seeded(LOAD_SALT + col * 104729 + i * 5197);
+        const T = TEMPLATE_DECK[(col * n + i) % TEMPLATE_DECK.length];
         return {
           rung: 1,
           story: true,
           name: "The article, and what the desk makes of it",
-          head: HEAD_SET[Math.floor(r() * HEAD_SET.length)],
-          // one, two or three columns, and not in a fixed rotation
-          cols: 1 + Math.floor(r() * 3),
+          head: T.head,
+          cols: T.cols,
           tone: inkFor(r),
         };
       });
@@ -4197,6 +4218,12 @@ Stage.register(
      * it is in shot. Written by the draw, read by the frame loop — one frame
      * stale, which at a hundredth of a lap a second is nothing. */
     const WEB_WIN = [0, 0, 0, 0.2];
+    /* How far each web is through its arrival, 0 to 1. Written by the draw,
+     * read by the telling: a page whose web is still climbing is printed
+     * paper and nothing else. Type sliding to make room, and a chart drawing
+     * itself, while the sheet is still coming up the frame is two motions on
+     * top of each other and neither reads. */
+    const WEB_INE = [0, 0, 0];
     /* IN SHOT MEANS READABLE, not merely mapped onto a web.
      *
      * The window a web reads is the whole of its geometry, and its geometry
@@ -5459,7 +5486,11 @@ Stage.register(
          * a frame, which is a page that never gets to open. */
         // the give is a fifth of a PAGE, not a tenth of the reel: at nine
         // pages the old figure was most of a page and nothing ever left
-        const vis = inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0, k.col);
+        // in shot, and standing still: a web that has not finished arriving
+        // carries pages that do not move
+        const vis =
+          (WEB_INE[k.col || 0] > 0.999 || k.seen) &&
+          inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0, k.col);
         let open = 1,
           draw = 1;
         if (k.story) {
@@ -7849,9 +7880,12 @@ void main(){
        * fastest is three presses running at three rates, which is what it
        * is. The lag between any two of them now turns over in under a
        * minute rather than in five. */
-      webSpd0: 0.02,
-      webSpd1: 0.015,
-      webSpd2: 0.025,
+      /* And read against a SIX-page column. The rate is normalised by the
+       * length of the reel where it is used, so these are the numbers off
+       * the panel and they mean the same thing they showed there. */
+      webSpd0: 0.0125,
+      webSpd1: 0.0105,
+      webSpd2: 0.0135,
       // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
@@ -9502,6 +9536,7 @@ void main(){
               (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.7,
             );
             const inE = inK * inK * inK * (inK * (inK * 6 - 15) + 10);
+            WEB_INE[k] = inE;
 
             /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
              * the web stops running and starts EDITING: it holds on a page for
