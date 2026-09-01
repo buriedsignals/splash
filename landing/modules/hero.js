@@ -4639,6 +4639,38 @@ const flowCol = (A, o) => {
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 2);
             y += 16;
+          } else if (S.head === "boxed") {
+            g.textAlign = "center";
+            const ms = fit("THE LOREM HERALD", "700", 15, meas * 0.62);
+            const bh = R(ms * 0.74) + 18;
+            g.strokeStyle = "#111111";
+            g.lineWidth = 1;
+            g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("THE LOREM HERALD", mid, y + bh - 9);
+            y += bh + 12;
+            g.fillStyle = ink;
+            rule(left, y, meas, 1);
+            g.fillStyle = "#111111";
+            y += 14;
+          } else if (S.head === "shoulder") {
+            g.textAlign = "left";
+            const ms = fit("Lorem Post", "700", 22, meas * 0.44);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("Lorem Post", left, y + R(ms * 0.74) + 2);
+            const bx = left + meas * 0.58,
+              bw = meas * 0.42;
+            rule(bx, y + 2, bw, 1);
+            rule(bx, y + 20, bw, 1);
+            g.textAlign = "right";
+            g.font = "6.5px " + SERIF;
+            g.fillText("LOREM IPSUM DOLOR", left + meas, y + 10);
+            g.fillStyle = ink;
+            g.fillText("SIT AMET", left + meas, y + 17);
+            g.fillStyle = "#111111";
+            y += R(ms * 0.74) + 14;
+            rule(left, y, meas, 3);
+            y += 15;
           } else {
             g.textAlign = "center";
             const ms = fit("The Lorem Chronicle", "700", 21, meas * 0.82);
@@ -5071,7 +5103,17 @@ const flowCol = (A, o) => {
        * the plates are still in this file and still composed by their own
        * presses; they come back when there is content to put in them. What is
        * being looked at first is the SHAPE of the pages. */
-      REEL = SPECS.map((S, i) => ({ spec: { ...S, i } }));
+      /* THE HEAD IS DERIVED, not chosen. Written into each spec by hand it
+       * repeated twice on four rungs and three times on the fifth — six pages
+       * cannot have six different tops if there are only four tops and a
+       * person picking them. The nth page of a rung takes the nth head, so a
+       * repeat inside a rung is now impossible rather than merely unintended. */
+      const HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+      const seen = {};
+      REEL = SPECS.map((S, i) => {
+        const k = (seen[S.rung] = (seen[S.rung] || 0) + 1) - 1;
+        return { spec: { ...S, i, head: HEADS[k % HEADS.length] } };
+      });
       GALLEY_H = REEL.reduce(
         (a, E) =>
           a +
