@@ -5536,6 +5536,27 @@ const flowCol = (A, o) => {
         const k = (seen[S.rung] = (seen[S.rung] || 0) + 1) - 1;
         return { spec: { ...S, i, head: HEADS[k % HEADS.length] } };
       });
+
+      /* ONE PAGE, EVERYWHERE. Every slot on the reel becomes the single page
+       * that carries the moving graphic, so it can be watched rather than
+       * waited for — one page in thirty-six comes round once every twenty
+       * seconds, which is no way to judge a drawing.
+       *
+       * It costs nothing: the reel is the same length, so the sheet is the
+       * same height and the column keeps its width, and all thirty-six holes
+       * are the same drawing at the same size, so they share one flipbook.
+       *
+       * It also throws away what the reel is FOR. The ramp — text alone,
+       * then a plate, then colour, then small charts, then the drawing
+       * taking the page — only reads in order. Set this to false to have it
+       * back. */
+      const REEL_ONE = true;
+      if (REEL_ONE) {
+        const alive =
+          REEL.find((E) => E.spec && E.spec.name === "One measure, one chart") ||
+          REEL.find((E) => E.spec && E.spec.live !== undefined);
+        if (alive) REEL = REEL.map(() => alive);
+      }
       PAGE_STEP = 1 / Math.max(1, REEL.length);
       GALLEY_H = REEL.reduce(
         (a, E) =>
