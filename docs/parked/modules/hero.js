@@ -3927,6 +3927,14 @@ Stage.register(
     // the boot's mark is the one that arrives on it, and the frame fills
     // outward from there rather than closing in on it
     const WEB_IN = [0.26, 0, 0.52];
+    /* AND HOW THEY LEAVE: the same move, downward. A sheet that arrived from
+     * below and then dissolved would be two different objects; a sheet that
+     * goes back the way it came is the press stopping. Same stagger, same
+     * quintic, a shade quicker because the reader has already asked to go and
+     * is being held while it plays. */
+    const OUT_RAMP = 1.2;
+    const OUT_SPAN = OUT_RAMP + Math.max.apply(null, WEB_IN);
+    let outSec = 0;
     let bootAt = null;
     /* The boot screen is clipped by where the paper actually is, so the web
      * loop hands it the middle sheet's leading edge. Looked up until the
@@ -8124,6 +8132,11 @@ void main(){
       box.appendChild(head);
 
       const tab = document.createElement("button");
+      // named, because it is put in the document BEFORE the panel is — the
+      // caller used to reach it as the panel's next sibling, which is the
+      // canvas, so the tab was hidden along with the panel and there was no
+      // way back to it without a reload
+      tab.id = "web-tune-tab";
       tab.textContent = "the webs";
       tab.style.cssText =
         "position:fixed;top:12px;right:12px;z-index:99998;display:none;" +
@@ -8737,6 +8750,14 @@ void main(){
      * own contents to carry. */
     const ARC = !!document.querySelector("#hero-arc");
     const WEBS_ONLY = !ARC;
+    /* AND THE SECOND ACT ONLY EXISTS IF THE SECTION UNDER THE HERO HAS
+     * SOMETHING IN IT. The wind-up, the break and the field of plates were
+     * choreography for four tiles coming up the page; with the section
+     * emptied they are a break played over nothing, on a screen the reader
+     * crosses in one gesture. The exit flood is NOT part of this — the page
+     * cues that one by hand, and it is what carries the ground into the
+     * section below. */
+    const ARC_ACT = ARC && !!document.querySelector(".chapter .pile");
 
     return {
       name: "hero",
@@ -8749,7 +8770,9 @@ void main(){
        * was painting arrives all at once instead. It is the same frame either
        * way, the same white; only the passage is lost. Held both ways: read
        * backward the retraction needs the frame for exactly as long. */
-      hold: () => tumbT >= 0 && tumbT < EXIT_END,
+      hold: () =>
+        (tumbT >= 0 && tumbT < EXIT_END) ||
+        (outSec > 0.001 && outSec < OUT_SPAN),
 
       init(api) {
         gl = api.gl;
@@ -8918,14 +8941,16 @@ void main(){
          * this, and nothing else in the module publishes anything. */
         window.__heroReady = true;
         loadPressImages(uploadGalley);
-        /* ?clean starts with it away — for a look at the paper with nothing
-         * over it, which is what it is for. */
+        /* AWAY BY DEFAULT. It covers the top right of the frame, which is
+         * where a web runs, so the ordinary state of the page is the paper
+         * with nothing over it. The tab in the corner brings it back without
+         * a reload; ?tune opens it on load, for a session spent tuning. */
         if (!window.__noTuner) {
           const panel = buildWebTuner();
-          if (/[?&]clean\b/.test(location.search)) {
+          if (!/[?&]tune\b/.test(location.search)) {
             panel.style.display = "none";
-            const t = panel.nextElementSibling;
-            if (t && t.tagName === "BUTTON") t.style.display = "block";
+            const t = document.getElementById("web-tune-tab");
+            if (t) t.style.display = "block";
           }
         }
         // Painting twenty-five charts and mipmapping the result is tens of
@@ -9040,6 +9065,16 @@ void main(){
           if (window.__bootDone) bootAt = clock;
           else if (!document.getElementById("boot")) bootAt = 0;
         }
+        /* THE PAGE ASKS, AND ASKS AGAIN FOR THEM BACK. One number, run
+         * forward while the page wants the paper out and backward when it
+         * wants it in, so the return is the same move read the other way
+         * rather than a second animation that resembles it. The page waits on
+         * __webOutK instead of on a duration it would have to guess. */
+        outSec = Math.max(
+          0,
+          Math.min(OUT_SPAN, outSec + (window.__webOut ? ctx.dt : -ctx.dt)),
+        );
+        window.__webOutK = outSec / OUT_SPAN;
 
         // adaptive resolution: this march cannot hold sixty frames at native
         // It drops fast when frames are late and climbs back quickly when they
@@ -9075,10 +9110,12 @@ void main(){
         // The wind-up runs over the whole arc — hero plus the section under it —
         // so the compression only bottoms out at the end of that scroll, not
         // when the hero has merely left.
-        const wind = Math.min(1, ctx.prog / WIND_SPAN);
+        const wind = ARC_ACT ? Math.min(1, ctx.prog / WIND_SPAN) : 0;
         // what is left of the arc, once the break has had its share: the cards
         // come in over this, and the camera walks back over it too
-        const back = Math.max(0, ctx.prog - WIND_SPAN) / (1 - WIND_SPAN);
+        const back = ARC_ACT
+          ? Math.max(0, ctx.prog - WIND_SPAN) / (1 - WIND_SPAN)
+          : 0;
         // This module only runs while it owns the canvas, so after a spell
         // away its last reading is from wherever the reader left it — often a
         // whole section back. A delta taken across that gap is meaningless and
@@ -9322,7 +9359,7 @@ void main(){
           burst = 1 - Math.pow(1 - u, 5); // flies out, then all but stops
         }
         // the paper section wants the webs and nothing after them
-        if (WEBS_ONLY) burst = 0;
+        if (WEBS_ONLY || !ARC_ACT) burst = 0;
 
         // the section's own interface waits for the field to settle
         const chap = document.querySelector("#chapter");
@@ -9845,7 +9882,11 @@ void main(){
               (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.7,
             );
             const inE = inK * inK * inK * (inK * (inK * 6 - 15) + 10);
-            WEB_INE[k] = inE;
+            const outK = clamp01((outSec - WEB_IN[k]) / OUT_RAMP);
+            const outE = outK * outK * outK * (outK * (outK * 6 - 15) + 10);
+            // at rest means arrived AND not leaving: a page tells its story
+            // on a sheet that is standing still, in either direction
+            WEB_INE[k] = inE * (1 - outE);
 
             /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
              * the web stops running and starts EDITING: it holds on a page for
@@ -9898,7 +9939,10 @@ void main(){
              * the whole climb is on screen. It used to start twice that far
              * down, which spent the first half of the ramp out of sight —
              * and left the boot's mark standing on nothing while it did. */
-            const rise = (1 - inE) * (cyw + hh + webNH);
+            /* Arrival and departure are the SAME offset. Both put the sheet
+             * below the frame, so one is the other counted the other way —
+             * there is no separate exit to keep in step with the entrance. */
+            const rise = ((1 - inE) + outE) * (cyw + hh + webNH);
             gl.uniform3f(uq.uC, cxw, cyw, 0);
             /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
              * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so

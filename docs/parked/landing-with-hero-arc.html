@@ -325,7 +325,10 @@
      cadence se traduit par un créneau plein écran par pavé — le lecteur passe
      le même temps sur chacun et n'en voit qu'un à la fois. Empilés à 60px
      d'écart ils se lisaient tous d'un coup, ce qui n'est pas le même rythme. */
-  .chapter{color:var(--paper);padding:0 var(--gut);position:relative;height:438vh}
+  /* Vide, donc un écran : la hauteur venait des quatre pavés qui montaient
+     dedans. marks() la repose de toute façon à chaque mise en page — c'est
+     ici pour que la première ne parte pas de 438vh de vide. */
+  .chapter{color:var(--paper);padding:0 var(--gut);position:relative;height:100vh}
   /* La pile. Une seule scène collée au cadre, et TOUS les pavés superposés
      dedans — même case de grille, donc même place. Aucun n'est dans le flux :
      leur position vient entièrement du script, ce qui permet de les faire
@@ -1832,25 +1835,15 @@
   </div>
 </section>
 
+<!-- THE FIRST SECTION AFTER THE HERO, emptied on purpose.
+     What was here was the arc's second act: four tiles stacking up the
+     page over four screens. It is out while the section is redesigned,
+     and the module notices — with no .pile in it there is no wind-up, no
+     break and no field of plates, because those were choreography for
+     the tiles. What is left is one screen of ground, and the paper
+     leaving downward is how the reader is brought onto it. -->
 <section class="chapter" data-ground="#14141c">
-  <div class="cstage">
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">01 · The evidence</div>
-    <h3>Visual journalism makes reporting easier to inspect.</h3>
-    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
-    <div class="src">Source · EJC State of Data Journalism Survey, 2023</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">02 · Trust</div>
-    <h3>Good design helps readers trust the work.</h3>
-    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
-    <div class="src">Source · Information Design Journal · ACM CHI, 2024–25</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">03 · The AI shift</div>
-    <h3>When articles become inputs, visual form becomes identity.</h3>
-    <p>AI turns fixed articles into “liquid information” that machines break apart and recompose.</p>
-    <div class="src">Source · Reuters Institute, 2025</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">04 · Discovery</div>
-    <h3>Visuals create another way for the story to travel.</h3>
-    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
-    <div class="src">Source · Google AI Search documentation</div></div></div>
-  </div>
+  <div class="cstage"></div>
 </section>
 </div>
 
@@ -2662,33 +2655,30 @@
   /* Trois temps, jamais mélangés : la tentative est avalée, le hero sort, puis
    * la page est portée. Menés ensemble, les deux mouvements se masquaient l'un
    * l'autre — on ne voyait ni la sortie ni le trajet. */
+  /* Le papier s'en va comme il est venu : par le bas, même décalage entre les
+   * trois colonnes, même courbe. On attend qu'il soit sorti — le module publie
+   * son avancement, donc rien ici ne devine une durée — puis la page est
+   * portée sur la première section. Deux temps, jamais mélangés, et la page
+   * est tenue du premier au dernier. */
+  const webbedOut = () => (window.__webOutK === undefined) || window.__webOutK >= 0.999;
+  const webbedIn  = () => (window.__webOutK === undefined) || window.__webOutK <= 0.001;
+
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
     hero.classList.add('gone');
-    // .46s d'animation plus .09s de retard sur la dernière ligne du titre
-    await wait(560);
+    window.__webOut = 1;
+    // .46s d'animation plus .09s de retard sur la dernière ligne du titre :
+    // le titre part pendant que le papier descend, ce sont les mêmes 1,7 s
+    await until(webbedOut, 4000);
 
-    await glide(firstTop, 620);
+    /* Le cadre est vide : le trajet n'a plus rien à couvrir, donc il est court
+       — assez pour que ce soit un déplacement et pas une coupure. */
+    await glide(firstTop, 380);
 
-    /* La cassure part vers 680 px, donc pendant le trajet, et elle dure trois
-     * secondes d'horloge. La page reste tenue jusqu'à ce qu'elle soit finie :
-     * ce qu'on regarde à ce moment-là, c'est le bloc qui s'ouvre. */
-    // 9 s de plafond, pas 6 : le module avance son horloge par pas de 50 ms
-    // au plus, donc sous 20 fps sa cassure dure plus longtemps que ses trois
-    // secondes nominales, et un plafond trop court la couperait
-    await until(broken, 9000);
-
-    /* Le premier pavé monte comme les autres — mais lancé, pas défilé. Il part
-     * pendant que la main est rendue, donc la reprise du défilement et son
-     * arrivée sont le même geste. */
-    piled = true; entryK = 1;
-    rise(760);
     running = false;
-    await wait(120);
-    /* Le verrou tombe : sous la tuile la page défile normalement, nativement,
-     * sans que rien ne soit intercepté. Ce qui reste, c'est un PLANCHER. */
+    await wait(80);
     lock(false);
     bounds = true;
   };
@@ -2696,28 +2686,21 @@
   /* Le retour. Symétrique de l'aller, dans l'ordre inverse : la tuile se
    * retire d'abord, la page remonte ensuite, et le hero se repose à
    * l'arrivée — jamais deux mouvements en même temps. */
+  /* Le retour, dans l'ordre inverse de l'aller : la page revient d'abord, le
+   * papier remonte ensuite. Jamais deux mouvements en même temps, et le papier
+   * remonte là où on peut le voir arriver. */
   const backUp = async () => {
     if (running) return;
     running = true; freeBack = false;
 
-    // 1. le pavé redescend — l'aller finissait par sa montée
-    await fall(560);
-    piled = false;
-
-    /* 2. la page recule jusqu'au seuil, et pas plus loin. Le module refuse de
-     * rembobiner tant qu'on est encore au niveau des pavés : il exige d'être
-     * revenu au-dessus du premier. C'est le seul endroit d'où la cassure peut
-     * se rejouer à l'envers en étant regardée. */
     window.__rewind = 1;
-    await glide(Math.max(0, windY - 24), 300);
-
-    // 3. la cassure se referme, page tenue — l'aller l'attendait de la même
-    //    façon, à l'endroit
-    await until(rebuilt, 4000);
-
-    // 4. le trajet, puis le hero revient : l'aller le faisait partir avant
-    await glide(0, 520);
+    await glide(0, 380);
     hero.classList.remove('gone');
+
+    // et il remonte par le même chemin, à l'envers — pas une seconde animation
+    window.__webOut = 0;
+    await until(webbedIn, 4000);
+
     running = false; armed = true;
     entryK = 0; stack();
     trigger = leave; fire = 1; freeBack = false;
@@ -2758,9 +2741,14 @@
        * et on n'avait pas le temps de le lire. Le chapitre est donc allongé
        * d'un temps mort, et le plafond descend d'autant — la scène reste
        * collée exactement jusque-là, les deux mesures ne peuvent pas diverger. */
-      chapter.style.height = ((piles.length + DWELL) * slotH) + 'px';
+      /* Une section VIDE tient un écran, et sa porte est son sommet : il n'y
+         a rien à faire défiler dedans, donc le premier geste vers le bas la
+         quitte — la même règle que toutes les autres portes de la page. Avec
+         des pavés, la hauteur et la porte restent ce qu'elles étaient. */
+      const N = piles.length;
+      chapter.style.height = ((N ? N + DWELL : 1) * slotH) + 'px';
       firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + Math.round((piles.length - 1 + DWELL) * slotH);
+      exitY = firstTop + Math.round((N ? N - 1 + DWELL : 0) * slotH);
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -3347,6 +3335,7 @@
       if (lastCard) lastCard.classList.remove('out');
     } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
       armed = true; hero.classList.remove('gone');
+      window.__webOut = 0;                   // et le papier revient avec lui
       trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });
