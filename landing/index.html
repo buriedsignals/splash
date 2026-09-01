@@ -98,6 +98,12 @@
      ferait concurrence, et sur une barre de trois c'est cher payé. */
   header a{color:inherit;text-decoration:none;transition:opacity .25s ease}
   header a:hover{opacity:.62}
+  /* The mark beside the name. Sized off the wordmark's own line rather
+     than in pixels, so the two stay in proportion at every breakpoint —
+     and set in currentColor, which is what makes it a piece of type
+     rather than a picture that has to be re-made for a dark ground. */
+  .wordmark{display:inline-flex;align-items:center;gap:.42em}
+  .wordmark .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block}
   .wordmark{font-family:var(--D);font-weight:800;font-size:22px;
             letter-spacing:-.035em;text-transform:none;line-height:1}
   header .hnav{display:flex;gap:26px;align-items:center}
@@ -1718,7 +1724,7 @@
 <body>
 
 <header class="rise" style="--d:.10s">
-  <a class="wordmark" href="https://splash.buriedsignals.com/">Splash</a>
+  <a class="wordmark" href="https://splash.buriedsignals.com/"><svg class="rosette" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span>Splash</span></a>
   <span class="hnav">
     <a href="https://splash.buriedsignals.com/case-studies">How it works</a>
     <a href="https://splash.buriedsignals.com/inspiration">Get inspiration</a>

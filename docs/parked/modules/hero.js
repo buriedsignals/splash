@@ -5240,12 +5240,40 @@ Stage.register(
      * bigger in a lead than in a column, so it read as part of the
      * graphic's own hierarchy, which it is not: it is a label about the
      * page's state, and those are the same size everywhere. */
+    /* The mark itself, as a path rather than a file: Path2D takes SVG path
+     * data straight, so the rosette in landing/marks is the same three
+     * drops here as it is in the header — one shape, not a copy of one. */
+    const ROSETTE = typeof Path2D === "undefined"
+      ? null
+      : new Path2D(
+          "M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z " +
+          "M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z " +
+          "M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z",
+        );
     function mark(g2, inner, t, alpha) {
       const cx = inner.x + inner.w / 2,
         cy = inner.y + inner.h / 2,
         fs2 = 11;
       g2.save();
       g2.globalAlpha = alpha;
+
+      /* THE ROSETTE, TURNING. Three drops around a triangular void, which
+       * is a shape that says something while it moves and nothing while it
+       * sits still — so it turns, and the turning is the wait. It is the
+       * mark itself rather than a word about it, which is the shorter way
+       * of saying the same thing. */
+      if (P.markLogo > 0.5 && ROSETTE) {
+        const sz = 22;
+        g2.translate(cx, cy);
+        g2.rotate(t * 1.6);
+        g2.scale(sz / 64, sz / 64);
+        g2.translate(-32, -32);
+        g2.fillStyle = "#b0aba2";
+        g2.fill(ROSETTE);
+        g2.restore();
+        return;
+      }
+
       g2.textAlign = "center";
       g2.textBaseline = "middle";
       g2.font = "600 " + fs2 + "px " + SANS;
@@ -5342,7 +5370,6 @@ Stage.register(
             k.asked = -1;
             k.shown = 0;
             k.seq = 0;
-            k.gotAt = undefined;
           }
           if (!vis) {
             if (k.seen) {
@@ -5441,9 +5468,14 @@ Stage.register(
           if (t - (k.lastPaint || -9) < 1 / PAINT_HZ) continue;
           // while the word is on the page it is moving, so the page is
           // repainted whether or not anything else has changed
-          if (k.img && k.gotAt === undefined) k.gotAt = t;
-          const waiting =
-            draw > 0 && (!k.img || t - k.gotAt < 0.34);
+          /* THE MARK IS GONE BEFORE THE DRAWING IS THERE. It used to fade
+           * from the moment the first stage landed, which is the moment the
+           * drawing starts appearing — so the two overlapped and mixed. It
+           * runs on the DRAWING'S OWN PROGRESS now: by the time the graphic
+           * is a tenth made, the mark has already gone, and a tenth of a
+           * bar chart is a few pixels at the foot of the plot. No mixing,
+           * because they are never both there. */
+          const waiting = draw < 0.1;
           if (
             !waiting &&
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
@@ -5483,12 +5515,8 @@ Stage.register(
            * registers what changed. It is held over the drawing and taken
            * off across a third of a second, which is long enough to be a
            * handover and short enough not to be a wait. */
-          if (inner && inner.h > 34 && inner.w > 70) {
-            const gone = k.img
-              ? clamp01((t - (k.gotAt === undefined ? t : k.gotAt)) / 0.34)
-              : 0;
-            if (gone < 1) mark(g2, inner, t, 1 - gone);
-          }
+          if (inner && inner.h > 34 && inner.w > 70 && draw < 0.1)
+            mark(g2, inner, t, 1 - clamp01(draw / 0.1));
           g2.restore();
         } else {
           if (!k.fresh || !k.img) continue;
@@ -7608,6 +7636,9 @@ void main(){
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
+      // the mark shown while the room is being made: the word, or the
+      // rosette turning
+      markLogo: 1,
       // the share of pages that print in one ink and a grey
       greyShare: 1,
       // seconds of one telling: opening, drawn into, held, lifted away
@@ -7696,6 +7727,7 @@ void main(){
           ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
           ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
           ["greyShare", 0, 1, 0.05, "share of pages that print in a grey"],
+          ["markLogo", 0, 1, 1, "the waiting mark: 0 the word, 1 the rosette"],
         ],
       ],
       [
@@ -7823,7 +7855,7 @@ void main(){
            * come out "spd0", and three rows called spd0/1/2 say nothing about
            * which column they move. The three-web rows name their side. */
           const SIDE = { 0: "left", 1: "middle", 2: "right" };
-          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey", markLogo: "mark" };
           const m = /^web(Spd|Lag)([012])$/.exec(key);
           lab.textContent = m
             ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
