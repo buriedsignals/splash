@@ -7583,13 +7583,12 @@ uniform vec3 uPtrK;
  * scales the clamp with it — at zero the sheet is evenly lit however far it
  * bends, at one it is the full contrast the surface can make. */
 uniform float uShade;
-/* THE SURFACE ALL THREE SHEETS LIE ON: the radius of it in world units, and
- * how hard a sheet turning away from the camera loses its light. A radius of
+/* THE SURFACE ALL THREE SHEETS LIE ON: its radius in world units, how hard a
+ * sheet turning away from the camera loses its light, and how much of the
+ * curve is carried in the VERTICAL as well as the horizontal. A radius of
  * zero is a flat row. The per-sheet wave is what a single sheet of paper
- * does; this is what the SET does — the three are laid on one cylinder about
- * the vertical, so the outer two turn toward the middle and fall away behind
- * it instead of standing in a row beside it. */
-uniform vec2 uCurve;
+ * does; this is what the SET does. */
+uniform vec3 uCurve;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7646,12 +7645,32 @@ void main(){
    * And it shades. A surface turning away from the camera catches less light
    * whatever its own local slope is doing; without this the three read as one
    * flat row that has merely been moved, which is the thing being fixed. */
+  /* A CYLINDER CURVES IN ONE DIRECTION ONLY. About the vertical, the outer
+   * columns turn toward the middle and fall away — but a point at the top of
+   * a sheet is at exactly the same depth as one at its foot, so the set is a
+   * curved wall and reads as one: nothing recedes as it goes up.
+   *
+   * The surface is an ELLIPSOID instead. x becomes a longitude, y a latitude,
+   * and z the distance from the middle of it, so the four corners of the set
+   * all fall away and the whole thing is curved everywhere rather than in the
+   * one direction that happened to be easy.
+   *
+   * The two radii are not independent settings — one is the other over uDome,
+   * so 1 is a sphere and 0 is the cylinder it used to be, continuously. At
+   * uDome near zero the latitude goes to nothing while the radius it is
+   * measured against goes to infinity, and the two cancel exactly: the height
+   * comes through untouched rather than collapsing. */
   if (uCurve.x > 0.0) {
-    float a = P.x / uCurve.x;
-    float ca = cos(a);
-    float r = uCurve.x + P.z;
-    P = vec3(sin(a) * r, P.y, ca * r - uCurve.x);
-    sh *= 1.0 - (1.0 - ca) * uCurve.y;
+    float R = uCurve.x;
+    float Ry = R / max(uCurve.z, 1e-4);
+    float a = P.x / R;
+    float b = P.y / Ry;
+    float ca = cos(a), cb = cos(b);
+    P = vec3(
+      sin(a) * cb * (R + P.z),
+      sin(b) * (Ry + P.z),
+      ca * cb * (R + P.z) - R);
+    sh *= 1.0 - (1.0 - ca * cb) * uCurve.y;
   }
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
@@ -7961,6 +7980,10 @@ void main(){
        * standing — and tying them together meant flattening the light on the
        * outer columns could only be done by flattening the ripple as well. */
       webCurveSh: 2.1,
+      /* And how much of it is carried in the vertical: 1 is a sphere — the
+       * top and foot of a sheet fall away exactly as its sides do — and 0 is
+       * a cylinder, curved across and dead flat up and down. */
+      webDome: 1.0,
       webShade: 0.70,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
@@ -9584,7 +9607,8 @@ void main(){
            * three keep the same curvature to the eye whatever the page is
            * resized to, which a fixed radius would not. */
           const curveR = P.webCurve > 1e-3 ? nw / P.webCurve : 0;
-          gl.uniform2f(uq.uCurve, curveR, P.webCurveSh);
+          const curveRy = curveR / Math.max(1e-4, P.webDome);
+          gl.uniform3f(uq.uCurve, curveR, P.webCurveSh, P.webDome);
           gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
           gl.bindVertexArray(pageVao);
           // a column each: web k reads the kth third of the sheet, and no
@@ -9703,17 +9727,21 @@ void main(){
              * the bell somewhere the cursor was not, and further out the
              * further the sheet sits from the middle. */
             const a0 = curveR > 0 ? cxw / curveR : 0;
-            const ca0 = Math.cos(a0);
-            const xC = curveR > 0 ? Math.sin(a0) * curveR : cxw;
-            const zC = curveR > 0 ? ca0 * curveR - curveR : 0;
+            const b0 = curveR > 0 ? cyw / curveRy : 0;
+            const ca0 = Math.cos(a0),
+              cb0 = Math.cos(b0);
+            const xC = curveR > 0 ? Math.sin(a0) * cb0 * curveR : cxw;
+            const yC = curveR > 0 ? Math.sin(b0) * curveRy : cyw;
+            const zC = curveR > 0 ? ca0 * cb0 * curveR - curveR : 0;
             const dz = Math.max(0.08, zoom - zC);
             const uvx = (ptr.x * cw) / (2 * ch),
               uvy = ptr.y / 2;
             gl.uniform2f(
               uq.uPtr,
               (((uvx - centre[0]) * dz) / 2.05 - xC) /
-                Math.max(1e-4, hw * ca0),
-              (((uvy - centre[1]) * dz) / 2.05 - cyw) / Math.max(1e-4, hh),
+                Math.max(1e-4, hw * ca0 * cb0),
+              (((uvy - centre[1]) * dz) / 2.05 - yC) /
+                Math.max(1e-4, hh * cb0),
             );
             gl.uniform3f(
               uq.uPtrK,
@@ -9755,7 +9783,7 @@ void main(){
           }
           gl.uniform4f(uq.uWin, 0, 0, 0, 0);
           // the plates are flat, and they are drawn with the same program
-          gl.uniform2f(uq.uCurve, 0, 0);
+          gl.uniform3f(uq.uCurve, 0, 0, 0);
           gl.bindVertexArray(null);
         }
 
