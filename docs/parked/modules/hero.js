@@ -5012,15 +5012,51 @@ Stage.register(
      * bound — three arrivals landing together put three decodes in three
      * consecutive frames, which is what a hundred and twenty drops from. */
     const RASTER_LIMIT = 2;
-    // the two whose reading order is round rather than across
-    const RADIAL = ["donut", "rings"];
-    /* Where the title sits, worked out the same way chrome() works it out.
-     * A wipe that starts at the very top cuts the title in half — and half
-     * a word reads as a fault, not as a gesture. The label lands whole and
-     * the plot is drawn in under it, which is also the order a desk does
-     * it in. */
+    /* HOW EACH DRAWING ARRIVES.
+     *
+     * One wipe for everything was a retreat, and it was not the necessary
+     * one. What made the old gestures expensive was that each stage of them
+     * was a separate rasterisation — not the gestures themselves. A clip
+     * can reproduce most of them EXACTLY over a single finished picture,
+     * and where it cannot it can do the same thing the drawing does.
+     *
+     *  traced  a path drawn from its start, which is a left edge advancing
+     *          — for a line, an area, a route, arcs from a hub. This is not
+     *          an approximation of the old gesture: it is the same one.
+     *  rise    bars coming up out of the baseline, which is a bottom edge
+     *          lifting. All of them together rather than staggered, which
+     *          is the one thing a clip cannot do to a flat picture.
+     *  extend  a horizontal bar reaching to the right, and the reading
+     *          order of anything laid out across the page.
+     *  rows    a grid filling in reading order: whole rows, then part of
+     *          the next one. Exactly what the unit square and the
+     *          choropleth used to do a cell at a time.
+     *  sweep   round from twelve o'clock, for a ring.
+     *  grow    out from the centre, for contours — which is what contours
+     *          did, from the middle outwards.
+     */
+    const ARRIVAL = {
+      bars: "rise",
+      stack: "extend",
+      line: "traced",
+      area: "traced",
+      route: "traced",
+      flows: "traced",
+      scatter: "extend",
+      places: "extend",
+      units: "rows",
+      choro: "rows",
+      donut: "sweep",
+      rings: "grow",
+    };
+    /* Where the title and the source line sit, worked out the same way
+     * chrome() works them out. A gesture that runs over them cuts a word in
+     * half, and half a word reads as a fault rather than as a drawing being
+     * made — so they land whole, the label first and the credit last, which
+     * is the order a desk does it in. */
     const titleBand = (w, h) =>
       h >= 90 && w >= 96 ? (h < 74 ? 4 : h < 118 ? 7 : 11) + 14 : 0;
+    const footBand = (w, h) => (h >= 124 && w >= 120 ? 20 : 0);
     let rasterBusy = 0;
     function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
       const body = (LIVE_ART[kind] || LIVE_ART.bars)(
@@ -5321,18 +5357,46 @@ Stage.register(
           if (inner && k.img && draw > 0) {
             g2.save();
             g2.beginPath();
-            const band = titleBand(inner.w, inner.h);
+            const band = titleBand(inner.w, inner.h),
+              foot = footBand(inner.w, inner.h);
+            const px = inner.x,
+              py = inner.y + band,
+              pw = inner.w,
+              ph = Math.max(4, inner.h - band - foot);
+            const u = clamp01((draw - 0.04) / 0.9);
             if (band && draw > 0.04) g2.rect(inner.x, inner.y, inner.w, band);
-            if (RADIAL.indexOf(k.kind) >= 0) {
-              const cx = inner.x + inner.w / 2,
-                cy = inner.y + (band + inner.h) / 2,
-                r = Math.hypot(inner.w, inner.h);
-              g2.moveTo(cx, cy);
-              g2.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + draw * Math.PI * 2);
-              g2.closePath();
-            } else {
-              const wipe = clamp01((draw - 0.04) / 0.96);
-              g2.rect(inner.x, inner.y + band, inner.w * wipe, inner.h - band);
+            if (foot && draw > 0.96)
+              g2.rect(inner.x, py + ph, inner.w, foot);
+            switch (ARRIVAL[k.kind] || "extend") {
+              case "rise":
+                g2.rect(px, py + ph * (1 - u), pw, ph * u);
+                break;
+              case "rows": {
+                const rows = 9,
+                  f = u * rows,
+                  whole = Math.floor(f),
+                  rh = ph / rows;
+                if (whole > 0) g2.rect(px, py, pw, rh * whole);
+                g2.rect(px, py + rh * whole, pw * (f - whole), rh);
+                break;
+              }
+              case "sweep": {
+                const cx = px + pw / 2,
+                  cy = py + ph / 2,
+                  r = Math.hypot(pw, ph);
+                g2.moveTo(cx, cy);
+                g2.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + u * Math.PI * 2);
+                g2.closePath();
+                break;
+              }
+              case "grow":
+                g2.arc(
+                  px + pw / 2, py + ph / 2,
+                  Math.max(0.1, u * Math.hypot(pw, ph) * 0.5), 0, Math.PI * 2,
+                );
+                break;
+              default: // traced and extend are both a left edge advancing
+                g2.rect(px, py, pw * u, ph);
             }
             g2.clip();
             g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
