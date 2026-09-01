@@ -7228,10 +7228,43 @@ void main(){
         "#web-tune button:hover{background:#f2b13c;color:#14141c;border-color:#f2b13c}";
       document.head.appendChild(st);
 
+      /* A PANEL YOU CANNOT PUT AWAY is a panel that is always in the way.
+       * It covers the top right of the frame, which is where a web runs, so
+       * judging the paper means judging it around the thing measuring it.
+       * The cross hides it and leaves a tab; the tab brings it back without
+       * a reload, so nothing that has been tuned is lost. */
       const head = document.createElement("div");
       head.className = "t";
-      head.textContent = "the webs";
+      head.style.cssText = "display:flex;align-items:center;gap:8px";
+      const name = document.createElement("span");
+      name.textContent = "the webs";
+      name.style.flex = "1";
+      const shut = document.createElement("button");
+      shut.textContent = "×";
+      shut.title = "put the panel away";
+      shut.style.cssText =
+        "width:20px;height:20px;margin:0;padding:0;line-height:1;font-size:15px;" +
+        "border-radius:5px;flex:0 0 auto";
+      head.append(name, shut);
       box.appendChild(head);
+
+      const tab = document.createElement("button");
+      tab.textContent = "the webs";
+      tab.style.cssText =
+        "position:fixed;top:12px;right:12px;z-index:99998;display:none;" +
+        "padding:7px 11px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(14,14,18,.9);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:8px;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      tab.onclick = () => {
+        box.style.display = "";
+        tab.style.display = "none";
+      };
+      shut.onclick = () => {
+        box.style.display = "none";
+        tab.style.display = "block";
+      };
+      document.body.appendChild(tab);
 
       /* THE RATE, READ OFF THE STAGE ITSELF. Not this panel's own rAF —
        * that would measure the browser handing out frames, which keeps
@@ -7993,7 +8026,16 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
         loadPressImages(uploadGalley);
-        if (!window.__noTuner) buildWebTuner();
+        /* ?clean starts with it away — for a look at the paper with nothing
+         * over it, which is what it is for. */
+        if (!window.__noTuner) {
+          const panel = buildWebTuner();
+          if (/[?&]clean\b/.test(location.search)) {
+            panel.style.display = "none";
+            const t = panel.nextElementSibling;
+            if (t && t.tagName === "BUTTON") t.style.display = "block";
+          }
+        }
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
