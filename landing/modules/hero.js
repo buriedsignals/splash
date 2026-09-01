@@ -3786,7 +3786,42 @@ Stage.register(
       "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
     const PAPER_RGB = [255, 255, 255],
       BLACK_RGB = [23, 23, 23];
+    /* THE FLOOR IS SET FOR PAPER THAT WILL BE DARKENED. These ratios are
+     * computed against white, and the webs do not show white: the reel is
+     * lifted, tone-mapped and remapped between the section's ground and
+     * white before anyone sees it, so a ratio measured here arrives smaller
+     * than it left. Four to one on paper is what survives that — the earlier
+     * three-and-a-bit did not, which is why some inks went missing on the
+     * webs while looking perfectly sound on the bench. */
+    const INK_ON_PAPER = 4.0,
+      INK_ON_BLACK = 1.9;
+    /* AND SOME OF THEM ARE GREY. A second colour on newsprint is often not
+     * a colour: a chart printed in one ink and a grey is the commonest thing
+     * a paper does, and a reel where every page is coloured is a reel that
+     * has never seen a newspaper. About a third print that way — dark enough
+     * to hold against the paper, light enough to be told from the black
+     * beside it, which is the same pair of tests the hues have to pass. */
+    const GREY_SHARE = 0.34;
+    function greyFor(rnd) {
+      /* The valid band collected, and one taken from it at RANDOM. Keeping
+       * the most balanced lightness is the argmax again: every grey came out
+       * the same grey, which is one ink and not a range of them. */
+      const ok = [];
+      for (let l = 0.6; l >= 0.18; l -= 0.01) {
+        // a trace of warmth, because a newspaper grey is ink on paper and
+        // not a screen neutral
+        const rgb = hsl2rgb(28 + rnd() * 14, 0.03 + rnd() * 0.05, l);
+        if (
+          ratio(rgb, PAPER_RGB) >= INK_ON_PAPER &&
+          ratio(rgb, BLACK_RGB) >= INK_ON_BLACK
+        )
+          ok.push(hexOf(rgb));
+      }
+      return ok.length ? ok[Math.floor(rnd() * ok.length)] : "#5b5751";
+    }
+
     function inkFor(rnd) {
+      if (rnd() < GREY_SHARE) return greyFor(rnd);
       /* A HUE FIRST, then the lightness that suits it — and the first hue
        * that works, not the best of many tries. Scoring sixty hues and
        * keeping the winner is an argmax and not a draw: the same few win
@@ -3806,7 +3841,7 @@ Stage.register(
           const rgb = hsl2rgb(h, sat, l);
           const onPaper = ratio(rgb, PAPER_RGB),
             onBlack = ratio(rgb, BLACK_RGB);
-          if (onPaper < 3.3 || onBlack < 1.75) continue;
+          if (onPaper < INK_ON_PAPER || onBlack < INK_ON_BLACK) continue;
           // the most BALANCED lightness that works: far enough from the
           // paper to be seen, far enough from the black to be a colour
           const bal = Math.min(onPaper / 4.5, 1) * Math.min(onBlack / 2.4, 1);
@@ -3824,6 +3859,11 @@ Stage.register(
      * and everything downstream derives from it, so a session is consistent
      * with itself and no two sessions agree. */
     const LOAD_SALT = (Math.random() * 1e9) | 0;
+    /* Where the reel is when the page opens. The clock starts at zero every
+     * load, so the three webs always came up on the same three pages however
+     * different those pages were. This moves the whole set and leaves the
+     * spacing between the webs exactly as it was. */
+    const WEB_PHASE = Math.random();
     const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
     const STORY_COLS = [1, 2, 3, 2, 3, 1, 3, 1, 2];
     const STORY_PAPERS = STORY_COLS.map((_, i) => {
@@ -4049,16 +4089,32 @@ Stage.register(
      * it is in shot. Written by the draw, read by the frame loop — one frame
      * stale, which at a hundredth of a lap a second is nothing. */
     const WEB_WIN = [0, 0, 0, 0.2];
+    /* IN SHOT MEANS READABLE, not merely mapped onto a web.
+     *
+     * The window a web reads is the whole of its geometry, and its geometry
+     * is half again as tall as the frame — then it fades out towards both
+     * ends, so the top and bottom of that window are off screen or on their
+     * way there. Testing against all of it meant a page counted as arriving
+     * long before anyone could see it: it spent its whole telling out of
+     * sight and slid into the frame with the graphic already finished,
+     * which is the one thing this was supposed to prevent.
+     *
+     * The band is the middle of the window — where the paper is at full
+     * strength and inside the frame. A page starts its telling when it
+     * reaches that, and is only let go once it is well clear of it. */
+    const BAND = 0.26; // trimmed off each end of a web's window
     const inShot = (y0, y1, pad) => {
       const m = pad === undefined ? 0.02 : pad,
         a = y0 / GALLEY_H,
         b = y1 / GALLEY_H,
-        dv = WEB_WIN[3];
+        dv = WEB_WIN[3],
+        lo = dv * BAND,
+        hi = dv * (1 - BAND);
       for (let k = 0; k < 3; k++) {
         // the window wraps, so it is tested against three copies of the reel
         const v = WEB_WIN[k];
         for (let o = -1; o <= 1; o++)
-          if (a < v + dv + m + o && b > v - m + o) return true;
+          if (a < v + hi + m + o && b > v + lo - m + o) return true;
       }
       return false;
     };
@@ -4931,7 +4987,7 @@ Stage.register(
       Math.max(0, P.storyRest === undefined ? 1.5 : P.storyRest);
     // and how far apart the pages take their turns
     const storySpread = () =>
-      Math.max(0, P.storySpread === undefined ? 14 : P.storySpread);
+      Math.max(0, P.storySpread === undefined ? 5 : P.storySpread);
     const ease = (u) => u * u * (3 - 2 * u);
     /* THE TELLING ONLY GOES ONE WAY. The room is made, the drawing arrives,
      * and it STAYS — for as long as the page is on screen, which is as long
@@ -5027,6 +5083,10 @@ Stage.register(
               k.seen = false;
               k.img = null;
               k.asked = -1;
+              // and it is not part-way through anything any more, which is
+              // what it still looked like to anything reading k.draw
+              k.draw = 0;
+              k.leave = 0;
               shut(k);
               wrote = true;
             }
@@ -7197,7 +7257,7 @@ void main(){
       // and seconds it is left as printed after coming into shot
       storyRest: 1.5,
       // and the spread of their turns, so they never open together
-      storySpread: 14,
+      storySpread: 5,
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       // The webs are the light in the frame, and are lifted to it.
       webLift: 1.34,
@@ -8812,8 +8872,14 @@ void main(){
                * the windows overlapped and the column beside you was partly
                * reading the same paper. The lag is a fine adjustment on top
                * of that third, in pages, which is what it is good for. */
+              /* AND IT DOES NOT START ON THE SAME PAPER TWICE. The clock
+               * begins at zero every load, so the three webs always opened
+               * on the same three pages of the reel however different the
+               * pages themselves were. One phase, drawn at load, moves the
+               * whole set — the spacing between the webs is untouched. */
               v =
-                (clock * rate + k / 3 + P["webLag" + k] * PAGE_STEP * 0.5) % 1;
+                (clock * rate + WEB_PHASE + k / 3 +
+                  P["webLag" + k] * PAGE_STEP * 0.5 + 1) % 1;
             }
             gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
             gl.uniform4f(
