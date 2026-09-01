@@ -3329,26 +3329,56 @@ Stage.register(
      * blocks are one ink, rung three's may have colour, rung four's charts are
      * held to a column, and rung five is where a block may take the measure.
      */
+    /* THE COLUMNS SAY WHAT THIS IS.
+     *
+     * They were lorem, which is the right thing while a layout is being
+     * judged and the wrong thing the moment anyone can read a word of it —
+     * a reader who leans in gets nothing back. The mastheads and the
+     * headlines stay playful, because a press full of invented papers is
+     * part of the joke; the body is the argument, set small, and true.
+     */
     const LOREM = (
-      "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse " +
-      "quam nihil molestiae consequatur vel illum qui dolorem eum fugiat quo " +
-      "voluptas nulla pariatur at vero eos et accusamus et iusto odio " +
-      "dignissimos ducimus qui blanditiis praesentium voluptatum deleniti " +
-      "atque corrupti quos dolores et quas molestias excepturi sint occaecati " +
-      "cupiditate non provident similique sunt in culpa qui officia deserunt " +
-      "mollitia animi id est laborum et dolorum fuga et harum quidem rerum " +
-      "facilis est et expedita distinctio nam libero tempore cum soluta nobis " +
-      "est eligendi optio cumque nihil impedit quo minus id quod maxime " +
-      "placeat facere possimus omnis voluptas assumenda est omnis dolor "
-    ).repeat(6);
+      "Your desk already writes the story. What it does not do is draw it. " +
+      "Between the reporting being finished and the page going out there is " +
+      "a gap, and the gap is filled by a request to somebody else, a queue, " +
+      "and a wait. Splash closes it. It teaches the assistant your newsroom " +
+      "already uses to make the graphic itself: a chart, a map, a piece of " +
+      "motion, a scrollytelling passage, built from the reporting you have " +
+      "done and nothing you have to gather again. " +
+      "It is not a chart tool bolted to a chat window. It reads the story " +
+      "and the data together, works out what the evidence will actually " +
+      "support, and proposes the form that says it — a line where a line is " +
+      "honest, a map where the story is about somewhere, a unit chart where " +
+      "the count is the point. You choose the direction. The desk keeps the " +
+      "decisions it should keep. " +
+      "The draft comes back for review before anything is published, and " +
+      "what comes out is the finished thing in the shape the page needs: " +
+      "print at the right measure, web that holds on a phone, video for the " +
+      "feeds, a scrolling piece for the site. One story, the formats it has " +
+      "to be in, and no second brief. " +
+      "None of it invents a number. The graphic carries where its figures " +
+      "came from, and it carries them because a graphic that cannot say " +
+      "where it got something is not evidence, it is decoration. The source " +
+      "line is written by the tool, not remembered by a person at eleven at " +
+      "night. " +
+      "What it changes is who can make a graphic at all. A desk with one " +
+      "designer makes as many as one designer can draw; a desk with this " +
+      "makes as many as it has stories worth drawing. The visual work stops " +
+      "being a favour asked of another department and becomes part of " +
+      "writing the piece — which is where it belonged before anyone had to " +
+      "ask for it. "
+    ).repeat(3);
 
+    /* Invented papers, and the odd one that is a joke about the trade. */
     const LOREM_HEAD = [
-      "Nam libero tempore",
-      "Soluta nobis est",
-      "Omnis voluptas assumenda",
-      "Quis autem vel eum",
-      "Temporibus autem quibusdam",
-      "Itaque earum rerum hic",
+      "Reporting in, graphics out",
+      "The desk that draws its own",
+      "A map where the story is",
+      "Nobody waits for the chart",
+      "What the evidence supports",
+      "The source line writes itself",
+      "One story, every format",
+      "Held to the reporting",
     ];
 
     /* head — where the paper's name goes and what it does to the page.
@@ -4378,7 +4408,7 @@ Stage.register(
 
     // ---- charts -------------------------------------------------------
     LIVE_ART.bars = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "Output by quarter", "Lorem Ipsum Statistical Office, 2026",
+      chrome(w, h, "Output by quarter", "Office for National Statistics, 2026",
         (pw, ph) => {
           const n = barCount(pw),
             gut = barGut(pw),
@@ -4401,7 +4431,7 @@ Stage.register(
         });
 
     LIVE_ART.line = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "The series, by year", "Annual, Lorem Ipsum Office",
+      chrome(w, h, "The series, by year", "Annual returns, 1994–2026",
         (pw, ph) => {
           const n = 13,
             gut = pw < 130 ? 0 : GUT,
@@ -4442,7 +4472,7 @@ Stage.register(
         });
 
     LIVE_ART.area = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "Share of the whole", "Per cent, Lorem Ipsum Office",
+      chrome(w, h, "Share of the whole", "Per cent of total, quarterly",
         (pw, ph) => {
           const n = 15,
             gut = pw < 130 ? 0 : GUT;
@@ -4508,7 +4538,7 @@ Stage.register(
         });
 
     LIVE_ART.scatter = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "Each dot, one district", "Two measures, Lorem Ipsum Office",
+      chrome(w, h, "Each dot, one district", "Two measures, 312 districts",
         (pw, ph) => {
           const n = pw < 130 ? 16 : 34,
             gut = pw < 130 ? 0 : GUT,
@@ -4546,7 +4576,7 @@ Stage.register(
      * is centred and the key only appears if there is width to spare. In
      * every case the ring is centred in the space it is actually given. */
     LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
-      chrome(w, h, "Of the whole", "Per cent, Lorem Ipsum Office",
+      chrome(w, h, "Of the whole", "Per cent, rounded to the nearest",
         (pw, ph) => {
           const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
           // five classes over the whole spectrum, biggest darkest
@@ -4682,7 +4712,7 @@ Stage.register(
     };
 
     LIVE_ART.choro = (w, h, p, q, v, tone, rnd, layer) =>
-      chrome(w, h, "Rate by country", "Natural Earth boundaries · Lorem Ipsum Office",
+      chrome(w, h, "Rate by country", "Boundaries: Natural Earth · Rates: national returns",
         (pw, ph) => {
           const G = geo();
           if (!G) return "";
@@ -5179,6 +5209,46 @@ Stage.register(
      * a cached half-drawn level kept numbers from whenever it was first
      * made — the bars jumped around as the graphic grew instead of rising.
      * A hole owns its picture, and asks for a new one when it wants it. */
+    /* THE ROOM IS MADE BEFORE THE DRAWING EXISTS, and for a moment there
+     * is a hole in the page with nothing in it. That gap is not a fault to
+     * hide — it is the desk working, and the honest thing to put in it is
+     * who is doing the work.
+     *
+     * One word, and a light passing over it. A bar filling to a number
+     * nobody knows is a lie about progress; a shimmer says only that
+     * something is happening, which is the truth and is all a wait this
+     * short can honestly claim.
+     *
+     * Drawn in canvas rather than rasterised, so it is there in the frame
+     * the hole opens — the one thing a raster cannot promise — and at one
+     * size whatever the hole. Scaling it with the block made the same word
+     * bigger in a lead than in a column, so it read as part of the
+     * graphic's own hierarchy, which it is not: it is a label about the
+     * page's state, and those are the same size everywhere. */
+    function mark(g2, inner, t, alpha) {
+      const cx = inner.x + inner.w / 2,
+        cy = inner.y + inner.h / 2,
+        fs2 = 11;
+      g2.save();
+      g2.globalAlpha = alpha;
+      g2.textAlign = "center";
+      g2.textBaseline = "middle";
+      g2.font = "600 " + fs2 + "px " + SANS;
+      const half = g2.measureText("Splash").width / 2 + fs2;
+      // the light travels across the word and rests before it returns
+      const sweep = (((t * 0.75) % 1.9) / 1.9) * 2.4 - 0.7;
+      const grd = g2.createLinearGradient(cx - half, 0, cx + half, 0);
+      const at = (u) => Math.max(0, Math.min(1, u));
+      grd.addColorStop(0, "#b9b4ab");
+      grd.addColorStop(at(sweep - 0.22), "#b9b4ab");
+      grd.addColorStop(at(sweep), "#efece5");
+      grd.addColorStop(at(sweep + 0.22), "#b9b4ab");
+      grd.addColorStop(1, "#b9b4ab");
+      g2.fillStyle = grd;
+      g2.fillText("Splash", cx, cy);
+      g2.restore();
+    }
+
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
@@ -5257,6 +5327,7 @@ Stage.register(
             k.asked = -1;
             k.shown = 0;
             k.seq = 0;
+            k.gotAt = undefined;
           }
           if (!vis) {
             if (k.seen) {
@@ -5353,7 +5424,13 @@ Stage.register(
          * type again for those seconds is a cost with nothing to show. */
         if (k.story) {
           if (t - (k.lastPaint || -9) < 1 / PAINT_HZ) continue;
+          // while the word is on the page it is moving, so the page is
+          // repainted whether or not anything else has changed
+          if (k.img && k.gotAt === undefined) k.gotAt = t;
+          const waiting =
+            draw > 0 && (!k.img || t - k.gotAt < 0.34);
           if (
+            !waiting &&
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
             Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
             Math.abs(k.leave - (k.lastGone === undefined ? -9 : k.lastGone)) < 0.004 &&
@@ -5384,6 +5461,18 @@ Stage.register(
             /* Straight down. The picture already IS the drawing at this
              * stage of being made, so there is nothing left to hide. */
             g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
+          }
+          /* THE WORD DOES NOT JUST STOP. The first stage of a drawing lands
+           * in one frame, and swapping a label for a graphic in one frame
+           * reads as a glitch — the eye registers the change before it
+           * registers what changed. It is held over the drawing and taken
+           * off across a third of a second, which is long enough to be a
+           * handover and short enough not to be a wait. */
+          if (inner && inner.h > 34 && inner.w > 70) {
+            const gone = k.img
+              ? clamp01((t - (k.gotAt === undefined ? t : k.gotAt)) / 0.34)
+              : 0;
+            if (gone < 1) mark(g2, inner, t, 1 - gone);
           }
           g2.restore();
         } else {
@@ -6286,16 +6375,16 @@ const flowCol = (A, o) => {
             g.fillRect(R(x0), R(top), GALLEY_COL, band);
             g.fillStyle = "#ffffff";
             g.textAlign = "center";
-            const ms = fit("THE DAILY LOREM", "700", 24, meas * 0.94);
+            const ms = fit("THE COLUMN INCH", "700", 24, meas * 0.94);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE DAILY LOREM", mid, top + R(band * 0.72));
+            g.fillText("THE COLUMN INCH", mid, top + R(band * 0.72));
             g.fillStyle = "#111111";
             y = top + band + 18;
           } else if (S.head === "tracked") {
             g.textAlign = "center";
-            const ms = fit("THE LOREM REVIEW", "400", 9.5, meas * 0.7);
+            const ms = fit("THE DEADLINE REVIEW", "400", 9.5, meas * 0.7);
             g.font = ms + "px " + SERIF;
-            track("THE LOREM REVIEW", mid, y + 8, ms * 0.46);
+            track("THE DEADLINE REVIEW", mid, y + 8, ms * 0.46);
             y += 18;
             g.fillStyle = ink;
             lozenge(mid, y, meas * 0.26);
@@ -6303,26 +6392,26 @@ const flowCol = (A, o) => {
             y += 20;
           } else if (S.head === "left") {
             g.textAlign = "left";
-            const ms = fit("The Lorem Gazette", "700", 19, meas * 0.56);
+            const ms = fit("The Galley Proof", "700", 19, meas * 0.56);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Lorem Gazette", left, y + R(ms * 0.74) + 4);
+            g.fillText("The Galley Proof", left, y + R(ms * 0.74) + 4);
             g.textAlign = "right";
             g.font = "7px " + SERIF;
             g.fillStyle = ink;
-            g.fillText("LOREM · IPSUM", left + meas, y + 10);
+            g.fillText("LATE EDITION", left + meas, y + 10);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 2);
             y += 16;
           } else if (S.head === "boxed") {
             g.textAlign = "center";
-            const ms = fit("THE LOREM HERALD", "700", 15, meas * 0.62);
+            const ms = fit("THE STONE &amp; THE SPIKE", "700", 15, meas * 0.62);
             const bh = R(ms * 0.74) + 18;
             g.strokeStyle = "#111111";
             g.lineWidth = 1;
             g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE LOREM HERALD", mid, y + bh - 9);
+            g.fillText("THE STONE &amp; THE SPIKE", mid, y + bh - 9);
             y += bh + 12;
             g.fillStyle = ink;
             rule(left, y, meas, 1);
@@ -6330,28 +6419,28 @@ const flowCol = (A, o) => {
             y += 14;
           } else if (S.head === "shoulder") {
             g.textAlign = "left";
-            const ms = fit("Lorem Post", "700", 22, meas * 0.44);
+            const ms = fit("The Press Run", "700", 22, meas * 0.44);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("Lorem Post", left, y + R(ms * 0.74) + 2);
+            g.fillText("The Press Run", left, y + R(ms * 0.74) + 2);
             const bx = left + meas * 0.58,
               bw = meas * 0.42;
             rule(bx, y + 2, bw, 1);
             rule(bx, y + 20, bw, 1);
             g.textAlign = "right";
             g.font = "6.5px " + SERIF;
-            g.fillText("LOREM IPSUM DOLOR", left + meas, y + 10);
+            g.fillText("SET IN THE MORNING", left + meas, y + 10);
             g.fillStyle = ink;
-            g.fillText("SIT AMET", left + meas, y + 17);
+            g.fillText("PRINTED BY NOON", left + meas, y + 17);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 3);
             y += 15;
           } else {
             g.textAlign = "center";
-            const ms = fit("The Lorem Chronicle", "700", 21, meas * 0.82);
+            const ms = fit("The Daily Splash", "700", 21, meas * 0.82);
             y += R(ms * 0.74) + 6;
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Lorem Chronicle", mid, y);
+            g.fillText("The Daily Splash", mid, y);
             y += 11;
             g.fillStyle = ink;
             rule(left, y, meas, 2);
@@ -6361,9 +6450,9 @@ const flowCol = (A, o) => {
             y += 14;
             g.font = "7.5px " + SERIF;
             g.textAlign = "left";
-            g.fillText("LOREM, 1900", left, y);
+            g.fillText("NO. 1, VOL. I", left, y);
             g.textAlign = "right";
-            g.fillText("IPSUM DOLOR", left + meas, y);
+            g.fillText("PRICE: ONE INCH", left + meas, y);
             y += 6;
             rule(left, y, meas, 1);
             y += 16;
@@ -6379,7 +6468,7 @@ const flowCol = (A, o) => {
           y += 14;
           g.font = "italic 9px " + SERIF;
           g.fillText(
-            "Dolorem ipsum quia dolor sit amet consectetur",
+            "Made at the desk, from the reporting already done",
             S.head === "left" ? left : mid,
             y,
           );
