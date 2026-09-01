@@ -4025,219 +4025,277 @@ Stage.register(
     };
 
     /* ---------------------------------------------------- the drawings
-     * Six charts and six maps. Each one arrives by its own gesture — a bar
-     * rises, a line is traced, an arc sweeps, a map fills in — and then it
-     * STOPS. A graphic that keeps moving after it has arrived is a graphic
-     * nobody can read: the reader's eye is still being asked to track it
-     * when it should be free to look. The numbers are cast once per telling
-     * and held; `p` is the only thing that moves, and it stops at one.
+     * Six charts and six maps. Each arrives by its own gesture — a bar
+     * rises, a line is traced, a map fills in — holds perfectly still, and
+     * then LEAVES BY THE SAME GESTURE CONTINUING. Not reversed: reversing
+     * un-draws a graphic, which reads as a mistake being undone, and not
+     * faded either, which reads as nothing at all. The sweep that brought
+     * the first bar in comes round again and takes it away, in the same
+     * direction, so arrival and departure are one movement passing through.
      *
-     * They carry their furniture: a title, a rule, an axis with figures on
-     * it where figures belong, and the line saying where the numbers came
-     * from. That is what separates a chart from a picture of a chart. Under
-     * a hundred pixels of height there is no room for any of it, and the
-     * drawing is only itself — the fourth rung's chart-the-size-of-a-
-     * paragraph has no space for a caption and no need of one.
+     * That is what `p` and `q` are. p is how far the sweep has arrived, q
+     * how far the same sweep has left; an element is present by the amount
+     * one leads the other. Between them they need no alpha anywhere.
+     *
+     * The furniture is set in a sans, at a size and a grey that put it
+     * beneath the drawing rather than beside it: a chart's title is a label,
+     * not a headline. It sits on a page of Georgia on purpose — the graphic
+     * should read as a made thing set INTO the article, which is what it is.
      */
     const CHARTS = ["bars", "line", "area", "stack", "scatter", "donut"];
     const MAPS = ["units", "choro", "places", "flows", "route", "rings"];
     const LIVE_KINDS = CHARTS.concat(MAPS);
 
-    const DINK = "#161616",
-      FAINT = "#c9c6bf",
-      PALE = "#e9e6e0";
+    /* SINGLE quotes around the family with a space in it. This string goes
+     * into an attribute of an SVG that is parsed as XML, and a double quote
+     * inside a double-quoted attribute ends it — the whole document fails to
+     * parse and the Image simply never loads, silently, with every drawing
+     * coming out blank. */
+    const SANS =
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+    const DINK = "#171717",
+      GRID = "#e8e6e2",
+      AXIS = "#a6a29b",
+      MUTE = "#8d8981",
+      PALE = "#eceae5",
+      /* Land has to be darker than you think. At a quarter of a page the map
+       * is competing with a column of nine-point type beside it, and a fill
+       * three per cent off white reads as blank paper — the shape of the
+       * world was there and could not be seen. */
+      LAND = "#e0dcd4";
     const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
     const fmt = (n) =>
-      n >= 1000 ? (n / 1000).toFixed(1) + "k" : n >= 10 ? Math.round(n) : n.toFixed(1);
+      n >= 1000 ? Math.round(n / 100) / 10 + "k" : n >= 10 ? Math.round(n) : n.toFixed(1);
 
     const svgWrap = (w, h, body) =>
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
       '" viewBox="0 0 ' + w + " " + h + '">' + body + "</svg>";
 
-    /* THE FURNITURE, in one place. Every drawing is composed the same way
-     * and differs only in what goes in the plot, which is the whole reason
-     * the set reads as one desk's work rather than twelve. */
-    const chrome = (w, h, small, title, note, draw) => {
-      if (small) return draw(w, Math.max(6, h - 2));
-      /* Every band is given an explicit height. A line of type sized only by
-       * its font takes whatever line box the engine decides, the total comes
-       * out a pixel or two over, and the block clips its own source line —
-       * which is the one part of a graphic that must never be cut. */
-      const tH = 13,
-        rule = 4,
-        nH = 11;
-      const ph = Math.max(10, h - tH - rule - nH);
+    /* One element's share of the sweep. p brings it, q takes it, and both
+     * run the same way down the set, so nothing ever moves backwards. */
+    const sweep = (i, n, p, q, spread) => {
+      const s = spread === undefined ? 1.15 : spread;
+      const lead = 1 + s;
+      const a = clamp01(p * lead - (i / Math.max(1, n)) * s);
+      const b = clamp01(q * lead - (i / Math.max(1, n)) * s);
+      return Math.max(0, (1 - Math.pow(1 - a, 3)) - (1 - Math.pow(1 - b, 3)));
+    };
+    // and where a continuous path currently begins and ends
+    const span = (n, p, q) => [q * (n - 1), p * (n - 1)];
+
+    /* THE FURNITURE, in one place, and it gives way as the block gets
+     * smaller. A chart the size of a paragraph has no room for a title and
+     * no need of one; a block under seventy pixels has room for the drawing
+     * and nothing else. Everything is inset, because a rule that touches the
+     * edge of its block reads as a crop rather than as a chart. */
+    const chrome = (w, h, title, note, draw) => {
+      const pad = h < 74 ? 4 : h < 116 ? 7 : 10;
+      const iw = Math.max(20, w - pad * 2);
+      const titled = h >= 88 && w >= 96;
+      const noted = h >= 116 && w >= 120;
+      const tH = titled ? 15 : 0,
+        nH = noted ? 19 : 0;
+      const ph = Math.max(12, h - pad * 2 - tH - nH);
       return (
-        '<div style="font:600 8.5px/13px Georgia,serif;letter-spacing:.09em;' +
-        "text-transform:uppercase;color:" + DINK + ";height:" + tH +
-        'px;overflow:hidden;white-space:nowrap">' + esc(title) + "</div>" +
-        draw(w, ph) +
-        '<div style="height:1px;background:' + DINK + ';margin:3px 0 0"></div>' +
-        '<div style="font:7.5px/10px Georgia,serif;color:#666;height:' + nH +
-        'px;letter-spacing:.05em;overflow:hidden;white-space:nowrap">' +
-        esc(note) + "</div>"
+        '<div style="box-sizing:border-box;width:' + w + "px;height:" + h +
+        "px;padding:" + pad + 'px;font-family:' + SANS + '">' +
+        (titled
+          ? '<div style="font:600 10.5px/15px ' + SANS + ";color:" + DINK +
+            ";height:15px;letter-spacing:-.004em;overflow:hidden;" +
+            'white-space:nowrap;text-overflow:ellipsis">' + esc(title) + "</div>"
+          : "") +
+        draw(iw, ph) +
+        (noted
+          ? '<div style="height:19px;padding-top:6px;margin-top:5px;' +
+            "border-top:1px solid " + GRID + ";font:400 8.5px/8px " + SANS +
+            ";color:" + MUTE + ";letter-spacing:.01em;overflow:hidden;" +
+            'white-space:nowrap;text-overflow:ellipsis">' + esc(note) + "</div>"
+          : "") +
+        "</div>"
       );
     };
 
-    /* A value axis: three figures up the left, and the rules they sit on.
-     * The rules are what a reader actually reads a height against. */
-    const yAxis = (w, h, top, pad) => {
+    /* A value axis: hairlines with their figures sitting ON them, ranged
+     * right in a gutter. No axis line and no ticks — the rules are what a
+     * height is read against, and a box drawn round a chart is furniture
+     * from a spreadsheet. */
+    const GUT = 26;
+    const yAxis = (w, h, top, gut) => {
       let out = "";
       for (let i = 0; i <= 2; i++) {
-        const y = h - 2 - (i / 2) * (h - 12);
+        const y = h - (i / 2) * (h - 9);
+        // the figure sits ON its rule, and the one at the foot is lifted so
+        // it stays inside the block instead of hanging off the bottom of it
+        const ty = i === 0 ? y - 3 : y + 2.8;
         out +=
-          '<path d="M' + pad + " " + y.toFixed(1) + " H" + (w - 1) +
-          '" stroke="' + (i ? FAINT : DINK) + '" stroke-width="' + (i ? 0.7 : 1.1) +
-          '" fill="none"/>' +
-          '<text x="0" y="' + (y - 2).toFixed(1) +
-          '" font-family="Georgia,serif" font-size="7" fill="#777">' +
-          fmt((i / 2) * top) + "</text>";
+          '<path d="M' + gut + " " + y.toFixed(1) + " H" + w + '" stroke="' +
+          GRID + '" stroke-width="1" fill="none"/>';
+        if (gut > 0)
+          out +=
+            '<text x="' + (gut - 6) + '" y="' + ty.toFixed(1) +
+            '" text-anchor="end" font-family="' + SANS +
+            '" font-size="8" fill="' + AXIS + '">' + fmt((i / 2) * top) + "</text>";
       }
       return out;
     };
 
+    const hexRGB = (hx) => [
+      parseInt(hx.slice(1, 3), 16),
+      parseInt(hx.slice(3, 5), 16),
+      parseInt(hx.slice(5, 7), 16),
+    ];
+
     const LIVE_ART = {};
 
     // ---- charts -------------------------------------------------------
-    LIVE_ART.bars = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Output by quarter", "LOREM IPSUM STATISTICAL OFFICE, 2026",
+    LIVE_ART.bars = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Output by quarter", "Lorem Ipsum Statistical Office, 2026",
         (pw, ph) => {
-          const n = small ? 9 : 13,
-            pad = small ? 0 : 17,
+          const n = pw < 130 ? 9 : 13,
+            gut = pw < 130 ? 0 : GUT,
             top = 40 + Math.round(rnd() * 60);
-          const bw = (pw - pad) / n;
-          let out = small ? "" : yAxis(pw, ph, top, pad);
+          const bw = (pw - gut) / n;
+          let out = yAxis(pw, ph, top, gut);
           for (let i = 0; i < n; i++) {
-            const k = clamp01(p * 2.4 - (i / n) * 1.3);
-            const e = 1 - Math.pow(1 - k, 3);
-            const tall = v[i % v.length] * (ph - 12) * e;
+            const k = sweep(i, n, p, q);
+            if (k <= 0) continue;
+            const tall = v[i % v.length] * (ph - 6) * k;
             out +=
-              '<rect x="' + (pad + i * bw + bw * 0.14).toFixed(1) + '" y="' +
-              (ph - 2 - tall).toFixed(1) + '" width="' + (bw * 0.72).toFixed(1) +
-              '" height="' + Math.max(0.4, tall).toFixed(1) + '" fill="' +
+              '<rect x="' + (gut + i * bw + bw * 0.16).toFixed(1) + '" y="' +
+              (ph - tall).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) +
+              '" height="' + Math.max(0.6, tall).toFixed(1) + '" rx="1" fill="' +
               (i === n - 1 ? tone : DINK) + '"/>';
           }
           return svgWrap(pw, ph, out);
         });
 
-    LIVE_ART.line = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "The series, year by year", "ANNUAL, LOREM IPSUM OFFICE",
+    LIVE_ART.line = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "The series, year by year", "Annual, Lorem Ipsum Office",
         (pw, ph) => {
           const n = 13,
-            pad = small ? 0 : 17,
+            gut = pw < 130 ? 0 : GUT,
             top = 60 + Math.round(rnd() * 40);
-          const px = (i) => pad + (i / (n - 1)) * (pw - pad - 2);
-          const py = (i) => ph - 2 - v[(i * 3) % v.length] * (ph - 14);
-          const upto = clamp01(p * 1.15) * (n - 1);
+          const X = (i) => gut + (i / (n - 1)) * (pw - gut);
+          const Y = (i) => ph - 3 - v[(i * 3) % v.length] * (ph - 12);
+          const [from, to] = span(n, p, q);
+          if (to <= from) return svgWrap(pw, ph, yAxis(pw, ph, top, gut));
+          const at = (f) => {
+            const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+              k = f - i;
+            return [X(i) + (X(i + 1) - X(i)) * k, Y(i) + (Y(i + 1) - Y(i)) * k];
+          };
           let d = "";
-          for (let i = 0; i < n; i++) {
-            const k = clamp01(upto - i + 1);
-            if (k <= 0) break;
-            const x = i ? px(i - 1) + (px(i) - px(i - 1)) * k : px(0),
-              y = i ? py(i - 1) + (py(i) - py(i - 1)) * k : py(0);
-            d += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
-          }
-          const hi = Math.min(n - 1, Math.floor(upto));
+          const s0 = at(from);
+          d += "M" + s0[0].toFixed(1) + " " + s0[1].toFixed(1);
+          for (let i = Math.ceil(from); i <= Math.floor(to); i++)
+            d += " L" + X(i).toFixed(1) + " " + Y(i).toFixed(1);
+          const s1 = at(to);
+          d += " L" + s1[0].toFixed(1) + " " + s1[1].toFixed(1);
           return svgWrap(pw, ph,
-            (small ? "" : yAxis(pw, ph, top, pad)) +
+            yAxis(pw, ph, top, gut) +
             '<path d="' + d + '" fill="none" stroke="' + tone +
-            '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>' +
-            '<circle cx="' + px(hi).toFixed(1) + '" cy="' + py(hi).toFixed(1) +
-            '" r="3" fill="#fff" stroke="' + DINK + '" stroke-width="1.6"/>');
+            '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+            '<circle cx="' + s1[0].toFixed(1) + '" cy="' + s1[1].toFixed(1) +
+            '" r="2.8" fill="#fff" stroke="' + tone + '" stroke-width="2"/>');
         });
 
-    LIVE_ART.area = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Share of the whole", "PER CENT, LOREM IPSUM OFFICE",
+    LIVE_ART.area = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Share of the whole", "Per cent, Lorem Ipsum Office",
         (pw, ph) => {
           const n = 15,
-            pad = small ? 0 : 17;
-          const px = (i) => pad + (i / (n - 1)) * (pw - pad - 2);
-          const py = (i) => ph - 2 - v[(i * 5) % v.length] * (ph - 14);
-          const upto = clamp01(p * 1.15) * (n - 1);
-          let top = "",
-            d = "M" + px(0).toFixed(1) + " " + (ph - 2);
-          for (let i = 0; i < n; i++) {
-            const k = clamp01(upto - i + 1);
-            if (k <= 0) break;
-            const x = i ? px(i - 1) + (px(i) - px(i - 1)) * k : px(0),
-              y = i ? py(i - 1) + (py(i) - py(i - 1)) * k : py(0);
-            d += " L" + x.toFixed(1) + " " + y.toFixed(1);
-            top += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
-            if (k < 1 || i === n - 1) {
-              d += " L" + x.toFixed(1) + " " + (ph - 2) + " Z";
-              break;
-            }
-          }
+            gut = pw < 130 ? 0 : GUT;
+          const X = (i) => gut + (i / (n - 1)) * (pw - gut);
+          const Y = (i) => ph - 3 - v[(i * 5) % v.length] * (ph - 12);
+          const [from, to] = span(n, p, q);
+          if (to <= from) return svgWrap(pw, ph, yAxis(pw, ph, 100, gut));
+          const at = (f) => {
+            const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+              k = f - i;
+            return [X(i) + (X(i + 1) - X(i)) * k, Y(i) + (Y(i + 1) - Y(i)) * k];
+          };
+          const a = at(from),
+            b = at(to);
+          let top = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1);
+          for (let i = Math.ceil(from); i <= Math.floor(to); i++)
+            top += " L" + X(i).toFixed(1) + " " + Y(i).toFixed(1);
+          top += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
+          const fill = top + " L" + b[0].toFixed(1) + " " + ph + " L" +
+            a[0].toFixed(1) + " " + ph + " Z";
           return svgWrap(pw, ph,
-            (small ? "" : yAxis(pw, ph, 100, pad)) +
-            '<path d="' + d + '" fill="' + tone + '" opacity=".55"/>' +
-            '<path d="' + top + '" fill="none" stroke="' + tone + '" stroke-width="1.8"/>');
+            yAxis(pw, ph, 100, gut) +
+            '<path d="' + fill + '" fill="' + tone + '" opacity=".22"/>' +
+            '<path d="' + top + '" fill="none" stroke="' + tone +
+            '" stroke-width="2" stroke-linejoin="round"/>');
         });
 
-    LIVE_ART.stack = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "By category", "THREE PARTS OF EACH, PER CENT",
+    LIVE_ART.stack = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "By category", "Three parts of each, per cent",
         (pw, ph) => {
-          const rows = small ? 4 : 6,
-            lab = small ? 0 : 15,
-            gap = 4;
-          const rh = Math.max(4, (ph - gap * (rows - 1)) / rows);
+          const rows = ph < 90 ? 4 : 6,
+            lab = pw < 130 ? 0 : 16,
+            gap = Math.max(3, ph * 0.06);
+          const rh = Math.max(3, (ph - gap * (rows - 1)) / rows);
+          const full = pw - lab;
           let out = "";
           for (let r = 0; r < rows; r++) {
-            const k = clamp01(p * 2.1 - (r / rows) * 1.1);
-            const e = 1 - Math.pow(1 - k, 3);
+            const k = sweep(r, rows, p, q);
+            if (k <= 0) continue;
             const y = r * (rh + gap);
-            const full = pw - lab - 2;
-            const a = v[r % v.length] * 0.5 * full * e,
-              b = v[(r + 5) % v.length] * 0.3 * full * e,
-              c = v[(r + 9) % v.length] * 0.18 * full * e;
-            if (!small)
+            const a = v[r % v.length] * 0.52 * full * k,
+              b = v[(r + 5) % v.length] * 0.3 * full * k,
+              c = v[(r + 9) % v.length] * 0.16 * full * k;
+            if (lab)
               out +=
-                '<text x="0" y="' + (y + rh * 0.76).toFixed(1) +
-                '" font-family="Georgia,serif" font-size="7.5" fill="#666">' +
+                '<text x="0" y="' + (y + rh * 0.74).toFixed(1) +
+                '" font-family="' + SANS + '" font-size="8" fill="' + AXIS + '">' +
                 String.fromCharCode(65 + r) + "</text>";
             out +=
               '<rect x="' + lab + '" y="' + y.toFixed(1) + '" width="' + a.toFixed(1) +
               '" height="' + rh.toFixed(1) + '" fill="' + DINK + '"/>' +
-              '<rect x="' + (lab + a).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' +
-              b.toFixed(1) + '" height="' + rh.toFixed(1) + '" fill="' + tone + '"/>' +
+              '<rect x="' + (lab + a).toFixed(1) + '" y="' + y.toFixed(1) +
+              '" width="' + b.toFixed(1) + '" height="' + rh.toFixed(1) +
+              '" fill="' + tone + '"/>' +
               '<rect x="' + (lab + a + b).toFixed(1) + '" y="' + y.toFixed(1) +
               '" width="' + c.toFixed(1) + '" height="' + rh.toFixed(1) +
-              '" fill="' + FAINT + '"/>';
+              '" fill="' + PALE + '"/>';
           }
           return svgWrap(pw, ph, out);
         });
 
-    LIVE_ART.scatter = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Each dot, one district", "TWO MEASURES, LOREM IPSUM OFFICE",
+    LIVE_ART.scatter = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Each dot, one district", "Two measures, Lorem Ipsum Office",
         (pw, ph) => {
-          const n = small ? 16 : 34,
-            pad = small ? 0 : 15;
-          let out = small
-            ? ""
-            : '<path d="M' + pad + " 2 V" + (ph - 2) + " H" + (pw - 1) +
-              '" stroke="' + DINK + '" stroke-width="1" fill="none"/>';
+          const n = pw < 130 ? 16 : 34,
+            gut = pw < 130 ? 0 : GUT;
+          let out = "";
+          for (let i = 0; i <= 2; i++)
+            out += '<path d="M' + gut + " " + (ph - (i / 2) * (ph - 8)).toFixed(1) +
+              " H" + pw + '" stroke="' + GRID + '" stroke-width="1" fill="none"/>';
           for (let i = 0; i < n; i++) {
-            const k = clamp01(p * 2.6 - (i / n) * 1.5);
+            const k = sweep(i, n, p, q, 1.35);
+            const x = gut + 4 + rnd() * (pw - gut - 8),
+              y = 4 + rnd() * (ph - 8),
+              r0 = 1.8 + rnd() * 2.8;
             if (k <= 0) continue;
-            const x = pad + 3 + rnd() * (pw - pad - 8),
-              y = 3 + rnd() * (ph - 8),
-              r = (1.8 + rnd() * 2.8) * k;
             out +=
               '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
-              r.toFixed(1) + '" fill="' + (i % 5 === 2 ? tone : DINK) +
-              '" opacity=".8"/>';
+              (r0 * k).toFixed(1) + '" fill="' + (i % 5 === 2 ? tone : DINK) +
+              '" opacity=".82"/>';
           }
           return svgWrap(pw, ph, out);
         });
 
-    LIVE_ART.donut = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Of the whole", "PER CENT, LOREM IPSUM OFFICE",
+    LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Of the whole", "Per cent, Lorem Ipsum Office",
         (pw, ph) => {
-          const cx = small ? pw / 2 : ph / 2 + 2,
+          const keyed = pw >= 190 && ph >= 74;
+          const box = keyed ? Math.min(ph, pw * 0.55) : Math.min(pw, ph);
+          const cx = keyed ? box / 2 : pw / 2,
             cy = ph / 2,
-            R0 = Math.min(pw, ph) / 2 - 3,
-            R1 = R0 * 0.58;
+            R0 = box / 2 - 1,
+            R1 = R0 * 0.6;
           const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
+          const shade = [tone, DINK, "#565350", "#9c9891", PALE];
           const arc = (a0, a1, fill) => {
             const P = (a, r) => [
               (cx + r * Math.cos(a)).toFixed(1),
@@ -4250,188 +4308,284 @@ Stage.register(
               big + " 1 " + x1 + " " + y1 + " L" + x2 + " " + y2 + " A" + R1 +
               " " + R1 + " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill + '"/>';
           };
-          const shade = [tone, DINK, "#4a4a4a", "#7d7a74", FAINT];
-          let a = -Math.PI / 2, out = "", key = "";
+          // one sweep round the ring: p is its leading edge, q its trailing
+          const TAU = Math.PI * 2;
+          const lead = clamp01(p) * TAU,
+            trail = clamp01(q) * TAU;
+          let a = 0, out = "", key = "";
           for (let i = 0; i < parts.length; i++) {
-            const sweep = parts[i] * Math.PI * 2 * clamp01(p * 1.3);
-            if (sweep > 0.01) out += arc(a, a + sweep, shade[i]);
-            a += parts[i] * Math.PI * 2;
-            if (!small && i < 3)
+            const s0 = Math.max(a, trail),
+              s1 = Math.min(a + parts[i] * TAU, lead);
+            if (s1 - s0 > 0.005)
+              out += arc(s0 - Math.PI / 2, s1 - Math.PI / 2, shade[i]);
+            a += parts[i] * TAU;
+            if (keyed && i < 3)
               key +=
-                '<rect x="' + (ph + 12) + '" y="' + (6 + i * 13) +
-                '" width="7" height="7" fill="' + shade[i] + '"/>' +
-                '<text x="' + (ph + 23) + '" y="' + (12.5 + i * 13) +
-                '" font-family="Georgia,serif" font-size="7.5" fill="#666">' +
+                '<rect x="' + (box + 14) + '" y="' + (cy - 22 + i * 15) +
+                '" width="8" height="8" rx="1.5" fill="' + shade[i] + '"/>' +
+                '<text x="' + (box + 27) + '" y="' + (cy - 14.5 + i * 15) +
+                '" font-family="' + SANS + '" font-size="8.5" fill="' + AXIS + '">' +
                 Math.round(parts[i] * 100) + "%</text>";
           }
           return svgWrap(pw, ph, out + key);
         });
 
-    // ---- maps ---------------------------------------------------------
-    LIVE_ART.units = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "One square, one thousand", "COUNTED, NOT ESTIMATED",
+    // ---- maps, on real geography -------------------------------------
+    /* Natural Earth's outlines, projected to Robinson and baked into geo.js.
+     * A choropleth of tinted squares is a heatmap; a map has to be somewhere.
+     *
+     * The crop is chosen by the SHAPE OF THE HOLE, not by taste. A block two
+     * columns wide and short takes the world; a block the shape of a single
+     * column takes a continent, because the world squeezed into it would be
+     * a strip of grey nothing. That is what responsive means for a map. */
+    const geo = () => (typeof window !== "undefined" && window.GEO) || null;
+    const ISOS = () => Object.keys(geo().c);
+    const cropFor = (w, h, rnd) => {
+      const G = geo(),
+        ar = w / h;
+      if (ar > 1.75) return G.crops.world;
+      const near = ["europe", "africa", "asia", "americas"];
+      const k = near[Math.floor(rnd() * near.length)];
+      return G.crops[k];
+    };
+    /* A MAP IS TWO LAYERS, and only one of them moves.
+     *
+     * Rasterising a hundred and sixty-seven country outlines forty times
+     * over an arrival is minutes of decoding for two seconds of animation,
+     * and it showed: the three maps that draw marks on land sat blank
+     * because a new request went out before the last had come back. The
+     * land is drawn once and kept; only the circles and the lines are made
+     * again. layer 1 is the ground, 2 the marks, 0 both — and the random
+     * stream is consumed identically whichever is asked for, so the two
+     * layers are always of the same place. */
+    const mapBase = (w, h, rnd, paint) => {
+      const G = geo();
+      if (!G) return "";
+      const [x0, y0, x1, y1] = cropFor(w, h, rnd);
+      const cw = x1 - x0,
+        ch = y1 - y0;
+      // fit the crop inside the hole without distorting the projection
+      const s = Math.min(w / cw, h / ch);
+      const vw = w / s,
+        vh = h / s;
+      const vx = x0 - (vw - cw) / 2,
+        vy = y0 - (vh - ch) / 2;
+      return (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+        '" viewBox="' + vx.toFixed(1) + " " + vy.toFixed(1) + " " + vw.toFixed(1) +
+        " " + vh.toFixed(1) + '">' + paint(1 / s, vx, vy, vw, vh) + "</svg>"
+      );
+    };
+
+    LIVE_ART.choro = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Rate by country", "Natural Earth boundaries · Lorem Ipsum Office",
         (pw, ph) => {
-          const cols = small ? 14 : 24,
+          const G = geo();
+          if (!G) return "";
+          const iso = ISOS();
+          // a real sequential ramp, not one ink at five opacities
+          const ramp = (t) => {
+            const a = [237, 234, 229],
+              b = hexRGB(tone);
+            const k = 0.12 + t * 0.88;
+            return (
+              "rgb(" +
+              Math.round(a[0] + (b[0] - a[0]) * k) + "," +
+              Math.round(a[1] + (b[1] - a[1]) * k) + "," +
+              Math.round(a[2] + (b[2] - a[2]) * k) + ")"
+            );
+          };
+          return mapBase(pw, ph, rnd, (u) => {
+            let out = "";
+            for (let i = 0; i < iso.length; i++) {
+              const k = sweep(i, iso.length, p, q, 1.6);
+              const t = v[i % v.length];
+              out +=
+                '<path d="' + G.c[iso[i]] + '" fill="' +
+                (layer === 2 ? "none" : k > 0.5 ? ramp(t) : LAND) +
+                '" stroke="' + (layer === 2 ? "none" : "#ffffff") +
+                '" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            }
+            return out;
+          });
+        });
+
+    LIVE_ART.places = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Where they were reported", "One circle, one city",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const here = G.cities.filter(
+              (c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh,
+            );
+            const n = Math.min(here.length, 22);
+            for (let i = 0; i < n; i++) {
+              const c = here[Math.floor((i / n) * here.length)];
+              const kk = sweep(i, n, p, q, 1.4);
+              if (kk <= 0) continue;
+              const r = (2.4 + v[i % v.length] * 7) * kk * u;
+              if (layer === 1) continue;
+              out +=
+                '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(2) +
+                '" fill="' + tone + '" fill-opacity=".42" stroke="' + tone +
+                '" stroke-width="' + (1.1 * u).toFixed(2) + '"/>';
+            }
+            return out;
+          });
+        });
+
+    LIVE_ART.flows = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Origin and destination", "Movements recorded, 2026",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const here = G.cities.filter(
+              (c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh,
+            );
+            if (here.length < 3) return out;
+            const hub = here[Math.floor(rnd() * here.length)];
+            const n = Math.min(9, here.length - 1);
+            let dots = "";
+            for (let i = 0; i < n; i++) {
+              const c = here[Math.floor(rnd() * here.length)];
+              const kk = sweep(i, n, p, q, 1.25);
+              if (kk <= 0 || c === hub || layer === 1) continue;
+              const mx = (hub[1] + c[1]) / 2,
+                my = (hub[2] + c[2]) / 2 - Math.hypot(c[1] - hub[1], c[2] - hub[2]) * 0.3;
+              const ex = hub[1] + (c[1] - hub[1]) * kk,
+                ey = hub[2] + (c[2] - hub[2]) * kk;
+              out +=
+                '<path d="M' + hub[1] + " " + hub[2] + " Q" + mx.toFixed(1) + " " +
+                my.toFixed(1) + " " + ex.toFixed(1) + " " + ey.toFixed(1) +
+                '" fill="none" stroke="' + tone + '" stroke-width="' +
+                ((0.9 + v[i % v.length] * 1.8) * u).toFixed(2) +
+                '" opacity=".85" stroke-linecap="round"/>';
+              if (kk > 0.98)
+                dots += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' +
+                  (2.2 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                  '" stroke-width="' + (1.2 * u).toFixed(2) + '"/>';
+            }
+            if (layer === 1) return out;
+            return out + dots + '<circle cx="' + hub[1] + '" cy="' + hub[2] +
+              '" r="' + (3.4 * u).toFixed(2) + '" fill="' + DINK + '"/>';
+          });
+        });
+
+    LIVE_ART.route = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "The route, stop by stop", "Stages of the journey",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const here = G.cities
+              .filter((c) => c[1] > vx && c[1] < vx + vw && c[2] > vy && c[2] < vy + vh)
+              .sort((a, b) => a[1] - b[1]);
+            if (here.length < 4) return out;
+            const n = Math.min(7, here.length);
+            const S = [];
+            for (let i = 0; i < n; i++)
+              S.push(here[Math.floor((i / (n - 1)) * (here.length - 1))]);
+            const [from, to] = span(n, p, q);
+            if (to <= from || layer === 1) return out;
+            const at = (f) => {
+              const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+                k = f - i;
+              return [
+                S[i][1] + (S[i + 1][1] - S[i][1]) * k,
+                S[i][2] + (S[i + 1][2] - S[i][2]) * k,
+              ];
+            };
+            const a = at(from),
+              b = at(to);
+            let d = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1),
+              dots = "";
+            for (let i = Math.ceil(from); i <= Math.floor(to); i++) {
+              d += " L" + S[i][1] + " " + S[i][2];
+              dots += '<circle cx="' + S[i][1] + '" cy="' + S[i][2] + '" r="' +
+                (2.6 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                '" stroke-width="' + (1.3 * u).toFixed(2) + '"/>';
+            }
+            d += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
+            return out + '<path d="' + d + '" fill="none" stroke="' + tone +
+              '" stroke-width="' + (2.4 * u).toFixed(2) +
+              '" stroke-linejoin="round" stroke-linecap="round"/>' + dots;
+          });
+        });
+
+    LIVE_ART.rings = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Reach from the centre", "Distance bands, in hundreds of km",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const here = G.cities.filter(
+              (c) => c[1] > vx + vw * 0.2 && c[1] < vx + vw * 0.8 &&
+                c[2] > vy + vh * 0.2 && c[2] < vy + vh * 0.8,
+            );
+            const c = here.length ? here[Math.floor(rnd() * here.length)]
+              : [null, vx + vw / 2, vy + vh / 2];
+            const n = 5,
+              max = Math.min(vw, vh) * 0.42;
+            if (layer === 1) return out;
+            for (let i = n - 1; i >= 0; i--) {
+              const k = sweep(n - 1 - i, n, p, q, 1.2);
+              if (k <= 0) continue;
+              const r = max * ((i + 1) / n) * k;
+              out += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(1) +
+                '" fill="' + tone + '" fill-opacity="' + (0.05).toFixed(2) +
+                '" stroke="' + tone + '" stroke-width="' + (1.2 * u).toFixed(2) +
+                '" stroke-opacity="' + (0.4 + (1 - i / n) * 0.55).toFixed(2) + '"/>';
+            }
+            return out + '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' +
+              (2.6 * u).toFixed(2) + '" fill="' + DINK + '"/>';
+          });
+        });
+
+    LIVE_ART.units = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "One square, one thousand", "Counted, not estimated",
+        (pw, ph) => {
+          const cols = pw < 130 ? 14 : 24,
             cell = pw / cols,
-            rows = Math.max(2, Math.floor(ph / cell));
+            rows = Math.max(2, Math.floor(ph / cell)),
+            n = rows * cols;
+          const oy = (ph - rows * cell) / 2;
           let out = "";
           for (let r = 0; r < rows; r++)
             for (let c = 0; c < cols; c++) {
-              const at = (r * cols + c) / (rows * cols);
-              const on = p * 1.5 > at;
+              const i = r * cols + c;
+              const k = sweep(i, n, p, q, 1.5);
               out +=
-                '<rect x="' + (c * cell + 0.5).toFixed(2) + '" y="' +
-                (r * cell + 0.5).toFixed(2) + '" width="' + (cell - 1).toFixed(2) +
-                '" height="' + (cell - 1).toFixed(2) + '" fill="' +
-                (on ? (at > 0.7 ? tone : DINK) : PALE) + '"/>';
+                '<rect x="' + (c * cell + 0.6).toFixed(2) + '" y="' +
+                (oy + r * cell + 0.6).toFixed(2) + '" width="' + (cell - 1.2).toFixed(2) +
+                '" height="' + (cell - 1.2).toFixed(2) + '" rx="' +
+                Math.min(1, cell / 6).toFixed(2) + '" fill="' +
+                (k > 0.5 ? (i / n > 0.72 ? tone : "#4b4741") : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
 
-    LIVE_ART.choro = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "By district", "RATE PER THOUSAND, 2026",
-        (pw, ph) => {
-          const cols = small ? 11 : 18,
-            cell = pw / cols,
-            rows = Math.max(2, Math.floor(ph / cell));
-          let out = "";
-          for (let r = 0; r < rows; r++)
-            for (let c = 0; c < cols; c++) {
-              // a coarse landmass, so it reads as somewhere and not as a table
-              const land =
-                Math.sin(c * 0.62 + r * 0.44) + Math.cos(c * 0.29 - r * 0.81) > -0.3;
-              if (!land) continue;
-              const at = rnd();
-              const on = p * 1.45 > at * 0.92;
-              const s = v[(r * cols + c) % v.length];
-              out +=
-                '<rect x="' + (c * cell).toFixed(2) + '" y="' + (r * cell).toFixed(2) +
-                '" width="' + (cell - 0.4).toFixed(2) + '" height="' +
-                (cell - 0.4).toFixed(2) + '" fill="' + (on ? tone : PALE) +
-                '" opacity="' + (on ? (0.28 + s * 0.72).toFixed(2) : 1) + '"/>';
-            }
-          return svgWrap(pw, ph, out);
-        });
-
-    LIVE_ART.places = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Where they were reported", "ONE CIRCLE, ONE PLACE",
-        (pw, ph) => {
-          let g = "";
-          for (let i = 1; i < 4; i++)
-            g += '<path d="M0 ' + ((i * ph) / 4).toFixed(0) + " H" + pw +
-              '" stroke="' + FAINT + '" stroke-width=".8"/>';
-          for (let i = 1; i < 5; i++)
-            g += '<path d="M' + ((i * pw) / 5).toFixed(0) + ' 0 V' + ph +
-              '" stroke="' + FAINT + '" stroke-width=".8"/>';
-          const n = small ? 7 : 14;
-          let out = "";
-          for (let i = 0; i < n; i++) {
-            const k = clamp01(p * 2.6 - (i / n) * 1.5);
-            if (k <= 0) continue;
-            const x = 7 + rnd() * (pw - 14),
-              y = 7 + rnd() * (ph - 14),
-              r = (3 + v[i % v.length] * 6) * (1 - Math.pow(1 - k, 3));
-            out +=
-              '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
-              r.toFixed(1) + '" fill="' + tone + '" opacity=".55" stroke="' +
-              DINK + '" stroke-width="1"/>';
-          }
-          return svgWrap(pw, ph, g + out);
-        });
-
-    LIVE_ART.flows = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Origin and destination", "MOVEMENTS RECORDED, 2026",
-        (pw, ph) => {
-          const hx = pw * 0.2, hy = ph * 0.66;
-          const n = small ? 5 : 9;
-          let out = "", dots = "";
-          for (let i = 0; i < n; i++) {
-            const k = clamp01(p * 2.2 - (i / n) * 1.2);
-            if (k <= 0) continue;
-            const e = 1 - Math.pow(1 - k, 2);
-            const tx = pw * (0.42 + rnd() * 0.54),
-              ty = ph * (0.08 + rnd() * 0.8);
-            const mx = (hx + tx) / 2, my = Math.min(hy, ty) - ph * 0.26;
-            const ex = hx + (tx - hx) * e, ey = hy + (ty - hy) * e;
-            out +=
-              '<path d="M' + hx.toFixed(1) + " " + hy.toFixed(1) + " Q" +
-              mx.toFixed(1) + " " + my.toFixed(1) + " " + ex.toFixed(1) + " " +
-              ey.toFixed(1) + '" fill="none" stroke="' + tone + '" stroke-width="' +
-              (1.4 + v[i % v.length] * 2.6).toFixed(1) +
-              '" opacity=".85" stroke-linecap="round"/>';
-            if (e > 0.97)
-              dots += '<circle cx="' + tx.toFixed(1) + '" cy="' + ty.toFixed(1) +
-                '" r="2.6" fill="#fff" stroke="' + DINK + '" stroke-width="1.4"/>';
-          }
-          return svgWrap(pw, ph,
-            out + dots + '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) +
-            '" r="4.4" fill="' + DINK + '"/>');
-        });
-
-    /* A ROUTE. A line that goes somewhere and stops on the way — a journey,
-     * a front, a river. The one map here with a DIRECTION, which is what
-     * makes it draw well: it advances stop by stop rather than fading up,
-     * and the eye follows it rather than scanning it. The faint land behind
-     * is not decoration — a route with nothing under it is a line chart. */
-    LIVE_ART.route = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "The route, stop by stop", "STAGES OF THE JOURNEY",
-        (pw, ph) => {
-          const n = small ? 5 : 8;
-          const stop = [];
-          for (let i = 0; i < n; i++)
-            stop.push([
-              8 + (i / (n - 1)) * (pw - 16),
-              8 + (0.12 + v[(i * 3) % v.length] * 0.74) * (ph - 16),
-            ]);
-          let land = "M0 " + (ph * (0.5 + rnd() * 0.22)).toFixed(1);
-          for (let i = 1; i <= 6; i++)
-            land += " Q" + ((i - 0.5) * (pw / 6)).toFixed(1) + " " +
-              (ph * (0.24 + rnd() * 0.5)).toFixed(1) + " " +
-              (i * (pw / 6)).toFixed(1) + " " + (ph * (0.32 + rnd() * 0.46)).toFixed(1);
-          land += " V" + ph + " H0 Z";
-          const upto = clamp01(p * 1.1) * (n - 1);
-          let d = "M" + stop[0][0].toFixed(1) + " " + stop[0][1].toFixed(1), last = 0;
-          for (let i = 1; i < n; i++) {
-            const k = clamp01(upto - i + 1);
-            if (k <= 0) break;
-            d += " L" + (stop[i - 1][0] + (stop[i][0] - stop[i - 1][0]) * k).toFixed(1) +
-              " " + (stop[i - 1][1] + (stop[i][1] - stop[i - 1][1]) * k).toFixed(1);
-            if (k >= 1) last = i;
-          }
-          let dots = "";
-          for (let i = 0; i <= last; i++)
-            dots += '<circle cx="' + stop[i][0].toFixed(1) + '" cy="' +
-              stop[i][1].toFixed(1) + '" r="' + (small ? 2.4 : 3.2) +
-              '" fill="#fff" stroke="' + DINK + '" stroke-width="1.5"/>';
-          return svgWrap(pw, ph,
-            '<path d="' + land + '" fill="' + DINK + '" opacity=".09"/>' +
-            '<path d="' + d + '" fill="none" stroke="' + tone + '" stroke-width="' +
-            (small ? 2.2 : 3) + '" stroke-linejoin="round" stroke-linecap="round"/>' + dots);
-        });
-
-    LIVE_ART.rings = (w, h, p, v, tone, rnd, small) =>
-      chrome(w, h, small, "Reach, in contours", "DISTANCE FROM THE CENTRE",
-        (pw, ph) => {
-          const cx = pw * 0.5, cy = ph * 0.5,
-            max = Math.min(pw, ph) * 0.46;
-          const n = small ? 4 : 6;
-          let out = "";
-          for (let i = n - 1; i >= 0; i--) {
-            const k = clamp01(p * 1.9 - ((n - 1 - i) / n) * 1.1);
-            if (k <= 0) continue;
-            const e = 1 - Math.pow(1 - k, 3);
-            const r = max * ((i + 1) / n) * e;
-            const wob = 0.8 + v[i % v.length] * 0.34;
-            out += '<ellipse cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) +
-              '" rx="' + (r * wob).toFixed(1) + '" ry="' + r.toFixed(1) +
-              '" fill="' + (i === 0 ? tone : "none") + '" stroke="' +
-              (i % 2 ? tone : DINK) + '" stroke-width="1.8" opacity="' +
-              (0.4 + (1 - i / n) * 0.6).toFixed(2) + '"/>';
-          }
-          return svgWrap(pw, ph, out +
-            '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) +
-            '" r="2" fill="' + DINK + '"/>');
-        });
 
     /* DEALT, NOT DRAWN. Six pages each picking a drawing at random gave
      * three the same one — independent draws collide, and two webs showing
@@ -4455,20 +4609,54 @@ Stage.register(
 
     /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
      * size of the drawing, handed to an Image as a data URI, and decoded. */
-    function rasterise(kind, w, h, p, v, tone, rnd) {
-      const body = (LIVE_ART[kind] || LIVE_ART.bars)(w, h, p, v, tone, rnd, h < 96);
+    // the kinds whose ground is worth keeping: everything they draw sits on
+    // a hundred and sixty-seven country outlines that never change
+    const GROUNDED = ["places", "flows", "route", "rings"];
+    const GROUND = new Map();
+
+    function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
+      const body = (LIVE_ART[kind] || LIVE_ART.bars)(
+        w, h, p, q, v, tone, seeded(seed), layer,
+      );
       const svg =
         '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
         '<foreignObject width="100%" height="100%">' +
         '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + w + "px;height:" + h +
-        'px;background:#ffffff;font:10px Georgia,serif;color:#161616;' +
-        'overflow:hidden">' + body + "</div></foreignObject></svg>";
+        "px;background:" + (layer === 2 ? "transparent" : "#ffffff") +
+        ';font:10px Georgia,serif;color:#161616;overflow:hidden">' +
+        body + "</div></foreignObject></svg>";
       return new Promise((res) => {
         const im = new Image();
         im.onload = () => res(im);
         im.onerror = () => res(null);
         im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
       });
+    }
+
+    /* One picture, however many layers it took. Returns a canvas rather than
+     * an image, because a composite is what the caller wants and building it
+     * here means the ground is fetched once per size and never again. */
+    async function rasterise(kind, w, h, p, q, v, tone, rnd, seed) {
+      const sd = seed === undefined ? 1 : seed;
+      if (GROUNDED.indexOf(kind) < 0)
+        return rasterOne(kind, w, h, p, q, v, tone, sd, 0);
+      const key = kind + "|" + w + "|" + h + "|" + tone + "|" + sd;
+      let ground = GROUND.get(key);
+      if (ground === undefined) {
+        ground = await rasterOne(kind, w, h, 1, 0, v, tone, sd, 1);
+        GROUND.set(key, ground);
+      }
+      const marks = await rasterOne(kind, w, h, p, q, v, tone, sd, 2);
+      if (!ground && !marks) return null;
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      const g = c.getContext("2d");
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, w, h);
+      if (ground) g.drawImage(ground, 0, 0);
+      if (marks) g.drawImage(marks, 0, 0);
+      return c;
     }
 
     /* HOW THE STORY IS TOLD, as two curves over one turn of it.
@@ -4505,7 +4693,7 @@ Stage.register(
      * it goes with the light, rising a few pixels as it thins, and the text
      * closes over where it was. Both are done to the composite rather than
      * to the markup, so a departure costs no rasterisation at all. */
-    const storyGone = (u) => (u < 0.84 ? 0 : ease(clamp01((u - 0.84) / 0.09)));
+    const storyGone = (u) => (u < 0.76 ? 0 : ease(clamp01((u - 0.76) / 0.16)));
 
     /* ONE JOB PER HOLE, not one per drawing. Sharing them was a real bug:
      * four copies of a page are at four different points in the telling, so
@@ -4545,7 +4733,8 @@ Stage.register(
           const resting = u >= 1;
           open = resting ? 0 : storyOpen(u);
           draw = resting ? 0 : storyDraw(u);
-          k.gone = resting ? 1 : storyGone(u);
+          // the same sweep coming round again, which is the departure
+          k.leave = resting ? 1 : storyGone(u);
           k.draw = draw;
         }
 
@@ -4555,7 +4744,11 @@ Stage.register(
          * departure is done to the composite. This is what makes the hold —
          * most of every cycle — cost nothing at all. */
         const size = k.story ? k.full() : k;
-        const want = k.story ? Math.round(draw * 40) : 40;
+        // the arrival and the departure are both asked for, and a picture
+        // is identified by where BOTH sweeps have got to
+        const want = k.story
+          ? Math.round(draw * 40) * 64 + Math.round((k.leave || 0) * 40)
+          : 40;
         if (
           ask && size && size.w >= 8 && size.h >= 8 && draw > 0 &&
           !k.pending && want !== k.asked
@@ -4564,7 +4757,10 @@ Stage.register(
           const rw = Math.min(size.w, LIVE_RASTER),
             rh = Math.max(8, Math.round((size.h * rw) / size.w));
           k.pending = true;
-          rasterise(k.kind, rw, rh, draw, k.vals || liveNow, k.tone, seeded(k.seed))
+          rasterise(
+            k.kind, rw, rh, draw, k.leave || 0, k.vals || liveNow, k.tone,
+            null, k.seed,
+          )
             .then((im) => {
               k.pending = false;
               if (im) {
@@ -4586,13 +4782,13 @@ Stage.register(
           if (
             Math.abs(open - (k.lastOpen === undefined ? -9 : k.lastOpen)) < 0.0015 &&
             Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
-            Math.abs(k.gone - (k.lastGone === undefined ? -9 : k.lastGone)) < 0.004 &&
+            Math.abs(k.leave - (k.lastGone === undefined ? -9 : k.lastGone)) < 0.004 &&
             !k.fresh
           )
             continue;
           k.lastOpen = open;
           k.lastDraw = draw;
-          k.lastGone = k.gone;
+          k.lastGone = k.leave;
           k.lastPaint = t;
           k.fresh = false;
           g2.save();
@@ -4603,19 +4799,12 @@ Stage.register(
           g2.fillRect(k.x, k.y, k.w, k.h);
           g2.textBaseline = "alphabetic";
           k.paint(open);
+          /* Straight down, no alpha and no offset. The departure is drawn
+           * INTO the graphic now — the same sweep that brought it coming
+           * round to take it away — so the composite has nothing to fake. */
           const inner = k.inner();
-          if (inner && k.img && draw > 0 && k.gone < 1) {
-            if (k.gone > 0) {
-              g2.save();
-              g2.globalAlpha = 1 - k.gone;
-              g2.drawImage(
-                k.img, inner.x, inner.y - k.gone * 9, inner.w, inner.h,
-              );
-              g2.restore();
-            } else {
-              g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
-            }
-          }
+          if (inner && k.img && draw > 0 && k.leave < 1)
+            g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
           g2.restore();
         } else {
           if (!k.fresh || !k.img) continue;
