@@ -4486,6 +4486,8 @@ void main(){
       webSpeed: 0.052, // laps per second
       webBend: 0.55, // how far the paper leaves its plane, relative to bend
       webLift: 1.0,
+      webX: 0, // the whole set, sideways and up, in visible half-measures
+      webY: 0,
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -4505,6 +4507,133 @@ void main(){
       insideBand: 0.34,
       insideSheen: 0.9,
     };
+
+    /* ------------------------------------------------------- the web tuner
+     * A live panel over the webs: their size, where they sit, how fast the
+     * paper runs, how hard it lifts off its plane, and the two numbers that
+     * decide whether the type reads at all.
+     *
+     * ONLY WITH "?webs" IN THE URL. The delivered page carries no panels —
+     * they were all taken out of it — and this one is not an exception to
+     * that: it does not exist unless it is asked for by name. No key opens
+     * it, because a key can be hit by accident and T already belongs to the
+     * post-its.
+     *
+     * "copy" puts the whole set on the clipboard as the source lines they
+     * correspond to, so a session of sliders comes back as code rather than as
+     * a description of code.
+     */
+    const WEB_TUNE = [
+      [
+        "the frame",
+        [
+          ["webW", 0.06, 0.42, 0.005, "half-width, in visible half-widths"],
+          ["webH", 0.8, 2.2, 0.01, "half-height, same measure"],
+          ["webSpread", 0.2, 1.1, 0.01, "where the outer two sit"],
+          ["webX", -0.6, 0.6, 0.01, "the whole set, sideways"],
+          ["webY", -0.6, 0.6, 0.01, "and up or down"],
+        ],
+      ],
+      [
+        "the press",
+        [
+          ["webSpeed", 0, 0.25, 0.002, "laps of the galley per second"],
+          ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
+        ],
+      ],
+      [
+        "the light",
+        [
+          ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
+          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
+        ],
+      ],
+    ];
+
+    function buildWebTuner() {
+      const box = document.createElement("div");
+      box.id = "web-tune";
+      box.style.cssText =
+        "position:fixed;top:12px;right:12px;z-index:99998;width:264px;" +
+        "max-height:calc(100vh - 24px);overflow:auto;padding:12px 14px 14px;" +
+        "background:rgba(14,14,18,.9);color:#e8e8e8;" +
+        "border:1px solid rgba(255,255,255,.14);border-radius:10px;" +
+        "font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      const st = document.createElement("style");
+      st.textContent =
+        "#web-tune .t{font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.5}" +
+        "#web-tune .g{margin:13px 0 4px;font-size:9px;letter-spacing:.13em;" +
+        "text-transform:uppercase;opacity:.36}" +
+        "#web-tune .r{display:flex;align-items:center;gap:7px;margin:5px 0}" +
+        "#web-tune .r label{flex:0 0 66px;opacity:.62;cursor:help}" +
+        "#web-tune .r .v{flex:0 0 46px;text-align:right;opacity:.5;" +
+        "font-variant-numeric:tabular-nums}" +
+        "#web-tune input{flex:1;min-width:0;height:14px;-webkit-appearance:none;" +
+        "appearance:none;background:transparent}" +
+        "#web-tune input::-webkit-slider-runnable-track{height:2px;background:rgba(255,255,255,.2)}" +
+        "#web-tune input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;" +
+        "margin-top:-4px;border-radius:50%;background:#f2b13c;cursor:pointer}" +
+        "#web-tune button{width:100%;margin-top:12px;padding:7px 0;font:inherit;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(255,255,255,.07);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:6px}" +
+        "#web-tune button:hover{background:#f2b13c;color:#14141c;border-color:#f2b13c}";
+      document.head.appendChild(st);
+
+      const head = document.createElement("div");
+      head.className = "t";
+      head.textContent = "the webs";
+      box.appendChild(head);
+
+      for (const [group, rows] of WEB_TUNE) {
+        const g = document.createElement("div");
+        g.className = "g";
+        g.textContent = group;
+        box.appendChild(g);
+        for (const [key, min, max, step, why] of rows) {
+          const row = document.createElement("div");
+          row.className = "r";
+          const lab = document.createElement("label");
+          lab.textContent = key.replace(/^(web|ink)/, "").toLowerCase() || key;
+          lab.title = why;
+          const inp = document.createElement("input");
+          inp.type = "range";
+          inp.min = min;
+          inp.max = max;
+          inp.step = step;
+          inp.value = P[key];
+          const out = document.createElement("span");
+          out.className = "v";
+          out.textContent = (+P[key]).toFixed(3);
+          inp.addEventListener("input", () => {
+            P[key] = parseFloat(inp.value);
+            out.textContent = P[key].toFixed(3);
+          });
+          row.append(lab, inp, out);
+          box.appendChild(row);
+        }
+      }
+
+      const btn = document.createElement("button");
+      btn.textContent = "copy the values";
+      btn.onclick = () => {
+        const txt = WEB_TUNE.map(([, rows]) =>
+          rows
+            .map(([k]) => "      " + k + ": " + (+P[k]).toFixed(3) + ",")
+            .join("\n"),
+        ).join("\n");
+        (navigator.clipboard
+          ? navigator.clipboard.writeText(txt)
+          : Promise.reject()
+        )
+          .then(() => (btn.textContent = "copied"))
+          .catch(() => console.log(txt));
+        setTimeout(() => (btn.textContent = "copy the values"), 1200);
+      };
+      box.appendChild(btn);
+      document.body.appendChild(box);
+      return box;
+    }
 
     /* --------------------------------------------------------- orientation
      * Column-major, matching the GLSL mat3 constructor exactly. The body's
@@ -5159,6 +5288,7 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
         loadPressImages(uploadGalley);
+        buildWebTuner();
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
@@ -6008,7 +6138,12 @@ void main(){
            * two mastheads keeps changing, which is what says three presses. */
           for (let k = 0; k < 3; k++) {
             const rate = P.webSpeed * WEB_SPD[k];
-            gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
+            gl.uniform3f(
+              uq.uC,
+              (k - 1) * nw * P.webSpread + nw * P.webX,
+              webNH * P.webY,
+              0,
+            );
             gl.uniform4f(
               uq.uWin,
               k * gutter,
