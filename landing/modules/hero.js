@@ -3834,13 +3834,14 @@ Stage.register(
        * in and it has to hold on its own — the SPREAD from white to black
        * is not here, it belongs to the drawings, which is where a scale of
        * values actually means something. */
+      // A route at thirteen per cent lightness is the same hole in another
+      // shape, so the stroke ink comes up with the scale.
       const ok = [];
-      for (let l = 0.42; l >= 0.13; l -= 0.01) {
+      for (let l = 0.56; l >= 0.3; l -= 0.01) {
         const g = Math.round(255 * l);
-        const rgb = [g, g, g];
-        if (ratio(rgb, PAPER_RGB) >= INK_ON_PAPER) ok.push(hexOf(rgb));
+        ok.push(hexOf([g, g, g]));
       }
-      return ok.length ? ok[Math.floor(rnd() * ok.length)] : "#5a5a5a";
+      return ok[Math.floor(rnd() * ok.length)];
     }
 
     function inkFor(rnd) {
@@ -4873,12 +4874,19 @@ Stage.register(
             for (let c = 0; c < cols; c++) {
               const i = r * cols + c;
               const k = sweep(i, n, p, q, 1.5);
+              /* THE GAP IS PROPORTIONAL, and wider than it was. A fixed
+               * 1.2 texels between cells vanishes at the size the reel
+               * draws these, and a grid whose gaps have gone is not a grid:
+               * it is a filled rectangle, which is what this looked like on
+               * the webs however light its cells were. A fifth of a cell
+               * survives the paper. */
+              const gap = Math.max(0.8, cell * 0.2);
               out +=
-                '<rect x="' + (c * cell + 0.6).toFixed(2) + '" y="' +
-                (oy + r * cell + 0.6).toFixed(2) + '" width="' + (cell - 1.2).toFixed(2) +
-                '" height="' + (cell - 1.2).toFixed(2) + '" rx="' +
-                Math.min(1, cell / 6).toFixed(2) + '" fill="' +
-                (k > 0.5 ? value(i / n > 0.72 ? 0.42 : 1, tone) : PALE) + '"/>';
+                '<rect x="' + (c * cell + gap / 2).toFixed(2) + '" y="' +
+                (oy + r * cell + gap / 2).toFixed(2) + '" width="' +
+                (cell - gap).toFixed(2) + '" height="' + (cell - gap).toFixed(2) +
+                '" fill="' +
+                (k > 0.5 ? value(i / n > 0.72 ? 0.3 : 0.78, tone) : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
