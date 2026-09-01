@@ -210,7 +210,8 @@ Stage.register(
         ],
         tpl: "illustrated",
         cols: 2,
-        cut: "square",
+        // no cut: this one runs as an essay, and the first rung needs it
+        
         cap: "BANDIT'S ROOST, 59½ MULBERRY STREET. PHOTOGRAPH BY JACOB RIIS.",
         img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg/960px-Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg",
       },
@@ -3308,6 +3309,7 @@ Stage.register(
     const LANDMARKS = [
       {
         year: 1786,
+        rung: 3,
         src: "The Commercial and Political Atlas",
         by: "William Playfair",
         what: "Imports and exports to and from England, 1700 to 1782 — the first time a quantity over time was drawn as a line.",
@@ -3315,6 +3317,7 @@ Stage.register(
       },
       {
         year: 1854,
+        rung: 2,
         src: "On the Mode of Communication of Cholera",
         by: "Dr John Snow",
         what: "Deaths from cholera around Broad Street, Soho — a map that found a pump.",
@@ -3322,6 +3325,7 @@ Stage.register(
       },
       {
         year: 1858,
+        rung: 3,
         src: "Notes on Matters Affecting the Health of the British Army",
         by: "Florence Nightingale",
         what: "Diagram of the causes of mortality in the army in the East — the blue is what killed more than the fighting.",
@@ -3329,6 +3333,7 @@ Stage.register(
       },
       {
         year: 1869,
+        rung: 3,
         src: "Tableaux graphiques et cartes figuratives",
         by: "Charles Joseph Minard",
         what: "The Russian campaign of 1812: six variables in one figure, and the width of the band is the army.",
@@ -3336,6 +3341,7 @@ Stage.register(
       },
       {
         year: 1900,
+        rung: 3,
         src: "The Exhibit of American Negroes, Paris Exposition",
         by: "W. E. B. Du Bois",
         what: "Occupations of Negroes and whites in Georgia — drawn by hand, in gouache, to be argued with.",
@@ -3384,6 +3390,42 @@ Stage.register(
         tiles: [7, 13],
       },
       {
+        year: 1979,
+        era: "1970s",
+        kicker: "Two inks",
+        forms: ["The locator, inset"],
+        body: "A map the size of a stamp, dropped into the second column, telling a reader where the place in the headline is. The cheapest graphic a desk ever made and the one it made most.",
+        ink: "#b3402a",
+        tiles: [5, 10],
+      },
+      {
+        year: 1986,
+        era: "1980s",
+        kicker: "Wire graphics",
+        forms: ["Sent down the wire"],
+        body: "Charts arrived with the copy, drawn once and printed in fifty papers. The form spread faster than the craft did, which is the argument every desk has had since.",
+        ink: "#1a2ffb",
+        tiles: [16, 20],
+      },
+      {
+        year: 1998,
+        era: "1990s",
+        kicker: "Small multiples",
+        forms: ["The same chart, twelve times"],
+        body: "One shape repeated across a grid, so a reader compares by looking rather than by remembering. It costs a column of space and saves a paragraph of explanation.",
+        ink: "#b3402a",
+        tiles: [24, 8],
+      },
+      {
+        year: 2001,
+        era: "2000s",
+        kicker: "On the page and the screen",
+        forms: ["Published twice"],
+        body: "The same drawing, set once for paper at a fixed size and once for a screen that could be any size at all — and the second one had to be built rather than drawn.",
+        ink: "#1a2ffb",
+        tiles: [3, 21],
+      },
+      {
         year: 1991,
         era: "1990s",
         kicker: "House style",
@@ -3412,6 +3454,21 @@ Stage.register(
     ];
 
     const MODERN = [
+      {
+        era: "2016",
+        forms: ["Every reader gets their own"],
+        tiles: [1, 11],
+      },
+      {
+        era: "2018",
+        forms: ["The story, told by scrolling"],
+        tiles: [12, 17],
+      },
+      {
+        era: "2022",
+        forms: ["Motion, from the same data"],
+        tiles: [9, 22],
+      },
       {
         era: "Today",
         forms: ["Made at the desk, by the assistant"],
@@ -4794,9 +4851,22 @@ const flowCol = (A, o) => {
          * this to cut the reel up and lay it out. Only this parked copy does
          * it — the delivered module publishes nothing. */
         PAGES.push({
-          rung: E.modern || E.leading ? 5 : E.spot ? 4 : E.colour ? 3
-            : E.landmark ? (E.year >= 1885 ? 2 : 1)
-            : E.A.cut ? 2 : 1,
+          /* The rung is what the page IS, never when it was printed. A
+           * founding plate is an image whatever its year, so it says which
+           * rung it belongs to itself: Snow is one ink, the other four were
+           * coloured by hand. And text alone means ALONE — a paper with a cut
+           * in it is on the second rung, not the first. */
+          rung: E.modern || E.leading
+            ? 5
+            : E.spot
+              ? 4
+              : E.colour
+                ? 3
+                : E.landmark
+                  ? E.landmark.rung
+                  : E.A.cut
+                    ? 2
+                    : 1,
           year: E.modern ? "today" : String(E.year),
           what: E.modern
             ? E.modern.forms.join(" ")
