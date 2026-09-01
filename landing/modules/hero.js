@@ -5279,6 +5279,37 @@ Stage.register(
       g2.restore();
     }
 
+    /* THE POINTER, FOLLOWED SLOWLY.
+     *
+     * Raw coordinates make the paper snap about with the cursor, which is a
+     * cursor effect and not a sheet: newsprint has weight and arrives late.
+     * The position is eased towards the pointer and the press eased down
+     * when it leaves, so the bulge fills and empties rather than switching.
+     *
+     * In CLIP space, because that is what can be turned into a position on
+     * a particular sheet — the same cursor is somewhere different on each
+     * of the three, and where depends on how far away that one is. */
+    const ptr = { x: 0, y: 0, tx: 0, ty: 0, k: 0, on: 0 };
+    function ptrTrack(e) {
+      ptr.tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
+      ptr.ty = 1 - (e.clientY / Math.max(1, innerHeight)) * 2;
+      ptr.on = 1;
+    }
+    if (typeof addEventListener === "function") {
+      addEventListener("pointermove", ptrTrack, { passive: true });
+      addEventListener("pointerdown", ptrTrack, { passive: true });
+      addEventListener("pointerleave", () => (ptr.on = 0), { passive: true });
+      // a finger is not a hand resting on the page: it presses and goes
+      addEventListener("pointerup", () => (ptr.on = 0), { passive: true });
+    }
+    function ptrStep(dt) {
+      const e = Math.min(1, dt * 6);
+      ptr.x += (ptr.tx - ptr.x) * e;
+      ptr.y += (ptr.ty - ptr.y) * e;
+      const want = ptr.on ? 1 : 0;
+      ptr.k += (want - ptr.k) * Math.min(1, dt * 3.5);
+    }
+
     let liveLast = -1;
     function liveTick(t, dt) {
       if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
@@ -7312,6 +7343,11 @@ in vec2 p;
 uniform vec3 uC, uAx, uAy, uAz;  // centre, half-axes, and the sheet's normal
 uniform vec2 uRes, uCentre;
 uniform float uZoom, uBend, uT;
+/* Where the pointer falls on THIS sheet, in the sheet's own coordinates,
+ * and how hard it presses. Sent per web because each one is at its own
+ * place and depth, so the same cursor is somewhere different on each. */
+uniform vec2 uPtr;
+uniform float uPtrK;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7321,14 +7357,28 @@ void main(){
   // waves, and the slope of that surface shades it, which is what stops a
   // curved sheet from reading as a printed rectangle.
   float w = 0.0, sh = 1.0;
+  float dx = 0.0, dy = 0.0;
   if(uBend > 0.0001){
     w  = sin(p.x*3.1 + uT*0.9)*0.45 + sin(p.y*2.3 - uT*0.7)*0.32
        + sin((p.x + p.y)*1.9 + uT*1.3)*0.23;
-    float dx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    float dy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    sh = clamp(1.0 - (dx*0.20 + dy*0.13) * uBend * 2.6, 0.62, 1.34);
+    dx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
+    dy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
   }
-  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend);
+  /* A HAND UNDER THE SHEET. The paper lifts where the pointer is and falls
+   * away from it — one soft bell, not a ripple, because a ripple is water
+   * and this is newsprint. Its own slope goes into the shading with the
+   * waves', so the bulge catches the light rather than being a bump you
+   * can only tell is there by the type moving. */
+  float bulge = 0.0;
+  if(uPtrK > 0.0001){
+    vec2 q = p - uPtr;
+    float e = exp(-dot(q, q) * 4.5);
+    bulge = e;
+    dx += -9.0 * q.x * e * (uPtrK / max(uBend, 1e-4));
+    dy += -9.0 * q.y * e * (uPtrK / max(uBend, 1e-4));
+  }
+  sh = clamp(1.0 - (dx*0.20 + dy*0.13) * uBend * 2.6, 0.62, 1.34);
+  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK);
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
   gl_Position = vec4(uvp.x * 2.0 * uRes.y / uRes.x, uvp.y * 2.0, 0.0, 1.0);
@@ -7587,6 +7637,8 @@ void main(){
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
+      // how far the paper lifts under the pointer, in half-heights
+      ptrLift: 0.16,
       // the mark shown while the room is being made: the word, or the
       // rosette turning
       markLogo: 1,
@@ -8178,6 +8230,8 @@ void main(){
           "uWash",
           "uWashC",
           "uWin",
+          "uPtr",
+          "uPtrK",
           "uEdge",
           "uInkC",
         ]);
@@ -8406,6 +8460,7 @@ void main(){
 
       frame(ctx) {
         clock += reduced ? 0 : ctx.dt;
+        ptrStep(Math.min(0.1, ctx.dt));
 
         // adaptive resolution: this march cannot hold sixty frames at native
         // It drops fast when frames are late and climbs back quickly when they
@@ -9221,7 +9276,23 @@ void main(){
                 (clock * rate + WEB_PHASE + k / 3 +
                   P["webLag" + k] * PAGE_STEP * 0.5 + 1) % 1;
             }
-            gl.uniform3f(uq.uC, (k - 1) * nw * P.webSpread, 0, 0);
+            const cxw = (k - 1) * nw * P.webSpread;
+            gl.uniform3f(uq.uC, cxw, 0, 0);
+            /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
+             * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
+             * running that backwards from a clip position gives the point on
+             * the sheet's plane — and dividing by the half-axes gives it in
+             * the sheet's own -1..1. Done here rather than in the shader
+             * because it is three numbers a frame, not one per vertex. */
+            const dz = Math.max(0.08, zoom);
+            const uvx = (ptr.x * cw) / (2 * ch),
+              uvy = ptr.y / 2;
+            gl.uniform2f(
+              uq.uPtr,
+              (((uvx - centre[0]) * dz) / 2.05 - cxw) / Math.max(1e-4, hw),
+              (((uvy - centre[1]) * dz) / 2.05) / Math.max(1e-4, hh),
+            );
+            gl.uniform1f(uq.uPtrK, P.ptrLift * ptr.k * hh);
             gl.uniform4f(
               uq.uWin,
               k * gutter,
@@ -9276,6 +9347,7 @@ void main(){
           gl.uniform1f(uq.uTiles, PANEL_N);
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
+          gl.uniform1f(uq.uPtrK, 0);
           gl.uniform1f(uq.uEdge, 0);
           gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
