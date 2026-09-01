@@ -7347,7 +7347,12 @@ uniform float uZoom, uBend, uT;
  * and how hard it presses. Sent per web because each one is at its own
  * place and depth, so the same cursor is somewhere different on each. */
 uniform vec2 uPtr;
-uniform float uPtrK;
+/* strength, radius, and the sheet's own aspect. The aspect is not a detail:
+ * p runs -1..1 on both axes whatever shape the sheet is, and these sheets
+ * are two and a half times taller than they are wide — so a round footprint
+ * in p is an ellipse two and a half times too tall in the world, which is
+ * why the lift looked like a ridge and not like something under the page. */
+uniform vec3 uPtrK;
 out vec2 vUv;
 out float vShade;
 out float vEdge;
@@ -7356,29 +7361,45 @@ void main(){
   // paper: it is subdivided and lifted off its own plane by three travelling
   // waves, and the slope of that surface shades it, which is what stops a
   // curved sheet from reading as a printed rectangle.
+  /* Each surface carries its own slope, and each is weighted by ITS OWN
+   * amplitude at the end. The bulge used to be normalised by dividing its
+   * gradient by uBend, which is fine until uBend is zero — then the term
+   * goes to infinity and the shading clamps across the whole sheet. A
+   * scale that has to be divided out is a scale in the wrong place. */
   float w = 0.0, sh = 1.0;
-  float dx = 0.0, dy = 0.0;
+  float wdx = 0.0, wdy = 0.0;
   if(uBend > 0.0001){
     w  = sin(p.x*3.1 + uT*0.9)*0.45 + sin(p.y*2.3 - uT*0.7)*0.32
        + sin((p.x + p.y)*1.9 + uT*1.3)*0.23;
-    dx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    dy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
+    wdx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
+    wdy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
   }
   /* A HAND UNDER THE SHEET. The paper lifts where the pointer is and falls
    * away from it — one soft bell, not a ripple, because a ripple is water
    * and this is newsprint. Its own slope goes into the shading with the
    * waves', so the bulge catches the light rather than being a bump you
    * can only tell is there by the type moving. */
-  float bulge = 0.0;
-  if(uPtrK > 0.0001){
-    vec2 q = p - uPtr;
-    float e = exp(-dot(q, q) * 4.5);
+  float bulge = 0.0, bdx = 0.0, bdy = 0.0;
+  if(uPtrK.x > 0.0001){
+    // measured round in the WORLD: the aspect is what was missing, not the
+    // profile
+    vec2 q = (p - uPtr) * vec2(1.0, uPtrK.z) / max(uPtrK.y, 1e-3);
+    /* A BELL, not a dome. A sphere under paper has a rim, and a rim is a
+     * hard thing: it reads as an object put under the page rather than as
+     * the page being lifted. The soft one was right — it was only ever
+     * WRONGLY SHAPED, stretched two and a half times up the sheet because
+     * p runs -1..1 on both axes whatever proportion the sheet is. */
+    float e = exp(-dot(q, q) * 2.0);
     bulge = e;
-    dx += -9.0 * q.x * e * (uPtrK / max(uBend, 1e-4));
-    dy += -9.0 * q.y * e * (uPtrK / max(uBend, 1e-4));
+    float g = -4.0 * e / max(uPtrK.y, 1e-3);
+    bdx = q.x * g;
+    bdy = q.y * g * uPtrK.z;
   }
-  sh = clamp(1.0 - (dx*0.20 + dy*0.13) * uBend * 2.6, 0.62, 1.34);
-  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK);
+  sh = clamp(
+    1.0 - ((wdx*uBend + bdx*uPtrK.x) * 0.20
+         + (wdy*uBend + bdy*uPtrK.x) * 0.13) * 2.6,
+    0.62, 1.34);
+  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK.x);
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
   gl_Position = vec4(uvp.x * 2.0 * uRes.y / uRes.x, uvp.y * 2.0, 0.0, 1.0);
@@ -7630,15 +7651,22 @@ void main(){
        * which is the wrong shape for a control: reading 0.930 tells you a
        * web is seven per cent slower than something, and not how fast it is
        * going. Three speeds say what they are. */
-      webSpd0: 0.01,
-      webSpd1: 0.0093,
-      webSpd2: 0.0106,
+      /* FASTER, AND FURTHER APART. Seven per cent between the three read as
+       * one speed with a wobble; half again between the slowest and the
+       * fastest is three presses running at three rates, which is what it
+       * is. The lag between any two of them now turns over in under a
+       * minute rather than in five. */
+      webSpd0: 0.0165,
+      webSpd1: 0.0128,
+      webSpd2: 0.0201,
       // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
       webLag2: 0.71,
       // how far the paper lifts under the pointer, in half-heights
       ptrLift: 0.16,
+      // and how wide the thing under it is, in half-WIDTHS of the sheet
+      ptrSize: 0.5,
       // the mark shown while the room is being made: the word, or the
       // rosette turning
       markLogo: 1,
@@ -9292,7 +9320,12 @@ void main(){
               (((uvx - centre[0]) * dz) / 2.05 - cxw) / Math.max(1e-4, hw),
               (((uvy - centre[1]) * dz) / 2.05) / Math.max(1e-4, hh),
             );
-            gl.uniform1f(uq.uPtrK, P.ptrLift * ptr.k * hh);
+            gl.uniform3f(
+              uq.uPtrK,
+              P.ptrLift * ptr.k * hh,
+              P.ptrSize,
+              hh / Math.max(1e-4, hw),
+            );
             gl.uniform4f(
               uq.uWin,
               k * gutter,
@@ -9347,7 +9380,7 @@ void main(){
           gl.uniform1f(uq.uTiles, PANEL_N);
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
-          gl.uniform1f(uq.uPtrK, 0);
+          gl.uniform3f(uq.uPtrK, 0, 1, 1);
           gl.uniform1f(uq.uEdge, 0);
           gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
