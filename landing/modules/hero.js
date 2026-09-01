@@ -3346,45 +3346,76 @@ Stage.register(
     /* The middle of the ramp: the decades when the graphic climbed to the top
      * of the page and the words moved under it. Labelled by what the form did,
      * not by an invented story — the same honesty the modern pages keep. */
+    /* 3 and 4 of the ramp. Labelled by what the FORM did in the decade, never
+     * by an invented story — the same rule the other made pages keep. */
+    const COLOUR = [
+      {
+        year: 1938,
+        era: "1930s",
+        paper: "The Picture Page",
+        kicker: "In colour",
+        forms: ["The second ink"],
+        cap: "A chart, printed in two inks",
+        body: "For a century a page had one ink and everything in it was black. A second colour changed what a drawing could say: two quantities at once, or one quantity and the thing it should be compared with, without a key to hold in your head.",
+        ink: "#b3402a",
+        tiles: [4],
+      },
+      {
+        year: 1958,
+        era: "1950s",
+        paper: "The Sunday Review",
+        kicker: "Four colours",
+        forms: ["Maps that carry two things"],
+        cap: "Where it happened, and how much",
+        body: "Colour separation reached the daily page. A map could hold a place and a value at the same time, and an editor could start asking what the second colour was for — which is the question that made the desk a desk.",
+        ink: "#1a2ffb",
+        tiles: [11],
+      },
+    ];
+
+    const SPOT = [
+      {
+        year: 1972,
+        era: "1970s",
+        kicker: "Graphics desk",
+        forms: ["A chart the size of", "a paragraph"],
+        body: "The words stop for the drawing and start again under it. Two or three to a page, set into the measure rather than given the top of it — the arrangement that let a reporter and an artist work on the same story without either giving way.",
+        ink: "#b3402a",
+        tiles: [7, 13],
+      },
+      {
+        year: 1991,
+        era: "1990s",
+        kicker: "House style",
+        forms: ["One idea a chart"],
+        body: "A style sheet of its own: the source named under every figure, the baseline at zero, one idea to a drawing, and no drawing without a number behind it. Most of what a desk argues about today was settled here.",
+        ink: "#1a2ffb",
+        tiles: [18, 23],
+      },
+    ];
+
     const LEADING = [
       {
-        year: 1935,
-        era: "1930s",
-        forms: ["The chart takes the top"],
-        body: "Statistical offices had been drawing for fifty years; the press began putting the drawing above the fold rather than in an appendix, and writing the paragraph underneath it.",
+        year: 2004,
+        era: "2000s",
+        forms: ["The graphic takes the top"],
+        body: "The drawing stops illustrating the article and starts being it: first on the page, largest on the page, with the words underneath explaining what it shows rather than the other way round.",
         tiles: [2],
       },
       {
-        year: 1955,
-        era: "1950s",
-        forms: ["Maps, printed in colour"],
-        body: "Colour separation reached the daily page. A map could carry a second variable at last, and an editor could ask what the second colour was for.",
-        tiles: [9],
-      },
-      {
-        year: 1975,
-        era: "1970s",
-        forms: ["The graphics desk"],
-        body: "A desk of its own, between the newsroom and the composing room, and a house style to go with it: one idea a chart, the source named, the baseline at zero.",
+        year: 2014,
+        era: "2010s",
+        forms: ["Built, not drawn"],
+        body: "The same piece published at every size at once, so it has to be built rather than drawn — and the desk that builds it needs the reporting, the data and the form to arrive together.",
         tiles: [15],
-      },
-      {
-        year: 1995,
-        era: "1990s",
-        forms: ["The page becomes a screen"],
-        body: "The same drawing, published twice — once on paper at a fixed size, once on a screen that could be any size at all, and that second one had to be built rather than drawn.",
-        tiles: [22],
       },
     ];
 
     const MODERN = [
-      { era: "1970s", forms: ["The first newsroom charts"], tiles: [3, 8] },
-      { era: "1990s", forms: ["Print infographics"], tiles: [12, 17] },
-      { era: "2010s", forms: ["Interactive, on the page"], tiles: [1, 21] },
       {
-    era: "Today",
-    forms: ["Made at the desk, by the assistant"],
-    tiles: [6, 14, 19],
+        era: "Today",
+        forms: ["Made at the desk, by the assistant"],
+        tiles: [6, 14, 19],
       },
     ];
 
@@ -3422,6 +3453,8 @@ Stage.register(
       pictorial: 1.36,
       modern: 1.55,
       leading: 1.5,
+      colour: 1.5,
+      spot: 1.5,
       landmark: 1.5,
     };
     const pageH = (A) => Math.round(GALLEY_COL * (PAGE_RATIO[A.tpl] || 1.45));
@@ -4171,6 +4204,148 @@ const flowCol = (A, o) => {
           return top + capH;
         },
 
+        /* 3 · COLOUR ARRIVES. The same page as the decade before it — a
+         * masthead, a headline, columns of type — with one difference that
+         * changed everything about how a page was read: the plate is no longer
+         * held to one ink. The cut keeps its colour here, and a spot of it
+         * reaches the furniture: the rule under the masthead, and the number of
+         * the story. Nothing else moves. */
+        colour(M, x0, top, capH) {
+          const Mg = 16,
+            meas = GALLEY_COL - Mg * 2,
+            left = x0 + Mg,
+            mid = x0 + GALLEY_COL / 2;
+          let y = top + 24;
+          g.fillStyle = M.ink;
+          g.fillRect(R(left), R(y), R(meas), 3);
+          g.fillStyle = "#111111";
+          y += 24;
+          g.textAlign = "center";
+          const ms = fit(M.paper, "700", 22, meas * 0.88);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(M.paper, mid, y);
+          y += 9;
+          rule(left, y, meas, 1);
+          y += 13;
+          g.font = "8px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(M.era, left, y);
+          g.textAlign = "right";
+          g.fillStyle = M.ink;
+          g.fillText(M.kicker.toUpperCase(), left + meas, y);
+          g.fillStyle = "#111111";
+          y += 7;
+          rule(left, y, meas, 1);
+          y += 26;
+          g.textAlign = "center";
+          let hs = 26;
+          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 26, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of M.forms) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.06);
+          }
+          y += 14;
+          // the plate, in colour — the whole point of the decade
+          if (panelSheet && M.tiles.length) {
+            const S = PANEL_S,
+              N = PANEL_N,
+              t = M.tiles[0];
+            const h = Math.min(meas * 0.62, capH * 0.3);
+            g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
+                        R(left), R(y), R(meas), R(h));
+            y += h + 6;
+            g.fillStyle = "rgba(20,20,28,.14)";
+            g.fillRect(R(left), R(y - 4), R(meas), 1);
+            g.fillStyle = "#111111";
+            g.font = "7px " + SERIF;
+            g.textAlign = "left";
+            g.fillText(M.cap.toUpperCase(), left, y + 6);
+            y += 20;
+          }
+          g.textAlign = "left";
+          const fs = 9,
+            lh = 12.4,
+            colW = (meas - 9) / 2;
+          const lines = wrapTo(M.body, colW, fs + "px " + SERIF);
+          const per = Math.ceil(lines.length / 2);
+          for (let c = 0; c < 2; c++) {
+            let ly = y;
+            for (let i = c * per; i < Math.min(lines.length, (c + 1) * per); i++) {
+              if (ly > top + capH - 16) break;
+              g.fillText(lines[i], left + c * (colW + 9), ly);
+              ly += lh;
+            }
+          }
+          return top + capH;
+        },
+
+        /* 4 · SMALL ONES, HERE AND THERE. Still a page of words — but the
+         * words now stop for a chart the size of a paragraph, and start again
+         * under it. Two or three to a page, set into the measure rather than
+         * given the top of it, which is what a newsroom did for thirty years
+         * before it let a graphic lead. */
+        spot(M, x0, top, capH) {
+          const Mg = 16,
+            meas = GALLEY_COL - Mg * 2,
+            left = x0 + Mg,
+            mid = x0 + GALLEY_COL / 2;
+          let y = top + 22;
+          rule(left, y, meas, 2);
+          y += 20;
+          g.textAlign = "left";
+          g.font = "8px " + SERIF;
+          g.fillText(M.era, left, y);
+          g.textAlign = "right";
+          g.fillStyle = M.ink;
+          g.fillText(M.kicker.toUpperCase(), left + meas, y);
+          g.fillStyle = "#111111";
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 24;
+          g.textAlign = "left";
+          let hs = 24;
+          for (const l of M.forms) hs = Math.min(hs, fit(l, "700", 24, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of M.forms) {
+            g.fillText(l, left, y);
+            y += R(hs * 1.04);
+          }
+          y += 16;
+
+          const fs = 9,
+            lh = 12.4,
+            colW = (meas - 9) / 2;
+          const lines = wrapTo(M.body + " " + M.body, colW, fs + "px " + SERIF);
+          const bot = top + capH - 14;
+          const S = PANEL_S,
+            N = PANEL_N;
+          let li = 0;
+          for (let c = 0; c < 2; c++) {
+            const cx = left + c * (colW + 9);
+            let ly = y;
+            // a chart the size of a paragraph, a few lines in
+            const t = M.tiles[c % M.tiles.length];
+            const at = y + lh * (c === 0 ? 4 : 9);
+            while (ly < bot) {
+              if (panelSheet && ly >= at && ly < at + 1) {
+                const h = colW * 0.74;
+                g.drawImage(panelSheet, (t % N) * S, Math.floor(t / N) * S, S, S,
+                            R(cx), R(ly - fs), R(colW), R(h));
+                g.fillStyle = "rgba(20,20,28,.14)";
+                g.fillRect(R(cx), R(ly - fs + h), R(colW), 1);
+                g.fillStyle = "#111111";
+                ly += h + 10;
+                continue;
+              }
+              if (li >= lines.length) break;
+              g.fillText(lines[li++], cx, ly);
+              ly += lh;
+            }
+          }
+          return top + capH;
+        },
+
         /* THE PAGE WHERE THE GRAPHIC LEADS. The step the reel was missing.
          *
          * It went from text with a photograph in it, which is 1890, straight
@@ -4537,6 +4712,8 @@ const flowCol = (A, o) => {
       CUTS.length = 0;
       REEL = ARTICLES.map((A) => ({ A, year: yearOf(A) }))
         .concat(LANDMARKS.map((K) => ({ landmark: K, year: K.year })))
+        .concat(COLOUR.map((C) => ({ colour: C, year: C.year })))
+        .concat(SPOT.map((S) => ({ spot: S, year: S.year })))
         .concat(LEADING.map((L) => ({ leading: L, year: L.year })))
         .sort((a, b) => a.year - b.year)
         .concat(MODERN.map((m) => ({ modern: m })));
@@ -4545,7 +4722,7 @@ const flowCol = (A, o) => {
           a +
           (E.modern
             ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-            : E.leading
+            : E.colour || E.spot || E.leading
               ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
               : E.landmark
                 ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
@@ -4569,7 +4746,7 @@ const flowCol = (A, o) => {
         const E = REEL[k];
         const h = E.modern
           ? Math.round(GALLEY_COL * PAGE_RATIO.modern)
-          : E.leading
+          : E.colour || E.spot || E.leading
             ? Math.round(GALLEY_COL * PAGE_RATIO.leading)
             : E.landmark
             ? Math.round(GALLEY_COL * PAGE_RATIO.landmark)
@@ -4582,6 +4759,10 @@ const flowCol = (A, o) => {
         g.textAlign = "left";
         if (E.modern) {
           PRESS.modern(E.modern, 0, y, h);
+        } else if (E.colour) {
+          PRESS.colour(E.colour, 0, y, h);
+        } else if (E.spot) {
+          PRESS.spot(E.spot, 0, y, h);
         } else if (E.leading) {
           PRESS.leading(E.leading, 0, y, h);
         } else if (E.landmark) {
