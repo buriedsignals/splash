@@ -3157,132 +3157,115 @@
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  /* LE DOS EST UNE PAGE, PAS UNE TEXTURE.
+  /* LE DOS EST CE QUI SORT.
    *
-   * C'était un champ de vecteurs : joli, et d'un autre monde — soyeux,
-   * technologique, le fond d'écran d'un produit qui n'est pas celui-ci. Ce
-   * site parle de presse : de colonnes, de filets, de blocs laissés pour un
-   * graphique. Le dos est donc une PAGE composée au hasard — quatre à six
-   * colonnes, un bandeau de titre, des lignes de plomb à la longueur
-   * irrégulière, un trou réservé quelque part, et dans le trou un petit
-   * graphique. C'est ce que Splash fait, dessiné à la taille d'un dos de
-   * carte.
+   * Ni un champ de vecteurs — soyeux, d'un autre produit — ni une fausse une
+   * de journal : la première était hors sujet, la seconde répétait ce que le
+   * hero fait déjà mieux, en plus petit. Ce que cette section défend, c'est
+   * que le desk MONTRE son travail ; alors le dos d'une carte est une FORME,
+   * une seule, dessinée au filet et coupée par le bord.
    *
-   * Une graine par carte, une seule fois : un dos qui bouge est un dos qu'on
+   * Quatre familles, une par carte, dans l'ordre — le catalogue en annonce
+   * quarante-quatre, on en tient quatre dans la main : des barres, une ligne,
+   * un nuage, des courbes de niveau. Les chiffres sont tirés d'une graine,
+   * donc aucun dos n'est le dessin d'un autre, et un seul élément par carte
+   * porte l'encre du jour : c'est le graphique, pas la décoration.
+   *
+   * Encre sur papier, et composé pour la pose où on le voit — la carte est
+   * écrite en paysage et tenue DEBOUT dans l'éventail, et le dos ne se voit
+   * que là. Le repère est donc tourné d'un quart de tour.
+   *
+   * Une graine par carte, peint une fois : un dos qui bouge est un dos qu'on
    * regarde au lieu de lire la face. */
-  const csBack = (cv, seed) => {
+  const csBack = (cv, seed, kind, acc) => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     const cwv = cv.clientWidth || 420, chv = cv.clientHeight || 260;
     cv.width = Math.round(cwv * dpr); cv.height = Math.round(chv * dpr);
     const g = cv.getContext('2d');
-    /* LA PAGE EST COMPOSÉE POUR LA POSE OÙ ON LA VOIT. La carte est écrite en
-     * paysage et tenue DEBOUT dans l'éventail — et le dos ne se voit que là,
-     * jamais au centre. Dessinée dans le repère de la carte, la une se
-     * retrouvait couchée sur la tranche gauche. Le repère est donc tourné
-     * d'un quart de tour : le haut de la page est le bord gauche de la carte,
-     * qui est le haut de l'écran une fois la carte debout. */
     g.setTransform(0, -dpr, dpr, 0, 0, chv * dpr);
     const w = chv, h = cwv;
     g.fillStyle = '#edeae3'; g.fillRect(0, 0, w, h);
 
-    let st = seed >>> 0;
+    let st = (seed >>> 0) || 1;
     const r = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
     const INK = (a) => 'rgba(20,20,28,' + a + ')';
+    const M = Math.round(w * 0.1);
+    const X = M, Y = Math.round(h * 0.16), W = w - M * 2, H = Math.round(h * 0.68);
 
-    const M = Math.round(w * 0.085);
-    const cols = 4 + Math.floor(r() * 3);
-    const gut = Math.max(5, w * 0.017);
-    const colW = (w - M * 2 - gut * (cols - 1)) / cols;
-    const lh = Math.max(4.2, h * 0.026);
-    const top = M;
+    // la grille : trois filets, et c'est tout ce qu'un fond a le droit de dire
+    g.fillStyle = INK(0.1);
+    for (let k = 0; k <= 3; k++) g.fillRect(X, Y + (H * k) / 3, W, 0.8);
+    g.fillStyle = INK(0.34); g.fillRect(X, Y + H, W, 1);
 
-    /* Le bandeau : un filet plein, le nom en pavés courts, un filet fin. Ce
-     * n'est pas du texte réduit — c'est ce qui reste d'un titre à cette
-     * taille, et ça suffit à dire « haut de page ». */
-    let y = top;
-    g.fillStyle = INK(0.62); g.fillRect(M, y, w - M * 2, 1.6);
-    y += 7;
-    const nameW = (w - M * 2) * (0.3 + r() * 0.22);
-    const nx = M + (w - M * 2 - nameW) / 2;
-    g.fillStyle = INK(0.5);
-    for (let k = 0, x = nx; k < 4 && x < nx + nameW; k++) {
-      const bw = Math.min(nx + nameW - x, (nameW / 4) * (0.5 + r() * 0.6));
-      g.fillRect(x, y, bw, 5.4);
-      x += bw + 4;
-    }
-    y += 11;
-    g.fillStyle = INK(0.3); g.fillRect(M, y, w - M * 2, 0.9);
-    y += Math.round(lh * 1.6);
+    g.lineJoin = 'round'; g.lineCap = 'round';
 
-    /* LE TROU. Une page en réserve un quelque part, et ce qui y va n'est pas
-     * une image : c'est le graphique. Une colonne ou deux, une hauteur en
-     * lignes — les mêmes contraintes que la bobine du hero. */
-    /* Le trou est HAUT dans la page : la main est à moitié hors du cadre, on
-     * ne voit que le haut de chaque carte, et un graphique placé au pied de
-     * la page est un graphique que personne ne voit. */
-    const bAt = 1 + Math.floor(r() * 3);
-    const bCol = Math.floor(r() * cols);
-    const bSpan = Math.min(cols - bCol, 1 + (r() < 0.45 ? 1 : 0));
-    const bLines = 5 + Math.floor(r() * 4);
-    const bx = M + bCol * (colW + gut);
-    const bw = colW * bSpan + gut * (bSpan - 1);
-    const by = y + bAt * lh;
-    const bh = bLines * lh;
-
-    const rows = Math.max(4, Math.floor((h - M - y) / lh));
-    for (let c = 0; c < cols; c++) {
-      const x = M + c * (colW + gut);
-      for (let k = 0; k < rows; k++) {
-        const ly = y + k * lh;
-        if (ly + 1.6 > h - M) break;
-        const inHole = c >= bCol && c < bCol + bSpan && k >= bAt && k < bAt + bLines;
-        if (inHole) continue;
-        // une ligne pleine, sauf la dernière d'un paragraphe : plus courte
-        const short = r() < 0.14;
-        const len = colW * (short ? 0.28 + r() * 0.34 : 0.9 + r() * 0.1);
-        g.fillStyle = INK(0.2 + r() * 0.08);
-        g.fillRect(x, ly, len, 1.5);
-      }
-      if (c > 0) {
-        g.fillStyle = INK(0.22);
-        g.fillRect(Math.round(x - gut / 2), y, 0.9, Math.min(h - M, y + rows * lh) - y);
-      }
-    }
-
-    /* DANS LE TROU, LE GRAPHIQUE. Des barres ou une ligne, dans l'une des deux
-     * encres de la page — jamais dans une troisième. C'est le seul endroit du
-     * dos qui ait une couleur, et c'est le sujet. */
-    const acc = r() < 0.5 ? 'rgba(26,47,251,.95)' : 'rgba(242,177,60,1)';
-    g.fillStyle = INK(0.05); g.fillRect(bx, by, bw, bh);
-    g.fillStyle = INK(0.3); g.fillRect(bx, by, bw, 0.9);
-    g.fillStyle = INK(0.3); g.fillRect(bx, by + bh - 0.9, bw, 0.9);
-    const pad = Math.max(4, bw * 0.08);
-    const ix = bx + pad, iy = by + pad, iw = bw - pad * 2, ih = bh - pad * 2;
-    if (r() < 0.5) {
-      const n = 4 + Math.floor(r() * 4);
-      const bwid = (iw / n) * 0.62;
+    if (kind === 0) {                       // ---- des barres
+      const n = 13 + Math.floor(r() * 7);
+      const gap = (W / n) * 0.34, bw = W / n - gap;
+      const hit = Math.floor(r() * n);
+      let v = 0.4 + r() * 0.3;
       for (let k = 0; k < n; k++) {
-        const hgt = ih * (0.2 + r() * 0.8);
-        g.fillStyle = k === Math.floor(r() * n) ? acc : INK(0.42);
-        g.fillRect(ix + k * (iw / n), iy + ih - hgt, bwid, hgt);
+        v = Math.max(0.12, Math.min(1, v + (r() - 0.5) * 0.42));
+        const bh = H * v;
+        g.fillStyle = k === hit ? acc : INK(0.3);
+        g.fillRect(X + k * (W / n), Y + H - bh, bw, bh);
       }
-    } else {
-      const n = 7 + Math.floor(r() * 6);
-      g.strokeStyle = acc; g.lineWidth = 1.4; g.beginPath();
+    } else if (kind === 1) {                // ---- une ligne, et son aire
+      const n = 22 + Math.floor(r() * 10);
+      const pts = [];
+      let v = 0.3 + r() * 0.4;
       for (let k = 0; k < n; k++) {
-        const px = ix + (iw * k) / (n - 1), py = iy + ih * (0.15 + r() * 0.7);
-        k ? g.lineTo(px, py) : g.moveTo(px, py);
+        v = Math.max(0.08, Math.min(0.96, v + (r() - 0.48) * 0.26));
+        pts.push([X + (W * k) / (n - 1), Y + H - H * v]);
       }
-      g.stroke();
-      g.fillStyle = INK(0.36);
-      g.fillRect(ix, iy + ih, iw, 0.9);
+      g.beginPath();
+      g.moveTo(pts[0][0], Y + H);
+      for (const q of pts) g.lineTo(q[0], q[1]);
+      g.lineTo(pts[n - 1][0], Y + H);
+      g.closePath();
+      g.fillStyle = INK(0.07); g.fill();
+      g.beginPath();
+      pts.forEach((q, k) => (k ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])));
+      g.strokeStyle = acc; g.lineWidth = 2; g.stroke();
+      const e = pts[n - 1];
+      g.fillStyle = acc; g.beginPath(); g.arc(e[0], e[1], 4, 0, 6.284); g.fill();
+    } else if (kind === 2) {                // ---- un nuage
+      const n = 46 + Math.floor(r() * 26);
+      const hit = Math.floor(r() * n);
+      for (let k = 0; k < n; k++) {
+        const px = X + r() * W, py = Y + H - Math.pow(r(), 0.8) * H;
+        const rad = 1.6 + r() * 4.6;
+        g.fillStyle = k === hit ? acc : INK(0.16 + r() * 0.16);
+        g.beginPath(); g.arc(px, py, rad, 0, 6.284); g.fill();
+      }
+    } else {                                // ---- des courbes de niveau
+      const cx = X + W * (0.35 + r() * 0.3), cy = Y + H * (0.4 + r() * 0.25);
+      const R = Math.min(W, H) * (0.42 + r() * 0.16);
+      const a1 = r() * 6.28, a2 = r() * 6.28, k1 = 2 + Math.floor(r() * 2),
+            k2 = 3 + Math.floor(r() * 3);
+      const rings = 6 + Math.floor(r() * 4);
+      for (let n = 0; n < rings; n++) {
+        const f = (n + 1) / rings;
+        g.beginPath();
+        for (let t = 0; t <= 64; t++) {
+          const th = (t / 64) * 6.2832;
+          const rr = R * f * (1 + 0.19 * Math.sin(th * k1 + a1)
+                                + 0.11 * Math.cos(th * k2 + a2));
+          const px = cx + Math.cos(th) * rr, py = cy + Math.sin(th) * rr * 0.72;
+          t ? g.lineTo(px, py) : g.moveTo(px, py);
+        }
+        g.closePath();
+        g.strokeStyle = n === rings - 3 ? acc : INK(0.2);
+        g.lineWidth = n === rings - 3 ? 2 : 1;
+        g.stroke();
+      }
     }
 
-    /* Le creux au centre : la rosette est posée par-dessus, et une page pleine
-     * de lignes la mange. */
-    const grd = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.32);
+    /* Le creux au centre : la rosette est posée par-dessus, et une forme qui
+     * lui passe dessous la mange. */
+    const grd = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.34);
     grd.addColorStop(0, 'rgba(237,234,227,.97)');
-    grd.addColorStop(0.55, 'rgba(237,234,227,.78)');
+    grd.addColorStop(0.5, 'rgba(237,234,227,.8)');
     grd.addColorStop(1, 'rgba(237,234,227,0)');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
   };
@@ -3325,7 +3308,9 @@
         el.style.setProperty('--faceInk', ink[1]);
         el.style.setProperty('--faceGlow', ink[2]);
         const cv = el.querySelector('canvas');
-        const paint = () => csBack(cv, 0x9E3779B1 ^ (i * 2654435761));
+        // une famille par carte, dans l'ordre : quatre dos, quatre formes
+        const paint = () => csBack(cv, 0x9E3779B1 ^ (i * 2654435761),
+                                   i % 4, ink[0]);
         if (cv.clientWidth) paint(); else requestAnimationFrame(paint);
         addEventListener('resize', paint, { passive: true });
       });
