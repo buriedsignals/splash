@@ -2952,8 +2952,11 @@
   if (word) {
     const chars = [...word.textContent];
     const last = chars.length - 1;
-    const d = (i) => ' style="--d:' + (i * 0.115).toFixed(3) + 's;--r:' +
-                     ((last - i) * 0.115).toFixed(3) + 's"';
+    /* .078 et non .115 : six lettres à cent quinze millisecondes mettent
+     * six dixièmes de seconde rien qu'à commencer, et le cadre est blanc et
+     * vide pendant ce temps-là. La cascade se lit encore comme une cascade. */
+    const d = (i) => ' style="--d:' + (i * 0.078).toFixed(3) + 's;--r:' +
+                     ((last - i) * 0.078).toFixed(3) + 's"';
     const press = chars.map((ch, i) =>
       '<span class="pg"' + d(i) + '>' +
         '<span class="pl c">' + ch + '</span>' +
@@ -3025,7 +3028,7 @@
      * retourne et grandit jusqu'à ce que la fenêtre soit ce papier. */
     window.__csFlood = 1;
     await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 3200);
-    await wait(120);
+    await wait(60);
 
     /* Le dernier pavé parti, il ne reste que le journal : il prend le cadre.
      * Il se rassemble, s'allume, s'aplatit en une seule couleur, puis déborde
@@ -3050,7 +3053,7 @@
      * canevas au module à l'instant où la section blanche prend le cadre :
      * attendre l'arrivée pour rendre son fond à la section, c'est le faire une
      * frame après que le blanc du module a commencé à s'effacer. */
-    await glide(whiteY, 1100);
+    await glide(whiteY, 700);
     place();                     // la piste part de zéro, pas d'où elle était
     /* Le voile ne tombe qu'une fois la scène du mot aux commandes : le cadre
      * est alors déjà son blanc à elle, donc la coupe ne se voit pas. Tombé
@@ -3063,7 +3066,7 @@
      * instant, et on ne voyait ni la fin de l'une ni le début de l'autre. On
      * attend que l'inondation soit pleine, puis un temps — assez pour que le
      * cadre blanc se lise comme un état, pas comme un passage. */
-    await wait(260);
+    await wait(90);
 
     if (word) {
       window.__wordOut = 0;      // le module peut remonter son effet
@@ -3073,7 +3076,7 @@
       /* La dernière encre par lettre arrive à ~1.27 s. Les copies entières
        * prennent la main juste après, EN REPÉRAGE : rien ne change à l'image,
        * on remplace seulement dix-huit couches par trois. */
-      setTimeout(() => word.classList.add('done'), 1300);
+      setTimeout(() => word.classList.add('done'), 920);
     }
     await wait(120);
     running = false;
@@ -3408,7 +3411,8 @@
          * Le module publie sa sortie, la main attend. */
         const want = (window.__webOutK === undefined || window.__webOutK >= 0.999) ? 1 : 0;
         gate += (want - gate) * 0.05;
-        flood += ((window.__csFlood ? 1 : 0) - flood) * 0.055;
+        // 0.085 et non 0.055 : la crue est un passage, pas une contemplation
+        flood += ((window.__csFlood ? 1 : 0) - flood) * 0.085;
         if (flood < 0.0008) flood = 0;
         /* LE PANNEAU S'ÉLARGIT, IL NE S'OUVRE PAS. Il a la largeur du
          * contenu, pas celle de la fenêtre, donc la carte qui déborde
