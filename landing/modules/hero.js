@@ -3369,21 +3369,6 @@ Stage.register(
       "ask for it. "
     ).repeat(3);
 
-    /* Invented papers, and the odd one that is a joke about the trade. */
-    const LOREM_HEAD = [
-      /* The first of these used to be the page's own line. The line has
-       * changed, and printing the old one twice in the frame under the new
-       * one made the paper argue with the sentence over it — and promise a
-       * graphic no page on this reel has. */
-      "Still set in words alone",
-      "The desk that draws its own",
-      "A map where the story is",
-      "Nobody waits for the chart",
-      "What the evidence supports",
-      "The source line writes itself",
-      "One story, every format",
-      "Held to the reporting",
-    ];
 
     /* head — where the paper's name goes and what it does to the page.
      * cols  — the measure, divided.
@@ -3961,6 +3946,72 @@ Stage.register(
      * screen has gone and then never again. */
     let bootMark = true;
     const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+    /* SIX REAL FRONT PAGES, one to a masthead style.
+     *
+     * The reel used to print invented papers with invented headlines — "The
+     * Daily Splash", "Nobody waits for the chart". Under a line that says
+     * reporting is still text heavy, invented papers make the claim about
+     * nothing: the reader has no way to tell whether the thing being
+     * described ever happened.
+     *
+     * These did happen. Masthead, weekday, date, headline and deck are the
+     * page as it was printed, each one checked against a source before it
+     * was written here. The body under them is set text and is NOT a
+     * quotation — nothing on this reel puts words in a newsroom's mouth.
+     *
+     * A style is a paper: the same masthead always carries the same front
+     * page, so the reel reads as six archives running past rather than as a
+     * shuffle of names and lines. */
+    const ARCHIVE = {
+      // centred masthead under a double rule — the classic broadsheet
+      centre: {
+        paper: "The New York Times",
+        when: "MONDAY, JULY 21, 1969",
+        edition: "LATE CITY EDITION",
+        head: "MEN WALK ON MOON",
+        deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
+      },
+      // a reversed banner — the paper that ran the biggest type in America
+      band: {
+        paper: "CHICAGO DAILY TRIBUNE",
+        when: "WEDNESDAY, NOVEMBER 3, 1948",
+        edition: "FINAL EDITION",
+        head: "DEWEY DEFEATS TRUMAN",
+        deck: "The result the paper printed before the count came in",
+      },
+      // letter-spaced, thin, French
+      tracked: {
+        paper: "L'AURORE",
+        when: "JEUDI 13 JANVIER 1898",
+        edition: "LITTÉRAIRE, ARTISTIQUE, SOCIALE",
+        head: "J'Accuse…!",
+        deck: "Lettre au Président de la République, par Émile Zola",
+      },
+      // the name set left, the way the mid-century sheets carried it
+      left: {
+        paper: "The New York Herald",
+        when: "SATURDAY, APRIL 15, 1865",
+        edition: "EXTRA",
+        head: "ASSASSINATION OF PRESIDENT LINCOLN",
+        deck: "The President Shot at the Theatre Last Evening",
+      },
+      // the name in a rule box
+      boxed: {
+        paper: "LE MONDE",
+        when: "JEUDI 13 SEPTEMBRE 2001",
+        edition: "ÉDITORIAL",
+        head: "NOUS SOMMES TOUS AMÉRICAINS",
+        deck: "L'éditorial de Jean-Marie Colombani, en première page",
+      },
+      // the name left with the ears to its right
+      shoulder: {
+        paper: "The Washington Post",
+        when: "FRIDAY, AUGUST 9, 1974",
+        edition: "FINAL",
+        head: "Nixon Resigns",
+        deck: "The first President of the United States to leave the office",
+      },
+    };
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
@@ -6685,79 +6736,96 @@ const flowCol = (A, o) => {
           const ink = S.rung >= 3 && S.tone ? S.tone : "#111111";
           let y = top + 20;
 
-          // ---- the name
+          // ---- the name, the date, and the page that was printed
+          const A = ARCHIVE[S.head] || ARCHIVE.centre;
           if (S.head === "band") {
             const band = 34;
             g.fillStyle = "#111111";
             g.fillRect(R(x0), R(top), GALLEY_COL, band);
             g.fillStyle = "#ffffff";
             g.textAlign = "center";
-            const ms = fit("THE COLUMN INCH", "700", 24, meas * 0.94);
+            const ms = fit(A.paper, "700", 24, meas * 0.94);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE COLUMN INCH", mid, top + R(band * 0.72));
+            g.fillText(A.paper, mid, top + R(band * 0.72));
             g.fillStyle = "#111111";
-            y = top + band + 18;
+            y = top + band + 14;
+            g.font = "6.5px " + SERIF;
+            g.textAlign = "left";
+            g.fillText(A.when, left, y);
+            g.textAlign = "right";
+            g.fillText(A.edition, left + meas, y);
+            y += 12;
           } else if (S.head === "tracked") {
             g.textAlign = "center";
-            const ms = fit("THE DEADLINE REVIEW", "400", 9.5, meas * 0.7);
+            const ms = fit(A.paper, "400", 9.5, meas * 0.7);
             g.font = ms + "px " + SERIF;
-            track("THE DEADLINE REVIEW", mid, y + 8, ms * 0.46);
+            track(A.paper, mid, y + 8, ms * 0.46);
             y += 18;
             g.fillStyle = ink;
             lozenge(mid, y, meas * 0.26);
             g.fillStyle = "#111111";
-            y += 20;
+            y += 14;
+            g.font = "6.5px " + SERIF;
+            track(A.when, mid, y, 6.5 * 0.4);
+            y += 12;
           } else if (S.head === "left") {
             g.textAlign = "left";
-            const ms = fit("The Galley Proof", "700", 19, meas * 0.56);
+            const ms = fit(A.paper, "700", 19, meas * 0.56);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Galley Proof", left, y + R(ms * 0.74) + 4);
+            g.fillText(A.paper, left, y + R(ms * 0.74) + 4);
             g.textAlign = "right";
             g.font = "7px " + SERIF;
             g.fillStyle = ink;
-            g.fillText("LATE EDITION", left + meas, y + 10);
+            g.fillText(A.edition, left + meas, y + 10);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 2);
-            y += 16;
+            y += 10;
+            g.textAlign = "left";
+            g.font = "6.5px " + SERIF;
+            g.fillText(A.when, left, y);
+            y += 10;
           } else if (S.head === "boxed") {
             g.textAlign = "center";
-            const ms = fit("THE STONE & THE SPIKE", "700", 15, meas * 0.62);
+            const ms = fit(A.paper, "700", 15, meas * 0.62);
             const bh = R(ms * 0.74) + 18;
             g.strokeStyle = "#111111";
             g.lineWidth = 1;
             g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE STONE & THE SPIKE", mid, y + bh - 9);
-            y += bh + 12;
+            g.fillText(A.paper, mid, y + bh - 9);
+            y += bh + 10;
+            g.font = "6.5px " + SERIF;
+            g.fillText(A.when, mid, y);
+            y += 6;
             g.fillStyle = ink;
             rule(left, y, meas, 1);
             g.fillStyle = "#111111";
             y += 14;
           } else if (S.head === "shoulder") {
             g.textAlign = "left";
-            const ms = fit("The Press Run", "700", 22, meas * 0.44);
+            const ms = fit(A.paper, "700", 22, meas * 0.44);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Press Run", left, y + R(ms * 0.74) + 2);
+            g.fillText(A.paper, left, y + R(ms * 0.74) + 2);
             const bx = left + meas * 0.58,
               bw = meas * 0.42;
             rule(bx, y + 2, bw, 1);
             rule(bx, y + 20, bw, 1);
             g.textAlign = "right";
             g.font = "6.5px " + SERIF;
-            g.fillText("SET IN THE MORNING", left + meas, y + 10);
+            g.fillText(A.when, left + meas, y + 10);
             g.fillStyle = ink;
-            g.fillText("PRINTED BY NOON", left + meas, y + 17);
+            g.fillText(A.edition, left + meas, y + 17);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 3);
             y += 15;
           } else {
             g.textAlign = "center";
-            const ms = fit("The Daily Splash", "700", 21, meas * 0.82);
+            const ms = fit(A.paper, "700", 21, meas * 0.82);
             y += R(ms * 0.74) + 6;
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Daily Splash", mid, y);
+            g.fillText(A.paper, mid, y);
             y += 11;
             g.fillStyle = ink;
             rule(left, y, meas, 2);
@@ -6767,28 +6835,41 @@ const flowCol = (A, o) => {
             y += 14;
             g.font = "7.5px " + SERIF;
             g.textAlign = "left";
-            g.fillText("NO. 1, VOL. I", left, y);
+            g.fillText(A.when, left, y);
             g.textAlign = "right";
-            g.fillText("PRICE: ONE INCH", left + meas, y);
+            g.fillText(A.edition, left + meas, y);
             y += 6;
             rule(left, y, meas, 1);
             y += 16;
           }
 
-          // ---- the headline and the deck
-          const title = LOREM_HEAD[(S.rung * 7 + (S.i || 0)) % LOREM_HEAD.length];
+          /* ---- the headline and the deck, as that page carried them.
+           *
+           * IT WRAPS. The invented heads were all short enough to set on one
+           * line, so the fitter only ever had to shrink a little; a real one
+           * — "ASSASSINATION OF PRESIDENT LINCOLN" — came out at eight
+           * points, a headline set smaller than its own body copy. It is
+           * sized to fill the measure over at most two lines instead. */
+          const title = A.head;
+          const hw = S.head === "tracked" ? "400" : "700";
+          let hs = 25;
+          let hl = [title];
+          for (;;) {
+            const f = hw + " " + R(hs) + "px " + SERIF;
+            hl = wrapTo(title, meas * 0.94, f);
+            if (hl.length <= 2 || hs < 11) break;
+            hs *= 0.94;
+          }
           g.textAlign = S.head === "left" ? "left" : "center";
-          const hs = fit(title, S.head === "tracked" ? "400" : "700", 25, meas * 0.92);
+          g.font = hw + " " + R(hs) + "px " + SERIF;
           y += R(hs * 0.74) + 10;
-          g.font = (S.head === "tracked" ? "400 " : "700 ") + hs + "px " + SERIF;
-          g.fillText(title, S.head === "left" ? left : mid, y);
+          for (let li = 0; li < hl.length; li++) {
+            g.fillText(hl[li], S.head === "left" ? left : mid, y);
+            if (li < hl.length - 1) y += R(hs * 0.92);
+          }
           y += 14;
           g.font = "italic 9px " + SERIF;
-          g.fillText(
-            "Made at the desk, from the reporting already done",
-            S.head === "left" ? left : mid,
-            y,
-          );
+          g.fillText(A.deck, S.head === "left" ? left : mid, y);
           y += 8;
           if (S.head !== "left") rule(mid - meas * 0.13, y, meas * 0.26, 1);
           y += 18;
