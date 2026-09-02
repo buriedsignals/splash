@@ -3046,6 +3046,16 @@
      * replier tout de suite : elle est derrière. */
     if (veilEl) veilEl.style.opacity = '1';
     window.__csFlood = 0;
+    /* LE MOT PART DÈS QUE LE BLANC EST COMPLET, pas à l'arrivée. Le cadre est
+     * déjà son fond à lui — il n'a aucune raison d'attendre que la page ait
+     * fini de voyager pour commencer, et l'attendre était huit dixièmes de
+     * seconde de blanc vide. La piste est remise à zéro avant, hors champ. */
+    place();
+    if (word) {
+      window.__wordOut = 0;
+      word.classList.add('in');
+      setTimeout(() => word.classList.add('done'), 920);
+    }
     /* 1500 ms et pas moins : l'inondation est pleine à tumbT 1.40, et le
      * module cesse de tourner dès que la section blanche lui prend le cadre.
      * Trop court, le fond du chapitre arrivait encore gris à la jonction. */
@@ -3053,32 +3063,19 @@
      * canevas au module à l'instant où la section blanche prend le cadre :
      * attendre l'arrivée pour rendre son fond à la section, c'est le faire une
      * frame après que le blanc du module a commencé à s'effacer. */
-    await glide(whiteY, 700);
-    place();                     // la piste part de zéro, pas d'où elle était
+    const trip = glide(whiteY, 700);
     /* Le voile ne tombe qu'une fois la scène du mot aux commandes : le cadre
      * est alors déjà son blanc à elle, donc la coupe ne se voit pas. Tombé
      * avant, il découvre le sol du document, qui est l'encre. */
     await until(() => window.__active === 'word', 1600);
     if (veilEl) veilEl.style.opacity = '0';
+    await trip;
 
     /* Le blanc d'abord, le mot ensuite. Il entrait à l'arrivée, donc pendant
      * que le journal finissait de déborder : deux choses à regarder au même
      * instant, et on ne voyait ni la fin de l'une ni le début de l'autre. On
      * attend que l'inondation soit pleine, puis un temps — assez pour que le
      * cadre blanc se lise comme un état, pas comme un passage. */
-    await wait(90);
-
-    if (word) {
-      window.__wordOut = 0;      // le module peut remonter son effet
-      word.classList.add('in');
-      // la dernière encre finit à ~1.3 s ; le relais se fait à ce moment-là,
-      // encres au repérage des deux côtés, donc invisible
-      /* La dernière encre par lettre arrive à ~1.27 s. Les copies entières
-       * prennent la main juste après, EN REPÉRAGE : rien ne change à l'image,
-       * on remplace seulement dix-huit couches par trois. */
-      setTimeout(() => word.classList.add('done'), 920);
-    }
-    await wait(120);
     running = false;
     whited = true;
     lock(false);
@@ -3845,8 +3842,6 @@
   async function backWhite() {
     if (running) return;
     running = true; freeBack = false; whited = false;
-    // le voile reprend le cadre avant que la page ne bouge, comme à l'aller
-    if (veilEl) veilEl.style.opacity = '1';
 
 
     /* Les pavés ne reviennent pas avec la page. Le pilote les place en
@@ -3861,16 +3856,15 @@
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
     window.__wordOut = 1;
-    await wait(220);
+    await wait(200);
     if (word) { word.classList.remove('done'); word.classList.add('out'); }
     showNotes(false);
-    /* Les mêmes coupes qu'à l'aller, et pour la même raison : ce qu'on
-     * regarde ici est un cadre blanc qui se vide, et un cadre blanc vide n'a
-     * pas besoin d'une seconde de plus. */
-    await wait(620);
-
-    // 2. le blanc seul, comme à l'aller
-    await wait(120);
+    /* LA SORTIE DU MOT SE JOUE À DÉCOUVERT. Le voile était levé au premier
+     * instant du retour : opaque et par-dessus la section, il couvrait le mot
+     * avant que sa sortie ait commencé, et le mot avait donc l'air de
+     * s'effacer d'un coup pendant que son animation se jouait derrière. Le
+     * voile ne monte qu'une fois le mot parti. */
+    await wait(560);
 
     /* 3. le voile prend le blanc, la section le rend, et la page recule. Le
      * voile s'efface dès que le module a le cadre — ce qui est aussi la
@@ -3878,9 +3872,15 @@
      * demi-couverture. Chaque passage de main se fait donc blanc sur blanc :
      * la section au voile, puis le voile au module, et rien ne se voit. */
 
+    /* Puis le blanc change de mains sans qu'on le voie : le voile prend le
+     * cadre — blanc sur blanc, la section est déjà blanche — et la plaque
+     * monte DERRIÈRE lui, dans la section d'au-dessus qui est encore hors
+     * champ. */
+    if (veilEl) veilEl.style.opacity = '1';
+    window.__csFlood = 1;
     window.__rewind = 1;
     const trip = glide(exitY, 800);
-    await until(retracted, 2600);
+    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
 
     /* 4. le dernier pavé revient — retirer .out rejoue sa transition à
      * l'envers. La section reprend son sol ici, revenue au plafond : elle est
@@ -3895,14 +3895,15 @@
      * rendre son blanc là, c'est faire réapparaître une bande blanche qui
      * glisse ensuite hors du cadre. Au plafond elle est exactement sous le
      * bord, et le relais ne se voit pas. */
-    /* La carte reprend le cadre à l'arrivée, sous le voile, et le voile tombe
-     * sur elle : blanc sur blanc des deux côtés. Puis elle se replie. */
-    window.__csFlood = 1;
-    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
-    if (veilEl) veilEl.style.opacity = '0';
+    /* LE VOILE NE TOMBE QU'APRÈS LE TRAJET. Tombé avant, la plaque est encore
+     * dans une section hors champ et ce qu'il découvre au milieu du voyage
+     * est le sol du document : le blanc SAUTAIT. À l'arrivée la plaque tient
+     * le cadre, la coupe est blanc sur blanc, et elle peut se replier. */
     await trip;
+    if (veilEl) veilEl.style.opacity = '0';
+    await wait(60);
     window.__csFlood = 0;
-    await wait(260);
+    await wait(200);
 
     inBounds();
     running = false;
