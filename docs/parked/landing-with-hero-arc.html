@@ -385,6 +385,17 @@
   .cstage{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
           display:grid;place-items:center;padding:var(--vs-s) 0;
           perspective:1500px}
+  /* UN PEU DE LUMIÈRE DANS LA SECTION. Le fond est l'encre du hero — il doit
+     l'être, c'est le sol sur lequel le papier se tenait, et le raccord n'est
+     un raccord que parce que c'est le même — mais un aplat d'encre sur cinq
+     écrans est un trou noir. Une flaque de lumière très basse, posée là où le
+     pavé arrive : la section n'est pas éclaircie, elle est ÉCLAIRÉE, ce qui
+     n'est pas la même chose et ne coûte pas le raccord.
+     Coupée avec le reste pendant la traversée, donc elle arrive avec le
+     texte et pas avant lui. */
+  .cstage::before{content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(115% 78% at 50% 46%,
+      rgba(237,234,227,.085), rgba(237,234,227,.028) 46%, transparent 72%)}
   .cintro{grid-area:1/1;max-width:min(780px,80vw);text-align:center;
           will-change:transform,opacity;opacity:0;transform:translateY(26px)}
   .cstage.in .cintro{opacity:1;transform:none;
@@ -395,7 +406,7 @@
   .cintro h2{margin:15px 0 0;font-family:var(--D);font-weight:800;
              letter-spacing:-.03em;line-height:1.02;text-wrap:balance;
              font-size:clamp(34px,5.2vw,70px)}
-  .cintro p{margin:20px auto 0;max-width:54ch;font-size:15px;opacity:.6}
+  .cintro p{margin:20px auto 0;max-width:54ch;font-size:15px;opacity:.72}
   .pile{grid-area:1/1;will-change:transform,opacity}
   /* Les pavés n'ont plus d'état d'apparition en CSS : ils montent depuis sous
      le cadre, et c'est le script qui les place. Le premier compris — il
@@ -413,15 +424,23 @@
   /* Plus large qu'avant, et posé : un pavé qui vient vers vous doit avoir la
      taille d'une page, pas d'un encart, et une ombre pour qu'on lise
      l'épaisseur de la pile derrière lui. */
-  .card{width:min(880px,72vw);background:#11121a;
-        border:1px solid rgba(237,234,227,.13);
+  /* LE PAVÉ SE DÉTACHE DU SOL. À #11121a sur un fond #14141c il n'y avait
+     RIEN entre les deux : la carte n'existait que par un filet à 13 % et par
+     son ombre, donc la pile ne se lisait pas comme des objets posés les uns
+     derrière les autres mais comme du texte qui change. Deux crans plus clair
+     que le sol suffisent — et l'ombre les sépare d'autant mieux qu'il y a
+     quelque chose à séparer. */
+  .card{width:min(880px,72vw);background:#20212c;
+        border:1px solid rgba(237,234,227,.17);
         border-radius:var(--rad-l);
-        box-shadow:0 40px 90px -30px rgba(0,0,0,.72);
+        box-shadow:0 40px 90px -30px rgba(0,0,0,.78);
         padding:clamp(28px,2.8vw,44px) clamp(30px,3vw,48px)}
   .card h3{margin:16px 0 0;font-size:clamp(25px,2.5vw,38px);line-height:1.04}
-  .card p{margin:16px 0 0;font-size:14px;opacity:.62}
-  .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.11);
-             font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.36}
+  .card p{margin:16px 0 0;font-size:14px;opacity:.74}
+  /* La source était à 36 % sur une carte presque noire : 2,9:1 contre son
+     fond, c'est-à-dire une ligne qu'on sait présente et qu'on ne lit pas. */
+  .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.15);
+             font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.52}
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
   #hsec{height:520vh;position:relative}
