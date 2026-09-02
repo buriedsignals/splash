@@ -434,11 +434,18 @@
      personne. */
   .csdeck{position:absolute;inset:0;transform-style:preserve-3d;
           perspective:1500px;perspective-origin:50% 50%}
+  /* LA CARTE DOIT TENIR SON PROPRE TEXTE. Sa proportion était écrite une
+     fois pour toutes, et le corps du texte, lui, ne descend pas indéfiniment
+     avec elle : sur un écran étroit la carte perdait cent cinquante pixels
+     de large sans rien perdre à lire, et le pied sortait par le bas. La
+     proportion est donc une variable — la carte s'allonge à mesure qu'elle
+     se resserre — et le format horizontal reste ce qu'il est là où il y a la
+     place. */
   .csc{position:absolute;left:50%;top:50%;
-       width:var(--cw);height:calc(var(--cw) * .68);
-       margin:calc(var(--cw) * -.34) 0 0 calc(var(--cw) / -2);
+       width:var(--cw);height:calc(var(--cw) * var(--ar));
+       margin:calc(var(--cw) * var(--ar) / -2) 0 0 calc(var(--cw) / -2);
        transform-style:preserve-3d;will-change:transform;
-       --cw:clamp(280px,30vw,460px)}
+       --cw:clamp(280px,30vw,460px);--ar:.68}
   .csface,.csback{position:absolute;inset:0;border-radius:var(--rad);
                   overflow:hidden;backface-visibility:hidden;
                   -webkit-backface-visibility:hidden}
@@ -446,8 +453,13 @@
      la dernière, qui est blanche : c'est la conclusion, et une conclusion se
      lit sur du papier. Le texte suit la couleur, pas l'inverse : chaque encre
      porte avec elle celle qui se lit dessus. */
+  /* ET SON DÉCOUPAGE SE MESURE SUR ELLE, pas sur la fenêtre : une marge en
+     vw sur un objet qui n'a pas la largeur de la fenêtre donne une carte
+     étroite à marges de carte large. Les corps qui doivent rester lisibles
+     gardent un plancher — un texte de source à sept pixels n'est plus un
+     texte. */
   .csface{background:var(--face,var(--blue));color:var(--faceInk,var(--paper));
-          padding:clamp(18px,1.8vw,30px);display:flex;flex-direction:column;
+          padding:calc(var(--cw) * .06);display:flex;flex-direction:column;
           box-shadow:0 40px 90px -34px var(--faceGlow,rgba(26,47,251,.6))}
   /* LE DOS EST DU PAPIER. Une page de journal est noire sur blanc, pas
      l'inverse — et une main de pages blanches tenue sur un sol d'encre est
@@ -476,26 +488,31 @@
      fausse sur les trois autres. */
   .csftop{display:flex;align-items:flex-start;justify-content:space-between;
           gap:16px}
-  .cscn{font-family:var(--C);font-size:10.5px;font-weight:500;letter-spacing:.16em;
-        opacity:.6;padding-top:.35em}
+  .cscn{font-family:var(--C);font-size:max(9px,calc(var(--cw) * .0231));font-weight:500;
+        letter-spacing:.16em;opacity:.6;padding-top:.35em}
   .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.72;
-          font-size:clamp(38px,4vw,68px);font-variant-numeric:tabular-nums;
+          font-size:calc(var(--cw) * .133);font-variant-numeric:tabular-nums;
           text-align:right}
   .cscbig i{font-style:normal;font-size:.34em;letter-spacing:-.02em;
             padding-left:.06em}
   .cscname{margin-top:auto;font-family:var(--D);font-weight:300;
            letter-spacing:-.03em;line-height:1.02;
-           font-size:clamp(19px,2vw,30px);max-width:22ch;text-wrap:balance}
-  .csfoot{margin-top:clamp(12px,1.6vh,20px);padding-top:clamp(10px,1.3vh,16px);
+           font-size:max(17px,calc(var(--cw) * .066));max-width:22ch;
+           text-wrap:balance}
+  .csfoot{margin-top:calc(var(--cw) * .033);padding-top:calc(var(--cw) * .027);
           border-top:1px solid currentColor;border-color:color-mix(in srgb,
             currentColor 26%, transparent)}
-  .cscwhy{margin:0;font-size:12.5px;line-height:1.45;opacity:.72;max-width:52ch}
-  .cscsrc{display:block;margin-top:clamp(8px,1vh,13px);font-family:var(--C);
-          font-size:10px;font-weight:500;letter-spacing:.16em;opacity:.55}
+  .cscwhy{margin:0;font-size:max(10.5px,calc(var(--cw) * .0275));line-height:1.45;
+          opacity:.72;max-width:52ch}
+  .cscsrc{display:block;margin-top:calc(var(--cw) * .021);font-family:var(--C);
+          font-size:max(9px,calc(var(--cw) * .022));font-weight:500;
+          letter-spacing:.16em;opacity:.55}
 
+  /* La carte se resserre en deux temps, et s'allonge d'autant. */
+  @media (max-width:1180px){ .csc{--ar:.74} }
   @media (max-width:820px){
     .csdeck{perspective:1000px}
-    .csc{--cw:min(78vw,340px)}
+    .csc{--cw:min(72vw,340px);--ar:.82}
   }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
@@ -3398,10 +3415,19 @@
        *
        * La première est devant : le rang se lit dans le cadre, la carte de
        * gauche est celle qu'on doit voir entière. */
+      /* ET IL SE MESURE SUR LA FENÊTRE. Écarté d'un nombre de pixels fixe, il
+       * tenait sur un écran large et sortait des deux côtés sur un téléphone,
+       * où une carte fait déjà les trois quarts du cadre : la première et la
+       * dernière étaient coupées net par le bord. L'écart est donc ce que la
+       * fenêtre peut donner, et ce qu'elle ne donne pas est repris en ANGLE —
+       * la main reste une main, elle est seulement tenue plus serrée. */
       const poseOf = (slot, count) => {
+        const room = Math.max(0, (innerWidth - (cds[0].offsetWidth || 300)) / 2);
+        const sx = Math.min(152, room / 1.5);
+        const tight = 1 - sx / 152;
         const d = slot - (count - 1) / 2;
-        return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10,
-                 z: -260 - slot * 96 };
+        return { x: d * sx, dip: Math.abs(d) * (26 + 10 * tight),
+                 rz: -d * (10 + 7 * tight), z: -260 - slot * 96 };
       };
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et

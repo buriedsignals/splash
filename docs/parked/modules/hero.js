@@ -8161,9 +8161,16 @@ void main(){
      * correspond to, so a session of sliders comes back as code rather than as
      * a description of code.
      */
+    /* AND THEY ARE FILED BY WHAT THEY MOVE, largest thing first: where the
+     * three stand, then the shape they stand in, then how the paper runs,
+     * then what happens inside one sheet, then the light on it. What is left
+     * is not the webs at all — the press behind them, the pointer, the mark
+     * that waits — and each of those is its own group rather than a drawer
+     * called "the press" holding four unrelated subjects. A slider filed
+     * under the thing it is not is a slider nobody finds. */
     const WEB_TUNE = [
       [
-        "the frame",
+        "where the three stand",
         [
           ["webW", 0.06, 0.42, 0.005, "half-width, in visible half-widths"],
           ["webH", 0.8, 2.2, 0.01, "half-height, same measure"],
@@ -8173,13 +8180,21 @@ void main(){
         ],
       ],
       [
-        "the three webs",
+        "the curve of the set",
         [
-          ["webSpd0", 0, 0.06, 0.0005, "left · laps of the galley per second"],
-          ["webSpd1", 0, 0.06, 0.0005, "middle · laps of the galley per second"],
-          ["webSpd2", 0, 0.06, 0.0005, "right · laps of the galley per second"],
-          ["webLag1", 0, 1, 0.01, "middle · where it starts, in pages"],
-          ["webLag2", 0, 1, 0.01, "right · where it starts, in pages"],
+          ["webCurve", 0, 1.4, 0.01, "how far the three wrap round you"],
+          ["webDome", 0, 1.4, 0.01, "0 a cylinder, 1 a sphere, over 1 an egg"],
+          ["webCurveSh", 0, 14, 0.1, "how much a sheet loses by turning away"],
+        ],
+      ],
+      [
+        "how the paper runs",
+        [
+          ["webSpd0", 0, 0.06, 0.0005, "left \u00b7 laps of the galley per second"],
+          ["webSpd1", 0, 0.06, 0.0005, "middle \u00b7 laps of the galley per second"],
+          ["webSpd2", 0, 0.06, 0.0005, "right \u00b7 laps of the galley per second"],
+          ["webLag1", 0, 1, 0.01, "middle \u00b7 where it starts, in pages"],
+          ["webLag2", 0, 1, 0.01, "right \u00b7 where it starts, in pages"],
         ],
       ],
       /* The ripple in the paper itself — one sheet's worth of behaviour,
@@ -8193,36 +8208,37 @@ void main(){
           ["webShade", 0, 1.4, 0.01, "how hard the ripple shades the sheet"],
         ],
       ],
-      /* The curve of the SET, kept apart from the press's own controls. It is
-       * not a property of one sheet — it is where the three are standing — and
-       * a slider filed under the thing it is not is a slider nobody finds. */
       [
-        "the curve of the set",
+        "the light on it",
         [
-          ["webCurve", 0, 1.4, 0.01, "how far the three wrap round you"],
-          ["webDome", 0, 1.4, 0.01, "0 a cylinder, 1 a sphere, over 1 an egg"],
-          ["webCurveSh", 0, 14, 0.1, "how much a sheet loses by turning away"],
+          ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
+          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
         ],
       ],
+      /* Behind the paper: what is being printed on it, and how often the
+       * page changes. Not a property of the webs — a property of the press. */
       [
-        "the press",
+        "the press behind it",
         [
           ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
           ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
-          ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
-          ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
           ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
           ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
           ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
           ["greyShare", 0, 1, 0.05, "share of pages that print in a grey"],
-          ["markLogo", 0, 1, 1, "the waiting mark: 0 the word, 1 the rosette"],
         ],
       ],
       [
-        "the light",
+        "the hand on the paper",
         [
-          ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
-          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
+          ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
+          ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
+        ],
+      ],
+      [
+        "the mark that waits",
+        [
+          ["markLogo", 0, 1, 1, "the waiting mark: 0 the word, 1 the rosette"],
         ],
       ],
     ];
@@ -9691,7 +9707,19 @@ void main(){
         const webDZ = Math.max(0.25, zoom);
         const webNH = webDZ / 4.1,
           webNW = webNH * (cw / Math.max(1, ch));
-        const webHW = webNW * P.webW,
+        /* THE SET IS MEASURED IN HALF-WIDTHS, so a narrow window makes it
+         * narrow: on a phone each web took a third of the frame and its type
+         * came out at a third of the size it was drawn for. The measure is
+         * right — the paper should keep its place on a wide screen — so the
+         * set is widened back as the window turns portrait, until the middle
+         * web holds most of the frame and the outer two only reach in from
+         * the edges. Width and spacing move together, or the columns overlap. */
+        const webFit = Math.max(
+          1,
+          Math.min(2.15, 0.95 / Math.max(0.3, cw / Math.max(1, ch))),
+        );
+        const webSp = P.webSpread * webFit;
+        const webHW = webNW * P.webW * webFit,
           webHH = webNH * P.webH;
         const WEB_ROWS = Math.ceil(NSHARD / 3);
         window.__glPath = "QUADS";
@@ -9911,7 +9939,7 @@ void main(){
           // paper would simply fade while a separate set of plates flew in
           // from the middle, and the break would read as two things crossing
           // rather than as one thing tearing.
-          const anX = ((i % 3) - 1) * webNW * P.webSpread;
+          const anX = ((i % 3) - 1) * webNW * webSp;
           const anY =
             (((Math.floor(i / 3) + 0.5) / WEB_ROWS) * 2 - 1) * webNH * 0.94;
           // out of the paper on the break's own throw, then eased into its
@@ -10134,7 +10162,7 @@ void main(){
                 (clock * rate + WEB_PHASE + k / 3 +
                   P["webLag" + k] * PAGE_STEP * 0.5 - runIn + 2) % 1;
             }
-            const cxw = (k - 1) * nw * P.webSpread + nw * P.webX,
+            const cxw = (k - 1) * nw * webSp + nw * P.webX,
               cyw = webNH * P.webY;
             /* HOW FAR BELOW IT STARTS: exactly its own half-height plus the
              * frame's, so its top edge begins ON the bottom of the frame and

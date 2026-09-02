@@ -9366,7 +9366,19 @@ void main(){
         const webDZ = Math.max(0.25, zoom);
         const webNH = webDZ / 4.1,
           webNW = webNH * (cw / Math.max(1, ch));
-        const webHW = webNW * P.webW,
+        /* THE SET IS MEASURED IN HALF-WIDTHS, so a narrow window makes it
+         * narrow: on a phone each web took a third of the frame and its type
+         * came out at a third of the size it was drawn for. The measure is
+         * right — the paper should keep its place on a wide screen — so the
+         * set is widened back as the window turns portrait, until the middle
+         * web holds most of the frame and the outer two only reach in from
+         * the edges. Width and spacing move together, or the columns overlap. */
+        const webFit = Math.max(
+          1,
+          Math.min(2.15, 0.95 / Math.max(0.3, cw / Math.max(1, ch))),
+        );
+        const webSp = P.webSpread * webFit;
+        const webHW = webNW * P.webW * webFit,
           webHH = webNH * P.webH;
         const WEB_ROWS = Math.ceil(NSHARD / 3);
         window.__glPath = "QUADS";
@@ -9586,7 +9598,7 @@ void main(){
           // paper would simply fade while a separate set of plates flew in
           // from the middle, and the break would read as two things crossing
           // rather than as one thing tearing.
-          const anX = ((i % 3) - 1) * webNW * P.webSpread;
+          const anX = ((i % 3) - 1) * webNW * webSp;
           const anY =
             (((Math.floor(i / 3) + 0.5) / WEB_ROWS) * 2 - 1) * webNH * 0.94;
           // out of the paper on the break's own throw, then eased into its
@@ -9809,7 +9821,7 @@ void main(){
                 (clock * rate + WEB_PHASE + k / 3 +
                   P["webLag" + k] * PAGE_STEP * 0.5 - runIn + 2) % 1;
             }
-            const cxw = (k - 1) * nw * P.webSpread + nw * P.webX,
+            const cxw = (k - 1) * nw * webSp + nw * P.webX,
               cyw = webNH * P.webY;
             /* HOW FAR BELOW IT STARTS: exactly its own half-height plus the
              * frame's, so its top edge begins ON the bottom of the frame and
