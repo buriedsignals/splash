@@ -4292,14 +4292,16 @@ Stage.register(
       ],
     };
 
-    /* Which shelf, decided locally. `?archives=FR` forces one, which is how
-     * this is looked at without changing where you are standing. */
+    /* Which shelf, decided locally, and it SAYS SO IN THE CONSOLE — one line
+     * naming the country, the clock it was read off and the languages that
+     * would have been the fallback, so the answer can be checked rather than
+     * trusted. `?archives=FR` forces one, which is how this is looked at
+     * without changing where you are standing. */
     const HOME = (() => {
       const q = /[?&]archives=([A-Za-z]{2})\b/.exec(location.search);
-      if (q) return q[1].toUpperCase();
       /* The clock first: it says where the machine IS, where the language
-       * says what it reads in — and a French speaker in Zurich should meet
-       * the shelf of the country they are standing in. */
+       * says only what it reads in — and a French speaker in Zurich should
+       * meet the shelf of the country they are standing in. */
       const CLOCK = {
         "Europe/Zurich": "CH",
         "Europe/Busingen": "CH",
@@ -4309,40 +4311,60 @@ Stage.register(
       };
       const US_CLOCK =
         /^(America\/(New_York|Detroit|Chicago|Denver|Phoenix|Los_Angeles|Boise|Juneau|Sitka|Nome|Adak|Anchorage|Menominee|Indiana\/|Kentucky\/|North_Dakota\/)|Pacific\/Honolulu)/;
+      let tz = "";
       try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-        if (CLOCK[tz]) return CLOCK[tz];
-        if (US_CLOCK.test(tz)) return "US";
+        tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
       } catch {
         /* a browser too old to have Intl simply reads the language instead */
       }
       const langs = navigator.languages || [navigator.language || ""];
-      for (const l of langs) {
-        const m = /-([A-Za-z]{2})$/.exec(l);
-        if (m) return m[1].toUpperCase();
+      let by = "";
+      let home = null;
+      if (q) {
+        home = q[1].toUpperCase();
+        by = "?archives";
+      } else if (CLOCK[tz]) {
+        home = CLOCK[tz];
+        by = "clock";
+      } else if (US_CLOCK.test(tz)) {
+        home = "US";
+        by = "clock";
+      } else {
+        for (const l of langs) {
+          const m = /-([A-Za-z]{2})$/.exec(l);
+          if (m) {
+            home = m[1].toUpperCase();
+            by = "language";
+            break;
+          }
+        }
       }
-      return null;
+      const known = home && SHELF[home] ? "own shelf" : "no shelf — English";
+      console.info(
+        "[splash] archives · country " + (home || "unknown") +
+          " (" + (by || "nothing to read") + ") · " + known +
+          " · clock " + (tz || "unknown") +
+          " · languages " + langs.join(", "),
+      );
+      return home;
     })();
 
-    /* The reel is three columns of six, so it wants EIGHTEEN pages and it
-     * wants them all different — that is what stops two webs holding the same
-     * page. The home shelf leads, the English shelf fills, and the count is
-     * taken at eighteen however long either of them is. */
-    const ARCHIVE = (() => {
-      const out = [];
-      const add = (a) => {
-        if (out.length < 18 && out.indexOf(a) < 0) out.push(a);
-      };
-      for (const a of SHELF[HOME] || []) add(a);
-      for (const a of SHELF.US.concat(SHELF.GB)) add(a);
-      /* Every shelf holds nine, so home plus the English shelf always comes
-       * to eighteen — but the count is what the reel depends on, not my
-       * arithmetic. If a shelf were ever short, the rest of the world makes
-       * it up rather than letting two webs print the same page. */
-      for (const k in SHELF) for (const a of SHELF[k]) add(a);
-      return out;
-    })();
+    /* THE READER'S OWN COUNTRY, AND ONLY IT. A shelf is nine front pages and
+     * the reel is three columns of six, so the nine are dealt round the three
+     * columns: each column holds six DIFFERENT pages, and the columns start at
+     * different points in the nine, which is what the deal already did when
+     * the shelf was longer.
+     *
+     * Nothing foreign is mixed in. It used to fill the remaining slots from
+     * the English shelf, so a French reader met four French papers and
+     * fourteen American ones — which is not what a shelf of your own country
+     * means. The English shelf is now the fallback and nothing else: it is
+     * what a country we hold no pages for gets, and it is the only case where
+     * two shelves are put end to end. */
+    const ARCHIVE =
+      (HOME && SHELF[HOME]) || SHELF.US.concat(SHELF.GB);
     window.__archiveHome = HOME; // so the shelf on the reel can be asked for
+    window.__archiveCount = ARCHIVE.length;
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
