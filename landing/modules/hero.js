@@ -26,6 +26,10 @@ Stage.register(
     // The ground is a design decision, so it stays in the document: the module
     // reads data-ground off the section and falls back to the house ink. The
     // render is referenced to it, so the two can never drift apart.
+    // Is the hero's own arc in the document at all? Read once, here, because
+    // the camera and the webs are set up long before the module is returned.
+    const ARC0 = !!document.querySelector("#hero-arc");
+
     const INK = [0.078, 0.078, 0.11]; // #14141c
     const ground = INK.slice();
     function readGround(el) {
@@ -99,7 +103,8 @@ Stage.register(
         tpl: "broadsheet",
         cols: 3,
         cut: "wide",
-        cap: "THE ANTECHAMBER OF THE TOMB, LOOKING NORTH.",
+        cap: "THE ANTECHAMBER OF THE TOMB. PHOTOGRAPH BY HARRY BURTON, 1922.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Tutankhamun_tomb_photographs_2_011.jpg/960px-Tutankhamun_tomb_photographs_2_011.jpg",
       },
       {
         paper: "The New York World",
@@ -140,7 +145,8 @@ Stage.register(
         tpl: "tabloid",
         cols: 2,
         cut: "band",
-        cap: "THE WOMEN'S PAVILION, BLACKWELL'S ISLAND.",
+        cap: "NEW YORK CITY ASYLUM FOR THE INSANE (WOMEN), BLACKWELL'S ISLAND.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/468_NEW-YORK_CITY_ASYLUM_FOR_THE_INSANE_%28WOMAN%29_BLACKWELL%27S_ISLAND.jpg/960px-468_NEW-YORK_CITY_ASYLUM_FOR_THE_INSANE_%28WOMAN%29_BLACKWELL%27S_ISLAND.jpg",
       },
       {
         paper: "The Morning Chronicle",
@@ -202,10 +208,12 @@ Stage.register(
             t: 'Worse was to follow. It was "soon perceived by estate owners and agents of property that a greater percentage of profits could be realized by the conversion of houses and blocks into barracks, and dividing their space into smaller proportions capable of containing human life within four walls. . . . Blocks were rented of real estate owners, or \'purchased on time,\' or taken in charge at a percentage, and held for under-letting." With the appearance of the middleman, wholly irresponsible, and utterly reckless and unrestrained, began the era of tenement building which turned out such blocks as Gotham Court, where, in one cholera epidemic that scarcely touched the clean wards, the tenants died at the rate of one hundred and ninety-five to the thousand of population; which forced the general mortality of the city up front l in 41.83 in 1815, to 1 in 27.33 in 1855, a year of unusual freedom from epidemic disease, and which wrung from the early organizers of the Health Department this wail: "There are numerous examples of tenement-houses in which are lodged several hundred people that have a pro rata allotment of ground area scarcely equal to two-square yards upon the city lot, court-yards and all included." The tenement-house population had swelled to half a million souls by that time, and on the East Side, in what is still the most densely populated district in all the world, China not excluded, it was packed at the rate of 290,000 to the square mile, a state of affairs wholly unexampled. The utmost cupidity of other lands and other days had never contrived to herd much more than half that number within the same space. The greatest crowding of Old London was at the rate of 175,816. Swine roamed the streets and gutters as their principal scavengers. The death of a child in a tenement was registered at the Bureau of Vital Statistics as "plainly due to suffocation in the foul air of an unventilated apartment," and the Senators, who had come down from Albany to find out what was the matter with New York, reported that "there are annually cut off from the population by disease and death enough human beings to people a city, and enough human labor to sustain it." And yet experts had testified that, as compared with uptown, rents were from twenty-five to thirty per cent. higher in the worst slums of the lower wards, with such accommodations as were enjoyed, for instance, by a "family with boarders" in Cedar Street, who fed hogs in the Stellar that contained eight or ten loads of manure; or "one room 12 x 19 with five families living in it, comprising twenty persons of both sexes and all ages, with only two beds, without partition, screen, chair, or table." The rate of rent has been successfully maintained to the present day, though the hog at least has been eliminated.',
           },
         ],
-        tpl: "monthly",
+        tpl: "illustrated",
         cols: 2,
-        cut: "square",
-        cap: "A REAR TENEMENT IN MULBERRY STREET.",
+        // no cut: this one runs as an essay, and the first rung needs it
+        
+        cap: "BANDIT'S ROOST, 59½ MULBERRY STREET. PHOTOGRAPH BY JACOB RIIS.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg/960px-Bandits_Roost%2C_59_and_a_half_Mulberry_Street.jpg",
       },
       {
         paper: "The North Star",
@@ -358,7 +366,7 @@ Stage.register(
             t: "But more potent still, they took the crude, simple desires of the workers, soldiers and peasants, and from them built their immediate programme. And so, while the oborontsi Mensheviki and Socialist Revolutionaries involved themselves in ​compromise with the bourgeoisie, the Bolsheviki rapidly captured the Russian masses. In July they were hunted and despised; by September the metropolitan workmen, the sailors of the Baltic Fleet, and the soldiers, had been won almost entirely to their cause. The September municipal elections in the large cities ) were significant; only 18 per cent of the returns were Menshevik and Socialist Revolutionary, against more than 70 per cent in June…",
           },
         ],
-        tpl: "monthly",
+        tpl: "review",
         cols: 2,
       },
       {
@@ -492,7 +500,8 @@ Stage.register(
         tpl: "rail",
         cols: 4,
         cut: "left",
-        cap: "A COURT OFF THE HAYMARKET.",
+        cap: "WENTWORTH STREET, WHITECHAPEL. ENGRAVING BY GUSTAVE DORÉ, 1872.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Gustave_Dor%C3%A9_-_Wentworth_Street_Whitechapel_-_London%2C_a_Pilgrimage.jpg/960px-Gustave_Dor%C3%A9_-_Wentworth_Street_Whitechapel_-_London%2C_a_Pilgrimage.jpg",
       },
       {
         paper: "McClure's Magazine",
@@ -558,10 +567,11 @@ Stage.register(
             t: "“Stay there, my grafter!” replied Mr. Councilman. “Can you lend me a hundred for a day or two?”",
           },
         ],
-        tpl: "rail",
+        tpl: "pictorial",
         cols: 3,
         cut: "left",
-        cap: "THE MUNICIPAL ASSEMBLY, ST. LOUIS.",
+        cap: "THE MUNICIPAL COURTS BUILDING, ST. LOUIS.",
+        img: "https://upload.wikimedia.org/wikipedia/commons/c/c9/Municipal_Courts_Building_%28NBY_433708%29.jpg",
       },
       {
         paper: "The San Francisco Examiner",
@@ -630,7 +640,8 @@ Stage.register(
         tpl: "tabloid",
         cols: 3,
         cut: "band",
-        cap: "THE FIELD AT CHICKAMAUGA, LOOKING SOUTH.",
+        cap: "THE CHICKAMAUGA BATTLEFIELD, SEPTEMBER 1863.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/Chickamauga_battlefield._%28Sept_19-20%2C_1863%29_LOC_99447309.jpg/960px-Chickamauga_battlefield._%28Sept_19-20%2C_1863%29_LOC_99447309.jpg",
       },
     ];
     /* The draw is published and overridable. A page that prints a different
@@ -3232,448 +3243,4423 @@ Stage.register(
       return cv;
     }
 
+    /* ----------------------------------------------------------- the galley
+     * The hero is paper coming off a press, and a web of newsprint has no page
+     * boundary — so what the webs carry cannot be a front page. It is a
+     * GALLEY: one measure, the eleven papers following one another down the
+     * column with their mastheads between them.
+     *
+     * Three galleys are set SIDE BY SIDE into one texture. Three webs then
+     * cost one upload rather than three, and each reads its own column at its
+     * own offset. Only v repeats; u is clamped and the columns are set apart
+     * by a strip of dead paper, so no column can bleed into its neighbour
+     * under a mipmap.
+     *
+     * Every paper is set by ITS OWN PRESS. Each article names one in `tpl` and
+     * the five are the five the front page knows. What separates them is what
+     * separates them on a page, and none of it is decoration: where the name
+     * sits and how it is set, what the rules do, whether the headline is
+     * centred or ranged left and in which face, and what furniture the press
+     * carries at all.
+     *
+     * A slot is AS TALL AS ITS ARTICLE, measured before anything is drawn. The
+     * first version gave every press a hand-written weight, and a paper whose
+     * body ran out before its slot did left a hole — which no newspaper has,
+     * because the column simply goes on. The three columns hold the same
+     * eleven articles in three orders, so their totals agree and one lap is
+     * exactly the texture's height however the measuring comes out. That is
+     * what keeps the loop seamless.
+     */
+    /* THE THREE WEBS RUN AS ONE, A PAGE APART.
+     *
+     * They used to run at rates a tenth apart and start a third of the reel
+     * apart, so at any moment the frame held three eras at once — 1835 beside
+     * 1900 beside today. That reads as a spread of dates and not as an
+     * evolution, which is the whole thing the reel is for. Set one page apart
+     * and driven at one rate, the frame carries pages n, n+1 and n+2: the
+     * order is legible across the frame, and the whole of it moves through the
+     * ramp together.
+     *
+     * The rates must be EQUAL for that to hold. A tenth of drift is invisible
+     * for a few seconds and has the columns out of order a minute later. */
+    /* THE THREE WEBS DO NOT RUN AT THE SAME SPEED. A press is three
+     * separate reels through three sets of rollers, and holding them to the
+     * same rate to four decimal places is the one thing a real one never
+     * does. A few per cent apart is enough: near enough that no column
+     * looks like it is racing, far enough that the set never settles into a
+     * pattern — the lag between any two of them is always changing, so an
+     * alignment that happens once does not happen again on the next lap.
+     * They live in P rather than here so the bench can move them: what a
+     * set of three should be is a thing to look at, not to reason about. */
+    let PAGE_STEP = 1 / 30; // one page, as a fraction of the reel
+
+    /* ------------------------------------------------------------ the reel
+     * The webs used to carry eleven papers dealt into three columns by three
+     * strides. They carry a TIMELINE now: one column that runs through the
+     * history of the form, from a penny paper of 1835 that had no pictures at
+     * all, through the presses that learned to print a photograph, to what a
+     * desk makes today — and the three webs read that one column at three
+     * different heights, so three eras are always in the frame at once.
+     *
+     * It loops. At the end of the run the press starts again at 1835, which is
+     * a seam, and an accepted one: the alternative is a reel long enough that
+     * a lap never comes round, and that reel is a hundred megabytes of
+     * texture. One column instead of three is what pays for the length there
+     * is — a third of the width buys three times the history for the same
+     * bytes, and it is also what guarantees the three webs are never showing
+     * the same page.
+     *
+     * The modern end is not invented journalism. It is the atlas hero.js
+     * already paints for the field of plates — real charts, real maps, drawn
+     * in canvas — copied a tile at a time onto the paper. What the reel ends
+     * on is literally what the tool makes.
+     */
+    /* ------------------------------------------------------- the templates
+     * Thirty page layouts, six to a rung, drawn with placeholder copy and
+     * placeholder pictures so the STRUCTURE can be judged before any content
+     * goes near it.
+     *
+     * One painter, thirty specifications. Thirty functions would be thirty
+     * places to fix the same spacing bug, and the six pages of a rung have to
+     * differ by their skeleton — where the name sits, how many columns, what
+     * shape the block is and where it falls — not by their words.
+     *
+     * The rungs are constraints, and the painter enforces them rather than
+     * trusting the specs: rung one may carry no block at all, rung two's
+     * blocks are one ink, rung three's may have colour, rung four's charts are
+     * held to a column, and rung five is where a block may take the measure.
+     */
+    /* THE COLUMNS SAY WHAT THIS IS.
+     *
+     * They were lorem, which is the right thing while a layout is being
+     * judged and the wrong thing the moment anyone can read a word of it —
+     * a reader who leans in gets nothing back. The mastheads and the
+     * headlines stay playful, because a press full of invented papers is
+     * part of the joke; the body is the argument, set small, and true.
+     */
+    const LOREM = (
+      "Your desk already writes the story. What it does not do is draw it. " +
+      "Between the reporting being finished and the page going out there is " +
+      "a gap, and the gap is filled by a request to somebody else, a queue, " +
+      "and a wait. Splash closes it. It teaches the assistant your newsroom " +
+      "already uses to make the graphic itself: a chart, a map, a piece of " +
+      "motion, a scrollytelling passage, built from the reporting you have " +
+      "done and nothing you have to gather again. " +
+      "It is not a chart tool bolted to a chat window. It reads the story " +
+      "and the data together, works out what the evidence will actually " +
+      "support, and proposes the form that says it — a line where a line is " +
+      "honest, a map where the story is about somewhere, a unit chart where " +
+      "the count is the point. You choose the direction. The desk keeps the " +
+      "decisions it should keep. " +
+      "The draft comes back for review before anything is published, and " +
+      "what comes out is the finished thing in the shape the page needs: " +
+      "print at the right measure, web that holds on a phone, video for the " +
+      "feeds, a scrolling piece for the site. One story, the formats it has " +
+      "to be in, and no second brief. " +
+      "None of it invents a number. The graphic carries where its figures " +
+      "came from, and it carries them because a graphic that cannot say " +
+      "where it got something is not evidence, it is decoration. The source " +
+      "line is written by the tool, not remembered by a person at eleven at " +
+      "night. " +
+      "What it changes is who can make a graphic at all. A desk with one " +
+      "designer makes as many as one designer can draw; a desk with this " +
+      "makes as many as it has stories worth drawing. The visual work stops " +
+      "being a favour asked of another department and becomes part of " +
+      "writing the piece — which is where it belonged before anyone had to " +
+      "ask for it. "
+    ).repeat(3);
+
+    /* Invented papers, and the odd one that is a joke about the trade. */
+    const LOREM_HEAD = [
+      "Reporting in, graphics out",
+      "The desk that draws its own",
+      "A map where the story is",
+      "Nobody waits for the chart",
+      "What the evidence supports",
+      "The source line writes itself",
+      "One story, every format",
+      "Held to the reporting",
+    ];
+
+    /* head — where the paper's name goes and what it does to the page.
+     * cols  — the measure, divided.
+     * drop  — a decorated initial on the first paragraph.
+     * blocks— rectangles the text flows around. col and span are in columns,
+     *         at and lines are in lines of the column they sit in.
+     * kind  — photo, chart or map, which is what the placeholder draws.
+     * tone  — ink for one colour, or a hex for a page that has a second.
+     */
+    const SPECS = [
+      // ---- 1 · text alone. No block may appear on any of these.
+      {
+    rung: 1,
+    name: "Single measure, centred name",
+    head: "centre",
+    cols: 1,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Two columns under a banner",
+    head: "band",
+    cols: 2,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Three columns, hairlines",
+    head: "centre",
+    cols: 3,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Two columns, decorated initial",
+    head: "tracked",
+    cols: 2,
+    drop: true,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "One column, all air",
+    head: "tracked",
+    cols: 1,
+    drop: true,
+    blocks: [],
+      },
+      {
+    rung: 1,
+    name: "Four columns, six point",
+    head: "left",
+    cols: 4,
+    blocks: [],
+      },
+
+      // ---- 2 · text and a black-and-white
+      {
+    rung: 2,
+    name: "Plate across the measure",
+    head: "centre",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 0, span: 2, at: 0, lines: 9 }],
+      },
+      {
+    rung: 2,
+    name: "Plate heads the second column",
+    head: "centre",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 1, span: 1, at: 0, lines: 11 }],
+      },
+      {
+    rung: 2,
+    name: "One measure, plate set into it",
+    head: "band",
+    cols: 1,
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 6, lines: 9 }],
+      },
+      {
+    rung: 2,
+    name: "Portrait beside the opening",
+    head: "left",
+    cols: 2,
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 3, lines: 13 }],
+      },
+      {
+    rung: 2,
+    name: "Two plates, one over the other",
+    head: "tracked",
+    cols: 2,
+    blocks: [
+      { kind: "photo", col: 1, span: 1, at: 0, lines: 7 },
+      { kind: "photo", col: 1, span: 1, at: 12, lines: 7 },
+    ],
+      },
+      {
+    rung: 2,
+    name: "Plate at the foot, full measure",
+    head: "centre",
+    cols: 3,
+    blocks: [{ kind: "photo", col: 0, span: 3, at: 14, lines: 8 }],
+      },
+
+      // ---- 3 · the same, with a second ink
+      {
+    rung: 3,
+    name: "Colour plate across the measure",
+    head: "centre",
+    cols: 2,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 10, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour cover, name reversed",
+    head: "band",
+    cols: 2,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 13, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "One measure, colour plate on top",
+    head: "centre",
+    cols: 1,
+    tone: "#b3402a",
+    blocks: [{ kind: "photo", col: 0, span: 1, at: 0, lines: 11, colour: true }],
+      },
+      {
+    rung: 3,
+    name: "Two colour plates",
+    head: "left",
+    cols: 2,
+    tone: "#1a7a4a",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 2, lines: 8, colour: true },
+      { kind: "photo", col: 1, span: 1, at: 9, lines: 8, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour at the foot",
+    head: "tracked",
+    cols: 2,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 13, lines: 9, colour: true },
+    ],
+      },
+      {
+    rung: 3,
+    name: "Colour plate, portrait, ranged left",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 1, lines: 14, colour: true },
+    ],
+      },
+
+      // ---- 4 · text, a picture, and small charts kept in their place
+      {
+    rung: 4,
+    name: "Photograph up, chart down a column",
+    head: "centre",
+    cols: 3,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "photo", col: 0, span: 2, at: 0, lines: 8, colour: true },
+      { kind: "chart", col: 2, span: 1, at: 6, lines: 6 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Locator map, inset",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 2, lines: 9, colour: true },
+      { kind: "map", col: 2, span: 1, at: 4, lines: 5 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Two charts down the second column",
+    live: 0,
+    anim: "bars",
+    head: "centre",
+    cols: 3,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "chart", col: 1, span: 1, at: 3, lines: 5 },
+      { kind: "chart", col: 1, span: 1, at: 12, lines: 5 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Chart at the foot of the measure",
+    head: "band",
+    cols: 2,
+    tone: "#1a2ffb",
+    blocks: [
+      { kind: "photo", col: 0, span: 1, at: 1, lines: 8, colour: true },
+      { kind: "chart", col: 0, span: 2, at: 16, lines: 6 },
+    ],
+      },
+      {
+    rung: 4,
+    name: "Map and photograph, side by side",
+    head: "centre",
+    cols: 2,
+    tone: "#1a7a4a",
+    blocks: [
+      { kind: "map", col: 0, span: 1, at: 0, lines: 8 },
+      { kind: "photo", col: 1, span: 1, at: 0, lines: 8, colour: true },
+    ],
+      },
+      {
+    rung: 4,
+    name: "One measure, a chart and a map in it",
+    live: 0,
+    anim: "bars",
+    head: "tracked",
+    cols: 1,
+    tone: "#b3402a",
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 4, lines: 6 },
+      { kind: "map", col: 0, span: 1, at: 15, lines: 6 },
+    ],
+      },
+
+      // ---- 5 · the drawing is the page
+      {
+    rung: 5,
+    name: "One measure, one chart",
+    live: 0,
+    anim: "bars",
+    head: "tracked",
+    cols: 1,
+    tone: "#b3402a",
+    lead: true,
+    blocks: [{ kind: "chart", col: 0, span: 1, at: 0, lines: 20 }],
+      },
+      {
+    rung: 5,
+    name: "A map, edge to edge",
+    head: "tracked",
+    cols: 2,
+    tone: "#1a7a4a",
+    lead: true,
+    blocks: [{ kind: "map", col: 0, span: 2, at: 0, lines: 22 }],
+      },
+      {
+    rung: 5,
+    name: "Four charts on a grid",
+    head: "centre",
+    cols: 2,
+    tone: "#1a2ffb",
+    lead: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 9 },
+      { kind: "chart", col: 1, span: 1, at: 0, lines: 9 },
+      { kind: "chart", col: 0, span: 1, at: 11, lines: 9 },
+      { kind: "chart", col: 1, span: 1, at: 11, lines: 9 },
+    ],
+      },
+      {
+    rung: 5,
+    name: "Map over chart",
+    head: "left",
+    cols: 2,
+    tone: "#b3402a",
+    lead: true,
+    blocks: [
+      { kind: "map", col: 0, span: 2, at: 0, lines: 13 },
+      { kind: "chart", col: 0, span: 2, at: 15, lines: 8 },
+    ],
+      },
+      {
+    rung: 5,
+    name: "The chart, and a column beside it",
+    live: 0,
+    anim: "bars",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    lead: true,
+    blocks: [{ kind: "chart", col: 0, span: 2, at: 0, lines: 24 }],
+      },
+      {
+    rung: 5,
+    name: "Chart, map, chart",
+    head: "centre",
+    cols: 3,
+    tone: "#1a7a4a",
+    lead: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 10 },
+      { kind: "map", col: 1, span: 1, at: 0, lines: 10 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 10 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "One chart, and nothing else",
+    live: 0,
+    anim: "bars",
+    head: "centre",
+    cols: 1,
+    tone: "#1a2ffb",
+    bare: true,
+    blocks: [{ kind: "chart", col: 0, span: 1, at: 0, lines: 22 }],
+      },
+      {
+    rung: 6,
+    name: "A map, and nothing else",
+    head: "band",
+    cols: 1,
+    tone: "#1a7a4a",
+    bare: true,
+    blocks: [{ kind: "map", col: 0, span: 1, at: 0, lines: 22 }],
+      },
+      {
+    rung: 6,
+    name: "Two charts, stacked",
+    live: 0,
+    anim: "bars",
+    head: "tracked",
+    cols: 1,
+    tone: "#b3402a",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 10 },
+      { kind: "chart", col: 0, span: 1, at: 11, lines: 10 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "Six small multiples",
+    head: "left",
+    cols: 3,
+    tone: "#1a2ffb",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 1, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 12 },
+      { kind: "chart", col: 0, span: 1, at: 13, lines: 12 },
+      { kind: "chart", col: 1, span: 1, at: 13, lines: 12 },
+      { kind: "chart", col: 2, span: 1, at: 13, lines: 12 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "The chart, and its key beside it",
+    head: "boxed",
+    cols: 3,
+    tone: "#6b4ea8",
+    bare: true,
+    blocks: [
+      { kind: "chart", col: 0, span: 2, at: 0, lines: 22 },
+      { kind: "chart", col: 2, span: 1, at: 0, lines: 22 },
+    ],
+      },
+      {
+    rung: 6,
+    name: "A map over a chart",
+    head: "shoulder",
+    cols: 1,
+    tone: "#1a7a4a",
+    bare: true,
+    blocks: [
+      { kind: "map", col: 0, span: 1, at: 0, lines: 14 },
+      { kind: "chart", col: 0, span: 1, at: 15, lines: 7 },
+    ],
+      },
+    ];
+
+    /* ---- the story page. Not a rung: the argument.
+     * A paper of nothing but words — which is what every page on the first
+     * rung is — and then the desk makes room in it and puts a drawing there.
+     * It is the whole proposition in one page, and the only page on the reel
+     * that changes while you watch it. */
+    /* A SEEDED SOURCE, so that a page's drawing is its own and does not
+     * change identity between two frames of the same telling — but differs
+     * from the page above it. Math.random() would reshuffle the chart on
+     * every raster, which is not a graphic, it is static. */
+    const seeded = (a) => () => {
+      a = (a + 0x6d2b79f5) | 0;
+      let x = Math.imul(a ^ (a >>> 15), 1 | a);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+
+    /* ------------------------------------------------------------- the ink
+     * A second colour, drawn at random and CHECKED before it is used.
+     *
+     * Three fixed inks meant every page on the reel was one of three, and a
+     * hand-picked set is also a set somebody has to keep picking. A hue is
+     * taken at random instead — the whole circle, not the primaries — and
+     * then it has to earn its place: measured against the paper it is
+     * printed on and against the black it shares the page with.
+     *
+     * Both tests matter and they pull opposite ways. Too light and the
+     * drawing disappears into the page; too dark and it stops reading as a
+     * second colour at all, and the chart may as well have been one ink.
+     */
+    const srgb = (c) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const lum = (rgb) =>
+      0.2126 * srgb(rgb[0]) + 0.7152 * srgb(rgb[1]) + 0.0722 * srgb(rgb[2]);
+    const ratio = (a, b) => {
+      const x = lum(a) + 0.05,
+        y = lum(b) + 0.05;
+      return x > y ? x / y : y / x;
+    };
+    const hsl2rgb = (h, s, l) => {
+      const k = (n) => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) =>
+        Math.round(
+          255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))),
+        );
+      return [f(0), f(8), f(4)];
+    };
+    const hexOf = (rgb) =>
+      "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
+    const PAPER_RGB = [255, 255, 255],
+      BLACK_RGB = [23, 23, 23];
+    /* THE FLOOR IS SET FOR PAPER THAT WILL BE DARKENED. These ratios are
+     * computed against white, and the webs do not show white: the reel is
+     * lifted, tone-mapped and remapped between the section's ground and
+     * white before anyone sees it, so a ratio measured here arrives smaller
+     * than it left. Four to one on paper is what survives that — the earlier
+     * three-and-a-bit did not, which is why some inks went missing on the
+     * webs while looking perfectly sound on the bench. */
+    const INK_ON_PAPER = 4.0,
+      INK_ON_BLACK = 1.9;
+    /* AND SOME OF THEM ARE GREY. A second colour on newsprint is often not
+     * a colour: a chart printed in one ink and a grey is the commonest thing
+     * a paper does, and a reel where every page is coloured is a reel that
+     * has never seen a newspaper. About a third print that way — dark enough
+     * to hold against the paper, light enough to be told from the black
+     * beside it, which is the same pair of tests the hues have to pass. */
+    /* HOW MANY PAGES PRINT IN GREY. A third meant most pages were still
+     * coloured and which ones you saw was luck — two loads running could
+     * look like a colour supplement or like a broadsheet. It is a number
+     * with a slider on it now, read at each recast so moving it takes hold
+     * on the next page that opens: nought is every page coloured, one is
+     * the whole reel in one ink and a grey. */
+    /* EVERY PAGE, BY DEFAULT. Greyscale means black and white — not a
+     * palette with some grey in it — so the share starts at one and the
+     * whole reel prints in one ink. The hues are still there and still
+     * measured; the slider is what lets them back in. */
+    const GREY_DEFAULT = 1;
+    const GREY_SHARE = () => {
+      /* P is declared further down, and the papers are built at module
+       * level — so this runs while P is in its dead zone. `typeof P` does
+       * NOT make that safe: typeof only swallows the error for an
+       * UNDECLARED name, and for a const before its declaration it throws
+       * like any other read. That threw the whole module before Stage saw
+       * it, silently, for the second time today. */
+      try {
+        return P.greyShare === undefined ? GREY_DEFAULT : P.greyShare;
+      } catch (e) {
+        return GREY_DEFAULT;
+      }
+    };
+    function greyFor(rnd) {
+      /* The valid band collected, and one taken from it at RANDOM. Keeping
+       * the most balanced lightness is the argmax again: every grey came out
+       * the same grey, which is one ink and not a range of them. */
+      /* NEUTRAL, and dark. A grey with a hue in it is a colour that has
+       * been talked down. This one is the ink a line or a route is drawn
+       * in and it has to hold on its own — the SPREAD from white to black
+       * is not here, it belongs to the drawings, which is where a scale of
+       * values actually means something. */
+      // A route at thirteen per cent lightness is the same hole in another
+      // shape, so the stroke ink comes up with the scale.
+      const ok = [];
+      for (let l = 0.56; l >= 0.3; l -= 0.01) {
+        const g = Math.round(255 * l);
+        ok.push(hexOf([g, g, g]));
+      }
+      return ok[Math.floor(rnd() * ok.length)];
+    }
+
+    function inkFor(rnd) {
+      if (rnd() < GREY_SHARE()) return greyFor(rnd);
+      /* A HUE FIRST, then the lightness that suits it — and the first hue
+       * that works, not the best of many tries. Scoring sixty hues and
+       * keeping the winner is an argmax and not a draw: the same few win
+       * every time, and a palette meant to be the whole circle came out red
+       * and violet with no green, no teal and no ochre in it.
+       *
+       * The lightness is searched because hues do not carry luminance alike.
+       * A blue at half lightness is already dark enough for the paper; a
+       * yellow at the same number is nowhere near, and has to come down to
+       * an ochre before it reads — which is a real printing ink, and exactly
+       * the kind this was throwing away. */
+      for (let tries = 0; tries < 40; tries++) {
+        const h = rnd() * 360,
+          sat = 0.38 + rnd() * 0.5;
+        let best = null;
+        for (let l = 0.58; l >= 0.16; l -= 0.015) {
+          const rgb = hsl2rgb(h, sat, l);
+          const onPaper = ratio(rgb, PAPER_RGB),
+            onBlack = ratio(rgb, BLACK_RGB);
+          if (onPaper < INK_ON_PAPER || onBlack < INK_ON_BLACK) continue;
+          // the most BALANCED lightness that works: far enough from the
+          // paper to be seen, far enough from the black to be a colour
+          const bal = Math.min(onPaper / 4.5, 1) * Math.min(onBlack / 2.4, 1);
+          if (!best || bal > best[0]) best = [bal, hexOf(rgb)];
+        }
+        if (best) return best[1];
+      }
+      return "#b3402a";
+    }
+
+    /* A DIFFERENT PAPER EVERY LOAD. The heads, the measures and the inks
+     * were fixed lists, so the reel was the same nine papers in the same
+     * order every time the page opened — and a reel that is always the same
+     * is a picture of a press, not a press. The salt is drawn once at load
+     * and everything downstream derives from it, so a session is consistent
+     * with itself and no two sessions agree. */
+    const LOAD_SALT = (Math.random() * 1e9) | 0;
+    /* Where the reel is when the page opens. The clock starts at zero every
+     * load, so the three webs always came up on the same three pages however
+     * different those pages were. This moves the whole set and leaves the
+     * spacing between the webs exactly as it was. */
+    const WEB_PHASE = Math.random();
+    /* WHEN EACH WEB COMES IN. The boot screen hands over to the paper, not
+     * to the page's furniture, so the three arrive under its fade rather
+     * than being there already when it lifts — a beat apart, because three
+     * sheets appearing together is a slide changing and three arriving one
+     * after another is a press starting. */
+    // the middle first, then the left, then the right: the sheet that covers
+    // the boot's mark is the one that arrives on it, and the frame fills
+    // outward from there rather than closing in on it
+    const WEB_IN = [0.26, 0, 0.52];
+    /* AND HOW THEY LEAVE: on up and off the top. The paper does not come in
+     * from below and then back out below — it keeps going, and it is taken
+     * off bottom edge first, top edge last, which is the same direction it
+     * has been travelling since it arrived. Same stagger, same quintic, a
+     * shade quicker because the reader has already asked to go and is being
+     * held while it plays. */
+    const OUT_RAMP = 1.2;
+    const OUT_SPAN = OUT_RAMP + Math.max.apply(null, WEB_IN);
+    let outSec = 0;
+    let bootAt = null;
+    let waveT = 0;
+    // the camera as it stands with the hero at rest, kept for the handover
+    let restCam = null;
+    /* WHERE EACH COLUMN'S FOOT IS, and where the column is across the frame,
+     * in viewport pixels, while the page is being handed over.
+     *
+     * ONE line for the three was a curtain: the lowest foot of the three held
+     * the whole width down, so a column that had already left kept a slab of
+     * ground over the page until the slowest one caught up — a black block
+     * coming up the frame, which is the opposite of paper leaving. Three
+     * feet, one per column, and the page is uncovered under each as that one
+     * goes. The narrow gap between two columns is closed by splitting the
+     * frame at the midpoint between their centres, so there is no strip that
+     * belongs to no column and therefore none that shows through early. */
+    const webBand = [];
+    /* The boot screen is clipped by where the paper actually is, so the web
+     * loop hands it the middle sheet's leading edge. Looked up until the
+     * screen has gone and then never again. */
+    let bootMark = true;
+    const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+    /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
+     * drawings, and the same fix.
+     *
+     * A head picked at random per page and a measure picked at random per
+     * page put two identical skeletons side by side often enough to be the
+     * first thing the eye finds: three columns under a banner, twice, is one
+     * paper photocopied. Six heads by three measures is eighteen templates,
+     * and eighteen is exactly how many pages the sheet carries — so they are
+     * shuffled once and dealt out, and no two pages on the whole reel share
+     * a skeleton, let alone two that are up at the same moment. */
+    const TEMPLATE_DECK = (() => {
+      const d = [];
+      for (const h of HEAD_SET) for (let c = 1; c <= 3; c++) d.push({ head: h, cols: c });
+      const r = seeded(LOAD_SALT + 7717);
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(r() * (i + 1));
+        const t = d[i];
+        d[i] = d[j];
+        d[j] = t;
+      }
+      return d;
+    })();
+    /* A COLUMN OF THE REEL. Each web reads one of these and only that one,
+     * so the three can never hold the same page — and therefore never the
+     * same drawing — however far their speeds pull their offsets apart. */
+    const storyPapers = (n, col) =>
+      Array.from({ length: n }, (_, i) => {
+        const r = seeded(LOAD_SALT + col * 104729 + i * 5197);
+        const T = TEMPLATE_DECK[(col * n + i) % TEMPLATE_DECK.length];
+        return {
+          rung: 1,
+          story: true,
+          name: "The article, and what the desk makes of it",
+          head: T.head,
+          cols: T.cols,
+          tone: inkFor(r),
+        };
+      });
+
+
+    /* THE HOLES. Six to a rung was reached by writing pages from nothing —
+     * decade labels and paragraphs I made up — and they are out again. What
+     * the reel wants at each of these years is named here instead, and drawn
+     * as an empty page, so the work still to be done is visible in the reel
+     * and countable in the catalogue rather than hidden behind filler. */
+    const EMPTIES = [
+      { year: 1931, rung: 2, need: "One more page of text with a black-and-white plate" },
+      { year: 1938, rung: 3, need: "The first colour photograph on a news page" },
+      { year: 1948, rung: 3, need: "Colour on a magazine cover" },
+      { year: 1955, rung: 3, need: "A colour photograph across the whole measure" },
+      { year: 1962, rung: 3, need: "Colour off the wire, the same day" },
+      { year: 1969, rung: 3, need: "Colour on the front page of a daily" },
+      { year: 1975, rung: 3, need: "Colour through the whole paper" },
+      { year: 1972, rung: 4, need: "A chart the size of a paragraph, set in the measure" },
+      { year: 1979, rung: 4, need: "The locator map, inset in a column" },
+      { year: 1986, rung: 4, need: "A chart sent down the wire" },
+      { year: 1991, rung: 4, need: "A house style: one idea a chart" },
+      { year: 1998, rung: 4, need: "Small multiples across a grid" },
+      { year: 2001, rung: 4, need: "The same piece, published on paper and on a screen" },
+      { year: 2004, rung: 5, need: "The graphic takes the top of the page" },
+      { year: 2014, rung: 5, need: "Built rather than drawn, at every size" },
+      { year: 2016, rung: 5, need: "A piece that answers to the reader" },
+      { year: 2018, rung: 5, need: "The story told by scrolling" },
+      { year: 2022, rung: 5, need: "Motion, out of the same data" },
+      { year: 2026, rung: 5, need: "Made at the desk, by the assistant" },
+    ];
+
+    /* THE PIECES THAT FOUNDED THE FORM.
+     *
+     * Five plates, in the years they were printed, set into the reel among
+     * the papers of their own decade. They are not decoration and they are
+     * not invented: each is the real sheet, public domain, and each is
+     * captioned with what it is and who drew it. They are also the argument
+     * the whole reel makes — that what a desk does now has a lineage, and
+     * that the lineage is a hundred and forty years long. */
+    const LANDMARKS = [
+      {
+        year: 1786,
+        rung: 0,
+        body: "Playfair engraved the trade of a century as a shape. Two lines run across eighty-two years, imports and exports, and the space between them is filled and labelled — the balance, in favour of England or against it, read off as an area rather than counted out of a table. He had to explain in the text that the bottom of the plate was years and the side was millions of pounds, because no reader had seen a quantity drawn against time before. The Commercial and Political Atlas carried forty-four such plates and one bar chart, made because Scotland's trade for a single year had no time to run along.", // outside the ramp
+        was: 3,
+        src: "The Commercial and Political Atlas",
+        by: "William Playfair",
+        what: "Imports and exports to and from England, 1700 to 1782 — the first time a quantity over time was drawn as a line.",
+        img: "https://upload.wikimedia.org/wikipedia/commons/4/4f/1786_Playfair_-_1_Chart_of_all_the_import_and_exports_to_and_from_England_from_the_year_1700_to_1782.jpg",
+      },
+      {
+        year: 1854,
+        rung: 0,
+        body: "In the ten days after the last day of August 1854, more than five hundred people died within a few streets of Golden Square. Snow marked every death as a bar against the house it happened in, and the bars gathered around one thing: the public pump in Broad Street. The map is an argument rather than an illustration — it shows the deaths thinning with distance from that pump, and the households that drew their water elsewhere standing clear in the middle of them. He put it before the parish board, the handle was taken off, and the map went into the second edition of his essay the following year.", // outside the ramp
+        was: 2,
+        src: "On the Mode of Communication of Cholera",
+        by: "Dr John Snow",
+        what: "Deaths from cholera around Broad Street, Soho — a map that found a pump.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Snow-cholera-map-1.jpg/1280px-Snow-cholera-map-1.jpg",
+      },
+      {
+        year: 1858,
+        rung: 0,
+        body: "Each wedge is a month of the war in the Crimea, and its area is the men who died in it. Blue is preventable disease, red is wounds, black is everything else — and the blue is most of the figure. Nightingale drew it for a royal commission and for readers who would not sit through a table, and she was right about them: the diagram was reprinted, argued over and acted on, and the sanitary commissions that followed it were the reason the second winter looks like the small figure beside the first.", // outside the ramp
+        was: 3,
+        src: "Notes on Matters Affecting the Health of the British Army",
+        by: "Florence Nightingale",
+        what: "Diagram of the causes of mortality in the army in the East — the blue is what killed more than the fighting.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/Nightingale-mortality.jpg/1280px-Nightingale-mortality.jpg",
+      },
+      {
+        year: 1869,
+        rung: 0,
+        body: "Six things at once, on one sheet: the size of the army as the width of the band, where it went, which way it was going, the places it passed, the dates, and the temperature on the retreat drawn underneath. Four hundred and twenty-two thousand men go into Russia as a broad tan river and ten thousand come back as a black thread. Minard was seventy-eight and had been drawing flows of goods and passengers for thirty years; this is the one that is still taught, because nothing in it is decoration.", // outside the ramp
+        was: 3,
+        src: "Tableaux graphiques et cartes figuratives",
+        by: "Charles Joseph Minard",
+        what: "The Russian campaign of 1812: six variables in one figure, and the width of the band is the army.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg/1280px-Minards_chart_Napoleons_Russian_campaign_of_1812_made_in_1869.jpg",
+      },
+      {
+        year: 1900,
+        rung: 0,
+        body: "Du Bois took a set of hand-drawn charts to the Exposition Universelle in Paris and hung them in the Palace of Social Economy. He and his students at Atlanta University had made them in ink and gouache — bars, spirals, fans, a map of Georgia by county — out of census returns and their own surveys, to answer a question the fair itself was asking badly. The plates are a century ahead of their look: the colour is doing work, the forms are chosen for what they have to say, and every one of them carries the number it was drawn from.", // outside the ramp
+        was: 3,
+        src: "The Exhibit of American Negroes, Paris Exposition",
+        by: "W. E. B. Du Bois",
+        what: "Occupations of Negroes and whites in Georgia — drawn by hand, in gouache, to be argued with.",
+        img: "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif/lossy-page1-1280px-The_Georgia_Negro_-_Occupations_of_Negroes_and_whites_in_Georgia.tif.jpg",
+      },
+    ];
+
+    /* The middle of the ramp: the decades when the graphic climbed to the top
+     * of the page and the words moved under it. Labelled by what the form did,
+     * not by an invented story — the same honesty the modern pages keep. */
+    /* 3 and 4 of the ramp. Labelled by what the FORM did in the decade, never
+     * by an invented story — the same rule the other made pages keep. */
+
+
+
+
+    /* The papers in the order they were printed, which is the order the reel
+     * runs in. Their own datelines decide it — nothing here is a choice. */
+    const CHRONO = () =>
+      ARTICLES.slice().sort((a, b) => {
+    const y = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+    return y(a) - y(b);
+      });
+
+    let panelSheet = null; // the atlas canvas, kept so the reel can read it
+
+    /* THE MEASURE OF ONE WEB, in texels — and it is CAPPED by the card.
+     *
+     * A texture has a maximum side, and on this machine it is 16384. Thirty
+     * pages of 560 rows come to 16800, so the upload failed and failed
+     * SILENTLY: no error, no warning, just three webs with nothing to read and
+     * a black frame where the hero should be. The column is therefore narrowed
+     * until the whole run fits, and it is measured against the card rather
+     * than guessed — add a page and the reel shrinks to make room by itself
+     * instead of going dark. */
+    let GALLEY_COL = 400;
+    const GALLEY_GAP = 0;
+    /* THREE COLUMNS, ONE PER WEB — and this is a correctness fix, not a
+     * decoration.
+     *
+     * One shared column was defensible while the three webs sat a fixed
+     * third of the reel apart: three offsets into one chronology showed
+     * three different pages, and that was the guarantee. It stopped being
+     * one the moment the webs were given DIFFERENT SPEEDS. The offsets are
+     * no longer fixed — they drift by the difference in rate, half a page a
+     * minute — so the windows slide into each other, and when they overlap
+     * the same page is on two webs at once. That is both faults the reel is
+     * supposed to make impossible: the same drawing twice on the screen,
+     * and a page arriving in one web already half drawn because the other
+     * web opened it a while ago.
+     *
+     * A column each removes the possibility rather than managing it. No
+     * page is ever in two windows, whatever the speeds do, because no page
+     * is in two columns. */
+    const GALLEY_COLS = 3;
+    /* HOW MANY DEVICE TEXELS TO ONE UNIT OF THE PAGE.
+     *
+     * The pages are set in a coordinate system where the measure is four
+     * hundred units, and they were STORED at four hundred texels — then
+     * magnified onto a sheet a third of the frame wide, which on a retina
+     * screen is nearer a thousand device pixels. Nine-unit body type
+     * arriving as twenty-two pixels drawn from nine is exactly what the
+     * newsprint looked like, and no filter fixes it: the resolution was
+     * never there.
+     *
+     * The fix is a transform on the galley's context and nothing else. Every
+     * press still draws in the same units at the same sizes; the canvas
+     * underneath is twice as big in each direction, so the type is RASTERISED
+     * at twice the resolution rather than resampled up to it. */
+    let GALLEY_SS = 2;
+    /* The reel the tuned speeds were set against. A web's speed on screen is
+     * its rate over the fraction of the reel in shot, and that fraction is
+     * one over the number of pages — so shortening the reel would quietly
+     * slow the paper down. The rate is normalised by this instead, and the
+     * numbers in the panel keep meaning what they meant. */
+    const REEL_REF = 9;
+    /* A PAGE IS A PAGE. Its depth is the sheet its press printed on, as a
+     * ratio of the measure — a broadsheet is a tall thin thing, a monthly is
+     * nearly square — and never how much of the article happened to be set.
+     * Measuring the text instead gave eleven pages of eleven different heights
+     * with no reason behind any of them, and a short piece produced a stub. */
+    /* ONE FORMAT, for every page on the reel.
+     *
+     * Each press used to print on its own sheet — a broadsheet tall and
+     * narrow, a monthly nearly square — which is true of the presses and wrong
+     * for this. Nothing lined up with anything: the webs never showed two
+     * pages at the same height, a cut landed somewhere different on every one,
+     * and each new template had its height tuned by hand against the last. The
+     * realism cost more than it bought. */
+    const PAGE_RATIO = 1.4;
+    const pageH = () => Math.round(GALLEY_COL * PAGE_RATIO);
+
+    let GALLEY_W = GALLEY_COL;
+    // Settled by the measuring pass, and read by the frame to size the window
+    // it slides down the web. Never a literal.
+    let GALLEY_H = 4400;
+    let REEL = [];
+    /* Where every page of the reel begins, as a fraction of it. The montage
+     * cuts on these and nothing else — a cut that lands mid-page is a jump,
+     * not an edit. */
+    const CUTS = [];
+    const PAGES = [];
+
+    /* The photographs. Every one of these is a real plate belonging to the
+     * story it sits in, public domain, and served with an open CORS header —
+     * which the hero needs, because a canvas that has drawn a cross-origin
+     * image without one cannot be uploaded as a texture at all.
+     *
+     * They are fetched, not carried: the page holds no image files. If one
+     * fails, or the header ever goes away, the press keeps the drawn plate it
+     * had before and nothing else changes.
+     */
+    /* WHAT ACTUALLY GOES IN THE HOLES. Not drawings of charts: real ones,
+     * captured off the pages that published them — Information is Beautiful
+     * for the built graphics, Our World in Data for the choropleths — and
+     * real photographs. Nothing in this list was made here, which is the
+     * point: the reel is showing what the form looks like, so a chart on it
+     * has to be a chart somebody actually published.
+     *
+     * They arrive as data URIs from press-assets.js, and the reason is not
+     * speed. The galley is a canvas that becomes a texture, and the bench
+     * reads that same canvas back with toDataURL; both throw on a canvas an
+     * image has TAINTED. A file loaded from disk taints one — under file://
+     * a document is its own opaque origin — so a bench page opened straight
+     * off the disk would lose the entire reel the moment a photograph was
+     * drawn into it. A data URI has no origin to be foreign to.
+     *
+     * If the table is not on the page the holes keep their drawn stand-ins
+     * and nothing else changes. */
+    const PRESS_ASSETS = (window.PRESS_DATA || { photo: [], chart: [], map: [] });
+
+
+    /* ------------------------------------------------- the moving graphic
+     * A block on the page whose contents are HTML, rendered LIVE.
+     *
+     * The paper is a canvas that becomes a texture, so nothing on it can be
+     * a live document — but real markup can be rasterised into it, through
+     * an <foreignObject> in an SVG carried as a data URI. Measured: real
+     * layout, no tainting, 0.46ms for the whole round trip of a block this
+     * size, and an <svg> nested inside the HTML renders too, which is what
+     * makes a line or an arc possible at all.
+     *
+     * What that route cannot do is move by ITSELF. An SVG loaded as an image
+     * runs in secure static mode, and the probe says so plainly: a CSS
+     * animation sat at 10px at t=0 and at t=900ms, and a webfont was ignored
+     * for the system fallback. So the motion is composed outside the markup,
+     * and composed FRESH — not baked into phases and played back, because
+     * these numbers are decided as they are drawn.
+     */
+    /* Asked for on every frame. What paces the arrival is how fast the
+     * stages come back, not a timer — and there are only ever a couple in
+     * flight, which is the thing that actually needed bounding. */
+    const LIVE_HZ = 60;
+    /* AND HOW OFTEN A PAGE IS SET AGAIN. It was every frame the hole had
+     * moved at all, which is sixty times a second and 88 megabytes a second
+     * of texture going back up the bus for text that slides an inch in a
+     * second and a half. Thirty is above what the eye resolves in a slide
+     * that slow, and it halves the traffic. */
+    const PAINT_HZ = 60;
+    let LIVE_HOLES = [];
+    let galleyCv = null;
+    /* Where each of the three webs currently is in the lap, and how much of
+     * it is in shot. Written by the draw, read by the frame loop — one frame
+     * stale, which at a hundredth of a lap a second is nothing. */
+    const WEB_WIN = [0, 0, 0, 0.2];
+    /* How far each web is through its arrival, 0 to 1. Written by the draw,
+     * read by the telling: a page whose web is still climbing is printed
+     * paper and nothing else. Type sliding to make room, and a chart drawing
+     * itself, while the sheet is still coming up the frame is two motions on
+     * top of each other and neither reads. */
+    const WEB_INE = [0, 0, 0];
+    /* IN SHOT MEANS READABLE, not merely mapped onto a web.
+     *
+     * The window a web reads is the whole of its geometry, and its geometry
+     * is half again as tall as the frame — then it fades out towards both
+     * ends, so the top and bottom of that window are off screen or on their
+     * way there. Testing against all of it meant a page counted as arriving
+     * long before anyone could see it: it spent its whole telling out of
+     * sight and slid into the frame with the graphic already finished,
+     * which is the one thing this was supposed to prevent.
+     *
+     * The band is the middle of the window — where the paper is at full
+     * strength and inside the frame. A page starts its telling when it
+     * reaches that, and is only let go once it is well clear of it. */
+    const BAND = 0.26; // trimmed off each end of a web's window
+    /* ASKED OF ONE WEB, not of all three. A page belongs to the column its
+     * web reads, so the only window that can ever show it is that web's —
+     * and it is that web's REAL position, written by the draw a frame ago,
+     * which is what makes the three different speeds account for
+     * themselves rather than be assumed away. */
+    const inShot = (y0, y1, pad, col) => {
+      const m = pad === undefined ? 0.02 : pad,
+        a = y0 / GALLEY_H,
+        b = y1 / GALLEY_H,
+        dv = WEB_WIN[3],
+        lo = dv * BAND,
+        hi = dv * (1 - BAND);
+      const k0 = col === undefined ? 0 : col,
+        k1 = col === undefined ? 2 : col;
+      for (let k = k0; k <= k1; k++) {
+        // the window wraps, so it is tested against three copies of the reel
+        const v = WEB_WIN[k];
+        for (let o = -1; o <= 1; o++)
+          if (a < v + hi + m + o && b > v + lo - m + o) return true;
+      }
+      return false;
+    };
+
+    /* THE NUMBERS, CAST ONCE AND HELD.
+     *
+     * They used to walk — a value drifting towards a target for ever — and
+     * that was wrong once the drawing had arrived. A chart that keeps moving
+     * after it is finished cannot be read: the eye is still being asked to
+     * track it at the moment it should be free to look. So a telling gets
+     * ONE set of numbers, drawn when the page is recast, and they do not
+     * move again. What moves is the arrival, and the arrival ends.
+     *
+     * It costs nothing to hold, either. Nothing changes during the hold, so
+     * nothing is rasterised and nothing is written back to the reel — which
+     * is most of every cycle. */
+    const clamp01 = (u) => Math.max(0, Math.min(1, u));
+    const LIVE_N = 16;
+    const liveNow = [],
+      liveTo = [];
+    for (let i = 0; i < LIVE_N; i++) {
+      liveNow.push(0.2 + Math.random() * 0.7);
+      liveTo.push(0.15 + Math.random() * 0.8);
+    }
+    function liveStep(dt) {
+      for (let i = 0; i < LIVE_N; i++) {
+        const d = liveTo[i] - liveNow[i];
+        liveNow[i] += d * Math.min(1, dt * 2.4);
+        if (Math.abs(d) < 0.015) liveTo[i] = 0.12 + Math.random() * 0.85;
+      }
+    }
+    // a fresh set, for one telling
+    const castValues = (rnd) => {
+      const out = [];
+      for (let i = 0; i < LIVE_N; i++) out.push(0.14 + rnd() * 0.82);
+      return out;
+    };
+
+    /* ---------------------------------------------------- the drawings
+     * Six charts and six maps. Each arrives by its own gesture — a bar
+     * rises, a line is traced, a map fills in — holds perfectly still, and
+     * then LEAVES BY THE SAME GESTURE CONTINUING. Not reversed: reversing
+     * un-draws a graphic, which reads as a mistake being undone, and not
+     * faded either, which reads as nothing at all. The sweep that brought
+     * the first bar in comes round again and takes it away, in the same
+     * direction, so arrival and departure are one movement passing through.
+     *
+     * That is what `p` and `q` are. p is how far the sweep has arrived, q
+     * how far the same sweep has left; an element is present by the amount
+     * one leads the other. Between them they need no alpha anywhere.
+     *
+     * The furniture is set in a sans, at a size and a grey that put it
+     * beneath the drawing rather than beside it: a chart's title is a label,
+     * not a headline. It sits on a page of Georgia on purpose — the graphic
+     * should read as a made thing set INTO the article, which is what it is.
+     */
+    const CHARTS = ["bars", "line", "area", "stack", "scatter", "donut"];
+    const MAPS = ["units", "choro", "places", "flows", "route", "rings"];
+    const LIVE_KINDS = CHARTS.concat(MAPS);
+
+    /* SINGLE quotes around the family with a space in it. This string goes
+     * into an attribute of an SVG that is parsed as XML, and a double quote
+     * inside a double-quoted attribute ends it — the whole document fails to
+     * parse and the Image simply never loads, silently, with every drawing
+     * coming out blank. */
+    const SANS =
+      "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+    const DINK = "#171717",
+      GRID = "#e8e6e2",
+      AXIS = "#a6a29b",
+      MUTE = "#9b978f",
+      PALE = "#eceae5",
+      /* Land has to be darker than you think. At a quarter of a page the map
+       * is competing with a column of nine-point type beside it, and a fill
+       * three per cent off white reads as blank paper — the shape of the
+       * world was there and could not be seen. */
+      LAND = "#e0dcd4";
+    const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const fmt = (n) =>
+      n >= 1000 ? Math.round(n / 100) / 10 + "k" : n >= 10 ? Math.round(n) : n.toFixed(1);
+
+    const svgWrap = (w, h, body) =>
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+      '" viewBox="0 0 ' + w + " " + h + '">' + body + "</svg>";
+
+    /* One element's share of the sweep. p brings it, q takes it, and both
+     * run the same way down the set, so nothing ever moves backwards. */
+    const sweep = (i, n, p, q, spread) => {
+      const s = spread === undefined ? 1.15 : spread;
+      const lead = 1 + s;
+      const a = clamp01(p * lead - (i / Math.max(1, n)) * s);
+      const b = clamp01(q * lead - (i / Math.max(1, n)) * s);
+      return Math.max(0, (1 - Math.pow(1 - a, 3)) - (1 - Math.pow(1 - b, 3)));
+    };
+    // and where a continuous path currently begins and ends
+    const span = (n, p, q) => [q * (n - 1), p * (n - 1)];
+
+    /* THE FURNITURE, in one place, and it gives way as the block gets
+     * smaller. A chart the size of a paragraph has no room for a title and
+     * no need of one; a block under seventy pixels has room for the drawing
+     * and nothing else. Everything is inset, because a rule that touches the
+     * edge of its block reads as a crop rather than as a chart. */
+    const chrome = (w, h, title, note, draw) => {
+      const pad = h < 74 ? 4 : h < 118 ? 7 : 11;
+      const iw = Math.max(20, w - pad * 2);
+      const titled = h >= 90 && w >= 96;
+      const noted = h >= 124 && w >= 120;
+      /* The title needs AIR UNDER IT. Set flush, the first gridline starts a
+       * pixel below the descenders and the label reads as part of the chart
+       * rather than as its name. The gap is a third of the title's own line,
+       * which is what the eye takes as a break. */
+      const tH = 14,
+        TGAP = 9,
+        // margin 9, rule 1, space 5, and a line of 9 — the block the source
+        // occupies, reserved before the plot is given what is left
+        nH = 20;
+      const ph = Math.max(12, h - pad * 2 - (titled ? tH + TGAP : 0) - (noted ? nH : 0));
+      return (
+        '<div style="box-sizing:border-box;width:' + w + "px;height:" + h +
+        "px;padding:" + pad + 'px;font-family:' + SANS + '">' +
+        (titled
+          ? '<div style="font:600 10.5px/' + tH + "px " + SANS + ";color:" + DINK +
+            ";height:" + tH + "px;margin-bottom:" + TGAP +
+            'px;letter-spacing:-.004em;overflow:hidden;' +
+            'white-space:nowrap;text-overflow:ellipsis">' + esc(title) + "</div>"
+          : "") +
+        draw(iw, ph) +
+        (noted
+          ? '<div style="height:7px;margin-top:9px;padding-top:4px;' +
+            "border-top:1px solid " + GRID + ";font:400 5.5px/7px " + SANS +
+            ";color:" + MUTE + ";letter-spacing:.005em;overflow:hidden;" +
+            'white-space:nowrap;text-overflow:ellipsis">' + esc(note) + "</div>"
+          : "") +
+        "</div>"
+      );
+    };
+
+    /* A value axis: hairlines with their figures sitting ON them, ranged
+     * right in a gutter. No axis line and no ticks — the rules are what a
+     * height is read against, and a box drawn round a chart is furniture
+     * from a spreadsheet. */
+    const GUT = 26;
+    const yAxis = (w, h, top, gut) => {
+      let out = "";
+      for (let i = 0; i <= 2; i++) {
+        const y = h - (i / 2) * (h - 9);
+        // the figure sits ON its rule, and the one at the foot is lifted so
+        // it stays inside the block instead of hanging off the bottom of it
+        const ty = i === 0 ? y - 3 : y + 2.8;
+        out +=
+          '<path d="M' + gut + " " + y.toFixed(1) + " H" + w + '" stroke="' +
+          GRID + '" stroke-width="1" fill="none"/>';
+        if (gut > 0)
+          out +=
+            '<text x="' + (gut - 6) + '" y="' + ty.toFixed(1) +
+            '" text-anchor="end" font-family="' + SANS +
+            '" font-size="8" fill="' + AXIS + '">' + fmt((i / 2) * top) + "</text>";
+      }
+      return out;
+    };
+
+    const hexRGB = (hx) => [
+      parseInt(hx.slice(1, 3), 16),
+      parseInt(hx.slice(3, 5), 16),
+      parseInt(hx.slice(5, 7), 16),
+    ];
+
+    /* A SCALE OF VALUES, WHITE TO BLACK.
+     *
+     * A black-and-white chart is not one grey used everywhere: it is the
+     * whole spectrum, from paper showing through to solid ink, and a reader
+     * tells one class from another by how dark it is. A single mid grey
+     * standing in for a colour is a chart with its scale thrown away.
+     *
+     * On a coloured page the same call runs from the paper to that page's
+     * own ink, which is the same idea said in one hue. Every drawing with
+     * more than one class in it asks this rather than choosing for itself,
+     * so the two read as one desk working in two inks.
+     */
+    const isNeutral = (hx) =>
+      hx.slice(1, 3) === hx.slice(3, 5) && hx.slice(3, 5) === hx.slice(5, 7);
+    const mixRGB = (a, b, k) =>
+      hexOf([
+        Math.round(a[0] + (b[0] - a[0]) * k),
+        Math.round(a[1] + (b[1] - a[1]) * k),
+        Math.round(a[2] + (b[2] - a[2]) * k),
+      ]);
+    const NEAR_WHITE = [246, 244, 240],
+      NEAR_BLACK = [18, 18, 18];
+    /* IT STOPS SHORT OF BLACK, AND ITS STEPS ARE EQUAL.
+     *
+     * The darkest class used to be solid ink, and on a web that is a hole:
+     * the sheet arrives at about a twelfth of white, so anything past the
+     * middle of the scale lands on the ground itself and a map, a grid or a
+     * field of dots comes out as one black shape. It runs to a mid-dark
+     * grey instead — still the heaviest thing on the page, still four to
+     * one against paper on the bench, and far enough off the ground that
+     * the class below it has room.
+     *
+     * And it is linear. A bent ladder put its classes forty-six levels
+     * apart at one end and nineteen at the other, and nineteen levels of
+     * grey is a difference the eye will not go looking for. Five classes
+     * now land thirty-four apart, every step the same as the one before —
+     * the only arrangement where no two neighbours are harder to tell apart
+     * than any other two.
+     */
+    const VALUE_LIGHTEST = 0.03,
+      VALUE_DARKEST = 0.7;
+    const value = (t, tone) => {
+      const k = clamp01(t);
+      const m = VALUE_LIGHTEST + k * (VALUE_DARKEST - VALUE_LIGHTEST);
+      if (isNeutral(tone)) return mixRGB(NEAR_WHITE, NEAR_BLACK, m);
+      const rgb = [
+        parseInt(tone.slice(1, 3), 16),
+        parseInt(tone.slice(3, 5), 16),
+        parseInt(tone.slice(5, 7), 16),
+      ];
+      return mixRGB(NEAR_WHITE, rgb, 0.14 + k * 0.72);
+    };
+
+    /* THE FEW NUMBERS THE REVEAL ALSO NEEDS.
+     *
+     * A clip can reproduce a staggered gesture — bars coming up one after
+     * another rather than together — but only if it knows where the bars
+     * are. Rather than let the reveal guess, the two counts that decide
+     * that live here and both the drawing and the clip read them. Guessing
+     * would work until somebody changed a chart. */
+    const barCount = (pw) => (pw < 130 ? 9 : 13);
+    const barGut = (pw) => (pw < 130 ? 0 : GUT);
+    const stackRows = (ph) => (ph < 90 ? 4 : 6);
+    const stackGap = (ph) => Math.max(3, ph * 0.06);
+
+    const LIVE_ART = {};
+
+    // ---- charts -------------------------------------------------------
+    LIVE_ART.bars = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Output by quarter", "Office for National Statistics, 2026",
+        (pw, ph) => {
+          const n = barCount(pw),
+            gut = barGut(pw),
+            top = 40 + Math.round(rnd() * 60);
+          const bw = (pw - gut) / n;
+          let out = yAxis(pw, ph, top, gut);
+          for (let i = 0; i < n; i++) {
+            const k = sweep(i, n, p, q);
+            if (k <= 0) continue;
+            const tall = v[i % v.length] * (ph - 6) * k;
+            out +=
+              '<rect x="' + (gut + i * bw + bw * 0.16).toFixed(1) + '" y="' +
+              (ph - tall).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) +
+              '" height="' + Math.max(0.6, tall).toFixed(1) + '" rx="1" fill="' +
+              // read off its own height: the tallest bar is the darkest,
+              // which is the whole of what a value scale is for
+              value(0.2 + v[i % v.length] * 0.8, tone) + '"/>';
+          }
+          return svgWrap(pw, ph, out);
+        });
+
+    LIVE_ART.line = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "The series, by year", "Annual returns, 1994–2026",
+        (pw, ph) => {
+          const n = 13,
+            gut = pw < 130 ? 0 : GUT,
+            top = 60 + Math.round(rnd() * 40);
+          /* THE HEAD IS PART OF THE LINE, and it is the widest part of it.
+           * The last point sat exactly on the right edge of the plot, so the
+           * ring that marks it was cut in half by the frame at the moment
+           * the drawing finished arriving — the one frame anybody looks at.
+           * The run is shortened by the head's own radius, and the fall is
+           * held inside it too, so the mark always lands whole. */
+          const HEAD = 4.4;
+          const X = (i) => gut + (i / (n - 1)) * (pw - gut - HEAD);
+          const Y = (i) =>
+            Math.max(
+              HEAD,
+              Math.min(ph - HEAD, ph - 3 - v[(i * 3) % v.length] * (ph - 12)),
+            );
+          const [from, to] = span(n, p, q);
+          if (to <= from) return svgWrap(pw, ph, yAxis(pw, ph, top, gut));
+          const at = (f) => {
+            const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+              k = f - i;
+            return [X(i) + (X(i + 1) - X(i)) * k, Y(i) + (Y(i + 1) - Y(i)) * k];
+          };
+          let d = "";
+          const s0 = at(from);
+          d += "M" + s0[0].toFixed(1) + " " + s0[1].toFixed(1);
+          for (let i = Math.ceil(from); i <= Math.floor(to); i++)
+            d += " L" + X(i).toFixed(1) + " " + Y(i).toFixed(1);
+          const s1 = at(to);
+          d += " L" + s1[0].toFixed(1) + " " + s1[1].toFixed(1);
+          return svgWrap(pw, ph,
+            yAxis(pw, ph, top, gut) +
+            '<path d="' + d + '" fill="none" stroke="' + tone +
+            '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+            '<circle cx="' + s1[0].toFixed(1) + '" cy="' + s1[1].toFixed(1) +
+            '" r="2.8" fill="#fff" stroke="' + tone + '" stroke-width="2"/>');
+        });
+
+    LIVE_ART.area = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Share of the whole", "Per cent of total, quarterly",
+        (pw, ph) => {
+          const n = 15,
+            gut = pw < 130 ? 0 : GUT;
+          const X = (i) => gut + (i / (n - 1)) * (pw - gut);
+          const Y = (i) => ph - 3 - v[(i * 5) % v.length] * (ph - 12);
+          const [from, to] = span(n, p, q);
+          if (to <= from) return svgWrap(pw, ph, yAxis(pw, ph, 100, gut));
+          const at = (f) => {
+            const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+              k = f - i;
+            return [X(i) + (X(i + 1) - X(i)) * k, Y(i) + (Y(i + 1) - Y(i)) * k];
+          };
+          const a = at(from),
+            b = at(to);
+          let top = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1);
+          for (let i = Math.ceil(from); i <= Math.floor(to); i++)
+            top += " L" + X(i).toFixed(1) + " " + Y(i).toFixed(1);
+          top += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
+          const fill = top + " L" + b[0].toFixed(1) + " " + ph + " L" +
+            a[0].toFixed(1) + " " + ph + " Z";
+          return svgWrap(pw, ph,
+            yAxis(pw, ph, 100, gut) +
+            '<path d="' + fill + '" fill="' + tone + '" opacity=".3"/>' +
+            '<path d="' + top + '" fill="none" stroke="' + tone +
+            '" stroke-width="2" stroke-linejoin="round"/>');
+        });
+
+    LIVE_ART.stack = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "By category", "Three parts of each, per cent",
+        (pw, ph) => {
+          const rows = stackRows(ph),
+            lab = pw < 130 ? 0 : 16,
+            gap = stackGap(ph);
+          const rh = Math.max(3, (ph - gap * (rows - 1)) / rows);
+          const full = pw - lab;
+          let out = "";
+          for (let r = 0; r < rows; r++) {
+            const k = sweep(r, rows, p, q);
+            if (k <= 0) continue;
+            const y = r * (rh + gap);
+            const a = v[r % v.length] * 0.52 * full * k,
+              b = v[(r + 5) % v.length] * 0.3 * full * k,
+              c = v[(r + 9) % v.length] * 0.16 * full * k;
+            if (lab)
+              out +=
+                '<text x="0" y="' + (y + rh * 0.74).toFixed(1) +
+                '" font-family="' + SANS + '" font-size="8" fill="' + AXIS + '">' +
+                String.fromCharCode(65 + r) + "</text>";
+            /* A hairline of paper between the segments. Two greys that touch
+             * are read as one shape however far apart they are on the scale
+             * — the eye wants an edge before it will look for a difference,
+             * and on a web that edge is the only thing that survives. */
+            const seg = (sx, sw, t) =>
+              sw <= 0.5
+                ? ""
+                : '<rect x="' + sx.toFixed(1) + '" y="' + y.toFixed(1) +
+                  '" width="' + Math.max(0.5, sw - 1.2).toFixed(1) + '" height="' +
+                  rh.toFixed(1) + '" fill="' + value(t, tone) + '"/>';
+            out +=
+              seg(lab, a, 1) + seg(lab + a, b, 0.56) + seg(lab + a + b, c, 0.14);
+          }
+          return svgWrap(pw, ph, out);
+        });
+
+    LIVE_ART.scatter = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Each dot, one district", "Two measures, 312 districts",
+        (pw, ph) => {
+          const n = pw < 130 ? 16 : 34,
+            gut = pw < 130 ? 0 : GUT,
+            top = 30 + Math.round(rnd() * 50);
+          /* The gutter is for the FIGURES, and this one drew its own bare
+           * rules and never wrote any — twenty-six pixels of white down the
+           * left of every scatter, held for nothing. It uses the same axis
+           * the other charts use, which is what the gutter was reserved for
+           * in the first place. */
+          let out = yAxis(pw, ph, top, gut);
+          for (let i = 0; i < n; i++) {
+            const k = sweep(i, n, p, q, 1.35);
+            const x = gut + 4 + rnd() * (pw - gut - 8),
+              y = 4 + rnd() * (ph - 8),
+              r0 = 1.8 + rnd() * 2.8;
+            if (k <= 0) continue;
+            out +=
+              '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
+              (r0 * k).toFixed(1) + '" fill="' +
+              // a dot's value is its size, which is the second measure
+              value(0.34 + ((r0 - 1.8) / 2.8) * 0.66, tone) + '" opacity=".95"/>';
+          }
+          return svgWrap(pw, ph, out);
+        });
+
+    /* A RING IS A CIRCLE, and a circle in a box that is not square leaves
+     * the rest of the box empty. It was drawn against min(w,h) and pinned to
+     * the left, so a wide short block put a small ring in one corner with a
+     * third of the plot blank beside it, and a tall narrow one put it in the
+     * middle of a column of nothing.
+     *
+     * The layout is chosen from the proportion of the block instead. Wide:
+     * the ring takes the height and the key stands beside it. Tall: the ring
+     * takes the width and the key lies under it in a row. Square: the ring
+     * is centred and the key only appears if there is width to spare. In
+     * every case the ring is centred in the space it is actually given. */
+    LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "Of the whole", "Per cent, rounded to the nearest",
+        (pw, ph) => {
+          const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
+          // five classes over the whole spectrum, biggest darkest
+          const shade = [1, 0.78, 0.56, 0.34, 0.12].map((t) => value(t, tone));
+          const ar = pw / ph;
+
+          let box, cx, cy, key = "";
+          const KEYW = 74,
+            KEYH = 14;
+          if (ar > 1.45 && pw - KEYW > 46 && ph >= 46) {
+            // beside: the ring takes the height, the key the strip to its right
+            box = Math.min(ph, pw - KEYW - 10);
+            cx = (pw - KEYW - 10) / 2;
+            cy = ph / 2;
+            key = "side";
+          } else if (ar < 0.78 && ph - KEYH * 3 > 46) {
+            // under: the ring takes the width, the key three rows beneath it
+            box = Math.min(pw, ph - KEYH * 3 - 8);
+            cx = pw / 2;
+            // the RING AND ITS KEY are one object, and it is that object
+            // which is centred — centring the ring alone leaves the key
+            // hanging and half the block empty under it
+            cy = (ph - (box + 8 + KEYH * 3)) / 2 + box / 2;
+            key = "under";
+          } else {
+            box = Math.min(pw, ph);
+            cx = pw / 2;
+            cy = ph / 2;
+            key = pw - box > 84 && ph >= 46 ? "side" : "";
+            if (key === "side") cx = (pw - KEYW - 10) / 2;
+          }
+          const R0 = box / 2 - 1,
+            R1 = R0 * 0.6;
+
+          const arc = (a0, a1, fill) => {
+            const P = (a, r) => [
+              (cx + r * Math.cos(a)).toFixed(1),
+              (cy + r * Math.sin(a)).toFixed(1),
+            ];
+            const big = a1 - a0 > Math.PI ? 1 : 0;
+            const [x0, y0] = P(a0, R0), [x1, y1] = P(a1, R0),
+              [x2, y2] = P(a1, R1), [x3, y3] = P(a0, R1);
+            return '<path d="M' + x0 + " " + y0 + " A" + R0 + " " + R0 + " 0 " +
+              big + " 1 " + x1 + " " + y1 + " L" + x2 + " " + y2 + " A" + R1 +
+              " " + R1 + " 0 " + big + " 0 " + x3 + " " + y3 + ' Z" fill="' + fill +
+              // the same hairline of paper the stack needs, for the same reason
+              '" stroke="#ffffff" stroke-width="1.4"/>';
+          };
+
+          // one sweep round the ring: p is its leading edge, q its trailing
+          const TAU = Math.PI * 2;
+          const lead = clamp01(p) * TAU,
+            trail = clamp01(q) * TAU;
+          const swatch = (x, y, i) =>
+            '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+            '" width="8" height="8" rx="1.5" fill="' + shade[i] + '"/>' +
+            '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 7.6).toFixed(1) +
+            '" font-family="' + SANS + '" font-size="8" fill="' + AXIS + '">' +
+            Math.round(parts[i] * 100) + "%</text>";
+
+          let a = 0, out = "", keys = "";
+          for (let i = 0; i < parts.length; i++) {
+            const s0 = Math.max(a, trail),
+              s1 = Math.min(a + parts[i] * TAU, lead);
+            if (s1 - s0 > 0.005) out += arc(s0 - Math.PI / 2, s1 - Math.PI / 2, shade[i]);
+            a += parts[i] * TAU;
+            if (i > 2) continue;
+            if (key === "side")
+              keys += swatch(pw - KEYW, cy - 22 + i * KEYH + 2, i);
+            else if (key === "under")
+              keys += swatch(pw / 2 - 22, cy + box / 2 + 8 + i * KEYH, i);
+          }
+          return svgWrap(pw, ph, out + keys);
+        });
+
+    // ---- maps, on real geography -------------------------------------
+    /* Natural Earth's outlines, projected to Robinson and baked into geo.js.
+     * A choropleth of tinted squares is a heatmap; a map has to be somewhere.
+     *
+     * The crop is chosen by the SHAPE OF THE HOLE, not by taste. A block two
+     * columns wide and short takes the world; a block the shape of a single
+     * column takes a continent, because the world squeezed into it would be
+     * a strip of grey nothing. That is what responsive means for a map. */
+    const geo = () => (typeof window !== "undefined" && window.GEO) || null;
+    const ISOS = () => Object.keys(geo().c);
+    /* The crop is chosen by PROPORTION, not by a threshold. Fitting a
+     * hemisphere into a hole two columns wide and a paragraph deep sizes the
+     * map by its height and leaves it occupying a third of the width, with
+     * the rest white — the map was there and the block still read as empty.
+     * The one whose shape is nearest the hole's wins, on a log ratio so that
+     * being twice too wide costs the same as being twice too tall; among
+     * those close enough to be interchangeable the page's own source picks,
+     * so two pages do not open on the same continent. */
+    const cropFor = (w, h, rnd) => {
+      const G = geo(),
+        ar = w / h;
+      const keys = Object.keys(G.crops);
+      const cost = (k) => {
+        const c = G.crops[k];
+        return Math.abs(Math.log((c[2] - c[0]) / (c[3] - c[1]) / ar));
+      };
+      const best = Math.min.apply(null, keys.map(cost));
+      const near = keys.filter((k) => cost(k) < best + 0.28);
+      return G.crops[near[Math.floor(rnd() * near.length)]];
+    };
+    /* A MAP IS TWO LAYERS, and only one of them moves.
+     *
+     * Rasterising a hundred and sixty-seven country outlines forty times
+     * over an arrival is minutes of decoding for two seconds of animation,
+     * and it showed: the three maps that draw marks on land sat blank
+     * because a new request went out before the last had come back. The
+     * land is drawn once and kept; only the circles and the lines are made
+     * again. layer 1 is the ground, 2 the marks, 0 both — and the random
+     * stream is consumed identically whichever is asked for, so the two
+     * layers are always of the same place. */
+    const mapBase = (w, h, rnd, paint) => {
+      const G = geo();
+      if (!G) return "";
+      const [x0, y0, x1, y1] = cropFor(w, h, rnd);
+      const cw = x1 - x0,
+        ch = y1 - y0;
+      // fit the crop inside the hole without distorting the projection
+      const s = Math.min(w / cw, h / ch);
+      const vw = w / s,
+        vh = h / s;
+      const vx = x0 - (vw - cw) / 2,
+        vy = y0 - (vh - ch) / 2;
+      return (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h +
+        '" viewBox="' + vx.toFixed(1) + " " + vy.toFixed(1) + " " + vw.toFixed(1) +
+        " " + vh.toFixed(1) + '">' + paint(1 / s, vx, vy, vw, vh) + "</svg>"
+      );
+    };
+
+    LIVE_ART.choro = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Rate by country", "Boundaries: Natural Earth · Rates: national returns",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          const iso = ISOS();
+          // a real sequential ramp, not one ink at five opacities
+          // paper to ink in five steps, so a country's class can be read off
+          // the map without going back to a key
+          const ramp = (t) => value(0.1 + Math.round(t * 4) * 0.225, tone);
+          return mapBase(pw, ph, rnd, (u) => {
+            let out = "";
+            for (let i = 0; i < iso.length; i++) {
+              const k = sweep(i, iso.length, p, q, 1.6);
+              const t = v[i % v.length];
+              out +=
+                '<path d="' + G.c[iso[i]] + '" fill="' +
+                (layer === 2 ? "none" : k > 0.5 ? ramp(t) : LAND) +
+                '" stroke="' + (layer === 2 ? "none" : "#ffffff") +
+                '" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            }
+            return out;
+          });
+        });
+
+    LIVE_ART.places = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Where reported", "One circle, one city",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            /* A CIRCLE HAS TO FIT INSIDE THE WINDOW, not just its centre. A
+             * city sitting a pixel from the edge of the crop was given a
+             * ten-pixel bubble and the bubble was cut in half by the frame,
+             * which reads as a rendering fault rather than as a place. The
+             * margin is the largest mark this drawing can make, so the
+             * cities near the edge are simply not among the ones it uses. */
+            const M = (2.4 + 7 + 1.2) * u;
+            const here = G.cities.filter(
+              (c) =>
+                c[1] > vx + M && c[1] < vx + vw - M &&
+                c[2] > vy + M && c[2] < vy + vh - M,
+            );
+            const n = Math.min(here.length, 22);
+            for (let i = 0; i < n; i++) {
+              const c = here[Math.floor((i / n) * here.length)];
+              const kk = sweep(i, n, p, q, 1.4);
+              if (kk <= 0) continue;
+              const r = (2.4 + v[i % v.length] * 7) * kk * u;
+              if (layer === 1) continue;
+              out +=
+                '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(2) +
+                '" fill="' + tone + '" fill-opacity=".55" stroke="' + tone +
+                '" stroke-width="' + (1.1 * u).toFixed(2) + '"/>';
+            }
+            return out;
+          });
+        });
+
+    LIVE_ART.flows = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Origin and destination", "Movements recorded, 2026",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            // the arc rises above the higher of its two ends, so the window
+            // has to hold the crown as well as the endpoints
+            const M = 6 * u,
+              CROWN = vh * 0.3;
+            const here = G.cities.filter(
+              (c) =>
+                c[1] > vx + M && c[1] < vx + vw - M &&
+                c[2] > vy + CROWN && c[2] < vy + vh - M,
+            );
+            if (here.length < 3) return out;
+            const hub = here[Math.floor(rnd() * here.length)];
+            const n = Math.min(9, here.length - 1);
+            let dots = "";
+            for (let i = 0; i < n; i++) {
+              const c = here[Math.floor(rnd() * here.length)];
+              const kk = sweep(i, n, p, q, 1.25);
+              if (kk <= 0 || c === hub || layer === 1) continue;
+              const mx = (hub[1] + c[1]) / 2,
+                my = Math.max(
+                  vy + M,
+                  (hub[2] + c[2]) / 2 -
+                    Math.hypot(c[1] - hub[1], c[2] - hub[2]) * 0.3,
+                );
+              const ex = hub[1] + (c[1] - hub[1]) * kk,
+                ey = hub[2] + (c[2] - hub[2]) * kk;
+              out +=
+                '<path d="M' + hub[1] + " " + hub[2] + " Q" + mx.toFixed(1) + " " +
+                my.toFixed(1) + " " + ex.toFixed(1) + " " + ey.toFixed(1) +
+                '" fill="none" stroke="' + tone + '" stroke-width="' +
+                ((0.9 + v[i % v.length] * 1.8) * u).toFixed(2) +
+                '" opacity=".85" stroke-linecap="round"/>';
+              if (kk > 0.98)
+                dots += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' +
+                  (2.2 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                  '" stroke-width="' + (1.2 * u).toFixed(2) + '"/>';
+            }
+            if (layer === 1) return out;
+            return out + dots + '<circle cx="' + hub[1] + '" cy="' + hub[2] +
+              '" r="' + (3.4 * u).toFixed(2) + '" fill="' + DINK + '"/>';
+          });
+        });
+
+    LIVE_ART.route = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "The route, stop by stop", "Stages of the journey",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const M = 5 * u;
+            const here = G.cities
+              .filter(
+                (c) =>
+                  c[1] > vx + M && c[1] < vx + vw - M &&
+                  c[2] > vy + M && c[2] < vy + vh - M,
+              )
+              .sort((a, b) => a[1] - b[1]);
+            if (here.length < 4) return out;
+            const n = Math.min(7, here.length);
+            const S = [];
+            for (let i = 0; i < n; i++)
+              S.push(here[Math.floor((i / (n - 1)) * (here.length - 1))]);
+            const [from, to] = span(n, p, q);
+            if (to <= from || layer === 1) return out;
+            const at = (f) => {
+              const i = Math.max(0, Math.min(n - 2, Math.floor(f))),
+                k = f - i;
+              return [
+                S[i][1] + (S[i + 1][1] - S[i][1]) * k,
+                S[i][2] + (S[i + 1][2] - S[i][2]) * k,
+              ];
+            };
+            const a = at(from),
+              b = at(to);
+            let d = "M" + a[0].toFixed(1) + " " + a[1].toFixed(1),
+              dots = "";
+            for (let i = Math.ceil(from); i <= Math.floor(to); i++) {
+              d += " L" + S[i][1] + " " + S[i][2];
+              dots += '<circle cx="' + S[i][1] + '" cy="' + S[i][2] + '" r="' +
+                (2.6 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                '" stroke-width="' + (1.3 * u).toFixed(2) + '"/>';
+            }
+            d += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
+            return out + '<path d="' + d + '" fill="none" stroke="' + tone +
+              '" stroke-width="' + (2.4 * u).toFixed(2) +
+              '" stroke-linejoin="round" stroke-linecap="round"/>' + dots;
+          });
+        });
+
+    LIVE_ART.rings = (w, h, p, q, v, tone, rnd, layer) =>
+      chrome(w, h, "Reach from the centre", "Distance bands, in hundreds of km",
+        (pw, ph) => {
+          const G = geo();
+          if (!G) return "";
+          return mapBase(pw, ph, rnd, (u, vx, vy, vw, vh) => {
+            let out = "";
+            if (layer !== 2)
+              for (const k of ISOS())
+                out += '<path d="' + G.c[k] + '" fill="' + LAND +
+                  '" stroke="#ffffff" stroke-width="' + (0.6 * u).toFixed(2) + '"/>';
+            const here = G.cities.filter(
+              (c) => c[1] > vx + vw * 0.2 && c[1] < vx + vw * 0.8 &&
+                c[2] > vy + vh * 0.2 && c[2] < vy + vh * 0.8,
+            );
+            const c = here.length ? here[Math.floor(rnd() * here.length)]
+              : [null, vx + vw / 2, vy + vh / 2];
+            /* The OUTERMOST BAND is what has to fit. Sized off the window and
+             * drawn round a centre anywhere in it, the widest ring ran off
+             * two sides at once — a set of contours cut by the frame is not
+             * a reading of distance, it is a mistake. It is the smallest
+             * distance from the centre to an edge instead. */
+            const n = 5,
+              max =
+                Math.min(
+                  Math.min(vw, vh) * 0.44,
+                  c[1] - vx,
+                  vx + vw - c[1],
+                  c[2] - vy,
+                  vy + vh - c[2],
+                ) *
+                0.97;
+            if (layer === 1) return out;
+            for (let i = n - 1; i >= 0; i--) {
+              const k = sweep(n - 1 - i, n, p, q, 1.2);
+              if (k <= 0) continue;
+              const r = max * ((i + 1) / n) * k;
+              out += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(1) +
+                '" fill="' + tone + '" fill-opacity="' + (0.05).toFixed(2) +
+                '" stroke="' + tone + '" stroke-width="' + (1.2 * u).toFixed(2) +
+                '" stroke-opacity="' + (0.55 + (1 - i / n) * 0.45).toFixed(2) + '"/>';
+            }
+            return out + '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' +
+              (2.6 * u).toFixed(2) + '" fill="' + DINK + '"/>';
+          });
+        });
+
+    LIVE_ART.units = (w, h, p, q, v, tone, rnd) =>
+      chrome(w, h, "One square, a thousand", "Counted, not estimated",
+        (pw, ph) => {
+          const cols = pw < 130 ? 14 : 24,
+            cell = pw / cols,
+            rows = Math.max(2, Math.floor(ph / cell)),
+            n = rows * cols;
+          const oy = (ph - rows * cell) / 2;
+          let out = "";
+          for (let r = 0; r < rows; r++)
+            for (let c = 0; c < cols; c++) {
+              const i = r * cols + c;
+              const k = sweep(i, n, p, q, 1.5);
+              /* THE GAP IS PROPORTIONAL, and wider than it was. A fixed
+               * 1.2 texels between cells vanishes at the size the reel
+               * draws these, and a grid whose gaps have gone is not a grid:
+               * it is a filled rectangle, which is what this looked like on
+               * the webs however light its cells were. A fifth of a cell
+               * survives the paper. */
+              const gap = Math.max(0.8, cell * 0.2);
+              out +=
+                '<rect x="' + (c * cell + gap / 2).toFixed(2) + '" y="' +
+                (oy + r * cell + gap / 2).toFixed(2) + '" width="' +
+                (cell - gap).toFixed(2) + '" height="' + (cell - gap).toFixed(2) +
+                '" fill="' +
+                (k > 0.5 ? value(i / n > 0.72 ? 0.26 : 0.86, tone) : PALE) + '"/>';
+            }
+          return svgWrap(pw, ph, out);
+        });
+
+
+    /* WHAT SHAPE OF HOLE EACH DRAWING WILL ACCEPT.
+     *
+     * Not every drawing survives every block. A bar chart standing in a
+     * single column of a three-column page has bars a pixel and a half wide
+     * against an axis it cannot afford; a line has three points of run for
+     * two hundred of fall. Of the charts only the unit square works upright,
+     * because a grid does not care which way it is longer. A ring is worse
+     * still: it is a circle, so anything but a square wastes the block on
+     * either side of it however the key is placed.
+     *
+     * The maps take any shape, which is the whole point of choosing the crop
+     * by proportion — there is always a piece of the world that is the shape
+     * of the hole. */
+    const PORTRAIT = 0.95;
+    const FITS = {
+      bars: (ar) => ar >= PORTRAIT,
+      line: (ar) => ar >= PORTRAIT,
+      area: (ar) => ar >= PORTRAIT,
+      stack: (ar) => ar >= PORTRAIT,
+      scatter: (ar) => ar >= PORTRAIT,
+      donut: (ar) => ar > 0.82 && ar < 1.28,
+    };
+    const fits = (kind, ar) => !FITS[kind] || FITS[kind](ar);
+
+    /* DEALT, NOT DRAWN. Six pages each picking a drawing at random gave
+     * three the same one — independent draws collide, and two webs showing
+     * the same chart at once is exactly the redundancy this is meant to
+     * avoid. The kinds are a deck instead: shuffled, dealt one at a time,
+     * and reshuffled only when it runs out, so no page can repeat another
+     * until every one has been seen.
+     *
+     * The deal now takes the shape of the hole with it and passes over any
+     * card that will not go in it, leaving those cards in the deck for a
+     * block that suits them. */
+    let KIND_DECK = [];
+    const cut = (rnd) => {
+      KIND_DECK = LIVE_KINDS.slice();
+      for (let i = KIND_DECK.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        const t = KIND_DECK[i];
+        KIND_DECK[i] = KIND_DECK[j];
+        KIND_DECK[j] = t;
+      }
+    };
+    function dealKind(rnd, ar, taken) {
+      const free = (kind) =>
+        fits(kind, ar) && (!taken || taken.indexOf(kind) < 0);
+      for (let pass = 0; pass < 3; pass++) {
+        if (!KIND_DECK.length) cut(rnd);
+        for (let i = KIND_DECK.length - 1; i >= 0; i--)
+          if (free(KIND_DECK[i])) return KIND_DECK.splice(i, 1)[0];
+        // nothing left in this deck goes in this hole: cut a fresh one
+        KIND_DECK.length = 0;
+      }
+      // last resort: anything that fits, even if it is already on a web
+      for (let i = 0; i < LIVE_KINDS.length; i++)
+        if (fits(LIVE_KINDS[i], ar)) return LIVE_KINDS[i];
+      return "units";
+    }
+
+    /* One rasterisation. The markup is wrapped as XHTML inside an SVG the
+     * size of the drawing, handed to an Image as a data URI, and decoded. */
+    // the kinds whose ground is worth keeping: everything they draw sits on
+    // a hundred and sixty-seven country outlines that never change
+    const GROUNDED = ["places", "flows", "route", "rings"];
+    const GROUND = new Map();
+
+    /* DRAWN AT TWICE THE SIZE IT IS LAID OUT AT.
+     *
+     * The layers of a map are composed into a canvas, and a canvas is a
+     * bitmap: made at the raster width and then drawn into a hole wider than
+     * that — or onto a screen at two device pixels to one — it is upscaled,
+     * and upscaling a bitmap is exactly what pixelation is. The choropleth
+     * escaped it because it is a single SVG image and the browser
+     * re-rasterises those at whatever size they are drawn; the four maps
+     * that carry marks did not, and looked it.
+     *
+     * The fix is at the source: the SVG keeps a viewBox of the layout size,
+     * so everything inside it is composed at exactly the same measurements,
+     * and is given twice that in width and height. Same drawing, four times
+     * the pixels, and the composite has resolution to spare wherever it
+     * lands. */
+    /* A DECODE IS A FRAME. Measured: rasterising one of these costs between
+     * one and eight milliseconds on the main thread, and at a hundred and
+     * twenty frames a second the whole budget is eight point three. Chrome
+     * will not decode an SVG off-thread — createImageBitmap refuses the
+     * blob outright — so the only levers are how big each one is and how
+     * many there are.
+     *
+     * 1.6 rather than 2 is a third fewer pixels and still well clear of the
+     * pixelation this was raised to fix: the composite is a bitmap, and
+     * what it needs is to be made larger than the hole it lands in, not
+     * twice as large. */
+    /* And never coarser than the sheet it lands on: the galley is stored at
+     * GALLEY_SS texels to the unit, so a drawing rasterised at 1.6 would be
+     * the one soft thing on a page of sharp type. Settled with the sheet. */
+    let RSCALE = 1.6;
+    /* And no more than two drawings are ever being made at once. The pages
+     * are staggered so this is usually true anyway, but usually is not a
+     * bound — three arrivals landing together put three decodes in three
+     * consecutive frames, which is what a hundred and twenty drops from. */
+    /* SEVERAL STAGES IN FLIGHT AT ONCE.
+     *
+     * One per hole meant the arrival ran at one over the round trip — about
+     * fifteen stages a second — while the machine sustains hundreds. The
+     * round trip is latency, not work: the picture is decoded off the
+     * critical path and only its callback waits for a frame. Asking for the
+     * next stage before the last has landed spends that latency instead of
+     * queueing behind it.
+     *
+     * Order is kept by a stamp rather than by waiting. A stage that comes
+     * back after a newer one has already been shown is dropped — it is a
+     * picture of a moment that has passed, and drawing it would run the
+     * arrival backwards for a frame. */
+    const RASTER_LIMIT = 5;
+    /* HOW EACH DRAWING ARRIVES.
+     *
+     * One wipe for everything was a retreat, and it was not the necessary
+     * one. What made the old gestures expensive was that each stage of them
+     * was a separate rasterisation — not the gestures themselves. A clip
+     * can reproduce most of them EXACTLY over a single finished picture,
+     * and where it cannot it can do the same thing the drawing does.
+     *
+     *  traced  a path drawn from its start, which is a left edge advancing
+     *          — for a line, an area, a route, arcs from a hub. This is not
+     *          an approximation of the old gesture: it is the same one.
+     *  rise    bars coming up out of the baseline, which is a bottom edge
+     *          lifting. All of them together rather than staggered, which
+     *          is the one thing a clip cannot do to a flat picture.
+     *  extend  a horizontal bar reaching to the right, and the reading
+     *          order of anything laid out across the page.
+     *  rows    a grid filling in reading order: whole rows, then part of
+     *          the next one. Exactly what the unit square and the
+     *          choropleth used to do a cell at a time.
+     *  sweep   round from twelve o'clock, for a ring.
+     *  grow    out from the centre, for contours — which is what contours
+     *          did, from the middle outwards.
+     */
+    const ARRIVAL = {
+      bars: "rise",
+      stack: "extendRows",
+      line: "traced",
+      area: "traced",
+      route: "traced",
+      flows: "traced",
+      scatter: "extend",
+      places: "extend",
+      units: "rows",
+      choro: "rows",
+      donut: "sweep",
+      rings: "grow",
+    };
+    /* Where the title and the source line sit, worked out the same way
+     * chrome() works them out. A gesture that runs over them cuts a word in
+     * half, and half a word reads as a fault rather than as a drawing being
+     * made — so they land whole, the label first and the credit last, which
+     * is the order a desk does it in. */
+    const titleBand = (w, h) =>
+      h >= 90 && w >= 96 ? (h < 74 ? 4 : h < 118 ? 7 : 11) + 14 : 0;
+    const footBand = (w, h) => (h >= 124 && w >= 120 ? 20 : 0);
+    let rasterBusy = 0;
+    function rasterOne(kind, w, h, p, q, v, tone, seed, layer) {
+      const body = (LIVE_ART[kind] || LIVE_ART.bars)(
+        w, h, p, q, v, tone, seeded(seed), layer,
+      );
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + w * RSCALE +
+        '" height="' + h * RSCALE + '" viewBox="0 0 ' + w + " " + h + '">' +
+        '<foreignObject width="100%" height="100%">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="width:' + w + "px;height:" + h +
+        "px;background:" + (layer === 2 ? "transparent" : "#ffffff") +
+        ';font:10px Georgia,serif;color:#161616;overflow:hidden">' +
+        body + "</div></foreignObject></svg>";
+      return new Promise((res) => {
+        const im = new Image();
+        im.onload = () => res(im);
+        im.onerror = () => res(null);
+        im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      });
+    }
+
+    /* One picture, however many layers it took. Returns a canvas rather than
+     * an image, because a composite is what the caller wants and building it
+     * here means the ground is fetched once per size and never again. */
+    async function rasterise(kind, w, h, p, q, v, tone, rnd, seed) {
+      const sd = seed === undefined ? 1 : seed;
+      if (GROUNDED.indexOf(kind) < 0)
+        return rasterOne(kind, w, h, p, q, v, tone, sd, 0);
+      const key = kind + "|" + w + "|" + h + "|" + tone + "|" + sd;
+      let ground = GROUND.get(key);
+      if (ground === undefined) {
+        ground = await rasterOne(kind, w, h, 1, 0, v, tone, sd, 1);
+        /* Bounded, because the hole is cut afresh at the top of every
+         * telling and each new size is a new world. Oldest out first: a
+         * ground from four tellings ago will not be asked for again. */
+        if (GROUND.size > 24) GROUND.delete(GROUND.keys().next().value);
+        GROUND.set(key, ground);
+      }
+      const marks = await rasterOne(kind, w, h, p, q, v, tone, sd, 2);
+      if (!ground && !marks) return null;
+      const c = document.createElement("canvas");
+      c.width = w * RSCALE;
+      c.height = h * RSCALE;
+      const g = c.getContext("2d");
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, c.width, c.height);
+      if (ground) g.drawImage(ground, 0, 0, c.width, c.height);
+      if (marks) g.drawImage(marks, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    /* The bench publishes the drawings themselves, so the catalogue can put
+     * them on a board out of the paper and they can be judged as drawings.
+     * The same functions the reel runs — not a copy of them, which would
+     * drift the moment either was touched. */
+    window.__liveArt = LIVE_ART;
+    window.__liveKinds = LIVE_KINDS;
+    window.__liveCharts = CHARTS;
+    window.__liveMaps = MAPS;
+    window.__seeded = seeded;
+    window.__rasterise = (kind, w, h, p, q, v, tone, seed) =>
+      rasterise(kind, w, h, p, q, v, tone, null, seed);
+    window.__castValues = castValues;
+    window.__fits = fits; // which shapes of hole a drawing will accept
+
+    /* HOW THE STORY IS TOLD, as two curves over one turn of it.
+     *
+     * They are separate on purpose. The room is made FIRST and the drawing
+     * arrives INTO it — that order is the whole claim: the desk does not
+     * replace the article, it makes space in it. A single curve doing both
+     * at once would show a graphic growing while the text retreated from it,
+     * which reads as the drawing shoving the words aside. */
+    const storySecs = () => Math.max(2, P.storySecs || 8.5);
+    /* AND THEN THE PAGE IS LEFT ALONE. Without a rest the text closes over
+     * one graphic and opens for the next in the same breath, which reads as
+     * a slot machine rather than as a desk working — the article never gets
+     * to be an article. The rest is the page as printed, and it is the state
+     * a reader should find it in most of the time.
+     *
+     * It is also the cheapest state there is: nothing to rasterise, nothing
+     * to set again, nothing written back to the reel. With six pages spread
+     * evenly through the cycle it means two or three are ever doing
+     * anything at once. */
+    /* And the rest is what the page waits before it opens, once it is in
+     * shot: a moment as printed, so a reader meets the article before the
+     * desk starts working on it. */
+    const storyRest = () =>
+      Math.max(0, P.storyRest === undefined ? 1.5 : P.storyRest);
+    // and how far apart the pages take their turns
+    const storySpread = () =>
+      Math.max(0, P.storySpread === undefined ? 5 : P.storySpread);
+    const ease = (u) => u * u * (3 - 2 * u);
+    /* THE TELLING ONLY GOES ONE WAY. The room is made, the drawing arrives,
+     * and it STAYS — for as long as the page is on screen, which is as long
+     * as anybody could be reading it. Nothing is taken away in front of a
+     * reader; a graphic that leaves while you are looking at it is one you
+     * were not allowed to finish. The page is closed and recast only after
+     * it has run out of shot, so what comes back round is a fresh article
+     * that opens again. There is no departure curve any more, because there
+     * is no departure. */
+    const storyOpen = (u) => (u < 0.04 ? 0 : ease(clamp01((u - 0.04) / 0.3)));
+    const storyDraw = (u) => (u < 0.24 ? 0 : ease(clamp01((u - 0.24) / 0.42)));
+
+    /* ONE JOB PER HOLE, not one per drawing. Sharing them was a real bug:
+     * four copies of a page are at four different points in the telling, so
+     * a shared picture showed one page the chart belonging to another, and
+     * a cached half-drawn level kept numbers from whenever it was first
+     * made — the bars jumped around as the graphic grew instead of rising.
+     * A hole owns its picture, and asks for a new one when it wants it. */
+    /* THE ROOM IS MADE BEFORE THE DRAWING EXISTS, and for a moment there
+     * is a hole in the page with nothing in it. That gap is not a fault to
+     * hide — it is the desk working, and the honest thing to put in it is
+     * who is doing the work.
+     *
+     * One word, and a light passing over it. A bar filling to a number
+     * nobody knows is a lie about progress; a shimmer says only that
+     * something is happening, which is the truth and is all a wait this
+     * short can honestly claim.
+     *
+     * Drawn in canvas rather than rasterised, so it is there in the frame
+     * the hole opens — the one thing a raster cannot promise — and at one
+     * size whatever the hole. Scaling it with the block made the same word
+     * bigger in a lead than in a column, so it read as part of the
+     * graphic's own hierarchy, which it is not: it is a label about the
+     * page's state, and those are the same size everywhere. */
+    /* The mark itself, as a path rather than a file: Path2D takes SVG path
+     * data straight, so the rosette in landing/marks is the same three
+     * drops here as it is in the header — one shape, not a copy of one. */
+    const ROSETTE = typeof Path2D === "undefined"
+      ? null
+      : new Path2D(
+          "M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z " +
+          "M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z " +
+          "M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z",
+        );
+    function mark(g2, inner, t, alpha) {
+      const cx = inner.x + inner.w / 2,
+        cy = inner.y + inner.h / 2,
+        fs2 = 11;
+      g2.save();
+      g2.globalAlpha = alpha;
+
+      /* THE MARK AND THE NAME, TOGETHER — the same lockup the page opens
+       * on, so the wait inside a page and the wait in front of the whole
+       * document are recognisably the same thing rather than two different
+       * placeholders that happen to belong to the same product. The rosette
+       * turns; the name takes the light across it.
+       *
+       * SET TO THE HOLE, because a hole is whatever size the page gave it.
+       * The pair is measured and, if it will not sit inside three quarters
+       * of the width, everything in it is scaled by the same factor — type,
+       * mark and the gap between them — so it is the same lockup smaller
+       * and not a different arrangement.
+       *
+       * markLogo drops the rosette and leaves the name alone. */
+      const wantLogo = P.markLogo > 0.5 && !!ROSETTE;
+      let fs = fs2 * 1.25;
+      g2.font = "600 " + fs + "px " + SANS;
+      let wd = g2.measureText("Splash").width;
+      let sz = wantLogo ? fs * 1.15 : 0;
+      let gap = wantLogo ? fs * 0.42 : 0;
+      let total = sz + gap + wd;
+      const room = inner.w * 0.74;
+      if (total > room) {
+        const k = room / total;
+        fs *= k;
+        sz *= k;
+        gap *= k;
+        wd *= k;
+        total = room;
+        g2.font = "600 " + fs + "px " + SANS;
+      }
+      const x0 = cx - total / 2;
+
+      if (wantLogo) {
+        g2.save();
+        /* About its CENTRE OF MASS, not the middle of its box. They are
+         * different points on this mark — the box is centred at 32,32 of
+         * the viewBox and the ink at 31.9,27.2, because three drops round a
+         * triangular void carry their weight high. Spun about the box it
+         * swings; spun about its mass it turns. */
+        g2.translate(x0 + sz / 2, cy);
+        g2.rotate(t * 1.6);
+        g2.scale(sz / 64, sz / 64);
+        g2.translate(-31.93, -27.21);
+        // pale: it is a placeholder, and a placeholder that holds the
+        // eye is competing with the thing it is holding a place for
+        g2.fillStyle = "#d2cdc4";
+        g2.fill(ROSETTE);
+        g2.restore();
+      }
+
+      g2.textAlign = "left";
+      g2.textBaseline = "middle";
+      // the light travels across the whole lockup and rests before it returns
+      const sweep = (((t * 0.75) % 1.9) / 1.9) * 2.4 - 0.7;
+      const grd = g2.createLinearGradient(x0 - fs, 0, x0 + total + fs, 0);
+      const at = (u) => Math.max(0, Math.min(1, u));
+      grd.addColorStop(0, "#d2cdc4");
+      grd.addColorStop(at(sweep - 0.22), "#d2cdc4");
+      grd.addColorStop(at(sweep), "#f4f2ec");
+      grd.addColorStop(at(sweep + 0.22), "#d2cdc4");
+      grd.addColorStop(1, "#d2cdc4");
+      g2.fillStyle = grd;
+      g2.fillText("Splash", x0 + sz + gap, cy);
+      g2.restore();
+    }
+
+    /* THE POINTER, FOLLOWED SLOWLY.
+     *
+     * Raw coordinates make the paper snap about with the cursor, which is a
+     * cursor effect and not a sheet: newsprint has weight and arrives late.
+     * The position is eased towards the pointer and the press eased down
+     * when it leaves, so the bulge fills and empties rather than switching.
+     *
+     * In CLIP space, because that is what can be turned into a position on
+     * a particular sheet — the same cursor is somewhere different on each
+     * of the three, and where depends on how far away that one is. */
+    const ptr = { x: 0, y: 0, tx: 0, ty: 0, k: 0, on: 0 };
+    function ptrTrack(e) {
+      ptr.tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
+      ptr.ty = 1 - (e.clientY / Math.max(1, innerHeight)) * 2;
+      ptr.on = 1;
+    }
+    if (typeof addEventListener === "function") {
+      addEventListener("pointermove", ptrTrack, { passive: true });
+      addEventListener("pointerdown", ptrTrack, { passive: true });
+      addEventListener("pointerleave", () => (ptr.on = 0), { passive: true });
+      // a finger is not a hand resting on the page: it presses and goes
+      addEventListener("pointerup", () => (ptr.on = 0), { passive: true });
+    }
+    function ptrStep(dt) {
+      const e = Math.min(1, dt * 6);
+      ptr.x += (ptr.tx - ptr.x) * e;
+      ptr.y += (ptr.ty - ptr.y) * e;
+      const want = ptr.on ? 1 : 0;
+      ptr.k += (want - ptr.k) * Math.min(1, dt * 3.5);
+    }
+
+    /* WRITING A RECTANGLE OF THE REEL BACK TO THE CARD.
+     *
+     * The page is drawn in logical units and stored at GALLEY_SS device
+     * texels to the unit, so a rectangle is scaled on its way to the card.
+     * One scratch canvas for the whole module, grown to the largest write
+     * there has been and never shrunk: texSubImage2D is told the width and
+     * height it is to read, so a scratch bigger than the write is simply not
+     * read past. A canvas per hole was three megabytes each at this
+     * resolution, and there are eighteen holes. */
+    let galleyScratch = null,
+      galleyScratchG = null;
+    function putGalley(x, y, w, h) {
+      const S = GALLEY_SS;
+      const dx = Math.max(0, Math.round(x * S)),
+        dy = Math.max(0, Math.round(y * S));
+      const dw = Math.min(galleyCv.width - dx, Math.round(w * S)),
+        dh = Math.min(galleyCv.height - dy, Math.round(h * S));
+      if (dw <= 0 || dh <= 0) return;
+      if (!galleyScratch) {
+        galleyScratch = document.createElement("canvas");
+        galleyScratch.width = dw;
+        galleyScratch.height = dh;
+        galleyScratchG = galleyScratch.getContext("2d");
+      } else if (galleyScratch.width < dw || galleyScratch.height < dh) {
+        galleyScratch.width = Math.max(dw, galleyScratch.width);
+        galleyScratch.height = Math.max(dh, galleyScratch.height);
+        galleyScratchG = galleyScratch.getContext("2d");
+      }
+      galleyScratchG.clearRect(0, 0, dw, dh);
+      galleyScratchG.drawImage(galleyCv, dx, dy, dw, dh, 0, 0, dw, dh);
+      gl.texSubImage2D(
+        gl.TEXTURE_2D, 0, dx, dy, dw, dh, gl.RGBA, gl.UNSIGNED_BYTE,
+        galleyScratch,
+      );
+    }
+
+    let liveLast = -1;
+    function liveTick(t, dt) {
+      if (!galleyCv || !galleyTex || !LIVE_HOLES.length) return;
+      /* ASKED EVERY FRAME. The gate used to be one over sixty, which at
+       * sixty frames a second is the frame period itself — so it passed on
+       * alternate frames and the arrival ran at half the rate it could,
+       * measured at sixteen stages a second when the round trip is one
+       * point eight milliseconds. A gate set to exactly the thing it is
+       * gating is not a limit, it is a coin toss. */
+      const ask = true;
+      const step = liveLast < 0 ? 1 / 60 : t - liveLast;
+      liveStep(Math.min(0.12, step));
+      liveLast = t;
+
+      let wrote = false;
+      const g2 = galleyCv.getContext("2d");
+      // the presses draw in page units; the sheet under them is GALLEY_SS
+      // times that in each direction, and this is the only place that knows
+      g2.setTransform(GALLEY_SS, 0, 0, GALLEY_SS, 0, 0);
+      gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+
+      /* Closed and put back the way it was printed. Only ever run on a page
+       * that has left the frame, which is the whole point of it. */
+      const shut = (k) => {
+        g2.save();
+        g2.beginPath();
+        g2.rect(k.x, k.y, k.w, k.h);
+        g2.clip();
+        g2.fillStyle = "#ffffff";
+        g2.fillRect(k.x, k.y, k.w, k.h);
+        g2.textBaseline = "alphabetic";
+        k.paint(0);
+        g2.restore();
+        putGalley(k.x, k.y, k.w, k.h);
+      };
+
+      for (const k of LIVE_HOLES) {
+        /* IN SHOT IS THE CLOCK. The telling ran on a global cycle, so a page
+         * opened and closed on its own schedule whether or not anyone could
+         * see it — and it took the graphic away in front of a reader. It
+         * starts when the page comes into the frame and it does not end.
+         *
+         * Leaving is wider than entering by design: a page sitting exactly
+         * on the edge would otherwise flicker between recast and closed once
+         * a frame, which is a page that never gets to open. */
+        // the give is a fifth of a PAGE, not a tenth of the reel: at nine
+        // pages the old figure was most of a page and nothing ever left
+        // in shot, and standing still: a web that has not finished arriving
+        // carries pages that do not move
+        const vis =
+          (WEB_INE[k.col || 0] > 0.999 || k.seen) &&
+          inShot(k.y, k.y + k.h, k.seen ? PAGE_STEP * 0.2 : 0, k.col);
+        let open = 1,
+          draw = 1;
+        if (k.story) {
+          if (vis && !k.seen) {
+            k.seen = true;
+            k.t0 = t;
+            /* THEY DO NOT ALL OPEN AT ONCE. The three webs between them hold
+             * most of the reel, so when the hero arrives every page comes
+             * into shot in the same frame — and with one wait for all of
+             * them the whole set opened together, which is a machine
+             * starting, not a desk working. Each page waits its own turn: an
+             * ordered share of the spread by its place on the reel, jittered
+             * so the cascade is not a metronome either. */
+            k.wait =
+              storyRest() +
+              ((k.slot + seeded(k.seed)() * 0.7) / Math.max(1, REEL.length)) *
+                storySpread();
+            k.recast();
+            k.lastOpen = undefined;
+            k.lastDraw = undefined;
+            k.img = null;
+            k.asked = -1;
+            k.shown = 0;
+            k.seq = 0;
+          }
+          if (!vis) {
+            if (k.seen) {
+              k.seen = false;
+              k.img = null;
+              k.asked = -1;
+              // and it is not part-way through anything any more, which is
+              // what it still looked like to anything reading k.draw
+              k.draw = 0;
+              k.leave = 0;
+              shut(k);
+              wrote = true;
+            }
+            continue;
+          }
+          const u = clamp01((t - k.t0 - (k.wait || 0)) / storySecs());
+          open = storyOpen(u);
+          draw = storyDraw(u);
+          k.leave = 0;
+          k.draw = draw;
+          /* THE MARK IS OFF THE PAGE BEFORE THE DRAWING IS ON IT.
+           *
+           * It used to fade on the drawing's own progress, so for a moment
+           * a bar was up while the rosette was still going — faint, but
+           * both there, which is the mixing. The drawing starts at 0.24 of
+           * the telling; the mark is gone by 0.23. There is a breath of
+           * empty frame between them, and that breath is the point: the
+           * room is made, the mark leaves, then the drawing begins. */
+          k.markAt = 1 - clamp01((u - 0.12) / 0.11);
+        } else if (!vis) continue;
+
+        // ask for the next picture of THIS hole
+        /* A drawing is asked for only while it is still ARRIVING. Once it is
+         * whole it does not change, so there is nothing to ask for; the
+         * departure is done to the composite. This is what makes the hold —
+         * most of every cycle — cost nothing at all. */
+        const size = k.story ? k.full() : k;
+        // the arrival and the departure are both asked for, and a picture
+        // is identified by where BOTH sweeps have got to
+        /* THE DRAWING IS MADE AT EVERY STAGE OF BEING MADE, again.
+         *
+         * I took this out on a measurement I had read wrong. The three
+         * milliseconds a rasterisation was said to cost is WALL TIME from
+         * setting the source to the image loading — queueing included — not
+         * time held on the main thread, and the two are not the same number
+         * at all. Measured properly, with one in flight and every picture
+         * unique: a chart sustains two thousand rasterisations a second and
+         * a world choropleth nine hundred, with the frame rate untouched.
+         *
+         * Thirty stages a second is one and a half per cent of that. What
+         * had actually been costing frames was doing it for several pages
+         * at once, unbounded — which the limit below now prevents.
+         *
+         * So the gesture is the drawing's own again, at every stage: a bar
+         * grows out of its baseline, a line is traced to its head, a dot
+         * swells, an arc leaves its hub. Not a clip that resembles it. */
+        const STEPS = 34;
+        const want = k.story ? Math.round(draw * STEPS) : STEPS;
+        if (
+          ask && size && size.w >= 8 && size.h >= 8 && draw > 0 &&
+          want !== k.asked && rasterBusy < RASTER_LIMIT
+        ) {
+          k.asked = want;
+          rasterBusy++;
+          k.seq = (k.seq || 0) + 1;
+          const seq = k.seq;
+          /* LAID OUT AT THE HOLE'S OWN SIZE. It used to be capped at two
+           * hundred and forty and then stretched into a block up to two
+           * hundred and ninety-two wide, which is a fifth bigger than it was
+           * composed at — so a title set at ten and a half point arrived on
+           * the paper at nearly thirteen, and every rule and every mark came
+           * up with it. The graphic did not look wrong on its own; it looked
+           * ENLARGED, because next to nine-point body type it was.
+           *
+           * There is no need for the cap now that the SVG carries a viewBox:
+           * the layout is the hole and the pixels are twice it, so the
+           * resolution comes from the raster and the SIZE comes from the
+           * page, which is where it belongs. */
+          const rw = size.w,
+            rh = size.h;
+          k.pending = true;
+          rasterise(
+            k.kind, rw, rh, draw, 0, k.vals || liveNow, k.tone, null, k.seed,
+          )
+            .then((im) => {
+              rasterBusy--;
+              // a stage that lands after a newer one has been shown is a
+              // picture of a moment that has passed
+              if (im && seq > (k.shown || 0)) {
+                k.shown = seq;
+                k.img = im;
+                k.fresh = true;
+              }
+            });
+        }
+        if (draw <= 0) {
+          k.img = null;
+          k.asked = -1;
+        }
+
+        /* Repainted only when the picture would actually differ. A story
+         * page holds still for half of every telling, and setting the same
+         * type again for those seconds is a cost with nothing to show. */
+        // what of the reel this hole is about to change, in page units
+        let wx = k.x,
+          wy = k.y,
+          ww = k.w,
+          wh = k.h;
+        if (k.story) {
+          if (t - (k.lastPaint || -9) < 1 / PAINT_HZ) continue;
+          // while the word is on the page it is moving, so the page is
+          // repainted whether or not anything else has changed
+          /* THE MARK IS GONE BEFORE THE DRAWING IS THERE. It used to fade
+           * from the moment the first stage landed, which is the moment the
+           * drawing starts appearing — so the two overlapped and mixed. It
+           * runs on the DRAWING'S OWN PROGRESS now: by the time the graphic
+           * is a tenth made, the mark has already gone, and a tenth of a
+           * bar chart is a few pixels at the foot of the plot. No mixing,
+           * because they are never both there. */
+          const waiting = k.markAt > 0;
+          const dOpen = Math.abs(
+            open - (k.lastOpen === undefined ? -9 : k.lastOpen),
+          );
+          if (
+            !waiting &&
+            dOpen < 0.0015 &&
+            Math.abs(draw - (k.lastDraw === undefined ? -9 : k.lastDraw)) < 0.004 &&
+            Math.abs(k.leave - (k.lastGone === undefined ? -9 : k.lastGone)) < 0.004 &&
+            !k.fresh
+          )
+            continue;
+          /* ONLY WHAT MOVED IS SET AGAIN, AND ONLY IT IS SENT.
+           *
+           * The type on a story page is a function of `open` and of nothing
+           * else. While the room is being made, the whole band changes and
+           * the whole band goes to the card. Once the room IS made — which
+           * is most of every telling — `open` holds at one and the only
+           * thing still changing is the drawing inside the hole. Setting a
+           * page of type again for that, and sending a page-sized rectangle
+           * of it, is the same picture typeset and uploaded sixty times a
+           * second for nothing.
+           *
+           * It was affordable while the reel was stored at the size it was
+           * drawn at. At two device texels to the unit it is four times the
+           * bytes, and four times nothing is still too much. */
+          const moved = dOpen > 0.0015 || k.lastOpen === undefined;
+          k.lastOpen = open;
+          k.lastDraw = draw;
+          k.lastGone = k.leave;
+          k.lastPaint = t;
+          k.fresh = false;
+          if (moved) {
+            g2.save();
+            g2.beginPath();
+            g2.rect(k.x, k.y, k.w, k.h);
+            g2.clip();
+            g2.fillStyle = "#ffffff";
+            g2.fillRect(k.x, k.y, k.w, k.h);
+            g2.textBaseline = "alphabetic";
+            k.paint(open);
+          }
+          /* THE ARRIVAL, AS A CLIP. Two shapes, and each is the direction
+           * its drawing is read in: a ring is swept round from twelve
+           * o'clock, everything else is opened from the left, which is how
+           * a series runs and how a map is scanned. The edge is hard on
+           * purpose — a soft one reads as a fade, and a fade says nothing.
+           */
+          const inner = k.inner();
+          /* THE HOLE ALONE, when the page around it has not moved. Exactly
+           * the hole and no margin: the rule drawn round it sits one unit
+           * outside, and a padded clear would take it off. */
+          if (!moved) {
+            if (!inner) continue;
+            wx = inner.x;
+            wy = inner.y;
+            ww = inner.w;
+            wh = inner.h;
+            g2.save();
+            g2.beginPath();
+            g2.rect(wx, wy, ww, wh);
+            g2.clip();
+            g2.fillStyle = "#ffffff";
+            g2.fillRect(wx, wy, ww, wh);
+          }
+          if (inner && k.img && draw > 0) {
+            /* Straight down. The picture already IS the drawing at this
+             * stage of being made, so there is nothing left to hide. */
+            g2.drawImage(k.img, inner.x, inner.y, inner.w, inner.h);
+          }
+          /* THE WORD DOES NOT JUST STOP. The first stage of a drawing lands
+           * in one frame, and swapping a label for a graphic in one frame
+           * reads as a glitch — the eye registers the change before it
+           * registers what changed. It is held over the drawing and taken
+           * off across a third of a second, which is long enough to be a
+           * handover and short enough not to be a wait. */
+          if (inner && inner.h > 34 && inner.w > 70 && k.markAt > 0)
+            mark(g2, inner, t, k.markAt);
+          g2.restore();
+        } else {
+          if (!k.fresh || !k.img) continue;
+          k.fresh = false;
+          g2.fillStyle = "#ffffff";
+          g2.fillRect(k.x, k.y, k.w, k.h);
+          g2.drawImage(k.img, k.x, k.y, k.w, k.h);
+        }
+
+        putGalley(wx, wy, ww, wh);
+        wrote = true;
+      }
+      /* NO MIPMAP. It used to be rebuilt on every frame a hole wrote, which
+       * on a sheet this size is tens of milliseconds of nothing anyone can
+       * see: the webs MAGNIFY the reel — that is the whole reason it is
+       * stored at twice the size — so the minified levels were built every
+       * frame and sampled by nothing. */
+      if (!wrote) return;
+    }
+
+    const PRESS_IMG = new Map();
+    function loadPressImages(done) {
+      const urls = [
+        ...new Set(
+          ARTICLES.map((a) => a.img)
+            .concat(LANDMARKS.map((k) => k.img))
+            .concat(Object.values(PRESS_ASSETS).flat())
+            .filter(Boolean),
+        ),
+      ];
+      let left = urls.length;
+      if (!left) return;
+      for (const u of urls) {
+        const im = new Image();
+        // Only what is actually fetched over the network needs it — and on a
+        // file:// URL it does not merely do nothing, it fails the check and
+        // the image never loads.
+        if (/^https?:/i.test(u)) im.crossOrigin = "anonymous";
+        im.onload = () => {
+          PRESS_IMG.set(u, im);
+          if (!--left) done();
+        };
+        im.onerror = () => {
+          if (!--left) done();
+        };
+        im.src = u;
+      }
+    }
+
+    /* The five presses, bound to one drawing context. Bound rather than free
+     * because the galley is composed twice: once onto a scratch canvas to find
+     * out how tall each paper wants to be, and once for real. Each press
+     * returns the height it used. */
+    function galleyPresses(g) {
+      const SERIF = '"Times New Roman", Times, Georgia, serif';
+      const R = Math.round;
+
+      const fit = (text, weight, start, max) => {
+        let s = start;
+        for (;;) {
+          g.font = weight + " " + R(s) + "px " + SERIF;
+          if (g.measureText(text).width <= max || s < 7) return R(s);
+          s *= 0.94;
+        }
+      };
+      /* LETTERSPACING, which every masthead, crosshead and caption here
+       * needs and which a canvas has no `tracking` for.
+       *
+       * Two ways, and the fallback is the one to distrust. Drawing a string
+       * glyph by glyph at advances taken from measureText(c) is wrong twice
+       * over: measureText(" ") returns ZERO, because a lone space is collapsed
+       * before it is measured, so word spaces close up and a title reads SHOOK
+       * THEWORLD; and a narrow letter measured ALONE does not carry the
+       * advance it has inside a run, so SPIRITUAL came out SP IR ITUAL. The
+       * context's own `letterSpacing` has neither problem, so it is used
+       * wherever it exists, and the glyph loop is kept only for a context that
+       * does not have it — where a slightly uneven masthead beats none.
+       *
+       * It is set after the font and put back to ZERO before returning —
+       * never to a captured value, which is what leaked it into the body. */
+      const HAS_LS = "letterSpacing" in g;
+      const spaceW = () =>
+        g.measureText("i i").width - g.measureText("ii").width;
+      const trackWidth = (text, sp) => {
+        if (HAS_LS) {
+          g.letterSpacing = sp.toFixed(2) + "px";
+          const w = g.measureText(text).width - sp; // the last glyph's trail
+          g.letterSpacing = "0px";
+          return w;
+        }
+        const sw = spaceW();
+        let w = -sp;
+        for (const c of [...text])
+          w += (c === " " ? sw : g.measureText(c).width) + sp;
+        return w;
+      };
+      const trackDraw = (text, x, y, sp) => {
+        const al = g.textAlign;
+        g.textAlign = "left";
+        if (HAS_LS) {
+          g.letterSpacing = sp.toFixed(2) + "px";
+          g.fillText(text, x, y);
+          // back to ZERO, not to whatever was read out of the context before.
+          // Restoring the captured value left every body paragraph after a
+          // masthead letterspaced — the getter does not hand back "0px" on a
+          // context that has never been set, so the restore was a no-op and
+          // the tracking leaked into the whole article.
+          g.letterSpacing = "0px";
+        } else {
+          const sw = spaceW();
+          let cx = x;
+          for (const c of [...text]) {
+            if (c !== " ") g.fillText(c, cx, y);
+            cx += (c === " " ? sw : g.measureText(c).width) + sp;
+          }
+        }
+        g.textAlign = al;
+      };
+      const track = (text, cx, y, sp) =>
+        trackDraw(text, cx - trackWidth(text, sp) / 2, y, sp);
+      const rule = (x, y, w, h) => g.fillRect(R(x), R(y), R(w), R(h));
+      const diamond = (cx, cy, r) => {
+        g.save();
+        g.translate(cx, cy);
+        g.rotate(Math.PI / 4);
+        g.fillRect(-r, -r, r * 2, r * 2);
+        g.restore();
+      };
+      // two hairlines with a lozenge between them — a monthly's mark, where a
+      // paper would put a rule
+      const lozenge = (cx, y, w) => {
+        rule(cx - w, y, w - 7, 1);
+        rule(cx + 7, y, w - 7, 1);
+        diamond(cx, y + 0.5, 2.1);
+      };
+
+      /* A plate's box takes the PICTURE's shape.
+       *
+       * It used to be a height chosen per press — 78 rows for a monthly, 64
+       * for a rail — with the photograph cover-fitted into it. Two of the six
+       * are PORTRAITS: Bandit's Roost and the Doré both run 960 by 1186, a
+       * ratio of 0.81, and cover-fitting a portrait into a box five times
+       * wider than it is tall throws away nineteen twentieths of the plate.
+       * What was left read as a stretched strip, which is what it was. Taken
+       * from the image instead, the box IS the picture's rectangle — bounded
+       * by the measure and by a height the page can afford — and nothing is
+       * cropped at all. */
+      const plateBox = (x, y, maxW, maxH, img) => {
+        const r = img && img.width ? img.width / img.height : 1.6;
+        let w = maxW,
+          h = w / r;
+        if (h > maxH) {
+          h = maxH;
+          w = h * r;
+        }
+        return { x: x + (maxW - w) / 2, y, w, h };
+      };
+
+      /* A cut. A real photograph when one has arrived, held back to what
+       * newsprint could actually hold: no black, no white, and no colour —
+       * a rotary press in 1890 had one ink. When none has arrived it is the
+       * drawn plate, which is a lit ground with a subject standing in it
+       * rather than a halftone, because at a galley's size a halftone is a
+       * grey rectangle and a hard-edged subject is a censor's bar. */
+      const cut = (x, y, w, h, caption, img, style) => {
+        if (img && img.width) {
+          const s = Math.max(w / img.width, h / img.height);
+          const dw = img.width * s,
+            dh = img.height * s;
+          g.save();
+          g.beginPath();
+          g.rect(R(x), R(y), R(w), R(h));
+          g.clip();
+          g.drawImage(img, R(x + (w - dw) / 2), R(y + (h - dh) / 2), R(dw), R(dh));
+          // one ink: the saturation of a grey fill, over the photograph's own
+          // hue and luminosity
+          g.globalCompositeOperation = "saturation";
+          g.fillStyle = "#808080";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.globalCompositeOperation = "source-over";
+          // and off both ends of the range, the way ink on absorbent paper is
+          g.fillStyle = "rgba(244,241,234,.17)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.restore();
+        } else {
+          const grd = g.createLinearGradient(x, y, x + w * 0.5, y + h);
+          grd.addColorStop(0.0, "#b4b0a8");
+          grd.addColorStop(0.5, "#6e6a64");
+          grd.addColorStop(1.0, "#948f87");
+          g.fillStyle = grd;
+          g.fillRect(R(x), R(y), R(w), R(h));
+          const sub = g.createRadialGradient(
+            x + w * 0.38,
+            y + h * 0.52,
+            h * 0.04,
+            x + w * 0.38,
+            y + h * 0.52,
+            h * 0.52,
+          );
+          sub.addColorStop(0.0, "rgba(232,229,222,.8)");
+          sub.addColorStop(1.0, "rgba(232,229,222,0)");
+          g.fillStyle = sub;
+          g.fillRect(R(x), R(y), R(w), R(h));
+        }
+        g.fillStyle = "#111111";
+        let yy = y + h + 3;
+        if (caption) {
+          g.fillRect(R(x), R(yy), R(w), 1);
+          yy += 10;
+          /* A monthly centres its caption and tracks it; a paper ranges it
+           * left under the cut and leaves it at that. Both are period, and
+           * which one is used is one more thing that tells the two apart at a
+           * glance — which is the whole job of these templates. */
+          const mid = style === "centre";
+          const fsz = mid ? 6.5 : 7;
+          const sp = mid ? fsz * 0.16 : 0;
+          g.font = fsz + "px " + SERIF;
+          g.textAlign = "left";
+          const txt = mid ? caption.toUpperCase() : caption;
+          const wid = (ws) =>
+            mid
+              ? trackWidth(ws.join(" "), sp)
+              : g.measureText(ws.join(" ")).width;
+          const put = (ws) => {
+            if (mid) trackDraw(ws.join(" "), x + (w - wid(ws)) / 2, yy, sp);
+            else g.fillText(ws.join(" "), x, yy);
+            yy += mid ? 10 : 9;
+          };
+          let line = [];
+          for (const t of txt.split(/\s+/)) {
+            line.push(t);
+            if (wid(line) > w) {
+              line.pop();
+              put(line);
+              line = [t];
+            }
+          }
+          if (line.length) put(line);
+        }
+        return yy;
+      };
+
+/* The body of a page.
+ *
+ * TWO THINGS CHANGED HERE, and they are the same thing seen twice.
+ *
+ * A page is a PAGE. Its depth comes from the sheet the press printed on
+ * — a fixed format per press — and never from how much of the article
+ * happened to be set. Before this, a slot stopped where the text
+ * stopped, so the eleven pages were eleven different heights with no
+ * reason behind any of them, and a short piece produced a stub.
+ *
+ * And a page is FULL. No newspaper has ever left the foot of a column
+ * empty: when a story runs out, the next one starts under a rule. So the
+ * flow is handed the articles that follow this one in its own column's
+ * order, and it keeps taking them — a rule, the paper's own headline,
+ * its byline, its text — until every column is full to the last line.
+ *
+ * The columns are balanced: every line is a slot, a crosshead is two, a
+ * continuation head is four, and the plate blocks as many as it is deep
+ * in the column it sits in.
+ */
+const flowCol = (A, o) => {
+  const { left, meas, top, bot, fs, lh, cols, drop, plate, openCaps, fill } = o;
+  const gut = cols > 1 ? 9 : 0;
+  const colW = (meas - gut * (cols - 1)) / cols;
+  const bodyFont = fs + "px " + SERIF;
+  const capsFont = R(fs * 0.92) + "px " + SERIF;
+  const DROPN = 3;
+
+  // the page's own depth, in lines, and what the columns must hold
+  const depth = Math.max(4, Math.floor((bot - top) / lh));
+  const blocked = plate ? Math.ceil(plate.h / lh) + 1 : 0;
+  const want = depth * cols - blocked;
+
+  let dropCh = "",
+    dropW = 0,
+    dropSize = 0;
+  if (drop) {
+    const b0 = A.body.find((b) => !b.h);
+    dropCh = b0 ? b0.t.charAt(0) : "";
+    /* The cap spans the first line's own cap-height down to the third
+     * line's baseline. Times' capital is about seven tenths of its body,
+     * so that span over seven tenths IS the size. */
+    dropSize = R((lh * (DROPN - 1) + fs * 0.7) / 0.7);
+    g.font = "700 " + dropSize + "px " + SERIF;
+    dropW = g.measureText(dropCh).width + fs * 0.24;
+  }
+
+  const lines = [];
+  let slots = 0;
+  const add = (L, n) => {
+    lines.push(L);
+    slots += n;
+  };
+
+  // one article's worth of lines, poured in
+  const pour = (art, isFirst) => {
+    let firstPara = true,
+      started = false,
+      capsLeft = isFirst ? openCaps || 0 : 0;
+    for (const blk of art.body) {
+      if (slots >= want) return;
+      if (blk.h) {
+        if (started) add({ head: true, text: blk.t }, 2);
+        continue;
+      }
+      started = true;
+      let ws = blk.t.split(/\s+/).filter(Boolean);
+      if (isFirst && firstPara && drop && ws.length)
+        ws = [ws[0].slice(1)].concat(ws.slice(1)).filter(Boolean);
+      const toks = ws.map((t) => {
+        if (firstPara && capsLeft > 0) {
+          capsLeft--;
+          return { t: t.toUpperCase(), caps: true };
+        }
+        return { t, caps: false };
+      });
+      let i = 0,
+        first = true;
+      while (i < toks.length && slots < want) {
+        const di = isFirst && drop && lines.length < DROPN ? dropW : 0;
+        const indent =
+          (first && !(isFirst && drop && firstPara) ? fs * 1.05 : 0) + di;
+        const line = [];
+        let w = indent;
+        while (i < toks.length) {
+          g.font = toks[i].caps ? capsFont : bodyFont;
+          const adv = g.measureText((line.length ? " " : "") + toks[i].t).width;
+          if (w + adv > colW && line.length) break;
+          line.push(toks[i]);
+          w += adv;
+          i++;
+        }
+        add({ toks: line, indent, justify: i < toks.length }, 1);
+        first = false;
+      }
+      firstPara = false;
+    }
+  };
+
+  pour(A, true);
+  for (const nxt of fill || []) {
+    if (slots >= want) break;
+    add({ brk: true, text: nxt.head.join(" "), by: nxt.by }, 4);
+    pour(nxt, false);
+  }
+
+  let li = 0;
+  for (let c = 0; c < cols && li < lines.length; c++) {
+    const x0 = left + c * (colW + gut);
+    let ly = top,
+      used = 0;
+    const from = li;
+    while (used < depth && li < lines.length) {
+      if (
+        plate &&
+        x0 + colW > plate.x + 1 &&
+        x0 < plate.x + plate.w - 1 &&
+        ly > plate.y &&
+        ly - fs < plate.y + plate.h
+      ) {
+        ly += lh;
+        used++;
+        continue;
+      }
+      const L = lines[li++];
+
+      // the next story on the page: a rule, its headline, its byline
+      if (L.brk) {
+        if (used + 4 > depth) {
+          li--;
+          break;
+        }
+        g.fillRect(R(x0), R(ly - fs * 0.4), R(colW), 2);
+        ly += lh * 0.9;
+        let ts = R(fs * 1.24);
+        for (;;) {
+          g.font = "700 " + ts + "px " + SERIF;
+          if (g.measureText(L.text).width <= colW || ts < 6) break;
+          ts -= 0.5;
+        }
+        g.textAlign = "center";
+        g.fillText(L.text, x0 + colW / 2, ly);
+        ly += lh;
+        g.font = R(fs * 0.8) + "px " + SERIF;
+        track(L.by, x0 + colW / 2, ly, fs * 0.24);
+        g.textAlign = "left";
+        ly += lh * 1.1;
+        used += 4;
+        continue;
+      }
+
+      if (L.head) {
+        const ts = R(fs * 0.88);
+        g.font = ts + "px " + SERIF;
+        track(L.text.toUpperCase(), x0 + colW / 2, ly + fs * 0.2, ts * 0.18);
+        ly += lh * 1.6;
+        used += 2;
+        continue;
+      }
+
+      const wd = L.toks.map((t) => {
+        g.font = t.caps ? capsFont : bodyFont;
+        return g.measureText(t.t).width;
+      });
+      g.font = bodyFont;
+      const spaceW = g.measureText("i i").width - g.measureText("ii").width;
+      const sum = wd.reduce((a, b) => a + b, 0);
+      const gap =
+        L.justify && L.toks.length > 1
+          ? (colW - L.indent - sum) / (L.toks.length - 1)
+          : spaceW;
+      let cx = x0 + L.indent;
+      for (let k = 0; k < L.toks.length; k++) {
+        g.font = L.toks[k].caps ? capsFont : bodyFont;
+        g.fillText(L.toks[k].t, cx, ly);
+        cx += wd[k] + gap;
+      }
+      ly += lh;
+      used++;
+    }
+    if (c > 0 && li > from)
+      g.fillRect(R(x0 - gut / 2), R(top - fs), 1, R(depth * lh - lh * 0.4));
+  }
+  if (drop && dropCh) {
+    g.font = "700 " + dropSize + "px " + SERIF;
+    g.textAlign = "left";
+    g.fillText(dropCh, left, top + lh * (DROPN - 1));
+  }
+  return top + depth * lh;
+};
+
+      /* A PLACEHOLDER, and it says which KIND it stands in for. A black
+       * rectangle would do for a photograph and would say nothing at all for a
+       * chart or a map, and the whole point of these thirty pages is to judge
+       * where each kind of thing sits — so a chart placeholder has bars, a map
+       * has a coast and some marks on it, and a photograph is a plate with a
+       * subject in it. None of them is data; all of them are shapes. */
+      const PALETTE = ["#1a2ffb", "#f2b13c", "#b3402a", "#1a7a4a", "#6b4ea8"];
+      const placeholder = (kind, x, y, w, h, tint, rich, seed, mono) => {
+        if (w <= 2 || h <= 2) return;
+        g.save();
+        g.beginPath();
+        g.rect(R(x), R(y), R(w), R(h));
+        g.clip();
+
+        /* THE REAL ONE, IF IT ARRIVED. The galley is composed twice — once
+         * before the files are in, once after — so this is the only place
+         * that decides between a captured graphic and the shape that stands
+         * in for it while the page is still loading.
+         *
+         * Cropped to fill rather than fitted, because a hole in a page has
+         * the proportion the layout gave it and a letterboxed chart in a
+         * newspaper column reads as a mistake. Rung two desaturates: that
+         * press had one ink, and the whole ramp says so. */
+        const list = PRESS_ASSETS[kind];
+        const real =
+          list && list.length && PRESS_IMG.get(list[(seed || 0) % list.length]);
+        if (real) {
+          const br = w / h;
+          let sw = real.width,
+            sh = real.height,
+            sx = 0,
+            sy = 0;
+          if (sw / sh > br) {
+            sw = sh * br;
+            sx = (real.width - sw) / 2;
+          } else {
+            sh = sw / br;
+            sy = (real.height - sh) / 2;
+          }
+          g.drawImage(real, sx, sy, sw, sh, R(x), R(y), R(w), R(h));
+          if (mono) {
+            g.globalCompositeOperation = "saturation";
+            g.fillStyle = "#808080";
+            g.fillRect(R(x), R(y), R(w), R(h));
+            g.globalCompositeOperation = "source-over";
+          }
+          g.strokeStyle = "rgba(20,20,28,.28)";
+          g.lineWidth = 1;
+          g.strokeRect(R(x) + 0.5, R(y) + 0.5, R(w) - 1, R(h) - 1);
+          g.restore();
+          return;
+        }
+        if (kind === "photo") {
+          g.fillStyle = tint || "#5c5a55";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.fillStyle = "rgba(255,255,255,.22)";
+          g.beginPath();
+          g.ellipse(x + w * 0.36, y + h * 0.56, w * 0.16, h * 0.34, 0, 0, 7);
+          g.fill();
+          g.fillStyle = "rgba(20,20,28,.28)";
+          g.fillRect(R(x), R(y + h * 0.72), R(w), R(h * 0.28));
+        } else if (kind === "chart") {
+          g.fillStyle = "rgba(20,20,28,.055)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          const n = Math.max(5, Math.round(w / 16));
+          const bw = (w * 0.86) / n;
+          for (let i = 0; i < n; i++) {
+            const v = 0.28 + 0.66 * Math.abs(Math.sin(i * 1.7 + w));
+            g.fillStyle = rich
+              ? PALETTE[i % PALETTE.length]
+              : tint && i === Math.floor(n * 0.62)
+                ? tint
+                : "#3a3833";
+            g.fillRect(
+              R(x + w * 0.07 + i * bw),
+              R(y + h * 0.82 - v * h * 0.66),
+              R(bw * 0.62),
+              R(v * h * 0.66),
+            );
+          }
+          g.fillStyle = "rgba(20,20,28,.42)";
+          g.fillRect(R(x + w * 0.07), R(y + h * 0.82), R(w * 0.86), 1);
+        } else {
+          g.fillStyle = "rgba(20,20,28,.055)";
+          g.fillRect(R(x), R(y), R(w), R(h));
+          g.strokeStyle = rich ? "#5b5852" : "#3a3833";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x + w * 0.12, y + h * 0.68);
+          g.bezierCurveTo(
+            x + w * 0.26, y + h * 0.22,
+            x + w * 0.62, y + h * 0.86,
+            x + w * 0.9, y + h * 0.3,
+          );
+          g.stroke();
+          g.beginPath();
+          g.moveTo(x + w * 0.2, y + h * 0.26);
+          g.bezierCurveTo(
+            x + w * 0.44, y + h * 0.52,
+            x + w * 0.5, y + h * 0.2,
+            x + w * 0.84, y + h * 0.62,
+          );
+          g.stroke();
+          for (let i = 0; i < (rich ? 9 : 6); i++) {
+            g.fillStyle = rich
+              ? PALETTE[i % PALETTE.length]
+              : tint && i % 3 === 0
+                ? tint
+                : "#3a3833";
+            g.beginPath();
+            g.arc(
+              x + w * (0.16 + 0.085 * i),
+              y + h * (0.4 + 0.26 * Math.sin(i * 2.1)),
+              Math.max(1.6, w * (rich ? 0.018 : 0.012)),
+              0,
+              7,
+            );
+            g.fill();
+          }
+        }
+        g.restore();
+        g.fillStyle = "rgba(20,20,28,.2)";
+        g.strokeStyle = "rgba(20,20,28,.2)";
+        g.strokeRect(R(x) + 0.5, R(y) + 0.5, R(w) - 1, R(h) - 1);
+        g.fillStyle = "#111111";
+      };
+
+      const imgOf = (A) => (A.img ? PRESS_IMG.get(A.img) : null);
+      const wrapTo = (text, w, font) => {
+        g.font = font;
+        const out = [];
+        let line = [];
+        for (const t of text.split(/\s+/)) {
+          line.push(t);
+          if (g.measureText(line.join(" ")).width > w) {
+            line.pop();
+            if (line.length) out.push(line.join(" "));
+            line = [t];
+          }
+        }
+        if (line.length) out.push(line.join(" "));
+        return out;
+      };
+
+      return {
+        // one name across the top under a double rule, a centred headline, and
+        // a plate across the measure a few lines in
+        broadsheet(A, x0, top, capH, fill) {
+          const M = 14,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          let y = top + 14;
+          rule(left, y, meas, 3);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 22;
+          g.textAlign = "center";
+          const ms = fit(A.paper, "700", 23, meas * 0.9);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, mid, y);
+          y += 8;
+          rule(left, y, meas, 1);
+          y += 12;
+          g.font = "8px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 24;
+          g.textAlign = "center";
+          let hs = 25;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 25, meas));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.08);
+          }
+          y += 3;
+          const ss = fit(A.sub, "400", 10, meas * 0.95);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 9;
+          rule(mid - meas * 0.16, y, meas * 0.32, 1);
+          y += 18;
+          g.textAlign = "left";
+          const fs = 9.5,
+            lh = 12.6;
+          /* The cut OPENS the body; it does not interrupt it. Dropped four
+           * lines in, on a single column, it fell in the middle of a sentence
+           * — the reader got half a clause, a photograph, and then the other
+           * half. Above the first line it costs nothing and reads as a plate. */
+          if (A.cut) {
+            const b = plateBox(left, y, meas, 178, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 9;
+          }
+          const plate = null;
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y + fs,
+              bot: top + capH - 14,
+              fs,
+              lh,
+              cols: 1,
+              fill,
+              plate,
+            }) + 12
+          );
+        },
+
+        // the name reversed out of a black band, one line of type as big as it
+        // will go ranged left, a cut across the measure, and a black foot
+        tabloid(A, x0, top, capH, fill) {
+          const M = 12,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          const band = 42;
+          g.fillStyle = "#111111";
+          g.fillRect(R(x0), R(top), GALLEY_COL, band);
+          g.fillStyle = "#ffffff";
+          g.textAlign = "center";
+          const name = A.paper.toUpperCase();
+          const ms = fit(name, "700", 30, meas * 0.96);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(name, x0 + GALLEY_COL / 2, top + R(band * 0.72));
+          g.fillStyle = "#111111";
+          /* The air. The dateline sat six rows above a two-point rule, so its
+           * descenders touched it, and the headline's baseline was thirty rows
+           * under that rule — which at forty point puts the tops of the caps
+           * ON it. Both gaps are opened, and the one over the headline is
+           * measured from the size the headline actually came out at rather
+           * than being a number that happened to work at one size. */
+          let y = top + band + 18;
+          g.font = "8px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 11;
+          rule(left, y, meas, 2);
+          g.textAlign = "left";
+          let hs = 40;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 40, meas));
+          y += R(hs * 0.74) + 20;
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 0.92);
+          }
+          y += 12;
+          const ss = fit(A.sub, "400", 10.5, meas);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 18;
+          if (A.cut) {
+            const b = plateBox(left, y, meas, 190, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A)) + 5;
+          }
+          const end = flowCol(A, {
+            left,
+            meas,
+            top: y + 9,
+            bot: top + capH - 26,
+            fs: 8.6,
+            lh: 11.6,
+            cols: 2,
+            fill,
+          });
+          g.fillStyle = "#111111";
+          g.fillRect(R(x0), R(end + 8), GALLEY_COL, 7);
+          return end + 22;
+        },
+
+        /* THE ATLANTIC MONTHLY. The austere one: no illustration, one column,
+         * everything centred, and the whole page carried by air and by the
+         * decorated initial. The Atlantic did not illustrate its essays, so
+         * this template has no plate at all — which is the point of it. */
+        monthly(A, x0, top, capH, fill) {
+          const M = 40,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 34;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 9.5, meas * 0.78);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.46);
+          y += 15;
+          lozenge(mid, y, meas * 0.3);
+          y += 42;
+          let hs = 25;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "400", 25, meas * 0.86));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            track(l, mid, y, hs * 0.045);
+            y += R(hs * 1.2);
+          }
+          y += 6;
+          const ss = fit(A.sub, "italic 400", 9.5, meas * 0.9);
+          g.font = "italic 400 " + ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 20;
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.62);
+          y += 30;
+          g.textAlign = "left";
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 26,
+            fs: 9.5, lh: 14.4, cols: 1, drop: true, fill,
+            openCaps: 4,
+          });
+          diamond(mid, end + 9, 2.4);
+          return end + 26;
+        },
+
+        /* SCRIBNER'S. The illustrated monthly, and it does not look like the
+         * Atlantic: the essay is set in TWO columns, the title sits between
+         * two rules rather than under an ornament, and there is a plate. Three
+         * magazines composed by one template were three magazines a reader
+         * could not tell apart, which is the thing this fixes. */
+        illustrated(A, x0, top, capH, fill) {
+          const M = 22,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 26;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 9, meas * 0.6);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.5);
+          y += 14;
+          rule(left, y, meas, 1);
+          y += 34;
+          let hs = 23;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "400", 23, meas * 0.8));
+          g.font = "400 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            track(l, mid, y, hs * 0.05);
+            y += R(hs * 1.16);
+          }
+          y += 11;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
+          y += 21;
+          const ss = fit(A.sub, "italic 400", 9, meas * 0.86);
+          g.font = "italic 400 " + ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 17;
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.6);
+          y += 22;
+          g.textAlign = "left";
+          const fs = 8.6,
+            lh = 12.2;
+          /* On a two-column page the cut takes ONE column, not the measure.
+           * Centred across both — which is what plateBox does when it is
+           * handed the whole measure and a portrait to fit — it punched a hole
+           * through the middle of both columns and dropped its caption over
+           * the type on either side of it. */
+          /* The cut heads the SECOND column. In the measure it holed both
+           * columns and dropped its caption over the type either side; four
+           * lines down the first column it cut the opening sentence in two.
+           * At the head of column two it interrupts nothing: column one runs
+           * clean from its initial, column two starts under the picture. */
+          const colW = (meas - 9) / 2;
+          /* Its top sits on the first line's cap-height, not on that line's
+           * baseline: level with the baseline, one line of text still fits
+           * ABOVE the picture — correctly, since that line's body is clear of
+           * it — and the column then opened on a single stranded line. */
+          const plate = A.cut
+            ? plateBox(left + colW + 9, y - fs, colW, 214, imgOf(A))
+            : null;
+          if (plate)
+            plate.h =
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A), "centre") -
+              plate.y;
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 24,
+            fs, lh, cols: 2, drop: true, plate, fill,
+            openCaps: 3,
+          });
+          diamond(mid, end + 9, 2.2);
+          return end + 24;
+        },
+
+        /* A SLOT NOT YET FILLED. Everything on rungs three to five was written
+         * by me from nothing — invented decade labels over invented paragraphs
+         * — so it is taken out and the hole it leaves is drawn instead: the
+         * rung, the year the reel wants, and what has to go there. The reel
+         * runs with gaps in it, which is the honest state of the work.
+         *
+         * Nothing else in the reel is made up. The eleven papers are real
+         * articles and the five plates are real sheets. */
+        blank(B, x0, top, capH) {
+          const M = 22,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.save();
+          g.setLineDash([7, 6]);
+          g.strokeStyle = "rgba(20,20,28,.32)";
+          g.lineWidth = 1;
+          g.strokeRect(R(left) + 0.5, R(top + 24) + 0.5, R(meas), R(capH - 52));
+          g.restore();
+          g.textAlign = "center";
+          let y = top + capH * 0.42;
+          g.font = "9px " + SERIF;
+          track("RUNG " + B.rung, mid, y, 9 * 0.5);
+          y += 30;
+          let hs = 21;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(B.need).width <= meas * 0.86 || hs < 10) break;
+            hs *= 0.94;
+          }
+          const lines = wrapTo(B.need, meas * 0.86, "400 " + R(hs) + "px " + SERIF);
+          for (const l of lines) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.18);
+          }
+          y += 16;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
+          y += 18;
+          g.font = "8px " + SERIF;
+          track(String(B.year).toUpperCase(), mid, y, 8 * 0.5);
+          y += 22;
+          g.font = "italic 8.5px " + SERIF;
+          g.fillText("to produce", mid, y);
+          g.textAlign = "left";
+          return top + capH;
+        },
+
+        /* THE ONE PAINTER. Every template on the reel comes through here: it
+         * reads a spec and draws it, so a spacing fault is fixed in one place
+         * rather than in thirty.
+         *
+         * It also ENFORCES the rungs rather than trusting the specs. Rung one
+         * carries no block whatever a spec says, rung two's blocks are one ink
+         * however they are marked, and only rung five may let a block take the
+         * measure at the top of the page. A constraint a data table can break
+         * is not a constraint. */
+        spec(S, x0, top, capH) {
+          const M = 16,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          const ink = S.rung >= 3 && S.tone ? S.tone : "#111111";
+          let y = top + 20;
+
+          // ---- the name
+          if (S.head === "band") {
+            const band = 34;
+            g.fillStyle = "#111111";
+            g.fillRect(R(x0), R(top), GALLEY_COL, band);
+            g.fillStyle = "#ffffff";
+            g.textAlign = "center";
+            const ms = fit("THE COLUMN INCH", "700", 24, meas * 0.94);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("THE COLUMN INCH", mid, top + R(band * 0.72));
+            g.fillStyle = "#111111";
+            y = top + band + 18;
+          } else if (S.head === "tracked") {
+            g.textAlign = "center";
+            const ms = fit("THE DEADLINE REVIEW", "400", 9.5, meas * 0.7);
+            g.font = ms + "px " + SERIF;
+            track("THE DEADLINE REVIEW", mid, y + 8, ms * 0.46);
+            y += 18;
+            g.fillStyle = ink;
+            lozenge(mid, y, meas * 0.26);
+            g.fillStyle = "#111111";
+            y += 20;
+          } else if (S.head === "left") {
+            g.textAlign = "left";
+            const ms = fit("The Galley Proof", "700", 19, meas * 0.56);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("The Galley Proof", left, y + R(ms * 0.74) + 4);
+            g.textAlign = "right";
+            g.font = "7px " + SERIF;
+            g.fillStyle = ink;
+            g.fillText("LATE EDITION", left + meas, y + 10);
+            g.fillStyle = "#111111";
+            y += R(ms * 0.74) + 14;
+            rule(left, y, meas, 2);
+            y += 16;
+          } else if (S.head === "boxed") {
+            g.textAlign = "center";
+            const ms = fit("THE STONE & THE SPIKE", "700", 15, meas * 0.62);
+            const bh = R(ms * 0.74) + 18;
+            g.strokeStyle = "#111111";
+            g.lineWidth = 1;
+            g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("THE STONE & THE SPIKE", mid, y + bh - 9);
+            y += bh + 12;
+            g.fillStyle = ink;
+            rule(left, y, meas, 1);
+            g.fillStyle = "#111111";
+            y += 14;
+          } else if (S.head === "shoulder") {
+            g.textAlign = "left";
+            const ms = fit("The Press Run", "700", 22, meas * 0.44);
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("The Press Run", left, y + R(ms * 0.74) + 2);
+            const bx = left + meas * 0.58,
+              bw = meas * 0.42;
+            rule(bx, y + 2, bw, 1);
+            rule(bx, y + 20, bw, 1);
+            g.textAlign = "right";
+            g.font = "6.5px " + SERIF;
+            g.fillText("SET IN THE MORNING", left + meas, y + 10);
+            g.fillStyle = ink;
+            g.fillText("PRINTED BY NOON", left + meas, y + 17);
+            g.fillStyle = "#111111";
+            y += R(ms * 0.74) + 14;
+            rule(left, y, meas, 3);
+            y += 15;
+          } else {
+            g.textAlign = "center";
+            const ms = fit("The Daily Splash", "700", 21, meas * 0.82);
+            y += R(ms * 0.74) + 6;
+            g.font = "700 " + ms + "px " + SERIF;
+            g.fillText("The Daily Splash", mid, y);
+            y += 11;
+            g.fillStyle = ink;
+            rule(left, y, meas, 2);
+            g.fillStyle = "#111111";
+            y += 5;
+            rule(left, y, meas, 1);
+            y += 14;
+            g.font = "7.5px " + SERIF;
+            g.textAlign = "left";
+            g.fillText("NO. 1, VOL. I", left, y);
+            g.textAlign = "right";
+            g.fillText("PRICE: ONE INCH", left + meas, y);
+            y += 6;
+            rule(left, y, meas, 1);
+            y += 16;
+          }
+
+          // ---- the headline and the deck
+          const title = LOREM_HEAD[(S.rung * 7 + (S.i || 0)) % LOREM_HEAD.length];
+          g.textAlign = S.head === "left" ? "left" : "center";
+          const hs = fit(title, S.head === "tracked" ? "400" : "700", 25, meas * 0.92);
+          y += R(hs * 0.74) + 10;
+          g.font = (S.head === "tracked" ? "400 " : "700 ") + hs + "px " + SERIF;
+          g.fillText(title, S.head === "left" ? left : mid, y);
+          y += 14;
+          g.font = "italic 9px " + SERIF;
+          g.fillText(
+            "Made at the desk, from the reporting already done",
+            S.head === "left" ? left : mid,
+            y,
+          );
+          y += 8;
+          if (S.head !== "left") rule(mid - meas * 0.13, y, meas * 0.26, 1);
+          y += 18;
+
+          // ---- the measure, and the blocks that sit in it
+          const cols = S.cols,
+            gut = 9,
+            colW = (meas - gut * (cols - 1)) / cols;
+          const fs = cols >= 3 ? 7.6 : 9,
+            lh = cols >= 3 ? 10.4 : 12.4;
+          const bot = top + capH - (S.bare ? 34 : 14);
+          const depth = Math.floor((bot - y) / lh);
+
+          /* THE BODY, AS A FUNCTION OF HOW FAR THE HOLE HAS OPENED.
+           *
+           * It used to run once, inline. It is a closure now because a story
+           * page repaints it — the whole point of that page is that the text
+           * OPENS to make room, and text that opens has to be set again with
+           * the hole at its new size. The flow already avoided a block by
+           * line-slots, so growing the block from nothing is the entire
+           * animation: the lines above hold, the lines below are pushed down,
+           * and a gap appears between them.
+           *
+           * `grow` is 0 for the page as printed and 1 for the page with the
+           * graphic in it. The block's rectangle at the current size is left
+           * on `liveInner`, because that is where the drawing goes. */
+          let liveInner = null;
+          const body = (grow) => {
+            /* The rung, enforced. A spec cannot put a picture on rung one, and
+             * cannot give a block the measure at the top of the page below rung
+             * five, whatever it says. */
+            const blocks = (S.rung === 1 && !S.story ? [] : S.blocks || [])
+              .map((b) => ({
+                ...b,
+                lines: S.story ? Math.round(b.lines * grow) : b.lines,
+                span: S.rung < 5 && !S.story && b.span >= cols && b.at === 0 && cols > 1
+                  ? Math.max(1, cols - 1)
+                  : b.span,
+                colour: S.rung >= 3 && b.colour,
+              }))
+              .filter((b) => b.lines >= 1);
+
+            /* A block takes the line-slots it is given, MINUS the air it owes
+             * the type around it. Set flush to its slots it began exactly where
+             * the line above it ended — a pixel and a half under that line's
+             * descenders — and the picture read as if it were glued to the text.
+             * Five rows off the top and eight off the foot leave about the same
+             * white above and below, which is what the eye is measuring. */
+            const AIR_T = 5,
+              AIR_B = 8;
+            liveInner = null;
+            for (let bi = 0; bi < blocks.length; bi++) {
+              const b = blocks[bi];
+              const bx = left + b.col * (colW + gut),
+                bw = colW * b.span + gut * (b.span - 1),
+                by = y - fs + b.at * lh + AIR_T,
+                bh = b.lines * lh - AIR_T - AIR_B;
+              if (bh < 2) continue;
+
+              /* On a story page the block is not a picture yet. It is the room
+               * being made for one: a hairline frame that grows with the text,
+               * and the drawing arrives inside it afterwards. Painting a
+               * placeholder here would put a finished graphic in a hole that is
+               * still opening, which says the opposite of what the page is for. */
+              if (S.story) {
+                g.save();
+                g.strokeStyle = "rgba(20,20,28,.5)";
+                g.lineWidth = 1;
+                g.strokeRect(R(bx) + 0.5, R(by) + 0.5, R(bw) - 1, R(bh) - 1);
+                g.restore();
+                liveInner = { x: R(bx) + 1, y: R(by) + 1, w: R(bw) - 2, h: R(bh) - 2 };
+                continue;
+              }
+
+              /* From the fifth rung up a drawing carries COLOUR — several of
+               * them. The rungs under it are a press with one ink, or one that
+               * bought a second for a photograph; a chart made at a desk today
+               * has a palette, and drawing the top of the ramp in the same grey
+               * as rung two says the opposite of what the page is for. The
+               * sixth rung is the end of that ramp, not a step back off it. */
+              /* A block the page wants alive keeps its rectangle, in galley
+               * coordinates, so the frame loop can write that rectangle and
+               * nothing else. */
+              if (S.live === bi && LIVE_ART[S.anim])
+                LIVE_HOLES.push({
+                  x: R(bx), y: R(by), w: R(bw), h: R(bh),
+                  anim: S.anim, tone: S.tone || "#b3402a",
+                });
+              placeholder(
+                b.kind, bx, by, bw, bh,
+                b.colour ? ink : null,
+                S.rung >= 5,
+                (S.i || 0) * 3 + bi,
+                S.rung === 2,
+              );
+            }
+
+            /* A BARE PAGE STOPS HERE. On the sixth rung the drawing IS the
+             * article: there is no body to flow, so the blocks take the page and
+             * the only words under them are the ones a graphic cannot do without
+             * — where the numbers came from, and who made it. Running the text
+             * loop anyway would have set lorem in the gaps between the charts,
+             * which is exactly the thing this rung is defined by not having. */
+            if (S.bare) {
+              const fy = top + capH - 22;
+              g.fillStyle = ink;
+              g.fillRect(R(left), R(fy), R(meas * 0.14), 2);
+              g.fillStyle = "#111111";
+              g.font = "7px " + SERIF;
+              g.textAlign = "left";
+              g.fillText("SOURCE · LOREM IPSUM STATISTICAL OFFICE, 2026", left, fy + 12);
+              g.textAlign = "right";
+              g.fillText("GRAPHIC BY THE DESK", left + meas, fy + 12);
+              g.textAlign = "left";
+              return;
+            }
+
+            // the words, flowing round them
+            g.fillStyle = "#111111";
+            g.font = fs + "px " + SERIF;
+            g.textAlign = "left";
+            const words = LOREM.split(" ");
+            let w = 0;
+            const line = () => {
+              const out = [];
+              let acc = 0;
+              while (w < words.length) {
+                const add = g.measureText((out.length ? " " : "") + words[w]).width;
+                if (acc + add > colW && out.length) break;
+                out.push(words[w]);
+                acc += add;
+                w++;
+              }
+              if (w >= words.length) w = 0;
+              return out.join(" ");
+            };
+            for (let c = 0; c < cols; c++) {
+              const cx = left + c * (colW + gut);
+              for (let r = 0; r < depth; r++) {
+                const ly = y + r * lh;
+                const hit = blocks.some(
+                  (b) =>
+                    c >= b.col && c < b.col + b.span && r >= b.at && r < b.at + b.lines,
+                );
+                if (hit) continue;
+                g.fillText(line(), cx, ly);
+              }
+            }
+
+            /* THE HAIRLINES, BROKEN WHERE A BLOCK CROSSES THEM.
+             *
+             * A rule between two columns was drawn down the whole depth of the
+             * page, and the blocks are painted before it — so any picture
+             * spanning that boundary got a line ruled straight through it. The
+             * line belongs between COLUMNS OF TYPE; where a block bridges them
+             * there are no two columns to separate. Each boundary is therefore
+             * drawn in the segments the blocks leave it. */
+            for (let c = 1; c < cols; c++) {
+              const lx = R(left + c * (colW + gut) - gut / 2);
+              const gaps = blocks
+                .filter((b) => b.col < c && b.col + b.span > c)
+                .map((b) => [b.at, b.at + b.lines])
+                .sort((a, b) => a[0] - b[0]);
+              let r = 0;
+              for (const [g0, g1] of gaps) {
+                if (g0 > r)
+                  g.fillRect(lx, R(y - fs + r * lh), 1, R((g0 - r) * lh - AIR_B));
+                r = Math.max(r, g1);
+              }
+              if (r < depth) g.fillRect(lx, R(y - fs + r * lh), 1, R((depth - r) * lh));
+            }
+          };
+
+          /* A STORY PAGE DOES NOT REFLOW. It slides.
+           *
+           * Opening the hole by whole line-slots is what the flow already
+           * knew how to do, and it is visibly stepped: a jump of a line at a
+           * time reads as a stutter, not as paper making room. So a story
+           * page does not use the slot flow at all. The words are broken
+           * ONCE — the same words in the same measure, so re-breaking them
+           * every frame would be work for nothing — and the lines below the
+           * hole are drawn lower, by a number of pixels that can be any
+           * number. The gap opens continuously and the type slides with it.
+           *
+           * The columns the block does not cross never move: that is what
+           * makes it read as room made IN the article rather than the
+           * article shoved aside.
+           *
+           * WHERE the room is made, and WHAT goes in it, are drawn again at
+           * the top of every telling. Twelve drawings and a page that can
+           * take one in any of its columns is a lot of pages; the same chart
+           * arriving in the same corner every time is one. */
+          if (S.story) {
+            const AIR_T = 5,
+              AIR_B = 8;
+            const rnd = seeded(LOAD_SALT + (S.i || 0) * 7919 + 13);
+
+            // the words, broken once
+            g.font = fs + "px " + SERIF;
+            const words = LOREM.split(" ");
+            let wi = 0;
+            const COL = [];
+            for (let c = 0; c < cols; c++) {
+              const col = [];
+              for (let r = 0; r < depth; r++) {
+                const out = [];
+                let acc = 0;
+                while (wi < words.length) {
+                  const add = g.measureText((out.length ? " " : "") + words[wi]).width;
+                  if (acc + add > colW && out.length) break;
+                  out.push(words[wi]);
+                  acc += add;
+                  wi++;
+                }
+                if (wi >= words.length) wi = 0;
+                col.push(out.join(" "));
+              }
+              COL.push(col);
+            }
+
+            /* The cast. A drawing, a measure to give it, and a place in the
+             * article to open. Held on the page rather than recomputed while
+             * painting, because a chart that changed identity between two
+             * frames of the same telling is not a graphic. */
+            let B = null;
+            /* THE HOLE IS DECIDED FIRST, and the drawing is dealt to it.
+             * It used to run the other way — deal a drawing, then make a
+             * hole — which meant a bar chart could be handed a single
+             * column of a three-column page and simply not work there.
+             * The room a page has to give is a fact about the page; what
+             * goes in it is the choice. */
+            const recast = () => {
+              const span = 1 + Math.floor(rnd() * cols);
+              const col = Math.floor(rnd() * (cols - span + 1));
+              const lines = Math.max(
+                5,
+                Math.min(depth - 3, Math.round(depth * (0.3 + rnd() * 0.34))),
+              );
+              const at = 2 + Math.floor(rnd() * Math.max(1, depth - lines - 3));
+              const bwNow = colW * span + gut * (span - 1),
+                bhNow = lines * lh - AIR_T - AIR_B;
+              /* NOT ONE ANOTHER WEB IS ALREADY SHOWING. The deck alone only
+               * guarantees that six pages differ, and the pages recast one
+               * at a time as each comes into the frame — so a page dealt a
+               * bar chart could open beside another still holding one from
+               * the pass before. What is on screen is the constraint, so it
+               * is what the deal is told about. */
+              const busy = [];
+              for (const o of LIVE_HOLES)
+                if (o !== hole && o.seen && o.kind) busy.push(o.kind);
+              const kind = dealKind(rnd, bwNow / Math.max(1, bhNow), busy);
+              B = {
+                kind, col, span, at, lines,
+                bx: left + col * (colW + gut),
+                bw: colW * span + gut * (span - 1),
+                byTop: y - fs + at * lh + AIR_T,
+                fullPx: lines * lh,
+              };
+              hole.kind = kind;
+              hole.seed = Math.floor(rnd() * 1e9);
+              // one set of numbers for this telling, and they do not move
+              // and a new ink each time, so a page is not one colour for ever
+              hole.tone = inkFor(rnd);
+              hole.vals = castValues(rnd);
+              hole.asked = -1;
+            };
+
+            let inner = null;
+            const paint = (open) => {
+              if (!B) recast();
+              const px = open * B.fullPx;
+              const holeH = px - AIR_T - AIR_B;
+              inner =
+                holeH > 6
+                  ? { x: R(B.bx) + 1, y: R(B.byTop) + 1, w: R(B.bw) - 2, h: R(holeH) - 2 }
+                  : null;
+
+              g.fillStyle = "#111111";
+              g.font = fs + "px " + SERIF;
+              g.textAlign = "left";
+              for (let c = 0; c < cols; c++) {
+                const cx = left + c * (colW + gut);
+                const crossed = c >= B.col && c < B.col + B.span;
+                for (let r = 0; r < depth; r++) {
+                  const ly = y + r * lh + (crossed && r >= B.at ? px : 0);
+                  if (ly > bot) break; // pushed off the foot of the page
+                  g.fillText(COL[c][r], cx, ly);
+                }
+              }
+
+              if (inner) {
+                g.save();
+                g.strokeStyle = "rgba(20,20,28,.45)";
+                g.lineWidth = 1;
+                g.strokeRect(R(B.bx) + 0.5, R(B.byTop) + 0.5, R(B.bw) - 1, R(holeH) - 1);
+                g.restore();
+              }
+
+              /* The hairlines, broken around the hole. A rule belongs between
+               * two columns of type; where the hole bridges them there are no
+               * two columns to separate. */
+              g.fillStyle = "#111111";
+              const top0 = R(y - fs);
+              for (let c = 1; c < cols; c++) {
+                const lx = R(left + c * (colW + gut) - gut / 2);
+                if (!(B.col < c && B.col + B.span > c && inner)) {
+                  g.fillRect(lx, top0, 1, R(bot - (y - fs)));
+                } else {
+                  g.fillRect(lx, top0, 1, Math.max(0, R(B.byTop - AIR_T - (y - fs))));
+                  const under = R(B.byTop + holeH + AIR_B);
+                  if (under < bot) g.fillRect(lx, under, 1, R(bot - under));
+                }
+              }
+            };
+
+            const bandY = R(y - fs - 3),
+              bandH = R(bot - bandY + 5);
+            const hole = {
+              story: true,
+              x: R(x0), y: bandY, w: GALLEY_COL, h: bandH,
+              kind: "bars",
+              tone: S.tone || "#b3402a",
+              phase: S.phase || 0,
+              slot: S.slot === undefined ? S.i || 0 : S.slot,
+              seed: (S.i || 0) * 131 + 7,
+              recast,
+              // the drawing is always asked for at the hole's FULL size, so
+              // it is not remade at every height it passes through
+              full: () => ({ w: R(B.bw) - 2, h: R(B.fullPx - AIR_T - AIR_B) - 2 }),
+              paint,
+              inner: () => inner,
+            };
+            recast();
+            paint(0);
+            LIVE_HOLES.push(hole);
+          } else {
+            body(1);
+          }
+          return top + capH;
+        },
+
+        /* A FOUNDING PLATE. A page of TEXT about a sheet, with the sheet set
+         * into it — not a picture with a caption, which is what it was and
+         * what made it read as a page with something left out. The plate takes
+         * one column; the words take the page. */
+        landmark(K, x0, top, capH) {
+          const M = 18,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 26;
+          g.font = "9px " + SERIF;
+          track(String(K.year), mid, y, 9 * 0.5);
+          y += 11;
+          rule(left, y, meas, 1);
+          y += 26;
+          let hs = 19;
+          for (;;) {
+            g.font = "400 " + R(hs) + "px " + SERIF;
+            if (g.measureText(K.src).width <= meas * 0.9 || hs < 9) break;
+            hs *= 0.94;
+          }
+          for (const l of wrapTo(K.src, meas * 0.9, "400 " + R(hs) + "px " + SERIF)) {
+            track(l, mid, y, hs * 0.03);
+            y += R(hs * 1.16);
+          }
+          y += 6;
+          g.font = "7.5px " + SERIF;
+          track(K.by.toUpperCase(), mid, y, 7.5 * 0.6);
+          y += 10;
+          rule(mid - meas * 0.14, y, meas * 0.28, 1);
+          y += 22;
+
+          const fs = 9,
+            lh = 12.4,
+            gut = 9,
+            colW = (meas - gut) / 2;
+          const bot = top + capH - 16;
+          const im = K.img ? PRESS_IMG.get(K.img) : null;
+          let after = y;
+          if (im && im.width) {
+            const b = plateBox(left + colW + gut, y - fs, colW, colW * 1.15, im);
+            g.save();
+            g.beginPath();
+            g.rect(R(b.x), R(b.y), R(b.w), R(b.h));
+            g.clip();
+            g.drawImage(im, R(b.x), R(b.y), R(b.w), R(b.h));
+            g.globalCompositeOperation = "saturation";
+            g.fillStyle = "#808080";
+            g.fillRect(R(b.x), R(b.y), R(b.w), R(b.h));
+            g.globalCompositeOperation = "source-over";
+            g.restore();
+            g.fillStyle = "rgba(20,20,28,.16)";
+            g.fillRect(R(b.x), R(b.y + b.h), R(b.w), 1);
+            g.fillStyle = "#111111";
+            g.font = "7px " + SERIF;
+            g.textAlign = "left";
+            let cy = b.y + b.h + 10;
+            for (const l of wrapTo(K.what, colW, "7px " + SERIF)) {
+              g.fillText(l, b.x, cy);
+              cy += 9;
+            }
+            after = cy + 8;
+          }
+          g.textAlign = "left";
+          const lines = wrapTo(K.body, colW, fs + "px " + SERIF);
+          let li = 0;
+          for (let c = 0; c < 2; c++) {
+            const cx = left + c * (colW + gut);
+            let ly = c === 1 ? after : y;
+            while (ly < bot && li < lines.length) {
+              g.fillText(lines[li++], cx, ly);
+              ly += lh;
+            }
+          }
+          return top + capH;
+        },
+
+        /* THE MASSES. A radical arts monthly of 1917, and nothing about it is
+         * genteel: everything ranged LEFT, a heavy rule, the title big and
+         * flush, no ornament, no initial, and a great deal of air above it.
+         * Set beside the Atlantic it should read as a different century, which
+         * is very nearly what it was. */
+        review(A, x0, top, capH, fill) {
+          const M = 26,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          g.textAlign = "left";
+          let y = top + 34;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "700", 11, meas * 0.5);
+          g.font = "700 " + ms + "px " + SERIF;
+          trackDraw(nm, left, y, ms * 0.3);
+          y += 14;
+          rule(left, y, meas, 4);
+          y += 50;
+          let hs = 32;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "700", 32, meas * 0.98));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 1.02);
+          }
+          y += 10;
+          const ss = fit(A.sub, "italic 400", 10, meas * 0.9);
+          g.font = "italic 400 " + ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 16;
+          g.font = "7.5px " + SERIF;
+          trackDraw(A.by, left, y, 7.5 * 0.55);
+          y += 12;
+          rule(left, y, meas * 0.22, 1);
+          y += 30;
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 22,
+            fs: 9.5, lh: 14.8, cols: 1, fill,
+            openCaps: 5,
+          });
+          rule(left, end + 10, meas * 0.22, 4);
+          return end + 26;
+        },
+
+        /* McCLURE'S. The muckraking monthly led with its picture: a headpiece
+         * across the measure at the very top, the magazine's name over it, and
+         * the title underneath. It was set as `rail` before this — a daily
+         * paper's template, with a boxed dateline that collided with its own
+         * masthead and no furniture at the head of the page at all. */
+        pictorial(A, x0, top, capH, fill) {
+          const M = 20,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          g.textAlign = "center";
+          let y = top + 24;
+          const nm = A.paper.toUpperCase();
+          const ms = fit(nm, "400", 9.5, meas * 0.66);
+          g.font = ms + "px " + SERIF;
+          track(nm, mid, y, ms * 0.48);
+          y += 13;
+          rule(left, y, meas, 1);
+          y += 32;
+          let hs = 24;
+          for (const l of A.head)
+            hs = Math.min(hs, fit(l, "700", 24, meas * 0.92));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, mid, y);
+            y += R(hs * 1.1);
+          }
+          y += 9;
+          const ss = fit(A.sub, "400", 9, meas * 0.9);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 12;
+          rule(mid - meas * 0.12, y, meas * 0.24, 1);
+          y += 17;
+          g.font = "7.5px " + SERIF;
+          track(A.by, mid, y, 7.5 * 0.6);
+          y += 20;
+          /* The picture, AFTER the title it belongs to. It led the page before
+           * this, which put it in front of the thing it illustrates — a reader
+           * met the building before being told whose building it was. */
+          if (A.cut) {
+            const b = plateBox(left + meas * 0.17, y, meas * 0.66, 150, imgOf(A));
+            y = cut(b.x, b.y, b.w, b.h, A.cap, imgOf(A), "centre") + 14;
+          }
+          g.textAlign = "left";
+          const end = flowCol(A, {
+            left, meas, top: y, bot: top + capH - 20,
+            fs: 8.8, lh: 12.4, cols: 2, fill,
+            openCaps: 3,
+          });
+          diamond(mid, end + 9, 2.2);
+          return end + 24;
+        },
+
+        // eight point and hairlines. a price between two rules, a deck that
+        // steps down a size a line at a time, and no plate: the presses of
+        // 1835 had none
+        penny(A, x0, top, capH, fill) {
+          const M = 10,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M,
+            mid = x0 + GALLEY_COL / 2;
+          /* The masthead sat sixteen rows under the hairline above it and
+           * seven above the triple rule below — and at twenty-one point the
+           * caps reach fifteen rows above their own baseline, so the name
+           * touched the line over it on all three penny papers. Both gaps are
+           * measured from the size the name actually came out at instead of
+           * being numbers that happened to clear a smaller one. */
+          let y = top + 12;
+          rule(left, y, meas, 1);
+          g.textAlign = "center";
+          const ms = fit(A.paper, "700", 21, meas * 0.8);
+          y += R(ms * 0.74) + 13;
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, mid, y);
+          y += 12;
+          rule(left, y, meas, 3);
+          y += 6;
+          rule(left, y, meas, 1);
+          y += 13;
+          g.font = "7px " + SERIF;
+          g.textAlign = "left";
+          g.fillText(A.date, left, y);
+          g.textAlign = "center";
+          g.fillText("PRICE ONE PENNY", mid, y);
+          g.textAlign = "right";
+          g.fillText(A.by, left + meas, y);
+          y += 5;
+          rule(left, y, meas, 1);
+          y += 20;
+          g.textAlign = "center";
+          let hs = 19;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 19, meas));
+          for (const l of A.head) {
+            g.font = "700 " + R(hs) + "px " + SERIF;
+            g.fillText(l, mid, y);
+            y += R(hs * 1.12);
+            hs *= 0.84;
+          }
+          const ss = fit(A.sub, "400", 8.5, meas * 0.95);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, mid, y);
+          y += 8;
+          rule(mid - meas * 0.2, y, meas * 0.4, 1);
+          y += 14;
+          g.textAlign = "left";
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y,
+              bot: top + capH - 12,
+              fs: 7.6,
+              lh: 10.2,
+              cols: 2,
+              fill,
+            }) + 12
+          );
+        },
+
+        // the name ranged left, the dateline boxed off to its right between
+        // two hairlines, and a heavy rule under both
+        rail(A, x0, top, capH, fill) {
+          const M = 13,
+            meas = GALLEY_COL - M * 2,
+            left = x0 + M;
+          g.textAlign = "left";
+          /* The head, rebuilt. The name was fitted to sixty per cent of the
+           * measure and set on a baseline fourteen rows under the top rule of
+           * the dateline box beside it, so at any size over about seventeen
+           * its ascenders ran into that rule — and the page began on nothing
+           * at all, no furniture above the name. It opens on a hairline now,
+           * and the box is dropped clear of the name's line. */
+          rule(left, top + 11, meas, 1);
+          const ms = fit(A.paper, "700", 19, meas * 0.54);
+          g.font = "700 " + ms + "px " + SERIF;
+          g.fillText(A.paper, left, top + 40);
+          const bx = left + meas * 0.6,
+            bw = meas * 0.4,
+            bt = top + 22,
+            bh = 21;
+          rule(bx, bt, bw, 1);
+          rule(bx, bt + bh, bw, 1);
+          g.textAlign = "right";
+          g.font = "7px " + SERIF;
+          g.fillText(A.date, left + meas, bt + 9);
+          g.fillText(A.by, left + meas, bt + 18);
+          let y = top + 50;
+          rule(left, y, meas, 2);
+          y += 26;
+          g.textAlign = "left";
+          let hs = 26;
+          for (const l of A.head) hs = Math.min(hs, fit(l, "700", 26, meas * 0.94));
+          g.font = "700 " + hs + "px " + SERIF;
+          for (const l of A.head) {
+            g.fillText(l, left, y);
+            y += R(hs * 1.05);
+          }
+          y += 3;
+          const ss = fit(A.sub, "400", 9.5, meas);
+          g.font = ss + "px " + SERIF;
+          g.fillText(A.sub, left, y);
+          y += 8;
+          rule(left, y, meas * 0.34, 1);
+          y += 18;
+          const fs = 9,
+            lh = 12.2;
+          /* Full measure, for the same reason the monthly's is. Inset to half
+           * a single-column measure the text could not run beside it — it
+           * jumped the whole line — and left an L of white with an orphan
+           * stranded under the picture. */
+          /* The cut heads the SECOND column rather than opening the whole
+           * measure. At full measure a portrait engraving is enormous and sits
+           * ON the page rather than in it; a column is the size it wants. */
+          const colW2 = (meas - 9) / 2;
+          const plate = A.cut
+            ? plateBox(left + colW2 + 9, y - fs, colW2, colW2 * 1.3, imgOf(A))
+            : null;
+          if (plate)
+            plate.h =
+              cut(plate.x, plate.y, plate.w, plate.h, A.cap, imgOf(A)) - plate.y;
+          return (
+            flowCol(A, {
+              left,
+              meas,
+              top: y,
+              bot: top + capH - 12,
+              fs,
+              lh,
+              cols: 2,
+              fill,
+              plate,
+            }) + 12
+          );
+        },
+      };
+    }
+
+    function buildGalley() {
+      // The run: every paper by its dateline, then the modern pages.
+      const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
+      CUTS.length = 0;
+      PAGES.length = 0;
+      /* The reel is the thirty templates now, in rung order. The papers and
+       * the plates are still in this file and still composed by their own
+       * presses; they come back when there is content to put in them. What is
+       * being looked at first is the SHAPE of the pages. */
+      /* THE HEAD IS DERIVED, not chosen. Written into each spec by hand it
+       * repeated twice on four rungs and three times on the fifth — six pages
+       * cannot have six different tops if there are only four tops and a
+       * person picking them. The nth page of a rung takes the nth head, so a
+       * repeat inside a rung is now impossible rather than merely unintended. */
+      /* The column, capped so the run fits one texture. */
+      const maxTex = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 16384;
+      /* HOW MANY PAGES A WEB GETS. Six rather than nine because there are
+       * three columns of them now and the sheet is stored at twice the
+       * size: nine each would be ninety megabytes of texture. Eighteen
+       * distinct pages across the three is twice the variety the one shared
+       * column of nine had, and no web can repeat another's. */
+      const PER_COL = 6;
+      /* The supersample, and then the measure, both capped by the card in
+       * both directions — three columns across and the reel down. Guessed
+       * rather than measured, this fails SILENTLY: the upload is refused and
+       * the webs read a texture that was never there. */
+      /* TWO TEXELS TO THE UNIT ON A RETINA SCREEN, one on a plain one — and
+       * the point is that both ends are wrong the other way round. A sheet
+       * is about a third of the frame wide, so at two device pixels to the
+       * CSS pixel a four-hundred-unit column is magnified two and a half
+       * times, and at one device pixel an eight-hundred-texel column would
+       * be MINIFIED — which without a mipmap chain is aliasing on every
+       * hairline. The sheet is stored at the resolution it is looked at. */
+      GALLEY_SS = Math.max(
+        1,
+        Math.min(
+          (window.devicePixelRatio || 1) >= 1.5 ? 2 : 1,
+          Math.floor((maxTex - 8) / (400 * GALLEY_COLS)),
+          Math.floor((maxTex - 8) / (400 * PAGE_RATIO * PER_COL)),
+        ),
+      );
+      RSCALE = Math.max(1.6, GALLEY_SS);
+      const fits = Math.floor(
+        (maxTex - 8) /
+          (GALLEY_SS * Math.max(GALLEY_COLS, PER_COL * PAGE_RATIO)),
+      );
+      GALLEY_COL = Math.max(240, Math.min(400, fits));
+      GALLEY_W = GALLEY_COL * GALLEY_COLS;
+
+      const HEADS = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+      const seen = {};
+      REEL = SPECS.map((S, i) => {
+        const k = (seen[S.rung] = (seen[S.rung] || 0) + 1) - 1;
+        return { spec: { ...S, i, head: HEADS[k % HEADS.length] } };
+      });
+
+      /* ONE PAGE, EVERYWHERE. Every slot on the reel becomes the single page
+       * that carries the moving graphic, so it can be watched rather than
+       * waited for — one page in thirty-six comes round once every twenty
+       * seconds, which is no way to judge a drawing.
+       *
+       * It costs nothing: the reel is the same length, so the sheet is the
+       * same height and the column keeps its width, and all thirty-six holes
+       * are the same drawing at the same size, so they share one flipbook.
+       *
+       * It also throws away what the reel is FOR. The ramp — text alone,
+       * then a plate, then colour, then small charts, then the drawing
+       * taking the page — only reads in order. Set this to false to have it
+       * back. */
+      /* THE STORY, TOLD SEVERAL TIMES OVER. The reel becomes one page — an
+       * article of nothing but words — repeated, and each copy starts at a
+       * different point in the telling. So the paper running past carries the
+       * argument at four stages at once: printed, opening, being drawn into,
+       * done. Reading down a web reads it in that order.
+       *
+       * Four rather than thirty-six because a story page is REPAINTED, not
+       * blitted: its text is set again every cycle, and thirty-six pages of
+       * typesetting per cycle is not a frame budget, it is a job.
+       *
+       * Set this to false and the ramp comes back — text alone through to
+       * pure dataviz, in the order it happened, which is what the reel is
+       * otherwise for. */
+      const REEL_STORY = true;
+      /* A column of the reel, cast for one web. `i` is unique across the
+       * three, because it is what seeds the page's cast and its place in
+       * the opening cascade — three columns sharing an index would be three
+       * webs opening the same drawing at the same instant, which is the
+       * fault this was built to remove. */
+      const storyReel = (c) =>
+        storyPapers(PER_COL, c).map((S, n) => ({
+          // `i` is unique across the sheet and seeds the page; `slot` is its
+          // place in ITS OWN column, which is what the opening cascade counts
+          spec: { ...S, i: c * PER_COL + n, slot: n, phase: n / PER_COL },
+        }));
+      if (REEL_STORY) REEL = storyReel(0);
+      PAGE_STEP = 1 / Math.max(1, REEL.length);
+      GALLEY_H = REEL.reduce(
+        (a, E) =>
+          a +
+          (E.spec || E.blank
+            ? Math.round(GALLEY_COL * PAGE_RATIO)
+            : E.landmark
+                ? Math.round(GALLEY_COL * PAGE_RATIO)
+                : pageH()),
+        0,
+      );
+
+      LIVE_HOLES = [];
+      const SS = GALLEY_SS;
+      const cv = document.createElement("canvas");
+      cv.width = GALLEY_W * SS;
+      cv.height = GALLEY_H * SS;
+      const g = cv.getContext("2d");
+      /* THE ONLY LINE THAT KNOWS. Every press below draws in page units at
+       * the sizes it always drew at; the sheet under them is SS times bigger
+       * in each direction, so the type is rasterised at that resolution
+       * instead of being resampled up to it on the way to the screen. */
+      g.setTransform(SS, 0, 0, SS, 0, 0);
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, GALLEY_W, GALLEY_H);
+      g.textBaseline = "alphabetic";
+      const PRESS = galleyPresses(g);
+
+      /* THREE COLUMNS, SIDE BY SIDE, one for each web. They are laid out
+       * one after another so a hole knows which column it is in, and the
+       * frame loop asks about a hole against that web's window alone. */
+      for (let c = 0; c < GALLEY_COLS; c++) {
+      const COLUMN = c === 0 ? REEL : storyReel(c);
+      const x0 = c * GALLEY_COL;
+      const hole0 = LIVE_HOLES.length;
+      /* The run, in the order it was printed. The papers first, by their own
+       * datelines, then what the desk makes. */
+      let y = 0;
+      for (let k = 0; k < COLUMN.length; k++) {
+        const E = COLUMN[k];
+        const h = E.spec || E.blank
+          ? Math.round(GALLEY_COL * PAGE_RATIO)
+          : E.landmark
+            ? Math.round(GALLEY_COL * PAGE_RATIO)
+            : pageH();
+        g.save();
+        g.beginPath();
+        g.rect(x0, y, GALLEY_COL, h);
+        g.clip();
+        g.fillStyle = "#111111";
+        g.textAlign = "left";
+        if (E.spec) {
+          PRESS.spec(E.spec, x0, y, h);
+        } else if (E.blank) {
+          PRESS.blank(E.blank, x0, y, h);
+        } else if (E.landmark) {
+          PRESS.landmark(E.landmark, x0, y, h);
+        } else {
+          // what the page carries on when the story runs out: the papers that
+          // follow it on the reel, so a column never has a hole in it
+          const fill = [];
+          for (let n = 1; n <= 3; n++) {
+            const F = COLUMN[(k + n) % COLUMN.length];
+            if (F && !F.modern) fill.push(F.A);
+          }
+          (PRESS[E.A.tpl] || PRESS.broadsheet)(E.A, x0, y, h, fill);
+        }
+        g.restore();
+        if (c === 0) CUTS.push(y / GALLEY_H);
+        /* The module publishes what it composed: which rung each page is on,
+         * what it is, and where it sits on the sheet. Nothing on the site
+         * reads it — the catalogue bench that did has been taken out — and it
+         * is kept because it is the only way to ASK the reel what it printed
+         * without reading pixels back off a texture. It costs one array. */
+        if (c === 0) PAGES.push({
+          /* The rung is what the page IS, never when it was printed. A
+           * founding plate is an image whatever its year, so it says which
+           * rung it belongs to itself: Snow is one ink, the other four were
+           * coloured by hand. And text alone means ALONE — a paper with a cut
+           * in it is on the second rung, not the first. */
+          rung: E.spec
+            ? E.spec.rung
+            : E.blank
+              ? E.blank.rung
+              : E.landmark
+              ? E.landmark.rung
+              : E.A.cut
+                ? 2
+                : 1,
+          year: E.spec ? "layout" : String(E.year),
+          what: E.spec
+            ? E.spec.name
+            : E.blank
+              ? E.blank.need
+              : E.landmark
+              ? E.landmark.src + " — " + E.landmark.by
+              : E.A.paper,
+          tpl: E.spec
+            ? "template · " + E.spec.cols + (E.spec.cols > 1 ? " columns" : " column")
+            : E.blank
+              ? "to produce"
+              : E.landmark
+                ? "landmark"
+                : E.A.tpl,
+          todo: !!E.blank,
+          y,
+          h,
+        });
+        y += h;
+      }
+      // every hole this column just laid down belongs to the web that reads
+      // it, and to no other
+      for (let i = hole0; i < LIVE_HOLES.length; i++) LIVE_HOLES[i].col = c;
+      }
+      window.__specs = SPECS; // the bench publishes them so they can be checked
+      window.__galleySheet = cv;
+      window.__liveHoles = LIVE_HOLES; // the bench, again
+      window.__galleyPages = PAGES;
+      /* The page rectangles above are in PAGE UNITS and describe the first
+       * column only; the sheet is three columns wide and stored at this many
+       * texels to the unit. The catalogue needs both numbers to cut a page
+       * out of it. */
+      window.__galleyScale = GALLEY_SS;
+      window.__galleyCol = GALLEY_COL;
+      // kept, because the moving blocks write back into it: a page has to
+      // stay correct if the whole reel is ever uploaded again
+      galleyCv = cv;
+      return cv;
+    }
+
     /* ------------------------------------------------------------ the glass */
     const VS = `#version 300 es
 in vec2 p;
 out vec2 vUv;
 void main(){ vUv = p*0.5+0.5; gl_Position = vec4(p,0.0,1.0); }`;
-
-    const FS = `#version 300 es
-precision highp float;
-uniform vec2  uRes;
-uniform float uTime;
-uniform vec2  uCam, uCentre;
-uniform float uZoom, uPresence;
-uniform vec3  uBG;
-uniform float uBox, uRound, uWarp, uWarpF, uWobble;
-uniform mat3  uOrient;   // world -> object: aim, drag and idle, composed on the CPU
-uniform mat3  uPlate;    // the plate holds the orientation it had when the body broke
-uniform float uIor, uDisp, uAbsorb, uFres, uFilm, uIrid;
-uniform float uGain, uRoom, uShade, uEnvRot, uSoft, uPanel, uExposure;
-uniform float uNews, uPageZoom, uInk, uPaper, uSheet, uCurl, uSheetS;
-uniform float uBurst;   // 0 = one body, 1 = the pieces at their far end
-uniform float uPack;    // the compression the body takes just before it goes
-uniform float uPageRes, uPageLod;
-uniform sampler2D uPage;
-out vec4 outColor;
-
-#define NSPEC 12
-#define NANCHOR 4
-#define INSTEP 32
-const float TAU = 6.2831853;
-
-float gRoom;
-float gLod;
-int   gSpec;   // spectral samples: fewer once the field fills the screen
-mat3  gSpin;
-mat3  gPlate;
-
-float hash21(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453123); }
-mat3 rotY(float a){ float c=cos(a), s=sin(a); return mat3(c,0.,-s, 0.,1.,0., s,0.,c); }
-mat3 rotX(float a){ float c=cos(a), s=sin(a); return mat3(1.,0.,0., 0.,c,s, 0.,-s,c); }
-
-// a box with its own extent per axis — the flat plate needs one, and faking it
-// by scaling z made the distance eight times too cautious to ever march to
-float sdBoxR(vec3 p, vec3 b, float r){
-  vec3 q = abs(p) - b + r;
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
-}
-
-float sdRoundBox(vec3 p, float b, float r){
-  vec3 q = abs(p) - vec3(b - r);
-  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
-}
-
-// low-frequency lobes: the faces swell and hollow the way a soap film does
-float warp(vec3 q){
-  float t = uTime*uWobble;
-  float a = sin(q.x*1.9 + t*0.50)*sin(q.y*2.3 - t*0.37)*sin(q.z*2.1 + t*0.43);
-  float b = sin(q.y*3.7 + t*0.31)*sin(q.z*3.1 - t*0.53)*sin(q.x*3.3 + t*0.29);
-  return a + 0.45*b;
-}
-
-// The break. The pieces are low-poly shards, not blobs: each is the
-// intersection of NFACE half-spaces, which is a convex polyhedron with a
-// handful of flat faces and hard edges — glass, rather than putty. The planes
-// are drawn once on the CPU and handed over as uniforms, so the shader does no
-// hashing at all; it only reads them.
-#define NSHARD 20
-#define NFACE 6
-uniform vec4  uPlanes[NSHARD*NFACE];   // xyz = face normal, w = its offset
-uniform vec3  uShardP[NSHARD];         // where each shard has got to
-uniform float uShardS[NSHARD];         // and how big it is
-uniform float uShardR[NSHARD];         // its bounding radius, for the early out
-uniform float uShardT[NSHARD];         // which tile of the atlas it carries
-uniform float uShardQ[NSHARD];         // and how many quarter turns to undo
-uniform float uFieldR;                 // one sphere around the whole field
-uniform vec3  uShardU[NSHARD], uShardV[NSHARD], uShardW[NSHARD];  // its own frame
-uniform sampler2D uPanels;             // the gallery, tiled
-uniform float uPanelN, uPanelsOn;
-
-float pieces(vec3 q, vec3 w){
-  // One sphere around the lot, tested first. A ray spends most of its march
-  // far from everything, and without this it paid twenty square roots on every
-  // step of that approach — the single most expensive thing in the frame.
-  float fd = length(q) - uFieldR;
-  if(fd > 0.25) return fd;
-
-  float d = 1e5;
-  for(int i=0;i<NSHARD;i++){
-    // most samples are nowhere near most shards, so test the bounding sphere
-    // first and skip the faces entirely — fourteen shards would otherwise cost
-    // eighty-four dot products on every step of every ray
-    vec3  rel = q - uShardP[i];
-    float bs = length(rel) - uShardR[i];
-    if(bs > 0.30){ d = min(d, bs); continue; }
-    float sc = uShardS[i];
-    vec3  o = rel / sc;
-    float b = -1e5;
-    for(int k=0;k<NFACE;k++){
-      vec4 pl = uPlanes[i*NFACE + k];
-      b = max(b, dot(o, pl.xyz) - pl.w);
-    }
-    d = min(d, b * sc);                // back out of the shard's scale
-  }
-  return d;
-}
-
-// One tile of the gallery atlas, for the flake that carries it.
-// The plate lies at some quarter turn; the picture is turned back by it here,
-// inside the tile, so the chart reads upright whatever the plate is doing.
-vec2 turnUV(vec2 uv, float q){
-  if(q > 2.5) return vec2(1.0 - uv.y, uv.x);
-  if(q > 1.5) return vec2(1.0 - uv.x, 1.0 - uv.y);
-  if(q > 0.5) return vec2(uv.y, 1.0 - uv.x);
-  return uv;
-}
-
-vec3 panelAt(float i, vec2 uv, float q){
-  float n = uPanelN;
-  float t = mod(i, n*n);
-  vec2 tile = vec2(mod(t, n), floor(t/n));
-  // the flip belongs to the tile's own uv, before the tile is placed: applied
-  // to the atlas coordinate it mirrors the whole sheet and picks another row
-  vec2 c = clamp(uv, 0.0, 1.0);
-  vec2 fv = turnUV(vec2(c.x, 1.0 - c.y), q);
-  return textureLod(uPanels, (tile + fv) / n, 0.0).rgb;
-}
-
-// The page, once the glass is gone: a sheet of paper and nothing else. The slab
-// is only thick enough to contain the curl, so there is no socle under it.
-float paper(vec3 w){
-  vec3 q = gPlate * w;
-  float t = 0.13*uPack*uCurl + 0.014;
-  return sdBoxR(q, vec3(uBox*1.05*uSheetS*uPack, uBox*1.45*uSheetS*uPack, t), 0.006);
-}
-
-float map(vec3 p){
-  vec3 q = gSpin * p;
-  float d;
-  if(uBurst < 0.001){
-    d = sdRoundBox(q/uPack, uBox, uRound) * uPack;   // the compression breath
-  } else {
-    // the flakes ride the page's frame, not the body's: gPlate settles to
-    // identity, so their faces come round to the camera instead of keeping
-    // whatever angle the spin-up happened to leave them at
-    d = min(pieces(gPlate * p, p), paper(p));
-  }
-  d -= warp(q*uWarpF) * uWarp * (1.0 - uBurst);
-  // 0.52 is the price of the warp, which breaks the distance bound. Once the
-  // body has broken there is no warp left and the plates are honest planes, so
-  // the ray may take nearly its full step — halving the steps it needs.
-  return d * (uBurst > 0.001 ? 0.94 : 0.52);
-}
-
-vec3 nrm(vec3 p){
-  vec2 e = vec2(1.0,-1.0)*0.0016;
-  return normalize(e.xyy*map(p+e.xyy) + e.yyx*map(p+e.yyx) +
-                   e.yxy*map(p+e.yxy) + e.xxx*map(p+e.xxx));
-}
-
-float strip(vec2 uv, vec2 c, vec2 s){
-  s *= uPanel;
-  float du = abs(fract(uv.x - c.x + 0.5) - 0.5);
-  float dv = abs(uv.y - c.y);
-  return 1.0 - smoothstep(-uSoft, uSoft, max(du - s.x, dv - s.y));
-}
-
-float pageTone(vec2 t, float bias){
-  float ink = textureLod(uPage, vec2(t.x, 1.0 - t.y), clamp(gLod + bias, 0.0, 9.0)).r;
-  return clamp(1.0 - (1.0 - ink)*uInk, 0.0, 1.0);
-}
-
-// white panels overhead, the same page lying on the table underneath. panels
-// and page carry their own coverage, so the walls behind them can lift out of
-// black without washing the ink out with them
-vec3 env(vec3 d){
-  d = rotY(uEnvRot) * d;
-  vec2 uv = vec2(atan(d.z, d.x)/TAU, asin(clamp(d.y,-1.0,1.0))/3.14159265);
-  float l = 0.0, cov = 0.0, c;
-  c = strip(uv, vec2(-0.15, 0.30), vec2(0.200, 0.135)); l = max(l, 1.00*c); cov = max(cov, c);
-  c = strip(uv, vec2( 0.30,-0.10), vec2(0.105, 0.230)); l = max(l, 0.92*c); cov = max(cov, c);
-  c = strip(uv, vec2( 0.46, 0.06), vec2(0.250, 0.045)); l = max(l, 0.80*c); cov = max(cov, c);
-  c = strip(uv, vec2(-0.03, 0.46), vec2(0.400, 0.060)); l = max(l, 0.45*c); cov = max(cov, c);
-  if(d.y < -0.02){
-    vec2 q = d.xz * (-1.15/d.y);
-    vec2 t = (q - vec2(0.10, 0.05)) / (vec2(0.98, 1.36)*max(uPageZoom,0.05)) * 0.5 + 0.5;
-    float on = step(0.0,t.x)*step(t.x,1.0)*step(0.0,t.y)*step(t.y,1.0);
-    l = mix(l, mix(1.0, pageTone(t, 1.0), uNews) * uPaper, on);
-    cov = max(cov, on);
-  }
-  // away from the panels the room is shaded: that shadow is the only thing a
-  // glass body can read by when the ground is light
-  return mix(vec3(gRoom*uShade), vec3(l*uGain), cov);
-}
-
-// tone map, then sit the result against the ground: an untouched ray lands on
-// uBG, shadow pulls to black, a caught light to white
-vec3 grade(vec3 col){
-  col = 1.0 - exp(-col * uExposure);
-  float R = 1.0 - exp(-gRoom*uExposure);
-  vec3  up = clamp((col - R)/max(1.0 - R, 1e-3), 0.0, 1.0);
-  vec3  dn = clamp(col/max(R, 1e-3), 0.0, 1.0);
-  col = mix(uBG*dn, mix(uBG, vec3(1.0), up), step(vec3(R), col));
-  return mix(uBG, max(col, 0.0), uPresence);
-}
-
-vec3 spectrum(float t){
-  return clamp(vec3(1.55) - abs(4.0*vec3(t) - vec3(3.0,2.0,1.0)), 0.0, 1.0);
-}
-
-// the sheet suspended in the middle of the body, curling slowly
-float sheetF(vec3 q){
-  return q.z - uPack*uCurl*(0.13*sin(q.x*2.3 + uTime*0.37) + 0.10*sin(q.y*1.9 - uTime*0.29));
-}
-vec2 sheetUV(vec3 q){
-  return q.xy / (vec2(uBox*1.05, uBox*1.45) * uSheetS * uPack) * 0.5 + 0.5;
-}
-
-bool trace(vec3 ro, vec3 rd, out vec3 p){
-  float t = 0.0;
-  for(int i=0;i<72;i++){
-    p = ro + rd*t;
-    float d = map(p);
-    if(d < 0.0016) return true;
-    t += max(d, 0.0016);
-    if(t > uZoom + 3.0) break;
-  }
-  return false;
-}
-
-// march the interior, hand back where and how the ray leaves — and whether it
-// ran into the sheet on the way out
-void through(vec3 p, vec3 n, vec3 rd, float ior,
-             out vec3 op, out vec3 on, out vec3 od, out float len,
-             out float ph, out vec2 puv, out float sh, out vec2 suv, out float sidx){
-  vec3 dir = refract(rd, n, 1.0/ior);
-  if(dot(dir,dir) < 1e-8) dir = reflect(rd, n);
-  dir = normalize(dir);
-  ph = 0.0; puv = vec2(0.5);
-  sh = 0.0; suv = vec2(0.5); sidx = 0.0;
-
-  // Which flake did we just enter, and where does the ray cross its face? The
-  // flakes are thin and convex, so the crossing is one division — no need to
-  // hunt for it along the march the way the newspaper needs.
-  if(uPanelsOn > 0.5 && uBurst > 0.001){
-    int si = -1; float best = 1e5;
-    for(int i=0;i<NSHARD;i++){
-      float dd = length(p - uShardP[i]) - uShardR[i];
-      if(dd < best){ best = dd; si = i; }
-    }
-    if(best < 0.06 && si >= 0){
-      vec3  rel = p - uShardP[si];
-      float sc  = uShardS[si];
-      vec3  nZ = uPlanes[si*NFACE + 4].xyz;
-      vec3  dir0 = refract(rd, n, 1.0/ior);
-      if(dot(dir0,dir0) < 1e-8) dir0 = reflect(rd, n);
-      dir0 = normalize(dir0);
-      float dn = dot(dir0, nZ);
-      if(abs(dn) > 1e-4){
-        float tt = -dot(rel, nZ)/dn;
-        if(tt > 0.0 && tt < 4.0*sc){
-          vec3 x = rel + dir0*tt;
-          vec2 uv = vec2(dot(x, uPlanes[si*NFACE + 0].xyz),
-                         dot(x, uPlanes[si*NFACE + 2].xyz)) / (sc*1.85) + 0.5;
-          if(uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0){
-            sh = 1.0; suv = uv; sidx = float(si);
-          }
-        }
-      }
-    }
-  }
-
-  vec3  cur = p - n*0.02;
-  float t = 0.0;
-  float f0 = sheetF(gPlate * cur);
-  for(int i=0;i<INSTEP;i++){
-    float d = -map(cur);
-    if(d < 0.0018) break;
-    float st = max(d, 0.0035);
-    vec3  nx = cur + dir*st;
-    float f1 = sheetF(gPlate * nx);
-    if(uSheet > 0.001 && f0*f1 < 0.0){
-      float a = f0/(f0 - f1);
-      vec2 uvp = sheetUV(gPlate * mix(cur, nx, a));
-      if(uvp.x > 0.0 && uvp.x < 1.0 && uvp.y > 0.0 && uvp.y < 1.0){
-        ph = 1.0; puv = uvp;
-        cur = mix(cur, nx, a); t += st*a;
-        break;                                   // the sheet is opaque
-      }
-    }
-    cur = nx; f0 = f1; t += st;
-    if(t > 7.0) break;
-  }
-  op = cur; on = nrm(cur); od = dir; len = t;
-}
-
-void main(){
-  gRoom = uRoom;
-  gSpin = uOrient;
-  gPlate = uPlate;
-
-  vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y - uCentre;
-  mat3 cam = rotY(uCam.x) * rotX(uCam.y);
-  vec3 ro = cam * vec3(0.0, 0.0, uZoom);
-  vec3 rd = normalize(cam * normalize(vec3(uv, -2.05)));
-
-  // Once the body has broken there is nothing here worth marching for: the
-  // plates and the page are flat quads, and they are drawn by the rasteriser.
-  // Marching 72 steps a pixel to find twenty rectangles was the whole cost.
-  if(uBurst > 0.001){ outColor = vec4(uBG, 1.0); return; }
-
-  vec3 hit;
-  if(!trace(ro, rd, hit)){ outColor = vec4(uBG, 1.0); return; }
-
-  // Neither the page nor the flakes go through the glass path any more.
-  //
-  // The page is paper: sending it through refraction also put a shadow on it,
-  // because the interior march starts 0.02 inside the surface and the sheet is
-  // only 0.022 thick, so some rays began past it and came back dark glass.
-  //
-  // The flakes are panels: they carry pictures, and a picture split across
-  // fourteen wavelengths and two refractions is a smear. Shaded flat they read
-  // as what they are — and they were also the most expensive thing on the
-  // page, covering most of the frame at four interior marches per pixel.
-  // Only a lit rim is left of the glass.
-  vec3 n = nrm(hit);
-  vec2  su0 = sheetUV(gPlate * hit);
-  vec2  sdx = dFdx(su0), sdy = dFdy(su0);
-  if(uBurst > 0.001){
-    float dPaper = paper(hit);
-    if(dPaper < 0.005){
-      gLod = 0.5*log2(max(dot(sdx,sdx), dot(sdy,sdy)) * uPageRes*uPageRes + 1e-9) + uPageLod;
-      vec3 col = vec3(mix(1.0, pageTone(su0, 0.0), uNews) * uPaper * 1.35);
-      outColor = vec4(grade(col), 1.0);
-      return;
-    }
-    if(uPanelsOn > 0.5){
-      // the shards live in body space, so the hit has to be taken there too —
-      // comparing a world point against them sampled the atlas somewhere else
-      // entirely, which is why every panel came back the atlas's dark fill
-      vec3 hq = gPlate * hit;
-      int si = -1; float best = 1e5;
-      for(int i=0;i<NSHARD;i++){
-        float dd = length(hq - uShardP[i]) - uShardR[i];
-        if(dd < best){ best = dd; si = i; }
-      }
-      if(si >= 0 && best < 0.12){
-        vec3  rel = hq - uShardP[si];
-        float sc  = uShardS[si];
-        // The tile is mapped from the flake's four side offsets, so it lands
-        // corner to corner whatever rectangle this one happens to be — no
-        // clamping, and no smeared border passing for empty space.
-        float ou = uPlanes[si*NFACE + 0].w, ol = uPlanes[si*NFACE + 1].w;
-        float ov = uPlanes[si*NFACE + 2].w, od = uPlanes[si*NFACE + 3].w;
-        vec2  uv = vec2((dot(rel, uShardU[si])/sc + ol) / (ou + ol),
-                        (dot(rel, uShardV[si])/sc + od) / (ov + od));
-        float face = abs(dot(gPlate * n, uShardW[si]));   // 1 flat on, 0 edge on
-        vec3  col = panelAt(uShardT[si], uv, uShardQ[si]) * uPaper * 2.4;
-        // The sides take the tile's own ground, read from its corner — which is
-        // the theme's background on a chart and the water on a map. Lifting the
-        // face colour toward a constant instead is what left grey slabs on the
-        // edge of every panel, and grey belongs to none of these grounds.
-        vec3 rim = panelAt(uShardT[si], vec2(0.03), uShardQ[si]) * uPaper * 2.4;
-        col = mix(rim * 0.88, col, smoothstep(0.30, 0.66, face));
-        outColor = vec4(grade(col), 1.0);
-        return;
-      }
-    }
-  }
-
-  float ct = clamp(dot(n,-rd), 0.0, 1.0);
-  float fres = mix(0.03, 1.0, pow(1.0 - ct, 5.0)) * uFres;
-
-  // four real interior traces spread across the spectrum; every sample rides
-  // on an interpolation of the pair around it, so the rainbow stays continuous
-  vec3  ap[NANCHOR], an[NANCHOR], ad[NANCHOR];
-  float al[NANCHOR], ai[NANCHOR], ah[NANCHOR], as[NANCHOR], ax[NANCHOR];
-  vec2  au[NANCHOR], av[NANCHOR];
-  for(int k=0;k<NANCHOR;k++){
-    float g = float(k)/float(NANCHOR-1);
-    float io = uIor + (g - 0.5)*uDisp;
-    ai[k] = io;
-    through(hit, n, rd, io, ap[k], an[k], ad[k], al[k], ah[k], au[k], as[k], av[k], ax[k]);
-  }
-
-  // one screen-space footprint for the page, from the middle wavelength: the
-  // refracted rays have no usable derivatives of their own and the type moires
-  vec2  dx = dFdx(au[1]), dy = dFdy(au[1]);
-  gLod = 0.5*log2(max(dot(dx,dx), dot(dy,dy)) * uPageRes*uPageRes + 1e-9) + uPageLod;
-
-  // Whole body, the flakes cover a corner of the frame and twelve samples are
-  // cheap. Once they have flown they cover most of it, and the loop is the
-  // single heaviest thing on the page — six samples there, dithered, is a
-  // straight halving that the jitter hides.
-  gSpec = uBurst > 0.35 ? NSPEC/2 : NSPEC;
-  float jit = hash21(gl_FragCoord.xy + uTime);
-  vec3 acc = vec3(0.0), wsum = vec3(1e-4);
-  for(int i=0;i<NSPEC;i++){
-    if(i >= gSpec) break;
-    float f = (float(i) + jit) / float(gSpec);
-    float x = f * float(NANCHOR-1);
-    int   k = int(min(floor(x), float(NANCHOR-2)));
-    float s = x - float(k);
-
-    vec3  en = normalize(mix(an[k], an[k+1], s));
-    vec3  ed = normalize(mix(ad[k], ad[k+1], s));
-    float el = mix(al[k], al[k+1], s);
-    float io = mix(ai[k], ai[k+1], s);
-
-    vec3 outd = refract(ed, -en, io);
-    vec3 e;
-    if(dot(outd,outd) < 1e-8) e = env(reflect(ed, en)) * 0.55;   // total internal
-    else                      e = env(normalize(outd));
-
-    // each wavelength reaches the sheet along its own bent path, so the type
-    // comes apart into colour exactly where the glass is thickest
-    float hs = mix(ah[k], ah[k+1], s) * uSheet;
-    if(hs > 0.001){
-      vec2 su = mix(au[k], au[k+1], s);
-      e = mix(e, vec3(mix(1.0, pageTone(su, 0.0), uNews) * uPaper * 0.42), hs);
-    }
-    // the flake is a panel: the gallery sits inside it, split by wavelength on
-    // the way in exactly as the newsprint is
-    float hp = mix(as[k], as[k+1], s);
-    if(hp > 0.001){
-      // lit well above the glass around it: seen through the flake and its
-      // absorption, anything dimmer than this reads as a black chip
-      e = mix(e, panelAt(ax[k], mix(av[k], av[k+1], s), 0.0) * uPaper * 2.6 + 0.10, hp);
-    }
-
-    vec3 w = spectrum(f);
-    acc  += w * e * exp(-uAbsorb * el);
-    wsum += w;
-  }
-  vec3 col = acc / wsum * 3.0;
-
-  // the reflection draws the hard contour; a thin-film shift turns it into the
-  // pink/mint halo the shell carries at grazing angles
-  float film = uFilm * 6.0 / (0.18 + 0.82*ct);
-  vec3  tint = 0.5 + 0.5*cos(TAU*(vec3(0.0,0.33,0.67) + film + 0.35));
-  col = mix(col, env(reflect(rd, n)) * mix(vec3(1.0), tint*1.35, uIrid), clamp(fres,0.0,1.0));
-
-  outColor = vec4(grade(col), 1.0);
-}`;
 
     /* ------------------------------------------------------------ the plates
      * Flat rectangles with a picture on them do not need a distance field.
@@ -3686,33 +7672,163 @@ in vec2 p;
 uniform vec3 uC, uAx, uAy, uAz;  // centre, half-axes, and the sheet's normal
 uniform vec2 uRes, uCentre;
 uniform float uZoom, uBend, uT;
+/* HOW TIGHT THE RIPPLE IS. One number over the whole field, so the three
+ * components keep their relation to each other — a wave is the sum of those
+ * three and pulling them apart would be three controls for one shape. */
+uniform float uWaveF;
+/* Where the pointer falls on THIS sheet, in the sheet's own coordinates,
+ * and how hard it presses. Sent per web because each one is at its own
+ * place and depth, so the same cursor is somewhere different on each. */
+uniform vec2 uPtr;
+/* strength, radius, and the sheet's own aspect. The aspect is not a detail:
+ * p runs -1..1 on both axes whatever shape the sheet is, and these sheets
+ * are two and a half times taller than they are wide — so a round footprint
+ * in p is an ellipse two and a half times too tall in the world, which is
+ * why the lift looked like a ridge and not like something under the page. */
+uniform vec3 uPtrK;
+/* HOW HARD THE SLOPE SHADES. The wave and the pointer both carry their own
+ * amplitude already; this is the strength of the shading they cause, and it
+ * scales the clamp with it — at zero the sheet is evenly lit however far it
+ * bends, at one it is the full contrast the surface can make. */
+uniform float uShade;
+/* THE SURFACE ALL THREE SHEETS LIE ON: its radius in world units, how hard a
+ * sheet turning away from the camera loses its light, and how much of the
+ * curve is carried in the VERTICAL as well as the horizontal. A radius of
+ * zero is a flat row. The per-sheet wave is what a single sheet of paper
+ * does; this is what the SET does. */
+uniform vec3 uCurve;
 out vec2 vUv;
 out float vShade;
+out float vEdge;
 void main(){
   // The plates are flat and pass straight through. The page is a sheet of
   // paper: it is subdivided and lifted off its own plane by three travelling
   // waves, and the slope of that surface shades it, which is what stops a
   // curved sheet from reading as a printed rectangle.
+  /* Each surface carries its own slope, and each is weighted by ITS OWN
+   * amplitude at the end. The bulge used to be normalised by dividing its
+   * gradient by uBend, which is fine until uBend is zero — then the term
+   * goes to infinity and the shading clamps across the whole sheet. A
+   * scale that has to be divided out is a scale in the wrong place. */
+  /* ONE WAVE FIELD, NOT THREE. The ripple used to be a function of the
+   * sheet's OWN coordinates, so each of the three carried a private copy of
+   * the same shape — and they had to be pushed out of phase with each other
+   * or the set read as one image cut into three. That was the right fix for
+   * three separate sheets. It is the wrong one now the three lie on a single
+   * curved surface: a crest reaching the edge of the middle column stopped
+   * dead there, and the next column started its own somewhere else.
+   *
+   * The field is world-anchored instead. p is the sheet's own -1..1, and the
+   * sheet's centre expressed in those same units is uC over its half-axis —
+   * so adding the two gives a coordinate that is continuous across the whole
+   * set, at exactly the wavelength a sheet had before. A crest leaving one
+   * column arrives on the next where it should, gap included.
+   *
+   * The slopes are untouched by this: the offset is a constant per sheet, so
+   * the derivative with respect to p is what it always was. */
+  vec2 g = (p + vec2(uC.x / max(abs(uAx.x), 1e-4),
+                     uC.y / max(abs(uAy.y), 1e-4))) * uWaveF;
   float w = 0.0, sh = 1.0;
+  float wdx = 0.0, wdy = 0.0;
   if(uBend > 0.0001){
-    w  = sin(p.x*3.1 + uT*0.9)*0.45 + sin(p.y*2.3 - uT*0.7)*0.32
-       + sin((p.x + p.y)*1.9 + uT*1.3)*0.23;
-    float dx = cos(p.x*3.1 + uT*0.9)*3.1*0.45 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    float dy = cos(p.y*2.3 - uT*0.7)*2.3*0.32 + cos((p.x + p.y)*1.9 + uT*1.3)*1.9*0.23;
-    sh = clamp(1.0 - (dx*0.20 + dy*0.13) * uBend * 2.6, 0.62, 1.34);
+    w  = sin(g.x*3.1 + uT*0.9)*0.45 + sin(g.y*2.3 - uT*0.7)*0.32
+       + sin((g.x + g.y)*1.9 + uT*1.3)*0.23;
+    // the slopes are with respect to p, and g is p scaled — so they carry
+    // the scale too, or tightening the ripple would light it as if it had not
+    wdx = (cos(g.x*3.1 + uT*0.9)*3.1*0.45
+         + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23) * uWaveF;
+    wdy = (cos(g.y*2.3 - uT*0.7)*2.3*0.32
+         + cos((g.x + g.y)*1.9 + uT*1.3)*1.9*0.23) * uWaveF;
   }
-  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend);
+  /* A HAND UNDER THE SHEET. The paper lifts where the pointer is and falls
+   * away from it — one soft bell, not a ripple, because a ripple is water
+   * and this is newsprint. Its own slope goes into the shading with the
+   * waves', so the bulge catches the light rather than being a bump you
+   * can only tell is there by the type moving. */
+  float bulge = 0.0, bdx = 0.0, bdy = 0.0;
+  if(uPtrK.x > 0.0001){
+    // measured round in the WORLD: the aspect is what was missing, not the
+    // profile
+    vec2 q = (p - uPtr) * vec2(1.0, uPtrK.z) / max(uPtrK.y, 1e-3);
+    /* A BELL, not a dome. A sphere under paper has a rim, and a rim is a
+     * hard thing: it reads as an object put under the page rather than as
+     * the page being lifted. The soft one was right — it was only ever
+     * WRONGLY SHAPED, stretched two and a half times up the sheet because
+     * p runs -1..1 on both axes whatever proportion the sheet is. */
+    float e = exp(-dot(q, q) * 1.6);
+    bulge = e;
+    float g = -4.0 * e / max(uPtrK.y, 1e-3);
+    bdx = q.x * g;
+    bdy = q.y * g * uPtrK.z;
+  }
+  sh = clamp(
+    1.0 - ((wdx*uBend + bdx*uPtrK.x) * 0.20
+         + (wdy*uBend + bdy*uPtrK.x) * 0.13) * 2.6 * uShade,
+    mix(1.0, 0.62, uShade), mix(1.0, 1.34, uShade));
+  vec3 P = uC + uAx*p.x + uAy*p.y + uAz*(w*uBend + bulge*uPtrK.x);
+  /* ONE CURVE UNDER ALL THREE. Read as polar coordinates about the vertical
+   * axis: x becomes an angle and z becomes a distance from it, so a point far
+   * to the side swings back AND turns to face the middle. Applied after the
+   * wave, so a sheet's own lift stays perpendicular to the curved surface it
+   * is lifting off rather than to the flat one it used to be on.
+   *
+   * And it shades. A surface turning away from the camera catches less light
+   * whatever its own local slope is doing; without this the three read as one
+   * flat row that has merely been moved, which is the thing being fixed. */
+  /* A CYLINDER CURVES IN ONE DIRECTION ONLY. About the vertical, the outer
+   * columns turn toward the middle and fall away — but a point at the top of
+   * a sheet is at exactly the same depth as one at its foot, so the set is a
+   * curved wall and reads as one: nothing recedes as it goes up.
+   *
+   * The surface is an ELLIPSOID instead. x becomes a longitude, y a latitude,
+   * and z the distance from the middle of it, so the four corners of the set
+   * all fall away and the whole thing is curved everywhere rather than in the
+   * one direction that happened to be easy.
+   *
+   * The two radii are not independent settings — one is the other over uDome,
+   * so 1 is a sphere and 0 is the cylinder it used to be, continuously. At
+   * uDome near zero the latitude goes to nothing while the radius it is
+   * measured against goes to infinity, and the two cancel exactly: the height
+   * comes through untouched rather than collapsing. */
+  if (uCurve.x > 0.0) {
+    float R = uCurve.x;
+    float Ry = R / max(uCurve.z, 1e-4);
+    float a = P.x / R;
+    float b = P.y / Ry;
+    float ca = cos(a), cb = cos(b);
+    P = vec3(
+      sin(a) * cb * (R + P.z),
+      sin(b) * (Ry + P.z),
+      ca * cb * (R + P.z) - R);
+    sh *= 1.0 - (1.0 - ca * cb) * uCurve.y;
+  }
   float d = max(0.08, uZoom - P.z);
   vec2 uvp = P.xy * 2.05 / d + uCentre;
   gl_Position = vec4(uvp.x * 2.0 * uRes.y / uRes.x, uvp.y * 2.0, 0.0, 1.0);
   vUv = p*0.5 + 0.5;
   vShade = sh;
+  vEdge = uvp.y * 2.0;   // where this fragment sits in the frame, for the fade
 }`;
 
     const QUAD_FS = `#version 300 es
 precision highp float;
 uniform sampler2D uTex;
 uniform float uTile, uTiles, uAlpha, uLift, uSpin;
+// The window a web reads out of the galley: origin and span, in texture
+// coordinates. Zero span means "no window" — every plate takes that path and
+// samples the atlas exactly as before.
+uniform vec4 uWin;
+/* THE INK CURVE, on the webs only.
+ *
+ * A column of newsprint four hundred texels wide is shown about two hundred
+ * and fifty wide, so every texel the card sees is a MIPMAP AVERAGE of ink and
+ * paper. Nine-point type averaged with the paper around it is grey, and on a
+ * paper ground grey type on near-white paper is what "not readable" looks
+ * like. The curve pushes the two apart again before the ground mapping: what
+ * was below the pivot goes to black, what was above it stays paper. x is the
+ * pivot, y the steepness; a zero y leaves the sample alone, which is what
+ * every plate passes. */
+uniform vec3 uInkC;   // pivot, gain, mip bias
 uniform vec3 uBG;
 uniform float uRoom, uExposure, uPresence;
 // The flood at the end of the chapter: the sheet is taken to one flat colour
@@ -3722,6 +7838,13 @@ uniform float uWash;
 uniform vec3 uWashC;
 in vec2 vUv;
 in float vShade;
+in float vEdge;
+// Where the paper starts leaving the frame, as a height in clip space. A web
+// that ran to the edge would put newsprint under the navigation and under the
+// standfirst, and neither could then be read; it also lies about the press,
+// where the web comes out of the machine and goes back into it. Zero for every
+// plate — they keep their hard edges.
+uniform float uEdge;
 out vec4 outColor;
 void main(){
   // the sheet's v runs the other way from the canvas, so it is flipped here —
@@ -3736,42 +7859,32 @@ void main(){
            : uSpin > 1.5 ? vec2(1.0 - uv.x, 1.0 - uv.y)
            : uSpin > 0.5 ? vec2(uv.y, 1.0 - uv.x) : uv;
     st = (vec2(mod(t, uTiles), floor(t/uTiles)) + clamp(q, 0.0, 1.0)) / uTiles;
+  } else if(uWin.w > 0.0){
+    // The web is a window onto one column of the galley, slid along v. Only v
+    // wraps — the texture repeats vertically and clamps horizontally, so a
+    // column can never bleed into the one set beside it.
+    st = vec2(uWin.x + clamp(uv.x, 0.0, 1.0)*uWin.z, uWin.y + uv.y*uWin.w);
   }
-  vec3 col = texture(uTex, st).rgb * uLift * vShade;
+  /* The bias is spent. It asked for a sharper mip than the card would pick,
+   * because the level chosen from the rate the coordinates change had already
+   * averaged the ink away — a workaround for a reel stored at less resolution
+   * than it was looked at. The reel is stored at the resolution it is looked
+   * at now and carries no mip chain at all, so this samples the sheet. */
+  vec3 base = texture(uTex, st, uInkC.z).rgb;
+  if(uInkC.y > 0.0) base = clamp((base - uInkC.x) * uInkC.y + uInkC.x, 0.0, 1.0);
+  vec3 col = base * uLift * vShade;
   col = 1.0 - exp(-col * uExposure);
   float R = 1.0 - exp(-uRoom*uExposure);
   vec3  up = clamp((col - R)/max(1.0 - R, 1e-3), 0.0, 1.0);
   vec3  dn = clamp(col/max(R, 1e-3), 0.0, 1.0);
   col = mix(uBG*dn, mix(uBG, vec3(1.0), up), step(vec3(R), col));
   vec3 lit = mix(uBG, max(col, 0.0), uPresence);
-  outColor = vec4(mix(lit, uWashC, uWash), uAlpha);
+  float fade = uEdge > 0.0
+    ? 1.0 - smoothstep(uEdge, uEdge + 0.40, abs(vEdge))
+    : 1.0;
+  outColor = vec4(mix(lit, uWashC, uWash), uAlpha * fade);
 }`;
 
-    // The blit: the scene is raymarched into a smaller buffer, then stretched.
-    // It also carries the glow — a ring of taps around each pixel, counting
-    // only what is brighter than the ground, so a light ground cannot
-    // additively wash itself out. Cheaper here than a separable blur, and the
-    // source is already downscaled.
-    const BLIT = `#version 300 es
-precision highp float;
-uniform sampler2D uTex;
-uniform vec2  uTexel;
-uniform vec3  uBG;
-uniform float uGlow;
-in vec2 vUv;
-out vec4 outColor;
-void main(){
-  vec3 base = texture(uTex, vUv).rgb;
-  if(uGlow < 0.02){ outColor = vec4(base, 1.0); return; }   // 24 taps, skipped
-  vec3 halo = vec3(0.0);
-  for(int i=0;i<12;i++){
-    float a = float(i)*0.5235988;
-    vec2 d = vec2(cos(a), sin(a)) * uTexel;
-    halo += max(texture(uTex, vUv + d* 7.0).rgb - uBG, 0.0);
-    halo += max(texture(uTex, vUv + d*17.0).rgb - uBG, 0.0);
-  }
-  outColor = vec4(base + halo * (uGlow/24.0), 1.0);
-}`;
 
     /* Inside the block. Once the body has broken, the marcher has nothing
      * left to trace — but the glass should not simply stop existing: the
@@ -3828,6 +7941,12 @@ float wallAt(vec2 uv, out float n){
 }
 
 void main(){
+  /* NOTHING TO DO IS THE COMMON CASE. Outside the break uAmt is zero, and
+   * everything below — the wall field, the dispersion, the sheen, the rim —
+   * multiplies by it and comes out as the buffer, unchanged. It was still
+   * being evaluated for every pixel of the frame, sixty times a second, to
+   * arrive at a copy. One fetch instead. */
+  if (uAmt < 0.0015) { outColor = vec4(texture(uTex, vUv).rgb, 1.0); return; }
   vec2 p = vUv * 2.0 - 1.0;
   p.x *= uAspect;
   float r = length(p) / 1.42;                  // 1 at the corner of the frame
@@ -3913,6 +8032,101 @@ void main(){
       curl: 0.18,
       sheetS: 0.5,
       bend: 0.16, // how far the sheet lifts off its own plane
+      // the three webs. Widths and heights are fractions of what the camera
+      // can see at the webs' own depth, so the composition holds on any frame
+      // rather than being a set of world units tuned to one window.
+      // 400 texels of column shown across 300 pixels is a minification the
+      // type does not survive; at 0.21 it is close to one to one.
+      webW: 0.36,
+      webH: 1.35, // half-height — over one, so no end of paper is ever in shot
+      // far enough apart that the ground still shows between the webs
+      webCut: 0, // 0 the press runs, 1 the montage cuts
+      webBeat: 0.9, // seconds a page is held before the cut
+      webSpread: 0.74,
+      webX: 0, // the whole set, sideways and up, in visible half-measures
+      webY: 0,
+      // The height at which the paper starts going back into the machine. On
+      // ink a long fade reads as the web leaving; on paper it reads as a
+      // gradient, so on paper it is held much later.
+      // the height at which the paper goes back into the machine, which also
+      // frees the header band from running over dense body type
+      webEdge: 0.69,
+      /* HOW FAST EACH WEB UNROLLS, in laps of the galley per second, one
+       * number each. They were a shared speed and three multipliers of it,
+       * which is the wrong shape for a control: reading 0.930 tells you a
+       * web is seven per cent slower than something, and not how fast it is
+       * going. Three speeds say what they are. */
+      /* FASTER, AND FURTHER APART. Seven per cent between the three read as
+       * one speed with a wobble; half again between the slowest and the
+       * fastest is three presses running at three rates, which is what it
+       * is. The lag between any two of them now turns over in under a
+       * minute rather than in five. */
+      /* And read against a SIX-page column. The rate is normalised by the
+       * length of the reel where it is used, so these are the numbers off
+       * the panel and they mean the same thing they showed there. */
+      webSpd0: 0.0125,
+      webSpd1: 0.0105,
+      webSpd2: 0.0135,
+      // and where each one starts, in pages
+      webLag0: 0,
+      webLag1: 0.37,
+      webLag2: 0.71,
+      // how far the paper lifts under the pointer, in half-heights
+      ptrLift: 0.2,
+      /* HOW WIDE, in half-widths of a sheet. Past one it reaches across
+       * the gap and takes the sheet beside it too, which is what a hand
+       * under a run of paper would do — the three webs are one web of
+       * paper cut into columns, not three separate objects. */
+      ptrSize: 2.5,
+      // the mark shown while the room is being made: the word, or the
+      // rosette turning
+      markLogo: 1,
+      // the share of pages that print in one ink and a grey
+      greyShare: 1,
+      // seconds of one telling: opening, drawn into, held, lifted away
+      storySecs: 8.5,
+      // and seconds it is left as printed after coming into shot
+      storyRest: 1.5,
+      // and the spread of their turns, so they never open together
+      storySpread: 5,
+      /* The shading the bend causes, which is not the same control as the
+       * bend. The paper wants to keep its curve and lose some of the
+       * contrast the curve was printing on it: at full strength the troughs
+       * came down to two thirds of the ground and read as shadows thrown on
+       * the sheet rather than as the sheet turning. */
+      /* HOW FAR THE THREE WRAP ROUND THE READER, in radians at the edge of
+       * the frame. It is an angle rather than a radius because a radius means
+       * nothing without knowing how wide the frame is, and the frame changes
+       * with the window; the angle is what the eye reads. Zero is a flat row. */
+      webCurve: 0.10,
+      /* And how much a sheet loses by turning away. It is its OWN number, not
+       * a share of the wave's shading: they are two different surfaces — one
+       * is the ripple in a sheet of paper, the other is where that sheet is
+       * standing — and tying them together meant flattening the light on the
+       * outer columns could only be done by flattening the ripple as well. */
+      webCurveSh: 7.4,
+      /* And how much of it is carried in the vertical: 1 is a sphere — the
+       * top and foot of a sheet fall away exactly as its sides do — and 0 is
+       * a cylinder, curved across and dead flat up and down. */
+      webDome: 0.38,
+      webShade: 0.78,
+      webBend: 0.35, // how far the paper leaves its plane, relative to bend
+      // how tight the ripple is, and how fast it travels across the set
+      webWaveF: 1.1,
+      webWaveSpd: 1.78,
+      // The webs are the light in the frame, and are lifted to it.
+      webLift: 1.12,
+      /* The ink curve belonged to a paper ground. There, the mapping sent any
+       * sample above 0.577 toward white, and a line of nine-point type
+       * averaged by the mipmap arrives at about 0.7 — so the type came out
+       * LIGHTER than the ground and could not be read at all. On ink that
+       * threshold works for the webs rather than against them: the paper of
+       * the web clears it and lights up, the type falls under it and darkens.
+       * The curve is off, and only the mip bias is kept — a sharper level than
+       * the card picks, which the type wants on any ground. */
+      inkPivot: 0.84,
+      inkGain: 0.0,
+      inkBias: -0.65,
       // the field: changing any of these reseeds the plates
       spreadMin: 1.7,
       spreadMax: 3.1,
@@ -3932,6 +8146,276 @@ void main(){
       insideBand: 0.34,
       insideSheen: 0.9,
     };
+
+    /* ------------------------------------------------------- the web tuner
+     * A live panel over the webs: their size, where they sit, how fast the
+     * paper runs, how hard it lifts off its plane, and the two numbers that
+     * decide whether the type reads at all.
+     *
+     * ONLY WITH "?webs" IN THE URL. The delivered page carries no panels —
+     * they were all taken out of it — and this one is not an exception to
+     * that: it does not exist unless it is asked for by name. No key opens
+     * it, because a key can be hit by accident and T already belongs to the
+     * post-its.
+     *
+     * "copy" puts the whole set on the clipboard as the source lines they
+     * correspond to, so a session of sliders comes back as code rather than as
+     * a description of code.
+     */
+    /* AND THEY ARE FILED BY WHAT THEY MOVE, largest thing first: where the
+     * three stand, then the shape they stand in, then how the paper runs,
+     * then what happens inside one sheet, then the light on it. What is left
+     * is not the webs at all — the press behind them, the pointer, the mark
+     * that waits — and each of those is its own group rather than a drawer
+     * called "the press" holding four unrelated subjects. A slider filed
+     * under the thing it is not is a slider nobody finds. */
+    const WEB_TUNE = [
+      [
+        "where the three stand",
+        [
+          ["webW", 0.06, 0.42, 0.005, "half-width, in visible half-widths"],
+          ["webH", 0.8, 2.2, 0.01, "half-height, same measure"],
+          ["webSpread", 0.2, 1.1, 0.01, "where the outer two sit"],
+          ["webX", -0.6, 0.6, 0.01, "the whole set, sideways"],
+          ["webY", -0.6, 0.6, 0.01, "and up or down"],
+        ],
+      ],
+      [
+        "the curve of the set",
+        [
+          ["webCurve", 0, 1.4, 0.01, "how far the three wrap round you"],
+          ["webDome", 0, 1.4, 0.01, "0 a cylinder, 1 a sphere, over 1 an egg"],
+          ["webCurveSh", 0, 14, 0.1, "how much a sheet loses by turning away"],
+        ],
+      ],
+      [
+        "how the paper runs",
+        [
+          ["webSpd0", 0, 0.06, 0.0005, "left \u00b7 laps of the galley per second"],
+          ["webSpd1", 0, 0.06, 0.0005, "middle \u00b7 laps of the galley per second"],
+          ["webSpd2", 0, 0.06, 0.0005, "right \u00b7 laps of the galley per second"],
+          ["webLag1", 0, 1, 0.01, "middle \u00b7 where it starts, in pages"],
+          ["webLag2", 0, 1, 0.01, "right \u00b7 where it starts, in pages"],
+        ],
+      ],
+      /* The ripple in the paper itself — one sheet's worth of behaviour,
+       * which is a different thing from where the three are standing. */
+      [
+        "the wave in the paper",
+        [
+          ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
+          ["webWaveF", 0.15, 3.5, 0.01, "how tight the ripple is"],
+          ["webWaveSpd", 0, 4, 0.02, "how fast it travels across the set"],
+          ["webShade", 0, 1.4, 0.01, "how hard the ripple shades the sheet"],
+        ],
+      ],
+      [
+        "the light on it",
+        [
+          ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
+          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
+        ],
+      ],
+      /* Behind the paper: what is being printed on it, and how often the
+       * page changes. Not a property of the webs — a property of the press. */
+      [
+        "the press behind it",
+        [
+          ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
+          ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
+          ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
+          ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
+          ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
+          ["greyShare", 0, 1, 0.05, "share of pages that print in a grey"],
+        ],
+      ],
+      [
+        "the hand on the paper",
+        [
+          ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
+          ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
+        ],
+      ],
+      [
+        "the mark that waits",
+        [
+          ["markLogo", 0, 1, 1, "the waiting mark: 0 the word, 1 the rosette"],
+        ],
+      ],
+    ];
+
+    function buildWebTuner() {
+      const box = document.createElement("div");
+      box.id = "web-tune";
+      box.style.cssText =
+        "position:fixed;top:12px;right:12px;z-index:99998;width:264px;" +
+        "max-height:calc(100vh - 24px);overflow:auto;padding:12px 14px 14px;" +
+        "background:rgba(14,14,18,.9);color:#e8e8e8;" +
+        "border:1px solid rgba(255,255,255,.14);border-radius:10px;" +
+        "font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      const st = document.createElement("style");
+      st.textContent =
+        "#web-tune .t{font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.5}" +
+        "#web-tune .g{margin:13px 0 4px;font-size:9px;letter-spacing:.13em;" +
+        "text-transform:uppercase;opacity:.36}" +
+        "#web-tune .r{display:flex;align-items:center;gap:7px;margin:5px 0}" +
+        "#web-tune .r label{flex:0 0 66px;opacity:.62;cursor:help}" +
+        "#web-tune .r .v{flex:0 0 46px;text-align:right;opacity:.5;" +
+        "font-variant-numeric:tabular-nums}" +
+        "#web-tune input{flex:1;min-width:0;height:14px;-webkit-appearance:none;" +
+        "appearance:none;background:transparent}" +
+        "#web-tune input::-webkit-slider-runnable-track{height:2px;background:rgba(255,255,255,.2)}" +
+        "#web-tune input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;" +
+        "margin-top:-4px;border-radius:50%;background:#f2b13c;cursor:pointer}" +
+        "#web-tune button{width:100%;margin-top:12px;padding:7px 0;font:inherit;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(255,255,255,.07);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:6px}" +
+        "#web-tune button:hover{background:#f2b13c;color:#14141c;border-color:#f2b13c}";
+      document.head.appendChild(st);
+
+      /* A PANEL YOU CANNOT PUT AWAY is a panel that is always in the way.
+       * It covers the top right of the frame, which is where a web runs, so
+       * judging the paper means judging it around the thing measuring it.
+       * The cross hides it and leaves a tab; the tab brings it back without
+       * a reload, so nothing that has been tuned is lost. */
+      const head = document.createElement("div");
+      head.className = "t";
+      head.style.cssText = "display:flex;align-items:center;gap:8px";
+      const name = document.createElement("span");
+      name.textContent = "the webs";
+      name.style.flex = "1";
+      const shut = document.createElement("button");
+      shut.textContent = "×";
+      shut.title = "put the panel away";
+      shut.style.cssText =
+        "width:20px;height:20px;margin:0;padding:0;line-height:1;font-size:15px;" +
+        "border-radius:5px;flex:0 0 auto";
+      head.append(name, shut);
+      box.appendChild(head);
+
+      const tab = document.createElement("button");
+      // named, because it is put in the document BEFORE the panel is — the
+      // caller used to reach it as the panel's next sibling, which is the
+      // canvas, so the tab was hidden along with the panel and there was no
+      // way back to it without a reload
+      tab.id = "web-tune-tab";
+      tab.textContent = "the webs";
+      tab.style.cssText =
+        // en bas à droite : en haut il se posait sur la navigation, et un
+        // outil de réglage ne doit pas couvrir un lien de la page
+        "position:fixed;bottom:12px;right:12px;z-index:99998;display:none;" +
+        "padding:7px 11px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(14,14,18,.9);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:8px;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      tab.onclick = () => {
+        box.style.display = "";
+        tab.style.display = "none";
+      };
+      shut.onclick = () => {
+        box.style.display = "none";
+        tab.style.display = "block";
+      };
+      document.body.appendChild(tab);
+
+      /* THE RATE, READ OFF THE STAGE ITSELF. Not this panel's own rAF —
+       * that would measure the browser handing out frames, which keeps
+       * ticking perfectly while the scene inside it stalls. The stage counts
+       * the frames it actually draws, so a repaint that overruns shows up
+       * here and nowhere else.
+       *
+       * Amber under fifty, because a number nobody reads is not a
+       * diagnostic. */
+      const fps = document.createElement("div");
+      fps.className = "t";
+      fps.style.cssText =
+        "margin-top:7px;opacity:.85;font-variant-numeric:tabular-nums";
+      box.appendChild(fps);
+      let f0 = window.__frames || 0,
+        t0 = performance.now();
+      setInterval(() => {
+        const f = window.__frames || 0,
+          t = performance.now();
+        const v = ((f - f0) * 1000) / Math.max(1, t - t0);
+        f0 = f;
+        t0 = t;
+        fps.style.color = v < 50 ? "#f2b13c" : "#e8e8e8";
+        /* BOTH NUMBERS, because one of them alone means nothing. The left
+         * is what the browser handed out; the right is what the scene spent
+         * inside its own frame. A low rate with a small cost is a browser
+         * running at half vsync — a display, a power setting, another tab —
+         * and no amount of work here will move it. A cost near the budget
+         * is ours. */
+        const cost = window.__frameMs || 0;
+        fps.style.color = cost > 9 ? "#f2b13c" : v < 50 ? "#8d8d96" : "#e8e8e8";
+        fps.textContent =
+          v.toFixed(0) + " fps · scene " + cost.toFixed(1) + " ms of " +
+          (1000 / Math.max(v, 0.001)).toFixed(1);
+      }, 500);
+
+      for (const [group, rows] of WEB_TUNE) {
+        const g = document.createElement("div");
+        g.className = "g";
+        g.textContent = group;
+        box.appendChild(g);
+        for (const [key, min, max, step, why] of rows) {
+          const row = document.createElement("div");
+          row.className = "r";
+          const lab = document.createElement("label");
+          /* The label is the key with its prefix off — but "webSpd0" would
+           * come out "spd0", and three rows called spd0/1/2 say nothing about
+           * which column they move. The three-web rows name their side. */
+          const SIDE = { 0: "left", 1: "middle", 2: "right" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey", markLogo: "mark", ptrLift: "touch", ptrSize: "touch size", webCurve: "wrap", webDome: "dome", webCurveSh: "wrap shade", webShade: "shade", webBend: "bend", webWaveF: "ripple", webWaveSpd: "drift" };
+          const m = /^web(Spd|Lag)([012])$/.exec(key);
+          lab.textContent = m
+            ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
+            : NAMED[key] || key.replace(/^(web|ink)/, "").toLowerCase() || key;
+          lab.title = why;
+          const inp = document.createElement("input");
+          inp.type = "range";
+          inp.min = min;
+          inp.max = max;
+          inp.step = step;
+          inp.value = P[key];
+          const out = document.createElement("span");
+          out.className = "v";
+          const dp = /^webSpd/.test(key) ? 4 : 3;
+          out.textContent = (+P[key]).toFixed(dp);
+          inp.addEventListener("input", () => {
+            P[key] = parseFloat(inp.value);
+            out.textContent = P[key].toFixed(dp);
+          });
+          row.append(lab, inp, out);
+          box.appendChild(row);
+        }
+      }
+
+      const btn = document.createElement("button");
+      btn.textContent = "copy the values";
+      btn.onclick = () => {
+        const txt = WEB_TUNE.map(([, rows]) =>
+          rows
+            .map(
+              ([k]) =>
+                "      " + k + ": " +
+                (+P[k]).toFixed(/^webSpd/.test(k) ? 4 : 3) + ",",
+            )
+            .join("\n"),
+        ).join("\n");
+        (navigator.clipboard
+          ? navigator.clipboard.writeText(txt)
+          : Promise.reject()
+        )
+          .then(() => (btn.textContent = "copied"))
+          .catch(() => console.log(txt));
+        setTimeout(() => (btn.textContent = "copy the values"), 1200);
+      };
+      box.appendChild(btn);
+      document.body.appendChild(box);
+      return box;
+    }
 
     /* --------------------------------------------------------- orientation
      * Column-major, matching the GLSL mat3 constructor exactly. The body's
@@ -3983,19 +8467,17 @@ void main(){
     }
 
     let gl,
-      prog,
-      blit,
+
       quad,
       inside,
-      u,
-      ub,
       uq,
       ui,
       vao,
       quadVao,
       pageVao,
       pageCount = 0,
-      pageTex;
+      pageTex,
+      galleyTex;
     let panelTex = null,
       panelsOn = 0;
     let fbTex,
@@ -4359,7 +8841,12 @@ void main(){
     let FLY = 2.8; // seconds of flight, braking the whole way
     // the plate stops following the body the moment it breaks
     let plateA = [0, 0, 0];
-    let centre = [0.3, 0.06],
+    /* Where the camera looks. Off to the right and a touch up, because the
+     * block had to sit clear of the hero's headline. The paper section has its
+     * own contents in the middle of the frame, so there the webs are centred:
+     * pushed right they left a bare band down the left and cut a column off
+     * against the right edge. */
+    let centre = ARC0 ? [0.3, 0.06] : [0, 0],
       presence = 1,
       scale = 0.9; // reset from the
     // canvas on first resize: a fixed start is either wasteful on a small
@@ -4415,11 +8902,35 @@ void main(){
       );
     }
 
+    /* WHERE THE WEBS ARE DRAWN.
+     *
+     * The arc when it is in the document: the hero and the chapter it breaks
+     * into, measured as one, because owning only the hero would hand the
+     * canvas away mid-explosion.
+     *
+     * When it is not — it has been lifted out — the webs still have work: they
+     * are the ground of the paper section that took its place. There they run
+     * and nothing else does. No wind, no break, no field of plates, no glass
+     * to stand inside: those are the arc's second act, and the section has its
+     * own contents to carry. */
+    const ARC = !!document.querySelector("#hero-arc");
+    const WEBS_ONLY = !ARC;
+    /* AND THE SECOND ACT IS OPT-IN, on the arc's own element. The wind-up,
+     * the break and the field of plates were choreography for four tiles
+     * coming up the page, and the section under the hero does something else
+     * now — so they are off unless the arc asks for them by name. Inferred
+     * from the presence of a tile it would come back on by accident the day
+     * that section has tiles again for a different reason, which is exactly
+     * the kind of coupling that makes a page behave differently for no
+     * visible cause. The exit flood is NOT part of this: the page cues that
+     * one by hand, and it is what carries the ground into the section
+     * below. */
+    const ARC_ACT = ARC &&
+      document.querySelector("#hero-arc").dataset.act === "break";
+
     return {
       name: "hero",
-      // Stage measures the pair: the hero and the chapter it breaks into.
-      // Owning only the hero would hand the canvas away mid-explosion.
-      section: "#hero-arc",
+      section: ARC ? "#hero-arc" : "#proof",
       field: ground,
 
       /* The exit keeps the frame until it is finished. It floods the journal
@@ -4428,7 +8939,10 @@ void main(){
        * was painting arrives all at once instead. It is the same frame either
        * way, the same white; only the passage is lost. Held both ways: read
        * backward the retraction needs the frame for exactly as long. */
-      hold: () => tumbT >= 0 && tumbT < EXIT_END,
+      hold: () =>
+        (tumbT >= 0 && tumbT < EXIT_END) ||
+        (outSec > 0.001 && outSec < OUT_SPAN) ||
+        !!window.__heroHold,
 
       init(api) {
         gl = api.gl;
@@ -4439,8 +8953,6 @@ void main(){
         // where it belongs from the first frame; the timeline is kept because
         // the break still walks the same orientation back.
         intro = IN_DONE;
-        prog = api.program(VS, FS);
-        blit = api.program(VS, BLIT);
         inside = api.program(VS, GLASS);
         quad = api.program(QUAD_VS, QUAD_FS);
         uq = api.uniforms(quad, [
@@ -4465,62 +8977,15 @@ void main(){
           "uPresence",
           "uWash",
           "uWashC",
-        ]);
-        u = api.uniforms(prog, [
-          "uRes",
-          "uTime",
-          "uCam",
-          "uCentre",
-          "uZoom",
-          "uPresence",
-          "uBG",
-          "uBox",
-          "uRound",
-          "uWarp",
-          "uWarpF",
-          "uWobble",
-          "uOrient",
-          "uPlate",
-          "uIor",
-          "uDisp",
-          "uAbsorb",
-          "uFres",
-          "uFilm",
-          "uIrid",
-          "uGain",
-          "uRoom",
+          "uWin",
+          "uPtr",
+          "uPtrK",
+          "uEdge",
           "uShade",
-          "uEnvRot",
-          "uSoft",
-          "uPanel",
-          "uExposure",
-          "uNews",
-          "uPageZoom",
-          "uInk",
-          "uPaper",
-          "uSheet",
-          "uCurl",
-          "uSheetS",
-          "uBurst",
-          "uPack",
-          "uPlanes[0]",
-          "uShardP[0]",
-          "uShardS[0]",
-          "uShardR[0]",
-          "uPanels",
-          "uPanelN",
-          "uPanelsOn",
-          "uShardU[0]",
-          "uShardV[0]",
-          "uShardW[0]",
-          "uShardT[0]",
-          "uShardQ[0]",
-          "uFieldR",
-          "uPageRes",
-          "uPageLod",
-          "uPage",
+          "uCurve",
+          "uWaveF",
+          "uInkC",
         ]);
-        ub = api.uniforms(blit, ["uTex", "uTexel", "uBG", "uGlow"]);
         ui = api.uniforms(inside, [
           "uTex",
           "uBG",
@@ -4548,7 +9013,7 @@ void main(){
           new Float32Array([-1, -1, 3, -1, -1, 3]),
           gl.STATIC_DRAW,
         );
-        for (const p of [prog, blit, inside]) {
+        for (const p of [inside]) {
           const al = gl.getAttribLocation(p, "p");
           if (al >= 0) {
             gl.enableVertexAttribArray(al);
@@ -4606,6 +9071,66 @@ void main(){
         }
 
         pageTex = api.texFromCanvas(buildPage());
+        /* The galley cannot go through texFromCanvas: that helper clamps both
+         * axes, and a web scrolls for ever — v has to REPEAT or the paper
+         * stops at the end of the lap and smears its last row down the rest of
+         * the column. u stays clamped, which is what keeps one column of the
+         * atlas out of its neighbour. */
+        /* Composed and uploaded twice: once now, with drawn plates, so the
+         * webs are running before anything has been over the network, and
+         * again once the photographs have arrived. The hero therefore never
+         * waits on Wikimedia, and if a plate never comes — or the CORS header
+         * that lets a canvas carrying it be uploaded at all ever goes away —
+         * the first upload is simply the one that stands. */
+        const uploadGalley = () => {
+          gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            buildGalley(),
+          );
+        };
+        galleyTex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+        /* NO MIPMAP CHAIN. The webs magnify the reel — the sheet is a third
+         * of the frame wide and the column behind it is four hundred units
+         * — so the minified levels were never sampled, while rebuilding them
+         * cost a pass over the whole sheet on every frame a page wrote back
+         * to it. A linear filter is the whole of what is used. */
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        // u clamps so a column cannot bleed into the one set beside it; v
+        // repeats, because a web scrolls for ever
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        uploadGalley();
+        /* THE ONE SIGNAL THE PAGE CAN WAIT ON. Not "the script ran" and not
+         * "a frame was drawn" — the reel exists and is on the card, which is
+         * the moment there is something to show. The boot screen holds until
+         * this, and nothing else in the module publishes anything. */
+        window.__heroReady = true;
+        loadPressImages(uploadGalley);
+        /* AWAY BY DEFAULT. It covers the top right of the frame, which is
+         * where a web runs, so the ordinary state of the page is the paper
+         * with nothing over it. The tab in the corner brings it back without
+         * a reload; ?tune opens it on load, for a session spent tuning. */
+        /* AND IT IS ASKED FOR BY NAME. The page that is tuned is now the
+         * page that is served — the same file, no parked twin — so the panel
+         * can no longer be told apart by which document it is in. It is told
+         * apart by the URL: ?webs leaves the tab in the corner, ?tune opens
+         * the panel outright, and a reader who was given neither gets no
+         * trace of either. */
+        if (!window.__noTuner && /[?&](tune|webs)\b/.test(location.search)) {
+          const panel = buildWebTuner();
+          if (!/[?&]tune\b/.test(location.search)) {
+            panel.style.display = "none";
+            const t = document.getElementById("web-tune-tab");
+            if (t) t.style.display = "block";
+          }
+        }
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
@@ -4613,8 +9138,15 @@ void main(){
         // panels are not needed until the break, so they are built once the
         // page is already running.
         const buildAtlas = () => {
-          panelTex = api.texFromCanvas(paintPanels());
+          /* The sheet is KEPT, not thrown away with the upload: the reel's
+           * modern pages read tiles straight off it. And the galley is
+           * composed again once it exists — until then those pages carry
+           * their head and nothing under it, the same two-pass arrangement
+           * the photographs use. */
+          panelSheet = paintPanels();
+          panelTex = api.texFromCanvas(panelSheet);
           panelsOn = 1;
+          uploadGalley();
         };
         if (window.requestIdleCallback)
           requestIdleCallback(buildAtlas, { timeout: 2500 });
@@ -4645,7 +9177,7 @@ void main(){
             ".gl-field{background:transparent!important}";
           document.head.appendChild(st);
         }
-        section = document.querySelector("#hero");
+        section = document.querySelector(ARC ? "#hero" : "#proof");
         // the fixed stage carries the ground now; neither section paints it
         if (section) section.classList.add("gl-field");
         const chap = document.querySelector("#chapter");
@@ -4702,6 +9234,31 @@ void main(){
 
       frame(ctx) {
         clock += reduced ? 0 : ctx.dt;
+        /* THE WAVE HAS ITS OWN CLOCK, accumulated rather than multiplied out
+         * of the scene's. Read as clock * speed, every change of speed
+         * rewrites the whole history of the phase and the ripple jumps to
+         * somewhere else on the sheet — which makes the control unusable for
+         * the one thing it is for, which is watching the change. */
+        waveT += (reduced ? 0 : ctx.dt) * 0.55 * P.webWaveSpd;
+        ptrStep(Math.min(0.1, ctx.dt));
+        /* The page says when the mark has gone. A page that has no boot
+         * screen at all never would — and waiting for a signal nobody is
+         * going to send is a web that never arrives — so the absence of the
+         * screen IS the signal, checked once. */
+        if (bootAt === null) {
+          if (window.__bootDone) bootAt = clock;
+          else if (!document.getElementById("boot")) bootAt = 0;
+        }
+        /* THE PAGE ASKS, AND ASKS AGAIN FOR THEM BACK. One number, run
+         * forward while the page wants the paper out and backward when it
+         * wants it in, so the return is the same move read the other way
+         * rather than a second animation that resembles it. The page waits on
+         * __webOutK instead of on a duration it would have to guess. */
+        outSec = Math.max(
+          0,
+          Math.min(OUT_SPAN, outSec + (window.__webOut ? ctx.dt : -ctx.dt)),
+        );
+        window.__webOutK = outSec / OUT_SPAN;
 
         // adaptive resolution: this march cannot hold sixty frames at native
         // It drops fast when frames are late and climbs back quickly when they
@@ -4737,10 +9294,12 @@ void main(){
         // The wind-up runs over the whole arc — hero plus the section under it —
         // so the compression only bottoms out at the end of that scroll, not
         // when the hero has merely left.
-        const wind = Math.min(1, ctx.prog / WIND_SPAN);
+        const wind = ARC_ACT ? Math.min(1, ctx.prog / WIND_SPAN) : 0;
         // what is left of the arc, once the break has had its share: the cards
         // come in over this, and the camera walks back over it too
-        const back = Math.max(0, ctx.prog - WIND_SPAN) / (1 - WIND_SPAN);
+        const back = ARC_ACT
+          ? Math.max(0, ctx.prog - WIND_SPAN) / (1 - WIND_SPAN)
+          : 0;
         // This module only runs while it owns the canvas, so after a spell
         // away its last reading is from wherever the reader left it — often a
         // whole section back. A delta taken across that gap is meaningless and
@@ -4983,6 +9542,8 @@ void main(){
           const u = Math.min(1, (tB - SQUASH) / FLY);
           burst = 1 - Math.pow(1 - u, 5); // flies out, then all but stops
         }
+        // the paper section wants the webs and nothing after them
+        if (WEBS_ONLY || !ARC_ACT) burst = 0;
 
         // the section's own interface waits for the field to settle
         const chap = document.querySelector("#chapter");
@@ -5105,6 +9666,31 @@ void main(){
           }
         }
 
+        /* THE CAMERA DOES NOT FOLLOW THE PAGE DURING THE HANDOVER.
+         *
+         * The camera is derived from where a marked element sits in the
+         * window, and it slides to the middle of the frame as soon as the page
+         * moves — which is right when the reader is doing the moving, and
+         * wrong when the page is being CARRIED. The crossing scrolls a whole
+         * screen in six hundred milliseconds, so the paper lurched sideways
+         * and up under a gesture that is supposed to be the paper standing
+         * still while the page arrives beneath it. That was the jump.
+         *
+         * It holds the camera it had AT REST, not the one it happens to have
+         * when the hold begins. The two are the same going out; coming back
+         * they are not — the return starts a screen down, where the resting
+         * camera has already slid to the middle — and freezing that one would
+         * have put the jump back at the other end, when the hold let go over a
+         * page that was home again. */
+        if (window.__heroHold) {
+          if (restCam) {
+            centre = [restCam[0], restCam[1]];
+            zoom = restCam[2];
+          }
+        } else if (away < 0.02) {
+          restCam = [centre[0], centre[1], zoom];
+        }
+
         const cw = canvas.width,
           ch = canvas.height;
         if (!sized) {
@@ -5114,18 +9700,42 @@ void main(){
         // MARCH is the raymarched glass, QUADS the rasterised plates seen from
         // inside it. They cost nothing alike, and a slow frame on one says
         // nothing about the other.
-        const marching = burst < 0.045;
-        window.__glPath = marching
-          ? burst > 0.001
-            ? "MARCH+"
-            : "MARCH"
-          : "QUADS";
+        /* Nothing marches any more. The hero was a block of glass and the
+         * marcher was how it existed; the hero is now three webs of paper,
+         * which are geometry. Kept as a constant rather than deleted on the
+         * spot so the passes that ask "is the block still whole?" — the
+         * buffer's resolution, the glass wall past the break — keep reading
+         * the same answer they always did. */
+        /* The webs' geometry, worked out before anything is placed, because
+         * the plates are anchored to it. What the camera sees at the webs'
+         * depth is taken off the vertex shader rather than guessed at: it
+         * projects clip.y = (P.y * 2.05 / d) * 2, so the edge of the frame is
+         * at P.y = d/4.1, and x is stretched by the aspect on the way. */
+        const webDZ = Math.max(0.25, zoom);
+        const webNH = webDZ / 4.1,
+          webNW = webNH * (cw / Math.max(1, ch));
+        /* THE SET IS MEASURED IN HALF-WIDTHS, so a narrow window makes it
+         * narrow: on a phone each web took a third of the frame and its type
+         * came out at a third of the size it was drawn for. The measure is
+         * right — the paper should keep its place on a wide screen — so the
+         * set is widened back as the window turns portrait, until the middle
+         * web holds most of the frame and the outer two only reach in from
+         * the edges. Width and spacing move together, or the columns overlap. */
+        const webFit = Math.max(
+          1,
+          Math.min(2.15, 0.95 / Math.max(0.3, cw / Math.max(1, ch))),
+        );
+        const webSp = P.webSpread * webFit;
+        const webHW = webNW * P.webW * webFit,
+          webHH = webNH * P.webH;
+        const WEB_ROWS = Math.ceil(NSHARD / 3);
+        window.__glPath = "QUADS";
         // the marcher traces into a fraction of the canvas and is stretched
         // back up; the plates are drawn at full size, because they are type and
         // hairlines and resampling them is what reads as pixelation
         sizeBuffer(
-          marching ? Math.max(2, Math.round(cw * scale)) : cw,
-          marching ? Math.max(2, Math.round(ch * scale)) : ch,
+          cw,
+          ch,
         );
 
         // the aim eases in; the drag coasts, damps, and relaxes back to square
@@ -5328,12 +9938,18 @@ void main(){
             sn = Math.sin(sd.skew);
           const fx = followX[i] * sd.amp,
             fy = followY[i] * sd.amp;
-          // At burst 0 every plate sits on the page, in the middle of the
-          // frame; the break carries it out to its place in the corridor. The
-          // same throw as before, but out of the page and aimed at the field's
-          // own layout rather than at a point on a sphere, so the pieces settle
-          // straight into it.
-          // out of the page on the break's own throw, then eased into its
+          // At burst 0 every plate sits WHERE THE PAPER IS. The hero used to
+          // be one block and the pieces were all born at its centre; it is
+          // three webs now, so a plate starts as a piece torn out of one —
+          // its column, and its own height down that column. Three columns of
+          // seven, which is what twenty plates come to. Without this the
+          // paper would simply fade while a separate set of plates flew in
+          // from the middle, and the break would read as two things crossing
+          // rather than as one thing tearing.
+          const anX = ((i % 3) - 1) * webNW * webSp;
+          const anY =
+            (((Math.floor(i / 3) + 0.5) / WEB_ROWS) * 2 - 1) * webNH * 0.94;
+          // out of the paper on the break's own throw, then eased into its
           // place in the corridor as the cards come up
           const tx = sd.dir[0] * sd.dist,
             ty = sd.dir[1] * sd.dist,
@@ -5342,16 +9958,16 @@ void main(){
           const oy = ty + (by - ty) * settle;
           const oz = tz + (z - tz) * settle;
           shardP[i * 3] =
-            pageC[0] +
-            (ox - pageC[0]) * burst +
-            (fx * cs - fy * sn) * 0.95 * par * burst;
+            anX + (ox - anX) * burst + (fx * cs - fy * sn) * 0.95 * par * burst;
           shardP[i * 3 + 1] =
-            pageC[1] +
-            (oy - pageC[1]) * burst +
-            (fx * sn + fy * cs) * 0.68 * par * burst;
+            anY + (oy - anY) * burst + (fx * sn + fy * cs) * 0.68 * par * burst;
           shardP[i * 3 + 2] = pageC[2] + (oz - pageC[2]) * burst;
+          // and it starts at the width of the column it was torn from, so the
+          // piece is the paper's own size at the moment it comes away
+          const born = Math.min(1, webHW / Math.max(1e-3, sd.siz * 0.9));
           shardS[i] =
-            (sd.siz + (shardS[i] - sd.siz) * settle) * (0.25 + 0.75 * burst);
+            (sd.siz + (shardS[i] - sd.siz) * settle) *
+            (born + (1 - born) * burst);
           shardR[i] = shardS[i] * sd.far;
           fieldR = Math.max(
             fieldR,
@@ -5363,90 +9979,306 @@ void main(){
         // Past the break the field is quads and the marcher has nothing left to
         // find: skipping both passes outright is worth more than making them
         // cheap. Stage has already cleared the canvas to the ground.
-        if (marching) {
-          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-          gl.viewport(0, 0, fw, fh);
-          gl.disable(gl.BLEND);
-          gl.useProgram(prog);
-          gl.bindVertexArray(vao);
-          gl.uniform2f(u.uRes, fw, fh);
-          gl.uniform1f(u.uTime, clock);
-          gl.uniform2f(u.uCam, 0, 0); // the field parallaxes, the camera does not
-          gl.uniformMatrix3fv(u.uOrient, false, orient);
-          gl.uniformMatrix3fv(u.uPlate, false, plate);
-          gl.uniform2f(u.uCentre, centre[0], centre[1]);
-          gl.uniform1f(u.uZoom, zoom);
-          gl.uniform1f(u.uPresence, presence * ctx.vis);
-          gl.uniform3f(u.uBG, ground[0], ground[1], ground[2]);
-          gl.uniform1f(u.uBox, P.box);
-          gl.uniform1f(u.uRound, P.round);
-          gl.uniform1f(u.uWarp, P.warp);
-          gl.uniform1f(u.uWarpF, P.warpF);
-          gl.uniform1f(u.uWobble, P.wobble);
-          gl.uniform1f(u.uIor, P.ior);
-          gl.uniform1f(u.uDisp, P.disp);
-          gl.uniform1f(u.uAbsorb, P.absorb);
-          gl.uniform1f(u.uFres, P.fres);
-          gl.uniform1f(u.uFilm, P.film);
-          gl.uniform1f(u.uIrid, P.irid);
-          gl.uniform1f(u.uGain, P.gain);
-          gl.uniform1f(u.uRoom, P.room);
-          gl.uniform1f(u.uShade, P.shade);
-          gl.uniform1f(u.uEnvRot, P.envRot);
-          gl.uniform1f(u.uSoft, P.soft);
-          gl.uniform1f(u.uPanel, P.panel);
-          gl.uniform1f(u.uExposure, P.exposure);
-          gl.uniform1f(u.uNews, P.news);
-          gl.uniform1f(u.uPageZoom, P.pageZoom);
-          gl.uniform1f(u.uInk, P.ink);
-          gl.uniform1f(u.uPaper, P.paper);
-          gl.uniform1f(u.uSheet, P.sheet);
-          gl.uniform1f(u.uCurl, P.curl);
-          gl.uniform1f(u.uSheetS, P.sheetS);
-          gl.uniform1f(u.uBurst, burst);
-          gl.uniform1f(u.uPack, pack);
-          // Placed in the frame rather than in the world: each shard gets an
-          // angle and a radius as a fraction of what is visible at its own depth,
-          // so however far it comes forward it stays on screen.
-          gl.uniform1f(u.uFieldR, fieldR);
-          gl.uniform4fv(u["uPlanes[0]"], planes);
-          gl.uniform3fv(u["uShardP[0]"], shardP);
-          gl.uniform1fv(u["uShardS[0]"], shardS);
-          gl.uniform1fv(u["uShardR[0]"], shardR);
-          gl.uniform3fv(u["uShardU[0]"], shardU);
-          gl.uniform3fv(u["uShardV[0]"], shardV);
-          gl.uniform3fv(u["uShardW[0]"], shardW);
-          gl.uniform1fv(u["uShardT[0]"], tileNow);
-          gl.uniform1fv(u["uShardQ[0]"], spinOf);
-          gl.uniform1f(u.uPageRes, PAGE_RES);
-          gl.uniform1f(u.uPageLod, P.pageLod);
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, pageTex);
-          gl.uniform1i(u.uPage, 0);
-          gl.activeTexture(gl.TEXTURE1);
-          gl.bindTexture(gl.TEXTURE_2D, panelTex || pageTex);
-          gl.uniform1i(u.uPanels, 1);
-          gl.uniform1f(u.uPanelN, PANEL_N);
-          gl.uniform1f(u.uPanelsOn, panelsOn);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-
+        /* Nothing is marched. The hero is three webs of paper and a field
+         * of plates, and both are geometry: the buffer is cleared to the
+         * ground and they are drawn straight into it. What used to stand here
+         * was the block's own distance field — a rounded box hollowed by
+         * travelling lobes, four refraction indices marched twice each and
+         * fanned into fourteen spectral samples. It went with the block.
+         */
+        /* Where the webs are painted.
+         *
+         * Into the buffer when the arc is here, because the glass pass reads
+         * that buffer back and is what puts it on screen. With webs only there
+         * is no glass pass — so there is nothing to copy the buffer out, and
+         * painting into it would put the webs somewhere no one ever sees. They
+         * go straight onto the canvas instead. */
+        /* AND WHEN THE GLASS IS IDLE, straight onto the canvas as well.
+         * Everything else that wants the buffer — the plates, the sheet, the
+         * flood — is inside `burst > 0.001`, and outside the break the glass
+         * pass reads the buffer and writes it back unchanged. That was a
+         * full screen written and a full screen read, at device pixels,
+         * sixty times a second, to arrive at what was already there. */
+        const glassIdle = burst <= 0.001 && washG <= 0.001;
+        if (WEBS_ONLY || glassIdle) {
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);
-          gl.useProgram(blit);
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, fbTex);
-          gl.uniform1i(ub.uTex, 0);
-          gl.uniform2f(ub.uTexel, 1 / fw, 1 / fh);
-          gl.uniform3f(ub.uBG, ground[0], ground[1], ground[2]);
-          // the halo belongs to the glass, not to the panels: it fades out with
-          // the break, or every plate wears a bright fringe
-          gl.uniform1f(ub.uGlow, P.glow * (1 - burst * 0.86));
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
         } else {
           gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
           gl.viewport(0, 0, fw, fh);
-          gl.clearColor(ground[0], ground[1], ground[2], 1);
-          gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        gl.clearColor(ground[0], ground[1], ground[2], 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        /* ---- the three webs ---------------------------------------------
+         * Paper coming off a press. Each web is the subdivided sheet the page
+         * was already drawn on — so the travelling waves that lift it off its
+         * own plane, and the slope that shades it, are the ones this file
+         * already had — reading its own column of the galley through a window
+         * that slides down for ever.
+         *
+         * Sized off what the camera can actually see at the webs' own depth
+         * rather than in world units: the three columns then hold their
+         * composition on a phone and on a wide desktop, instead of being tuned
+         * to whatever window they were written in.
+         *
+         * They let go as the break takes over — by then their pieces are the
+         * plates, and two paper surfaces in the same place would fight.
+         */
+        /* The paper lets go exactly over the throw that carries its pieces
+         * away. Held longer and a web sits behind the plates it has already
+         * become; released sooner and there is a gap where the hero is
+         * nothing at all. */
+        /* HELD MEANS ON SCREEN. Stage measures a section's coverage to
+         * decide what the canvas is for, and while the page is being carried
+         * onto the section BELOW the hero, the hero's own section is entirely
+         * above the frame: its coverage is nothing, so the paper it is still
+         * holding the frame for would be drawn at nothing. A page that says it
+         * is holding is saying the paper is what the reader is looking at. */
+        const vis = window.__heroHold ? 1 : ctx.vis;
+        const webFade = (1 - sm(0.0, 0.22, burst)) * presence * vis;
+        // Nothing moves while the paper is not on screen: the cost is real,
+        // small, and pointless against a web nobody can see.
+        if (webFade > 0.002) liveTick(ctx.t, ctx.dt);
+        if (webFade > 0.002 && galleyTex) {
+          const nw = webNW,
+            hw = webHW,
+            hh = webHH;
+          gl.useProgram(quad);
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.uniform2f(uq.uRes, cw, ch);
+          gl.uniform2f(uq.uCentre, centre[0], centre[1]);
+          gl.uniform1f(uq.uZoom, zoom);
+          gl.uniform3f(uq.uBG, ground[0], ground[1], ground[2]);
+          gl.uniform1f(uq.uRoom, P.room);
+          gl.uniform1f(uq.uExposure, P.exposure);
+          gl.uniform1f(uq.uPresence, presence * vis);
+          gl.uniform1f(uq.uAlpha, webFade);
+          gl.uniform1f(uq.uLift, P.paper * P.webLift);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, galleyTex);
+          gl.uniform1i(uq.uTex, 0);
+          gl.uniform1f(uq.uTiles, 0);
+          gl.uniform1f(uq.uTile, 0);
+          gl.uniform1f(uq.uSpin, 0);
+          gl.uniform1f(uq.uWash, 0);
+          gl.uniform3f(uq.uWashC, WASH_C[0], WASH_C[1], WASH_C[2]);
+          gl.uniform3f(uq.uAz, 0, 0, 1);
+          gl.uniform3f(uq.uAx, hw, 0, 0);
+          gl.uniform3f(uq.uAy, 0, hh, 0);
+          gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
+          gl.uniform1f(uq.uEdge, P.webEdge);
+          gl.uniform1f(uq.uShade, P.webShade);
+          gl.uniform1f(uq.uWaveF, P.webWaveF);
+          /* THE RADIUS, FROM THE ANGLE AND THE FRAME. The control is the wrap
+           * at the edge of the frame, so the radius follows the window: the
+           * three keep the same curvature to the eye whatever the page is
+           * resized to, which a fixed radius would not. */
+          const curveR = P.webCurve > 1e-3 ? nw / P.webCurve : 0;
+          const curveRy = curveR / Math.max(1e-4, P.webDome);
+          gl.uniform3f(uq.uCurve, curveR, P.webCurveSh, P.webDome);
+          gl.uniform3f(uq.uInkC, P.inkPivot, P.inkGain, P.inkBias);
+          gl.bindVertexArray(pageVao);
+          // a column each: web k reads the kth third of the sheet, and no
+          // page it shows exists anywhere else on the reel
+          const du = 1 / GALLEY_COLS,
+            gutter = du;
+          /* How much of a lap is in shot is NOT a taste decision — it is
+           * whatever keeps a texel square. Choose it by hand and the type is
+           * stretched or squeezed by however wrong the guess was, and it goes
+           * wrong again the moment the column changes width. */
+          const dv = (GALLEY_COL * hh) / (GALLEY_H * hw);
+          /* The three do not run at the same rate. Identical speeds read as
+           * one image cut into three; a few per cent apart and the gap between
+           * two mastheads keeps changing, which is what says three presses. */
+          webBand.length = 0;
+          for (let k = 0; k < 3; k++) {
+            /* NORMALISED BY THE LENGTH OF THE REEL. A web's speed on screen
+             * is its rate over the fraction of the reel in shot, and that
+             * fraction is one over the number of pages — so cutting the
+             * column from nine pages to six would have slowed the paper by
+             * half again, silently, and made every tuned number in the panel
+             * mean something else. */
+            const rate =
+              P["webSpd" + k] * (REEL_REF / Math.max(1, REEL.length));
+            /* EACH WEB CLIMBS INTO PLACE, and it does not fade. Paper fed off
+             * a press arrives from below at full ink; a sheet that appears
+             * by getting less transparent is a layer being switched on. It
+             * starts a whole frame below where it belongs, so the boot's
+             * mark is covered by newsprint rather than by nothing.
+             *
+             * SMOOTHER-STEP, not an ease-out. A cubic spends most of its
+             * speed in the first third and then crawls, and the eye reads
+             * the crawl as the motion stopping before it has stopped — a
+             * quintic has zero velocity AND zero acceleration at both ends,
+             * so there is no moment where the arrival hands over to the
+             * running speed. That handover was the brutal part; it is not
+             * an event any more. */
+            const inK = clamp01(
+              (clock - (bootAt === null ? clock : bootAt) - WEB_IN[k]) / 1.7,
+            );
+            const inE = inK * inK * inK * (inK * (inK * 6 - 15) + 10);
+            const outK = clamp01((outSec - WEB_IN[k]) / OUT_RAMP);
+            const outE = outK * outK * outK * (outK * (outK * 6 - 15) + 10);
+            // at rest means arrived AND not leaving: a page tells its story
+            // on a sheet that is standing still, in either direction
+            WEB_INE[k] = inE * (1 - outE);
+
+            /* THE MONTAGE. At cut 0 the paper runs, which is a press. Above it
+             * the web stops running and starts EDITING: it holds on a page for
+             * a beat and cuts to the next, three pages apart from its
+             * neighbours, and the later pages come faster — the compression a
+             * title sequence uses to cross an age in thirty seconds. */
+            let v;
+            if (P.webCut > 0.5 && CUTS.length) {
+              const n = CUTS.length;
+              const t = clock / Math.max(0.12, P.webBeat);
+              const i = Math.floor(t) + k * 3;
+              const j = ((i % n) + n) % n;
+              v = CUTS[j];
+            } else {
+              /* A WHOLE PAGE APART IS STILL IN STEP. Offsetting each web by
+               * exactly one page put a different page in each column, which
+               * was the point — but it also put every page BOUNDARY at the
+               * same height, so the three mastheads sat in a row and the
+               * webs read as one grid rather than as three sheets coming off
+               * a press. Broken by a third of a page and two thirds, which
+               * are not multiples of each other or of a page, so no two
+               * columns ever line up. */
+              /* A THIRD OF THE REEL APART, not a page. A page is what the
+               * offset used to be, and a web shows nearly two of them — so
+               * the windows overlapped and the column beside you was partly
+               * reading the same paper. The lag is a fine adjustment on top
+               * of that third, in pages, which is what it is good for. */
+              /* AND IT DOES NOT START ON THE SAME PAPER TWICE. The clock
+               * begins at zero every load, so the three webs always opened
+               * on the same three pages of the reel however different the
+               * pages themselves were. One phase, drawn at load, moves the
+               * whole set — the spacing between the webs is untouched. */
+              /* AND THE PAPER IS RUNNING FASTER AS IT ARRIVES. The sheet
+               * used to climb into place while the reel scrolled at its
+               * cruising rate the whole time, so the moment the climb
+               * finished was the moment all the motion stopped at once.
+               * A decaying offset in the scroll gives the press an extra
+               * turn of speed that eases into the running one — the
+               * arrival is a press winding down to its rate, which is what
+               * it looks like on a stone floor. */
+              const runIn = (1 - inE) * 0.075;
+              v =
+                (clock * rate + WEB_PHASE + k / 3 +
+                  P["webLag" + k] * PAGE_STEP * 0.5 - runIn + 2) % 1;
+            }
+            const cxw = (k - 1) * nw * webSp + nw * P.webX,
+              cyw = webNH * P.webY;
+            /* HOW FAR BELOW IT STARTS: exactly its own half-height plus the
+             * frame's, so its top edge begins ON the bottom of the frame and
+             * the whole climb is on screen. It used to start twice that far
+             * down, which spent the first half of the ramp out of sight —
+             * and left the boot's mark standing on nothing while it did. */
+            /* ONE OFFSET, TWO ENDS OF THE FRAME. The arrival brings the
+             * sheet up from below; the departure CARRIES ON UP and takes it
+             * off the top, so the paper never reverses — it comes in from the
+             * bottom, runs, and leaves through the top, which is what a web
+             * on a press does. The whole move is one signed number, so the
+             * exit cannot drift out of step with the entrance. */
+            const rise = ((1 - inE) - outE) * (cyw + hh + webNH);
+            // and the foot of this sheet, for the line that uncovers the page
+            const foot = cyw - hh - rise;
+            gl.uniform3f(uq.uC, cxw, cyw, 0);
+            /* WHERE THE CURSOR IS ON THIS SHEET. The vertex shader projects
+             * P.xy * 2.05/d + uCentre and then stretches x by the aspect, so
+             * running that backwards from a clip position gives the point on
+             * the sheet's plane — and dividing by the half-axes gives it in
+             * the sheet's own -1..1. Done here rather than in the shader
+             * because it is three numbers a frame, not one per vertex. */
+            /* WHERE THE SHEET ACTUALLY IS, once the set is curved. Its
+             * centre has swung back and sideways and its width has
+             * foreshortened by the cosine of its own angle — inverting the
+             * projection against the flat position it no longer occupies put
+             * the bell somewhere the cursor was not, and further out the
+             * further the sheet sits from the middle. */
+            const a0 = curveR > 0 ? cxw / curveR : 0;
+            const b0 = curveR > 0 ? cyw / curveRy : 0;
+            const ca0 = Math.cos(a0),
+              cb0 = Math.cos(b0);
+            const xC = curveR > 0 ? Math.sin(a0) * cb0 * curveR : cxw;
+            const yC = curveR > 0 ? Math.sin(b0) * curveRy : cyw;
+            const zC = curveR > 0 ? ca0 * cb0 * curveR - curveR : 0;
+            const dz = Math.max(0.08, zoom - zC);
+            const uvx = (ptr.x * cw) / (2 * ch),
+              uvy = ptr.y / 2;
+            gl.uniform2f(
+              uq.uPtr,
+              (((uvx - centre[0]) * dz) / 2.05 - xC) /
+                Math.max(1e-4, hw * ca0 * cb0),
+              (((uvy - centre[1]) * dz) / 2.05 - yC) /
+                Math.max(1e-4, hh * cb0),
+            );
+            gl.uniform3f(
+              uq.uPtrK,
+              P.ptrLift * ptr.k * hh,
+              P.ptrSize,
+              hh / Math.max(1e-4, hw),
+            );
+            /* THIS COLUMN'S FOOT AND ITS PLACE ACROSS THE FRAME. The same
+             * projection the vertex shader uses, run on two numbers instead
+             * of on every vertex — and on the sheet's OWN depth, because the
+             * curve has already put the outer two further away than the
+             * middle. */
+            if (window.__heroHold) {
+              const r = canvas.getBoundingClientRect();
+              const fy = (foot * 2.05) / dz + centre[1];
+              const fx = ((xC * 2.05) / dz + centre[0]) * (ch / Math.max(1, cw));
+              webBand[k] = [
+                r.left + (fx + 0.5) * r.width,
+                r.top + (0.5 - fy) * r.height,
+              ];
+            }
+            gl.uniform4f(
+              uq.uWin,
+              k * gutter,
+              v,
+              du,
+              dv,
+            );
+            gl.uniform1f(uq.uAlpha, webFade);
+            gl.uniform3f(uq.uC, cxw, cyw - rise, 0);
+            /* WHERE THE LEADING EDGE IS, IN THE PAGE'S UNITS. The vertex
+             * shader puts a point at clip.y = (P.y*2.05/d + uCentre.y)*2, so
+             * the sheet's top edge runs back through that to a viewport
+             * pixel — and the boot screen clips itself to it. The mark is
+             * not taken off by a timer that happens to run near the paper;
+             * it is taken off by the paper. */
+            if (k === 1 && bootMark) {
+              if (!document.getElementById("boot")) bootMark = false;
+              else {
+                const r = canvas.getBoundingClientRect();
+                const cy = ((cyw + hh - rise) * 2.05) / dz + centre[1];
+                window.__webTop = r.top + ((1 - cy * 2) / 2) * r.height;
+              }
+            }
+            // ONE CLOCK FOR THE THREE. The field they read is shared and
+            // world-anchored, so a phase per web would make each column
+            // sample the same water at a different moment — which is the
+            // seam the shared field exists to remove.
+            gl.uniform1f(uq.uT, waveT);
+            // what this web is showing, kept for the frame loop: repainting a
+            // page no web has in shot is work nobody can see
+            WEB_WIN[k] = v;
+            WEB_WIN[3] = dv;
+            gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
+          }
+          /* Biased ten pixels DOWN, and the bias has only one safe direction:
+           * placed too low a foot hides a strip of ground with nothing on it,
+           * placed too high it leaves a strip of the page's text standing over
+           * paper, which is the one thing it must never do. */
+          if (window.__heroHold && webBand.length === 3)
+            window.__webBands = webBand.map((b) => [b[0], b[1] + 10]);
+          gl.uniform4f(uq.uWin, 0, 0, 0, 0);
+          // the plates are flat, and they are drawn with the same program
+          gl.uniform3f(uq.uCurve, 0, 0, 0);
+          gl.bindVertexArray(null);
         }
 
         // ---- the plates, straight onto the canvas at full resolution ------
@@ -5483,6 +10315,9 @@ void main(){
           gl.uniform1f(uq.uTiles, PANEL_N);
           gl.uniform1f(uq.uLift, P.paper * 2.4);
           gl.uniform1f(uq.uBend, 0);
+          gl.uniform3f(uq.uPtrK, 0, 1, 1);
+          gl.uniform1f(uq.uEdge, 0);
+          gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);
           gl.uniform1f(uq.uWash, 0);
@@ -5607,7 +10442,7 @@ void main(){
             );
             gl.uniform3f(uq.uAz, plateM[2], plateM[5], plateM[8]);
             gl.uniform1f(uq.uBend, P.bend * hy * (1 - washG));
-            gl.uniform1f(uq.uT, clock * 0.55);
+            gl.uniform1f(uq.uT, waveT);
             gl.bindVertexArray(pageVao);
             gl.drawElements(gl.TRIANGLES, pageCount, gl.UNSIGNED_SHORT, 0);
           }
@@ -5615,7 +10450,7 @@ void main(){
 
         gl.bindVertexArray(null);
 
-        if (!marching && !OFF.inside) {
+        if (!OFF.inside && !WEBS_ONLY && !glassIdle) {
           // out of the buffer and through the glass we are now standing in
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, cw, ch);

@@ -181,6 +181,11 @@ const Stage = (() => {
     gl = canvas.getContext("webgl2", {
       antialias: true,
       alpha: true,
+      /* Straight, and it does not matter: every scene clears opaque, so no
+       * partly transparent pixel ever reaches the compositor. It mattered for
+       * one afternoon, when a scene cleared to nothing so the page could show
+       * through the gaps between its sheets — and showing through the gaps
+       * turned out to be the wrong thing to want. */
       premultipliedAlpha: false,
     });
     if (!gl) {
@@ -311,6 +316,12 @@ const Stage = (() => {
         gl.ONE,
         gl.ONE_MINUS_SRC_ALPHA,
       );
+      /* WHAT THE SCENE COSTS, kept apart from what the browser gives us.
+       * A frame counter alone cannot tell a scene that is too slow from a
+       * browser that has decided to run at half rate — and they need
+       * opposite fixes. This is the time spent inside the module's own
+       * frame, rolled so it reads steadily. */
+      const __t = performance.now();
       try {
         active.frame({
           t: time,
@@ -326,6 +337,9 @@ const Stage = (() => {
         note("frame:" + active.name, e);
         active.ready = false;
       }
+      const __d = performance.now() - __t;
+      window.__frameMs =
+        window.__frameMs === undefined ? __d : window.__frameMs * 0.94 + __d * 0.06;
     }
     requestAnimationFrame(frame);
   }
