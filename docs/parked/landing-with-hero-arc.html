@@ -3387,7 +3387,8 @@
        * la carte se retourne, ce dos grandit jusqu'à couvrir la fenêtre, et
        * la page voyage sous ce couvert. Le raccord n'est pas un changement de
        * couleur, c'est un objet qu'on suit. */
-      let flood = 0, wasWide = false, floodDirty = false, radPx = 0;
+      const FLOOD_DUR = 0.95;   // secondes, la même mesure que les autres passages
+      let flood = 0, wasWide = false, floodDirty = false, radPx = 0, lastT = 0;
       const readProg = () => {
         const r = run.getBoundingClientRect();
         const span = Math.max(1, r.height - innerHeight);
@@ -3411,8 +3412,19 @@
          * Le module publie sa sortie, la main attend. */
         const want = (window.__webOutK === undefined || window.__webOutK >= 0.999) ? 1 : 0;
         gate += (want - gate) * 0.05;
-        // 0.085 et non 0.055 : la crue est un passage, pas une contemplation
-        flood += ((window.__csFlood ? 1 : 0) - flood) * 0.085;
+        /* LA CRUE A UNE DURÉE, PAS UN COEFFICIENT. Menée par un lissage
+         * exponentiel elle partait d'un coup et traînait à la fin : le
+         * retournement, qui est le geste qu'on regarde, se jouait presque
+         * entier dans le premier dixième. Elle avance d'une fraction de
+         * seconde par frame, donc sa longueur est un nombre — celui des
+         * autres passages de cette page, autour de neuf cents millisecondes —
+         * et la courbe est mise DESSUS : lente aux deux bouts, pleine au
+         * milieu, ce qui est ce qu'on appelle fluide. */
+        const dtv = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
+        lastT = now;
+        const tgt = window.__csFlood ? 1 : 0;
+        const step2 = dtv / FLOOD_DUR;
+        flood += Math.max(-step2, Math.min(step2, tgt - flood));
         if (flood < 0.0008) flood = 0;
         /* LE PANNEAU S'ÉLARGIT, IL NE S'OUVRE PAS. Il a la largeur du
          * contenu, pas celle de la fenêtre, donc la carte qui déborde
