@@ -372,125 +372,111 @@
      derniers pixels de son écran de scroll, et la pile ne se lisait pas.
      L'ordre du document suffit à décider qui passe devant. */
   /* ------------------------------------------------------------------
-     LA PREMIÈRE SECTION : L'ÉPREUVE QUI REVIENT DU BUREAU.
+     LA PREMIÈRE SECTION : LE CHIFFRE QUI CHANGE DE MAIN.
 
-     Le hero est une presse qui imprime. Celle-ci est le bureau qui lit ce
-     qui en est sorti — donc une ÉPREUVE : une colonne de plomb, une marge
-     large, et les marques du correcteur qui se posent à mesure qu'on
-     descend. La barre de changement dans la marge, le chiffre entouré au
-     stylo, le passage au feutre sous les nombres : ce ne sont pas des
-     ornements, ce sont les trois gestes qu'on fait réellement sur une
-     épreuve — et ce sont ceux que Splash fait sur un article.
+     Elle est écrite dans la langue de la page et pas dans une autre : la
+     display en 300, une seule mesure de gris, les filets à 20 %, le mono
+     bleu pour les index, le carré ambre pour l'oreille. Le catalogue pose un
+     nombre géant en 200 et dit « c'est l'argument de la section, il n'a pas
+     besoin d'être répété ailleurs » — c'est le geste le plus fort du site.
 
-     Elle est CLAIRE, et c'est le geste du passage qui le demande : le
-     papier se retire par le haut, et ce qu'il découvre est du papier. Le
-     sombre était le sol de la presse ; il n'a rien à faire de ce côté-ci.
+     Ce qu'on en fait ici est neuf : le nombre géant N'EST PAS FIXE. Il y a
+     quatre constats et quatre chiffres, et le nombre prend celui du constat
+     qu'on est en train de lire. La colonne de gauche est un sommaire — les
+     mêmes lignes à filet que les familles du catalogue — et la ligne où l'on
+     est ouvre sa phrase pendant que le nombre, à droite, devient le sien.
+     Le sommaire ne renvoie pas à un chapitre : il EST le chapitre, et le
+     chiffre est ce qui le tient.
 
-     Une seule couleur en plus de l'encre : le stylo. Ce n'est pas un accent
-     choisi, c'est la deuxième encre que les presses de la bobine achètent
-     au cinquième échelon — la page se sert dans son propre vocabulaire. */
+     Elle est claire, comme le catalogue et les outils : le papier se retire
+     par le haut et ce qu'il découvre est du papier. */
   .chapter{position:relative;background:var(--paper);color:var(--ink);
-           padding:0 var(--gut);--pen:#b3402a}
-  .galley{max-width:var(--max);margin:0 auto;
-          padding:clamp(64px,10vh,132px) 0 clamp(80px,13vh,170px)}
+           padding:0 var(--gut)}
+  /* LA SECTION A DE LA COURSE. Quatre états et un chiffre qui change de main
+     ne valent rien si les quatre lignes tiennent dans un écran : il n'y a
+     alors rien à descendre, donc rien ne change jamais de main. Les lignes
+     respirent et le bas de la section porte le reste de la course — c'est du
+     défilement, pas de la marge. */
+  .cs{max-width:var(--max);margin:0 auto;
+      padding:clamp(64px,10vh,132px) 0 clamp(260px,58vh,660px);
+      display:grid;grid-template-columns:minmax(0,1fr) auto;
+      gap:clamp(24px,5vw,80px);align-items:start}
 
-  /* le cartouche de la galée : ce qu'on tient, et d'où ça vient */
-  .gslug{display:flex;justify-content:space-between;align-items:baseline;
-         gap:20px;padding-bottom:13px;border-bottom:2px solid var(--ink);
-         font-family:var(--C);font-size:9.5px;font-weight:500;
-         letter-spacing:.2em;text-transform:uppercase}
-  .gslug i{font-style:normal;color:var(--pen)}
-  .gslug span{color:rgba(20,20,28,.5)}
-  .gtop{padding:clamp(40px,6vh,74px) 0 clamp(46px,7vh,86px)}
-  /* La mesure est portée par le TITRE et pas par son bloc : une largeur en ch
-     posée sur le conteneur se compte dans le corps du conteneur, pas dans
-     celui du titre — 22ch de texte courant, c'est trois mots de display, et
-     la ligne se brisait à chaque mot. */
-  .ghead{font-family:var(--D);font-weight:800;letter-spacing:-.035em;
-         line-height:.96;text-wrap:balance;max-width:15ch;
-         font-size:clamp(36px,5.6vw,88px)}
-  .glede{margin:26px 0 0;max-width:52ch;font-size:16px;line-height:1.55;
-         color:rgba(20,20,28,.66)}
+  .cseye{display:flex;align-items:center;gap:10px;
+         font-family:var(--C);font-size:10.5px;font-weight:500;
+         letter-spacing:.16em;text-transform:uppercase}
+  .cseye i{width:7px;height:7px;background:var(--amber);flex:0 0 auto}
+  .csL h2{margin:clamp(20px,3vh,34px) 0 0;font-family:var(--D);font-weight:300;
+          letter-spacing:-.03em;line-height:1.02;max-width:16ch;
+          font-size:clamp(30px,4.6vw,74px)}
+  .cslede{margin:clamp(18px,2.6vh,28px) 0 clamp(40px,7vh,84px);max-width:52ch;
+          font-size:clamp(13.5px,1.2vw,16px);line-height:1.6;opacity:.6}
 
-  /* UNE PRISE : le folio et sa barre dans la marge, le plomb au centre, le
-     chiffre tiré dans la marge de droite. Trois colonnes parce qu'une
-     épreuve a trois colonnes — la marge où l'on écrit, le texte, et la
-     marge où l'on tire ce qui compte. */
-  .gtake{display:grid;gap:0 clamp(20px,2.8vw,56px);
-        grid-template-columns:clamp(54px,5vw,86px) minmax(0,1fr) clamp(190px,21vw,320px);
-        align-items:start;padding:clamp(44px,6.5vh,86px) 0;
-        border-top:1px solid rgba(20,20,28,.15)}
-  .gmark{position:relative;align-self:stretch;min-height:150px}
-  .gnum{font-family:var(--C);font-size:10px;font-weight:600;letter-spacing:.2em;
-        color:var(--pen)}
-  /* LA BARRE DE CHANGEMENT. Dans une épreuve elle dit « il s'est passé
-     quelque chose sur cette ligne ». Elle se TRACE, du haut vers le bas,
-     parce que c'est le sens dans lequel une main la tire — et parce que
-     c'est la même grammaire que les graphiques du hero, qui se dessinent
-     au lieu d'apparaître. */
-  .gbar{position:absolute;left:0;top:30px;bottom:0;width:3px;
-        background:var(--pen);transform:scaleY(0);transform-origin:top;
-        transition:transform .85s cubic-bezier(.22,.68,.24,1) .05s}
-  .gtake.gseen .gbar{transform:scaleY(1)}
+  /* LES LIGNES. Exactement les lignes de famille du catalogue — filet à 20 %,
+     index mono bleu, nom en display 300, référence en mono à 40 % calée à
+     droite — mais elles s'ouvrent. Le filet passe à l'encre pleine sur celle
+     qu'on lit : c'est le seul repère dont on a besoin pour savoir laquelle
+     le chiffre est en train de porter. */
+  .csrows{list-style:none;margin:0;padding:0}
+  .csrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+         gap:0 clamp(12px,1.6vw,26px);align-items:baseline;
+         border-top:1px solid rgba(20,20,28,.2);
+         padding:clamp(34px,5.6vh,68px) 0 clamp(28px,4.6vh,56px);
+         /* Chaque ligne a son temps : sans un minimum, les quatre tiennent
+            dans un écran et la dernière n'est jamais celle qu'on lit — le
+            chiffre ne lui revient jamais. */
+         min-height:21vh;align-content:start;
+         transition:border-color .45s ease}
+  .csrow.on{border-top-color:var(--ink)}
+  .csrow b{font-family:var(--C);font-size:10.5px;font-weight:500;
+           letter-spacing:.16em;color:var(--blue);opacity:.4;
+           transition:opacity .45s ease}
+  .csrow.on b{opacity:1}
+  .csrow>span{font-family:var(--D);font-weight:300;letter-spacing:-.022em;
+              line-height:1.12;font-size:clamp(17px,1.9vw,27px);
+              opacity:.55;transition:opacity .45s ease}
+  .csrow.on>span{opacity:1}
+  .csrow em{font-style:normal;font-family:var(--C);font-size:10.5px;
+            font-weight:500;letter-spacing:.16em;opacity:.35;white-space:nowrap}
+  /* La phrase s'ouvre par la HAUTEUR de sa rangée, pas par une hauteur
+     devinée : 0fr à 1fr, donc la mesure est celle du texte et rien n'est
+     réglé à la main le jour où la phrase change. */
+  .cswrap{grid-column:2/4;display:grid;grid-template-rows:0fr;
+          transition:grid-template-rows .55s cubic-bezier(.22,.68,.24,1)}
+  .csrow.on .cswrap{grid-template-rows:1fr}
+  .cswrap>div{overflow:hidden}
+  .cswrap p{margin:14px 0 0;max-width:56ch;font-size:14.5px;line-height:1.62;
+            opacity:0;transition:opacity .4s ease .08s}
+  .csrow.on .cswrap p{opacity:.62}
 
-  .gtake h3{font-family:var(--D);font-weight:800;letter-spacing:-.03em;
-           line-height:1.02;text-wrap:balance;max-width:19ch;
-           font-size:clamp(25px,3.2vw,50px)}
-  .gtake p{margin:20px 0 0;max-width:54ch;font-size:15.5px;line-height:1.62;
-          color:rgba(20,20,28,.74)}
-  /* AU FEUTRE, PAS EN GRAS. Le chiffre est déjà dans la phrase ; ce qu'on
-     ajoute, c'est le geste de quelqu'un qui l'a relevé. La bande est
-     derrière la ligne de base, comme un surligneur passé trop bas. */
-  .gtake p b{font-weight:500;color:var(--ink);
-            box-shadow:inset 0 -.42em 0 rgba(242,177,60,.5)}
-  .gsrc{margin-top:24px;font-family:var(--C);font-size:9.5px;font-weight:500;
-        letter-spacing:.18em;text-transform:uppercase;color:rgba(20,20,28,.5)}
-
-  /* LE CHIFFRE, ENTOURÉ. Le trait n'est pas une ellipse : c'est une boucle
-     qui dépasse, parce qu'un cercle au stylo dépasse toujours. Il se trace
-     d'un bout à l'autre — un seul trait, une seule main. */
-  .gfig{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;
-        text-align:right}
-  /* Le trait entoure LE CHIFFRE, pas le bloc : un cercle qui enferme aussi la
-     légende n'entoure plus rien, il encadre. */
-  .gring{position:relative;display:inline-block;padding:12px clamp(16px,1.8vw,30px) 14px}
-  .gring svg{position:absolute;left:0;top:0;width:100%;height:100%;
-             overflow:visible;pointer-events:none}
-  .gring path{fill:none;stroke:var(--pen);stroke-width:2.4;stroke-linecap:round;
-             vector-effect:non-scaling-stroke;
-             stroke-dasharray:900;stroke-dashoffset:900;
-             transition:stroke-dashoffset 1.25s cubic-bezier(.32,.72,.3,1) .2s}
-  .gtake.gseen .gring path{stroke-dashoffset:0}
-  .gfig b{display:block;font-family:var(--D);font-weight:800;
-          letter-spacing:-.045em;line-height:.86;font-variant-numeric:tabular-nums;
-          font-size:clamp(44px,6.4vw,104px)}
-  .gfig b i{font-style:normal;font-size:.44em;letter-spacing:-.02em}
-  .gfig small{display:block;margin-top:18px;font-family:var(--C);font-size:9.5px;
+  /* LE NOMBRE. Le geste du catalogue, en 200, à la même échelle — sauf qu'il
+     change. Les quatre sont dans la même case et c'est celui de la ligne
+     lue qui est debout : celui qui part monte et s'efface, celui qui vient
+     arrive de dessous. Un seul mouvement, jamais deux à la fois. */
+  .csR{position:sticky;top:calc(var(--bar) + clamp(60px,12vh,150px));
+       justify-self:end;text-align:right;padding-top:clamp(30px,6vh,80px)}
+  .csfig{display:grid}
+  .csfig>div{grid-area:1/1;opacity:0;transform:translateY(22px);
+             transition:opacity .42s ease, transform .6s cubic-bezier(.22,.68,.24,1)}
+  .csfig>div.on{opacity:1;transform:none}
+  .csfig b{display:block;font-family:var(--D);font-weight:200;
+           letter-spacing:-.05em;line-height:.78;
+           font-size:clamp(80px,13.5vw,240px);font-variant-numeric:tabular-nums}
+  .csfig b i{font-style:normal;font-size:.36em;letter-spacing:-.02em}
+  .csfig span{display:block;margin-top:clamp(14px,2vh,24px);margin-left:auto;
+              max-width:20ch;font-family:var(--C);font-size:10.5px;
               font-weight:500;letter-spacing:.16em;text-transform:uppercase;
-              line-height:1.5;color:rgba(20,20,28,.55);max-width:19ch}
-
-  /* Le texte entre à la même allure que la barre, une fois, et ne bouge
-     plus — la règle du hero vaut ici : ce qui est arrivé est arrivé. */
-  .gtake h3,.gtake p,.gsrc,.gfig b,.gfig small,.gnum{
-    opacity:0;transform:translateY(14px);
-    transition:opacity .6s ease var(--d,0s), transform .7s cubic-bezier(.22,.68,.24,1) var(--d,0s)}
-  .gtake.gseen h3,.gtake.gseen p,.gtake.gseen .gsrc,
-  .gtake.gseen .gfig b,.gtake.gseen .gfig small,.gtake.gseen .gnum{
-    opacity:1;transform:none}
-  .gtake h3{--d:.06s} .gtake p{--d:.14s} .gsrc{--d:.2s}
-  .gfig b{--d:.1s} .gfig small{--d:.24s}
+              line-height:1.6;opacity:.42}
 
   @media (max-width:900px){
-    .gtake{grid-template-columns:34px minmax(0,1fr);gap:0 18px}
-    .gfig{grid-column:2;justify-self:start;text-align:left;margin-top:30px;
-          padding-left:6px}
-    .gfig small{margin-left:0}
-    .gmark{min-height:0}
+    .cs{grid-template-columns:1fr;gap:clamp(30px,6vh,60px)}
+    .csR{position:static;justify-self:start;text-align:left;padding-top:0;
+         order:-1}
+    .csfig span{margin-left:0}
+    .csrow em{display:none}
   }
   @media (prefers-reduced-motion:reduce){
-    .gtake h3,.gtake p,.gsrc,.gfig b,.gfig small,.gnum{opacity:1;transform:none;transition:none}
-    .gbar{transform:scaleY(1);transition:none}
-    .gring path{stroke-dashoffset:0;transition:none}
+    .csrow,.csrow b,.csrow>span,.cswrap,.cswrap p,.csfig>div{transition:none}
   }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
@@ -1975,48 +1961,28 @@
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
 <section class="chapter" data-ground="#edeae3">
-  <div class="galley">
-  <div class="gslug"><i>The case</i><span>Galley 1 &middot; set from the reporting</span></div>
-  <div class="gtop">
-    <h2 class="ghead">A story people can see is a story people can check.</h2>
-    <p class="glede">Four findings the argument rests on, marked the way a proof comes back from the desk: a bar where something changed, a ring round the number that carries it, a stroke under what was read twice.</p>
-  </div>
-  <article class="gtake">
-    <div class="gmark"><div class="gnum">01</div><div class="gbar" aria-hidden="true"></div></div>
-    <div class="gbody">
-      <h3>Visual journalism makes reporting easier to inspect.</h3>
-      <p>In a survey of 768 people working in data journalism, <b>70% said it makes stories more reliable</b> and 61% said it helps readers make sense of what they are reading.</p>
-      <div class="gsrc">EJC &middot; State of Data Journalism, 2023</div>
+  <div class="cs">
+    <div class="csL">
+      <div class="cseye"><i></i>The case</div>
+      <h2>Four findings, and every one of them is about being seen.</h2>
+      <p class="cslede">The desk already writes the story. These are the reasons it is worth showing &mdash; each one carried by a single number, which is the one standing on the right.</p>
+      <ol class="csrows">
+      <li class="csrow"><b>01</b><span>Visual journalism makes reporting easier to inspect.</span><em>EJC, 2023</em>
+        <div class="cswrap"><div><p>In a survey of 768 people working in data journalism, 70% said it makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p></div></div></li>
+      <li class="csrow"><b>02</b><span>Good design helps readers trust the work.</span><em>IDJ &middot; ACM CHI, 2024&ndash;25</em>
+        <div class="cswrap"><div><p>Clear visual design makes the same reporting read as clearer, more rigorous and more engaging &mdash; a page is judged before it is read, and the judgement carries.</p></div></div></li>
+      <li class="csrow"><b>03</b><span>When articles become inputs, visual form becomes identity.</span><em>Reuters Institute, 2025</em>
+        <div class="cswrap"><div><p>AI turns fixed articles into liquid information that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p></div></div></li>
+      <li class="csrow"><b>04</b><span>Visuals give the story another way to travel.</span><em>Google AI Search</em>
+        <div class="cswrap"><div><p>AI search is multimodal: it carries high-quality images and video alongside the text, so a piece with a graphic has more than one way of being found.</p></div></div></li>
+      </ol>
     </div>
-    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>70<i>%</i></b></span><small>said it makes stories more reliable</small></div>
-  </article>
-  <article class="gtake">
-    <div class="gmark"><div class="gnum">02</div><div class="gbar" aria-hidden="true"></div></div>
-    <div class="gbody">
-      <h3>Good design helps readers trust the work.</h3>
-      <p>Clear visual design makes the same work feel <b>clearer, more rigorous and more engaging</b> &mdash; the finding holds across the literature on how a page is judged before it is read.</p>
-      <div class="gsrc">Information Design Journal &middot; ACM CHI, 2024&ndash;25</div>
-    </div>
-    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>2<i>x</i></b></span><small>the same work, read as clearer</small></div>
-  </article>
-  <article class="gtake">
-    <div class="gmark"><div class="gnum">03</div><div class="gbar" aria-hidden="true"></div></div>
-    <div class="gbody">
-      <h3>When articles become inputs, visual form becomes identity.</h3>
-      <p>AI turns fixed articles into <b>liquid information</b> that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p>
-      <div class="gsrc">Reuters Institute, 2025</div>
-    </div>
-    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>1<i>st</i></b></span><small>thing a machine keeps of a page</small></div>
-  </article>
-  <article class="gtake">
-    <div class="gmark"><div class="gnum">04</div><div class="gbar" aria-hidden="true"></div></div>
-    <div class="gbody">
-      <h3>Visuals create another way for the story to travel.</h3>
-      <p>AI search is multimodal: it can carry <b>high-quality images and video</b> alongside the text, so a piece with a graphic has more than one way of being found.</p>
-      <div class="gsrc">Google AI Search documentation</div>
-    </div>
-    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>4<i></i></b></span><small>ways one story can travel</small></div>
-  </article>
+    <div class="csR"><div class="csfig">
+      <div><b>70<i>%</i></b><span>said it makes stories more reliable</span></div>
+      <div><b>2<i>&times;</i></b><span>the same work, read as clearer</span></div>
+      <div><b>1<i>st</i></b><span>thing a machine keeps of a page</span></div>
+      <div><b>4<i></i></b><span>ways one story can travel</span></div>
+    </div></div>
   </div>
 </section>
 </div>
@@ -3160,22 +3126,36 @@
     if (!pileQ) { pileQ = true; requestAnimationFrame(stack); }
   }, { passive: true });
 
-  /* CE QUI SE POSE, SE POSE UNE FOIS. Chaque prise s'inscrit quand elle
-   * entre dans le cadre et n'est plus jamais observée : la barre se trace, le
-   * cercle se ferme, le plomb monte d'un cran, et ensuite plus rien ne bouge —
-   * la même règle que les graphiques du hero, qui tiennent une fois faits.
-   * Pas de gestionnaire de scroll : ce serait un calcul par frame pour un
-   * événement qui arrive quatre fois en tout. */
-  if (typeof IntersectionObserver === 'function') {
-    const io = new IntersectionObserver((es) => {
-      for (const e of es) if (e.isIntersecting) {
-        e.target.classList.add('gseen');
-        io.unobserve(e.target);
-      }
-    }, { rootMargin: '0px 0px -16% 0px', threshold: 0.12 });
-    document.querySelectorAll('.chapter .gtake').forEach((el) => io.observe(el));
-  } else {
-    document.querySelectorAll('.chapter .gtake').forEach((el) => el.classList.add('gseen'));
+  /* LA LIGNE QU'ON LIT, ET LE CHIFFRE QU'ELLE PORTE.
+   *
+   * Une ligne de lecture à 44 % de la hauteur — pas le milieu : on lit un
+   * peu au-dessus du centre, et une ligne posée au centre donne toujours
+   * l'impression d'être en retard d'un cran. La ligne active est celle dont
+   * le haut est passé au-dessus d'elle en dernier, ce qui est ce que fait un
+   * sommaire qu'on descend ; en dessous de la première, c'est la première.
+   *
+   * Coalescé sur une frame : le scroll natif tire des dizaines d'événements
+   * par seconde et il n'y a que quatre états possibles. */
+  const csRows = [...document.querySelectorAll('.chapter .csrow')];
+  const csFigs = [...document.querySelectorAll('.chapter .csfig > div')];
+  if (csRows.length && csFigs.length === csRows.length) {
+    let csAt = -1, csQ = false;
+    const csPick = () => {
+      csQ = false;
+      const line = innerHeight * 0.44;
+      let k = 0;
+      for (let i = 0; i < csRows.length; i++)
+        if (csRows[i].getBoundingClientRect().top <= line) k = i;
+      if (k === csAt) return;
+      csAt = k;
+      csRows.forEach((el, i) => el.classList.toggle('on', i === k));
+      csFigs.forEach((el, i) => el.classList.toggle('on', i === k));
+    };
+    addEventListener('scroll', () => {
+      if (!csQ) { csQ = true; requestAnimationFrame(csPick); }
+    }, { passive: true });
+    addEventListener('resize', csPick, { passive: true });
+    csPick();
   }
 
   // repères puis pile : la pile se calcule sur les repères, jamais l'inverse
