@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Test — vrai contenu, aucune animation</title>
+<title>Splash — reporting in, graphics out</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
      tailles — un favicon en PNG est net à une seule. Sans fond : la marque
@@ -88,7 +88,8 @@
          justify-content:space-between;align-items:center;height:var(--bar);
          padding:0 var(--gut);color:#fff;
          font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.15em;
-         text-transform:uppercase;mix-blend-mode:difference}
+         text-transform:uppercase;mix-blend-mode:difference;
+         transition:filter .34s ease}
   /* LE HEADER EST CELUI DU SITE, repris tel quel de la galerie : c'est la
      même barre sur la landing, les études de cas et l'inspiration, et une
      barre qui change d'une page à l'autre n'est plus une barre.
@@ -176,10 +177,15 @@
   body.booting section,
   body.booting footer,
   body.booting > svg{opacity:0 !important}
+  /* `filter` est listé ici aussi, et il le faut : cette règle est plus
+     spécifique que `header{}`, donc c'est ELLE qui décide des transitions de
+     l'en-tête une fois le boot passé — et sans la mentionner, la transition
+     posée sur l'en-tête lui-même était simplement écrasée. Une transition
+     déclarée à un endroit et gagnée à un autre ne transite pas. */
   body.settling header,
   body.settling section,
   body.settling footer,
-  body.settling > svg{opacity:1;transition:opacity .7s ease}
+  body.settling > svg{opacity:1;transition:opacity .7s ease, filter .34s ease}
   @media (prefers-reduced-motion:reduce){
     #boot .bt-mark{animation:none}
     #boot .bt-grp,#boot .bt-nm{transition:none}
@@ -337,7 +343,33 @@
      cadence se traduit par un créneau plein écran par pavé — le lecteur passe
      le même temps sur chacun et n'en voit qu'un à la fois. Empilés à 60px
      d'écart ils se lisaient tous d'un coup, ce qui n'est pas le même rythme. */
-  .chapter{color:var(--paper);padding:0 var(--gut);position:relative;height:438vh}
+  /* DERRIÈRE LA TOILE, le temps de la passation. Les sections passent devant
+     le canevas, donc le texte se posait PAR-DESSUS les journaux : il était
+     bien là avant qu'ils partent, mais c'est lui qui les couvrait et non
+     l'inverse. Le temps du geste il passe derrière, et pendant ce temps-là le
+     canevas est effacé à zéro — donc le cadre a la forme des feuilles et de
+     rien d'autre, et le texte sort de dessous à mesure qu'elles s'en vont.
+     Retiré à la fin du geste, quand il n'y a plus de papier pour le cacher. */
+  /* Rien tant que rien n'a été mesuré : la forme est posée en ligne à chaque
+     frame, et celle-ci est le repli — vide, jamais l'inverse. */
+  .chapter.behind{clip-path:polygon(0 100%,100% 100%,100% 100%,0 100%)}
+  /* ET L'UI SE RETIRE PENDANT LA TRAVERSÉE. Un en-tête qui flotte au-dessus
+     d'un geste qui prend tout le cadre est la seule chose immobile de l'image,
+     donc la seule qu'on regarde.
+
+     PAR LE FILTRE, ET PAS PAR L'OPACITÉ. L'en-tête porte son animation
+     d'entrée, `riseC`, en fill both : `opacity` reste donc sous le contrôle
+     d'une animation pour toujours. Une déclaration !important gagne bien la
+     cascade — mais aucune transition ne peut démarrer sur une propriété
+     animée, alors la valeur SAUTE. C'est ce saut, et il était là aux deux
+     bouts du geste. `filter` n'est touché par aucune animation, donc il
+     transite, dans les deux sens, sans rien disputer à personne. */
+  /* La transition est sur l'en-tête LUI-MÊME et pas sur l'état traversée :
+     posée sur l'état, elle n'existe qu'à l'aller — au retour la déclaration
+     s'en va avec la classe, et avec elle la transition qui aurait dû la
+     ramener. La valeur repassait à rien d'un coup, ce qui est le même saut à
+     l'autre bout du geste. */
+  body.crossing header{filter:opacity(0);pointer-events:none}
   /* La pile. Une seule scène collée au cadre, et TOUS les pavés superposés
      dedans — même case de grille, donc même place. Aucun n'est dans le flux :
      leur position vient entièrement du script, ce qui permet de les faire
@@ -345,56 +377,143 @@
      amène. Empilés par le flux, un pavé n'apparaissait que sur les cent
      derniers pixels de son écran de scroll, et la pile ne se lisait pas.
      L'ordre du document suffit à décider qui passe devant. */
-  .cstage{position:sticky;top:0;height:100vh;height:100dvh;
-          display:grid;place-items:center;padding:var(--vs-s) 0}
-  .pile{grid-area:1/1;will-change:transform,opacity}
-  /* Les pavés n'ont plus d'état d'apparition en CSS : ils montent depuis sous
-     le cadre, et c'est le script qui les place. Le premier compris — il
-     arrivait par un fondu pendant que les autres montaient, deux grammaires
-     pour le même geste. */
-  /* Le dernier pavé se retire comme les autres avant que la lumière ne prenne
-     le cadre — sinon le blanc monterait par-dessus un texte encore posé. */
-  .card.out{opacity:0;transform:translateY(-38px);
-            transition:opacity .34s cubic-bezier(.4,0,.2,1),
-                       transform .4s cubic-bezier(.4,0,.2,1)}
-  /* opaque, pas translucide : empilés, deux pavés translucides laissent
-     lire le texte de celui de dessous à travers celui de dessus. La couleur
-     est celle que donnait rgba(17,17,24,.74) sur le sol — même aplat, sans
-     la transparence. */
-  .card{width:min(620px,54vw);background:#11121a;
-        border:1px solid rgba(237,234,227,.13);
-        border-radius:var(--rad-l);
-        padding:clamp(24px,2.4vw,38px) clamp(26px,2.6vw,40px)}
-  .card h3{margin:16px 0 0;font-size:clamp(25px,2.5vw,38px);line-height:1.04}
-  .card p{margin:16px 0 0;font-size:14px;opacity:.62}
-  .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.11);
-             font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.36}
+  /* ------------------------------------------------------------------
+     LA PREMIÈRE SECTION : QUATRE CARTES FACE CACHÉE, QU'ON RETOURNE.
 
-  /* --- LES QUATRE PREUVES ------------------------------------------------
-     Les tuiles de l'ancien chapitre, avec EXACTEMENT leur comportement : la
-     même scène collée au cadre, les mêmes pavés superposés dans la même case
-     de grille, la même montée pilotée par `stack()`. Rien de la mécanique n'a
-     changé — elle se mesure seulement sur cette section-ci au lieu du
-     chapitre, qui est sorti avec le hero.
+     Le chapô est au centre et il ne bouge pas. Dessous, quatre cartes tenues
+     en éventail, DOS VERS NOUS : chaque dos est un dessin génératif — un
+     champ de lignes tiré d'une graine, jamais deux fois le même — avec la
+     rosette au milieu. Elles flottent, et elles suivent la souris : c'est une
+     main qu'on tient, pas une image posée.
 
-     Et sur le même sol qu'elles avaient : l'encre. Elles y sont nées, le pavé
-     sombre en est fait, et les bobines de journal qui passent derrière sont
-     de la lumière sur ce fond — c'est ce pour quoi elles ont été écrites.
+     Au défilement, elles viennent une à une au centre. Chacune se RETOURNE en
+     chemin pour montrer sa face, et se met à plat — la carte est composée en
+     paysage et tenue debout dans l'éventail, donc le quart de tour qui la
+     couche est aussi ce qui la rend lisible. Puis elle bascule contenu vers le
+     ciel et s'en va pendant que la suivante arrive : les deux mouvements se
+     recouvrent, sinon il y a un trou au milieu du cadre entre deux cartes.
 
-     ELLE MONTE PAR-DESSUS LE DERNIER ÉCRAN DU MOT. La piste finit sa course à
-     `p = 1`, c'est-à-dire au dernier pixel où la scène du mot est encore
-     collée — après quoi cette scène, vide, défile encore d'un écran avant que
-     la section suivante n'arrive. Personne ne voyait jamais cet écran : le
-     rideau vers l'orchestration prenait la page exactement à la fin de la
-     course. En m'intercalant j'ai repoussé ce rideau et découvert le blanc. Un
-     écran de marge négative remet la section là où le rideau prenait la main :
-     le mot sort, l'encre est déjà là. */
-  .proof{background:var(--ink);color:var(--paper);
-         padding:0 var(--gut);position:relative;
-         margin-top:-100vh;z-index:1}
-  /* l'ambre de la maison, qui est la couleur du numéro d'une preuve depuis le
-     début — elle était portée en style en ligne sur l'ancien balisage */
-  .proof .card .meta{color:var(--amber)}
+     Tout est écrit à la frame en JS et rien n'est en transition CSS : le
+     flottement, la souris et le défilement se composent sur la même
+     transformation, et deux d'entre eux qui se disputeraient la propriété
+     donneraient la main au dernier écrit. */
+  .chapter{position:relative;background:var(--ink);color:var(--paper);
+           padding:0 var(--gut)}
+  .csrun{--n:4;max-width:var(--max);margin:0 auto;
+         height:calc(var(--n) * 74vh + 100vh)}
+  /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
+     au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
+     passer devant : il est au centre du panneau collé, et les cartes lui
+     passent dessus. */
+  .csstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden}
+  .csintro{position:absolute;inset:0;display:grid;place-content:center;
+           justify-items:center;text-align:center;padding:0 var(--gut);
+           pointer-events:none}
+  .csintro>*{max-width:min(760px,84vw)}
+  .cseye{display:inline-flex;align-items:center;gap:9px;
+         font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.19em;
+         text-transform:uppercase;opacity:.5}
+  .cseye i{width:7px;height:7px;background:var(--amber);flex:0 0 auto}
+  .csintro h2{margin:clamp(14px,2vh,24px) 0 0;font-family:var(--D);font-weight:300;
+              letter-spacing:-.03em;line-height:1;text-wrap:balance;
+              font-size:clamp(26px,3.7vw,58px)}
+  .cslede{margin:clamp(12px,1.6vh,20px) auto 0;max-width:54ch;
+          font-size:clamp(13px,1.1vw,15.5px);line-height:1.6;opacity:.55}
+
+  /* LE PLATEAU. La perspective est portée par lui : les quatre cartes
+     partagent un point de fuite, sinon chacune est vue depuis un endroit
+     différent et l'éventail n'en est plus un. */
+  /* Le plateau couvre le panneau, donc son milieu est le milieu de la
+     fenêtre — et il est écrit après le chapô, donc les cartes lui passent
+     par-dessus sans qu'on ait à empiler quoi que ce soit à la main. */
+  /* PRESERVE-3D, ET C'EST LUI QUI TRIE. `perspective` seul donne bien la
+     fuite aux enfants, mais le plateau reste un contexte APLATI : les cartes
+     sont alors peintes dans l'ordre du balisage et la dernière écrite passe
+     devant, quelle que soit sa profondeur. C'est pour ça que l'empilement
+     refusait de s'inverser — la profondeur était juste et n'était lue par
+     personne. */
+  .csdeck{position:absolute;inset:0;transform-style:preserve-3d;
+          perspective:1500px;perspective-origin:50% 50%}
+  /* LA CARTE DOIT TENIR SON PROPRE TEXTE. Sa proportion était écrite une
+     fois pour toutes, et le corps du texte, lui, ne descend pas indéfiniment
+     avec elle : sur un écran étroit la carte perdait cent cinquante pixels
+     de large sans rien perdre à lire, et le pied sortait par le bas. La
+     proportion est donc une variable — la carte s'allonge à mesure qu'elle
+     se resserre — et le format horizontal reste ce qu'il est là où il y a la
+     place. */
+  .csc{position:absolute;left:50%;top:50%;
+       width:var(--cw);height:calc(var(--cw) * var(--ar));
+       margin:calc(var(--cw) * var(--ar) / -2) 0 0 calc(var(--cw) / -2);
+       transform-style:preserve-3d;will-change:transform;
+       --cw:clamp(280px,30vw,460px);--ar:.68}
+  .csface,.csback{position:absolute;inset:0;border-radius:var(--rad);
+                  overflow:hidden;backface-visibility:hidden;
+                  -webkit-backface-visibility:hidden}
+  /* LA FACE A SA COULEUR, TIRÉE AU SORT DANS LES ENCRES DE LA MAISON — sauf
+     la dernière, qui est blanche : c'est la conclusion, et une conclusion se
+     lit sur du papier. Le texte suit la couleur, pas l'inverse : chaque encre
+     porte avec elle celle qui se lit dessus. */
+  /* ET SON DÉCOUPAGE SE MESURE SUR ELLE, pas sur la fenêtre : une marge en
+     vw sur un objet qui n'a pas la largeur de la fenêtre donne une carte
+     étroite à marges de carte large. Les corps qui doivent rester lisibles
+     gardent un plancher — un texte de source à sept pixels n'est plus un
+     texte. */
+  .csface{background:var(--face,var(--blue));color:var(--faceInk,var(--paper));
+          padding:calc(var(--cw) * .06);display:flex;flex-direction:column;
+          box-shadow:0 40px 90px -34px var(--faceGlow,rgba(26,47,251,.6))}
+  /* LE DOS EST DU PAPIER. Une page de journal est noire sur blanc, pas
+     l'inverse — et une main de pages blanches tenue sur un sol d'encre est
+     l'image que cette section raconte. Le blanc est passé de la dernière face
+     au dos de toutes : il travaille plus là. */
+  .csback{transform:rotateY(180deg);background:var(--paper);
+          border:1px solid rgba(20,20,28,.16);
+          box-shadow:0 34px 76px -30px rgba(0,0,0,.7)}
+  .csback canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .csrose{position:absolute;left:50%;top:50%;width:clamp(38px,4.6vw,66px);
+          height:clamp(38px,4.6vw,66px);
+          transform:translate(-50%,-50%);color:var(--ink);opacity:.9}
+
+  /* LA FACE EST COMPOSÉE, PAS EMPILÉE. Tout était rangé en bas à gauche dans
+     des corps voisins : quatre blocs de la même famille les uns sur les
+     autres, sans hiérarchie et sans respiration. Elle a trois étages
+     maintenant, et chacun a un travail :
+
+       en haut, l'index et — quand il y en a un — le chiffre, tiré à droite
+       comme le catalogue tire le sien ;
+       au milieu, LE CONSTAT, seul, en display 300, c'est lui la carte ;
+       en bas, sous un filet, ce qui l'appuie et qui l'a trouvé.
+
+     Le filet est en currentColor : la face change d'encre à chaque
+     chargement, et une couleur écrite à la main serait juste sur l'une et
+     fausse sur les trois autres. */
+  .csftop{display:flex;align-items:flex-start;justify-content:space-between;
+          gap:16px}
+  .cscn{font-family:var(--C);font-size:max(9px,calc(var(--cw) * .0231));font-weight:500;
+        letter-spacing:.16em;opacity:.6;padding-top:.35em}
+  .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.72;
+          font-size:calc(var(--cw) * .133);font-variant-numeric:tabular-nums;
+          text-align:right}
+  .cscbig i{font-style:normal;font-size:.34em;letter-spacing:-.02em;
+            padding-left:.06em}
+  .cscname{margin-top:auto;font-family:var(--D);font-weight:300;
+           letter-spacing:-.03em;line-height:1.02;
+           font-size:max(17px,calc(var(--cw) * .066));max-width:22ch;
+           text-wrap:balance}
+  .csfoot{margin-top:calc(var(--cw) * .033);padding-top:calc(var(--cw) * .027);
+          border-top:1px solid currentColor;border-color:color-mix(in srgb,
+            currentColor 26%, transparent)}
+  .cscwhy{margin:0;font-size:max(10.5px,calc(var(--cw) * .0275));line-height:1.45;
+          opacity:.72;max-width:52ch}
+  .cscsrc{display:block;margin-top:calc(var(--cw) * .021);font-family:var(--C);
+          font-size:max(9px,calc(var(--cw) * .022));font-weight:500;
+          letter-spacing:.16em;opacity:.55}
+
+  /* La carte se resserre en deux temps, et s'allonge d'autant. */
+  @media (max-width:1180px){ .csc{--ar:.74} }
+  @media (max-width:820px){
+    .csdeck{perspective:1000px}
+    .csc{--cw:min(72vw,340px);--ar:.82}
+  }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
   #hsec{height:520vh;position:relative}
@@ -519,13 +638,22 @@
      inversés — la dernière lettre part la première. `reverse` retourne la
      courbe mais pas le retard, donc chaque lettre porte aussi le sien à
      l'envers, sinon le mot se déferait dans le sens où il s'est fait. */
-  .pmark.out .pg{animation:pg .52s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .k{animation:pk .50s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .c{animation:pc .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .m{animation:pm .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .y{animation:py .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
+  /* LA SORTIE EST LA MÊME QUE L'ENTRÉE, JOUÉE PLUS VITE. On arrive sur un mot
+     qu'on ne connaît pas et il faut le temps de le voir se composer ; on
+     quitte un mot qu'on vient de lire, et le regarder se défaire à la même
+     allure est une seconde d'attente sur quelque chose de déjà su.
+
+     Rien n'est changé de la grammaire : le même mouvement vers la droite, la
+     même séparation des encres, le même fondu, le même sens de cascade. Seuls
+     la durée et l'écart entre lettres sont divisés — la cascade se lit encore
+     comme une cascade, et tout est fini en un demi-quart de seconde. */
+  .pmark.out .pg{animation:pg .3s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .k{animation:pk .28s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .c{animation:pc .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .m{animation:pm .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .y{animation:py .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
   .pmark.out{transform:translate3d(15vw,0,0);
-             transition:transform 1.35s cubic-bezier(.16,.84,.3,1)}
+             transition:transform .52s cubic-bezier(.4,0,.3,1)}
   .pmark.done .pg,.pmark.done .k{animation:none;opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){
     .pmark .pg,.pmark .k{opacity:1}
@@ -1810,6 +1938,8 @@
 </div>
 
 
+
+
 <header class="rise" style="--d:.10s">
   <a class="wordmark" href="https://splash.buriedsignals.com/"><svg class="rosette" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span>Splash</span></a>
   <span class="hnav">
@@ -1830,6 +1960,57 @@
   </nav>
 </div>
 <div id="veil" aria-hidden="true"></div>
+
+<div id="hero-arc">
+<section class="hero" data-ground="#14141c">
+  <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
+  <h1><span class="rise" style="--d:.26s">Reporting in,</span><em class="rise" style="--d:.38s">graphics out.</em></h1>
+  <div class="heroft">
+    <p class="rise" style="--d:.54s">Your desk already writes the story. Splash teaches the assistant it already uses to show it — charts, maps, motion and scrollytelling, from the reporting you have done.</p>
+    <div class="rise" style="--d:.66s;display:flex;gap:9px">
+      <a href="https://splash.buriedsignals.com/inspiration" style="background:var(--amber);color:var(--ink)">Get inspired</a>
+      <a href="https://buriedsignals.com/join" target="_blank" rel="noopener" style="border:1px solid rgba(237,234,227,.26);color:var(--paper)">Start building &nearr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- THE FIRST SECTION AFTER THE HERO, emptied on purpose.
+     What was here was the arc's second act: four tiles stacking up the
+     page over four screens. It is out while the section is redesigned,
+     and the module notices — with no .pile in it there is no wind-up, no
+     break and no field of plates, because those were choreography for
+     the tiles. What is left is one screen of ground, and the paper
+     leaving downward is how the reader is brought onto it. -->
+<section class="chapter" data-ground="#14141c">
+  <div class="csrun">
+    <div class="csstick">
+      <div class="csintro">
+        <div class="cseye"><i></i>The case</div>
+        <h2>Four reasons the desk should be showing its work.</h2>
+        <p class="cslede">Splash is not a case for prettier pages. It is a case for pages that can be checked, trusted, recomposed and found &mdash; and each of those is somebody else&rsquo;s finding, not ours.</p>
+      </div>
+      <div class="csdeck">
+        <div class="csc">
+          <div class="csface"><div class="csftop"><span class="cscn">01</span><b class="cscbig">70<i>%</i></b></div><span class="cscname">say it makes stories more reliable</span><div class="csfoot"><p class="cscwhy">In a survey of 768 people working in data journalism, 70% said it makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p><span class="cscsrc">EJC &middot; State of Data Journalism, 2023</span></div></div>
+          <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
+        </div>
+        <div class="csc">
+          <div class="csface"><div class="csftop"><span class="cscn">02</span></div><span class="cscname">Design is read as rigour, before a word is.</span><div class="csfoot"><p class="cscwhy">Clear visual design makes the same reporting read as clearer, more rigorous and more engaging. A page is judged before it is read, and the judgement carries.</p><span class="cscsrc">Information Design Journal &middot; ACM CHI</span></div></div>
+          <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
+        </div>
+        <div class="csc">
+          <div class="csface"><div class="csftop"><span class="cscn">03</span></div><span class="cscname">When articles become inputs, form becomes identity.</span><div class="csfoot"><p class="cscwhy">AI turns fixed articles into liquid information that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p><span class="cscsrc">Reuters Institute, 2025</span></div></div>
+          <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
+        </div>
+        <div class="csc">
+          <div class="csface"><div class="csftop"><span class="cscn">04</span></div><span class="cscname">A graphic is a second way of being found.</span><div class="csfoot"><p class="cscwhy">AI search is multimodal: it carries images and video alongside the text, so a piece with a graphic has more than one way of being found.</p><span class="cscsrc">Google &middot; AI Search documentation</span></div></div>
+          <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
 
 <section id="hsec" data-ground="#ffffff">
   <div id="hstage">
@@ -1874,27 +2055,6 @@
       </a>
       <div class="fly p amber" style="--x:2.04;--t:98;--w:12;--ar:1.25"><span class="n">09</span><div class="gfx swat"><svg viewBox="0 0 100 60"><g class="sw"><rect x="6" y="14" width="26" height="32" rx="2"/><rect x="37" y="14" width="26" height="32" rx="2"/><rect x="68" y="14" width="26" height="32" rx="2"/></g></svg></div><span class="t">Colour</span></div>
     </div>
-  </div>
-</section>
-
-<section class="proof" id="proof" data-ground="#14141c">
-  <div class="cstage">
-    <div class="pile"><div class="card"><div class="meta">01 &middot; The evidence</div>
-    <h3>Visual journalism makes reporting easier to inspect.</h3>
-    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
-    <div class="src">Source &middot; EJC State of Data Journalism Survey, 2023</div></div></div>
-    <div class="pile"><div class="card"><div class="meta">02 &middot; Trust</div>
-    <h3>Good design helps readers trust the work.</h3>
-    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
-    <div class="src">Source &middot; Information Design Journal &middot; ACM CHI, 2024&ndash;25</div></div></div>
-    <div class="pile"><div class="card"><div class="meta">03 &middot; The AI shift</div>
-    <h3>When articles become inputs, visual form becomes identity.</h3>
-    <p>AI turns fixed articles into &ldquo;liquid information&rdquo; that machines break apart and recompose.</p>
-    <div class="src">Source &middot; Reuters Institute, 2025</div></div></div>
-    <div class="pile"><div class="card"><div class="meta">04 &middot; Discovery</div>
-    <h3>Visuals create another way for the story to travel.</h3>
-    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
-    <div class="src">Source &middot; Google AI Search documentation</div></div></div>
   </div>
 </section>
 
@@ -2471,11 +2631,6 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   const hero = document.querySelector('.hero');
   const chapter = document.querySelector('.chapter');
-  /* Qui PORTE la pile. C'était le chapitre du hero ; l'arc étant sorti, c'est
-   * la section de papier posée entre le mot et l'orchestration. La mécanique
-   * ne change pas d'un iota — `stack()` est une fonction pure du défilement —
-   * seul l'objet sur lequel elle se mesure change. */
-  const pileHost = chapter || document.getElementById('proof');
   const firstCard = document.querySelector('.card');
   let armed = true, running = false;
   /* Les repères de la page — où se pose chaque verrou. Mesurés une fois par
@@ -2665,33 +2820,93 @@
   /* Trois temps, jamais mélangés : la tentative est avalée, le hero sort, puis
    * la page est portée. Menés ensemble, les deux mouvements se masquaient l'un
    * l'autre — on ne voyait ni la sortie ni le trajet. */
+  /* Le papier s'en va comme il est venu : par le bas, même décalage entre les
+   * trois colonnes, même courbe. On attend qu'il soit sorti — le module publie
+   * son avancement, donc rien ici ne devine une durée — puis la page est
+   * portée sur la première section. Deux temps, jamais mélangés, et la page
+   * est tenue du premier au dernier. */
+  const webbedOut = () => (window.__webOutK === undefined) || window.__webOutK >= 0.999;
+  const webbedIn  = () => (window.__webOutK === undefined) || window.__webOutK <= 0.001;
+
+  /* LA COUPE, POSÉE À CHAQUE FRAME — un escalier, pas une ligne.
+   *
+   * Le module publie le pied de CHAQUE colonne et sa place en travers du
+   * cadre. Une seule ligne pour les trois, c'était un rideau : le pied le plus
+   * bas tenait toute la largeur, donc une colonne déjà partie gardait une dalle
+   * de fond par-dessus la page en attendant la plus lente — un bloc noir qui
+   * monte, ce qui est l'inverse de du papier qui s'en va. Ici la page est
+   * découverte sous chaque colonne à mesure que celle-là part.
+   *
+   * La frontière entre deux bandes est le milieu de leurs centres : il n'y a
+   * donc aucune bande qui n'appartienne à personne, et rien ne peut passer par
+   * l'écart entre deux feuilles.
+   *
+   * Les points sont relatifs à la BOÎTE de la section, pas à la fenêtre : elle
+   * se déplace pendant le retour, et une forme mesurée à l'écran et posée dans
+   * son repère à elle se décale d'autant. */
+  let cutRaf = 0;
+  const cutOn = () => {
+    chapter.classList.add('behind');
+    const step = () => {
+      if (!window.__heroHold) return;
+      const b = window.__webBands;
+      const H = innerHeight, W = innerWidth;
+      const top = chapter.getBoundingClientRect().top;
+      let shape = 'polygon(0px ' + (H - top) + 'px,' + W + 'px ' + (H - top) +
+                  'px,' + W + 'px ' + (H - top) + 'px,0px ' + (H - top) + 'px)';
+      if (b && b.length === 3) {
+        const xs = [0, (b[0][0] + b[1][0]) / 2, (b[1][0] + b[2][0]) / 2, W];
+        const y = (v) => Math.max(0, Math.min(H, v)) - top;
+        const pts = [];
+        for (let i = 0; i < 3; i++) {
+          pts.push(xs[i].toFixed(1) + 'px ' + y(b[i][1]).toFixed(1) + 'px');
+          pts.push(xs[i + 1].toFixed(1) + 'px ' + y(b[i][1]).toFixed(1) + 'px');
+        }
+        pts.push(W + 'px ' + (H - top) + 'px', '0px ' + (H - top) + 'px');
+        shape = 'polygon(' + pts.join(',') + ')';
+      }
+      chapter.style.clipPath = shape;
+      cutRaf = requestAnimationFrame(step);
+    };
+    step();
+  };
+  const cutOff = () => {
+    cancelAnimationFrame(cutRaf);
+    chapter.classList.remove('behind');
+    chapter.style.clipPath = '';
+  };
+
+  /* LA TRAVERSÉE, dans l'ordre : la page est tenue, l'ui se retire, la page est
+   * portée jusqu'à la section, son contenu est mis sous le papier, le papier
+   * s'en va, et la main est rendue.
+   *
+   * La coupe est posée AVANT le voyage et non après. Le canevas est fixe, donc
+   * pendant le trajet c'est la section qui passe devant les journaux : sans
+   * elle on verrait le texte monter par-dessus le papier au lieu de le voir
+   * sortir de dessous. */
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
+    window.__heroHold = 1;
+    document.body.classList.add('crossing');
     hero.classList.add('gone');
-    // .46s d'animation plus .09s de retard sur la dernière ligne du titre
-    await wait(560);
+    if (cstage) cstage.classList.add('in');
+    cutOn();
+    await wait(300);
 
     await glide(firstTop, 620);
-
-    /* La cassure part vers 680 px, donc pendant le trajet, et elle dure trois
-     * secondes d'horloge. La page reste tenue jusqu'à ce qu'elle soit finie :
-     * ce qu'on regarde à ce moment-là, c'est le bloc qui s'ouvre. */
-    // 9 s de plafond, pas 6 : le module avance son horloge par pas de 50 ms
-    // au plus, donc sous 20 fps sa cassure dure plus longtemps que ses trois
-    // secondes nominales, et un plafond trop court la couperait
-    await until(broken, 9000);
-
-    /* Le premier pavé monte comme les autres — mais lancé, pas défilé. Il part
-     * pendant que la main est rendue, donc la reprise du défilement et son
-     * arrivée sont le même geste. */
-    piled = true; entryK = 1;
-    rise(760);
-    running = false;
     await wait(120);
-    /* Le verrou tombe : sous la tuile la page défile normalement, nativement,
-     * sans que rien ne soit intercepté. Ce qui reste, c'est un PLANCHER. */
+
+    window.__webOut = 1;
+    await until(webbedOut, 4000);
+
+    cutOff();
+    window.__heroHold = 0;
+    document.body.classList.remove('crossing');
+
+    running = false;
+    await wait(80);
     lock(false);
     bounds = true;
   };
@@ -2699,28 +2914,31 @@
   /* Le retour. Symétrique de l'aller, dans l'ordre inverse : la tuile se
    * retire d'abord, la page remonte ensuite, et le hero se repose à
    * l'arrivée — jamais deux mouvements en même temps. */
+  /* Le retour, dans l'ordre inverse de l'aller : la page revient d'abord, le
+   * papier remonte ensuite. Jamais deux mouvements en même temps, et le papier
+   * remonte là où on peut le voir arriver. */
   const backUp = async () => {
     if (running) return;
     running = true; freeBack = false;
 
-    // 1. le pavé redescend — l'aller finissait par sa montée
-    await fall(560);
-    piled = false;
-
-    /* 2. la page recule jusqu'au seuil, et pas plus loin. Le module refuse de
-     * rembobiner tant qu'on est encore au niveau des pavés : il exige d'être
-     * revenu au-dessus du premier. C'est le seul endroit d'où la cassure peut
-     * se rejouer à l'envers en étant regardée. */
     window.__rewind = 1;
-    await glide(Math.max(0, windY - 24), 300);
+    window.__heroHold = 1;
+    document.body.classList.add('crossing');
+    cutOn();
 
-    // 3. la cassure se referme, page tenue — l'aller l'attendait de la même
-    //    façon, à l'endroit
-    await until(rebuilt, 4000);
+    // 1. le papier redescend et recouvre la section — l'aller finissait par
+    //    son retrait, donc le retour commence par son retour
+    window.__webOut = 0;
+    await until(webbedIn, 4000);
 
-    // 4. le trajet, puis le hero revient : l'aller le faisait partir avant
-    await glide(0, 520);
+    // 2. puis la page rentre, derrière le papier
+    if (cstage) cstage.classList.remove('in');
+    await glide(0, 620);
     hero.classList.remove('gone');
+    cutOff();
+    window.__heroHold = 0;
+    document.body.classList.remove('crossing');
+
     running = false; armed = true;
     entryK = 0; stack();
     trigger = leave; fire = 1; freeBack = false;
@@ -2732,7 +2950,7 @@
    * section suivante — et le mot y entre à l'arrivée, comme la première tuile
    * se posait à la sienne. Jamais deux mouvements en même temps.
    */
-  const cards = [...document.querySelectorAll('.card')];
+  const cards = [...document.querySelectorAll('.chapter .card')];
   const lastCard = cards[cards.length - 1];
   const word = document.querySelector('.pmark');
 
@@ -2742,8 +2960,11 @@
   if (word) {
     const chars = [...word.textContent];
     const last = chars.length - 1;
-    const d = (i) => ' style="--d:' + (i * 0.115).toFixed(3) + 's;--r:' +
-                     ((last - i) * 0.115).toFixed(3) + 's"';
+    /* .078 et non .115 : six lettres à cent quinze millisecondes mettent
+     * six dixièmes de seconde rien qu'à commencer, et le cadre est blanc et
+     * vide pendant ce temps-là. La cascade se lit encore comme une cascade. */
+    const d = (i) => ' style="--d:' + (i * 0.078).toFixed(3) + 's;--r:' +
+                     ((last - i) * 0.078).toFixed(3) + 's"';
     const press = chars.map((ch, i) =>
       '<span class="pg"' + d(i) + '>' +
         '<span class="pl c">' + ch + '</span>' +
@@ -2755,15 +2976,23 @@
 
   const marks = () => {
     slotH = innerHeight;
-    if (pileHost) {
+    if (chapter) {
       /* Le dernier pavé a droit au même temps mort que les autres. Sans lui,
        * il se posait pile sur le plafond : à peine arrivé, la sortie partait
        * et on n'avait pas le temps de le lire. Le chapitre est donc allongé
        * d'un temps mort, et le plafond descend d'autant — la scène reste
        * collée exactement jusque-là, les deux mesures ne peuvent pas diverger. */
-      pileHost.style.height = ((piles.length + DWELL) * slotH) + 'px';
-      firstTop = Math.round(pileHost.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + Math.round((piles.length - 1 + DWELL) * slotH);
+      /* LA SECTION FAIT LA HAUTEUR DE CE QU'IL Y A DEDANS. C'est une galée :
+         on la lit en descendant, il n'y a rien d'épinglé et rien à compter en
+         écrans. La porte est son bas — le dernier écran de la section est
+         encore de la section, donc le plafond est sa hauteur moins un écran.
+         La forme à pavés est gardée pour le jour où il y en a de nouveau. */
+      const N = piles.length;
+      chapter.style.height = N ? ((INTRO + N + DWELL) * slotH) + 'px' : '';
+      firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
+      exitY = firstTop + (N
+        ? Math.round((INTRO + N - 1 + DWELL) * slotH)
+        : Math.max(0, chapter.offsetHeight - slotH));
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -2796,13 +3025,24 @@
       rises[i] = Math.round(slotH / 2 + piles[i].offsetHeight / 2 + 40);
   };
 
+  const veilEl = document.getElementById('veil');
+
   const toWhite = async () => {
     if (running) return;
     running = true; freeBack = false;
 
-    if (lastCard) lastCard.classList.add('out');
-    // .34s d'opacité, .4s de translation, plus un temps de respiration
-    await wait(560);
+    /* 1. LA CARTE BLANCHE PREND LE CADRE. Elle est déjà là — c'est le dos de
+     * la dernière — donc rien n'est fabriqué pour la remplacer : elle se
+     * retourne et grandit jusqu'à ce que la fenêtre soit ce papier. */
+    window.__csFlood = 1;
+    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 3200);
+    /* ET LE SOL DE LA SECTION PASSE AU BLANC, sous la plaque, donc sans que
+     * ça se voie. C'était ça, le noir de l'entrée : le voile ne tient le cadre
+     * que jusqu'à ce que la toile du mot peigne pour de bon, et après ça il
+     * reste un demi-écran de chapitre à traverser — en encre. Le chapitre
+     * porte le blanc de ce qui vient pendant toute la traversée ; il reprend
+     * son encre au retour, sous la plaque, de la même façon. */
+    if (chapter) chapter.style.background = '#ffffff';
 
     /* Le dernier pavé parti, il ne reste que le journal : il prend le cadre.
      * Il se rassemble, s'allume, s'aplatit en une seule couleur, puis déborde
@@ -2812,12 +3052,29 @@
      * Le trajet part EN MÊME TEMPS, pas après : c'est le cadre qui blanchit
      * qui couvre le déplacement de la page. Menés l'un après l'autre, on
      * regardait d'abord une animation, puis un défilement. */
-    /* La section suivante ne peint pas son sol pendant ce temps-là. Sinon le
-     * blanc arrive par le bas avec elle, alors qu'il doit NAÎTRE du journal :
-     * on voyait une section blanche monter devant une inondation en cours.
-     * Transparente, elle laisse voir le cadre que le module blanchit. Le fond
-     * du document est l'encre, donc rien ne s'éclaircit avant l'heure. */
-    window.__exit = 1;
+    /* PLUS DE SECOND BLANC. Le journal reblanchissait le cadre : il partait
+     * de l'encre, donc le passage était noir puis blanc, sous un cadre DÉJÀ
+     * blanc. Le voile — plein cadre, fixe, du blanc de la section qui vient —
+     * est levé sous le couvert de la carte, blanc sur blanc, et c'est lui qui
+     * tient le cadre pendant que la page voyage. La carte peut alors se
+     * replier tout de suite : elle est derrière. */
+    if (veilEl) veilEl.style.opacity = '1';
+    /* ET LA PLAQUE RESTE UNE PLAQUE. Elle était rendue à sa carte ici, donc
+     * elle se retournait et rapetissait pendant la traversée : un coin
+     * arrondi qui rentre au milieu du cadre, et le sol du chapitre derrière
+     * lui. Rien ne demande qu'elle revienne maintenant — elle est le blanc de
+     * la traversée, et elle ne redevient une carte qu'au retour, quand il y a
+     * de nouveau une main à laquelle la rendre. */
+    /* LE MOT PART DÈS QUE LE BLANC EST COMPLET, pas à l'arrivée. Le cadre est
+     * déjà son fond à lui — il n'a aucune raison d'attendre que la page ait
+     * fini de voyager pour commencer, et l'attendre était huit dixièmes de
+     * seconde de blanc vide. La piste est remise à zéro avant, hors champ. */
+    place();
+    if (word) {
+      window.__wordOut = 0;
+      word.classList.add('in');
+      setTimeout(() => word.classList.add('done'), 920);
+    }
     /* 1500 ms et pas moins : l'inondation est pleine à tumbT 1.40, et le
      * module cesse de tourner dès que la section blanche lui prend le cadre.
      * Trop court, le fond du chapitre arrivait encore gris à la jonction. */
@@ -2825,28 +3082,27 @@
      * canevas au module à l'instant où la section blanche prend le cadre :
      * attendre l'arrivée pour rendre son fond à la section, c'est le faire une
      * frame après que le blanc du module a commencé à s'effacer. */
-    await glide(whiteY, 1500);
-    place();                     // la piste part de zéro, pas d'où elle était
+    const trip = glide(whiteY, 700);
+    /* Le voile ne tombe qu'une fois la scène du mot aux commandes : le cadre
+     * est alors déjà son blanc à elle, donc la coupe ne se voit pas. Tombé
+     * avant, il découvre le sol du document, qui est l'encre. */
+    /* ET PAS SEULEMENT UNE FOIS LA SCÈNE NOMMÉE. Stage rend la toile visible
+     * par une transition d'opacité de trois cent cinquante millisecondes : le
+     * temps qu'elle monte, la section — qui est transparente exprès, pour
+     * laisser voir ce que la scène peint — laisse voir le sol du document, qui
+     * est l'encre. C'était le noir derrière l'entrée. On attend donc que la
+     * toile peigne pour de bon, pas qu'on la nomme. */
+    const stageEl = document.getElementById('stage');
+    await until(() => window.__active === 'word' &&
+      (!stageEl || +getComputedStyle(stageEl).opacity > 0.99), 2000);
+    if (veilEl) veilEl.style.opacity = '0';
+    await trip;
 
     /* Le blanc d'abord, le mot ensuite. Il entrait à l'arrivée, donc pendant
      * que le journal finissait de déborder : deux choses à regarder au même
      * instant, et on ne voyait ni la fin de l'une ni le début de l'autre. On
      * attend que l'inondation soit pleine, puis un temps — assez pour que le
      * cadre blanc se lise comme un état, pas comme un passage. */
-    await until(flooded, 1200);
-    await wait(320);
-
-    if (word) {
-      window.__wordOut = 0;      // le module peut remonter son effet
-      word.classList.add('in');
-      // la dernière encre finit à ~1.3 s ; le relais se fait à ce moment-là,
-      // encres au repérage des deux côtés, donc invisible
-      /* La dernière encre par lettre arrive à ~1.27 s. Les copies entières
-       * prennent la main juste après, EN REPÉRAGE : rien ne change à l'image,
-       * on remplace seulement dix-huit couches par trois. */
-      setTimeout(() => word.classList.add('done'), 1300);
-    }
-    await wait(120);
     running = false;
     whited = true;
     lock(false);
@@ -2860,34 +3116,528 @@
    *
    * L'avancement se calcule sur les repères, jamais sur un rectangle mesuré :
    * une fois collé, un pavé rapporte sa position collée et non la sienne. */
-  const piles = [...document.querySelectorAll('.pile')];
+  const piles = [...document.querySelectorAll('.chapter .pile')];
+  const intro = document.querySelector('.chapter .cintro');
+  const cstage = document.querySelector('.chapter .cstage');
   const rises = [];       // la distance qu'un pavé parcourt, la sienne
+  /* L'intro tient le premier écran de la section : on la lit, PUIS la pile
+   * commence. Un pavé qui monterait pendant qu'on lit, c'est l'intro qu'on ne
+   * lit pas. */
+  const INTRO = 1;
   /* Le temps mort. Un pavé posé garde le cadre pendant les 38 premiers pour
    * cent de son écran de scroll : on a le temps de le lire avant que quoi que
    * ce soit ne bouge. Le suivant fait tout son chemin sur les 62 % restants. */
   const DWELL = 0.38, TRIP = 1 - DWELL;
   let pileQ = false, piled = false, entryK = 0;
+  const cl = (v) => Math.max(0, Math.min(1, v));
+  /* LA PILE VIENT À VOUS.
+   *
+   * Un pavé fait deux choses, jamais en même temps : il MONTE depuis sous le
+   * cadre en grandissant jusqu'à sa taille pleine, puis — un temps mort plus
+   * tard — il RECULE, remonte de peu, rapetisse et s'incline en arrière
+   * pendant que le suivant passe devant lui. `up` finit exactement là où
+   * `off` commence, donc les deux gestes se succèdent au lieu de se disputer
+   * la même transformation.
+   *
+   * L'ordre de profondeur ne se calcule pas : les pavés partagent une cellule
+   * de grille, donc c'est l'ordre du document qui empile, et le suivant est
+   * toujours écrit après. */
   const stack = () => {
     pileQ = false;
     if (!slotH) return;
+    // l'intro s'efface sur son propre écran, avant que le premier pavé bouge
+    if (intro) {
+      const p0 = cl((scrollY - firstTop) / slotH);
+      intro.style.opacity = (1 - cl(p0 * 1.7)).toFixed(3);
+      intro.style.transform = 'translate3d(0,' + (-p0 * 54).toFixed(1) + 'px,0)';
+    }
     for (let i = 0; i < piles.length; i++) {
-      const q = (scrollY - (firstTop + i * slotH)) / slotH;
-      // sa montée, puis — un temps mort plus tard — son effacement
-      const up = Math.max(0, Math.min(1, (q - DWELL + 1) / TRIP));
-      const off = Math.max(0, Math.min(1, (q - DWELL) / TRIP));
-      /* entryK est la montée que le défilement ne peut pas donner. À l'arrivée
-       * sur le premier pavé la page est déjà à sa place — q vaut zéro — donc
-       * sans lui il se poserait sans être monté : il apparaîtrait. */
-      const y = (1 - up + entryK) * rises[i] - off * 30;
-      piles[i].style.transform = 'translate3d(0,' + y.toFixed(1) + 'px,0)';
-      // tant que le bloc se casse, la page lui appartient : un pavé posé
-      // par-dessus l'explosion, c'est deux choses à regarder en même temps
-      piles[i].style.opacity = piled ? (1 - off).toFixed(3) : '0';
+      const q = (scrollY - (firstTop + (INTRO + i) * slotH)) / slotH;
+      const up = cl((q - DWELL + 1) / TRIP);
+      /* LA PROFONDEUR N'EST PAS BORNÉE À UN ÉCRAN. Coupée à un, tous les
+       * pavés déjà passés se retrouvaient au même endroit, à la même taille :
+       * la pile n'avait qu'une seule épaisseur derrière le pavé de devant.
+       * Elle se compte en écrans, sans plafond, et chaque écran de plus
+       * rapproche le pavé de son point de fuite sans jamais l'atteindre —
+       * l'écart entre deux pavés diminue à mesure qu'ils s'éloignent, ce qui
+       * est le propre d'une perspective. */
+      const d = Math.max(0, q - DWELL) / TRIP;
+      const k = 1 - Math.pow(0.55, d);
+      /* entryK est la montée que le défilement ne peut pas donner, pour un
+       * pavé qui doit se poser alors que la page est déjà à sa place. */
+      const y = (1 - up + entryK) * rises[i] - k * slotH * 0.34;
+      const sc = 0.9 + 0.1 * up - k * 0.26;
+      piles[i].style.transform =
+        'translate3d(0,' + y.toFixed(1) + 'px,0) scale(' + sc.toFixed(4) +
+        ') rotateX(' + (k * 9).toFixed(2) + 'deg)';
+      /* ASSOMBRI, PAS RENDU TRANSLUCIDE. Deux pavés translucides empilés
+       * laissent lire le texte de celui de dessous à travers celui de
+       * dessus, et c'est illisible des deux côtés. Un pavé qui recule reste
+       * opaque et perd de la lumière, ce qui est ce que fait la profondeur. */
+      piles[i].style.filter = 'brightness(' + (1 - k * 0.5).toFixed(3) + ')';
     }
   };
   addEventListener('scroll', () => {
     if (!pileQ) { pileQ = true; requestAnimationFrame(stack); }
   }, { passive: true });
+
+  /* ---- les quatre cartes -------------------------------------------------
+   *
+   * LE DOS EST DESSINÉ, PAS DÉCORÉ. Un champ de vecteurs tiré d'une graine :
+   * chaque trait suit l'angle du champ là où il passe, donc les traits d'un
+   * même dos se peignent sans se croiser et le dessin a une direction. Une
+   * graine par carte, une seule fois — c'est un dos, pas une animation, et un
+   * dos qui bouge est un dos qu'on regarde au lieu de regarder la face.
+   */
+  const csSeeded = (n) => () => {
+    n |= 0; n = (n + 0x6D2B79F5) | 0;
+    let t = Math.imul(n ^ (n >>> 15), 1 | n);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  /* LE DOS EST UNE COMPOSITION, ET RIEN D'AUTRE.
+   *
+   * Trois essais pour arriver là. Un champ de vecteurs : d'un autre produit,
+   * soyeux, premium. Une fausse une de journal : ce que le hero fait déjà, en
+   * vingt fois plus petit. Un graphique : littéral, et un graphique au dos
+   * d'une carte est un graphique qu'on ne peut pas lire.
+   *
+   * Alors rien à lire. Le dos est un PLATEAU : une grille remplie de blocs à
+   * coins doux, quelques ronds, des aplats d'encre à trois valeurs et un seul
+   * bloc dans la couleur du jour. C'est le plateau du catalogue réduit à la
+   * taille d'une carte, et c'est le seul vocabulaire que cette page possède —
+   * des rectangles posés sur du papier.
+   *
+   * La grille est remplie au hasard mais REMPLIE : un bloc prend une ou deux
+   * cases dans chaque sens, les cases restantes sont du papier. Rien ne
+   * flotte, rien ne se recouvre — ce qui distingue une composition d'un
+   * semis.
+   *
+   * Encre sur papier, et composé pour la pose où on le voit : la carte est
+   * écrite en paysage et tenue DEBOUT dans l'éventail, et le dos ne se voit
+   * que là, donc le repère du dessin est tourné d'un quart de tour.
+   *
+   * Une graine par carte, peint une fois : un dos qui bouge est un dos qu'on
+   * regarde au lieu de lire la face. */
+  const csBack = (cv, seed, kind, acc) => {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    const cwv = cv.clientWidth || 420, chv = cv.clientHeight || 260;
+    cv.width = Math.round(cwv * dpr); cv.height = Math.round(chv * dpr);
+    const g = cv.getContext('2d');
+    g.setTransform(0, -dpr, dpr, 0, 0, chv * dpr);
+    const w = chv, h = cwv;
+    g.fillStyle = '#edeae3'; g.fillRect(0, 0, w, h);
+
+    let st = (seed >>> 0) || 1;
+    const r = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
+
+    const M = Math.round(w * 0.085), GAP = Math.max(5, w * 0.022);
+    const C = 3, R = 5;
+    const cw = (w - M * 2 - GAP * (C - 1)) / C;
+    const ch = (h - M * 2 - GAP * (R - 1)) / R;
+    const rad = Math.max(5, w * 0.028);
+
+    const taken = new Array(C * R).fill(false);
+    const free = (c, rr, sc, sr) => {
+      if (c + sc > C || rr + sr > R) return false;
+      for (let a = 0; a < sc; a++)
+        for (let b = 0; b < sr; b++) if (taken[(rr + b) * C + c + a]) return false;
+      return true;
+    };
+    const claim = (c, rr, sc, sr) => {
+      for (let a = 0; a < sc; a++)
+        for (let b = 0; b < sr; b++) taken[(rr + b) * C + c + a] = true;
+    };
+
+    /* QUATRE VALEURS D'ENCRE, ET AUCUNE COULEUR. Le bloc du jour mettait du
+     * bleu ou de l'ambre au dos, donc la carte annonçait sa face avant de se
+     * retourner — et surtout, quatre dos colorés dans une main font une main
+     * bariolée. Le dos est du papier et des gris ; la couleur arrive quand la
+     * carte se retourne, et c'est tout ce qu'elle a à faire. Quatre valeurs et
+     * rien entre les deux : un aplat se choisit, il ne se dose pas. */
+    const TINT = ['rgba(20,20,28,.05)', 'rgba(20,20,28,.11)',
+                  'rgba(20,20,28,.19)', 'rgba(20,20,28,.3)'];
+    const blocks = [];
+    for (let rr = 0; rr < R; rr++) {
+      for (let c = 0; c < C; c++) {
+        if (taken[rr * C + c]) continue;
+        if (r() < 0.2) { claim(c, rr, 1, 1); continue; }   // du papier, laissé
+        let sc = 1, sr = 1;
+        const roll = r();
+        if (roll > 0.78 && free(c, rr, 2, 2)) { sc = 2; sr = 2; }
+        else if (roll > 0.54 && free(c, rr, 2, 1)) { sc = 2; }
+        else if (roll > 0.3 && free(c, rr, 1, 2)) { sr = 2; }
+        claim(c, rr, sc, sr);
+        blocks.push({ c, r: rr, sc, sr, k: r(), t: r() });
+      }
+    }
+    const round = (x, y, ww, hh, rr2) => {
+      const q = Math.min(rr2, ww / 2, hh / 2);
+      g.beginPath();
+      g.moveTo(x + q, y);
+      g.arcTo(x + ww, y, x + ww, y + hh, q);
+      g.arcTo(x + ww, y + hh, x, y + hh, q);
+      g.arcTo(x, y + hh, x, y, q);
+      g.arcTo(x, y, x + ww, y, q);
+      g.closePath();
+    };
+
+    blocks.forEach((b, i) => {
+      const x = M + b.c * (cw + GAP), y = M + b.r * (ch + GAP);
+      const ww = cw * b.sc + GAP * (b.sc - 1), hh = ch * b.sr + GAP * (b.sr - 1);
+      const fill = TINT[Math.floor(b.t * TINT.length)];
+      if (b.k > 0.84 && Math.abs(ww - hh) < Math.min(ww, hh) * 0.5) {
+        // un rond, quand la case est presque carrée : sinon c'est un ovale
+        g.fillStyle = fill;
+        g.beginPath();
+        g.arc(x + ww / 2, y + hh / 2, Math.min(ww, hh) / 2, 0, 6.2832);
+        g.fill();
+      } else if (b.k > 0.7) {
+        // un quart de rond : le même bloc, un coin ouvert
+        g.fillStyle = fill;
+        g.beginPath();
+        g.moveTo(x, y + hh);
+        g.arc(x, y + hh, Math.min(ww, hh), -1.5708, 0);
+        g.closePath();
+        g.fill();
+      } else {
+        g.fillStyle = fill;
+        round(x, y, ww, hh, rad);
+        g.fill();
+      }
+    });
+
+    /* Le creux au centre : la rosette est posée par-dessus, et un aplat qui
+     * lui passe dessous la mange. */
+    const grd = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.36);
+    grd.addColorStop(0, 'rgba(237,234,227,.98)');
+    grd.addColorStop(0.5, 'rgba(237,234,227,.84)');
+    grd.addColorStop(1, 'rgba(237,234,227,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  };
+
+  /* LE JEU. Une carte n'a qu'un temps : sa place dans la course de la
+   * section. Avant, elle est dans l'éventail, dos vers nous et flottante ;
+   * pendant, elle vient au centre en se retournant et en se couchant ; après,
+   * elle bascule contenu vers le ciel et s'en va — et la suivante est déjà en
+   * route, parce que deux mouvements qui se suivent laissent un trou au
+   * milieu du cadre et deux qui se recouvrent n'en laissent pas.
+   *
+   * Flottement, souris et défilement sont composés sur UNE transformation,
+   * écrite à la frame. Répartis sur des propriétés ou des transitions
+   * séparées, le dernier écrit gagne et les deux autres disparaissent. */
+  {
+    const run = document.querySelector('.chapter .csrun');
+    const deck = run && run.querySelector('.csdeck');
+    const cds = deck ? [...deck.querySelectorAll('.csc')] : [];
+    const tally = run && run.querySelector('.cscount b');
+    if (cds.length) {
+      /* LES ENCRES DE LA FACE. Tirées au sort dans le nuancier de la page —
+       * pas inventées — et la dernière est le papier, parce que la dernière
+       * carte est la conclusion et qu'une conclusion se lit sur du blanc.
+       * Chaque encre porte celle qui se lit dessus : la couleur du texte n'est
+       * pas un second tirage. */
+      /* DEUX ENCRES, ET CE SONT CELLES DE LA PAGE. Le bleu et l'ambre sont
+       * les seules couleurs que ce site possède ; un rouge ou un vert n'y sont
+       * nulle part, donc ils n'y ont rien à faire. Elles ALTERNENT à partir
+       * d'un tirage, ce qui est du hasard sans jamais donner deux cartes de
+       * suite de la même couleur. */
+      const INKS = [
+        ['#1a2ffb', '#edeae3', 'rgba(26,47,251,.6)'],
+        ['#f2b13c', '#14141c', 'rgba(242,177,60,.5)'],
+      ];
+      const off = Math.random() < 0.5 ? 0 : 1;
+      cds.forEach((el, i) => {
+        // le blanc a quitté la dernière face : il est au dos, où il travaille
+        const ink = INKS[(i + off) % INKS.length];
+        el.style.setProperty('--face', ink[0]);
+        el.style.setProperty('--faceInk', ink[1]);
+        el.style.setProperty('--faceGlow', ink[2]);
+        const cv = el.querySelector('canvas');
+        // une famille par carte, dans l'ordre : quatre dos, quatre formes
+        const paint = () => csBack(cv, 0x9E3779B1 ^ (i * 2654435761),
+                                   i % 4, ink[0]);
+        if (cv.clientWidth) paint(); else requestAnimationFrame(paint);
+        addEventListener('resize', paint, { passive: true });
+      });
+
+      const N = cds.length;
+      const sm = (u) => u * u * u * (u * (u * 6 - 15) + 10);
+      const cl = (u) => Math.max(0, Math.min(1, u));
+      // l'éventail : quatre poses, tenues en main
+      /* LA MAIN EST LOIN DERRIÈRE. Pas par goût de la profondeur : dans un
+       * contexte 3D le navigateur ne trie pas par z-index, il fait se couper
+       * les plans — et une carte prise en plein retournement est de chant,
+       * donc elle TRAVERSE celle qu'on lit et se dessine par-dessus. Trois
+       * cents pixels de recul suffisent à ce que rien ne se croise. */
+      /* L'ÉVENTAIL EST EN BAS DU CADRE, à moitié dehors : le centre de chaque
+       * carte est posé sur le bord bas de la fenêtre, donc il en dépasse
+       * exactement la moitié. C'est une main tenue basse — et ça laisse le
+       * milieu du cadre au chapô jusqu'à ce qu'une carte vienne le lui
+       * prendre.
+       *
+       * LA PREMIÈRE EST DEVANT : une main se tient dans l'ordre où on va la
+       * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
+      /* L'ÉVENTAIL SE REFAIT À MESURE QU'IL SE VIDE. Posé une fois pour
+       * quatre, il gardait le trou de chaque carte partie et restait décentré
+       * du nombre qui manque — une main de deux cartes tenue comme une main
+       * de quatre. Il est recalculé à la frame sur ce qui reste.
+       *
+       * Et il se recalcule EN CONTINU, pas au moment où une carte s'en va :
+       * ce qui compte n'est pas combien il en reste mais combien il en reste
+       * DÉJÀ PARTI — la somme des avancements. Une carte qui monte au centre
+       * rend sa place petit à petit, les autres se resserrent au même rythme,
+       * et rien ne saute d'un cran.
+       *
+       * La première est devant : le rang se lit dans le cadre, la carte de
+       * gauche est celle qu'on doit voir entière. */
+      /* ET IL SE MESURE SUR LA FENÊTRE. Écarté d'un nombre de pixels fixe, il
+       * tenait sur un écran large et sortait des deux côtés sur un téléphone,
+       * où une carte fait déjà les trois quarts du cadre : la première et la
+       * dernière étaient coupées net par le bord. L'écart est donc ce que la
+       * fenêtre peut donner, et ce qu'elle ne donne pas est repris en ANGLE —
+       * la main reste une main, elle est seulement tenue plus serrée. */
+      const poseOf = (slot, count) => {
+        const room = Math.max(0, (innerWidth - (cds[0].offsetWidth || 300)) / 2);
+        const sx = Math.min(152, room / 1.5);
+        const tight = 1 - sx / 152;
+        const d = slot - (count - 1) / 2;
+        return { x: d * sx, dip: Math.abs(d) * (26 + 10 * tight),
+                 rz: -d * (10 + 7 * tight), z: -260 - slot * 96 };
+      };
+      let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
+      /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
+       * distribué aux quatre, c'est un bloc qui glisse : elles partent
+       * ensemble, arrivent ensemble, et la main n'a plus d'épaisseur. Chacune
+       * suit le curseur à SON rythme — la première vive, la dernière lente —
+       * donc le geste traverse la main au lieu de la déplacer. */
+      const pxE = cds.map(() => 0), pyE = cds.map(() => 0);
+      const easeK = cds.map((_, i) => 0.085 - i * 0.016);
+      let gate = 0;   // la main n'entre qu'une fois le papier hors du cadre
+      /* LA DERNIÈRE CARTE DEVIENT LE SOL DE LA SECTION SUIVANTE. Le blanc de
+       * la section d'après existe déjà dans le cadre — c'est le dos de la
+       * carte — alors on ne fabrique pas un second blanc pour le remplacer :
+       * la carte se retourne, ce dos grandit jusqu'à couvrir la fenêtre, et
+       * la page voyage sous ce couvert. Le raccord n'est pas un changement de
+       * couleur, c'est un objet qu'on suit. */
+      const FLOOD_DUR = 0.95;   // secondes, la même mesure que les autres passages
+      let flood = 0, wasWide = false, floodDirty = false, radPx = 0, lastT = 0;
+      const readProg = () => {
+        const r = run.getBoundingClientRect();
+        const span = Math.max(1, r.height - innerHeight);
+        prog = cl(-r.top / span);
+      };
+      addEventListener('pointermove', (e) => {
+        tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
+        ty = (e.clientY / Math.max(1, innerHeight)) * 2 - 1;
+      }, { passive: true });
+      const frame = (now) => {
+        if (!live) { raf = 0; return; }
+        raf = requestAnimationFrame(frame);
+        for (let i = 0; i < N; i++) {
+          pxE[i] += (tx - pxE[i]) * easeK[i];
+          pyE[i] += (ty - pyE[i]) * easeK[i];
+        }
+        const t = now / 1000;
+        /* LES CARTES N'ENTRENT QU'UNE FOIS LE PAPIER SORTI DU CADRE. Pendant
+         * la traversée le journal tient encore l'écran ; une main qui monte
+         * derrière lui est un second objet dans un geste qui n'en veut qu'un.
+         * Le module publie sa sortie, la main attend. */
+        const want = (window.__webOutK === undefined || window.__webOutK >= 0.999) ? 1 : 0;
+        gate += (want - gate) * 0.05;
+        /* LA CRUE A UNE DURÉE, PAS UN COEFFICIENT. Menée par un lissage
+         * exponentiel elle partait d'un coup et traînait à la fin : le
+         * retournement, qui est le geste qu'on regarde, se jouait presque
+         * entier dans le premier dixième. Elle avance d'une fraction de
+         * seconde par frame, donc sa longueur est un nombre — celui des
+         * autres passages de cette page, autour de neuf cents millisecondes —
+         * et la courbe est mise DESSUS : lente aux deux bouts, pleine au
+         * milieu, ce qui est ce qu'on appelle fluide. */
+        const dtv = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
+        lastT = now;
+        const tgt = window.__csFlood ? 1 : 0;
+        const step2 = dtv / FLOOD_DUR;
+        flood += Math.max(-step2, Math.min(step2, tgt - flood));
+        if (flood < 0.0008) flood = 0;
+        /* LE PANNEAU S'ÉLARGIT, IL NE S'OUVRE PAS. Il a la largeur du
+         * contenu, pas celle de la fenêtre, donc la carte qui déborde
+         * s'arrêtait net sur les gouttières. Le laisser déborder rend la
+         * page large : une barre horizontale apparaît sous une carte censée
+         * ne rien changer. Il garde donc sa coupe — la main doit être à
+         * moitié hors du cadre — et gagne les gouttières le temps de la
+         * crue, mesurées sur la fenêtre SANS sa barre. */
+        const wide = flood > 0.02;
+        if (wide !== wasWide) {
+          wasWide = wide;
+          const stk = deck.parentElement;
+          stk.style.marginLeft = stk.style.marginRight = '';
+          if (wide) {
+            const m = Math.max(0, (document.documentElement.clientWidth -
+                                   stk.getBoundingClientRect().width) / 2);
+            stk.style.marginLeft = stk.style.marginRight = (-m) + 'px';
+          }
+        }
+        window.__csFloodK = flood;
+        const FL2 = sm(cl(flood));
+        // ce qu'il faut d'agrandissement pour que la carte couvre la fenêtre
+        const need = FL2 > 0
+          ? Math.max(innerWidth / cds[0].offsetWidth,
+                     innerHeight / cds[0].offsetHeight) * 1.34
+          : 1;
+        const H = deck.clientHeight || innerHeight;
+        const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
+        const cw = cds[0].offsetWidth || 340;
+        let front = 0;
+        /* Deux passes : la première dit où en est chaque carte, la seconde
+         * place la main autour de celles qui y sont encore. Une seule passe
+         * ne peut pas — la place d'une carte dépend de l'avancement des
+         * autres, et la moitié d'entre elles n'a pas encore été calculée. */
+        const A = [], FL = [], O = [];
+        for (let i = 0; i < N; i++) {
+          const u = prog * (N + 0.55) - i - 0.75;
+          A[i] = sm(cl((u + 0.34) / 0.78));
+          FL[i] = sm(cl((u + 0.34) / 0.66));
+          O[i] = sm(cl((u - 0.78) / 0.55));
+        }
+        let goneAll = 0;
+        for (let i = 0; i < N; i++) goneAll += A[i];
+        let goneBefore = 0;
+        for (let i = 0; i < N; i++) {
+          /* Le temps propre de la carte : elle part avant son tour et s'en va
+           * après, donc les fenêtres se recouvrent d'un tiers de cran. Le jeu
+           * est au repos au début, et la dernière est tenue à la fin.
+           *
+           * LE RETOURNEMENT EST FINI AVANT L'ATTERRISSAGE. Mené sur toute
+           * l'arrivée, la carte passe de chant au moment où elle est grande et
+           * au milieu du cadre — un trait vertical en plein centre. Mené plus
+           * vite, le passage de chant a lieu tôt, loin et petit. */
+          const a = A[i], flip = FL[i], o = O[i];
+          const F = poseOf(i - goneBefore, N - goneAll);
+          goneBefore += a;
+          const ptx = pxE[i], pty = pyE[i];
+          /* LE FLOTTEMENT NE S'ARRÊTE JAMAIS. Éteint à l'arrivée, la carte se
+           * clouait au milieu du cadre et devenait une capture d'écran : ce
+           * qui la tient en l'air, c'est qu'elle ne cesse pas de bouger. Elle
+           * respire seulement plus calmement une fois posée devant les yeux —
+           * une amplitude, pas un interrupteur. */
+          const idle = gate * (1 - 0.62 * a);
+          const fy = Math.sin(t * 0.7 + i * 1.9) * 9 * idle;
+          const fx = Math.cos(t * 0.53 + i * 2.7) * 6 * idle;
+          const fr = Math.sin(t * 0.44 + i * 1.3) * 2.2 * idle;
+          /* LA SOURIS NE S'ÉTEINT JAMAIS. Elle était multipliée par le même
+           * facteur que le flottement, donc elle mourait avec l'éventail :
+           * dès qu'une carte montait au centre elle devenait un objet mort,
+           * et tout le milieu du parcours — c'est-à-dire tout ce qu'on
+           * regarde — ne répondait plus à rien. Elle est seulement plus
+           * discrète sur la carte qu'on lit : un texte qui court après le
+           * curseur ne se lit pas. */
+          /* Deux termes, pas un facteur qui s'éteint : un que la main seule
+           * porte — la profondeur y pèse, la carte de devant suit moins — et
+           * un que TOUTES portent, du bas du cadre jusqu'à la sortie. */
+          const lead = gate;
+          const hand = (1 - a) * gate;   // ce que la main seule porte
+          const px = ptx * (17 * lead + (26 - Math.abs(F.x) * 0.05) * hand);
+          const py = pty * (11 * lead + 14 * hand);
+          /* Trois stations sur une seule verticale : en bas à moitié dehors,
+           * au milieu retournée et lisible, puis hors du cadre par le haut. */
+          const rest = bottom + F.dip + (1 - gate) * (cw * 0.85);
+          /* La sortie n'est pas une translation seule : une dérive de côté et
+           * un quart de degré de roulis, sinon la carte quitte le cadre comme
+           * un ascenseur. */
+          const sway = (i % 2 ? 1 : -1);
+          const x = F.x * (1 - a) + fx + px + o * sway * 54;
+          const y = rest * (1 - a) + fy + py - o * (bottom + cw * 0.72);
+          const z = F.z * (1 - a) + 170 * a - o * 120;
+          const rz = (F.rz + 90) * (1 - a) + fr + o * sway * 7;
+          const ry = 180 * (1 - flip) - ptx * 6.5 * lead;   // dos, puis face
+          /* Et elle INCLINE, pas seulement elle déplace : une carte qui glisse
+           * sans tourner est une image qu'on pousse ; une carte qui s'oriente
+           * vers le curseur est une carte qu'on tient. */
+          const rx = 9 * (1 - a) + pty * 6.5 * lead + o * 40;
+          /* LA CARTE QUI DÉBORDE. La dernière, et seulement elle : elle
+           * revient au centre, se retourne dos vers nous — le dos est du
+           * papier — et grandit jusqu'à ce que le cadre soit ce papier. Ses
+           * coins s'ouvrent en même temps : un rectangle arrondi à l'échelle
+           * de l'écran est une carte posée sur la page, pas la page. */
+          let X = x, Y = y, Z = z, RX = rx, RY = ry, RZ = rz, S = 1;
+          /* Et tout est rendu quand la crue est finie. Le bloc de crue ne
+           * s'exécute que pendant la crue : sans ce nettoyage, le rayon, le
+           * voile et l'ombre restaient tels qu'ils étaient à la dernière
+           * frame où elle existait encore. */
+          if (i === N - 1 && FL2 === 0 && floodDirty) {
+            floodDirty = false;
+            const fa0 = cds[i].firstElementChild, bk0 = cds[i].lastElementChild;
+            fa0.style.borderRadius = bk0.style.borderRadius = '';
+            bk0.style.boxShadow = bk0.style.background = '';
+            bk0.children[0].style.opacity = bk0.children[1].style.opacity = '';
+          }
+          if (i === N - 1 && FL2 > 0) {
+            X = x * (1 - FL2); Y = y * (1 - FL2); Z = z * (1 - FL2);
+            RX = rx * (1 - FL2); RZ = rz * (1 - FL2);
+            RY = ry * (1 - FL2) + 180 * FL2;
+            S = 1 + (need - 1) * FL2;
+            /* Le rayon s'ouvre EN PIXELS, depuis celui de la carte. Écrit en
+             * pour-cent il valait cent à l'état de repos, c'est-à-dire une
+             * ellipse : la carte revenait de la crue en pastille. */
+            const fa = cds[i].firstElementChild, bk = cds[i].lastElementChild;
+            if (!radPx) radPx = parseFloat(getComputedStyle(fa).borderRadius) || 12;
+            const rr = ((1 - FL2) * radPx).toFixed(1) + 'px';
+            fa.style.borderRadius = rr;
+            bk.style.borderRadius = rr;
+            bk.style.boxShadow = FL2 > 0.5 ? 'none' : '';
+            floodDirty = true;
+            /* ET LE DESSIN SE DISSOUT EN CHEMIN. Ce qu'on récupère de la
+             * carte, c'est SON BLANC : à l'échelle de l'écran sa composition
+             * n'est plus une carte, c'est un motif plein cadre qu'on aurait à
+             * lire au moment où il n'y a plus rien à lire. Le papier reste,
+             * le dessin s'en va, et la section suivante se pose sur du blanc
+             * uni — même blanc, aucun raccord. */
+            /* LE DOS EST VIDE AVANT D'ÊTRE VU. La carte se retourne pendant
+             * la crue, donc son dos n'apparaît qu'à mi-tour — au-delà de
+             * quatre-vingt-dix degrés. Le dessin et la rosette s'effacent sur
+             * le premier tiers : quand la face arrière arrive, il n'y a plus
+             * rien dessus, et ce qui grandit est du papier et rien d'autre.
+             * Effacés plus tard, on voyait la marque grossir jusqu'au plein
+             * cadre avant de disparaître. */
+            const fade = (1 - cl(FL2 / 0.3)).toFixed(3);
+            bk.children[0].style.opacity = fade;
+            bk.children[1].style.opacity = fade;
+            /* ET LE PAPIER DEVIENT LE BLANC DE LA SECTION SUIVANTE. Le dos est
+             * du papier chaud, la section d'après est du blanc pur : laissés
+             * tels quels, le relais entre les deux est une marche. La carte
+             * s'aplatit sur le sol de ce qui vient, donc il n'y a rien à
+             * relayer. */
+            const mx = (a2, b2) => Math.round(a2 + (b2 - a2) * FL2);
+            bk.style.background =
+              'rgb(' + mx(237, 255) + ',' + mx(234, 255) + ',' + mx(227, 255) + ')';
+          }
+          cds[i].style.transform =
+            'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' + Z.toFixed(1) + 'px)' +
+            ' rotateX(' + RX.toFixed(2) + 'deg) rotateY(' + RY.toFixed(2) + 'deg)' +
+            ' rotateZ(' + RZ.toFixed(2) + 'deg)' +
+            (S !== 1 ? ' scale(' + S.toFixed(4) + ')' : '');
+          /* PAS D'OPACITÉ SUR UNE CARTE. Une opacité inférieure à 1 APLATIT le
+           * contexte 3D : le navigateur cesse de trier les deux faces, et on
+           * voit le recto à travers le dos — c'est le clignotement à
+           * l'apparition. L'entrée et la sortie sont donc positionnelles, ce
+           * qui est de toute façon ce qu'on veut voir : la main monte du bas
+           * du cadre, et la carte lue en sort par le haut. */
+          cds[i].style.zIndex = String(40 + Math.round(a * 40) - Math.round(o * 90));
+          if (a > 0.5 && o < 0.5) front = i;
+        }
+        if (tally && front !== shown) { shown = front; tally.textContent = '0' + (front + 1); }
+      };
+      const wake = () => { if (live && !raf) raf = requestAnimationFrame(frame); };
+      addEventListener('scroll', () => { readProg(); }, { passive: true });
+      addEventListener('resize', () => { readProg(); }, { passive: true });
+      if (typeof IntersectionObserver === 'function') {
+        new IntersectionObserver((es) => {
+          for (const e of es) { live = e.isIntersecting; readProg(); wake(); }
+        }, { threshold: 0 }).observe(run);
+      } else { live = true; wake(); }
+      readProg(); live = true; wake();
+    }
+  }
 
   // repères puis pile : la pile se calcule sur les repères, jamais l'inverse
   const remark = () => { marks(); stack(); };
@@ -2896,40 +3646,9 @@
   addEventListener('load', remark);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remark);
 
-  /* Le hero tient la page dès le chargement, et la reprend si on y revient.
-   *
-   * SAUF S'IL N'EST PAS LÀ. L'arc du hero est sorti du document (il est garé
-   * dans docs/parked/), et tout ce qui suit n'était atteint que par sa sortie :
-   * c'est elle qui blanchissait le cadre, portait la page jusqu'à la section
-   * Splash et lui disait d'entrer. Sans elle la page s'ouvrait sur un écran
-   * blanc — la section était dans le document mais n'avait jamais reçu
-   * l'ordre. Sans arc, on démarre donc directement dans l'état que cette
-   * sortie laissait derrière elle. */
-  if (chapter) {
-    trigger = leave;
-    lock(true);
-  } else {
-    whited = true;
-    bounds = false;
-    armed = false;
-    running = false;
-    trigger = () => {};
-    lock(false);
-    // la piste part de zéro, comme après le trajet qui portait la page ici
-    place();
-    /* Les pavés sont là et se montent au seul défilement. `entryK` est la
-     * montée que le défilement ne peut pas donner : elle n'existait que parce
-     * que la sortie du hero DÉPOSAIT le lecteur sur le premier pavé, déjà à sa
-     * place. Ici on y arrive en défilant, donc il n'y a rien à rattraper. */
-    piled = true;
-    entryK = 0;
-    if (word) {
-      word.classList.add('in');
-      // les copies entières prennent la main juste après l'encrage, en
-      // repérage — ici il n'y a pas d'encrage à attendre
-      setTimeout(() => word.classList.add('done'), 60);
-    }
-  }
+  // le hero tient la page dès le chargement, et la reprend si on y revient
+  trigger = leave;
+  lock(true);
 
   /* ---- les bornes des pavés ---------------------------------------------
    * Entre le hero et le blanc, la page défile librement — mais bornée. Le
@@ -3172,19 +3891,31 @@
      * exactement ce que le module est en train de faire retomber, et la
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
-    /* LE RELAIS SE FAIT SUR UN ÉTAT, PAS SUR UN DÉLAI : le module publie où
-     * en est sa déformation, on attend qu'elle soit retombée, et les calques
-     * changent de mains dans la frame même. Un délai fixe rendait le mot au
-     * document pendant que le module dessinait encore le sien — deux mots,
-     * celui du canevas immobile et celui du document qui défile. */
+    /* LE RELAIS SE FAIT SUR UN ÉTAT, PAS SUR UN DÉLAI.
+     *
+     * Tant que `.done` est là, c'est le MODULE qui dessine le mot — le DOM est
+     * à zéro et il n'y a rien à voir de ce côté. Retirer `.done` tout de suite
+     * rend les calques au document pendant que le module dessine encore le
+     * sien, le temps que sa déformation retombe : deux mots, celui du canevas
+     * qui ne défile pas et celui du document qui défile, décalés l'un de
+     * l'autre. C'était le doublon qui descend.
+     *
+     * On prévient donc le module, on attend que sa déformation soit RETOMBÉE —
+     * il publie où elle en est, donc rien n'est deviné — et le relais se fait
+     * là : le module s'arrête de dessiner dans la frame même où le document
+     * reprend ses calques. Un seul mot du début à la fin. */
     window.__wordOut = 1;
+    showNotes(false);
     await until(() => window.__wordMix === undefined || window.__wordMix < 0.02, 900);
     if (word) { word.classList.remove('done'); word.classList.add('out'); }
-    showNotes(false);
-    await wait(1000);
-
-    // 2. le blanc seul, comme à l'aller
-    await wait(320);
+    /* LA SORTIE DU MOT SE JOUE À DÉCOUVERT. Le voile était levé au premier
+     * instant du retour : opaque et par-dessus la section, il couvrait le mot
+     * avant que sa sortie ait commencé, et le mot avait donc l'air de
+     * s'effacer d'un coup pendant que son animation se jouait derrière. Le
+     * voile ne monte qu'une fois le mot parti. */
+    /* Le voile attend que la sortie soit FINIE, et pas une frame de plus : la
+     * dernière lettre part à .195 s et son encre la plus lente met .34 s. */
+    await wait(540);
 
     /* 3. le voile prend le blanc, la section le rend, et la page recule. Le
      * voile s'efface dès que le module a le cadre — ce qui est aussi la
@@ -3192,9 +3923,21 @@
      * demi-couverture. Chaque passage de main se fait donc blanc sur blanc :
      * la section au voile, puis le voile au module, et rien ne se voit. */
 
+    /* Puis le blanc change de mains sans qu'on le voie : le voile prend le
+     * cadre — blanc sur blanc, la section est déjà blanche — et la plaque
+     * monte DERRIÈRE lui, dans la section d'au-dessus qui est encore hors
+     * champ. */
+    if (veilEl) veilEl.style.opacity = '1';
+    window.__csFlood = 1;
     window.__rewind = 1;
-    const trip = glide(exitY, 1500);
-    await until(retracted, 2600);
+    /* LE TRAJET DU RETOUR EST PLUS COURT QUE CELUI DE L'ALLER, et il doit
+     * l'être : à l'aller le cadre porte le mot qui se compose, il y a quelque
+     * chose à regarder pendant qu'on avance. Ici il n'y a que du blanc — le
+     * voile — et un cadre blanc immobile est une attente, pas un passage. */
+    const trip = glide(exitY, 520);
+    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
+    // le chapitre reprend son encre sous la plaque, comme il l'avait quittée
+    if (chapter) chapter.style.background = '';
 
     /* 4. le dernier pavé revient — retirer .out rejoue sa transition à
      * l'envers. La section reprend son sol ici, revenue au plafond : elle est
@@ -3209,8 +3952,17 @@
      * rendre son blanc là, c'est faire réapparaître une bande blanche qui
      * glisse ensuite hors du cadre. Au plafond elle est exactement sous le
      * bord, et le relais ne se voit pas. */
+    /* LE VOILE NE TOMBE QU'APRÈS LE TRAJET. Tombé avant, la plaque est encore
+     * dans une section hors champ et ce qu'il découvre au milieu du voyage
+     * est le sol du document : le blanc SAUTAIT. À l'arrivée la plaque tient
+     * le cadre, la coupe est blanc sur blanc, et elle peut se replier. */
     await trip;
-    await wait(560);
+    /* Et la plaque se replie DANS LA FOULÉE : chaque frame de blanc gagnée ici
+     * est une frame de blanc en moins, et c'est son repli qui redonne la
+     * section à voir. */
+    if (veilEl) veilEl.style.opacity = '0';
+    window.__csFlood = 0;
+    await wait(120);
 
     inBounds();
     running = false;
@@ -3377,24 +4129,20 @@
     if (doesIn && scrollY < doesY - 4) { scrollTo(0, doesY); backToWhite(); return; }
     if (waysIn && scrollY < waysY - 4) { scrollTo(0, waysY); backToDoes(); return; }
 
-    /* Les deux filets du hero — et ils ne valent que s'il est là. Sans arc,
-     * le second s'exécutait à chaque événement au-dessus du haut de page :
-     * il touchait `hero`, qui est nul, donc TOUT le gestionnaire de défilement
-     * levait une exception — et s'il ne l'avait pas levée il aurait repris le
-     * verrou et figé la page. Plus rien ne défilait et aucune transition ne
-     * partait. */
-    if (chapter) {
-      // filet : rentré dans les pavés par un chemin qui n'a joué aucune séquence
-      if (scrollY > firstTop && scrollY < exitY - 60) {
-        whited = false;
-        inBounds();
-        if (word) word.classList.remove('in', 'out', 'done');
-        showNotes(false);
-        if (lastCard) lastCard.classList.remove('out');
-      } else if (scrollY < 4 && !armed) {    // filet : Home, barre, restauration
-        armed = true; hero.classList.remove('gone');
-        trigger = leave; fire = 1; freeBack = false; lock(true);
-      }
+    // filet : rentré dans les pavés par un chemin qui n'a joué aucune séquence
+    if (scrollY > firstTop && scrollY < exitY - 60) {
+      whited = false;
+      inBounds();
+      if (word) word.classList.remove('in', 'out', 'done');
+      showNotes(false);
+      if (lastCard) lastCard.classList.remove('out');
+    } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
+      armed = true; hero.classList.remove('gone');
+      window.__webOut = 0;                   // et le papier revient avec lui
+      window.__heroHold = 0;                 // sans laisser le verrou derrière
+      document.body.classList.remove('crossing');
+      cutOff();
+      trigger = leave; fire = 1; freeBack = false; lock(true);
     }
   }, { passive: true });
 

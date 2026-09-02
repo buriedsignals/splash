@@ -4179,6 +4179,7 @@ Stage.register(
      * cuts on these and nothing else — a cut that lands mid-page is a jump,
      * not an edit. */
     const CUTS = [];
+    const PAGES = [];
 
     /* The photographs. Every one of these is a real plate belonging to the
      * story it sits in, public domain, and served with an open CORS header —
@@ -5276,6 +5277,20 @@ Stage.register(
       if (marks) g.drawImage(marks, 0, 0, c.width, c.height);
       return c;
     }
+
+    /* The bench publishes the drawings themselves, so the catalogue can put
+     * them on a board out of the paper and they can be judged as drawings.
+     * The same functions the reel runs — not a copy of them, which would
+     * drift the moment either was touched. */
+    window.__liveArt = LIVE_ART;
+    window.__liveKinds = LIVE_KINDS;
+    window.__liveCharts = CHARTS;
+    window.__liveMaps = MAPS;
+    window.__seeded = seeded;
+    window.__rasterise = (kind, w, h, p, q, v, tone, seed) =>
+      rasterise(kind, w, h, p, q, v, tone, null, seed);
+    window.__castValues = castValues;
+    window.__fits = fits; // which shapes of hole a drawing will accept
 
     /* HOW THE STORY IS TOLD, as two curves over one turn of it.
      *
@@ -7419,6 +7434,7 @@ const flowCol = (A, o) => {
       // The run: every paper by its dateline, then the modern pages.
       const yearOf = (A) => parseInt((A.date.match(/\d{4}/) || ["1900"])[0], 10);
       CUTS.length = 0;
+      PAGES.length = 0;
       /* The reel is the thirty templates now, in rung order. The papers and
        * the plates are still in this file and still composed by their own
        * presses; they come back when there is content to put in them. What is
@@ -7578,12 +7594,61 @@ const flowCol = (A, o) => {
         }
         g.restore();
         if (c === 0) CUTS.push(y / GALLEY_H);
+        /* The module publishes what it composed: which rung each page is on,
+         * what it is, and where it sits on the sheet. Nothing on the site
+         * reads it — the catalogue bench that did has been taken out — and it
+         * is kept because it is the only way to ASK the reel what it printed
+         * without reading pixels back off a texture. It costs one array. */
+        if (c === 0) PAGES.push({
+          /* The rung is what the page IS, never when it was printed. A
+           * founding plate is an image whatever its year, so it says which
+           * rung it belongs to itself: Snow is one ink, the other four were
+           * coloured by hand. And text alone means ALONE — a paper with a cut
+           * in it is on the second rung, not the first. */
+          rung: E.spec
+            ? E.spec.rung
+            : E.blank
+              ? E.blank.rung
+              : E.landmark
+              ? E.landmark.rung
+              : E.A.cut
+                ? 2
+                : 1,
+          year: E.spec ? "layout" : String(E.year),
+          what: E.spec
+            ? E.spec.name
+            : E.blank
+              ? E.blank.need
+              : E.landmark
+              ? E.landmark.src + " — " + E.landmark.by
+              : E.A.paper,
+          tpl: E.spec
+            ? "template · " + E.spec.cols + (E.spec.cols > 1 ? " columns" : " column")
+            : E.blank
+              ? "to produce"
+              : E.landmark
+                ? "landmark"
+                : E.A.tpl,
+          todo: !!E.blank,
+          y,
+          h,
+        });
         y += h;
       }
       // every hole this column just laid down belongs to the web that reads
       // it, and to no other
       for (let i = hole0; i < LIVE_HOLES.length; i++) LIVE_HOLES[i].col = c;
       }
+      window.__specs = SPECS; // the bench publishes them so they can be checked
+      window.__galleySheet = cv;
+      window.__liveHoles = LIVE_HOLES; // the bench, again
+      window.__galleyPages = PAGES;
+      /* The page rectangles above are in PAGE UNITS and describe the first
+       * column only; the sheet is three columns wide and stored at this many
+       * texels to the unit. The catalogue needs both numbers to cut a page
+       * out of it. */
+      window.__galleyScale = GALLEY_SS;
+      window.__galleyCol = GALLEY_COL;
       // kept, because the moving blocks write back into it: a page has to
       // stay correct if the whole reel is ever uploaded again
       galleyCv = cv;
@@ -7978,12 +8043,7 @@ void main(){
       webCut: 0, // 0 the press runs, 1 the montage cuts
       webBeat: 0.9, // seconds a page is held before the cut
       webSpread: 0.74,
-      /* The whole set, sideways and up, in visible half-measures. These
-       * existed only on the bench, so a value tuned there could not be
-       * carried across — and the two modules had already drifted apart on
-       * three others. A knob the delivered page does not have is a knob
-       * that lies about what is being judged. */
-      webX: 0,
+      webX: 0, // the whole set, sideways and up, in visible half-measures
       webY: 0,
       // The height at which the paper starts going back into the machine. On
       // ink a long fade reads as the web leaving; on paper it reads as a
@@ -8086,6 +8146,276 @@ void main(){
       insideBand: 0.34,
       insideSheen: 0.9,
     };
+
+    /* ------------------------------------------------------- the web tuner
+     * A live panel over the webs: their size, where they sit, how fast the
+     * paper runs, how hard it lifts off its plane, and the two numbers that
+     * decide whether the type reads at all.
+     *
+     * ONLY WITH "?webs" IN THE URL. The delivered page carries no panels —
+     * they were all taken out of it — and this one is not an exception to
+     * that: it does not exist unless it is asked for by name. No key opens
+     * it, because a key can be hit by accident and T already belongs to the
+     * post-its.
+     *
+     * "copy" puts the whole set on the clipboard as the source lines they
+     * correspond to, so a session of sliders comes back as code rather than as
+     * a description of code.
+     */
+    /* AND THEY ARE FILED BY WHAT THEY MOVE, largest thing first: where the
+     * three stand, then the shape they stand in, then how the paper runs,
+     * then what happens inside one sheet, then the light on it. What is left
+     * is not the webs at all — the press behind them, the pointer, the mark
+     * that waits — and each of those is its own group rather than a drawer
+     * called "the press" holding four unrelated subjects. A slider filed
+     * under the thing it is not is a slider nobody finds. */
+    const WEB_TUNE = [
+      [
+        "where the three stand",
+        [
+          ["webW", 0.06, 0.42, 0.005, "half-width, in visible half-widths"],
+          ["webH", 0.8, 2.2, 0.01, "half-height, same measure"],
+          ["webSpread", 0.2, 1.1, 0.01, "where the outer two sit"],
+          ["webX", -0.6, 0.6, 0.01, "the whole set, sideways"],
+          ["webY", -0.6, 0.6, 0.01, "and up or down"],
+        ],
+      ],
+      [
+        "the curve of the set",
+        [
+          ["webCurve", 0, 1.4, 0.01, "how far the three wrap round you"],
+          ["webDome", 0, 1.4, 0.01, "0 a cylinder, 1 a sphere, over 1 an egg"],
+          ["webCurveSh", 0, 14, 0.1, "how much a sheet loses by turning away"],
+        ],
+      ],
+      [
+        "how the paper runs",
+        [
+          ["webSpd0", 0, 0.06, 0.0005, "left \u00b7 laps of the galley per second"],
+          ["webSpd1", 0, 0.06, 0.0005, "middle \u00b7 laps of the galley per second"],
+          ["webSpd2", 0, 0.06, 0.0005, "right \u00b7 laps of the galley per second"],
+          ["webLag1", 0, 1, 0.01, "middle \u00b7 where it starts, in pages"],
+          ["webLag2", 0, 1, 0.01, "right \u00b7 where it starts, in pages"],
+        ],
+      ],
+      /* The ripple in the paper itself — one sheet's worth of behaviour,
+       * which is a different thing from where the three are standing. */
+      [
+        "the wave in the paper",
+        [
+          ["webBend", 0, 1.6, 0.01, "how far the paper leaves its plane"],
+          ["webWaveF", 0.15, 3.5, 0.01, "how tight the ripple is"],
+          ["webWaveSpd", 0, 4, 0.02, "how fast it travels across the set"],
+          ["webShade", 0, 1.4, 0.01, "how hard the ripple shades the sheet"],
+        ],
+      ],
+      [
+        "the light on it",
+        [
+          ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
+          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
+        ],
+      ],
+      /* Behind the paper: what is being printed on it, and how often the
+       * page changes. Not a property of the webs — a property of the press. */
+      [
+        "the press behind it",
+        [
+          ["webCut", 0, 1, 1, "0 the press runs, 1 the montage cuts"],
+          ["webBeat", 0.15, 2.5, 0.05, "seconds a page is held"],
+          ["storySecs", 2, 20, 0.5, "seconds the room takes to be made"],
+          ["storyRest", 0, 12, 0.25, "seconds as printed, once the page is in shot"],
+          ["storySpread", 0, 40, 0.5, "how far apart the pages take their turns"],
+          ["greyShare", 0, 1, 0.05, "share of pages that print in a grey"],
+        ],
+      ],
+      [
+        "the hand on the paper",
+        [
+          ["ptrLift", 0, 0.6, 0.01, "how far it lifts under the pointer"],
+          ["ptrSize", 0.1, 3.5, 0.05, "how far the lift reaches"],
+        ],
+      ],
+      [
+        "the mark that waits",
+        [
+          ["markLogo", 0, 1, 1, "the waiting mark: 0 the word, 1 the rosette"],
+        ],
+      ],
+    ];
+
+    function buildWebTuner() {
+      const box = document.createElement("div");
+      box.id = "web-tune";
+      box.style.cssText =
+        "position:fixed;top:12px;right:12px;z-index:99998;width:264px;" +
+        "max-height:calc(100vh - 24px);overflow:auto;padding:12px 14px 14px;" +
+        "background:rgba(14,14,18,.9);color:#e8e8e8;" +
+        "border:1px solid rgba(255,255,255,.14);border-radius:10px;" +
+        "font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      const st = document.createElement("style");
+      st.textContent =
+        "#web-tune .t{font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.5}" +
+        "#web-tune .g{margin:13px 0 4px;font-size:9px;letter-spacing:.13em;" +
+        "text-transform:uppercase;opacity:.36}" +
+        "#web-tune .r{display:flex;align-items:center;gap:7px;margin:5px 0}" +
+        "#web-tune .r label{flex:0 0 66px;opacity:.62;cursor:help}" +
+        "#web-tune .r .v{flex:0 0 46px;text-align:right;opacity:.5;" +
+        "font-variant-numeric:tabular-nums}" +
+        "#web-tune input{flex:1;min-width:0;height:14px;-webkit-appearance:none;" +
+        "appearance:none;background:transparent}" +
+        "#web-tune input::-webkit-slider-runnable-track{height:2px;background:rgba(255,255,255,.2)}" +
+        "#web-tune input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;" +
+        "margin-top:-4px;border-radius:50%;background:#f2b13c;cursor:pointer}" +
+        "#web-tune button{width:100%;margin-top:12px;padding:7px 0;font:inherit;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(255,255,255,.07);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:6px}" +
+        "#web-tune button:hover{background:#f2b13c;color:#14141c;border-color:#f2b13c}";
+      document.head.appendChild(st);
+
+      /* A PANEL YOU CANNOT PUT AWAY is a panel that is always in the way.
+       * It covers the top right of the frame, which is where a web runs, so
+       * judging the paper means judging it around the thing measuring it.
+       * The cross hides it and leaves a tab; the tab brings it back without
+       * a reload, so nothing that has been tuned is lost. */
+      const head = document.createElement("div");
+      head.className = "t";
+      head.style.cssText = "display:flex;align-items:center;gap:8px";
+      const name = document.createElement("span");
+      name.textContent = "the webs";
+      name.style.flex = "1";
+      const shut = document.createElement("button");
+      shut.textContent = "×";
+      shut.title = "put the panel away";
+      shut.style.cssText =
+        "width:20px;height:20px;margin:0;padding:0;line-height:1;font-size:15px;" +
+        "border-radius:5px;flex:0 0 auto";
+      head.append(name, shut);
+      box.appendChild(head);
+
+      const tab = document.createElement("button");
+      // named, because it is put in the document BEFORE the panel is — the
+      // caller used to reach it as the panel's next sibling, which is the
+      // canvas, so the tab was hidden along with the panel and there was no
+      // way back to it without a reload
+      tab.id = "web-tune-tab";
+      tab.textContent = "the webs";
+      tab.style.cssText =
+        // en bas à droite : en haut il se posait sur la navigation, et un
+        // outil de réglage ne doit pas couvrir un lien de la page
+        "position:fixed;bottom:12px;right:12px;z-index:99998;display:none;" +
+        "padding:7px 11px;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;" +
+        "color:#e8e8e8;cursor:pointer;background:rgba(14,14,18,.9);" +
+        "border:1px solid rgba(255,255,255,.16);border-radius:8px;" +
+        "-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)";
+      tab.onclick = () => {
+        box.style.display = "";
+        tab.style.display = "none";
+      };
+      shut.onclick = () => {
+        box.style.display = "none";
+        tab.style.display = "block";
+      };
+      document.body.appendChild(tab);
+
+      /* THE RATE, READ OFF THE STAGE ITSELF. Not this panel's own rAF —
+       * that would measure the browser handing out frames, which keeps
+       * ticking perfectly while the scene inside it stalls. The stage counts
+       * the frames it actually draws, so a repaint that overruns shows up
+       * here and nowhere else.
+       *
+       * Amber under fifty, because a number nobody reads is not a
+       * diagnostic. */
+      const fps = document.createElement("div");
+      fps.className = "t";
+      fps.style.cssText =
+        "margin-top:7px;opacity:.85;font-variant-numeric:tabular-nums";
+      box.appendChild(fps);
+      let f0 = window.__frames || 0,
+        t0 = performance.now();
+      setInterval(() => {
+        const f = window.__frames || 0,
+          t = performance.now();
+        const v = ((f - f0) * 1000) / Math.max(1, t - t0);
+        f0 = f;
+        t0 = t;
+        fps.style.color = v < 50 ? "#f2b13c" : "#e8e8e8";
+        /* BOTH NUMBERS, because one of them alone means nothing. The left
+         * is what the browser handed out; the right is what the scene spent
+         * inside its own frame. A low rate with a small cost is a browser
+         * running at half vsync — a display, a power setting, another tab —
+         * and no amount of work here will move it. A cost near the budget
+         * is ours. */
+        const cost = window.__frameMs || 0;
+        fps.style.color = cost > 9 ? "#f2b13c" : v < 50 ? "#8d8d96" : "#e8e8e8";
+        fps.textContent =
+          v.toFixed(0) + " fps · scene " + cost.toFixed(1) + " ms of " +
+          (1000 / Math.max(v, 0.001)).toFixed(1);
+      }, 500);
+
+      for (const [group, rows] of WEB_TUNE) {
+        const g = document.createElement("div");
+        g.className = "g";
+        g.textContent = group;
+        box.appendChild(g);
+        for (const [key, min, max, step, why] of rows) {
+          const row = document.createElement("div");
+          row.className = "r";
+          const lab = document.createElement("label");
+          /* The label is the key with its prefix off — but "webSpd0" would
+           * come out "spd0", and three rows called spd0/1/2 say nothing about
+           * which column they move. The three-web rows name their side. */
+          const SIDE = { 0: "left", 1: "middle", 2: "right" };
+          const NAMED = { storySecs: "telling", storyRest: "wait", storySpread: "spread", greyShare: "grey", markLogo: "mark", ptrLift: "touch", ptrSize: "touch size", webCurve: "wrap", webDome: "dome", webCurveSh: "wrap shade", webShade: "shade", webBend: "bend", webWaveF: "ripple", webWaveSpd: "drift" };
+          const m = /^web(Spd|Lag)([012])$/.exec(key);
+          lab.textContent = m
+            ? SIDE[m[2]] + (m[1] === "Lag" ? " start" : "")
+            : NAMED[key] || key.replace(/^(web|ink)/, "").toLowerCase() || key;
+          lab.title = why;
+          const inp = document.createElement("input");
+          inp.type = "range";
+          inp.min = min;
+          inp.max = max;
+          inp.step = step;
+          inp.value = P[key];
+          const out = document.createElement("span");
+          out.className = "v";
+          const dp = /^webSpd/.test(key) ? 4 : 3;
+          out.textContent = (+P[key]).toFixed(dp);
+          inp.addEventListener("input", () => {
+            P[key] = parseFloat(inp.value);
+            out.textContent = P[key].toFixed(dp);
+          });
+          row.append(lab, inp, out);
+          box.appendChild(row);
+        }
+      }
+
+      const btn = document.createElement("button");
+      btn.textContent = "copy the values";
+      btn.onclick = () => {
+        const txt = WEB_TUNE.map(([, rows]) =>
+          rows
+            .map(
+              ([k]) =>
+                "      " + k + ": " +
+                (+P[k]).toFixed(/^webSpd/.test(k) ? 4 : 3) + ",",
+            )
+            .join("\n"),
+        ).join("\n");
+        (navigator.clipboard
+          ? navigator.clipboard.writeText(txt)
+          : Promise.reject()
+        )
+          .then(() => (btn.textContent = "copied"))
+          .catch(() => console.log(txt));
+        setTimeout(() => (btn.textContent = "copy the values"), 1200);
+      };
+      box.appendChild(btn);
+      document.body.appendChild(box);
+      return box;
+    }
 
     /* --------------------------------------------------------- orientation
      * Column-major, matching the GLSL mat3 constructor exactly. The body's
@@ -8783,6 +9113,24 @@ void main(){
          * this, and nothing else in the module publishes anything. */
         window.__heroReady = true;
         loadPressImages(uploadGalley);
+        /* AWAY BY DEFAULT. It covers the top right of the frame, which is
+         * where a web runs, so the ordinary state of the page is the paper
+         * with nothing over it. The tab in the corner brings it back without
+         * a reload; ?tune opens it on load, for a session spent tuning. */
+        /* AND IT IS ASKED FOR BY NAME. The page that is tuned is now the
+         * page that is served — the same file, no parked twin — so the panel
+         * can no longer be told apart by which document it is in. It is told
+         * apart by the URL: ?webs leaves the tab in the corner, ?tune opens
+         * the panel outright, and a reader who was given neither gets no
+         * trace of either. */
+        if (!window.__noTuner && /[?&](tune|webs)\b/.test(location.search)) {
+          const panel = buildWebTuner();
+          if (!/[?&]tune\b/.test(location.search)) {
+            panel.style.display = "none";
+            const t = document.getElementById("web-tune-tab");
+            if (t) t.style.display = "block";
+          }
+        }
         // Painting twenty-five charts and mipmapping the result is tens of
         // milliseconds. Done on the first frame it can make the compositor drop
         // the page to 30Hz for the rest of the session — which is the "30 from
