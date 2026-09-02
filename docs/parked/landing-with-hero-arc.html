@@ -413,11 +413,6 @@
               font-size:clamp(26px,3.7vw,58px)}
   .cslede{margin:clamp(12px,1.6vh,20px) auto 0;max-width:54ch;
           font-size:clamp(13px,1.1vw,15.5px);line-height:1.6;opacity:.55}
-  .cscount{margin-top:clamp(12px,1.8vh,22px);display:inline-flex;align-items:baseline;
-           gap:9px;font-family:var(--C);font-size:10.5px;font-weight:500;
-           letter-spacing:.16em}
-  .cscount b{color:var(--blue);font-weight:500}
-  .cscount span{opacity:.35}
 
   /* LE PLATEAU. La perspective est portée par lui : les quatre cartes
      partagent un point de fuite, sinon chacune est vue depuis un endroit
@@ -428,10 +423,10 @@
   .csdeck{position:absolute;inset:0;
           perspective:1500px;perspective-origin:50% 50%}
   .csc{position:absolute;left:50%;top:50%;
-       width:var(--cw);height:calc(var(--cw) * .62);
-       margin:calc(var(--cw) * -.31) 0 0 calc(var(--cw) / -2);
+       width:var(--cw);height:calc(var(--cw) * .68);
+       margin:calc(var(--cw) * -.34) 0 0 calc(var(--cw) / -2);
        transform-style:preserve-3d;will-change:transform;
-       --cw:clamp(230px,24vw,370px)}
+       --cw:clamp(280px,30vw,460px)}
   .csface,.csback{position:absolute;inset:0;border-radius:var(--rad);
                   overflow:hidden;backface-visibility:hidden;
                   -webkit-backface-visibility:hidden}
@@ -452,14 +447,17 @@
 
   .cscn{font-family:var(--C);font-size:10.5px;font-weight:500;letter-spacing:.16em;
         opacity:.62;margin-bottom:auto}
-  .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.78;
-          font-size:clamp(44px,4.8vw,84px);font-variant-numeric:tabular-nums;
-          margin-bottom:clamp(5px,.7vh,10px)}
+  /* Le chiffre est sur une CARTE, pas sur une affiche : à la taille du grand
+     nombre du catalogue il mangeait la moitié de la face et la source passait
+     par-dessus bord. */
+  .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.8;
+          font-size:clamp(32px,3.2vw,54px);font-variant-numeric:tabular-nums;
+          margin-bottom:clamp(4px,.5vh,8px)}
   .cscbig i{font-style:normal;font-size:.38em;letter-spacing:-.02em}
   .cscname{font-family:var(--D);font-weight:300;letter-spacing:-.03em;line-height:1;
            font-size:clamp(17px,1.75vw,26px);max-width:24ch}
-  .cscwhy{margin:clamp(8px,1.1vh,14px) 0 0;font-size:12.5px;line-height:1.5;
-          opacity:.82;max-width:44ch}
+  .cscwhy{margin:clamp(7px,.9vh,12px) 0 0;font-size:12.5px;line-height:1.45;
+          opacity:.82;max-width:46ch}
   .cscsrc{margin-top:clamp(8px,1vh,13px);font-family:var(--C);font-size:10px;
           font-weight:500;letter-spacing:.16em;opacity:.7}
 
@@ -1956,7 +1954,6 @@
         <div class="cseye"><i></i>The case</div>
         <h2>Four reasons the desk should be showing its work.</h2>
         <p class="cslede">Splash is not a case for prettier pages. It is a case for pages that can be checked, trusted, recomposed and found &mdash; and each of those is somebody else&rsquo;s finding, not ours.</p>
-        <div class="cscount"><b>01</b><span>/ 04</span></div>
       </div>
       <div class="csdeck">
         <div class="csc">
@@ -3190,21 +3187,20 @@
        * carte est la conclusion et qu'une conclusion se lit sur du blanc.
        * Chaque encre porte celle qui se lit dessus : la couleur du texte n'est
        * pas un second tirage. */
+      /* DEUX ENCRES, ET CE SONT CELLES DE LA PAGE. Le bleu et l'ambre sont
+       * les seules couleurs que ce site possède ; un rouge ou un vert n'y sont
+       * nulle part, donc ils n'y ont rien à faire. Elles ALTERNENT à partir
+       * d'un tirage, ce qui est du hasard sans jamais donner deux cartes de
+       * suite de la même couleur. */
       const INKS = [
         ['#1a2ffb', '#edeae3', 'rgba(26,47,251,.6)'],
         ['#f2b13c', '#14141c', 'rgba(242,177,60,.5)'],
-        ['#b3402a', '#edeae3', 'rgba(179,64,42,.5)'],
-        ['#1a7a4a', '#edeae3', 'rgba(26,122,74,.45)'],
       ];
-      const bag = INKS.slice();
-      for (let k = bag.length - 1; k > 0; k--) {
-        const j = Math.floor(Math.random() * (k + 1));
-        const sw = bag[k]; bag[k] = bag[j]; bag[j] = sw;
-      }
+      const off = Math.random() < 0.5 ? 0 : 1;
       cds.forEach((el, i) => {
         const ink = i === cds.length - 1
           ? ['#edeae3', '#14141c', 'rgba(237,234,227,.28)']
-          : bag[i % bag.length];
+          : INKS[(i + off) % INKS.length];
         el.style.setProperty('--face', ink[0]);
         el.style.setProperty('--faceInk', ink[1]);
         el.style.setProperty('--faceGlow', ink[2]);
@@ -3233,7 +3229,12 @@
        * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
       const fan = cds.map((_, i) => {
         const d = i - (N - 1) / 2;
-        return { x: d * 152, dip: Math.abs(d) * 26, rz: d * 10, z: -300 - i * 52 };
+        /* L'ORDRE EST L'ORDRE DE LA MAIN : la première devant, la deuxième
+         * derrière elle et devant la troisième. Dans un contexte 3D le
+         * z-index ne décide rien — c'est la profondeur qui trie — donc
+         * l'écart entre deux cartes est assez large pour qu'aucune
+         * inclinaison ne puisse les faire se croiser. */
+        return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10, z: -260 - i * 96 };
       });
       let prog = 0, live = false, ptx = 0, pty = 0, tx = 0, ty = 0, raf = 0, shown = -1;
       let gate = 0;   // la main n'entre qu'une fois le papier hors du cadre
@@ -3286,18 +3287,27 @@
           const py = pty * 14 * idle;
           /* Trois stations sur une seule verticale : en bas à moitié dehors,
            * au milieu retournée et lisible, puis hors du cadre par le haut. */
-          const rest = bottom + F.dip + (1 - gate) * (cw * 0.7);
-          const x = (F.x + fx + px) * (1 - a);
-          const y = (rest + fy + py) * (1 - a) - o * (bottom + cw * 0.62);
-          const z = F.z * (1 - a) + 170 * a;
-          const rz = (F.rz + fr + 90) * (1 - a);   // debout dans la main, couchée au centre
+          const rest = bottom + F.dip + (1 - gate) * (cw * 0.85);
+          /* La sortie n'est pas une translation seule : une dérive de côté et
+           * un quart de degré de roulis, sinon la carte quitte le cadre comme
+           * un ascenseur. */
+          const sway = (i % 2 ? 1 : -1);
+          const x = (F.x + fx + px) * (1 - a) + o * sway * 54;
+          const y = (rest + fy + py) * (1 - a) - o * (bottom + cw * 0.72);
+          const z = F.z * (1 - a) + 170 * a - o * 120;
+          const rz = (F.rz + fr + 90) * (1 - a) + o * sway * 7;
           const ry = 180 * (1 - flip);              // dos, puis face
           const rx = 9 * (1 - a) + (1 - a) * pty * 6 * idle + o * 40;
           cds[i].style.transform =
             'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px)' +
             ' rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)' +
             ' rotateZ(' + rz.toFixed(2) + 'deg)';
-          cds[i].style.opacity = ((1 - o) * (a > 0.02 ? 1 : gate)).toFixed(3);
+          /* PAS D'OPACITÉ SUR UNE CARTE. Une opacité inférieure à 1 APLATIT le
+           * contexte 3D : le navigateur cesse de trier les deux faces, et on
+           * voit le recto à travers le dos — c'est le clignotement à
+           * l'apparition. L'entrée et la sortie sont donc positionnelles, ce
+           * qui est de toute façon ce qu'on veut voir : la main monte du bas
+           * du cadre, et la carte lue en sort par le haut. */
           cds[i].style.zIndex = String(40 + Math.round(a * 40) - Math.round(o * 90));
           if (a > 0.5 && o < 0.5) front = i;
         }
