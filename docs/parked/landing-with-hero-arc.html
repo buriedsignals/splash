@@ -395,11 +395,15 @@
            padding:0 var(--gut)}
   .csrun{--n:4;max-width:var(--max);margin:0 auto;
          height:calc(var(--n) * 74vh + 100vh)}
-  .csstick{position:sticky;top:0;height:100vh;height:100dvh;
-           display:flex;flex-direction:column;align-items:center;
-           padding:calc(var(--bar) + clamp(18px,4vh,48px)) 0 clamp(20px,4vh,48px)}
-
-  .csintro{text-align:center;max-width:min(760px,84vw);flex:0 0 auto}
+  /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
+     au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
+     passer devant : il est au centre du panneau collé, et les cartes lui
+     passent dessus. */
+  .csstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden}
+  .csintro{position:absolute;inset:0;display:grid;place-content:center;
+           justify-items:center;text-align:center;padding:0 var(--gut);
+           pointer-events:none}
+  .csintro>*{max-width:min(760px,84vw)}
   .cseye{display:inline-flex;align-items:center;gap:9px;
          font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.19em;
          text-transform:uppercase;opacity:.5}
@@ -418,7 +422,10 @@
   /* LE PLATEAU. La perspective est portée par lui : les quatre cartes
      partagent un point de fuite, sinon chacune est vue depuis un endroit
      différent et l'éventail n'en est plus un. */
-  .csdeck{position:relative;flex:1;width:100%;min-height:0;
+  /* Le plateau couvre le panneau, donc son milieu est le milieu de la
+     fenêtre — et il est écrit après le chapô, donc les cartes lui passent
+     par-dessus sans qu'on ait à empiler quoi que ce soit à la main. */
+  .csdeck{position:absolute;inset:0;
           perspective:1500px;perspective-origin:50% 50%}
   .csc{position:absolute;left:50%;top:50%;
        width:var(--cw);height:calc(var(--cw) * .62);
@@ -428,9 +435,13 @@
   .csface,.csback{position:absolute;inset:0;border-radius:var(--rad);
                   overflow:hidden;backface-visibility:hidden;
                   -webkit-backface-visibility:hidden}
-  .csface{background:var(--blue);color:var(--paper);
+  /* LA FACE A SA COULEUR, TIRÉE AU SORT DANS LES ENCRES DE LA MAISON — sauf
+     la dernière, qui est blanche : c'est la conclusion, et une conclusion se
+     lit sur du papier. Le texte suit la couleur, pas l'inverse : chaque encre
+     porte avec elle celle qui se lit dessus. */
+  .csface{background:var(--face,var(--blue));color:var(--faceInk,var(--paper));
           padding:clamp(18px,1.8vw,30px);display:flex;flex-direction:column;
-          box-shadow:0 40px 90px -34px rgba(26,47,251,.6)}
+          box-shadow:0 40px 90px -34px var(--faceGlow,rgba(26,47,251,.6))}
   .csback{transform:rotateY(180deg);background:#0f0f16;
           border:1px solid rgba(237,234,227,.12);
           box-shadow:0 30px 70px -34px rgba(0,0,0,.85)}
@@ -3174,7 +3185,29 @@
     const cds = deck ? [...deck.querySelectorAll('.csc')] : [];
     const tally = run && run.querySelector('.cscount b');
     if (cds.length) {
+      /* LES ENCRES DE LA FACE. Tirées au sort dans le nuancier de la page —
+       * pas inventées — et la dernière est le papier, parce que la dernière
+       * carte est la conclusion et qu'une conclusion se lit sur du blanc.
+       * Chaque encre porte celle qui se lit dessus : la couleur du texte n'est
+       * pas un second tirage. */
+      const INKS = [
+        ['#1a2ffb', '#edeae3', 'rgba(26,47,251,.6)'],
+        ['#f2b13c', '#14141c', 'rgba(242,177,60,.5)'],
+        ['#b3402a', '#edeae3', 'rgba(179,64,42,.5)'],
+        ['#1a7a4a', '#edeae3', 'rgba(26,122,74,.45)'],
+      ];
+      const bag = INKS.slice();
+      for (let k = bag.length - 1; k > 0; k--) {
+        const j = Math.floor(Math.random() * (k + 1));
+        const sw = bag[k]; bag[k] = bag[j]; bag[j] = sw;
+      }
       cds.forEach((el, i) => {
+        const ink = i === cds.length - 1
+          ? ['#edeae3', '#14141c', 'rgba(237,234,227,.28)']
+          : bag[i % bag.length];
+        el.style.setProperty('--face', ink[0]);
+        el.style.setProperty('--faceInk', ink[1]);
+        el.style.setProperty('--faceGlow', ink[2]);
         const cv = el.querySelector('canvas');
         const paint = () => csBack(cv, 0x9E3779B1 ^ (i * 2654435761));
         if (cv.clientWidth) paint(); else requestAnimationFrame(paint);
@@ -3190,12 +3223,20 @@
        * les plans — et une carte prise en plein retournement est de chant,
        * donc elle TRAVERSE celle qu'on lit et se dessine par-dessus. Trois
        * cents pixels de recul suffisent à ce que rien ne se croise. */
+      /* L'ÉVENTAIL EST EN BAS DU CADRE, à moitié dehors : le centre de chaque
+       * carte est posé sur le bord bas de la fenêtre, donc il en dépasse
+       * exactement la moitié. C'est une main tenue basse — et ça laisse le
+       * milieu du cadre au chapô jusqu'à ce qu'une carte vienne le lui
+       * prendre.
+       *
+       * LA PREMIÈRE EST DEVANT : une main se tient dans l'ordre où on va la
+       * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
       const fan = cds.map((_, i) => {
         const d = i - (N - 1) / 2;
-        return { x: d * 152, y: Math.abs(d) * 22, rz: d * 10,
-                 z: -300 - Math.abs(d) * 50 };
+        return { x: d * 152, dip: Math.abs(d) * 26, rz: d * 10, z: -300 - i * 52 };
       });
       let prog = 0, live = false, ptx = 0, pty = 0, tx = 0, ty = 0, raf = 0, shown = -1;
+      let gate = 0;   // la main n'entre qu'une fois le papier hors du cadre
       const readProg = () => {
         const r = run.getBoundingClientRect();
         const span = Math.max(1, r.height - innerHeight);
@@ -3210,6 +3251,15 @@
         raf = requestAnimationFrame(frame);
         ptx += (tx - ptx) * 0.06; pty += (ty - pty) * 0.06;
         const t = now / 1000;
+        /* LES CARTES N'ENTRENT QU'UNE FOIS LE PAPIER SORTI DU CADRE. Pendant
+         * la traversée le journal tient encore l'écran ; une main qui monte
+         * derrière lui est un second objet dans un geste qui n'en veut qu'un.
+         * Le module publie sa sortie, la main attend. */
+        const want = (window.__webOutK === undefined || window.__webOutK >= 0.999) ? 1 : 0;
+        gate += (want - gate) * 0.05;
+        const H = deck.clientHeight || innerHeight;
+        const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
+        const cw = cds[0].offsetWidth || 340;
         let front = 0;
         for (let i = 0; i < N; i++) {
           /* Le temps propre de la carte. Elle part avant son tour et s'en va
@@ -3223,28 +3273,31 @@
            * l'arrivée, la carte passe de chant au moment où elle est grande
            * et au milieu du cadre — un trait vertical en plein centre. Mené
            * plus vite, le passage de chant a lieu tôt, loin et petit. */
-          const flip = sm(cl((u + 0.34) / 0.62));
+          const flip = sm(cl((u + 0.34) / 0.66));
           const o = sm(cl((u - 0.78) / 0.55));   // la bascule et le départ
           const F = fan[i];
           // flottement : il n'a de sens que dans l'éventail, il s'éteint avec a
-          const idle = (1 - a) * 1;
+          const idle = (1 - a) * gate;
           const fy = Math.sin(t * 0.7 + i * 1.9) * 9 * idle;
           const fx = Math.cos(t * 0.53 + i * 2.7) * 6 * idle;
           const fr = Math.sin(t * 0.44 + i * 1.3) * 2.2 * idle;
           // la souris : la profondeur d'abord, la carte de devant suit moins
           const px = ptx * (26 - Math.abs(F.x) * 0.05) * idle;
           const py = pty * 14 * idle;
+          /* Trois stations sur une seule verticale : en bas à moitié dehors,
+           * au milieu retournée et lisible, puis hors du cadre par le haut. */
+          const rest = bottom + F.dip + (1 - gate) * (cw * 0.7);
           const x = (F.x + fx + px) * (1 - a);
-          const y = (F.y + fy + py) * (1 - a) - o * 150;
+          const y = (rest + fy + py) * (1 - a) - o * (bottom + cw * 0.62);
           const z = F.z * (1 - a) + 170 * a;
           const rz = (F.rz + fr + 90) * (1 - a);   // debout dans la main, couchée au centre
           const ry = 180 * (1 - flip);              // dos, puis face
-          const rx = 9 * (1 - a) + (1 - a) * pty * 6 * idle + o * 74;
+          const rx = 9 * (1 - a) + (1 - a) * pty * 6 * idle + o * 40;
           cds[i].style.transform =
             'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px)' +
             ' rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)' +
             ' rotateZ(' + rz.toFixed(2) + 'deg)';
-          cds[i].style.opacity = (1 - o).toFixed(3);
+          cds[i].style.opacity = ((1 - o) * (a > 0.02 ? 1 : gate)).toFixed(3);
           cds[i].style.zIndex = String(40 + Math.round(a * 40) - Math.round(o * 90));
           if (a > 0.5 && o < 0.5) front = i;
         }
