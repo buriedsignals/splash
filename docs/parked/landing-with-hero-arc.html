@@ -3245,13 +3245,15 @@
        * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
       const fan = cds.map((_, i) => {
         const d = i - (N - 1) / 2;
-        /* L'ORDRE EST CELUI D'UN PAQUET POSÉ : la dernière devant, la
-         * première tout au fond. Dans un contexte 3D le z-index ne décide
-         * rien — c'est la profondeur qui trie — donc l'écart entre deux
-         * cartes est assez large pour qu'aucune inclinaison ne puisse les
-         * faire se croiser. */
+        /* LA PREMIÈRE EST DEVANT, ET C'EST CELLE DE GAUCHE. Le rang se lit
+         * dans le cadre, pas dans le balisage : la carte 01 est à gauche de
+         * l'éventail, c'est elle qu'on doit voir entière, et les trois autres
+         * s'enfoncent derrière elle vers la droite. Dans un contexte 3D le
+         * z-index ne décide rien — c'est la profondeur qui trie — donc
+         * l'écart est assez large pour qu'aucune inclinaison ne puisse en
+         * faire se croiser deux. */
         return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10,
-                 z: -260 - (N - 1 - i) * 96 };
+                 z: -260 - i * 96 };
       });
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
