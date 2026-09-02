@@ -3337,36 +3337,55 @@ Stage.register(
      * headlines stay playful, because a press full of invented papers is
      * part of the joke; the body is the argument, set small, and true.
      */
+    /* THE BODY IS LOREM, and that is the honest setting.
+     *
+     * It used to be the page's own pitch, which was fine under invented
+     * papers. Under a real masthead it is not: a paragraph about desks and
+     * graphics set under THE NEW YORK TIMES of 8 December 1941 is a sentence
+     * that newsroom never wrote, at a size a reader can read. The archives
+     * are real down to the weekday; what fills the measure under them says
+     * nothing at all, on purpose.
+     *
+     * Latin, not English, so nobody has to decide whether it is a quotation.
+     * The reel is about the SHAPE of a page of type — the measure, the
+     * column rules, the wall of grey — and lorem carries that shape and no
+     * claim with it. */
     const LOREM = (
-      "Your desk already writes the story. What it does not do is draw it. " +
-      "Between the reporting being finished and the page going out there is " +
-      "a gap, and the gap is filled by a request to somebody else, a queue, " +
-      "and a wait. Splash closes it. It teaches the assistant your newsroom " +
-      "already uses to make the graphic itself: a chart, a map, a piece of " +
-      "motion, a scrollytelling passage, built from the reporting you have " +
-      "done and nothing you have to gather again. " +
-      "It is not a chart tool bolted to a chat window. It reads the story " +
-      "and the data together, works out what the evidence will actually " +
-      "support, and proposes the form that says it — a line where a line is " +
-      "honest, a map where the story is about somewhere, a unit chart where " +
-      "the count is the point. You choose the direction. The desk keeps the " +
-      "decisions it should keep. " +
-      "The draft comes back for review before anything is published, and " +
-      "what comes out is the finished thing in the shape the page needs: " +
-      "print at the right measure, web that holds on a phone, video for the " +
-      "feeds, a scrolling piece for the site. One story, the formats it has " +
-      "to be in, and no second brief. " +
-      "None of it invents a number. The graphic carries where its figures " +
-      "came from, and it carries them because a graphic that cannot say " +
-      "where it got something is not evidence, it is decoration. The source " +
-      "line is written by the tool, not remembered by a person at eleven at " +
-      "night. " +
-      "What it changes is who can make a graphic at all. A desk with one " +
-      "designer makes as many as one designer can draw; a desk with this " +
-      "makes as many as it has stories worth drawing. The visual work stops " +
-      "being a favour asked of another department and becomes part of " +
-      "writing the piece — which is where it belonged before anyone had to " +
-      "ask for it. "
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do " +
+      "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim " +
+      "ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut " +
+      "aliquip ex ea commodo consequat. Duis aute irure dolor in " +
+      "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla " +
+      "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in " +
+      "culpa qui officia deserunt mollit anim id est laborum. " +
+      "Sed ut perspiciatis unde omnis iste natus error sit voluptatem " +
+      "accusantium doloremque laudantium, totam rem aperiam, eaque ipsa " +
+      "quae ab illo inventore veritatis et quasi architecto beatae vitae " +
+      "dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit " +
+      "aspernatur aut odit aut fugit, sed quia consequuntur magni dolores " +
+      "eos qui ratione voluptatem sequi nesciunt. " +
+      "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, " +
+      "consectetur, adipisci velit, sed quia non numquam eius modi tempora " +
+      "incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut " +
+      "enim ad minima veniam, quis nostrum exercitationem ullam corporis " +
+      "suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur. " +
+      "Quis autem vel eum iure reprehenderit qui in ea voluptate velit " +
+      "esse quam nihil molestiae consequatur, vel illum qui dolorem eum " +
+      "fugiat quo voluptas nulla pariatur. " +
+      "At vero eos et accusamus et iusto odio dignissimos ducimus qui " +
+      "blanditiis praesentium voluptatum deleniti atque corrupti quos " +
+      "dolores et quas molestias excepturi sint occaecati cupiditate non " +
+      "provident, similique sunt in culpa qui officia deserunt mollitia " +
+      "animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis " +
+      "est et expedita distinctio. " +
+      "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil " +
+      "impedit quo minus id quod maxime placeat facere possimus, omnis " +
+      "voluptas assumenda est, omnis dolor repellendus. Temporibus autem " +
+      "quibusdam et aut officiis debitis aut rerum necessitatibus saepe " +
+      "eveniet ut et voluptates repudiandae sint et molestiae non " +
+      "recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut " +
+      "aut reiciendis voluptatibus maiores alias consequatur aut perferendis " +
+      "doloribus asperiores repellat. "
     ).repeat(3);
 
 
