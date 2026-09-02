@@ -3547,7 +3547,14 @@
              * lire au moment où il n'y a plus rien à lire. Le papier reste,
              * le dessin s'en va, et la section suivante se pose sur du blanc
              * uni — même blanc, aucun raccord. */
-            const fade = (1 - cl((FL2 - 0.42) / 0.4)).toFixed(3);
+            /* LE DOS EST VIDE AVANT D'ÊTRE VU. La carte se retourne pendant
+             * la crue, donc son dos n'apparaît qu'à mi-tour — au-delà de
+             * quatre-vingt-dix degrés. Le dessin et la rosette s'effacent sur
+             * le premier tiers : quand la face arrière arrive, il n'y a plus
+             * rien dessus, et ce qui grandit est du papier et rien d'autre.
+             * Effacés plus tard, on voyait la marque grossir jusqu'au plein
+             * cadre avant de disparaître. */
+            const fade = (1 - cl(FL2 / 0.3)).toFixed(3);
             bk.children[0].style.opacity = fade;
             bk.children[1].style.opacity = fade;
             /* ET LE PAPIER DEVIENT LE BLANC DE LA SECTION SUIVANTE. Le dos est
@@ -3842,13 +3849,16 @@
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
     window.__wordOut = 1;
-    await wait(380);
+    await wait(220);
     if (word) { word.classList.remove('done'); word.classList.add('out'); }
     showNotes(false);
-    await wait(1000);
+    /* Les mêmes coupes qu'à l'aller, et pour la même raison : ce qu'on
+     * regarde ici est un cadre blanc qui se vide, et un cadre blanc vide n'a
+     * pas besoin d'une seconde de plus. */
+    await wait(620);
 
     // 2. le blanc seul, comme à l'aller
-    await wait(320);
+    await wait(120);
 
     /* 3. le voile prend le blanc, la section le rend, et la page recule. Le
      * voile s'efface dès que le module a le cadre — ce qui est aussi la
@@ -3857,7 +3867,7 @@
      * la section au voile, puis le voile au module, et rien ne se voit. */
 
     window.__rewind = 1;
-    const trip = glide(exitY, 1500);
+    const trip = glide(exitY, 800);
     await until(retracted, 2600);
 
     /* 4. le dernier pavé revient — retirer .out rejoue sa transition à
@@ -3880,7 +3890,7 @@
     if (veilEl) veilEl.style.opacity = '0';
     await trip;
     window.__csFlood = 0;
-    await wait(560);
+    await wait(260);
 
     inBounds();
     running = false;
