@@ -6,10 +6,10 @@
 <title>Splash — the landing as it stood, hero arc included</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
-     tailles — un favicon en PNG est net à une seule. Le carré d'encre est là
-     parce qu'un onglet n'a pas de fond à lui : posée seule, la marque
-     disparaît sur le thème clair d'un navigateur. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2213%22%20fill%3D%22%2314141c%22%2F%3E%3Cpath%20fill%3D%22%23edeae3%22%20d%3D%22M51.043%2032.561L42.02%2051.064A11.148%2011.148%200%201%201%2030.616%2035.116Z%20M17.9%2041.122L6.387%2024.057A11.148%2011.148%200%201%201%2025.9%2022.154Z%20M27.057%208.139L47.593%206.701A11.148%2011.148%200%201%201%2039.484%2024.551Z%22%2F%3E%3C%2Fsvg%3E">
+     tailles — un favicon en PNG est net à une seule. Sans fond : la marque
+     est une forme, pas une pastille, et un carré posé sous elle en ferait
+     un logo d'application. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20fill%3D%22%2314141c%22%20d%3D%22M51.043%2032.561L42.02%2051.064A11.148%2011.148%200%201%201%2030.616%2035.116Z%20M17.9%2041.122L6.387%2024.057A11.148%2011.148%200%201%201%2025.9%2022.154Z%20M27.057%208.139L47.593%206.701A11.148%2011.148%200%201%201%2039.484%2024.551Z%22%2F%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
@@ -621,13 +621,22 @@
      inversés — la dernière lettre part la première. `reverse` retourne la
      courbe mais pas le retard, donc chaque lettre porte aussi le sien à
      l'envers, sinon le mot se déferait dans le sens où il s'est fait. */
-  .pmark.out .pg{animation:pg .52s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .k{animation:pk .50s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .c{animation:pc .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .m{animation:pm .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
-  .pmark.out .y{animation:py .62s cubic-bezier(.16,.84,.3,1) var(--r) both reverse}
+  /* LA SORTIE EST LA MÊME QUE L'ENTRÉE, JOUÉE PLUS VITE. On arrive sur un mot
+     qu'on ne connaît pas et il faut le temps de le voir se composer ; on
+     quitte un mot qu'on vient de lire, et le regarder se défaire à la même
+     allure est une seconde d'attente sur quelque chose de déjà su.
+
+     Rien n'est changé de la grammaire : le même mouvement vers la droite, la
+     même séparation des encres, le même fondu, le même sens de cascade. Seuls
+     la durée et l'écart entre lettres sont divisés — la cascade se lit encore
+     comme une cascade, et tout est fini en un demi-quart de seconde. */
+  .pmark.out .pg{animation:pg .3s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .k{animation:pk .28s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .c{animation:pc .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .m{animation:pm .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
+  .pmark.out .y{animation:py .34s cubic-bezier(.4,0,.3,1) calc(var(--r) * .5) both reverse}
   .pmark.out{transform:translate3d(15vw,0,0);
-             transition:transform 1.35s cubic-bezier(.16,.84,.3,1)}
+             transition:transform .52s cubic-bezier(.4,0,.3,1)}
   .pmark.done .pg,.pmark.done .k{animation:none;opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){
     .pmark .pg,.pmark .k{opacity:1}
@@ -3896,7 +3905,9 @@
      * avant que sa sortie ait commencé, et le mot avait donc l'air de
      * s'effacer d'un coup pendant que son animation se jouait derrière. Le
      * voile ne monte qu'une fois le mot parti. */
-    await wait(560);
+    /* Le voile attend que la sortie soit FINIE, et pas une frame de plus : la
+     * dernière lettre part à .195 s et son encre la plus lente met .34 s. */
+    await wait(540);
 
     /* 3. le voile prend le blanc, la section le rend, et la page recule. Le
      * voile s'efface dès que le module a le cadre — ce qui est aussi la
