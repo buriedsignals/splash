@@ -3945,73 +3945,176 @@ Stage.register(
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
     let bootMark = true;
-    const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
-    /* SIX REAL FRONT PAGES, one to a masthead style.
+    /* EIGHTEEN REAL FRONT PAGES, all of them in English.
      *
-     * The reel used to print invented papers with invented headlines — "The
-     * Daily Splash", "Nobody waits for the chart". Under a line that says
-     * reporting is still text heavy, invented papers make the claim about
-     * nothing: the reader has no way to tell whether the thing being
-     * described ever happened.
+     * The reel used to print papers that never existed — The Daily Splash,
+     * The Stone & The Spike — with headlines to match. Under a line that says
+     * reporting is still text heavy, an invented paper makes the claim about
+     * nothing: a reader has no way to tell whether the thing described ever
+     * happened.
      *
-     * These did happen. Masthead, weekday, date, headline and deck are the
-     * page as it was printed, each one checked against a source before it
-     * was written here. The body under them is set text and is NOT a
-     * quotation — nothing on this reel puts words in a newsroom's mouth.
+     * These happened. Masthead, weekday, date, headline and deck are the page
+     * as it was printed; every one was checked against a source before it was
+     * written here, and every weekday was recomputed from its date rather than
+     * remembered. The body under them is set text and is NOT a quotation —
+     * nothing on this reel puts words in a newsroom's mouth.
      *
-     * A style is a paper: the same masthead always carries the same front
-     * page, so the reel reads as six archives running past rather than as a
-     * shuffle of names and lines. */
-    const ARCHIVE = {
-      // centred masthead under a double rule — the classic broadsheet
-      centre: {
+     * A PAPER KEEPS ITS OWN MASTHEAD. The style belongs to the paper and not
+     * to the slot, so the Times always arrives centred under a double rule and
+     * the Herald always sets its name left: the reel reads as a shelf of
+     * archives rather than as a shuffle of names and lines. */
+    const ARCHIVE = [
+      // ---- centred under a double rule
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "TUESDAY, APRIL 16, 1912",
+        edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+        head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
+        deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
+      },
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "MONDAY, NOVEMBER 11, 1918",
+        edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+        head: "ARMISTICE SIGNED, END OF THE WAR!",
+        deck: "Berlin Seized by Revolutionists",
+      },
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "MONDAY, DECEMBER 8, 1941",
+        edition: "LATE CITY EDITION",
+        head: "JAPAN WARS ON U.S. AND BRITAIN",
+        deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
+      },
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "TUESDAY, MAY 8, 1945",
+        edition: "LATE CITY EDITION",
+        head: "THE WAR IN EUROPE IS ENDED!",
+        deck: "Surrender Is Unconditional",
+      },
+      {
+        style: "centre",
         paper: "The New York Times",
         when: "MONDAY, JULY 21, 1969",
         edition: "LATE CITY EDITION",
         head: "MEN WALK ON MOON",
         deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
       },
-      // a reversed banner — the paper that ran the biggest type in America
-      band: {
-        paper: "CHICAGO DAILY TRIBUNE",
-        when: "WEDNESDAY, NOVEMBER 3, 1948",
-        edition: "FINAL EDITION",
-        head: "DEWEY DEFEATS TRUMAN",
-        deck: "The result the paper printed before the count came in",
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "SUNDAY, JUNE 13, 1971",
+        edition: "LATE CITY EDITION",
+        head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
+        deck: "A series drawn from a secret history of the war",
       },
-      // letter-spaced, thin, French
-      tracked: {
-        paper: "L'AURORE",
-        when: "JEUDI 13 JANVIER 1898",
-        edition: "LITTÉRAIRE, ARTISTIQUE, SOCIALE",
-        head: "J'Accuse…!",
-        deck: "Lettre au Président de la République, par Émile Zola",
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "WEDNESDAY, SEPTEMBER 12, 2001",
+        edition: "LATE EDITION",
+        head: "U.S. ATTACKED",
+        deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
       },
-      // the name set left, the way the mid-century sheets carried it
-      left: {
+      {
+        style: "centre",
+        paper: "The New York Times",
+        when: "WEDNESDAY, NOVEMBER 5, 2008",
+        edition: "LATE EDITION",
+        head: "OBAMA ELECTED PRESIDENT AS RACIAL BARRIER FALLS",
+        deck: "The first Black president of the United States",
+      },
+      // ---- the name set left
+      {
+        style: "left",
         paper: "The New York Herald",
         when: "SATURDAY, APRIL 15, 1865",
         edition: "EXTRA",
         head: "ASSASSINATION OF PRESIDENT LINCOLN",
         deck: "The President Shot at the Theatre Last Evening",
       },
-      // the name in a rule box
-      boxed: {
-        paper: "LE MONDE",
-        when: "JEUDI 13 SEPTEMBRE 2001",
-        edition: "ÉDITORIAL",
-        head: "NOUS SOMMES TOUS AMÉRICAINS",
-        deck: "L'éditorial de Jean-Marie Colombani, en première page",
+      {
+        style: "left",
+        paper: "The Boston Globe",
+        when: "SUNDAY, JANUARY 6, 2002",
+        edition: "SPOTLIGHT",
+        head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
+        deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
       },
-      // the name left with the ears to its right
-      shoulder: {
+      // ---- letter-spaced and thin
+      {
+        style: "tracked",
+        paper: "THE SUN",
+        when: "TUESDAY, SEPTEMBER 21, 1897",
+        edition: "NEW YORK",
+        head: "IS THERE A SANTA CLAUS?",
+        deck: "The editorial answering Virginia O'Hanlon, eight years old",
+      },
+      {
+        style: "tracked",
+        paper: "CALL-CHRONICLE-EXAMINER",
+        when: "THURSDAY, APRIL 19, 1906",
+        edition: "THREE PAPERS, ONE PRESS",
+        head: "EARTHQUAKE AND FIRE: SAN FRANCISCO IN RUINS",
+        deck: "Death and destruction have been the fate of San Francisco",
+      },
+      // ---- a reversed banner
+      {
+        style: "band",
+        paper: "CHICAGO DAILY TRIBUNE",
+        when: "WEDNESDAY, NOVEMBER 3, 1948",
+        edition: "FINAL EDITION",
+        head: "DEWEY DEFEATS TRUMAN",
+        deck: "The result the paper printed before the count came in",
+      },
+      {
+        style: "band",
+        paper: "VARIETY",
+        when: "WEDNESDAY, OCTOBER 30, 1929",
+        edition: "NEW YORK",
+        head: "WALL ST. LAYS AN EGG",
+        deck: "The crash, in the trade paper's own language",
+      },
+      // ---- the name in a rule box
+      {
+        style: "boxed",
+        paper: "THE GUARDIAN",
+        when: "THURSDAY, JUNE 6, 2013",
+        edition: "LONDON",
+        head: "NSA COLLECTING PHONE RECORDS OF MILLIONS OF VERIZON CUSTOMERS DAILY",
+        deck: "The first of the documents taken from the National Security Agency",
+      },
+      {
+        style: "boxed",
+        paper: "THE GUARDIAN",
+        when: "MONDAY, JULY 4, 2011",
+        edition: "LONDON",
+        head: "MILLY DOWLER'S VOICEMAIL WAS HACKED BY NEWS OF THE WORLD",
+        deck: "Messages deleted while the missing schoolgirl was still being searched for",
+      },
+      // ---- the name left with its ears to the right
+      {
+        style: "shoulder",
+        paper: "The Washington Post",
+        when: "SUNDAY, JUNE 18, 1972",
+        edition: "FINAL",
+        head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
+        deck: "The break-in at the Watergate, on the morning after",
+      },
+      {
+        style: "shoulder",
         paper: "The Washington Post",
         when: "FRIDAY, AUGUST 9, 1974",
         edition: "FINAL",
-        head: "Nixon Resigns",
+        head: "NIXON RESIGNS",
         deck: "The first President of the United States to leave the office",
       },
-    };
+    ];
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
@@ -4023,8 +4126,13 @@ Stage.register(
      * shuffled once and dealt out, and no two pages on the whole reel share
      * a skeleton, let alone two that are up at the same moment. */
     const TEMPLATE_DECK = (() => {
-      const d = [];
-      for (const h of HEAD_SET) for (let c = 1; c <= 3; c++) d.push({ head: h, cols: c });
+      /* ONE SLOT PER ARCHIVE. The deck used to be every masthead crossed with
+       * every measure, which made eighteen skeletons; it is the eighteen front
+       * pages themselves now, each keeping the masthead its paper uses, and
+       * the measure is what still varies between them. Three columns of six
+       * come to eighteen, so every page on the shelf is on the reel exactly
+       * once and no web can hold the same one as another. */
+      const d = ARCHIVE.map((a, i) => ({ head: a.style, cols: 1 + (i % 3), arch: i }));
       const r = seeded(LOAD_SALT + 7717);
       for (let i = d.length - 1; i > 0; i--) {
         const j = Math.floor(r() * (i + 1));
@@ -4046,6 +4154,7 @@ Stage.register(
           story: true,
           name: "The article, and what the desk makes of it",
           head: T.head,
+          arch: T.arch,
           cols: T.cols,
           tone: inkFor(r),
         };
@@ -6737,7 +6846,7 @@ const flowCol = (A, o) => {
           let y = top + 20;
 
           // ---- the name, the date, and the page that was printed
-          const A = ARCHIVE[S.head] || ARCHIVE.centre;
+          const A = ARCHIVE[S.arch] || ARCHIVE[0];
           if (S.head === "band") {
             const band = 34;
             g.fillStyle = "#111111";
