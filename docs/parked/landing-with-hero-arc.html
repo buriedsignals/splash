@@ -337,10 +337,6 @@
      cadence se traduit par un créneau plein écran par pavé — le lecteur passe
      le même temps sur chacun et n'en voit qu'un à la fois. Empilés à 60px
      d'écart ils se lisaient tous d'un coup, ce qui n'est pas le même rythme. */
-  /* Vide, donc un écran : la hauteur venait des quatre pavés qui montaient
-     dedans. marks() la repose de toute façon à chaque mise en page — c'est
-     ici pour que la première ne parte pas de 438vh de vide. */
-  .chapter{color:var(--paper);padding:0 var(--gut);position:relative;height:100vh}
   /* DERRIÈRE LA TOILE, le temps de la passation. Les sections passent devant
      le canevas, donc le texte se posait PAR-DESSUS les journaux : il était
      bien là avant qu'ils partent, mais c'est lui qui les couvrait et non
@@ -375,72 +371,127 @@
      amène. Empilés par le flux, un pavé n'apparaissait que sur les cent
      derniers pixels de son écran de scroll, et la pile ne se lisait pas.
      L'ordre du document suffit à décider qui passe devant. */
-  /* --- la première section : une intro, puis la pile qui vient à vous ----
-     Tout est dans la même cellule de grille du plateau collé — l'intro et les
-     quatre pavés au même point — et le script ne donne à chacun que sa
-     profondeur. Le plateau COUPE : un pavé qui monte vient de sous le cadre,
-     celui qui recule sort par le haut, et ni l'un ni l'autre ne doit se voir
-     déborder sur la section voisine. La perspective est sur le plateau, donc
-     partagée : les pavés reculent vers le même point de fuite. */
-  .cstage{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
-          display:grid;place-items:center;padding:var(--vs-s) 0;
-          perspective:1500px}
-  /* UN PEU DE LUMIÈRE DANS LA SECTION. Le fond est l'encre du hero — il doit
-     l'être, c'est le sol sur lequel le papier se tenait, et le raccord n'est
-     un raccord que parce que c'est le même — mais un aplat d'encre sur cinq
-     écrans est un trou noir. Une flaque de lumière très basse, posée là où le
-     pavé arrive : la section n'est pas éclaircie, elle est ÉCLAIRÉE, ce qui
-     n'est pas la même chose et ne coûte pas le raccord.
-     Coupée avec le reste pendant la traversée, donc elle arrive avec le
-     texte et pas avant lui. */
-  .cstage::before{content:'';position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(115% 78% at 50% 46%,
-      rgba(237,234,227,.085), rgba(237,234,227,.028) 46%, transparent 72%)}
-  .cintro{grid-area:1/1;max-width:min(780px,80vw);text-align:center;
-          will-change:transform,opacity;opacity:0;transform:translateY(26px)}
-  .cstage.in .cintro{opacity:1;transform:none;
-          transition:opacity .62s cubic-bezier(.24,.62,.28,1) .06s,
-                     transform .72s cubic-bezier(.24,.62,.28,1)}
-  .ckick{font-size:9.5px;font-weight:500;letter-spacing:.17em;
-         text-transform:uppercase;color:var(--amber)}
-  .cintro h2{margin:15px 0 0;font-family:var(--D);font-weight:800;
-             letter-spacing:-.03em;line-height:1.02;text-wrap:balance;
-             font-size:clamp(34px,5.2vw,70px)}
-  .cintro p{margin:20px auto 0;max-width:54ch;font-size:15px;opacity:.72}
-  .pile{grid-area:1/1;will-change:transform,opacity}
-  /* Les pavés n'ont plus d'état d'apparition en CSS : ils montent depuis sous
-     le cadre, et c'est le script qui les place. Le premier compris — il
-     arrivait par un fondu pendant que les autres montaient, deux grammaires
-     pour le même geste. */
-  /* Le dernier pavé se retire comme les autres avant que la lumière ne prenne
-     le cadre — sinon le blanc monterait par-dessus un texte encore posé. */
-  .card.out{opacity:0;transform:translateY(-38px);
-            transition:opacity .34s cubic-bezier(.4,0,.2,1),
-                       transform .4s cubic-bezier(.4,0,.2,1)}
-  /* opaque, pas translucide : empilés, deux pavés translucides laissent
-     lire le texte de celui de dessous à travers celui de dessus. La couleur
-     est celle que donnait rgba(17,17,24,.74) sur le sol — même aplat, sans
-     la transparence. */
-  /* Plus large qu'avant, et posé : un pavé qui vient vers vous doit avoir la
-     taille d'une page, pas d'un encart, et une ombre pour qu'on lise
-     l'épaisseur de la pile derrière lui. */
-  /* LE PAVÉ SE DÉTACHE DU SOL. À #11121a sur un fond #14141c il n'y avait
-     RIEN entre les deux : la carte n'existait que par un filet à 13 % et par
-     son ombre, donc la pile ne se lisait pas comme des objets posés les uns
-     derrière les autres mais comme du texte qui change. Deux crans plus clair
-     que le sol suffisent — et l'ombre les sépare d'autant mieux qu'il y a
-     quelque chose à séparer. */
-  .card{width:min(880px,72vw);background:#20212c;
-        border:1px solid rgba(237,234,227,.17);
-        border-radius:var(--rad-l);
-        box-shadow:0 40px 90px -30px rgba(0,0,0,.78);
-        padding:clamp(28px,2.8vw,44px) clamp(30px,3vw,48px)}
-  .card h3{margin:16px 0 0;font-size:clamp(25px,2.5vw,38px);line-height:1.04}
-  .card p{margin:16px 0 0;font-size:14px;opacity:.74}
-  /* La source était à 36 % sur une carte presque noire : 2,9:1 contre son
-     fond, c'est-à-dire une ligne qu'on sait présente et qu'on ne lit pas. */
-  .card .src{margin-top:24px;padding-top:14px;border-top:1px solid rgba(237,234,227,.15);
-             font-size:9.5px;font-weight:500;letter-spacing:.17em;text-transform:uppercase;opacity:.52}
+  /* ------------------------------------------------------------------
+     LA PREMIÈRE SECTION : L'ÉPREUVE QUI REVIENT DU BUREAU.
+
+     Le hero est une presse qui imprime. Celle-ci est le bureau qui lit ce
+     qui en est sorti — donc une ÉPREUVE : une colonne de plomb, une marge
+     large, et les marques du correcteur qui se posent à mesure qu'on
+     descend. La barre de changement dans la marge, le chiffre entouré au
+     stylo, le passage au feutre sous les nombres : ce ne sont pas des
+     ornements, ce sont les trois gestes qu'on fait réellement sur une
+     épreuve — et ce sont ceux que Splash fait sur un article.
+
+     Elle est CLAIRE, et c'est le geste du passage qui le demande : le
+     papier se retire par le haut, et ce qu'il découvre est du papier. Le
+     sombre était le sol de la presse ; il n'a rien à faire de ce côté-ci.
+
+     Une seule couleur en plus de l'encre : le stylo. Ce n'est pas un accent
+     choisi, c'est la deuxième encre que les presses de la bobine achètent
+     au cinquième échelon — la page se sert dans son propre vocabulaire. */
+  .chapter{position:relative;background:var(--paper);color:var(--ink);
+           padding:0 var(--gut);--pen:#b3402a}
+  .galley{max-width:var(--max);margin:0 auto;
+          padding:clamp(64px,10vh,132px) 0 clamp(80px,13vh,170px)}
+
+  /* le cartouche de la galée : ce qu'on tient, et d'où ça vient */
+  .gslug{display:flex;justify-content:space-between;align-items:baseline;
+         gap:20px;padding-bottom:13px;border-bottom:2px solid var(--ink);
+         font-family:var(--C);font-size:9.5px;font-weight:500;
+         letter-spacing:.2em;text-transform:uppercase}
+  .gslug i{font-style:normal;color:var(--pen)}
+  .gslug span{color:rgba(20,20,28,.5)}
+  .gtop{padding:clamp(40px,6vh,74px) 0 clamp(46px,7vh,86px)}
+  /* La mesure est portée par le TITRE et pas par son bloc : une largeur en ch
+     posée sur le conteneur se compte dans le corps du conteneur, pas dans
+     celui du titre — 22ch de texte courant, c'est trois mots de display, et
+     la ligne se brisait à chaque mot. */
+  .ghead{font-family:var(--D);font-weight:800;letter-spacing:-.035em;
+         line-height:.96;text-wrap:balance;max-width:15ch;
+         font-size:clamp(36px,5.6vw,88px)}
+  .glede{margin:26px 0 0;max-width:52ch;font-size:16px;line-height:1.55;
+         color:rgba(20,20,28,.66)}
+
+  /* UNE PRISE : le folio et sa barre dans la marge, le plomb au centre, le
+     chiffre tiré dans la marge de droite. Trois colonnes parce qu'une
+     épreuve a trois colonnes — la marge où l'on écrit, le texte, et la
+     marge où l'on tire ce qui compte. */
+  .gtake{display:grid;gap:0 clamp(20px,2.8vw,56px);
+        grid-template-columns:clamp(54px,5vw,86px) minmax(0,1fr) clamp(190px,21vw,320px);
+        align-items:start;padding:clamp(44px,6.5vh,86px) 0;
+        border-top:1px solid rgba(20,20,28,.15)}
+  .gmark{position:relative;align-self:stretch;min-height:150px}
+  .gnum{font-family:var(--C);font-size:10px;font-weight:600;letter-spacing:.2em;
+        color:var(--pen)}
+  /* LA BARRE DE CHANGEMENT. Dans une épreuve elle dit « il s'est passé
+     quelque chose sur cette ligne ». Elle se TRACE, du haut vers le bas,
+     parce que c'est le sens dans lequel une main la tire — et parce que
+     c'est la même grammaire que les graphiques du hero, qui se dessinent
+     au lieu d'apparaître. */
+  .gbar{position:absolute;left:0;top:30px;bottom:0;width:3px;
+        background:var(--pen);transform:scaleY(0);transform-origin:top;
+        transition:transform .85s cubic-bezier(.22,.68,.24,1) .05s}
+  .gtake.gseen .gbar{transform:scaleY(1)}
+
+  .gtake h3{font-family:var(--D);font-weight:800;letter-spacing:-.03em;
+           line-height:1.02;text-wrap:balance;max-width:19ch;
+           font-size:clamp(25px,3.2vw,50px)}
+  .gtake p{margin:20px 0 0;max-width:54ch;font-size:15.5px;line-height:1.62;
+          color:rgba(20,20,28,.74)}
+  /* AU FEUTRE, PAS EN GRAS. Le chiffre est déjà dans la phrase ; ce qu'on
+     ajoute, c'est le geste de quelqu'un qui l'a relevé. La bande est
+     derrière la ligne de base, comme un surligneur passé trop bas. */
+  .gtake p b{font-weight:500;color:var(--ink);
+            box-shadow:inset 0 -.42em 0 rgba(242,177,60,.5)}
+  .gsrc{margin-top:24px;font-family:var(--C);font-size:9.5px;font-weight:500;
+        letter-spacing:.18em;text-transform:uppercase;color:rgba(20,20,28,.5)}
+
+  /* LE CHIFFRE, ENTOURÉ. Le trait n'est pas une ellipse : c'est une boucle
+     qui dépasse, parce qu'un cercle au stylo dépasse toujours. Il se trace
+     d'un bout à l'autre — un seul trait, une seule main. */
+  .gfig{justify-self:end;display:flex;flex-direction:column;align-items:flex-end;
+        text-align:right}
+  /* Le trait entoure LE CHIFFRE, pas le bloc : un cercle qui enferme aussi la
+     légende n'entoure plus rien, il encadre. */
+  .gring{position:relative;display:inline-block;padding:12px clamp(16px,1.8vw,30px) 14px}
+  .gring svg{position:absolute;left:0;top:0;width:100%;height:100%;
+             overflow:visible;pointer-events:none}
+  .gring path{fill:none;stroke:var(--pen);stroke-width:2.4;stroke-linecap:round;
+             vector-effect:non-scaling-stroke;
+             stroke-dasharray:900;stroke-dashoffset:900;
+             transition:stroke-dashoffset 1.25s cubic-bezier(.32,.72,.3,1) .2s}
+  .gtake.gseen .gring path{stroke-dashoffset:0}
+  .gfig b{display:block;font-family:var(--D);font-weight:800;
+          letter-spacing:-.045em;line-height:.86;font-variant-numeric:tabular-nums;
+          font-size:clamp(44px,6.4vw,104px)}
+  .gfig b i{font-style:normal;font-size:.44em;letter-spacing:-.02em}
+  .gfig small{display:block;margin-top:18px;font-family:var(--C);font-size:9.5px;
+              font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+              line-height:1.5;color:rgba(20,20,28,.55);max-width:19ch}
+
+  /* Le texte entre à la même allure que la barre, une fois, et ne bouge
+     plus — la règle du hero vaut ici : ce qui est arrivé est arrivé. */
+  .gtake h3,.gtake p,.gsrc,.gfig b,.gfig small,.gnum{
+    opacity:0;transform:translateY(14px);
+    transition:opacity .6s ease var(--d,0s), transform .7s cubic-bezier(.22,.68,.24,1) var(--d,0s)}
+  .gtake.gseen h3,.gtake.gseen p,.gtake.gseen .gsrc,
+  .gtake.gseen .gfig b,.gtake.gseen .gfig small,.gtake.gseen .gnum{
+    opacity:1;transform:none}
+  .gtake h3{--d:.06s} .gtake p{--d:.14s} .gsrc{--d:.2s}
+  .gfig b{--d:.1s} .gfig small{--d:.24s}
+
+  @media (max-width:900px){
+    .gtake{grid-template-columns:34px minmax(0,1fr);gap:0 18px}
+    .gfig{grid-column:2;justify-self:start;text-align:left;margin-top:30px;
+          padding-left:6px}
+    .gfig small{margin-left:0}
+    .gmark{min-height:0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .gtake h3,.gtake p,.gsrc,.gfig b,.gfig small,.gnum{opacity:1;transform:none;transition:none}
+    .gbar{transform:scaleY(1);transition:none}
+    .gring path{stroke-dashoffset:0;transition:none}
+  }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
   #hsec{height:520vh;position:relative}
@@ -1923,29 +1974,49 @@
      break and no field of plates, because those were choreography for
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
-<section class="chapter" data-ground="#14141c">
-  <div class="cstage">
-    <div class="cintro">
-      <div class="ckick">The case</div>
-      <h2>A story people can see is a story people can check.</h2>
-      <p>Four findings, from the desks that publish and the readers who read them — the reason a graphic is reporting and not decoration.</p>
+<section class="chapter" data-ground="#edeae3">
+  <div class="galley">
+  <div class="gslug"><i>The case</i><span>Galley 1 &middot; set from the reporting</span></div>
+  <div class="gtop">
+    <h2 class="ghead">A story people can see is a story people can check.</h2>
+    <p class="glede">Four findings the argument rests on, marked the way a proof comes back from the desk: a bar where something changed, a ring round the number that carries it, a stroke under what was read twice.</p>
+  </div>
+  <article class="gtake">
+    <div class="gmark"><div class="gnum">01</div><div class="gbar" aria-hidden="true"></div></div>
+    <div class="gbody">
+      <h3>Visual journalism makes reporting easier to inspect.</h3>
+      <p>In a survey of 768 people working in data journalism, <b>70% said it makes stories more reliable</b> and 61% said it helps readers make sense of what they are reading.</p>
+      <div class="gsrc">EJC &middot; State of Data Journalism, 2023</div>
     </div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">01 · The evidence</div>
-    <h3>Visual journalism makes reporting easier to inspect.</h3>
-    <p>In a survey of 768 people involved in data journalism, 70% said data journalism makes stories more reliable, and 61% said it helps readers make sense of what they are reading.</p>
-    <div class="src">Source · EJC State of Data Journalism Survey, 2023</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">02 · Trust</div>
-    <h3>Good design helps readers trust the work.</h3>
-    <p>Clear visual design can make the same work feel clearer, more rigorous and more engaging.</p>
-    <div class="src">Source · Information Design Journal · ACM CHI, 2024–25</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">03 · The AI shift</div>
-    <h3>When articles become inputs, visual form becomes identity.</h3>
-    <p>AI turns fixed articles into “liquid information” that machines break apart and recompose.</p>
-    <div class="src">Source · Reuters Institute, 2025</div></div></div>
-    <div class="pile"><div class="card"><div class="meta" style="color:var(--amber)">04 · Discovery</div>
-    <h3>Visuals create another way for the story to travel.</h3>
-    <p>AI Search is multimodal, and can use high-quality images and video alongside text.</p>
-    <div class="src">Source · Google AI Search documentation</div></div></div>
+    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>70<i>%</i></b></span><small>said it makes stories more reliable</small></div>
+  </article>
+  <article class="gtake">
+    <div class="gmark"><div class="gnum">02</div><div class="gbar" aria-hidden="true"></div></div>
+    <div class="gbody">
+      <h3>Good design helps readers trust the work.</h3>
+      <p>Clear visual design makes the same work feel <b>clearer, more rigorous and more engaging</b> &mdash; the finding holds across the literature on how a page is judged before it is read.</p>
+      <div class="gsrc">Information Design Journal &middot; ACM CHI, 2024&ndash;25</div>
+    </div>
+    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>2<i>x</i></b></span><small>the same work, read as clearer</small></div>
+  </article>
+  <article class="gtake">
+    <div class="gmark"><div class="gnum">03</div><div class="gbar" aria-hidden="true"></div></div>
+    <div class="gbody">
+      <h3>When articles become inputs, visual form becomes identity.</h3>
+      <p>AI turns fixed articles into <b>liquid information</b> that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p>
+      <div class="gsrc">Reuters Institute, 2025</div>
+    </div>
+    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>1<i>st</i></b></span><small>thing a machine keeps of a page</small></div>
+  </article>
+  <article class="gtake">
+    <div class="gmark"><div class="gnum">04</div><div class="gbar" aria-hidden="true"></div></div>
+    <div class="gbody">
+      <h3>Visuals create another way for the story to travel.</h3>
+      <p>AI search is multimodal: it can carry <b>high-quality images and video</b> alongside the text, so a piece with a graphic has more than one way of being found.</p>
+      <div class="gsrc">Google AI Search documentation</div>
+    </div>
+    <div class="gfig"><span class="gring"><svg viewBox="0 0 220 130" preserveAspectRatio="none" aria-hidden="true"><path d="M182 40C182 18 146 7 112 8 60 10 16 26 15 62c-1 34 46 58 96 57 44-1 84-19 85-45 1-22-22-40-56-47"/></svg><b>4<i></i></b></span><small>ways one story can travel</small></div>
+  </article>
   </div>
 </section>
 </div>
@@ -2917,14 +2988,17 @@
        * et on n'avait pas le temps de le lire. Le chapitre est donc allongé
        * d'un temps mort, et le plafond descend d'autant — la scène reste
        * collée exactement jusque-là, les deux mesures ne peuvent pas diverger. */
-      /* Un écran pour l'intro, puis un par pavé, plus le temps mort du
-         dernier. Une section VIDE tient un écran et sa porte est son sommet :
-         il n'y a rien à faire défiler dedans, donc le premier geste vers le
-         bas la quitte — la même règle que toutes les autres portes. */
+      /* LA SECTION FAIT LA HAUTEUR DE CE QU'IL Y A DEDANS. C'est une galée :
+         on la lit en descendant, il n'y a rien d'épinglé et rien à compter en
+         écrans. La porte est son bas — le dernier écran de la section est
+         encore de la section, donc le plafond est sa hauteur moins un écran.
+         La forme à pavés est gardée pour le jour où il y en a de nouveau. */
       const N = piles.length;
-      chapter.style.height = ((N ? INTRO + N + DWELL : 1) * slotH) + 'px';
+      chapter.style.height = N ? ((INTRO + N + DWELL) * slotH) + 'px' : '';
       firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + Math.round((N ? INTRO + N - 1 + DWELL : 0) * slotH);
+      exitY = firstTop + (N
+        ? Math.round((INTRO + N - 1 + DWELL) * slotH)
+        : Math.max(0, chapter.offsetHeight - slotH));
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -3085,6 +3159,24 @@
   addEventListener('scroll', () => {
     if (!pileQ) { pileQ = true; requestAnimationFrame(stack); }
   }, { passive: true });
+
+  /* CE QUI SE POSE, SE POSE UNE FOIS. Chaque prise s'inscrit quand elle
+   * entre dans le cadre et n'est plus jamais observée : la barre se trace, le
+   * cercle se ferme, le plomb monte d'un cran, et ensuite plus rien ne bouge —
+   * la même règle que les graphiques du hero, qui tiennent une fois faits.
+   * Pas de gestionnaire de scroll : ce serait un calcul par frame pour un
+   * événement qui arrive quatre fois en tout. */
+  if (typeof IntersectionObserver === 'function') {
+    const io = new IntersectionObserver((es) => {
+      for (const e of es) if (e.isIntersecting) {
+        e.target.classList.add('gseen');
+        io.unobserve(e.target);
+      }
+    }, { rootMargin: '0px 0px -16% 0px', threshold: 0.12 });
+    document.querySelectorAll('.chapter .gtake').forEach((el) => io.observe(el));
+  } else {
+    document.querySelectorAll('.chapter .gtake').forEach((el) => el.classList.add('gseen'));
+  }
 
   // repères puis pile : la pile se calcule sur les repères, jamais l'inverse
   const remark = () => { marks(); stack(); };
