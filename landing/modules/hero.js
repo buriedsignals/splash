@@ -4116,12 +4116,44 @@ Stage.register(
       // ---- the United Kingdom
       GB: [
         {
+          style: "left",
+          paper: "The Sunday Times",
+          when: "SUNDAY, SEPTEMBER 24, 1972",
+          edition: "INSIGHT",
+          head: "OUR THALIDOMIDE CHILDREN: A CAUSE FOR NATIONAL SHAME",
+          deck: "The settlement offered to the families, examined",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "SATURDAY, APRIL 11, 1992",
+          edition: "LONDON",
+          head: "IT'S THE SUN WOT WON IT",
+          deck: "The paper claiming the general election for John Major",
+        },
+        {
+          style: "centre",
+          paper: "Daily Mail",
+          when: "FRIDAY, FEBRUARY 14, 1997",
+          edition: "LONDON",
+          head: "MURDERERS",
+          deck: "Five men named over the killing of Stephen Lawrence",
+        },
+        {
           style: "boxed",
           paper: "THE GUARDIAN",
           when: "MONDAY, JULY 4, 2011",
           edition: "LONDON",
           head: "MILLY DOWLER'S VOICEMAIL WAS HACKED BY NEWS OF THE WORLD",
           deck: "Messages deleted while the missing schoolgirl was still being searched for",
+        },
+        {
+          style: "shoulder",
+          paper: "News of the World",
+          when: "SUNDAY, JULY 10, 2011",
+          edition: "FINAL ISSUE",
+          head: "THANK YOU & GOODBYE",
+          deck: "The last of 168 years, set over a collage of its own front pages",
         },
         {
           style: "boxed",
@@ -4159,6 +4191,14 @@ Stage.register(
           deck: "L'éditorial de Jean-Marie Colombani, en première page",
         },
         {
+          style: "centre",
+          paper: "Libération",
+          when: "LUNDI 22 AVRIL 2002",
+          edition: "PARIS",
+          head: "NON",
+          deck: "Au lendemain du premier tour, Le Pen qualifié pour le second",
+        },
+        {
           style: "shoulder",
           paper: "Charlie Hebdo",
           when: "MERCREDI 14 JANVIER 2015",
@@ -4167,17 +4207,57 @@ Stage.register(
           deck: "Le numéro des survivants, une semaine après l'attentat",
         },
       ],
-      /* SWITZERLAND IS NAMED AND EMPTY, and that is deliberate.
+      /* SWITZERLAND, out of the Journal de Genève and Gazette de Lausanne
+       * archive — the one Swiss press archive that is digitised page by page
+       * and citable, and the ancestor of Le Temps.
        *
-       * Every other line on these shelves was checked against a source before
-       * it was written. Swiss front pages are the one set I could not source
-       * that way: the events are documented — the women's vote of 7 February
-       * 1971, the Swissair grounding of 2 October 2001 — but not the wording
-       * their papers put over them, and a headline half-remembered is worth
-       * less here than none. A Swiss reader therefore gets the English shelf,
-       * which is the stated fallback. Fill this and it takes precedence with
-       * no other change. */
-      CH: [],
+       * Four of these five carry the paper's OWN wording, quoted in Le Temps's
+       * bicentenary series with a link to the scanned page. The first issue of
+       * 5 January 1826 is the exception: the page is documented, its title is
+       * not, so what stands in the headline's place says plainly what the page
+       * is rather than pretending to quote it. */
+      CH: [
+        {
+          style: "centre",
+          paper: "Journal de Genève",
+          when: "JEUDI 5 JANVIER 1826",
+          edition: "PREMIÈRE ÉDITION",
+          head: "PREMIÈRE ÉDITION",
+          deck: "Le «Journal de Genève» paraît pour la première fois",
+        },
+        {
+          style: "left",
+          paper: "Gazette de Lausanne",
+          when: "LUNDI 2 FÉVRIER 1959",
+          edition: "LAUSANNE",
+          head: "VAUD ACCORDE LES DROITS POLITIQUES AUX FEMMES EN MATIÈRE CANTONALE",
+          deck: "Le même jour, le suffrage féminin est refusé au plan fédéral",
+        },
+        {
+          style: "tracked",
+          paper: "JOURNAL DE GENÈVE",
+          when: "LUNDI 8 FÉVRIER 1971",
+          edition: "GENÈVE",
+          head: "LE «OUI» EST AUTHENTIQUE",
+          deck: "Jacques-Simon Eggly, au lendemain du suffrage féminin",
+        },
+        {
+          style: "boxed",
+          paper: "JOURNAL DE GENÈVE ET GAZETTE DE LAUSANNE",
+          when: "MERCREDI 28 NOVEMBRE 1990",
+          edition: "GENÈVE ET LAUSANNE",
+          head: "LE DERNIER BASTION TOMBE",
+          deck: "Appenzell Rhodes-Intérieures, le dernier canton à accorder le vote aux femmes",
+        },
+        {
+          style: "shoulder",
+          paper: "Le Temps",
+          when: "JEUDI 14 DÉCEMBRE 2000",
+          edition: "GENÈVE",
+          head: "JUGÉ PRÉSIDENT",
+          deck: "Cinq semaines de recomptage, et la Cour suprême tranche",
+        },
+      ],
     };
 
     /* Which shelf, decided locally. `?archives=FR` forces one, which is how
