@@ -3018,9 +3018,12 @@
     if (running) return;
     running = true; freeBack = false;
 
-    if (lastCard) lastCard.classList.add('out');
-    // .34s d'opacité, .4s de translation, plus un temps de respiration
-    await wait(560);
+    /* 1. LA CARTE BLANCHE PREND LE CADRE. Elle est déjà là — c'est le dos de
+     * la dernière — donc rien n'est fabriqué pour la remplacer : elle se
+     * retourne et grandit jusqu'à ce que la fenêtre soit ce papier. */
+    window.__csFlood = 1;
+    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 3200);
+    await wait(120);
 
     /* Le dernier pavé parti, il ne reste que le journal : il prend le cadre.
      * Il se rassemble, s'allume, s'aplatit en une seule couleur, puis déborde
@@ -3043,16 +3046,18 @@
      * canevas au module à l'instant où la section blanche prend le cadre :
      * attendre l'arrivée pour rendre son fond à la section, c'est le faire une
      * frame après que le blanc du module a commencé à s'effacer. */
-    await glide(whiteY, 1500);
+    await glide(whiteY, 1100);
     place();                     // la piste part de zéro, pas d'où elle était
+    /* La carte a fini son travail : la section blanche tient le cadre, elle
+     * est hors champ, elle peut redevenir une carte. */
+    window.__csFlood = 0;
 
     /* Le blanc d'abord, le mot ensuite. Il entrait à l'arrivée, donc pendant
      * que le journal finissait de déborder : deux choses à regarder au même
      * instant, et on ne voyait ni la fin de l'une ni le début de l'autre. On
      * attend que l'inondation soit pleine, puis un temps — assez pour que le
      * cadre blanc se lise comme un état, pas comme un passage. */
-    await until(flooded, 1200);
-    await wait(320);
+    await wait(260);
 
     if (word) {
       window.__wordOut = 0;      // le module peut remonter son effet
@@ -3367,6 +3372,13 @@
       const pxE = cds.map(() => 0), pyE = cds.map(() => 0);
       const easeK = cds.map((_, i) => 0.085 - i * 0.016);
       let gate = 0;   // la main n'entre qu'une fois le papier hors du cadre
+      /* LA DERNIÈRE CARTE DEVIENT LE SOL DE LA SECTION SUIVANTE. Le blanc de
+       * la section d'après existe déjà dans le cadre — c'est le dos de la
+       * carte — alors on ne fabrique pas un second blanc pour le remplacer :
+       * la carte se retourne, ce dos grandit jusqu'à couvrir la fenêtre, et
+       * la page voyage sous ce couvert. Le raccord n'est pas un changement de
+       * couleur, c'est un objet qu'on suit. */
+      let flood = 0, wasWide = false, floodDirty = false, radPx = 0;
       const readProg = () => {
         const r = run.getBoundingClientRect();
         const span = Math.max(1, r.height - innerHeight);
@@ -3390,6 +3402,33 @@
          * Le module publie sa sortie, la main attend. */
         const want = (window.__webOutK === undefined || window.__webOutK >= 0.999) ? 1 : 0;
         gate += (want - gate) * 0.05;
+        flood += ((window.__csFlood ? 1 : 0) - flood) * 0.055;
+        if (flood < 0.0008) flood = 0;
+        /* LE PANNEAU S'ÉLARGIT, IL NE S'OUVRE PAS. Il a la largeur du
+         * contenu, pas celle de la fenêtre, donc la carte qui déborde
+         * s'arrêtait net sur les gouttières. Le laisser déborder rend la
+         * page large : une barre horizontale apparaît sous une carte censée
+         * ne rien changer. Il garde donc sa coupe — la main doit être à
+         * moitié hors du cadre — et gagne les gouttières le temps de la
+         * crue, mesurées sur la fenêtre SANS sa barre. */
+        const wide = flood > 0.02;
+        if (wide !== wasWide) {
+          wasWide = wide;
+          const stk = deck.parentElement;
+          stk.style.marginLeft = stk.style.marginRight = '';
+          if (wide) {
+            const m = Math.max(0, (document.documentElement.clientWidth -
+                                   stk.getBoundingClientRect().width) / 2);
+            stk.style.marginLeft = stk.style.marginRight = (-m) + 'px';
+          }
+        }
+        window.__csFloodK = flood;
+        const FL2 = sm(cl(flood));
+        // ce qu'il faut d'agrandissement pour que la carte couvre la fenêtre
+        const need = FL2 > 0
+          ? Math.max(innerWidth / cds[0].offsetWidth,
+                     innerHeight / cds[0].offsetHeight) * 1.34
+          : 1;
         const H = deck.clientHeight || innerHeight;
         const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
         const cw = cds[0].offsetWidth || 340;
@@ -3460,10 +3499,53 @@
            * sans tourner est une image qu'on pousse ; une carte qui s'oriente
            * vers le curseur est une carte qu'on tient. */
           const rx = 9 * (1 - a) + pty * 6.5 * lead + o * 40;
+          /* LA CARTE QUI DÉBORDE. La dernière, et seulement elle : elle
+           * revient au centre, se retourne dos vers nous — le dos est du
+           * papier — et grandit jusqu'à ce que le cadre soit ce papier. Ses
+           * coins s'ouvrent en même temps : un rectangle arrondi à l'échelle
+           * de l'écran est une carte posée sur la page, pas la page. */
+          let X = x, Y = y, Z = z, RX = rx, RY = ry, RZ = rz, S = 1;
+          /* Et tout est rendu quand la crue est finie. Le bloc de crue ne
+           * s'exécute que pendant la crue : sans ce nettoyage, le rayon, le
+           * voile et l'ombre restaient tels qu'ils étaient à la dernière
+           * frame où elle existait encore. */
+          if (i === N - 1 && FL2 === 0 && floodDirty) {
+            floodDirty = false;
+            const fa0 = cds[i].firstElementChild, bk0 = cds[i].lastElementChild;
+            fa0.style.borderRadius = bk0.style.borderRadius = '';
+            bk0.style.boxShadow = '';
+            bk0.children[0].style.opacity = bk0.children[1].style.opacity = '';
+          }
+          if (i === N - 1 && FL2 > 0) {
+            X = x * (1 - FL2); Y = y * (1 - FL2); Z = z * (1 - FL2);
+            RX = rx * (1 - FL2); RZ = rz * (1 - FL2);
+            RY = ry * (1 - FL2) + 180 * FL2;
+            S = 1 + (need - 1) * FL2;
+            /* Le rayon s'ouvre EN PIXELS, depuis celui de la carte. Écrit en
+             * pour-cent il valait cent à l'état de repos, c'est-à-dire une
+             * ellipse : la carte revenait de la crue en pastille. */
+            const fa = cds[i].firstElementChild, bk = cds[i].lastElementChild;
+            if (!radPx) radPx = parseFloat(getComputedStyle(fa).borderRadius) || 12;
+            const rr = ((1 - FL2) * radPx).toFixed(1) + 'px';
+            fa.style.borderRadius = rr;
+            bk.style.borderRadius = rr;
+            bk.style.boxShadow = FL2 > 0.5 ? 'none' : '';
+            floodDirty = true;
+            /* ET LE DESSIN SE DISSOUT EN CHEMIN. Ce qu'on récupère de la
+             * carte, c'est SON BLANC : à l'échelle de l'écran sa composition
+             * n'est plus une carte, c'est un motif plein cadre qu'on aurait à
+             * lire au moment où il n'y a plus rien à lire. Le papier reste,
+             * le dessin s'en va, et la section suivante se pose sur du blanc
+             * uni — même blanc, aucun raccord. */
+            const fade = (1 - cl((FL2 - 0.42) / 0.4)).toFixed(3);
+            bk.children[0].style.opacity = fade;
+            bk.children[1].style.opacity = fade;
+          }
           cds[i].style.transform =
-            'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px)' +
-            ' rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)' +
-            ' rotateZ(' + rz.toFixed(2) + 'deg)';
+            'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' + Z.toFixed(1) + 'px)' +
+            ' rotateX(' + RX.toFixed(2) + 'deg) rotateY(' + RY.toFixed(2) + 'deg)' +
+            ' rotateZ(' + RZ.toFixed(2) + 'deg)' +
+            (S !== 1 ? ' scale(' + S.toFixed(4) + ')' : '');
           /* PAS D'OPACITÉ SUR UNE CARTE. Une opacité inférieure à 1 APLATIT le
            * contexte 3D : le navigateur cesse de trier les deux faces, et on
            * voit le recto à travers le dos — c'est le clignotement à
@@ -3726,6 +3808,8 @@
   async function backWhite() {
     if (running) return;
     running = true; freeBack = false; whited = false;
+    // la carte reprend le cadre avant que la page ne bouge, comme à l'aller
+    window.__csFlood = 1;
 
 
     /* Les pavés ne reviennent pas avec la page. Le pilote les place en
@@ -3772,6 +3856,9 @@
      * glisse ensuite hors du cadre. Au plafond elle est exactement sous le
      * bord, et le relais ne se voit pas. */
     await trip;
+    /* Et elle se replie une fois la page revenue dans la section : repliée
+     * plus tôt, on la verrait rétrécir au milieu du trajet. */
+    window.__csFlood = 0;
     await wait(560);
 
     inBounds();
