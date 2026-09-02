@@ -3964,176 +3964,268 @@ Stage.register(
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
     let bootMark = true;
-    /* EIGHTEEN REAL FRONT PAGES, all of them in English.
+    /* THE ARCHIVES, BY COUNTRY.
      *
-     * The reel used to print papers that never existed — The Daily Splash,
-     * The Stone & The Spike — with headlines to match. Under a line that says
-     * reporting is still text heavy, an invented paper makes the claim about
-     * nothing: a reader has no way to tell whether the thing described ever
-     * happened.
+     * A shelf per country, and the reader's own shelf goes on the reel first.
+     * A French reader meets J'Accuse before the Titanic; an English shelf
+     * fills whatever room is left, and a country we hold no pages for simply
+     * gets the English one — which is the fallback, not a failure.
      *
-     * These happened. Masthead, weekday, date, headline and deck are the page
-     * as it was printed; every one was checked against a source before it was
-     * written here, and every weekday was recomputed from its date rather than
-     * remembered. The body under them is set text and is NOT a quotation —
-     * nothing on this reel puts words in a newsroom's mouth.
+     * WHERE THE READER IS, WITHOUT ASKING ANYONE. The browser already knows
+     * what clock it keeps and what languages it was set to; both are read
+     * locally and neither leaves the page. There is no geolocation prompt, no
+     * lookup service, and nothing about the reader is sent anywhere — the
+     * whole thing is a timezone string and a language tag.
      *
-     * A PAPER KEEPS ITS OWN MASTHEAD. The style belongs to the paper and not
-     * to the slot, so the Times always arrives centred under a double rule and
-     * the Herald always sets its name left: the reel reads as a shelf of
-     * archives rather than as a shuffle of names and lines. */
-    const ARCHIVE = [
-      // ---- centred under a double rule
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "TUESDAY, APRIL 16, 1912",
-        edition: "ALL THE NEWS THAT'S FIT TO PRINT",
-        head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
-        deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "MONDAY, NOVEMBER 11, 1918",
-        edition: "ALL THE NEWS THAT'S FIT TO PRINT",
-        head: "ARMISTICE SIGNED, END OF THE WAR!",
-        deck: "Berlin Seized by Revolutionists",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "MONDAY, DECEMBER 8, 1941",
-        edition: "LATE CITY EDITION",
-        head: "JAPAN WARS ON U.S. AND BRITAIN",
-        deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "TUESDAY, MAY 8, 1945",
-        edition: "LATE CITY EDITION",
-        head: "THE WAR IN EUROPE IS ENDED!",
-        deck: "Surrender Is Unconditional",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "MONDAY, JULY 21, 1969",
-        edition: "LATE CITY EDITION",
-        head: "MEN WALK ON MOON",
-        deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "SUNDAY, JUNE 13, 1971",
-        edition: "LATE CITY EDITION",
-        head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
-        deck: "A series drawn from a secret history of the war",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "WEDNESDAY, SEPTEMBER 12, 2001",
-        edition: "LATE EDITION",
-        head: "U.S. ATTACKED",
-        deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
-      },
-      {
-        style: "centre",
-        paper: "The New York Times",
-        when: "WEDNESDAY, NOVEMBER 5, 2008",
-        edition: "LATE EDITION",
-        head: "OBAMA ELECTED PRESIDENT AS RACIAL BARRIER FALLS",
-        deck: "The first Black president of the United States",
-      },
-      // ---- the name set left
-      {
-        style: "left",
-        paper: "The New York Herald",
-        when: "SATURDAY, APRIL 15, 1865",
-        edition: "EXTRA",
-        head: "ASSASSINATION OF PRESIDENT LINCOLN",
-        deck: "The President Shot at the Theatre Last Evening",
-      },
-      {
-        style: "left",
-        paper: "The Boston Globe",
-        when: "SUNDAY, JANUARY 6, 2002",
-        edition: "SPOTLIGHT",
-        head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
-        deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
-      },
-      // ---- letter-spaced and thin
-      {
-        style: "tracked",
-        paper: "THE SUN",
-        when: "TUESDAY, SEPTEMBER 21, 1897",
-        edition: "NEW YORK",
-        head: "IS THERE A SANTA CLAUS?",
-        deck: "The editorial answering Virginia O'Hanlon, eight years old",
-      },
-      {
-        style: "tracked",
-        paper: "CALL-CHRONICLE-EXAMINER",
-        when: "THURSDAY, APRIL 19, 1906",
-        edition: "THREE PAPERS, ONE PRESS",
-        head: "EARTHQUAKE AND FIRE: SAN FRANCISCO IN RUINS",
-        deck: "Death and destruction have been the fate of San Francisco",
-      },
-      // ---- a reversed banner
-      {
-        style: "band",
-        paper: "CHICAGO DAILY TRIBUNE",
-        when: "WEDNESDAY, NOVEMBER 3, 1948",
-        edition: "FINAL EDITION",
-        head: "DEWEY DEFEATS TRUMAN",
-        deck: "The result the paper printed before the count came in",
-      },
-      {
-        style: "band",
-        paper: "VARIETY",
-        when: "WEDNESDAY, OCTOBER 30, 1929",
-        edition: "NEW YORK",
-        head: "WALL ST. LAYS AN EGG",
-        deck: "The crash, in the trade paper's own language",
-      },
-      // ---- the name in a rule box
-      {
-        style: "boxed",
-        paper: "THE GUARDIAN",
-        when: "THURSDAY, JUNE 6, 2013",
-        edition: "LONDON",
-        head: "NSA COLLECTING PHONE RECORDS OF MILLIONS OF VERIZON CUSTOMERS DAILY",
-        deck: "The first of the documents taken from the National Security Agency",
-      },
-      {
-        style: "boxed",
-        paper: "THE GUARDIAN",
-        when: "MONDAY, JULY 4, 2011",
-        edition: "LONDON",
-        head: "MILLY DOWLER'S VOICEMAIL WAS HACKED BY NEWS OF THE WORLD",
-        deck: "Messages deleted while the missing schoolgirl was still being searched for",
-      },
-      // ---- the name left with its ears to the right
-      {
-        style: "shoulder",
-        paper: "The Washington Post",
-        when: "SUNDAY, JUNE 18, 1972",
-        edition: "FINAL",
-        head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
-        deck: "The break-in at the Watergate, on the morning after",
-      },
-      {
-        style: "shoulder",
-        paper: "The Washington Post",
-        when: "FRIDAY, AUGUST 9, 1974",
-        edition: "FINAL",
-        head: "NIXON RESIGNS",
-        deck: "The first President of the United States to leave the office",
-      },
-    ];
+     * Masthead, weekday, date, headline and deck are the page as it was
+     * printed. Every headline was checked against a source before it was
+     * written here, and every weekday was recomputed from its date rather
+     * than remembered. The body under them is lorem, on purpose. */
+    const SHELF = {
+      // ---- the United States
+      US: [
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, APRIL 16, 1912",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
+          deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, NOVEMBER 11, 1918",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "ARMISTICE SIGNED, END OF THE WAR!",
+          deck: "Berlin Seized by Revolutionists",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, DECEMBER 8, 1941",
+          edition: "LATE CITY EDITION",
+          head: "JAPAN WARS ON U.S. AND BRITAIN",
+          deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, MAY 8, 1945",
+          edition: "LATE CITY EDITION",
+          head: "THE WAR IN EUROPE IS ENDED!",
+          deck: "Surrender Is Unconditional",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, JULY 21, 1969",
+          edition: "LATE CITY EDITION",
+          head: "MEN WALK ON MOON",
+          deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "SUNDAY, JUNE 13, 1971",
+          edition: "LATE CITY EDITION",
+          head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
+          deck: "A series drawn from a secret history of the war",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "WEDNESDAY, SEPTEMBER 12, 2001",
+          edition: "LATE EDITION",
+          head: "U.S. ATTACKED",
+          deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "WEDNESDAY, NOVEMBER 5, 2008",
+          edition: "LATE EDITION",
+          head: "OBAMA ELECTED PRESIDENT AS RACIAL BARRIER FALLS",
+          deck: "The first Black president of the United States",
+        },
+        {
+          style: "left",
+          paper: "The New York Herald",
+          when: "SATURDAY, APRIL 15, 1865",
+          edition: "EXTRA",
+          head: "ASSASSINATION OF PRESIDENT LINCOLN",
+          deck: "The President Shot at the Theatre Last Evening",
+        },
+        {
+          style: "left",
+          paper: "The Boston Globe",
+          when: "SUNDAY, JANUARY 6, 2002",
+          edition: "SPOTLIGHT",
+          head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
+          deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
+        },
+        {
+          style: "tracked",
+          paper: "THE SUN",
+          when: "TUESDAY, SEPTEMBER 21, 1897",
+          edition: "NEW YORK",
+          head: "IS THERE A SANTA CLAUS?",
+          deck: "The editorial answering Virginia O'Hanlon, eight years old",
+        },
+        {
+          style: "tracked",
+          paper: "CALL-CHRONICLE-EXAMINER",
+          when: "THURSDAY, APRIL 19, 1906",
+          edition: "THREE PAPERS, ONE PRESS",
+          head: "EARTHQUAKE AND FIRE: SAN FRANCISCO IN RUINS",
+          deck: "Death and destruction have been the fate of San Francisco",
+        },
+        {
+          style: "band",
+          paper: "CHICAGO DAILY TRIBUNE",
+          when: "WEDNESDAY, NOVEMBER 3, 1948",
+          edition: "FINAL EDITION",
+          head: "DEWEY DEFEATS TRUMAN",
+          deck: "The result the paper printed before the count came in",
+        },
+        {
+          style: "band",
+          paper: "VARIETY",
+          when: "WEDNESDAY, OCTOBER 30, 1929",
+          edition: "NEW YORK",
+          head: "WALL ST. LAYS AN EGG",
+          deck: "The crash, in the trade paper's own language",
+        },
+        {
+          style: "shoulder",
+          paper: "The Washington Post",
+          when: "SUNDAY, JUNE 18, 1972",
+          edition: "FINAL",
+          head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
+          deck: "The break-in at the Watergate, on the morning after",
+        },
+        {
+          style: "shoulder",
+          paper: "The Washington Post",
+          when: "FRIDAY, AUGUST 9, 1974",
+          edition: "FINAL",
+          head: "NIXON RESIGNS",
+          deck: "The first President of the United States to leave the office",
+        },
+      ],
+      // ---- the United Kingdom
+      GB: [
+        {
+          style: "boxed",
+          paper: "THE GUARDIAN",
+          when: "MONDAY, JULY 4, 2011",
+          edition: "LONDON",
+          head: "MILLY DOWLER'S VOICEMAIL WAS HACKED BY NEWS OF THE WORLD",
+          deck: "Messages deleted while the missing schoolgirl was still being searched for",
+        },
+        {
+          style: "boxed",
+          paper: "THE GUARDIAN",
+          when: "THURSDAY, JUNE 6, 2013",
+          edition: "LONDON",
+          head: "NSA COLLECTING PHONE RECORDS OF MILLIONS OF VERIZON CUSTOMERS DAILY",
+          deck: "The first of the documents taken from the National Security Agency",
+        },
+      ],
+      // ---- France
+      FR: [
+        {
+          style: "tracked",
+          paper: "L'AURORE",
+          when: "JEUDI 13 JANVIER 1898",
+          edition: "LITTÉRAIRE, ARTISTIQUE, SOCIALE",
+          head: "J'ACCUSE…!",
+          deck: "Lettre au Président de la République, par Émile Zola",
+        },
+        {
+          style: "band",
+          paper: "L'ÉQUIPE",
+          when: "LUNDI 13 JUILLET 1998",
+          edition: "ÉDITION SPÉCIALE",
+          head: "POUR L'ÉTERNITÉ",
+          deck: "La France championne du monde",
+        },
+        {
+          style: "boxed",
+          paper: "LE MONDE",
+          when: "JEUDI 13 SEPTEMBRE 2001",
+          edition: "ÉDITORIAL",
+          head: "NOUS SOMMES TOUS AMÉRICAINS",
+          deck: "L'éditorial de Jean-Marie Colombani, en première page",
+        },
+        {
+          style: "shoulder",
+          paper: "Charlie Hebdo",
+          when: "MERCREDI 14 JANVIER 2015",
+          edition: "N° 1178",
+          head: "TOUT EST PARDONNÉ",
+          deck: "Le numéro des survivants, une semaine après l'attentat",
+        },
+      ],
+      /* SWITZERLAND IS NAMED AND EMPTY, and that is deliberate.
+       *
+       * Every other line on these shelves was checked against a source before
+       * it was written. Swiss front pages are the one set I could not source
+       * that way: the events are documented — the women's vote of 7 February
+       * 1971, the Swissair grounding of 2 October 2001 — but not the wording
+       * their papers put over them, and a headline half-remembered is worth
+       * less here than none. A Swiss reader therefore gets the English shelf,
+       * which is the stated fallback. Fill this and it takes precedence with
+       * no other change. */
+      CH: [],
+    };
+
+    /* Which shelf, decided locally. `?archives=FR` forces one, which is how
+     * this is looked at without changing where you are standing. */
+    const HOME = (() => {
+      const q = /[?&]archives=([A-Za-z]{2})\b/.exec(location.search);
+      if (q) return q[1].toUpperCase();
+      /* The clock first: it says where the machine IS, where the language
+       * says what it reads in — and a French speaker in Zurich should meet
+       * the shelf of the country they are standing in. */
+      const CLOCK = {
+        "Europe/Zurich": "CH",
+        "Europe/Busingen": "CH",
+        "Europe/Paris": "FR",
+        "Europe/London": "GB",
+        "Europe/Belfast": "GB",
+      };
+      const US_CLOCK =
+        /^(America\/(New_York|Detroit|Chicago|Denver|Phoenix|Los_Angeles|Boise|Juneau|Sitka|Nome|Adak|Anchorage|Menominee|Indiana\/|Kentucky\/|North_Dakota\/)|Pacific\/Honolulu)/;
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        if (CLOCK[tz]) return CLOCK[tz];
+        if (US_CLOCK.test(tz)) return "US";
+      } catch {
+        /* a browser too old to have Intl simply reads the language instead */
+      }
+      const langs = navigator.languages || [navigator.language || ""];
+      for (const l of langs) {
+        const m = /-([A-Za-z]{2})$/.exec(l);
+        if (m) return m[1].toUpperCase();
+      }
+      return null;
+    })();
+
+    /* The reel is three columns of six, so it wants EIGHTEEN pages and it
+     * wants them all different — that is what stops two webs holding the same
+     * page. The home shelf leads, the English shelf fills, and the count is
+     * taken at eighteen however long either of them is. */
+    const ARCHIVE = (() => {
+      const out = [];
+      const add = (a) => {
+        if (out.length < 18 && out.indexOf(a) < 0) out.push(a);
+      };
+      for (const a of SHELF[HOME] || []) add(a);
+      for (const a of SHELF.US.concat(SHELF.GB)) add(a);
+      return out;
+    })();
+    window.__archiveHome = HOME; // so the shelf on the reel can be asked for
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
