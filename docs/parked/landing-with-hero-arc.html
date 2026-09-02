@@ -372,79 +372,103 @@
      derniers pixels de son écran de scroll, et la pile ne se lisait pas.
      L'ordre du document suffit à décider qui passe devant. */
   /* ------------------------------------------------------------------
-     LA PREMIÈRE SECTION : LE JEU DE CARTES QUI SE PRÉSENTE.
+     LA PREMIÈRE SECTION : LE JEU DE CARTES, MENÉ AU DÉFILEMENT.
 
      Le geste principal de cette page n'est pas typographique, c'est LA CASE :
-     un rectangle à coins doux posé sur le papier. Le catalogue est un plateau
-     de cases, ce que fait Splash est un champ de feuilles, les constats de la
-     page livrée sont des cases qui montent par-dessus la bobine. Une section
-     d'ici sans case n'est pas d'ici.
-
-     Ici les cases sont DEBOUT. Cinq cartes arrivent par la gauche du cadre,
-     sur le flanc, et se rangent en éventail : celles de gauche tournées vers
+     un rectangle à coins doux. Le catalogue est un plateau de cases, ce que
+     fait Splash est un champ de feuilles, les constats de la page livrée sont
+     des cases qui montent par-dessus la bobine. Ici elles sont DEBOUT : cinq
+     cartes sur le flanc, rangées en éventail — celles de gauche tournées vers
      la droite, celles de droite vers la gauche, comme un livre ouvert. Celle
-     du milieu écarte les autres, se retourne pour être lue, tient le temps
-     d'une lecture, puis se range et décale tout le jeu d'un cran.
+     du milieu écarte les autres, se retourne pour être lue, puis se range et
+     décale tout le jeu d'un cran.
+
+     SUR FOND SOMBRE, donc le raccord avec la presse est direct : le papier se
+     retire par le haut et ce qu'il découvre est le même sol que celui sur
+     lequel il se tenait. Rien ne change de valeur au passage.
+
+     ET C'EST LE DÉFILEMENT QUI MÈNE. Une horloge décide toute seule de ce
+     qu'on lit et de quand on a fini de le lire ; le lecteur décide mieux. Le
+     panneau est collé, la course de la section est le jeu, et la carte lue
+     est celle où l'on est.
 
      LE BLEU EST LÀ OÙ EST L'ATTENTION. Le catalogue pose exactement une case
      en bleu plein dans un champ de neutres ; ici cette case unique n'est pas
      posée une fois pour toutes — c'est celle qu'on lit, donc le bleu se
-     déplace avec elle. La règle du site, rendue mobile.
-
-     La perspective est portée par le PLATEAU et pas par les cartes : elles
-     partagent un point de fuite, sinon chacune est vue depuis un endroit
-     différent et l'éventail n'en est plus un. */
-  .chapter{position:relative;background:var(--paper);color:var(--ink);
+     déplace avec elle. La règle du site, rendue mobile. */
+  .chapter{position:relative;background:var(--ink);color:var(--paper);
            padding:0 var(--gut)}
-  .cs{max-width:var(--max);margin:0 auto;
-      padding:clamp(56px,9vh,120px) 0 clamp(70px,11vh,150px)}
+  /* La course : un cran par carte, plus un écran pour tenir la dernière. */
+  .csrun{--n:5;max-width:var(--max);margin:0 auto;
+         height:calc(var(--n) * 66vh + 100vh)}
+  .csstick{position:sticky;top:0;height:100vh;height:100dvh;
+           display:flex;flex-direction:column;
+           padding:calc(var(--bar) + clamp(24px,5vh,60px)) 0 clamp(28px,5vh,60px)}
 
   .cseye{display:flex;align-items:center;gap:9px;
          font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.19em;
          text-transform:uppercase;opacity:.5}
   .cseye i{width:7px;height:7px;background:var(--amber);flex:0 0 auto}
-  .cs h2{margin:clamp(18px,2.6vh,30px) 0 0;font-family:var(--D);font-weight:300;
-         letter-spacing:-.03em;line-height:.98;max-width:17ch;
-         font-size:clamp(28px,4.4vw,68px)}
-  .cslede{margin:clamp(16px,2.2vh,24px) 0 0;max-width:50ch;
-          font-size:clamp(13.5px,1.15vw,16px);line-height:1.6;opacity:.6}
+  .csstick h2{margin:clamp(14px,2vh,24px) 0 0;font-family:var(--D);font-weight:300;
+              letter-spacing:-.03em;line-height:.98;max-width:17ch;
+              font-size:clamp(26px,3.6vw,56px)}
+  .cslede{margin:clamp(12px,1.6vh,20px) 0 0;max-width:50ch;
+          font-size:clamp(13px,1.1vw,15.5px);line-height:1.6;opacity:.55}
 
-  .csdeck{position:relative;margin-top:clamp(38px,6vh,80px);
-          height:clamp(300px,40vh,430px);
-          perspective:1700px;perspective-origin:50% 46%}
+  .csdeck{position:relative;flex:1;min-height:0;margin-top:clamp(18px,3vh,40px);
+          perspective:1700px;perspective-origin:50% 50%}
   .csc{position:absolute;top:50%;left:50%;
-       width:clamp(250px,25vw,380px);height:clamp(280px,37vh,400px);
-       margin:0 0 0 calc(clamp(250px,25vw,380px) / -2);
+       width:clamp(250px,24vw,380px);height:min(100%, clamp(300px,42vh,460px));
+       margin:0 0 0 calc(clamp(250px,24vw,380px) / -2);
        transform:translate(0,-50%) translateX(-64vw) rotateY(72deg);
        transform-origin:50% 50%;
        box-sizing:border-box;border-radius:var(--rad);overflow:hidden;
-       padding:clamp(16px,1.5vw,26px);display:flex;flex-direction:column;
-       background:var(--table);color:var(--ink);
-       box-shadow:0 26px 60px -30px rgba(20,20,28,.5);
-       transition:transform .95s cubic-bezier(.3,.72,.26,1),
-                  background .5s ease, color .5s ease, box-shadow .7s ease}
-  /* La carte lue : bleu plein, et un peu plus détachée du papier. */
-  .csc.on{background:var(--blue);color:var(--paper);
-          box-shadow:0 44px 90px -34px rgba(26,47,251,.55)}
+       padding:clamp(15px,1.4vw,24px);display:flex;flex-direction:column;
+       background:rgba(237,234,227,.075);color:var(--paper);
+       border:1px solid rgba(237,234,227,.12);
+       box-shadow:0 30px 70px -34px rgba(0,0,0,.8);
+       transition:transform .8s cubic-bezier(.3,.72,.26,1),
+                  background .45s ease, border-color .45s ease, box-shadow .6s ease}
+  /* La carte lue : bleu plein, sans filet — c'est une surface, pas une case
+     vide, et la seule du plateau. */
+  .csc.on{background:var(--blue);border-color:transparent;
+          box-shadow:0 46px 96px -34px rgba(26,47,251,.7)}
   .cscn{font-family:var(--C);font-size:10.5px;font-weight:500;letter-spacing:.16em;
-        opacity:.36;margin-bottom:auto}
-  .csc.on .cscn{opacity:.62}
+        opacity:.4;margin-bottom:auto}
+  .csc.on .cscn{opacity:.66}
   .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.78;
-          font-size:clamp(52px,6.2vw,104px);font-variant-numeric:tabular-nums;
-          margin-bottom:clamp(8px,1vh,14px)}
+          font-size:clamp(48px,5.6vw,96px);font-variant-numeric:tabular-nums;
+          margin-bottom:clamp(6px,.9vh,12px)}
   .cscbig i{font-style:normal;font-size:.38em;letter-spacing:-.02em}
   .cscname{font-family:var(--D);font-weight:300;letter-spacing:-.03em;
-           line-height:1;font-size:clamp(19px,2.1vw,31px)}
-  .cscsrc{margin-top:clamp(10px,1.3vh,16px);font-family:var(--C);font-size:10.5px;
-          font-weight:500;letter-spacing:.16em;opacity:.38}
-  .csc.on .cscsrc{opacity:.66}
+           line-height:1;font-size:clamp(18px,2vw,29px)}
+  .cscwhy{margin:clamp(10px,1.4vh,16px) 0 0;font-size:13px;line-height:1.55;
+          opacity:.62}
+  .cscsrc{margin-top:clamp(9px,1.2vh,15px);font-family:var(--C);font-size:10.5px;
+          font-weight:500;letter-spacing:.16em;opacity:.42}
+  .csc.on .cscwhy{opacity:.82}
+  .csc.on .cscsrc{opacity:.72}
+  /* ON NE LIT QUE CELLE DU MILIEU. Vues de trois quarts, deux cartes voisines
+     se chevauchent et leurs lignes se croisent : ce qui se lit alors n'est
+     aucune des deux. Elles gardent leur numéro et rendent le reste — ce sont
+     des surfaces en attente, pas des textes en concurrence. */
+  .csc:not(.on) .cscbig,
+  .csc:not(.on) .cscname,
+  .csc:not(.on) .cscwhy,
+  .csc:not(.on) .cscsrc{opacity:.07;transition:opacity .45s ease}
+
+  /* Le compteur : où l'on en est dans le jeu, dans la langue du site. */
+  .cscount{margin-top:clamp(14px,2vh,26px);display:flex;align-items:baseline;gap:9px;
+           font-family:var(--C);font-size:10.5px;font-weight:500;letter-spacing:.16em}
+  .cscount b{color:var(--blue);font-weight:500}
+  .cscount span{opacity:.35}
 
   @media (max-width:820px){
-    .csdeck{height:clamp(260px,44vh,360px);perspective:1100px}
-    .csc{width:min(74vw,300px);margin-left:min(-37vw,-150px)}
+    .csdeck{perspective:1100px}
+    .csc{width:min(72vw,300px);margin-left:min(-36vw,-150px)}
   }
   @media (prefers-reduced-motion:reduce){
-    .csc{transition:none}
+    .csc{transition:background .3s ease}
   }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
@@ -1928,17 +1952,20 @@
      break and no field of plates, because those were choreography for
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
-<section class="chapter" data-ground="#edeae3">
-  <div class="cs">
-    <div class="cseye"><i></i>The case</div>
-    <h2>Four reasons the desk should be showing its work.</h2>
-    <p class="cslede">Splash is not a case for prettier pages. It is a case for pages that can be checked, trusted, recomposed and found &mdash; and each of those is somebody else&rsquo;s finding, not ours.</p>
-    <div class="csdeck">
-      <div class="csc"><span class="cscn">01</span><b class="cscbig">70<i>%</i></b><span class="cscname">say it makes stories more reliable</span><span class="cscsrc">EJC &middot; 768 practitioners, 2023</span></div>
-      <div class="csc"><span class="cscn">02</span><span class="cscname">Design is read as rigour, before a word is.</span><span class="cscsrc">Information Design Journal &middot; ACM CHI</span></div>
-      <div class="csc"><span class="cscn">03</span><span class="cscname">When articles become inputs, form becomes identity.</span><span class="cscsrc">Reuters Institute, 2025</span></div>
-      <div class="csc"><span class="cscn">04</span><span class="cscname">A graphic is a second way of being found.</span><span class="cscsrc">Google &middot; AI Search documentation</span></div>
-      <div class="csc"><span class="cscn">05</span><span class="cscname">So the desk keeps the story, and the page gets shown.</span><span class="cscsrc">Splash</span></div>
+<section class="chapter" data-ground="#14141c">
+  <div class="csrun">
+    <div class="csstick">
+      <div class="cseye"><i></i>The case</div>
+      <h2>Four reasons the desk should be showing its work.</h2>
+      <p class="cslede">Splash is not a case for prettier pages. It is a case for pages that can be checked, trusted, recomposed and found &mdash; and each of those is somebody else&rsquo;s finding, not ours.</p>
+      <div class="cscount"><b>01</b><span>/ 05</span></div>
+      <div class="csdeck">
+        <div class="csc"><span class="cscn">01</span><b class="cscbig">70<i>%</i></b><span class="cscname">say it makes stories more reliable</span><p class="cscwhy">In a survey of 768 people working in data journalism, 70% said it makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p><span class="cscsrc">EJC &middot; 768 practitioners, 2023</span></div>
+        <div class="csc"><span class="cscn">02</span><span class="cscname">Design is read as rigour, before a word is.</span><p class="cscwhy">Clear visual design makes the same reporting read as clearer, more rigorous and more engaging. A page is judged before it is read, and the judgement carries.</p><span class="cscsrc">Information Design Journal &middot; ACM CHI</span></div>
+        <div class="csc"><span class="cscn">03</span><span class="cscname">When articles become inputs, form becomes identity.</span><p class="cscwhy">AI turns fixed articles into liquid information that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p><span class="cscsrc">Reuters Institute, 2025</span></div>
+        <div class="csc"><span class="cscn">04</span><span class="cscname">A graphic is a second way of being found.</span><p class="cscwhy">AI search is multimodal: it carries images and video alongside the text, so a piece with a graphic has more than one way of being found.</p><span class="cscsrc">Google &middot; AI Search documentation</span></div>
+        <div class="csc"><span class="cscn">05</span><span class="cscname">So the desk keeps the story, and the page gets shown.</span><p class="cscwhy">Splash teaches the assistant your newsroom already uses to make the graphic itself &mdash; a chart, a map, a piece of motion &mdash; out of the reporting you have already done.</p><span class="cscsrc">Splash</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -3083,36 +3110,42 @@
     if (!pileQ) { pileQ = true; requestAnimationFrame(stack); }
   }, { passive: true });
 
-  /* LE JEU SE PRÉSENTE, UNE CARTE À LA FOIS.
+  /* LE JEU SE PRÉSENTE, ET C'EST LE LECTEUR QUI TOURNE LES CARTES.
    *
-   * Chaque carte n'a qu'un état : sa place par rapport à celle qu'on lit. À
-   * gauche elle est tournée vers la droite, à droite vers la gauche, au
-   * milieu elle est de face — et comme tout se calcule à partir d'un seul
-   * nombre, celle du milieu ÉCARTE les autres sans que personne ait à le
-   * dire : elle occupe sa largeur, les autres commencent après.
+   * L'état d'une carte est un seul nombre : sa distance à celle qu'on lit. À
+   * gauche elle est tournée vers la droite, à droite vers la gauche, au milieu
+   * de face — et celle du milieu ÉCARTE les autres sans que personne ait à le
+   * dire, puisqu'elle prend sa largeur et que les autres commencent après.
    *
-   * Le jeu ne tourne que lorsqu'on le regarde. Un carrousel qui avance dans
-   * une section qu'on a quittée a déjà fait trois tours quand on revient, et
-   * ce qu'on trouve n'est jamais son début. */
+   * Le rang vient de la COURSE de la section, pas d'une horloge : un panneau
+   * collé, un cran par carte. Une horloge décide toute seule de ce qu'on lit
+   * et de quand on a fini de le lire ; ici c'est le poignet.
+   *
+   * Coalescé sur une frame — le défilement natif tire des dizaines
+   * d'événements par seconde pour cinq états possibles. */
   {
-    const deck = document.querySelector('.chapter .csdeck');
+    const run = document.querySelector('.chapter .csrun');
+    const deck = run && run.querySelector('.csdeck');
     const cds = deck ? [...deck.querySelectorAll('.csc')] : [];
+    const tally = run && run.querySelector('.cscount b');
     if (cds.length) {
-      const HOLD = 3400;          // le temps d'une lecture
-      let at = 0, live = false, tick = 0, armed = false;
-      const lay = () => {
+      let at = -1, q = false, armed = false;
+      const lay = (k) => {
         const w = cds[0].offsetWidth || 320;
-        const half = w / 2 + Math.min(46, w * 0.14);
-        const step = Math.min(58, w * 0.17);
+        const half = w / 2 + Math.min(50, w * 0.15);
+        /* Assez d'écart pour que deux tranches voisines ne se recouvrent pas :
+         * serrées, elles ne font plus qu'une masse et l'éventail se lit comme
+         * une seule carte épaisse. */
+        const step = Math.min(84, w * 0.24);
         cds.forEach((el, i) => {
-          const d = i - at;
+          const d = i - k;
           let x, ry, z;
           if (d === 0) { x = 0; ry = 0; z = 70; }
           else {
-            const s = d < 0 ? -1 : 1, m = Math.abs(d);
-            x = s * (half + (m - 1) * step);
-            ry = -s * 72;
-            z = -m * 46;
+            const sg = d < 0 ? -1 : 1, m = Math.abs(d);
+            x = sg * (half + (m - 1) * step);
+            ry = -sg * 66;
+            z = -m * 42;
           }
           el.style.transform =
             'translate(0,-50%) translateX(' + x.toFixed(1) + 'px) ' +
@@ -3120,33 +3153,24 @@
           el.style.zIndex = String(20 - Math.abs(d));
           el.classList.toggle('on', d === 0);
         });
+        if (tally) tally.textContent = '0' + (k + 1);
       };
-      const step = () => { at = (at + 1) % cds.length; lay(); };
-      const run = (on) => {
-        if (on === live) return;
-        live = on;
-        clearInterval(tick);
-        if (on && !matchMedia('(prefers-reduced-motion:reduce)').matches)
-          tick = setInterval(step, HOLD);
+      const pick = () => {
+        q = false;
+        const r = run.getBoundingClientRect();
+        const span = Math.max(1, r.height - innerHeight);
+        const p = Math.max(0, Math.min(1, -r.top / span));
+        /* Un cran par carte, et le dernier cran garde la dernière : sans le
+         * moins un, la toute fin du parcours tombe au-delà du jeu. */
+        const k = Math.max(0, Math.min(cds.length - 1,
+                    Math.floor(p * cds.length - 1e-6)));
+        if (!armed || k !== at) { at = k; armed = true; lay(k); }
       };
-      if (typeof IntersectionObserver === 'function') {
-        new IntersectionObserver((es) => {
-          for (const e of es) {
-            /* Les cartes arrivent de la gauche du cadre la première fois que
-             * la section est vue, en décalé — leur transformation de départ
-             * les met hors champ, donc il suffit de les placer. */
-            if (e.isIntersecting && !armed) {
-              armed = true;
-              cds.forEach((el, i) => setTimeout(() => {
-                el.style.transitionDelay = '0s';
-                lay();
-              }, i * 110));
-            }
-            run(e.isIntersecting);
-          }
-        }, { threshold: 0.15 }).observe(deck);
-      } else { lay(); }
-      addEventListener('resize', () => { if (armed) lay(); }, { passive: true });
+      addEventListener('scroll', () => {
+        if (!q) { q = true; requestAnimationFrame(pick); }
+      }, { passive: true });
+      addEventListener('resize', () => { armed = false; pick(); }, { passive: true });
+      pick();
     }
   }
 
