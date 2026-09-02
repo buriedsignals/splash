@@ -443,13 +443,17 @@
   .csface{background:var(--face,var(--blue));color:var(--faceInk,var(--paper));
           padding:clamp(18px,1.8vw,30px);display:flex;flex-direction:column;
           box-shadow:0 40px 90px -34px var(--faceGlow,rgba(26,47,251,.6))}
-  .csback{transform:rotateY(180deg);background:#0f0f16;
-          border:1px solid rgba(237,234,227,.12);
-          box-shadow:0 30px 70px -34px rgba(0,0,0,.85)}
+  /* LE DOS EST DU PAPIER. Une page de journal est noire sur blanc, pas
+     l'inverse — et une main de pages blanches tenue sur un sol d'encre est
+     l'image que cette section raconte. Le blanc est passé de la dernière face
+     au dos de toutes : il travaille plus là. */
+  .csback{transform:rotateY(180deg);background:var(--paper);
+          border:1px solid rgba(20,20,28,.16);
+          box-shadow:0 34px 76px -30px rgba(0,0,0,.7)}
   .csback canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
   .csrose{position:absolute;left:50%;top:50%;width:clamp(38px,4.6vw,66px);
-          height:clamp(38px,4.6vw,66px);margin:-2.3vw 0 0 -2.3vw;
-          transform:translate(-50%,-50%);margin:0;color:var(--paper);opacity:.92}
+          height:clamp(38px,4.6vw,66px);
+          transform:translate(-50%,-50%);color:var(--ink);opacity:.9}
 
   /* LA FACE EST COMPOSÉE, PAS EMPILÉE. Tout était rangé en bas à gauche dans
      des corps voisins : quatre blocs de la même famille les uns sur les
@@ -3179,11 +3183,11 @@
      * qui est le haut de l'écran une fois la carte debout. */
     g.setTransform(0, -dpr, dpr, 0, 0, chv * dpr);
     const w = chv, h = cwv;
-    g.fillStyle = '#0f0f16'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#edeae3'; g.fillRect(0, 0, w, h);
 
     let st = seed >>> 0;
     const r = () => { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; };
-    const INK = (a) => 'rgba(237,234,227,' + a + ')';
+    const INK = (a) => 'rgba(20,20,28,' + a + ')';
 
     const M = Math.round(w * 0.085);
     const cols = 4 + Math.floor(r() * 3);
@@ -3196,18 +3200,18 @@
      * n'est pas du texte réduit — c'est ce qui reste d'un titre à cette
      * taille, et ça suffit à dire « haut de page ». */
     let y = top;
-    g.fillStyle = INK(0.34); g.fillRect(M, y, w - M * 2, 1.6);
+    g.fillStyle = INK(0.62); g.fillRect(M, y, w - M * 2, 1.6);
     y += 7;
     const nameW = (w - M * 2) * (0.3 + r() * 0.22);
     const nx = M + (w - M * 2 - nameW) / 2;
-    g.fillStyle = INK(0.26);
+    g.fillStyle = INK(0.5);
     for (let k = 0, x = nx; k < 4 && x < nx + nameW; k++) {
       const bw = Math.min(nx + nameW - x, (nameW / 4) * (0.5 + r() * 0.6));
       g.fillRect(x, y, bw, 5.4);
       x += bw + 4;
     }
     y += 11;
-    g.fillStyle = INK(0.16); g.fillRect(M, y, w - M * 2, 0.9);
+    g.fillStyle = INK(0.3); g.fillRect(M, y, w - M * 2, 0.9);
     y += Math.round(lh * 1.6);
 
     /* LE TROU. Une page en réserve un quelque part, et ce qui y va n'est pas
@@ -3236,11 +3240,11 @@
         // une ligne pleine, sauf la dernière d'un paragraphe : plus courte
         const short = r() < 0.14;
         const len = colW * (short ? 0.28 + r() * 0.34 : 0.9 + r() * 0.1);
-        g.fillStyle = INK(0.1 + r() * 0.04);
+        g.fillStyle = INK(0.2 + r() * 0.08);
         g.fillRect(x, ly, len, 1.5);
       }
       if (c > 0) {
-        g.fillStyle = INK(0.12);
+        g.fillStyle = INK(0.22);
         g.fillRect(Math.round(x - gut / 2), y, 0.9, Math.min(h - M, y + rows * lh) - y);
       }
     }
@@ -3248,10 +3252,10 @@
     /* DANS LE TROU, LE GRAPHIQUE. Des barres ou une ligne, dans l'une des deux
      * encres de la page — jamais dans une troisième. C'est le seul endroit du
      * dos qui ait une couleur, et c'est le sujet. */
-    const acc = r() < 0.5 ? 'rgba(26,47,251,.85)' : 'rgba(242,177,60,.8)';
-    g.fillStyle = INK(0.07); g.fillRect(bx, by, bw, bh);
-    g.fillStyle = INK(0.16); g.fillRect(bx, by, bw, 0.9);
-    g.fillStyle = INK(0.16); g.fillRect(bx, by + bh - 0.9, bw, 0.9);
+    const acc = r() < 0.5 ? 'rgba(26,47,251,.95)' : 'rgba(242,177,60,1)';
+    g.fillStyle = INK(0.05); g.fillRect(bx, by, bw, bh);
+    g.fillStyle = INK(0.3); g.fillRect(bx, by, bw, 0.9);
+    g.fillStyle = INK(0.3); g.fillRect(bx, by + bh - 0.9, bw, 0.9);
     const pad = Math.max(4, bw * 0.08);
     const ix = bx + pad, iy = by + pad, iw = bw - pad * 2, ih = bh - pad * 2;
     if (r() < 0.5) {
@@ -3259,7 +3263,7 @@
       const bwid = (iw / n) * 0.62;
       for (let k = 0; k < n; k++) {
         const hgt = ih * (0.2 + r() * 0.8);
-        g.fillStyle = k === Math.floor(r() * n) ? acc : INK(0.3);
+        g.fillStyle = k === Math.floor(r() * n) ? acc : INK(0.42);
         g.fillRect(ix + k * (iw / n), iy + ih - hgt, bwid, hgt);
       }
     } else {
@@ -3270,16 +3274,16 @@
         k ? g.lineTo(px, py) : g.moveTo(px, py);
       }
       g.stroke();
-      g.fillStyle = INK(0.22);
+      g.fillStyle = INK(0.36);
       g.fillRect(ix, iy + ih, iw, 0.9);
     }
 
     /* Le creux au centre : la rosette est posée par-dessus, et une page pleine
      * de lignes la mange. */
     const grd = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.32);
-    grd.addColorStop(0, 'rgba(15,15,22,.96)');
-    grd.addColorStop(0.55, 'rgba(15,15,22,.72)');
-    grd.addColorStop(1, 'rgba(15,15,22,0)');
+    grd.addColorStop(0, 'rgba(237,234,227,.97)');
+    grd.addColorStop(0.55, 'rgba(237,234,227,.78)');
+    grd.addColorStop(1, 'rgba(237,234,227,0)');
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
   };
 
@@ -3315,9 +3319,8 @@
       ];
       const off = Math.random() < 0.5 ? 0 : 1;
       cds.forEach((el, i) => {
-        const ink = i === cds.length - 1
-          ? ['#edeae3', '#14141c', 'rgba(237,234,227,.28)']
-          : INKS[(i + off) % INKS.length];
+        // le blanc a quitté la dernière face : il est au dos, où il travaille
+        const ink = INKS[(i + off) % INKS.length];
         el.style.setProperty('--face', ink[0]);
         el.style.setProperty('--faceInk', ink[1]);
         el.style.setProperty('--faceGlow', ink[2]);
