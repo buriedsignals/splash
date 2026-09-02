@@ -8087,9 +8087,13 @@ void main(){
       /* And read against a SIX-page column. The rate is normalised by the
        * length of the reel where it is used, so these are the numbers off
        * the panel and they mean the same thing they showed there. */
-      webSpd0: 0.0125,
-      webSpd1: 0.0105,
-      webSpd2: 0.0135,
+      /* TWO AND A HALF TIMES what they were. The three rates keep their
+       * relation to one another — the middle web is still the slow one and
+       * the right the quick one, which is what stops the set reading as one
+       * sheet — and the whole press simply runs faster. */
+      webSpd0: 0.0315,
+      webSpd1: 0.0265,
+      webSpd2: 0.034,
       // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
