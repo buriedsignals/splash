@@ -3938,6 +3938,8 @@ Stage.register(
     let outSec = 0;
     let bootAt = null;
     let waveT = 0;
+    // the camera as it stands with the hero at rest, kept for the handover
+    let restCam = null;
     /* WHERE EACH COLUMN'S FOOT IS, and where the column is across the frame,
      * in viewport pixels, while the page is being handed over.
      *
@@ -9639,6 +9641,31 @@ void main(){
             centre[0] *= 1 - pull;
             centre[1] *= 1 - pull;
           }
+        }
+
+        /* THE CAMERA DOES NOT FOLLOW THE PAGE DURING THE HANDOVER.
+         *
+         * The camera is derived from where a marked element sits in the
+         * window, and it slides to the middle of the frame as soon as the page
+         * moves — which is right when the reader is doing the moving, and
+         * wrong when the page is being CARRIED. The crossing scrolls a whole
+         * screen in six hundred milliseconds, so the paper lurched sideways
+         * and up under a gesture that is supposed to be the paper standing
+         * still while the page arrives beneath it. That was the jump.
+         *
+         * It holds the camera it had AT REST, not the one it happens to have
+         * when the hold begins. The two are the same going out; coming back
+         * they are not — the return starts a screen down, where the resting
+         * camera has already slid to the middle — and freezing that one would
+         * have put the jump back at the other end, when the hold let go over a
+         * page that was home again. */
+        if (window.__heroHold) {
+          if (restCam) {
+            centre = [restCam[0], restCam[1]];
+            zoom = restCam[2];
+          }
+        } else if (away < 0.02) {
+          restCam = [centre[0], centre[1], zoom];
         }
 
         const cw = canvas.width,
