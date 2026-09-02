@@ -3985,84 +3985,12 @@ Stage.register(
       // ---- the United States
       US: [
         {
-          style: "centre",
-          paper: "The New York Times",
-          when: "TUESDAY, APRIL 16, 1912",
-          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
-          head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
-          deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "MONDAY, NOVEMBER 11, 1918",
-          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
-          head: "ARMISTICE SIGNED, END OF THE WAR!",
-          deck: "Berlin Seized by Revolutionists",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "MONDAY, DECEMBER 8, 1941",
-          edition: "LATE CITY EDITION",
-          head: "JAPAN WARS ON U.S. AND BRITAIN",
-          deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "TUESDAY, MAY 8, 1945",
-          edition: "LATE CITY EDITION",
-          head: "THE WAR IN EUROPE IS ENDED!",
-          deck: "Surrender Is Unconditional",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "MONDAY, JULY 21, 1969",
-          edition: "LATE CITY EDITION",
-          head: "MEN WALK ON MOON",
-          deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "SUNDAY, JUNE 13, 1971",
-          edition: "LATE CITY EDITION",
-          head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
-          deck: "A series drawn from a secret history of the war",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "WEDNESDAY, SEPTEMBER 12, 2001",
-          edition: "LATE EDITION",
-          head: "U.S. ATTACKED",
-          deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
-        },
-        {
-          style: "centre",
-          paper: "The New York Times",
-          when: "WEDNESDAY, NOVEMBER 5, 2008",
-          edition: "LATE EDITION",
-          head: "OBAMA ELECTED PRESIDENT AS RACIAL BARRIER FALLS",
-          deck: "The first Black president of the United States",
-        },
-        {
           style: "left",
           paper: "The New York Herald",
           when: "SATURDAY, APRIL 15, 1865",
           edition: "EXTRA",
           head: "ASSASSINATION OF PRESIDENT LINCOLN",
           deck: "The President Shot at the Theatre Last Evening",
-        },
-        {
-          style: "left",
-          paper: "The Boston Globe",
-          when: "SUNDAY, JANUARY 6, 2002",
-          edition: "SPOTLIGHT",
-          head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
-          deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
         },
         {
           style: "tracked",
@@ -4081,12 +4009,12 @@ Stage.register(
           deck: "Death and destruction have been the fate of San Francisco",
         },
         {
-          style: "band",
-          paper: "CHICAGO DAILY TRIBUNE",
-          when: "WEDNESDAY, NOVEMBER 3, 1948",
-          edition: "FINAL EDITION",
-          head: "DEWEY DEFEATS TRUMAN",
-          deck: "The result the paper printed before the count came in",
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, APRIL 16, 1912",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
+          deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
         },
         {
           style: "band",
@@ -4097,12 +4025,20 @@ Stage.register(
           deck: "The crash, in the trade paper's own language",
         },
         {
-          style: "shoulder",
-          paper: "The Washington Post",
-          when: "SUNDAY, JUNE 18, 1972",
-          edition: "FINAL",
-          head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
-          deck: "The break-in at the Watergate, on the morning after",
+          style: "band",
+          paper: "CHICAGO DAILY TRIBUNE",
+          when: "WEDNESDAY, NOVEMBER 3, 1948",
+          edition: "FINAL EDITION",
+          head: "DEWEY DEFEATS TRUMAN",
+          deck: "The result the paper printed before the count came in",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, JULY 21, 1969",
+          edition: "LATE CITY EDITION",
+          head: "MEN WALK ON MOON",
+          deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
         },
         {
           style: "shoulder",
@@ -4111,6 +4047,14 @@ Stage.register(
           edition: "FINAL",
           head: "NIXON RESIGNS",
           deck: "The first President of the United States to leave the office",
+        },
+        {
+          style: "boxed",
+          paper: "The Boston Globe",
+          when: "SUNDAY, JANUARY 6, 2002",
+          edition: "SPOTLIGHT",
+          head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
+          deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
         },
       ],
       // ---- the United Kingdom
@@ -4122,6 +4066,22 @@ Stage.register(
           edition: "INSIGHT",
           head: "OUR THALIDOMIDE CHILDREN: A CAUSE FOR NATIONAL SHAME",
           deck: "The settlement offered to the families, examined",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "TUESDAY, MAY 4, 1982",
+          edition: "LONDON",
+          head: "GOTCHA",
+          deck: "The sinking of the Belgrano, in one word",
+        },
+        {
+          style: "centre",
+          paper: "The Sunday Times",
+          when: "SUNDAY, APRIL 24, 1983",
+          edition: "WORLD EXCLUSIVE",
+          head: "WORLD EXCLUSIVE",
+          deck: "Six pages of the Hitler diaries, before the forgery was known",
         },
         {
           style: "band",
@@ -4140,6 +4100,14 @@ Stage.register(
           deck: "Five men named over the killing of Stephen Lawrence",
         },
         {
+          style: "shoulder",
+          paper: "The Daily Telegraph",
+          when: "FRIDAY, MAY 8, 2009",
+          edition: "LONDON",
+          head: "THE TRUTH ABOUT THE CABINET'S EXPENSES",
+          deck: "The first of the expenses files, off a leaked disc",
+        },
+        {
           style: "boxed",
           paper: "THE GUARDIAN",
           when: "MONDAY, JULY 4, 2011",
@@ -4156,7 +4124,7 @@ Stage.register(
           deck: "The last of 168 years, set over a collage of its own front pages",
         },
         {
-          style: "boxed",
+          style: "tracked",
           paper: "THE GUARDIAN",
           when: "THURSDAY, JUNE 6, 2013",
           edition: "LONDON",
@@ -4173,6 +4141,38 @@ Stage.register(
           edition: "LITTÉRAIRE, ARTISTIQUE, SOCIALE",
           head: "J'ACCUSE…!",
           deck: "Lettre au Président de la République, par Émile Zola",
+        },
+        {
+          style: "band",
+          paper: "L'AUTO",
+          when: "LUNDI 19 JANVIER 1903",
+          edition: "PARIS",
+          head: "LE TOUR DE FRANCE",
+          deck: "Henri Desgrange annonce la course qui portera le journal",
+        },
+        {
+          style: "centre",
+          paper: "L'HUMANITÉ",
+          when: "LUNDI 18 AVRIL 1904",
+          edition: "PREMIER NUMÉRO",
+          head: "NOTRE BUT",
+          deck: "L'article fondateur de Jean Jaurès, en première page",
+        },
+        {
+          style: "left",
+          paper: "LE MONDE",
+          when: "MARDI 19 DÉCEMBRE 1944",
+          edition: "PARIS",
+          head: "PREMIER NUMÉRO",
+          deck: "Le premier numéro du «Monde», d'Hubert Beuve-Méry",
+        },
+        {
+          style: "shoulder",
+          paper: "Libération",
+          when: "MERCREDI 18 AVRIL 1973",
+          edition: "PARIS",
+          head: "PREMIÈRE ÉDITION",
+          deck: "Le quotidien fondé sous l'égide de Jean-Paul Sartre",
         },
         {
           style: "band",
@@ -4208,21 +4208,21 @@ Stage.register(
         },
       ],
       /* SWITZERLAND, out of the Journal de Genève and Gazette de Lausanne
-       * archive — the one Swiss press archive that is digitised page by page
-       * and citable, and the ancestor of Le Temps.
+       * archive — the one Swiss press archive digitised page by page and
+       * citable, and the ancestor of Le Temps.
        *
-       * Four of these five carry the paper's OWN wording, quoted in Le Temps's
-       * bicentenary series with a link to the scanned page. The first issue of
-       * 5 January 1826 is the exception: the page is documented, its title is
-       * not, so what stands in the headline's place says plainly what the page
-       * is rather than pretending to quote it. */
+       * Five of these nine carry the paper's OWN wording, quoted in Le Temps's
+       * bicentenary series with a link to the scanned page. The other four are
+       * pages whose existence and date are documented but whose title is not,
+       * so what stands in the headline's place says plainly what the page is
+       * rather than pretending to quote it. */
       CH: [
         {
           style: "centre",
           paper: "Journal de Genève",
           when: "JEUDI 5 JANVIER 1826",
-          edition: "PREMIÈRE ÉDITION",
-          head: "PREMIÈRE ÉDITION",
+          edition: "GENÈVE",
+          head: "PREMIER NUMÉRO",
           deck: "Le «Journal de Genève» paraît pour la première fois",
         },
         {
@@ -4232,6 +4232,14 @@ Stage.register(
           edition: "LAUSANNE",
           head: "VAUD ACCORDE LES DROITS POLITIQUES AUX FEMMES EN MATIÈRE CANTONALE",
           deck: "Le même jour, le suffrage féminin est refusé au plan fédéral",
+        },
+        {
+          style: "band",
+          paper: "GAZETTE DE LAUSANNE",
+          when: "MARDI 22 JUILLET 1969",
+          edition: "LAUSANNE",
+          head: "PREMIER PAS SUR LA LUNE",
+          deck: "La une de la «Gazette», photographie du sol lunaire à l'appui",
         },
         {
           style: "tracked",
@@ -4251,11 +4259,35 @@ Stage.register(
         },
         {
           style: "shoulder",
+          paper: "Le Nouveau Quotidien",
+          when: "MARDI 24 SEPTEMBRE 1991",
+          edition: "LAUSANNE",
+          head: "PREMIÈRE ÉDITION",
+          deck: "Un «Nouveau Quotidien» pour une Suisse «différente»",
+        },
+        {
+          style: "centre",
+          paper: "Le Temps",
+          when: "MERCREDI 18 MARS 1998",
+          edition: "GENÈVE",
+          head: "NAISSANCE DU «TEMPS»",
+          deck: "Trois quotidiens romands n'en font plus qu'un",
+        },
+        {
+          style: "shoulder",
           paper: "Le Temps",
           when: "JEUDI 14 DÉCEMBRE 2000",
           edition: "GENÈVE",
           head: "JUGÉ PRÉSIDENT",
           deck: "Cinq semaines de recomptage, et la Cour suprême tranche",
+        },
+        {
+          style: "left",
+          paper: "Le Temps",
+          when: "DIMANCHE 15 NOVEMBRE 2015",
+          edition: "ÉDITION SPÉCIALE",
+          head: "TERREUR SUR PARIS",
+          deck: "Le seul dimanche de son histoire où le journal a paru",
         },
       ],
     };
@@ -4303,6 +4335,11 @@ Stage.register(
       };
       for (const a of SHELF[HOME] || []) add(a);
       for (const a of SHELF.US.concat(SHELF.GB)) add(a);
+      /* Every shelf holds nine, so home plus the English shelf always comes
+       * to eighteen — but the count is what the reel depends on, not my
+       * arithmetic. If a shelf were ever short, the rest of the world makes
+       * it up rather than letting two webs print the same page. */
+      for (const k in SHELF) for (const a of SHELF[k]) add(a);
       return out;
     })();
     window.__archiveHome = HOME; // so the shelf on the reel can be asked for
