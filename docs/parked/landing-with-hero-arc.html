@@ -3211,8 +3211,14 @@
         for (let b = 0; b < sr; b++) taken[(rr + b) * C + c + a] = true;
     };
 
-    // trois valeurs d'encre, et rien entre les deux : un aplat se choisit
-    const TINT = ['rgba(20,20,28,.07)', 'rgba(20,20,28,.14)', 'rgba(20,20,28,.26)'];
+    /* QUATRE VALEURS D'ENCRE, ET AUCUNE COULEUR. Le bloc du jour mettait du
+     * bleu ou de l'ambre au dos, donc la carte annonçait sa face avant de se
+     * retourner — et surtout, quatre dos colorés dans une main font une main
+     * bariolée. Le dos est du papier et des gris ; la couleur arrive quand la
+     * carte se retourne, et c'est tout ce qu'elle a à faire. Quatre valeurs et
+     * rien entre les deux : un aplat se choisit, il ne se dose pas. */
+    const TINT = ['rgba(20,20,28,.05)', 'rgba(20,20,28,.11)',
+                  'rgba(20,20,28,.19)', 'rgba(20,20,28,.3)'];
     const blocks = [];
     for (let rr = 0; rr < R; rr++) {
       for (let c = 0; c < C; c++) {
@@ -3227,12 +3233,6 @@
         blocks.push({ c, r: rr, sc, sr, k: r(), t: r() });
       }
     }
-    // un seul bloc porte la couleur du jour, et c'est un des plus grands
-    let big = 0;
-    for (let i = 1; i < blocks.length; i++)
-      if (blocks[i].sc * blocks[i].sr > blocks[big].sc * blocks[big].sr) big = i;
-    if (blocks.length && r() < 0.5) big = Math.floor(r() * blocks.length);
-
     const round = (x, y, ww, hh, rr2) => {
       const q = Math.min(rr2, ww / 2, hh / 2);
       g.beginPath();
@@ -3247,7 +3247,7 @@
     blocks.forEach((b, i) => {
       const x = M + b.c * (cw + GAP), y = M + b.r * (ch + GAP);
       const ww = cw * b.sc + GAP * (b.sc - 1), hh = ch * b.sr + GAP * (b.sr - 1);
-      const fill = i === big ? acc : TINT[Math.floor(b.t * 3)];
+      const fill = TINT[Math.floor(b.t * TINT.length)];
       if (b.k > 0.84 && Math.abs(ww - hh) < Math.min(ww, hh) * 0.5) {
         // un rond, quand la case est presque carrée : sinon c'est un ovale
         g.fillStyle = fill;
