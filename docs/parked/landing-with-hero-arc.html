@@ -420,7 +420,13 @@
   /* Le plateau couvre le panneau, donc son milieu est le milieu de la
      fenêtre — et il est écrit après le chapô, donc les cartes lui passent
      par-dessus sans qu'on ait à empiler quoi que ce soit à la main. */
-  .csdeck{position:absolute;inset:0;
+  /* PRESERVE-3D, ET C'EST LUI QUI TRIE. `perspective` seul donne bien la
+     fuite aux enfants, mais le plateau reste un contexte APLATI : les cartes
+     sont alors peintes dans l'ordre du balisage et la dernière écrite passe
+     devant, quelle que soit sa profondeur. C'est pour ça que l'empilement
+     refusait de s'inverser — la profondeur était juste et n'était lue par
+     personne. */
+  .csdeck{position:absolute;inset:0;transform-style:preserve-3d;
           perspective:1500px;perspective-origin:50% 50%}
   .csc{position:absolute;left:50%;top:50%;
        width:var(--cw);height:calc(var(--cw) * .68);
@@ -3243,18 +3249,24 @@
        *
        * LA PREMIÈRE EST DEVANT : une main se tient dans l'ordre où on va la
        * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
-      const fan = cds.map((_, i) => {
-        const d = i - (N - 1) / 2;
-        /* LA PREMIÈRE EST DEVANT, ET C'EST CELLE DE GAUCHE. Le rang se lit
-         * dans le cadre, pas dans le balisage : la carte 01 est à gauche de
-         * l'éventail, c'est elle qu'on doit voir entière, et les trois autres
-         * s'enfoncent derrière elle vers la droite. Dans un contexte 3D le
-         * z-index ne décide rien — c'est la profondeur qui trie — donc
-         * l'écart est assez large pour qu'aucune inclinaison ne puisse en
-         * faire se croiser deux. */
+      /* L'ÉVENTAIL SE REFAIT À MESURE QU'IL SE VIDE. Posé une fois pour
+       * quatre, il gardait le trou de chaque carte partie et restait décentré
+       * du nombre qui manque — une main de deux cartes tenue comme une main
+       * de quatre. Il est recalculé à la frame sur ce qui reste.
+       *
+       * Et il se recalcule EN CONTINU, pas au moment où une carte s'en va :
+       * ce qui compte n'est pas combien il en reste mais combien il en reste
+       * DÉJÀ PARTI — la somme des avancements. Une carte qui monte au centre
+       * rend sa place petit à petit, les autres se resserrent au même rythme,
+       * et rien ne saute d'un cran.
+       *
+       * La première est devant : le rang se lit dans le cadre, la carte de
+       * gauche est celle qu'on doit voir entière. */
+      const poseOf = (slot, count) => {
+        const d = slot - (count - 1) / 2;
         return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10,
-                 z: -260 - i * 96 };
-      });
+                 z: -260 - slot * 96 };
+      };
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
        * distribué aux quatre, c'est un bloc qui glisse : elles partent
@@ -3291,21 +3303,32 @@
         const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
         const cw = cds[0].offsetWidth || 340;
         let front = 0;
+        /* Deux passes : la première dit où en est chaque carte, la seconde
+         * place la main autour de celles qui y sont encore. Une seule passe
+         * ne peut pas — la place d'une carte dépend de l'avancement des
+         * autres, et la moitié d'entre elles n'a pas encore été calculée. */
+        const A = [], FL = [], O = [];
         for (let i = 0; i < N; i++) {
-          /* Le temps propre de la carte. Elle part avant son tour et s'en va
-           * après : les fenêtres se recouvrent d'un tiers de cran. */
-          /* LE JEU EST AU REPOS AU DÉBUT ET LA DERNIÈRE EST TENUE À LA FIN.
-           * Un cran par carte tout juste, et la première est déjà à mi-chemin
-           * quand la section entre — on ne voit jamais la main. */
           const u = prog * (N + 0.55) - i - 0.75;
-          const a = sm(cl((u + 0.34) / 0.78));   // l'arrivée
-          /* LE RETOURNEMENT EST FINI AVANT L'ATTERRISSAGE. Mené sur toute
-           * l'arrivée, la carte passe de chant au moment où elle est grande
-           * et au milieu du cadre — un trait vertical en plein centre. Mené
-           * plus vite, le passage de chant a lieu tôt, loin et petit. */
-          const flip = sm(cl((u + 0.34) / 0.66));
-          const o = sm(cl((u - 0.78) / 0.55));   // la bascule et le départ
-          const F = fan[i];
+          A[i] = sm(cl((u + 0.34) / 0.78));
+          FL[i] = sm(cl((u + 0.34) / 0.66));
+          O[i] = sm(cl((u - 0.78) / 0.55));
+        }
+        let goneAll = 0;
+        for (let i = 0; i < N; i++) goneAll += A[i];
+        let goneBefore = 0;
+        for (let i = 0; i < N; i++) {
+          /* Le temps propre de la carte : elle part avant son tour et s'en va
+           * après, donc les fenêtres se recouvrent d'un tiers de cran. Le jeu
+           * est au repos au début, et la dernière est tenue à la fin.
+           *
+           * LE RETOURNEMENT EST FINI AVANT L'ATTERRISSAGE. Mené sur toute
+           * l'arrivée, la carte passe de chant au moment où elle est grande et
+           * au milieu du cadre — un trait vertical en plein centre. Mené plus
+           * vite, le passage de chant a lieu tôt, loin et petit. */
+          const a = A[i], flip = FL[i], o = O[i];
+          const F = poseOf(i - goneBefore, N - goneAll);
+          goneBefore += a;
           const ptx = pxE[i], pty = pyE[i];
           /* LE FLOTTEMENT NE S'ARRÊTE JAMAIS. Éteint à l'arrivée, la carte se
            * clouait au milieu du cadre et devenait une capture d'écran : ce
