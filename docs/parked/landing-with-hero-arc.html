@@ -3028,7 +3028,13 @@
      * retourne et grandit jusqu'à ce que la fenêtre soit ce papier. */
     window.__csFlood = 1;
     await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 3200);
-    await wait(60);
+    /* ET LE SOL DE LA SECTION PASSE AU BLANC, sous la plaque, donc sans que
+     * ça se voie. C'était ça, le noir de l'entrée : le voile ne tient le cadre
+     * que jusqu'à ce que la toile du mot peigne pour de bon, et après ça il
+     * reste un demi-écran de chapitre à traverser — en encre. Le chapitre
+     * porte le blanc de ce qui vient pendant toute la traversée ; il reprend
+     * son encre au retour, sous la plaque, de la même façon. */
+    if (chapter) chapter.style.background = '#ffffff';
 
     /* Le dernier pavé parti, il ne reste que le journal : il prend le cadre.
      * Il se rassemble, s'allume, s'aplatit en une seule couleur, puis déborde
@@ -3067,7 +3073,15 @@
     /* Le voile ne tombe qu'une fois la scène du mot aux commandes : le cadre
      * est alors déjà son blanc à elle, donc la coupe ne se voit pas. Tombé
      * avant, il découvre le sol du document, qui est l'encre. */
-    await until(() => window.__active === 'word', 1600);
+    /* ET PAS SEULEMENT UNE FOIS LA SCÈNE NOMMÉE. Stage rend la toile visible
+     * par une transition d'opacité de trois cent cinquante millisecondes : le
+     * temps qu'elle monte, la section — qui est transparente exprès, pour
+     * laisser voir ce que la scène peint — laisse voir le sol du document, qui
+     * est l'encre. C'était le noir derrière l'entrée. On attend donc que la
+     * toile peigne pour de bon, pas qu'on la nomme. */
+    const stageEl = document.getElementById('stage');
+    await until(() => window.__active === 'word' &&
+      (!stageEl || +getComputedStyle(stageEl).opacity > 0.99), 2000);
     if (veilEl) veilEl.style.opacity = '0';
     await trip;
 
@@ -3855,9 +3869,16 @@
      * exactement ce que le module est en train de faire retomber, et la
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
-    window.__wordOut = 1;
-    await wait(200);
+    /* LE MOT NE DISPARAÎT PAS AVANT DE PARTIR. `.done` le met à zéro et laisse
+     * trois copies pleines le dessiner à sa place ; le module les retire dès
+     * qu'on le prévient. Prévenu deux cents millisecondes AVANT qu'on rende
+     * ses calques au mot, il y avait donc deux dixièmes de seconde où plus
+     * rien n'était dessiné — mesuré : opacité zéro pendant tout ce temps. Le
+     * mot avait l'air de s'éteindre, et sa sortie se jouait après, sur ce que
+     * l'œil avait déjà rangé comme parti. Les deux se font dans la même
+     * frame : les calques reviennent au moment où les copies s'en vont. */
     if (word) { word.classList.remove('done'); word.classList.add('out'); }
+    window.__wordOut = 1;
     showNotes(false);
     /* LA SORTIE DU MOT SE JOUE À DÉCOUVERT. Le voile était levé au premier
      * instant du retour : opaque et par-dessus la section, il couvrait le mot
@@ -3881,6 +3902,8 @@
     window.__rewind = 1;
     const trip = glide(exitY, 800);
     await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
+    // le chapitre reprend son encre sous la plaque, comme il l'avait quittée
+    if (chapter) chapter.style.background = '';
 
     /* 4. le dernier pavé revient — retirer .out rejoue sa transition à
      * l'envers. La section reprend son sol ici, revenue au plafond : elle est
