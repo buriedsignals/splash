@@ -3014,6 +3014,8 @@
       rises[i] = Math.round(slotH / 2 + piles[i].offsetHeight / 2 + 40);
   };
 
+  const veilEl = document.getElementById('veil');
+
   const toWhite = async () => {
     if (running) return;
     running = true; freeBack = false;
@@ -3033,12 +3035,14 @@
      * Le trajet part EN MÊME TEMPS, pas après : c'est le cadre qui blanchit
      * qui couvre le déplacement de la page. Menés l'un après l'autre, on
      * regardait d'abord une animation, puis un défilement. */
-    /* La section suivante ne peint pas son sol pendant ce temps-là. Sinon le
-     * blanc arrive par le bas avec elle, alors qu'il doit NAÎTRE du journal :
-     * on voyait une section blanche monter devant une inondation en cours.
-     * Transparente, elle laisse voir le cadre que le module blanchit. Le fond
-     * du document est l'encre, donc rien ne s'éclaircit avant l'heure. */
-    window.__exit = 1;
+    /* PLUS DE SECOND BLANC. Le journal reblanchissait le cadre : il partait
+     * de l'encre, donc le passage était noir puis blanc, sous un cadre DÉJÀ
+     * blanc. Le voile — plein cadre, fixe, du blanc de la section qui vient —
+     * est levé sous le couvert de la carte, blanc sur blanc, et c'est lui qui
+     * tient le cadre pendant que la page voyage. La carte peut alors se
+     * replier tout de suite : elle est derrière. */
+    if (veilEl) veilEl.style.opacity = '1';
+    window.__csFlood = 0;
     /* 1500 ms et pas moins : l'inondation est pleine à tumbT 1.40, et le
      * module cesse de tourner dès que la section blanche lui prend le cadre.
      * Trop court, le fond du chapitre arrivait encore gris à la jonction. */
@@ -3048,9 +3052,11 @@
      * frame après que le blanc du module a commencé à s'effacer. */
     await glide(whiteY, 1100);
     place();                     // la piste part de zéro, pas d'où elle était
-    /* La carte a fini son travail : la section blanche tient le cadre, elle
-     * est hors champ, elle peut redevenir une carte. */
-    window.__csFlood = 0;
+    /* Le voile ne tombe qu'une fois la scène du mot aux commandes : le cadre
+     * est alors déjà son blanc à elle, donc la coupe ne se voit pas. Tombé
+     * avant, il découvre le sol du document, qui est l'encre. */
+    await until(() => window.__active === 'word', 1600);
+    if (veilEl) veilEl.style.opacity = '0';
 
     /* Le blanc d'abord, le mot ensuite. Il entrait à l'arrivée, donc pendant
      * que le journal finissait de déborder : deux choses à regarder au même
@@ -3513,7 +3519,7 @@
             floodDirty = false;
             const fa0 = cds[i].firstElementChild, bk0 = cds[i].lastElementChild;
             fa0.style.borderRadius = bk0.style.borderRadius = '';
-            bk0.style.boxShadow = '';
+            bk0.style.boxShadow = bk0.style.background = '';
             bk0.children[0].style.opacity = bk0.children[1].style.opacity = '';
           }
           if (i === N - 1 && FL2 > 0) {
@@ -3540,6 +3546,14 @@
             const fade = (1 - cl((FL2 - 0.42) / 0.4)).toFixed(3);
             bk.children[0].style.opacity = fade;
             bk.children[1].style.opacity = fade;
+            /* ET LE PAPIER DEVIENT LE BLANC DE LA SECTION SUIVANTE. Le dos est
+             * du papier chaud, la section d'après est du blanc pur : laissés
+             * tels quels, le relais entre les deux est une marche. La carte
+             * s'aplatit sur le sol de ce qui vient, donc il n'y a rien à
+             * relayer. */
+            const mx = (a2, b2) => Math.round(a2 + (b2 - a2) * FL2);
+            bk.style.background =
+              'rgb(' + mx(237, 255) + ',' + mx(234, 255) + ',' + mx(227, 255) + ')';
           }
           cds[i].style.transform =
             'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' + Z.toFixed(1) + 'px)' +
@@ -3808,8 +3822,8 @@
   async function backWhite() {
     if (running) return;
     running = true; freeBack = false; whited = false;
-    // la carte reprend le cadre avant que la page ne bouge, comme à l'aller
-    window.__csFlood = 1;
+    // le voile reprend le cadre avant que la page ne bouge, comme à l'aller
+    if (veilEl) veilEl.style.opacity = '1';
 
 
     /* Les pavés ne reviennent pas avec la page. Le pilote les place en
@@ -3855,9 +3869,12 @@
      * rendre son blanc là, c'est faire réapparaître une bande blanche qui
      * glisse ensuite hors du cadre. Au plafond elle est exactement sous le
      * bord, et le relais ne se voit pas. */
+    /* La carte reprend le cadre à l'arrivée, sous le voile, et le voile tombe
+     * sur elle : blanc sur blanc des deux côtés. Puis elle se replie. */
+    window.__csFlood = 1;
+    await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
+    if (veilEl) veilEl.style.opacity = '0';
     await trip;
-    /* Et elle se replie une fois la page revenue dans la section : repliée
-     * plus tôt, on la verrait rétrécir au milieu du trajet. */
     window.__csFlood = 0;
     await wait(560);
 
