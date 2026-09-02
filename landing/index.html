@@ -3172,8 +3172,13 @@
      * exactement ce que le module est en train de faire retomber, et la
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
+    /* LE RELAIS SE FAIT SUR UN ÉTAT, PAS SUR UN DÉLAI : le module publie où
+     * en est sa déformation, on attend qu'elle soit retombée, et les calques
+     * changent de mains dans la frame même. Un délai fixe rendait le mot au
+     * document pendant que le module dessinait encore le sien — deux mots,
+     * celui du canevas immobile et celui du document qui défile. */
     window.__wordOut = 1;
-    await wait(380);
+    await until(() => window.__wordMix === undefined || window.__wordMix < 0.02, 900);
     if (word) { word.classList.remove('done'); word.classList.add('out'); }
     showNotes(false);
     await wait(1000);

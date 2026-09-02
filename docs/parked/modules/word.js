@@ -382,11 +382,16 @@ void main(){
         gl.uniform1f(u.uMix, mix);
         /* Tant que le mot s'imprime, c'est le document qui le dessine : c'est
          * là que vivent les encres par lettre et leur mise en registre. On ne
-         * le reprend qu'une fois posé, à la même place, sans que ça se voie —
-         * et on le garde le temps que la déformation retombe, sans quoi la
-         * disparition n'aurait aucune durée : le cadre serait rendu au
-         * document dans la frame même où l'effet est encore au plein. */
-        const on = printed || warm > 0.01;
+         * le reprend qu'une fois posé, à la même place, sans que ça se voie.
+         *
+         * UN SEUL DESSINE, TOUJOURS : `.done` dit lequel, et rien d'autre. Le
+         * module gardait aussi le cadre le temps que sa déformation retombe,
+         * ce qui datait d'un relais fait à l'aveugle, au premier instant de la
+         * sortie — il fallait bien une durée à la disparition. La page attend
+         * maintenant que l'effet soit à plat pour rendre les calques, donc
+         * cette réserve ne servait plus qu'à dessiner un deuxième mot par
+         * dessus celui du document, fixe pendant que l'autre défilait. */
+        const on = printed;
         window.__wordOn = on; // diagnostic : le module dessine-t-il le mot ?
         gl.uniform1f(u.uOn, on ? 1 : 0);
         gl.drawArrays(gl.TRIANGLES, 0, 3);

@@ -3889,17 +3889,23 @@
      * exactement ce que le module est en train de faire retomber, et la
      * déformation a l'air de s'éteindre d'un coup. Le module est donc prévenu
      * en avance ; le relais ne se fait qu'une fois l'effet à plat. */
-    /* LE MOT NE DISPARAÎT PAS AVANT DE PARTIR. `.done` le met à zéro et laisse
-     * trois copies pleines le dessiner à sa place ; le module les retire dès
-     * qu'on le prévient. Prévenu deux cents millisecondes AVANT qu'on rende
-     * ses calques au mot, il y avait donc deux dixièmes de seconde où plus
-     * rien n'était dessiné — mesuré : opacité zéro pendant tout ce temps. Le
-     * mot avait l'air de s'éteindre, et sa sortie se jouait après, sur ce que
-     * l'œil avait déjà rangé comme parti. Les deux se font dans la même
-     * frame : les calques reviennent au moment où les copies s'en vont. */
-    if (word) { word.classList.remove('done'); word.classList.add('out'); }
+    /* LE RELAIS SE FAIT SUR UN ÉTAT, PAS SUR UN DÉLAI.
+     *
+     * Tant que `.done` est là, c'est le MODULE qui dessine le mot — le DOM est
+     * à zéro et il n'y a rien à voir de ce côté. Retirer `.done` tout de suite
+     * rend les calques au document pendant que le module dessine encore le
+     * sien, le temps que sa déformation retombe : deux mots, celui du canevas
+     * qui ne défile pas et celui du document qui défile, décalés l'un de
+     * l'autre. C'était le doublon qui descend.
+     *
+     * On prévient donc le module, on attend que sa déformation soit RETOMBÉE —
+     * il publie où elle en est, donc rien n'est deviné — et le relais se fait
+     * là : le module s'arrête de dessiner dans la frame même où le document
+     * reprend ses calques. Un seul mot du début à la fin. */
     window.__wordOut = 1;
     showNotes(false);
+    await until(() => window.__wordMix === undefined || window.__wordMix < 0.02, 900);
+    if (word) { word.classList.remove('done'); word.classList.add('out'); }
     /* LA SORTIE DU MOT SE JOUE À DÉCOUVERT. Le voile était levé au premier
      * instant du retour : opaque et par-dessus la section, il couvrait le mot
      * avant que sa sortie ait commencé, et le mot avait donc l'air de
