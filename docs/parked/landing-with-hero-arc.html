@@ -3245,12 +3245,13 @@
        * jouer, et c'est celle qui part en premier qu'on doit voir entière. */
       const fan = cds.map((_, i) => {
         const d = i - (N - 1) / 2;
-        /* L'ORDRE EST L'ORDRE DE LA MAIN : la première devant, la deuxième
-         * derrière elle et devant la troisième. Dans un contexte 3D le
-         * z-index ne décide rien — c'est la profondeur qui trie — donc
-         * l'écart entre deux cartes est assez large pour qu'aucune
-         * inclinaison ne puisse les faire se croiser. */
-        return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10, z: -260 - i * 96 };
+        /* L'ORDRE EST CELUI D'UN PAQUET POSÉ : la dernière devant, la
+         * première tout au fond. Dans un contexte 3D le z-index ne décide
+         * rien — c'est la profondeur qui trie — donc l'écart entre deux
+         * cartes est assez large pour qu'aucune inclinaison ne puisse les
+         * faire se croiser. */
+        return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10,
+                 z: -260 - (N - 1 - i) * 96 };
       });
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
