@@ -3371,7 +3371,11 @@ Stage.register(
 
     /* Invented papers, and the odd one that is a joke about the trade. */
     const LOREM_HEAD = [
-      "Reporting in, graphics out",
+      /* The first of these used to be the page's own line. The line has
+       * changed, and printing the old one twice in the frame under the new
+       * one made the paper argue with the sentence over it — and promise a
+       * graphic no page on this reel has. */
+      "Still set in words alone",
       "The desk that draws its own",
       "A map where the story is",
       "Nobody waits for the chart",
@@ -4237,6 +4241,23 @@ Stage.register(
      * second and a half. Thirty is above what the eye resolves in a slide
      * that slow, and it halves the traffic. */
     const PAINT_HZ = 60;
+    /* THE PAPER CARRIES NO DRAWINGS.
+     *
+     * The reel used to open a hole in each article and draw a chart into it —
+     * the argument told four times over, printed, opening, being drawn into,
+     * done. That was the hero's claim when its line was "Reporting in,
+     * graphics out": the paper showed the outcome.
+     *
+     * The line is now "Reporting is still text heavy", and the reel is what
+     * that line is ABOUT. A chart opening inside it says the opposite of the
+     * sentence over it, so the pages print and stay printed: three webs of
+     * solid type, which is the state of the thing the rest of the page
+     * proposes to change.
+     *
+     * Nothing is deleted. The hole is still cast and still measured — it is
+     * simply never handed to the frame loop, which repaints only what is on
+     * this list. Set it back to true and the drawings come back with it. */
+    const PAPER_DRAWS = false;
     let LIVE_HOLES = [];
     let galleyCv = null;
     /* Where each of the three webs currently is in the lap, and how much of
@@ -6851,7 +6872,7 @@ const flowCol = (A, o) => {
               /* A block the page wants alive keeps its rectangle, in galley
                * coordinates, so the frame loop can write that rectangle and
                * nothing else. */
-              if (S.live === bi && LIVE_ART[S.anim])
+              if (PAPER_DRAWS && S.live === bi && LIVE_ART[S.anim])
                 LIVE_HOLES.push({
                   x: R(bx), y: R(by), w: R(bw), h: R(bh),
                   anim: S.anim, tone: S.tone || "#b3402a",
@@ -7102,7 +7123,9 @@ const flowCol = (A, o) => {
             };
             recast();
             paint(0);
-            LIVE_HOLES.push(hole);
+            // and the page stays as it was printed unless the reel is asked
+            // for its drawings: what is not on this list is never repainted
+            if (PAPER_DRAWS) LIVE_HOLES.push(hole);
           } else {
             body(1);
           }
