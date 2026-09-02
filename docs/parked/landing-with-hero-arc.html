@@ -3922,7 +3922,11 @@
     if (veilEl) veilEl.style.opacity = '1';
     window.__csFlood = 1;
     window.__rewind = 1;
-    const trip = glide(exitY, 800);
+    /* LE TRAJET DU RETOUR EST PLUS COURT QUE CELUI DE L'ALLER, et il doit
+     * l'être : à l'aller le cadre porte le mot qui se compose, il y a quelque
+     * chose à regarder pendant qu'on avance. Ici il n'y a que du blanc — le
+     * voile — et un cadre blanc immobile est une attente, pas un passage. */
+    const trip = glide(exitY, 520);
     await until(() => window.__csFloodK === undefined || window.__csFloodK > 0.985, 2400);
     // le chapitre reprend son encre sous la plaque, comme il l'avait quittée
     if (chapter) chapter.style.background = '';
@@ -3945,10 +3949,12 @@
      * est le sol du document : le blanc SAUTAIT. À l'arrivée la plaque tient
      * le cadre, la coupe est blanc sur blanc, et elle peut se replier. */
     await trip;
+    /* Et la plaque se replie DANS LA FOULÉE : chaque frame de blanc gagnée ici
+     * est une frame de blanc en moins, et c'est son repli qui redonne la
+     * section à voir. */
     if (veilEl) veilEl.style.opacity = '0';
-    await wait(60);
     window.__csFlood = 0;
-    await wait(200);
+    await wait(120);
 
     inBounds();
     running = false;
