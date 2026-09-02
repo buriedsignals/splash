@@ -445,21 +445,37 @@
           height:clamp(38px,4.6vw,66px);margin:-2.3vw 0 0 -2.3vw;
           transform:translate(-50%,-50%);margin:0;color:var(--paper);opacity:.92}
 
+  /* LA FACE EST COMPOSÉE, PAS EMPILÉE. Tout était rangé en bas à gauche dans
+     des corps voisins : quatre blocs de la même famille les uns sur les
+     autres, sans hiérarchie et sans respiration. Elle a trois étages
+     maintenant, et chacun a un travail :
+
+       en haut, l'index et — quand il y en a un — le chiffre, tiré à droite
+       comme le catalogue tire le sien ;
+       au milieu, LE CONSTAT, seul, en display 300, c'est lui la carte ;
+       en bas, sous un filet, ce qui l'appuie et qui l'a trouvé.
+
+     Le filet est en currentColor : la face change d'encre à chaque
+     chargement, et une couleur écrite à la main serait juste sur l'une et
+     fausse sur les trois autres. */
+  .csftop{display:flex;align-items:flex-start;justify-content:space-between;
+          gap:16px}
   .cscn{font-family:var(--C);font-size:10.5px;font-weight:500;letter-spacing:.16em;
-        opacity:.62;margin-bottom:auto}
-  /* Le chiffre est sur une CARTE, pas sur une affiche : à la taille du grand
-     nombre du catalogue il mangeait la moitié de la face et la source passait
-     par-dessus bord. */
-  .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.8;
-          font-size:clamp(32px,3.2vw,54px);font-variant-numeric:tabular-nums;
-          margin-bottom:clamp(4px,.5vh,8px)}
-  .cscbig i{font-style:normal;font-size:.38em;letter-spacing:-.02em}
-  .cscname{font-family:var(--D);font-weight:300;letter-spacing:-.03em;line-height:1;
-           font-size:clamp(17px,1.75vw,26px);max-width:24ch}
-  .cscwhy{margin:clamp(7px,.9vh,12px) 0 0;font-size:12.5px;line-height:1.45;
-          opacity:.82;max-width:46ch}
-  .cscsrc{margin-top:clamp(8px,1vh,13px);font-family:var(--C);font-size:10px;
-          font-weight:500;letter-spacing:.16em;opacity:.7}
+        opacity:.6;padding-top:.35em}
+  .cscbig{font-family:var(--D);font-weight:200;letter-spacing:-.05em;line-height:.72;
+          font-size:clamp(38px,4vw,68px);font-variant-numeric:tabular-nums;
+          text-align:right}
+  .cscbig i{font-style:normal;font-size:.34em;letter-spacing:-.02em;
+            padding-left:.06em}
+  .cscname{margin-top:auto;font-family:var(--D);font-weight:300;
+           letter-spacing:-.03em;line-height:1.02;
+           font-size:clamp(19px,2vw,30px);max-width:22ch;text-wrap:balance}
+  .csfoot{margin-top:clamp(12px,1.6vh,20px);padding-top:clamp(10px,1.3vh,16px);
+          border-top:1px solid currentColor;border-color:color-mix(in srgb,
+            currentColor 26%, transparent)}
+  .cscwhy{margin:0;font-size:12.5px;line-height:1.45;opacity:.72;max-width:52ch}
+  .cscsrc{display:block;margin-top:clamp(8px,1vh,13px);font-family:var(--C);
+          font-size:10px;font-weight:500;letter-spacing:.16em;opacity:.55}
 
   @media (max-width:820px){
     .csdeck{perspective:1000px}
@@ -1957,19 +1973,19 @@
       </div>
       <div class="csdeck">
         <div class="csc">
-          <div class="csface"><span class="cscn">01</span><b class="cscbig">70<i>%</i></b><span class="cscname">say it makes stories more reliable</span><p class="cscwhy">In a survey of 768 people working in data journalism, 70% said it makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p><span class="cscsrc">EJC &middot; State of Data Journalism, 2023</span></div>
+          <div class="csface"><div class="csftop"><span class="cscn">01</span><b class="cscbig">70<i>%</i></b></div><span class="cscname">say it makes stories more reliable</span><div class="csfoot"><p class="cscwhy">In a survey of 768 people working in data journalism, 70% said it makes stories more reliable and 61% said it helps readers make sense of what they are reading.</p><span class="cscsrc">EJC &middot; State of Data Journalism, 2023</span></div></div>
           <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
         </div>
         <div class="csc">
-          <div class="csface"><span class="cscn">02</span><span class="cscname">Design is read as rigour, before a word is.</span><p class="cscwhy">Clear visual design makes the same reporting read as clearer, more rigorous and more engaging. A page is judged before it is read, and the judgement carries.</p><span class="cscsrc">Information Design Journal &middot; ACM CHI</span></div>
+          <div class="csface"><div class="csftop"><span class="cscn">02</span></div><span class="cscname">Design is read as rigour, before a word is.</span><div class="csfoot"><p class="cscwhy">Clear visual design makes the same reporting read as clearer, more rigorous and more engaging. A page is judged before it is read, and the judgement carries.</p><span class="cscsrc">Information Design Journal &middot; ACM CHI</span></div></div>
           <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
         </div>
         <div class="csc">
-          <div class="csface"><span class="cscn">03</span><span class="cscname">When articles become inputs, form becomes identity.</span><p class="cscwhy">AI turns fixed articles into liquid information that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p><span class="cscsrc">Reuters Institute, 2025</span></div>
+          <div class="csface"><div class="csftop"><span class="cscn">03</span></div><span class="cscname">When articles become inputs, form becomes identity.</span><div class="csfoot"><p class="cscwhy">AI turns fixed articles into liquid information that machines break apart and recompose. What survives the recomposition is the shape you gave it.</p><span class="cscsrc">Reuters Institute, 2025</span></div></div>
           <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
         </div>
         <div class="csc">
-          <div class="csface"><span class="cscn">04</span><span class="cscname">A graphic is a second way of being found.</span><p class="cscwhy">AI search is multimodal: it carries images and video alongside the text, so a piece with a graphic has more than one way of being found.</p><span class="cscsrc">Google &middot; AI Search documentation</span></div>
+          <div class="csface"><div class="csftop"><span class="cscn">04</span></div><span class="cscname">A graphic is a second way of being found.</span><div class="csfoot"><p class="cscwhy">AI search is multimodal: it carries images and video alongside the text, so a piece with a graphic has more than one way of being found.</p><span class="cscsrc">Google &middot; AI Search documentation</span></div></div>
           <div class="csback"><canvas></canvas><svg class="csrose" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg></div>
         </div>
       </div>
@@ -3236,7 +3252,14 @@
          * inclinaison ne puisse les faire se croiser. */
         return { x: d * 152, dip: Math.abs(d) * 26, rz: -d * 10, z: -260 - i * 96 };
       });
-      let prog = 0, live = false, ptx = 0, pty = 0, tx = 0, ty = 0, raf = 0, shown = -1;
+      let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
+      /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
+       * distribué aux quatre, c'est un bloc qui glisse : elles partent
+       * ensemble, arrivent ensemble, et la main n'a plus d'épaisseur. Chacune
+       * suit le curseur à SON rythme — la première vive, la dernière lente —
+       * donc le geste traverse la main au lieu de la déplacer. */
+      const pxE = cds.map(() => 0), pyE = cds.map(() => 0);
+      const easeK = cds.map((_, i) => 0.085 - i * 0.016);
       let gate = 0;   // la main n'entre qu'une fois le papier hors du cadre
       const readProg = () => {
         const r = run.getBoundingClientRect();
@@ -3250,7 +3273,10 @@
       const frame = (now) => {
         if (!live) { raf = 0; return; }
         raf = requestAnimationFrame(frame);
-        ptx += (tx - ptx) * 0.06; pty += (ty - pty) * 0.06;
+        for (let i = 0; i < N; i++) {
+          pxE[i] += (tx - pxE[i]) * easeK[i];
+          pyE[i] += (ty - pyE[i]) * easeK[i];
+        }
         const t = now / 1000;
         /* LES CARTES N'ENTRENT QU'UNE FOIS LE PAPIER SORTI DU CADRE. Pendant
          * la traversée le journal tient encore l'écran ; une main qui monte
@@ -3277,9 +3303,13 @@
           const flip = sm(cl((u + 0.34) / 0.66));
           const o = sm(cl((u - 0.78) / 0.55));   // la bascule et le départ
           const F = fan[i];
-          // LE FLOTTEMENT est propre à la main : c'est une carte tenue qui
-          // respire, et une carte posée au milieu du cadre ne respire pas.
-          const idle = (1 - a) * gate;
+          const ptx = pxE[i], pty = pyE[i];
+          /* LE FLOTTEMENT NE S'ARRÊTE JAMAIS. Éteint à l'arrivée, la carte se
+           * clouait au milieu du cadre et devenait une capture d'écran : ce
+           * qui la tient en l'air, c'est qu'elle ne cesse pas de bouger. Elle
+           * respire seulement plus calmement une fois posée devant les yeux —
+           * une amplitude, pas un interrupteur. */
+          const idle = gate * (1 - 0.62 * a);
           const fy = Math.sin(t * 0.7 + i * 1.9) * 9 * idle;
           const fx = Math.cos(t * 0.53 + i * 2.7) * 6 * idle;
           const fr = Math.sin(t * 0.44 + i * 1.3) * 2.2 * idle;
@@ -3294,8 +3324,9 @@
            * porte — la profondeur y pèse, la carte de devant suit moins — et
            * un que TOUTES portent, du bas du cadre jusqu'à la sortie. */
           const lead = gate;
-          const px = ptx * (17 * lead + (26 - Math.abs(F.x) * 0.05) * idle);
-          const py = pty * (11 * lead + 14 * idle);
+          const hand = (1 - a) * gate;   // ce que la main seule porte
+          const px = ptx * (17 * lead + (26 - Math.abs(F.x) * 0.05) * hand);
+          const py = pty * (11 * lead + 14 * hand);
           /* Trois stations sur une seule verticale : en bas à moitié dehors,
            * au milieu retournée et lisible, puis hors du cadre par le haut. */
           const rest = bottom + F.dip + (1 - gate) * (cw * 0.85);
@@ -3303,10 +3334,10 @@
            * un quart de degré de roulis, sinon la carte quitte le cadre comme
            * un ascenseur. */
           const sway = (i % 2 ? 1 : -1);
-          const x = (F.x + fx) * (1 - a) + px + o * sway * 54;
-          const y = (rest + fy) * (1 - a) + py - o * (bottom + cw * 0.72);
+          const x = F.x * (1 - a) + fx + px + o * sway * 54;
+          const y = rest * (1 - a) + fy + py - o * (bottom + cw * 0.72);
           const z = F.z * (1 - a) + 170 * a - o * 120;
-          const rz = (F.rz + fr + 90) * (1 - a) + o * sway * 7;
+          const rz = (F.rz + 90) * (1 - a) + fr + o * sway * 7;
           const ry = 180 * (1 - flip) - ptx * 6.5 * lead;   // dos, puis face
           /* Et elle INCLINE, pas seulement elle déplace : une carte qui glisse
            * sans tourner est une image qu'on pousse ; une carte qui s'oriente
