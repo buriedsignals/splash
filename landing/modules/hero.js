@@ -3882,8 +3882,11 @@ Stage.register(
       return ok[Math.floor(rnd() * ok.length)];
     }
 
-    function inkFor(rnd) {
-      if (rnd() < GREY_SHARE()) return greyFor(rnd);
+    /* `share` overrides how often the draw comes out grey. The reel wants
+     * every page grey — it is newsprint — but the board under the answer
+     * wants a mix, and the two should not have to be two functions. */
+    function inkFor(rnd, share) {
+      if (rnd() < (share === undefined ? GREY_SHARE() : share)) return greyFor(rnd);
       /* A HUE FIRST, then the lightness that suits it — and the first hue
        * that works, not the best of many tries. Scoring sixty hues and
        * keeping the winner is an argmax and not a draw: the same few win
@@ -5859,10 +5862,20 @@ Stage.register(
      * furniture with nothing in it: axes, titles, coastlines, no data. */
     window.__artKinds = () => Object.keys(LIVE_ART);
     window.__artFits = (kind, ar) => (FITS[kind] ? FITS[kind](ar) : true);
-    window.__artTile = (kind, w, h, seed) => {
+    /* An ink for a caller that wants one: grey as often as `grey` says, a
+     * printing colour otherwise. Same draw as the reel's, different share. */
+    window.__artInk = (seed, grey) => inkFor(seeded(seed >>> 0 || 1), grey);
+    /* A drawing. `p` brings it in and `q` takes it away — both are optional
+     * and default to a finished one — so the same call serves a tile that
+     * stands still and a tile that is drawing itself over and over. */
+    window.__artTile = (kind, w, h, seed, opt) => {
+      const o = opt || {};
       const rnd = seeded(seed >>> 0 || 1);
       const paint = LIVE_ART[kind] || LIVE_ART.bars;
-      return paint(w, h, 1, 0, castValues(rnd), inkFor(rnd), rnd, 0);
+      const tone = o.tone || inkFor(rnd, o.grey);
+      const p = o.p === undefined ? 1 : o.p;
+      const q = o.q === undefined ? 0 : o.q;
+      return paint(w, h, p, q, castValues(rnd), tone, rnd, 0);
     };
 
     const PORTRAIT = 0.95;
