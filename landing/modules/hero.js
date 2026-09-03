@@ -3337,49 +3337,57 @@ Stage.register(
      * headlines stay playful, because a press full of invented papers is
      * part of the joke; the body is the argument, set small, and true.
      */
+    /* THE BODY IS LOREM, and that is the honest setting.
+     *
+     * It used to be the page's own pitch, which was fine under invented
+     * papers. Under a real masthead it is not: a paragraph about desks and
+     * graphics set under THE NEW YORK TIMES of 8 December 1941 is a sentence
+     * that newsroom never wrote, at a size a reader can read. The archives
+     * are real down to the weekday; what fills the measure under them says
+     * nothing at all, on purpose.
+     *
+     * Latin, not English, so nobody has to decide whether it is a quotation.
+     * The reel is about the SHAPE of a page of type — the measure, the
+     * column rules, the wall of grey — and lorem carries that shape and no
+     * claim with it. */
     const LOREM = (
-      "Your desk already writes the story. What it does not do is draw it. " +
-      "Between the reporting being finished and the page going out there is " +
-      "a gap, and the gap is filled by a request to somebody else, a queue, " +
-      "and a wait. Splash closes it. It teaches the assistant your newsroom " +
-      "already uses to make the graphic itself: a chart, a map, a piece of " +
-      "motion, a scrollytelling passage, built from the reporting you have " +
-      "done and nothing you have to gather again. " +
-      "It is not a chart tool bolted to a chat window. It reads the story " +
-      "and the data together, works out what the evidence will actually " +
-      "support, and proposes the form that says it — a line where a line is " +
-      "honest, a map where the story is about somewhere, a unit chart where " +
-      "the count is the point. You choose the direction. The desk keeps the " +
-      "decisions it should keep. " +
-      "The draft comes back for review before anything is published, and " +
-      "what comes out is the finished thing in the shape the page needs: " +
-      "print at the right measure, web that holds on a phone, video for the " +
-      "feeds, a scrolling piece for the site. One story, the formats it has " +
-      "to be in, and no second brief. " +
-      "None of it invents a number. The graphic carries where its figures " +
-      "came from, and it carries them because a graphic that cannot say " +
-      "where it got something is not evidence, it is decoration. The source " +
-      "line is written by the tool, not remembered by a person at eleven at " +
-      "night. " +
-      "What it changes is who can make a graphic at all. A desk with one " +
-      "designer makes as many as one designer can draw; a desk with this " +
-      "makes as many as it has stories worth drawing. The visual work stops " +
-      "being a favour asked of another department and becomes part of " +
-      "writing the piece — which is where it belonged before anyone had to " +
-      "ask for it. "
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do " +
+      "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim " +
+      "ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut " +
+      "aliquip ex ea commodo consequat. Duis aute irure dolor in " +
+      "reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla " +
+      "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in " +
+      "culpa qui officia deserunt mollit anim id est laborum. " +
+      "Sed ut perspiciatis unde omnis iste natus error sit voluptatem " +
+      "accusantium doloremque laudantium, totam rem aperiam, eaque ipsa " +
+      "quae ab illo inventore veritatis et quasi architecto beatae vitae " +
+      "dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit " +
+      "aspernatur aut odit aut fugit, sed quia consequuntur magni dolores " +
+      "eos qui ratione voluptatem sequi nesciunt. " +
+      "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, " +
+      "consectetur, adipisci velit, sed quia non numquam eius modi tempora " +
+      "incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut " +
+      "enim ad minima veniam, quis nostrum exercitationem ullam corporis " +
+      "suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur. " +
+      "Quis autem vel eum iure reprehenderit qui in ea voluptate velit " +
+      "esse quam nihil molestiae consequatur, vel illum qui dolorem eum " +
+      "fugiat quo voluptas nulla pariatur. " +
+      "At vero eos et accusamus et iusto odio dignissimos ducimus qui " +
+      "blanditiis praesentium voluptatum deleniti atque corrupti quos " +
+      "dolores et quas molestias excepturi sint occaecati cupiditate non " +
+      "provident, similique sunt in culpa qui officia deserunt mollitia " +
+      "animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis " +
+      "est et expedita distinctio. " +
+      "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil " +
+      "impedit quo minus id quod maxime placeat facere possimus, omnis " +
+      "voluptas assumenda est, omnis dolor repellendus. Temporibus autem " +
+      "quibusdam et aut officiis debitis aut rerum necessitatibus saepe " +
+      "eveniet ut et voluptates repudiandae sint et molestiae non " +
+      "recusandae. Itaque earum rerum hic tenetur a sapiente delectus, ut " +
+      "aut reiciendis voluptatibus maiores alias consequatur aut perferendis " +
+      "doloribus asperiores repellat. "
     ).repeat(3);
 
-    /* Invented papers, and the odd one that is a joke about the trade. */
-    const LOREM_HEAD = [
-      "Reporting in, graphics out",
-      "The desk that draws its own",
-      "A map where the story is",
-      "Nobody waits for the chart",
-      "What the evidence supports",
-      "The source line writes itself",
-      "One story, every format",
-      "Held to the reporting",
-    ];
 
     /* head — where the paper's name goes and what it does to the page.
      * cols  — the measure, divided.
@@ -3874,8 +3882,11 @@ Stage.register(
       return ok[Math.floor(rnd() * ok.length)];
     }
 
-    function inkFor(rnd) {
-      if (rnd() < GREY_SHARE()) return greyFor(rnd);
+    /* `share` overrides how often the draw comes out grey. The reel wants
+     * every page grey — it is newsprint — but the board under the answer
+     * wants a mix, and the two should not have to be two functions. */
+    function inkFor(rnd, share) {
+      if (rnd() < (share === undefined ? GREY_SHARE() : share)) return greyFor(rnd);
       /* A HUE FIRST, then the lightness that suits it — and the first hue
        * that works, not the best of many tries. Scoring sixty hues and
        * keeping the winner is an argmax and not a draw: the same few win
@@ -3956,7 +3967,632 @@ Stage.register(
      * loop hands it the middle sheet's leading edge. Looked up until the
      * screen has gone and then never again. */
     let bootMark = true;
-    const HEAD_SET = ["centre", "band", "tracked", "left", "boxed", "shoulder"];
+    /* THE ARCHIVES, BY COUNTRY.
+     *
+     * A shelf per country, and the reader's own shelf goes on the reel first.
+     * A French reader meets J'Accuse before the Titanic; an English shelf
+     * fills whatever room is left, and a country we hold no pages for simply
+     * gets the English one — which is the fallback, not a failure.
+     *
+     * WHERE THE READER IS, WITHOUT ASKING ANYONE. The browser already knows
+     * what clock it keeps and what languages it was set to; both are read
+     * locally and neither leaves the page. There is no geolocation prompt, no
+     * lookup service, and nothing about the reader is sent anywhere — the
+     * whole thing is a timezone string and a language tag.
+     *
+     * Masthead, weekday, date, headline and deck are the page as it was
+     * printed. Every headline was checked against a source before it was
+     * written here, and every weekday was recomputed from its date rather
+     * than remembered. The body under them is lorem, on purpose. */
+    const SHELF = {
+      // ---- the United States
+      US: [
+        {
+          style: "left",
+          paper: "The New York Herald",
+          when: "SATURDAY, APRIL 15, 1865",
+          edition: "EXTRA",
+          head: "ASSASSINATION OF PRESIDENT LINCOLN",
+          deck: "The President Shot at the Theatre Last Evening",
+        },
+        {
+          style: "tracked",
+          paper: "THE SUN",
+          when: "TUESDAY, SEPTEMBER 21, 1897",
+          edition: "NEW YORK",
+          head: "IS THERE A SANTA CLAUS?",
+          deck: "The editorial answering Virginia O'Hanlon, eight years old",
+        },
+        {
+          style: "tracked",
+          paper: "CALL-CHRONICLE-EXAMINER",
+          when: "THURSDAY, APRIL 19, 1906",
+          edition: "THREE PAPERS, ONE PRESS",
+          head: "EARTHQUAKE AND FIRE: SAN FRANCISCO IN RUINS",
+          deck: "Death and destruction have been the fate of San Francisco",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, APRIL 16, 1912",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "TITANIC SINKS FOUR HOURS AFTER HITTING ICEBERG",
+          deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, NOVEMBER 11, 1918",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "ARMISTICE SIGNED, END OF THE WAR!",
+          deck: "Berlin Seized by Revolutionists",
+        },
+        {
+          style: "band",
+          paper: "VARIETY",
+          when: "WEDNESDAY, OCTOBER 30, 1929",
+          edition: "NEW YORK",
+          head: "WALL ST. LAYS AN EGG",
+          deck: "The crash, in the trade paper's own language",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, DECEMBER 8, 1941",
+          edition: "LATE CITY EDITION",
+          head: "JAPAN WARS ON U.S. AND BRITAIN",
+          deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, MAY 8, 1945",
+          edition: "LATE CITY EDITION",
+          head: "THE WAR IN EUROPE IS ENDED!",
+          deck: "Surrender Is Unconditional",
+        },
+        {
+          style: "band",
+          paper: "CHICAGO DAILY TRIBUNE",
+          when: "WEDNESDAY, NOVEMBER 3, 1948",
+          edition: "FINAL EDITION",
+          head: "DEWEY DEFEATS TRUMAN",
+          deck: "The result the paper printed before the count came in",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, JULY 21, 1969",
+          edition: "LATE CITY EDITION",
+          head: "MEN WALK ON MOON",
+          deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "SUNDAY, JUNE 13, 1971",
+          edition: "LATE CITY EDITION",
+          head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
+          deck: "A series drawn from a secret history of the war",
+        },
+        {
+          style: "shoulder",
+          paper: "The Washington Post",
+          when: "SUNDAY, JUNE 18, 1972",
+          edition: "FINAL",
+          head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
+          deck: "The break-in at the Watergate, on the morning after",
+        },
+        {
+          style: "shoulder",
+          paper: "The Washington Post",
+          when: "FRIDAY, AUGUST 9, 1974",
+          edition: "FINAL",
+          head: "NIXON RESIGNS",
+          deck: "The first President of the United States to leave the office",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "WEDNESDAY, SEPTEMBER 12, 2001",
+          edition: "LATE EDITION",
+          head: "U.S. ATTACKED",
+          deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
+        },
+        {
+          style: "boxed",
+          paper: "The Boston Globe",
+          when: "SUNDAY, JANUARY 6, 2002",
+          edition: "SPOTLIGHT",
+          head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
+          deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "THURSDAY, OCTOBER 5, 2017",
+          edition: "LATE EDITION",
+          head: "HARVEY WEINSTEIN PAID OFF SEXUAL HARASSMENT ACCUSERS FOR DECADES",
+          deck: "Three decades of allegations, and the settlements that kept them quiet",
+        },
+      ],
+      // ---- the United Kingdom
+      GB: [
+        {
+          style: "centre",
+          paper: "The Daily Universal Register",
+          when: "SATURDAY, JANUARY 1, 1785",
+          edition: "FIRST ISSUE",
+          head: "No. 1, JOHN WALTER'S PAPER",
+          deck: "Renamed The Times three years later",
+        },
+        {
+          style: "tracked",
+          paper: "THE OBSERVER",
+          when: "SUNDAY, DECEMBER 4, 1791",
+          edition: "FIRST ISSUE",
+          head: "No. 1, THE FIRST SUNDAY PAPER IN THE WORLD",
+          deck: "W. S. Bourne's, and it is still going",
+        },
+        {
+          style: "left",
+          paper: "The Manchester Guardian",
+          when: "SATURDAY, MAY 5, 1821",
+          edition: "FIRST ISSUE",
+          head: "No. 1, JOHN EDWARD TAYLOR'S PAPER",
+          deck: "A hundred and thirty years before it lost the Manchester",
+        },
+        {
+          style: "centre",
+          paper: "Daily Mail",
+          when: "MONDAY, JANUARY 15, 1934",
+          edition: "LONDON",
+          head: "HURRAH FOR THE BLACKSHIRTS",
+          deck: "Lord Rothermere for Mosley, in the paper's own words",
+        },
+        {
+          style: "left",
+          paper: "The Sunday Times",
+          when: "SUNDAY, SEPTEMBER 24, 1972",
+          edition: "INSIGHT",
+          head: "OUR THALIDOMIDE CHILDREN: A CAUSE FOR NATIONAL SHAME",
+          deck: "The settlement offered to the families, examined",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "TUESDAY, MAY 4, 1982",
+          edition: "LONDON",
+          head: "GOTCHA",
+          deck: "The sinking of the Belgrano, in one word",
+        },
+        {
+          style: "centre",
+          paper: "The Sunday Times",
+          when: "SUNDAY, APRIL 24, 1983",
+          edition: "WORLD EXCLUSIVE",
+          head: "WORLD EXCLUSIVE",
+          deck: "Six pages of the Hitler diaries, before the forgery was known",
+        },
+        {
+          style: "left",
+          paper: "The Sunday Times",
+          when: "SUNDAY, OCTOBER 5, 1986",
+          edition: "INSIGHT",
+          head: "REVEALED: THE SECRETS OF ISRAEL'S NUCLEAR ARSENAL",
+          deck: "Mordechai Vanunu's account, and the photographs he took inside Dimona",
+        },
+        {
+          style: "boxed",
+          paper: "THE INDEPENDENT",
+          when: "TUESDAY, OCTOBER 7, 1986",
+          edition: "FIRST ISSUE",
+          head: "No. 1, «IT IS. ARE YOU?»",
+          deck: "The line it was launched on",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "WEDNESDAY, APRIL 19, 1989",
+          edition: "LONDON",
+          head: "THE TRUTH",
+          deck: "What the paper printed about Hillsborough, and later retracted",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "SATURDAY, APRIL 11, 1992",
+          edition: "LONDON",
+          head: "IT'S THE SUN WOT WON IT",
+          deck: "The paper claiming the general election for John Major",
+        },
+        {
+          style: "centre",
+          paper: "Daily Mail",
+          when: "FRIDAY, FEBRUARY 14, 1997",
+          edition: "LONDON",
+          head: "MURDERERS",
+          deck: "Five men named over the killing of Stephen Lawrence",
+        },
+        {
+          style: "shoulder",
+          paper: "The Daily Telegraph",
+          when: "FRIDAY, MAY 8, 2009",
+          edition: "LONDON",
+          head: "THE TRUTH ABOUT THE CABINET'S EXPENSES",
+          deck: "The first of the expenses files, off a leaked disc",
+        },
+        {
+          style: "boxed",
+          paper: "THE GUARDIAN",
+          when: "MONDAY, JULY 4, 2011",
+          edition: "LONDON",
+          head: "MILLY DOWLER'S VOICEMAIL WAS HACKED BY NEWS OF THE WORLD",
+          deck: "Messages deleted while the missing schoolgirl was still being searched for",
+        },
+        {
+          style: "shoulder",
+          paper: "News of the World",
+          when: "SUNDAY, JULY 10, 2011",
+          edition: "FINAL ISSUE",
+          head: "THANK YOU & GOODBYE",
+          deck: "The last of 168 years, set over a collage of its own front pages",
+        },
+        {
+          style: "tracked",
+          paper: "THE GUARDIAN",
+          when: "THURSDAY, JUNE 6, 2013",
+          edition: "LONDON",
+          head: "NSA COLLECTING PHONE RECORDS OF MILLIONS OF VERIZON CUSTOMERS DAILY",
+          deck: "The first of the documents taken from the National Security Agency",
+        },
+      ],
+      // ---- France
+      FR: [
+        {
+          style: "centre",
+          paper: "LE FIGARO",
+          when: "DIMANCHE 15 JANVIER 1826",
+          edition: "N° 1",
+          head: "SANS LA LIBERTÉ DE BLÂMER, IL N'EST POINT D'ÉLOGE FLATTEUR",
+          deck: "L'épigraphe de Beaumarchais, portée par le journal dès son premier numéro",
+        },
+        {
+          style: "band",
+          paper: "COMBAT",
+          when: "JEUDI 24 AOÛT 1944",
+          edition: "PARIS",
+          head: "LE SANG DE LA LIBERTÉ",
+          deck: "L'éditorial d'Albert Camus, Paris se soulevant",
+        },
+        {
+          style: "tracked",
+          paper: "L'AURORE",
+          when: "JEUDI 13 JANVIER 1898",
+          edition: "LITTÉRAIRE, ARTISTIQUE, SOCIALE",
+          head: "J'ACCUSE…!",
+          deck: "Lettre au Président de la République, par Émile Zola",
+        },
+        {
+          style: "band",
+          paper: "L'AUTO",
+          when: "LUNDI 19 JANVIER 1903",
+          edition: "PARIS",
+          head: "LE TOUR DE FRANCE",
+          deck: "Henri Desgrange annonce la course qui portera le journal",
+        },
+        {
+          style: "centre",
+          paper: "L'HUMANITÉ",
+          when: "LUNDI 18 AVRIL 1904",
+          edition: "PREMIER NUMÉRO",
+          head: "NOTRE BUT",
+          deck: "L'article fondateur de Jean Jaurès, en première page",
+        },
+        {
+          style: "boxed",
+          paper: "LE CANARD ENCHAÎNÉ",
+          when: "VENDREDI 10 SEPTEMBRE 1915",
+          edition: "N° 1",
+          head: "N° 1, EN PLEINE GUERRE",
+          deck: "Maurice Maréchal et H.-P. Gassier lancent le journal",
+        },
+        {
+          style: "left",
+          paper: "LE MONDE",
+          when: "MARDI 19 DÉCEMBRE 1944",
+          edition: "N° 1",
+          head: "N° 1, APRÈS LA LIBÉRATION",
+          deck: "Le quotidien d'Hubert Beuve-Méry paraît pour la première fois",
+        },
+        {
+          style: "shoulder",
+          paper: "LE PARISIEN LIBÉRÉ",
+          when: "MERCREDI 23 AOÛT 1944",
+          edition: "N° 2",
+          head: "LA BATAILLE DANS PARIS CONTINUE !",
+          deck: "Le deuxième numéro, paru le lendemain du premier",
+        },
+        {
+          style: "band",
+          paper: "L'ÉQUIPE",
+          when: "JEUDI 28 FÉVRIER 1946",
+          edition: "N° 1",
+          head: "N° 1, APRÈS «L'AUTO»",
+          deck: "Jacques Goddet reprend le titre, trois fois par semaine",
+        },
+        {
+          style: "tracked",
+          paper: "HARA-KIRI HEBDO",
+          when: "LUNDI 16 NOVEMBRE 1970",
+          edition: "N° 94",
+          head: "BAL TRAGIQUE À COLOMBEY : 1 MORT",
+          deck: "La une qui a fait interdire l'hebdomadaire, et naître «Charlie»",
+        },
+        {
+          style: "shoulder",
+          paper: "Libération",
+          when: "MERCREDI 18 AVRIL 1973",
+          edition: "N° 1",
+          head: "N° 1, SOUS L'ÉGIDE DE SARTRE",
+          deck: "Le quotidien paraît pour la première fois",
+        },
+        {
+          style: "boxed",
+          paper: "LE CANARD ENCHAÎNÉ",
+          when: "MERCREDI 10 OCTOBRE 1979",
+          edition: "PARIS",
+          head: "QUAND GISCARD EMPOCHAIT LES DIAMANTS DE BOKASSA",
+          deck: "Le fac-similé d'une commande, sorti par Pierre Péan",
+        },
+        {
+          style: "band",
+          paper: "L'ÉQUIPE",
+          when: "LUNDI 13 JUILLET 1998",
+          edition: "ÉDITION SPÉCIALE",
+          head: "POUR L'ÉTERNITÉ",
+          deck: "La France championne du monde",
+        },
+        {
+          style: "boxed",
+          paper: "LE MONDE",
+          when: "JEUDI 13 SEPTEMBRE 2001",
+          edition: "ÉDITORIAL",
+          head: "NOUS SOMMES TOUS AMÉRICAINS",
+          deck: "L'éditorial de Jean-Marie Colombani, en première page",
+        },
+        {
+          style: "centre",
+          paper: "Libération",
+          when: "LUNDI 22 AVRIL 2002",
+          edition: "PARIS",
+          head: "NON",
+          deck: "Au lendemain du premier tour, Le Pen qualifié pour le second",
+        },
+        {
+          style: "left",
+          paper: "Charlie Hebdo",
+          when: "MERCREDI 14 JANVIER 2015",
+          edition: "N° 1178",
+          head: "TOUT EST PARDONNÉ",
+          deck: "Le numéro des survivants, une semaine après l'attentat",
+        },
+      ],
+      /* SWITZERLAND, out of the Journal de Genève and Gazette de Lausanne
+       * archive and Le Temps's own bicentenary series — the one Swiss press
+       * archive digitised page by page and citable.
+       *
+       * Five of these carry the paper's OWN wording, quoted with a link to
+       * the scanned page. The rest are pages whose existence and date are
+       * documented but whose title is not, so what stands in the headline's
+       * place says plainly what the page is rather than pretending to quote
+       * it. Same rule as the first issues on the other three shelves. */
+      CH: [
+        {
+          style: "centre",
+          paper: "Journal de Genève",
+          when: "JEUDI 5 JANVIER 1826",
+          edition: "N° 1",
+          head: "N° 1, IL Y A DEUX CENTS ANS",
+          deck: "Le «Journal de Genève» paraît pour la première fois",
+        },
+        {
+          style: "left",
+          paper: "Journal de Genève",
+          when: "MARDI 8 MAI 1945",
+          edition: "GENÈVE",
+          head: "LA FIN DE LA GUERRE EN EUROPE",
+          deck: "Une des rares unes illustrées du «Journal», trois vainqueurs en pied de page",
+        },
+        {
+          style: "left",
+          paper: "Gazette de Lausanne",
+          when: "LUNDI 2 FÉVRIER 1959",
+          edition: "LAUSANNE",
+          head: "VAUD ACCORDE LES DROITS POLITIQUES AUX FEMMES EN MATIÈRE CANTONALE",
+          deck: "Le même jour, le suffrage féminin est refusé au plan fédéral",
+        },
+        {
+          style: "band",
+          paper: "GAZETTE DE LAUSANNE",
+          when: "MARDI 22 JUILLET 1969",
+          edition: "LAUSANNE",
+          head: "PREMIER PAS SUR LA LUNE",
+          deck: "La une de la «Gazette», photographie du sol lunaire à l'appui",
+        },
+        {
+          style: "tracked",
+          paper: "JOURNAL DE GENÈVE",
+          when: "LUNDI 8 FÉVRIER 1971",
+          edition: "GENÈVE",
+          head: "LE «OUI» EST AUTHENTIQUE",
+          deck: "Jacques-Simon Eggly, au lendemain du suffrage féminin",
+        },
+        {
+          style: "boxed",
+          paper: "JOURNAL DE GENÈVE ET GAZETTE DE LAUSANNE",
+          when: "MERCREDI 28 NOVEMBRE 1990",
+          edition: "GENÈVE ET LAUSANNE",
+          head: "LE DERNIER BASTION TOMBE",
+          deck: "Appenzell Rhodes-Intérieures, le dernier canton à accorder le vote aux femmes",
+        },
+        {
+          style: "shoulder",
+          paper: "Le Nouveau Quotidien",
+          when: "MARDI 24 SEPTEMBRE 1991",
+          edition: "N° 1",
+          head: "N° 1, POUR UNE SUISSE «DIFFÉRENTE»",
+          deck: "Jacques Pilet lance «un cadrage différent de l'actualité»",
+        },
+        {
+          style: "centre",
+          paper: "Le Nouveau Quotidien",
+          when: "JEUDI 20 FÉVRIER 1997",
+          edition: "LAUSANNE",
+          head: "LA MORT DE DENG XIAOPING",
+          deck: "Le dernier patriarche de l'Empire du Milieu",
+        },
+        {
+          style: "centre",
+          paper: "Le Temps",
+          when: "MERCREDI 18 MARS 1998",
+          edition: "GENÈVE",
+          head: "NAISSANCE DU «TEMPS»",
+          deck: "Trois quotidiens romands n'en font plus qu'un",
+        },
+        {
+          style: "shoulder",
+          paper: "Le Temps",
+          when: "JEUDI 14 DÉCEMBRE 2000",
+          edition: "GENÈVE",
+          head: "JUGÉ PRÉSIDENT",
+          deck: "Cinq semaines de recomptage, et la Cour suprême tranche",
+        },
+        {
+          style: "band",
+          paper: "Le Temps",
+          when: "MERCREDI 12 SEPTEMBRE 2001",
+          edition: "ÉDITION SPÉCIALE",
+          head: "LE 11-SEPTEMBRE",
+          deck: "Vingt pages spéciales, et une photographie qu'il n'a pas fallu légender",
+        },
+        {
+          style: "left",
+          paper: "Le Temps",
+          when: "JEUDI 10 AVRIL 2003",
+          edition: "GENÈVE",
+          head: "LA CHUTE DE SADDAM HUSSEIN",
+          deck: "La statue de Bagdad, avant qu'elle ne soit déboulonnée",
+        },
+        {
+          style: "tracked",
+          paper: "Le Temps",
+          when: "LUNDI 28 FÉVRIER 2011",
+          edition: "GENÈVE",
+          head: "LES PRINTEMPS ARABES",
+          deck: "Une quinzaine de journalistes envoyés du Maroc à la Jordanie",
+        },
+        {
+          style: "boxed",
+          paper: "Le Temps",
+          when: "DIMANCHE 15 NOVEMBRE 2015",
+          edition: "ÉDITION SPÉCIALE",
+          head: "TERREUR SUR PARIS",
+          deck: "Le seul dimanche de son histoire où le journal a paru",
+        },
+        {
+          style: "band",
+          paper: "Le Temps",
+          when: "JEUDI 10 NOVEMBRE 2016",
+          edition: "GENÈVE",
+          head: "L'ÉLECTION DE DONALD TRUMP",
+          deck: "La une renversée d'un numéro préparé pour l'autre résultat",
+        },
+        {
+          style: "shoulder",
+          paper: "Le Temps",
+          when: "JEUDI 13 JUIN 2019",
+          edition: "ÉDITION SPÉCIALE",
+          head: "LA GRÈVE DES FEMMES",
+          deck: "Trente pages, la veille du 14 juin",
+        },
+      ],
+    };
+
+    /* Which shelf, decided locally, and it SAYS SO IN THE CONSOLE — one line
+     * naming the country, the clock it was read off and the languages that
+     * would have been the fallback, so the answer can be checked rather than
+     * trusted. `?archives=FR` forces one, which is how this is looked at
+     * without changing where you are standing. */
+    const HOME = (() => {
+      const q = /[?&]archives=([A-Za-z]{2})\b/.exec(location.search);
+      /* The clock first: it says where the machine IS, where the language
+       * says only what it reads in — and a French speaker in Zurich should
+       * meet the shelf of the country they are standing in. */
+      const CLOCK = {
+        "Europe/Zurich": "CH",
+        "Europe/Busingen": "CH",
+        "Europe/Paris": "FR",
+        "Europe/London": "GB",
+        "Europe/Belfast": "GB",
+      };
+      const US_CLOCK =
+        /^(America\/(New_York|Detroit|Chicago|Denver|Phoenix|Los_Angeles|Boise|Juneau|Sitka|Nome|Adak|Anchorage|Menominee|Indiana\/|Kentucky\/|North_Dakota\/)|Pacific\/Honolulu)/;
+      let tz = "";
+      try {
+        tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch {
+        /* a browser too old to have Intl simply reads the language instead */
+      }
+      const langs = navigator.languages || [navigator.language || ""];
+      let by = "";
+      let home = null;
+      if (q) {
+        home = q[1].toUpperCase();
+        by = "?archives";
+      } else if (CLOCK[tz]) {
+        home = CLOCK[tz];
+        by = "clock";
+      } else if (US_CLOCK.test(tz)) {
+        home = "US";
+        by = "clock";
+      } else {
+        for (const l of langs) {
+          const m = /-([A-Za-z]{2})$/.exec(l);
+          if (m) {
+            home = m[1].toUpperCase();
+            by = "language";
+            break;
+          }
+        }
+      }
+      const known = home && SHELF[home] ? "own shelf" : "no shelf — English";
+      console.info(
+        "[splash] archives · country " + (home || "unknown") +
+          " (" + (by || "nothing to read") + ") · " + known +
+          " · clock " + (tz || "unknown") +
+          " · languages " + langs.join(", "),
+      );
+      return home;
+    })();
+
+    /* THE READER'S OWN COUNTRY, AND ONLY IT. A shelf is nine front pages and
+     * the reel is three columns of six, so the nine are dealt round the three
+     * columns: each column holds six DIFFERENT pages, and the columns start at
+     * different points in the nine, which is what the deal already did when
+     * the shelf was longer.
+     *
+     * Nothing foreign is mixed in. It used to fill the remaining slots from
+     * the English shelf, so a French reader met four French papers and
+     * fourteen American ones — which is not what a shelf of your own country
+     * means. The English shelf is now the fallback and nothing else: it is
+     * what a country we hold no pages for gets, and it is the only case where
+     * two shelves are put end to end. */
+    const shelfFor = (c) => (c && SHELF[c]) || SHELF.US.concat(SHELF.GB);
+    let ARCHIVE = shelfFor(HOME);
+    window.__archiveHome = HOME; // so the shelf on the reel can be asked for
+    window.__archiveCount = ARCHIVE.length;
+    window.__archiveBy = "clock";
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
@@ -3967,18 +4603,168 @@ Stage.register(
      * and eighteen is exactly how many pages the sheet carries — so they are
      * shuffled once and dealt out, and no two pages on the whole reel share
      * a skeleton, let alone two that are up at the same moment. */
-    const TEMPLATE_DECK = (() => {
-      const d = [];
-      for (const h of HEAD_SET) for (let c = 1; c <= 3; c++) d.push({ head: h, cols: c });
+    const dealDeck = () => {
+      /* ONE SLOT PER ARCHIVE, AND THE PAPERS SPREAD OUT.
+       *
+       * Shuffled at random the deck put a paper's pages next to each other:
+       * measured on the American shelf, one column ran three New York Timeses
+       * in a row and the Swiss one ran three Le Temps. Sixteen front pages
+       * came out looking like five. The articles were all different — the
+       * three columns take three disjoint blocks, so the same page can never
+       * be on two webs at once — but three identical mastheads down one web
+       * reads as a repeat whatever is printed under them.
+       *
+       * So the deck is arranged rather than shuffled: at every turn it takes
+       * the paper with the most pages left that is NOT the one just taken.
+       * Which of that paper's pages comes first is still a draw, and so is
+       * the tie between two papers holding the same number — the order is
+       * different every load, and no two neighbours share a masthead unless
+       * the shelf leaves no other choice. */
       const r = seeded(LOAD_SALT + 7717);
-      for (let i = d.length - 1; i > 0; i--) {
-        const j = Math.floor(r() * (i + 1));
-        const t = d[i];
-        d[i] = d[j];
-        d[j] = t;
+      const by = new Map();
+      ARCHIVE.forEach((a, i) => {
+        if (!by.has(a.paper)) by.set(a.paper, []);
+        by.get(a.paper).push(i);
+      });
+      for (const v of by.values())
+        for (let i = v.length - 1; i > 0; i--) {
+          const j = Math.floor(r() * (i + 1));
+          const t = v[i];
+          v[i] = v[j];
+          v[j] = t;
+        }
+      const out = [];
+      let last = null;
+      while (out.length < ARCHIVE.length) {
+        let best = null,
+          bestN = -1;
+        for (const [k, v] of by) {
+          if (!v.length || k === last) continue;
+          // the tie goes to a draw, so two papers of equal weight do not
+          // always come out in the same order
+          const n = v.length + r() * 0.5;
+          if (n > bestN) {
+            bestN = n;
+            best = k;
+          }
+        }
+        if (best === null) for (const [k, v] of by) if (v.length) { best = k; break; }
+        out.push(by.get(best).pop());
+        last = best;
       }
-      return d;
-    })();
+      return out.map((idx, n) => ({
+        head: ARCHIVE[idx].style,
+        cols: 1 + (n % 3),
+        arch: idx,
+      }));
+    };
+    let TEMPLATE_DECK = dealDeck();
+
+    /* THE CLOCK ANSWERS FIRST, THE CONNECTION ANSWERS BETTER.
+     *
+     * A timezone is read in nought milliseconds and needs nobody's
+     * permission, but it says where the MACHINE thinks it is: a laptop
+     * carried across a border keeps the clock it was set to, and this one is
+     * a nomad's. So the clock composes the reel — the boot never waits on a
+     * network — and the connection is asked in parallel. If it names a
+     * different country, and that country has a shelf, the reel is composed
+     * again on the same path the photographs already use, which is a rebuild
+     * the page is built to do.
+     *
+     * Cloudflare's trace is the one asked: it is the edge the request already
+     * passes through on its way anywhere, it needs no key, and it answers in
+     * one line. api.country.is is the second try. Either way it is ONE call
+     * that carries nothing but the request itself — no cookie, no identifier,
+     * no analytics — and it is skipped entirely when the shelf was named in
+     * the URL. Nothing is stored.
+     *
+     * It cannot be exact and does not claim to be: a VPN answers for the VPN.
+     * That is why the answer, and which signal gave it, are printed. */
+    let regalley = null; // set by the GL side once the reel is on the card
+    /* FOUR PLACES TO ASK, AND IT SAYS WHY EACH ONE FAILED.
+     *
+     * Every one of these answers a plain GET with `access-control-allow-origin: *`
+     * — checked against all four — so a browser can read them from any origin,
+     * a local file included. What stops them is on the reader's side: a
+     * content blocker with a "privacy" list, a network that swallows them, a
+     * browser that refuses cross-origin reads from file:// at all (Safari
+     * does). None of that is worth a broken hero, so a failure costs the page
+     * nothing and the clock's answer stands.
+     *
+     * But a silent failure is not diagnosable, so each attempt prints what it
+     * hit: blocked, timed out, or a status. Three lines in a console beat one
+     * shrug. */
+    const GEO_MS = 2500;
+    const GEO_SOURCES = [
+      ["cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", (t) => {
+        const m = /(?:^|\n)loc=([A-Z]{2})/.exec(t);
+        return m ? m[1] : null;
+      }],
+      ["geojs", "https://get.geojs.io/v1/ip/country.json", (t) => {
+        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
+      }],
+      ["country.is", "https://api.country.is/", (t) => {
+        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
+      }],
+      ["ipwho.is", "https://ipwho.is/", (t) => {
+        try { return (JSON.parse(t).country_code || "").toUpperCase() || null; } catch { return null; }
+      }],
+    ];
+    const askTheConnection = async () => {
+      if (/[?&]archives=/.test(location.search)) return;
+      let loc = null;
+      const tried = [];
+      for (const [name, url, read] of GEO_SOURCES) {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), GEO_MS);
+        const t0 = performance.now();
+        try {
+          const r = await fetch(url, { signal: ctl.signal, cache: "no-store" });
+          const ms = Math.round(performance.now() - t0);
+          if (!r.ok) {
+            tried.push(name + " " + r.status + " (" + ms + "ms)");
+            continue;
+          }
+          loc = read(await r.text());
+          tried.push(name + (loc ? " → " + loc : " → unreadable") + " (" + ms + "ms)");
+          if (loc) break;
+        } catch (e) {
+          const ms = Math.round(performance.now() - t0);
+          /* An abort is our own timeout; anything else is the request never
+           * leaving — a blocker, or a browser that will not read across
+           * origins from here. */
+          tried.push(
+            name + " " + (e && e.name === "AbortError" ? "timed out" : "blocked or offline") +
+              " (" + ms + "ms)",
+          );
+        } finally {
+          clearTimeout(t);
+        }
+      }
+      if (!loc) {
+        console.info(
+          "[splash] archives · connection did not answer · keeping " +
+            (HOME || "English") + " · tried " + tried.join(" · "),
+        );
+        return;
+      }
+      const same = loc === HOME;
+      const has = !!SHELF[loc];
+      console.info(
+        "[splash] archives · connection says " + loc +
+          (same ? " · agrees with the clock" : " · the clock said " + (HOME || "nothing")) +
+          " · " + (has ? "own shelf" : "no shelf — English") +
+          " · " + tried.join(" · "),
+      );
+      if (same) return;
+      ARCHIVE = shelfFor(has ? loc : null);
+      TEMPLATE_DECK = dealDeck();
+      window.__archiveHome = has ? loc : null;
+      window.__archiveCount = ARCHIVE.length;
+      window.__archiveBy = "connection";
+      if (regalley) regalley();
+    };
+
     /* A COLUMN OF THE REEL. Each web reads one of these and only that one,
      * so the three can never hold the same page — and therefore never the
      * same drawing — however far their speeds pull their offsets apart. */
@@ -3991,6 +4777,7 @@ Stage.register(
           story: true,
           name: "The article, and what the desk makes of it",
           head: T.head,
+          arch: T.arch,
           cols: T.cols,
           tone: inkFor(r),
         };
@@ -4237,6 +5024,23 @@ Stage.register(
      * second and a half. Thirty is above what the eye resolves in a slide
      * that slow, and it halves the traffic. */
     const PAINT_HZ = 60;
+    /* THE PAPER CARRIES NO DRAWINGS.
+     *
+     * The reel used to open a hole in each article and draw a chart into it —
+     * the argument told four times over, printed, opening, being drawn into,
+     * done. That was the hero's claim when its line was "Reporting in,
+     * graphics out": the paper showed the outcome.
+     *
+     * The line is now "Reporting is still text heavy", and the reel is what
+     * that line is ABOUT. A chart opening inside it says the opposite of the
+     * sentence over it, so the pages print and stay printed: three webs of
+     * solid type, which is the state of the thing the rest of the page
+     * proposes to change.
+     *
+     * Nothing is deleted. The hole is still cast and still measured — it is
+     * simply never handed to the frame loop, which repaints only what is on
+     * this list. Set it back to true and the drawings come back with it. */
+    const PAPER_DRAWS = false;
     let LIVE_HOLES = [];
     let galleyCv = null;
     /* Where each of the three webs currently is in the lap, and how much of
@@ -4661,15 +5465,20 @@ Stage.register(
           let out = yAxis(pw, ph, top, gut);
           for (let i = 0; i < n; i++) {
             const k = sweep(i, n, p, q, 1.35);
+            /* WHERE A DOT SITS IS ITS VALUE. Both axes were a draw, so a
+             * scatter never moved when its numbers did — and a scatter is
+             * two measures or it is confetti. The spread across the plot is
+             * still a draw; the height and the size are read. */
+            const vv = v[i % v.length];
             const x = gut + 4 + rnd() * (pw - gut - 8),
-              y = 4 + rnd() * (ph - 8),
-              r0 = 1.8 + rnd() * 2.8;
+              y = 4 + (1 - vv) * (ph - 8) + (rnd() - 0.5) * ph * 0.12,
+              r0 = 1.6 + vv * 3.0;
             if (k <= 0) continue;
             out +=
               '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
               (r0 * k).toFixed(1) + '" fill="' +
               // a dot's value is its size, which is the second measure
-              value(0.34 + ((r0 - 1.8) / 2.8) * 0.66, tone) + '" opacity=".95"/>';
+              value(0.34 + vv * 0.66, tone) + '" opacity=".95"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -4688,7 +5497,15 @@ Stage.register(
     LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
       chrome(w, h, "Of the whole", "Per cent, rounded to the nearest",
         (pw, ph) => {
-          const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
+          /* THE SLICES ARE THE NUMBERS, normalised — they were five literals,
+           * so every share-of-the-whole ever drawn cut the circle in exactly
+           * the same places. Sorted large to small, because a pie read
+           * clockwise from the biggest is the only kind worth drawing. */
+          const raw5 = [v[0], v[1], v[2], v[3], v[4]]
+            .map((x) => 0.05 + x * 0.95)
+            .sort((a, b) => b - a);
+          const sum5 = raw5.reduce((a, b) => a + b, 0);
+          const parts = raw5.map((x) => x / sum5);
           // five classes over the whole spectrum, biggest darkest
           const shade = [1, 0.78, 0.56, 0.34, 0.12].map((t) => value(t, tone));
           const ar = pw / ph;
@@ -4978,8 +5795,12 @@ Stage.register(
               dots = "";
             for (let i = Math.ceil(from); i <= Math.floor(to); i++) {
               d += " L" + S[i][1] + " " + S[i][2];
+              /* A STOP CARRIES A NUMBER TOO — how much was picked up there.
+               * Drawn at one size the route was the one drawing on the board
+               * that could not answer its own data. */
+              const sv = v[i % v.length];
               dots += '<circle cx="' + S[i][1] + '" cy="' + S[i][2] + '" r="' +
-                (2.6 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                ((1.7 + sv * 2.6) * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
                 '" stroke-width="' + (1.3 * u).toFixed(2) + '"/>';
             }
             d += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
@@ -5025,7 +5846,16 @@ Stage.register(
             for (let i = n - 1; i >= 0; i--) {
               const k = sweep(n - 1 - i, n, p, q, 1.2);
               if (k <= 0) continue;
-              const r = max * ((i + 1) / n) * k;
+              /* THE BANDS ARE THE NUMBERS. Evenly spaced they were the same
+               * five rings on every map whatever was measured; read off the
+               * cast they widen and narrow with it, and the outermost still
+               * lands on `max`, which is what keeps the set inside the
+               * frame. */
+              const step = 0.55 + v[i % v.length] * 0.9;
+              let acc = 0, tot = 0;
+              for (let j = 0; j < n; j++) tot += 0.55 + v[j % v.length] * 0.9;
+              for (let j = 0; j <= i; j++) acc += 0.55 + v[j % v.length] * 0.9;
+              const r = max * (acc / tot) * k * (step > 0 ? 1 : 1);
               out += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(1) +
                 '" fill="' + tone + '" fill-opacity="' + (0.05).toFixed(2) +
                 '" stroke="' + tone + '" stroke-width="' + (1.2 * u).toFixed(2) +
@@ -5056,12 +5886,18 @@ Stage.register(
                * the webs however light its cells were. A fifth of a cell
                * survives the paper. */
               const gap = Math.max(0.8, cell * 0.2);
+              /* THE SHARE IS READ OFF THE NUMBERS. It was the literal 0.72,
+               * so every unit chart ever drawn showed the same proportion
+               * filled however different its data was — and a chart whose
+               * bars can move while its squares cannot is not one chart
+               * short of animated, it is one chart that is not a chart. */
+              const share = 0.28 + v[0] * 0.56;
               out +=
                 '<rect x="' + (c * cell + gap / 2).toFixed(2) + '" y="' +
                 (oy + r * cell + gap / 2).toFixed(2) + '" width="' +
                 (cell - gap).toFixed(2) + '" height="' + (cell - gap).toFixed(2) +
                 '" fill="' +
-                (k > 0.5 ? value(i / n > 0.72 ? 0.26 : 0.86, tone) : PALE) + '"/>';
+                (k > 0.5 ? value(i / n > share ? 0.26 : 0.86, tone) : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
@@ -5080,6 +5916,43 @@ Stage.register(
      * The maps take any shape, which is the whole point of choosing the crop
      * by proportion — there is always a piece of the world that is the shape
      * of the hole. */
+    /* ---------------------------------------------------- lent to the page
+     * THE TWELVE DRAWINGS, OFFERED TO WHOEVER ASKS. They were built for the
+     * reel and the reel no longer prints them; they are still the only charts
+     * and maps this site draws in its own hand, and the field under the answer
+     * wants exactly that. So the module publishes a way to ask for one: a
+     * kind, a size, a seed, and it returns the markup — the same markup the
+     * rasteriser wraps, so what the field shows and what the paper used to
+     * print are the same drawing.
+     *
+     * FINISHED, NOT BEING MADE — and that is p=1, q=0, not p=q=1. The two
+     * run the same way down the set: p brings each element in, q takes it
+     * away, and the drawing is what is left between them. Asked with both at
+     * one, every element had arrived AND left, so the tiles came out as
+     * furniture with nothing in it: axes, titles, coastlines, no data. */
+    window.__artKinds = () => Object.keys(LIVE_ART);
+    window.__artFits = (kind, ar) => (FITS[kind] ? FITS[kind](ar) : true);
+    /* An ink for a caller that wants one: grey as often as `grey` says, a
+     * printing colour otherwise. Same draw as the reel's, different share. */
+    window.__artInk = (seed, grey) => inkFor(seeded(seed >>> 0 || 1), grey);
+    /* A drawing. `p` brings it in and `q` takes it away — both are optional
+     * and default to a finished one — so the same call serves a tile that
+     * stands still and a tile that is drawing itself over and over. */
+    window.__artTile = (kind, w, h, seed, opt) => {
+      const o = opt || {};
+      const rnd = seeded(seed >>> 0 || 1);
+      const paint = LIVE_ART[kind] || LIVE_ART.bars;
+      const tone = o.tone || inkFor(rnd, o.grey);
+      const p = o.p === undefined ? 1 : o.p;
+      const q = o.q === undefined ? 0 : o.q;
+      /* THE CAST IS DRAWN EVEN WHEN IT IS NOT USED. `vals` lets a caller move
+       * the numbers under a drawing that otherwise stays put — but the same
+       * stream lays the chart out, so skipping the draw would shift every
+       * position after it and the drawing would jump instead of move. */
+      const cast = castValues(rnd);
+      return paint(w, h, p, q, o.vals || cast, tone, rnd, 0);
+    };
+
     const PORTRAIT = 0.95;
     const FITS = {
       bars: (ar) => ar >= PORTRAIT,
@@ -6664,79 +7537,96 @@ const flowCol = (A, o) => {
           const ink = S.rung >= 3 && S.tone ? S.tone : "#111111";
           let y = top + 20;
 
-          // ---- the name
+          // ---- the name, the date, and the page that was printed
+          const A = ARCHIVE[S.arch] || ARCHIVE[0];
           if (S.head === "band") {
             const band = 34;
             g.fillStyle = "#111111";
             g.fillRect(R(x0), R(top), GALLEY_COL, band);
             g.fillStyle = "#ffffff";
             g.textAlign = "center";
-            const ms = fit("THE COLUMN INCH", "700", 24, meas * 0.94);
+            const ms = fit(A.paper, "700", 24, meas * 0.94);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE COLUMN INCH", mid, top + R(band * 0.72));
+            g.fillText(A.paper, mid, top + R(band * 0.72));
             g.fillStyle = "#111111";
-            y = top + band + 18;
+            y = top + band + 14;
+            g.font = "6.5px " + SERIF;
+            g.textAlign = "left";
+            g.fillText(A.when, left, y);
+            g.textAlign = "right";
+            g.fillText(A.edition, left + meas, y);
+            y += 12;
           } else if (S.head === "tracked") {
             g.textAlign = "center";
-            const ms = fit("THE DEADLINE REVIEW", "400", 9.5, meas * 0.7);
+            const ms = fit(A.paper, "400", 9.5, meas * 0.7);
             g.font = ms + "px " + SERIF;
-            track("THE DEADLINE REVIEW", mid, y + 8, ms * 0.46);
+            track(A.paper, mid, y + 8, ms * 0.46);
             y += 18;
             g.fillStyle = ink;
             lozenge(mid, y, meas * 0.26);
             g.fillStyle = "#111111";
-            y += 20;
+            y += 14;
+            g.font = "6.5px " + SERIF;
+            track(A.when, mid, y, 6.5 * 0.4);
+            y += 12;
           } else if (S.head === "left") {
             g.textAlign = "left";
-            const ms = fit("The Galley Proof", "700", 19, meas * 0.56);
+            const ms = fit(A.paper, "700", 19, meas * 0.56);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Galley Proof", left, y + R(ms * 0.74) + 4);
+            g.fillText(A.paper, left, y + R(ms * 0.74) + 4);
             g.textAlign = "right";
             g.font = "7px " + SERIF;
             g.fillStyle = ink;
-            g.fillText("LATE EDITION", left + meas, y + 10);
+            g.fillText(A.edition, left + meas, y + 10);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 2);
-            y += 16;
+            y += 10;
+            g.textAlign = "left";
+            g.font = "6.5px " + SERIF;
+            g.fillText(A.when, left, y);
+            y += 10;
           } else if (S.head === "boxed") {
             g.textAlign = "center";
-            const ms = fit("THE STONE & THE SPIKE", "700", 15, meas * 0.62);
+            const ms = fit(A.paper, "700", 15, meas * 0.62);
             const bh = R(ms * 0.74) + 18;
             g.strokeStyle = "#111111";
             g.lineWidth = 1;
             g.strokeRect(R(mid - meas * 0.38) + 0.5, R(y) + 0.5, R(meas * 0.76), bh);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("THE STONE & THE SPIKE", mid, y + bh - 9);
-            y += bh + 12;
+            g.fillText(A.paper, mid, y + bh - 9);
+            y += bh + 10;
+            g.font = "6.5px " + SERIF;
+            g.fillText(A.when, mid, y);
+            y += 6;
             g.fillStyle = ink;
             rule(left, y, meas, 1);
             g.fillStyle = "#111111";
             y += 14;
           } else if (S.head === "shoulder") {
             g.textAlign = "left";
-            const ms = fit("The Press Run", "700", 22, meas * 0.44);
+            const ms = fit(A.paper, "700", 22, meas * 0.44);
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Press Run", left, y + R(ms * 0.74) + 2);
+            g.fillText(A.paper, left, y + R(ms * 0.74) + 2);
             const bx = left + meas * 0.58,
               bw = meas * 0.42;
             rule(bx, y + 2, bw, 1);
             rule(bx, y + 20, bw, 1);
             g.textAlign = "right";
             g.font = "6.5px " + SERIF;
-            g.fillText("SET IN THE MORNING", left + meas, y + 10);
+            g.fillText(A.when, left + meas, y + 10);
             g.fillStyle = ink;
-            g.fillText("PRINTED BY NOON", left + meas, y + 17);
+            g.fillText(A.edition, left + meas, y + 17);
             g.fillStyle = "#111111";
             y += R(ms * 0.74) + 14;
             rule(left, y, meas, 3);
             y += 15;
           } else {
             g.textAlign = "center";
-            const ms = fit("The Daily Splash", "700", 21, meas * 0.82);
+            const ms = fit(A.paper, "700", 21, meas * 0.82);
             y += R(ms * 0.74) + 6;
             g.font = "700 " + ms + "px " + SERIF;
-            g.fillText("The Daily Splash", mid, y);
+            g.fillText(A.paper, mid, y);
             y += 11;
             g.fillStyle = ink;
             rule(left, y, meas, 2);
@@ -6746,28 +7636,41 @@ const flowCol = (A, o) => {
             y += 14;
             g.font = "7.5px " + SERIF;
             g.textAlign = "left";
-            g.fillText("NO. 1, VOL. I", left, y);
+            g.fillText(A.when, left, y);
             g.textAlign = "right";
-            g.fillText("PRICE: ONE INCH", left + meas, y);
+            g.fillText(A.edition, left + meas, y);
             y += 6;
             rule(left, y, meas, 1);
             y += 16;
           }
 
-          // ---- the headline and the deck
-          const title = LOREM_HEAD[(S.rung * 7 + (S.i || 0)) % LOREM_HEAD.length];
+          /* ---- the headline and the deck, as that page carried them.
+           *
+           * IT WRAPS. The invented heads were all short enough to set on one
+           * line, so the fitter only ever had to shrink a little; a real one
+           * — "ASSASSINATION OF PRESIDENT LINCOLN" — came out at eight
+           * points, a headline set smaller than its own body copy. It is
+           * sized to fill the measure over at most two lines instead. */
+          const title = A.head;
+          const hw = S.head === "tracked" ? "400" : "700";
+          let hs = 25;
+          let hl = [title];
+          for (;;) {
+            const f = hw + " " + R(hs) + "px " + SERIF;
+            hl = wrapTo(title, meas * 0.94, f);
+            if (hl.length <= 2 || hs < 11) break;
+            hs *= 0.94;
+          }
           g.textAlign = S.head === "left" ? "left" : "center";
-          const hs = fit(title, S.head === "tracked" ? "400" : "700", 25, meas * 0.92);
+          g.font = hw + " " + R(hs) + "px " + SERIF;
           y += R(hs * 0.74) + 10;
-          g.font = (S.head === "tracked" ? "400 " : "700 ") + hs + "px " + SERIF;
-          g.fillText(title, S.head === "left" ? left : mid, y);
+          for (let li = 0; li < hl.length; li++) {
+            g.fillText(hl[li], S.head === "left" ? left : mid, y);
+            if (li < hl.length - 1) y += R(hs * 0.92);
+          }
           y += 14;
           g.font = "italic 9px " + SERIF;
-          g.fillText(
-            "Made at the desk, from the reporting already done",
-            S.head === "left" ? left : mid,
-            y,
-          );
+          g.fillText(A.deck, S.head === "left" ? left : mid, y);
           y += 8;
           if (S.head !== "left") rule(mid - meas * 0.13, y, meas * 0.26, 1);
           y += 18;
@@ -6851,7 +7754,7 @@ const flowCol = (A, o) => {
               /* A block the page wants alive keeps its rectangle, in galley
                * coordinates, so the frame loop can write that rectangle and
                * nothing else. */
-              if (S.live === bi && LIVE_ART[S.anim])
+              if (PAPER_DRAWS && S.live === bi && LIVE_ART[S.anim])
                 LIVE_HOLES.push({
                   x: R(bx), y: R(by), w: R(bw), h: R(bh),
                   anim: S.anim, tone: S.tone || "#b3402a",
@@ -7102,7 +8005,9 @@ const flowCol = (A, o) => {
             };
             recast();
             paint(0);
-            LIVE_HOLES.push(hole);
+            // and the page stays as it was printed unless the reel is asked
+            // for its drawings: what is not on this list is never repainted
+            if (PAPER_DRAWS) LIVE_HOLES.push(hole);
           } else {
             body(1);
           }
@@ -7451,7 +8356,14 @@ const flowCol = (A, o) => {
        * size: nine each would be ninety megabytes of texture. Eighteen
        * distinct pages across the three is twice the variety the one shared
        * column of nine had, and no web can repeat another's. */
-      const PER_COL = 6;
+      /* HOW MANY PAGES A COLUMN GETS — read off the shelf, not fixed at six.
+       * Sixteen front pages over three columns of six is eighteen slots, so
+       * two of them would be printed twice and two webs could line up on the
+       * same page; the guard against that has always been that a column holds
+       * pages nobody else holds. Five apiece uses fifteen of the sixteen and
+       * nothing repeats. The English fallback is thirty-two and takes the cap
+       * of six. Which page sits out rotates with the load's own seed. */
+      const PER_COL = Math.max(2, Math.min(6, Math.floor(ARCHIVE.length / 3)));
       /* The supersample, and then the measure, both capped by the card in
        * both directions — three columns across and the reel down. Guessed
        * rather than measured, this fails SILENTLY: the upload is refused and
@@ -7599,7 +8511,20 @@ const flowCol = (A, o) => {
          * reads it — the catalogue bench that did has been taken out — and it
          * is kept because it is the only way to ASK the reel what it printed
          * without reading pixels back off a texture. It costs one array. */
-        if (c === 0) PAGES.push({
+        /* Every column, not just the first: what the bench wants to know is
+         * whether two webs can be holding the same page, and one column
+         * cannot answer that. */
+        PAGES.push({
+          col: c,
+          arch: E.spec && E.spec.arch !== undefined ? E.spec.arch : -1,
+          paper:
+            E.spec && E.spec.arch !== undefined && ARCHIVE[E.spec.arch]
+              ? ARCHIVE[E.spec.arch].paper
+              : "",
+          head:
+            E.spec && E.spec.arch !== undefined && ARCHIVE[E.spec.arch]
+              ? ARCHIVE[E.spec.arch].head
+              : "",
           /* The rung is what the page IS, never when it was printed. A
            * founding plate is an image whatever its year, so it says which
            * rung it belongs to itself: Snow is one ink, the other four were
@@ -8064,9 +8989,18 @@ void main(){
       /* And read against a SIX-page column. The rate is normalised by the
        * length of the reel where it is used, so these are the numbers off
        * the panel and they mean the same thing they showed there. */
-      webSpd0: 0.0125,
-      webSpd1: 0.0105,
-      webSpd2: 0.0135,
+      /* THREE AND A HALF TIMES what they were. The three rates keep their
+       * relation to one another — the middle web is still the slow one and
+       * the right the quick one, which is what stops the set reading as one
+       * sheet — and the whole press simply runs faster. */
+      /* THREE AND A HALF TIMES the original rate, tuned by eye. Left as
+       * tuned: a column went from six pages to five when the shelves went to
+       * sixteen, so the lap is shorter and the pace on the glass may read a
+       * little different — that is a judgement to make by looking, not a
+       * number to derive. */
+      webSpd0: 0.044,
+      webSpd1: 0.037,
+      webSpd2: 0.0475,
       // and where each one starts, in pages
       webLag0: 0,
       webLag1: 0.37,
@@ -9107,6 +10041,12 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
+        /* And the same rebuild is what the connection's answer uses, if it
+         * disagrees with the clock. It is handed over only once the reel is
+         * on the card, so an answer that arrives early cannot rebuild a sheet
+         * that does not exist yet. */
+        regalley = uploadGalley;
+        askTheConnection();
         /* THE ONE SIGNAL THE PAGE CAN WAIT ON. Not "the script ran" and not
          * "a frame was drawn" — the reel exists and is on the card, which is
          * the moment there is something to show. The boot screen holds until

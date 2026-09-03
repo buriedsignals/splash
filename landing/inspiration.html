@@ -259,6 +259,79 @@
   .mcplink svg{width:14px;height:14px;color:var(--amber)}
 
   /* ===================================================================
+     THE FIRST SCREEN — the masthead and the index, side by side.
+
+     A gallery whose first story is below the fold is a gallery you have to
+     be TOLD about. The hero was already cut to 82vh so the first row would
+     peek; measured, it never did — the title, the lede, the field and the
+     bar come to more than the reserve, and the first story landed a hundred
+     and fifty pixels under the frame on a laptop.
+
+     So the two stop taking a screen each. The pitch and its field stand on
+     the ink, the stories run on the paper beside them, and the two grounds
+     meet on a RAZOR EDGE — the same edge this page already draws between its
+     sections, stood on its end. Nothing new is invented: the same two
+     grounds, the same type, the same rows.
+
+     And the masthead STAYS, for the length of the gallery. A field that
+     searches a list should not be scrolled away from the list it searches.
+
+     The band under the header is ink ACROSS THE WHOLE WIDTH, so the header
+     never sits half on one ground and half on the other — it keeps the one
+     treatment it has always had, and the paper starts under it.
+     =================================================================== */
+  .top{background:var(--ink)}
+  @media (min-width:1100px){
+    .top{display:grid;grid-template-columns:minmax(340px,34fr) 66fr;
+         align-items:start;padding-top:var(--bar)}
+    .top>.hero{position:sticky;top:var(--bar);
+               min-height:calc(100vh - var(--bar));
+               padding:var(--vs-s) clamp(26px,2.6vw,52px) var(--vs-s) var(--gut);
+               gap:clamp(18px,2.8vh,34px)}
+    .top>.hero>*{max-width:560px;margin:0}
+    .top .hero h1{font-size:clamp(32px,3vw,56px);max-width:13ch}
+    .top .hlede{max-width:40ch;font-size:clamp(13px,.95vw,15px)}
+    .top .sform input{font-size:clamp(18px,1.45vw,26px);padding-top:18px}
+    .top .sform button{width:clamp(42px,3vw,52px);height:clamp(42px,3vw,52px)}
+    /* The index keeps its own gutter on the outside and takes the seam on
+       the inside, so the rule under a row runs to the fold and stops. */
+    /* The paper runs the full height of the frame whatever the list holds,
+       or a short answer leaves the seam stopping in mid-air with the ink
+       showing under it. */
+    .top>.res{padding:var(--vs-s) var(--gut) var(--vs) clamp(26px,2.6vw,52px);
+              min-height:calc(100vh - var(--bar))}
+    .top .rstage{max-width:1040px;margin:0}
+    .top .rhead h2{font-size:clamp(26px,2.5vw,44px)}
+    /* The sheet is measured on the COLUMN now, not on the window: at 32vw it
+       reserved a third of the whole page inside two thirds of it, and the
+       titles were left a stripe. */
+    .top .rlist{--cw:min(320px,21vw);--in:26px}
+  }
+  /* Stacked, the reserve is spent differently: the band is shorter and the
+     index starts on half a breath, which is what puts the first story in the
+     frame on a phone. */
+  /* Written on the child, not on the class: the responsive bands further
+     down set the band's reserve too, and they come later in the sheet. */
+  @media (max-width:1099px){
+    /* Stacked, every pixel the band keeps is a pixel the first story does
+       not get. The reserve above the title comes down to the header's own
+       band plus a step, and the breath below it to a step as well: the band
+       is then as tall as what is in it, and the first row clears the fold
+       with its caption and not only with its picture. */
+    .top>.hero{min-height:clamp(320px,50vh,620px);gap:clamp(14px,2.2vh,30px);
+               padding:calc(var(--bar) + 22px) var(--gut) 30px}
+    .top>.hero h1{font-size:clamp(34px,7vw,124px)}
+    .top>.res{padding-top:var(--vs-s)}
+  }
+  /* The tablet and the short laptop: wide enough that the title takes three
+     lines at the portrait size, not wide enough to stand the two columns up.
+     The title is cut to two lines and the band comes back under the fold. */
+  @media (min-width:861px) and (max-width:1099px){
+    .top>.hero h1{font-size:clamp(32px,4.4vw,54px);max-width:20ch}
+    .top>.hero .hlede{max-width:56ch}
+  }
+
+  /* ===================================================================
      THE RESULTS — paper.
 
      The landing's `four ways out` grammar, carried over whole: opaque rows
@@ -873,7 +946,9 @@
   </nav>
 </div>
 
-<!-- ===================== THE HERO ===================== -->
+<!-- ============ THE FIRST SCREEN: masthead | index ============ -->
+<div class="top">
+
 <section class="hero on-ink">
   <h1>
     <span class="rise" style="--d:.28s">Visual stories</span>
@@ -941,6 +1016,8 @@
     </div>
   </div>
 </section>
+
+</div><!-- /.top -->
 
 <!-- ===================== THE AGENT ===================== -->
 <section class="mcp on-ink arm" id="mcp">
@@ -1130,7 +1207,12 @@
   const CRED = SAME ? 'include' : 'omit';
 
   const PER_PAGE = 10;
-  const FEATURED = 3;
+  /* SIX, NOT THREE. Three was the right number under a hero that took the
+     whole frame — a taste of the gallery, met on the way down. The gallery
+     now stands beside the masthead in a column of its own height, and three
+     rows in it leave two thirds of the paper blank. Six fills the column and
+     still fits the first screen on a laptop. Same call, same cost. */
+  const FEATURED = 6;
 
   const $ = (id) => document.getElementById(id);
 
@@ -1494,17 +1576,23 @@
   });
 
   /* A placeholder cut off mid-word reads as a broken field rather than as an
-     example of what to type. The narrow frame gets a shorter one — the same
-     kind of subjects, fewer of them — and it follows a rotation, so the field
-     is right whichever way the phone is held. */
-  const narrow = matchMedia('(max-width:640px)');
-  const setHint = (m) => {
-    $('q').placeholder = m.matches
-      ? 'climate, elections, migration…'
-      : 'climate change, urban data, election graphics…';
+     example of what to type. WHAT DECIDES IS THE FIELD, not the window: the
+     masthead stands in a column of its own on a wide screen now, and the long
+     hint does not fit there either — a rule written on the window's width was
+     giving a phone's field the phone's hint and a 1512px window a hint too
+     long for the column it landed in. The field is measured against its own
+     type, and takes the short hint — the same kind of subjects, fewer of
+     them — whenever the long one would not fit. */
+  const LONG = 'climate change, urban data, election graphics…';
+  const SHORT = 'climate, elections, migration…';
+  const qf = $('q');
+  const setHint = () => {
+    const em = parseFloat(getComputedStyle(qf).fontSize) || 20;
+    qf.placeholder = qf.clientWidth > LONG.length * em * 0.47 ? LONG : SHORT;
   };
-  setHint(narrow);
-  narrow.addEventListener('change', setHint);
+  setHint();
+  if (window.ResizeObserver) new ResizeObserver(setHint).observe(qf);
+  else addEventListener('resize', setHint, { passive: true });
 
   $('sform').addEventListener('submit', (e) => {
     e.preventDefault();

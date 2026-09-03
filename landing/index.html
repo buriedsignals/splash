@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Splash — reporting in, graphics out</title>
+<title>Splash — reporting is still text heavy</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
      tailles — un favicon en PNG est net à une seule. Sans fond : la marque
@@ -331,6 +331,36 @@
   @media (prefers-reduced-motion:reduce){
     .hero.gone .rise{animation:none;opacity:0}
   }
+
+  /* LE TITRE SE RETOURNE AVANT QUE LA PAGE PARTE.
+     Le premier scroll ne lance pas la traversée tout de suite. La ligne du
+     repos pose le problème — le reportage est encore fait de texte — et la
+     réponse ne s'écrit pas ailleurs sur la page : elle prend la place de la
+     question, au même endroit et dans le même corps. La traversée ne part
+     qu'après, sinon les deux gestes se marchent dessus.
+
+     Un seul titre, deux phrases : le texte est remplacé ENTRE les deux
+     animations, donc rien n'est empilé, rien ne se chevauche, et la boîte
+     centrée sur son axe encaisse une ligne plus longue sans bouger.
+
+     `.rise` porte déjà une animation sur ces mêmes éléments, avec un `both`
+     qui en tient l'état final ; ces règles-ci sont plus spécifiques, donc
+     elles la remplacent au lieu de se battre avec elle. La sortie du hero
+     l'est plus encore, mais dans l'autre sens — d'où le retrait de `.back`
+     avant `.gone` côté script, sans quoi le titre resterait quand tout le
+     reste s'en va. */
+  .hero h1.turn>span,.hero h1.turn>em{
+    animation:fallC .40s cubic-bezier(.4,0,.2,1) both}
+  .hero h1.turn>em{animation-delay:0s}
+  .hero h1.turn>span{animation-delay:.07s}
+  .hero h1.back>span,.hero h1.back>em{
+    animation:riseC .80s cubic-bezier(.16,.84,.3,1) both}
+  .hero h1.back>span{animation-delay:0s}
+  .hero h1.back>em{animation-delay:.10s}
+  @media (prefers-reduced-motion:reduce){
+    .hero h1.turn>span,.hero h1.turn>em,
+    .hero h1.back>span,.hero h1.back>em{animation:none;opacity:1}
+  }
   .hero h1 em{font-style:normal;color:var(--amber);display:block}
   .heroft{display:flex;justify-content:space-between;align-items:flex-end;gap:34px;flex-wrap:wrap}
   .heroft p{margin:0;max-width:38ch;font-size:13.5px;opacity:.58}
@@ -399,8 +429,115 @@
      donneraient la main au dernier écrit. */
   .chapter{position:relative;background:var(--ink);color:var(--paper);
            padding:0 var(--gut)}
-  .csrun{--n:4;max-width:var(--max);margin:0 auto;
-         height:calc(var(--n) * 74vh + 100vh)}
+  /* ONE RUN FOR THE WHOLE CHAPTER. The answer used to be a section of its
+     own ahead of this one, so its pane rode out of the frame — taking the
+     board with it — before «Four reasons» could come in, and there was a
+     screen of nothing between the two lines. They are one section now:
+     `--a1` is the scroll the first line has to itself, the four cards keep
+     the run they always had, and the board stands behind all of it.
+
+     It sets its own gutter, because the section cannot: the board has to
+     reach the edges of the window and `.answer` takes the chapter's padding
+     off for it. */
+  .csrun{--n:4;--a1:46;max-width:var(--max);margin:0 auto;padding:0 var(--gut);
+         position:relative;z-index:1;
+         height:calc(var(--a1) * 1vh + var(--n) * 74vh + 100vh)}
+
+  /* ===================================================================
+     THE ANSWER, ON ITS OWN SCREEN.
+
+     The crossing out of the hero used to land on the hand of cards. It
+     lands here first: one screen, one line, the same ink the chapter has
+     always had — so what the paper lifts off is a sentence and nothing
+     else. The cards keep their own screenfuls underneath.
+
+     The line is pinned for the length of the section, because the drawings
+     arrive AROUND IT: the sentence is the thing they are about, so it is the
+     thing they come towards. */
+  /* AND IT IS SET LIKE THE HERO'S OWN LINE — same face, same measure, same
+     optical centre at 57% of the frame, second line in amber. The hero used to
+     turn its headline over to this sentence before the paper lifted; the
+     sentence has a screen of its own now, so the turn is gone and the swap
+     happens BEHIND the paper: one line leaves with the webs, the other is
+     already standing exactly where the first one stood. */
+  /* NO GUTTER ON THIS ONE. `.chapter` insets its sides, and the sticky
+     stage clips what leaves it — so the drawings were cut off thirty-six
+     pixels short of the window and the two strips they could never reach
+     read as black bands down the edges. The type keeps its gutter; it sets
+     its own. */
+  .answer{position:relative;padding:0}
+  /* One screen to hold the frame while the drawings come in, and a little
+     over half a screen for the exchange: the line goes out on that scroll
+     and «Four reasons» comes up straight behind it. The drawings do not
+     move for it — they are the ground both lines stand on. */
+  /* THE BOARD IS THE GROUND OF THE CHAPTER, NOT OF ONE SCREEN OF IT. A
+     holder laid over the whole section — absolute, so it takes no room in
+     the flow — and inside it a pane that sticks to the top of the window.
+     The pane is therefore pinned from the first line to the last card: the
+     drawings stand behind the answer, behind «Four reasons», and behind the
+     hand, and nothing about them moves when the reader scrolls. */
+  .avhold{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .avstage{position:sticky;top:0;height:100vh;overflow:hidden;
+           perspective:1000px;perspective-origin:50% 50%}
+  /* THE LINE IS IN THE PANE, not in the column: it is set to the window the
+     way the hero's line is, and the column below it is capped and guttered.
+     It is named, not reached for as «the h2 of the answer» — there are two
+     headings in this section now, and the other one is «Four reasons». */
+  .avline{position:absolute;left:var(--gut);right:var(--gut);top:57%;
+          transform:translateY(-50%);margin:0;z-index:2;
+          font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
+          text-align:center;letter-spacing:-.045em}
+  .avline>span,.avline>em{display:block}
+  .avline>em{font-style:normal;color:var(--amber)}
+
+  /* ===================================================================
+     THE DRAWINGS COME STRAIGHT AT YOU.
+
+     Small tiles — the size the ones over the wordmark are, not the big
+     cards — standing in the depth around the sentence, and the scroll
+     walks the camera through them. Each comes forward on its own line,
+     grows, passes the frame and is gone; the one that goes is put back at
+     the far end, so the walk never runs out.
+
+     They are SCATTERED, not set on a ring. A ring puts every tile at the
+     same distance from the middle, and the set then arrives as one event
+     rather than as a room being walked through.
+
+     A perspective has one vanishing point, and it is behind the sentence:
+     at the far end every tile is small and near the middle, which is
+     exactly where the words are. So nothing is solid back there — a tile
+     fades up over the first half of its approach and is at full strength
+     only once it has spread out past the type.
+     =================================================================== */
+  /* THE ORDER IS: DRAWINGS, THEN THE SCRIM, THEN THE WORDS. The scrim is
+     there to darken what passes behind the sentence, so it has to be over
+     the drawings and under the type. Written the other way round it was a
+     black gradient laid across the line itself. */
+  .avfield{position:absolute;inset:0;z-index:0;pointer-events:none;
+           transform-style:preserve-3d;will-change:transform}
+  .avfly{position:absolute;left:50%;top:50%;
+         border-radius:var(--rad);background:var(--paper);overflow:hidden;
+         will-change:transform,opacity;backface-visibility:hidden;
+         box-shadow:0 26px 60px -34px rgba(20,20,28,.85)}
+  .avfly>div{width:100%;height:100%}
+  /* A DARK TILE IS THE SAME DRAWING, TURNED OVER. The twelve painters bake
+     their palette in — near-black type, a pale grid, land a shade off paper
+     — and threading a theme through all of them would be a rewrite of the
+     module the reel runs on. Inverting the drawing and rotating the hue back
+     gives the dark version of the same chart: the type goes light, the grid
+     falls to a whisper, and the colour keeps its own hue. The card's ground
+     is not inverted, because it is not inside the filter. */
+  .avfly.avdark>div{filter:invert(1) hue-rotate(180deg)}
+  /* And it needs a rim: a dark card on a dark ground has no edge, and the
+     shadow it casts is invisible. */
+  .avfly.avdark{box-shadow:0 26px 60px -34px rgba(0,0,0,.9),
+                inset 0 0 0 1px rgba(237,234,227,.16)}
+  /* The words keep their contrast under whatever passes them. */
+  .avscrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+           background:radial-gradient(56% 26% at 50% 57%,
+             rgba(20,20,28,.86) 0%, rgba(20,20,28,.7) 46%,
+             rgba(20,20,28,.2) 78%, rgba(20,20,28,0) 100%)}
+
   /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
      au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
      passer devant : il est au centre du panneau collé, et les cartes lui
@@ -1932,6 +2069,51 @@
 </style>
 </head>
 <body>
+<script>
+/* ===================================================================
+   THE PAGE IS HELD BEFORE ANYTHING ELSE EXISTS.
+
+   The real lock is installed by the main script, at the far end of the
+   body — which is thousands of lines and one WebGL module after the
+   first paint. Everything in between was scrollable, and it did not
+   merely scroll: the lock, arriving late, anchors the page WHERE IT
+   FINDS IT, so a flick during the loading screen pinned the page half
+   a chapter down and set the crossing running behind the screen. A
+   wheel at 60ms put it at 900, and five seconds later it was at 10989
+   with the hero never played.
+
+   So the hold starts here, inline, before the loading screen is even
+   parsed: the page is put at the top, kept there, and the gesture is
+   swallowed. The real lock supersedes it the moment it is installed —
+   `lock()` calls the release itself, so the two can never both be on.
+
+   And it lets go on its own after twelve seconds. If the main script
+   fails to load at all, the page must still be readable; an
+   unscrollable page is a worse failure than an unchoreographed one.
+   =================================================================== */
+(function () {
+  try { history.scrollRestoration = 'manual'; } catch (e) {}
+  if (scrollY) scrollTo(0, 0);
+  var KEY = /^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/;
+  var eat = function (e) { e.preventDefault(); };
+  var key = function (e) { if (KEY.test(e.key)) e.preventDefault(); };
+  var snap = function () { if (scrollY) scrollTo(0, 0); };
+  addEventListener('wheel', eat, { passive: false });
+  addEventListener('touchmove', eat, { passive: false });
+  addEventListener('keydown', key, { passive: false });
+  addEventListener('scroll', snap, { passive: true });
+  var off = function () {
+    if (!window.__preLock) return;
+    window.__preLock = null;
+    removeEventListener('wheel', eat, { passive: false });
+    removeEventListener('touchmove', eat, { passive: false });
+    removeEventListener('keydown', key, { passive: false });
+    removeEventListener('scroll', snap);
+  };
+  window.__preLock = off;
+  setTimeout(off, 12000);
+})();
+</script>
 <div id="boot" role="status" aria-label="Loading">
   <div class="bt-grp"><svg class="bt-mark" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span class="bt-nm">Splash</span></div>
 </div>
@@ -1964,7 +2146,7 @@
 <div id="hero-arc">
 <section class="hero" data-ground="#14141c">
   <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
-  <h1><span class="rise" style="--d:.26s">Reporting in,</span><em class="rise" style="--d:.38s">graphics out.</em></h1>
+  <h1><span class="rise" style="--d:.26s">Reporting is still</span><em class="rise" style="--d:.38s">text heavy</em></h1>
   <div class="heroft">
     <p class="rise" style="--d:.54s">Your desk already writes the story. Splash teaches the assistant it already uses to show it — charts, maps, motion and scrollytelling, from the reporting you have done.</p>
     <div class="rise" style="--d:.66s;display:flex;gap:9px">
@@ -1981,7 +2163,21 @@
      break and no field of plates, because those were choreography for
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
-<section class="chapter" data-ground="#14141c">
+<!-- ====== THE CHAPTER — one board, two lines, four cards ======
+     The answer and the case used to be two sections. Two sections means two
+     pinned panes, and a pane leaves the frame before the next one arrives:
+     the drawings rode out with the first line and «Four reasons» came up
+     over nothing. One section, one board standing behind the whole of it. -->
+<section class="chapter answer cards" data-ground="#14141c">
+  <!-- The board, and the first line standing in it. Pinned for the whole
+       chapter, so what follows is read over the same drawings. -->
+  <div class="avhold">
+    <div class="avstage">
+      <div class="avfield" aria-hidden="true"></div>
+      <div class="avscrim" aria-hidden="true"></div>
+      <h2 class="avline"><span>We should be</span><em>communicating visually</em></h2>
+    </div>
+  </div>
   <div class="csrun">
     <div class="csstick">
       <div class="csintro">
@@ -2631,6 +2827,9 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   const hero = document.querySelector('.hero');
   const chapter = document.querySelector('.chapter');
+  /* The crossing's target and the white's departure are no longer the
+   * same section: the answer takes the first screen, the cards follow. */
+  const cardsSec = document.querySelector('.chapter.cards');
   const firstCard = document.querySelector('.card');
   let armed = true, running = false;
   /* Les repères de la page — où se pose chaque verrou. Mesurés une fois par
@@ -2736,6 +2935,9 @@
   let locked = false;
   const lock = (on) => {
     if (on === locked) return;
+    /* Et il relève la tenue d'avant le chargement : deux verrous posés en même
+       temps, c'est l'ancre de l'un contre le rappel à zéro de l'autre. */
+    if (on && window.__preLock) window.__preLock();
     locked = on;
     const f = on ? 'addEventListener' : 'removeEventListener';
     window[f]('wheel', eat, { passive: false });
@@ -2884,11 +3086,37 @@
    * pendant le trajet c'est la section qui passe devant les journaux : sans
    * elle on verrait le texte monter par-dessus le papier au lieu de le voir
    * sortir de dessous. */
+  /* Les deux lignes du hero. Celle du repos est aussi celle du balisage —
+   * écrite là pour qu'elle soit lue sans script — et celle-ci est la réponse
+   * que le premier scroll amène. Elles sont gardées ici, ensemble, parce que
+   * le retour doit pouvoir remettre la première. */
+  const HEAD_REST = ['Reporting is still', 'text heavy'];
+  const h1 = hero && hero.querySelector('h1');
+  const setHead = (t) => {
+    if (!h1) return;
+    const a = h1.querySelector('span'), b = h1.querySelector('em');
+    if (a) a.textContent = t[0];
+    if (b) b.textContent = t[1];
+  };
   const leave = async () => {
     if (!armed || running || !chapter) return;
+    /* ET PAS TANT QUE LE HERO N'EST PAS ARRIVÉ. Un geste fait devant une page
+       qui charge n'est pas une décision de traverser : la traversée se jouait
+       derrière l'écran de chargement, et le lecteur arrivait dans un chapitre
+       sans avoir vu le hero. L'attente ne s'arrête pas au retrait de l'écran —
+       le hero se pose encore après lui. */
+    if (window.__uiIn === 0) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
+    /* LE HERO GARDE SA LIGNE. Il retournait son titre vers la réponse avant
+     * que le papier se lève — la phrase était donc dite deux fois à cinq
+     * secondes d'intervalle une fois qu'elle a eu son propre écran. Elle est
+     * dite une fois, par la section, et le hero reste sur la sienne : la
+     * traversée part directement. */
+    /* `.back` s'en va d'abord : il est plus spécifique que la sortie du hero
+     * et retiendrait le titre. */
+    if (h1) h1.classList.remove('turn', 'back');
     document.body.classList.add('crossing');
     hero.classList.add('gone');
     if (cstage) cstage.classList.add('in');
@@ -2908,6 +3136,7 @@
     running = false;
     await wait(80);
     lock(false);
+    setBeat(0);                // le chapitre s'ouvre sur sa première phrase
     bounds = true;
   };
 
@@ -2925,6 +3154,10 @@
     window.__heroHold = 1;
     document.body.classList.add('crossing');
     cutOn();
+    /* La question revient AVANT que le hero se remontre — le papier le
+     * couvre encore à cet instant, donc le remplacement ne se voit pas. */
+    if (h1) h1.classList.remove('turn', 'back');
+    setHead(HEAD_REST);
 
     // 1. le papier redescend et recouvre la section — l'aller finissait par
     //    son retrait, donc le retour commence par son retour
@@ -2990,9 +3223,16 @@
       const N = piles.length;
       chapter.style.height = N ? ((INTRO + N + DWELL) * slotH) + 'px' : '';
       firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + (N
-        ? Math.round((INTRO + N - 1 + DWELL) * slotH)
-        : Math.max(0, chapter.offsetHeight - slotH));
+      /* THE CROSSING LANDS ON THE FIRST SECTION, THE WHITE LEAVES FROM THE
+         LAST. They used to be one and the same. There are two now — the answer
+         on its own screen, then the hand of cards — so the exit is measured on
+         the last of them; measured on the first, the reader would be taken to
+         the white before a single card had been dealt. */
+      const last = cardsSec || chapter;
+      const lastTop = Math.round(last.getBoundingClientRect().top + scrollY);
+      exitY = N
+        ? firstTop + Math.round((INTRO + N - 1 + DWELL) * slotH)
+        : lastTop + Math.max(0, last.offsetHeight - slotH);
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -3362,6 +3602,10 @@
       });
 
       const N = cds.length;
+      /* LES DEUX BOUTS DE LA MAIN, résolus et non tâtonnés : la première carte
+       * bouge à zéro, la dernière est encore tenue à un. Elles servent aussi
+       * au chapitre, qui a besoin de savoir OÙ la première a fini d'arriver. */
+      const LEAD = 0.34, RATE = N - 1 + LEAD + 0.78;
       const sm = (u) => u * u * u * (u * (u * 6 - 15) + 10);
       const cl = (u) => Math.max(0, Math.min(1, u));
       // l'éventail : quatre poses, tenues en main
@@ -3406,6 +3650,15 @@
                  rz: -d * (10 + 7 * tight), z: -260 - slot * 96 };
       };
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
+      /* Le point de fuite du plateau est dans la feuille de style, et il change
+       * avec la largeur : le lire est la seule façon de ne pas l'écrire deux
+       * fois. */
+      let PSP = 1500;
+      const gaugePsp = () => {
+        PSP = parseFloat(getComputedStyle(deck).perspective) || 1500;
+      };
+      gaugePsp();
+      addEventListener('resize', gaugePsp, { passive: true });
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
        * distribué aux quatre, c'est un bloc qui glisse : elles partent
        * ensemble, arrivent ensemble, et la main n'a plus d'épaisseur. Chacune
@@ -3422,10 +3675,82 @@
        * couleur, c'est un objet qu'on suit. */
       const FLOOD_DUR = 0.95;   // secondes, la même mesure que les autres passages
       let flood = 0, wasWide = false, floodDirty = false, radPx = 0, lastT = 0;
+      /* ACT ONE BELONGS TO THE FIRST LINE. The run carries it at the front —
+       * `--a1` screens of scroll before the first card is dealt — and it is
+       * read off the stylesheet rather than written twice, so the height of
+       * the section and the length of the act cannot drift apart.
+       *
+       * In that act one line leaves and the other arrives, IN THAT ORDER.
+       * Crossed over each other they would be two sentences printed on top of
+       * one another for half a screen; the answer goes out first, and «Four
+       * reasons» comes up into the frame it leaves. The board behind them does
+       * not move for either. */
+      /* AND THE SCROLL ONLY CUES THEM. Scrubbed on the scroll position, a
+       * sentence goes out at whatever speed the hand on the wheel happens to
+       * have — it stops half gone, it comes back a little, it is a slider and
+       * not a sentence leaving. Each of the two plays ITS OWN animation, at
+       * its own pace; what the reader does is decide WHEN. Three cues, and
+       * the reader crosses them in either direction:
+       *   before the first  — the answer stands
+       *   between the two   — «Four reasons» stands, and the answer has gone
+       *   past the second   — both have gone, and the hand is dealt.
+       * The second cue is well before the first card, so the case is never
+       * read through a sentence that is still leaving. */
+      const line = document.querySelector('.avline');
+      const intro = run.querySelector('.csintro');
+      const FADE = 0.62;    // seconds, what either of them takes to come or go
+      let a1 = 0, stage = 0, lineK = 1, introK = 0, lineOp = -1, introOp = -1;
+      const gaugeAct = () => {
+        const v = parseFloat(getComputedStyle(run).getPropertyValue('--a1'));
+        a1 = (v > 0 ? v : 70) * innerHeight / 100;
+      };
       const readProg = () => {
         const r = run.getBoundingClientRect();
         const span = Math.max(1, r.height - innerHeight);
-        prog = cl(-r.top / span);
+        const pr = cl(-r.top / span);
+        const act = Math.min(0.9, a1 / span);
+        const u = cl(pr / act);
+        /* ONE CUE IS HELD, THE SECOND IS ONLY A THRESHOLD. The chapter takes
+         * the page for the first exchange — the answer out, «Four reasons» in
+         * — because a single flick of the wheel would otherwise carry the
+         * reader through both of them in one inertia. Once the sentence is
+         * standing the page is his again: he leaves it when he likes, and the
+         * going of it plays itself the moment he crosses the mark.
+         *
+         * The mark sits a little before the end of the act, so the sentence is
+         * on its way out before the first card stirs rather than the two
+         * starting together. */
+        stage = u < 0.12 ? 0 : u < 0.72 ? 1 : 2;
+        /* AND IT SAYS WHERE ITS CUES ARE. The page holds the reader at each of
+         * them while the sentence plays, and it cannot work the marks out for
+         * itself without writing this act's length a second time. */
+        const top = r.top + scrollY;
+        window.__csBeats = { y1: Math.round(top + a1 * 0.12) };
+        /* And the hand is dealt over what is left of the run, so the four
+         * cards keep exactly the pacing they had as a section of their own. */
+        prog = cl((pr - act) / (1 - act));
+      };
+      /* ONE AT A TIME, NEVER BOTH. Nothing comes up until the other has gone:
+       * two sentences dissolving through each other in the same place is a
+       * fault, not a transition. */
+      const beats = (dtv) => {
+        const step = dtv / FADE;
+        const wl = stage === 0 ? 1 : 0, wi = stage === 1 ? 1 : 0;
+        if (wl <= lineK || introK < 0.02)
+          lineK += Math.max(-step, Math.min(step, wl - lineK));
+        if (wi <= introK || lineK < 0.02)
+          introK += Math.max(-step, Math.min(step, wi - introK));
+        if (line && lineK !== lineOp) {
+          lineOp = lineK; line.style.opacity = sm(cl(lineK)).toFixed(3);
+        }
+        if (intro && introK !== introOp) {
+          introOp = introK; intro.style.opacity = sm(cl(introK)).toFixed(3);
+        }
+        /* And whether both are where the cue asked them to be. The page waits
+         * on THIS, never on a number of milliseconds: the two would come apart
+         * the first time the fade is retuned. */
+        window.__csSettled =
+          (Math.abs(wl - lineK) < 0.002 && Math.abs(wi - introK) < 0.002) ? 1 : 0;
       };
       addEventListener('pointermove', (e) => {
         tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
@@ -3455,6 +3780,7 @@
          * milieu, ce qui est ce qu'on appelle fluide. */
         const dtv = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
         lastT = now;
+        beats(dtv);
         const tgt = window.__csFlood ? 1 : 0;
         const step2 = dtv / FLOOD_DUR;
         flood += Math.max(-step2, Math.min(step2, tgt - flood));
@@ -3485,8 +3811,33 @@
                      innerHeight / cds[0].offsetHeight) * 1.34
           : 1;
         const H = deck.clientHeight || innerHeight;
-        const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
+        /* LA MAIN ATTEND HORS DU CADRE. Le centre d'une carte était posé sur
+           le bord bas, donc l'éventail dépassait de moitié et la section
+           s'ouvrait sur des cartes déjà là — on voyait le jeu avant d'en
+           avoir lu la raison. Il est descendu d'une demi-carte de plus : rien
+           n'est dans la fenêtre tant qu'une carte n'est pas appelée, et
+           chacune arrive du dehors. */
         const cw = cds[0].offsetWidth || 340;
+        const chh = cds[0].offsetHeight || 240;
+        /* Ce que vaut une carte quand elle SORT par le haut : une hauteur de
+           cadre et de quoi la faire disparaître. */
+        const bottom = H / 2 + Math.max(chh, cw) * 0.92;
+        /* ET CE QU'IL FAUT POUR QU'ELLE SOIT HORS DU CADRE EN BAS — carte par
+           carte, parce que ce n'est pas la même distance pour chacune.
+           L'éventail est étagé en profondeur, et la perspective RAMÈNE une
+           carte lointaine vers le centre du cadre : mesurée une fois pour
+           toutes sur la carte de devant, les trois qui sont derrière
+           dépassaient par le bas. Sur un téléphone, où le point de fuite est
+           plus près (1000 au lieu de 1500), elles étaient carrément dans le
+           cadre — trois cartes visibles avant d'avoir scrollé.
+           La projection est une division : on la retourne. Et ce qu'une carte
+           occupe dans la hauteur, c'est sa LARGEUR, parce qu'au repos elle est
+           tournée d'un quart de tour — plus la part de sa hauteur que les
+           quelques degrés qui manquent au quart de tour lui rendent. */
+        const restOf = (fz) => {
+          const kz = PSP / (PSP + Math.abs(fz));
+          return H / (2 * kz) + (cw + chh * 0.28) / 2 + 22;
+        };
         let front = 0;
         /* Deux passes : la première dit où en est chaque carte, la seconde
          * place la main autour de celles qui y sont encore. Une seule passe
@@ -3494,7 +3845,18 @@
          * autres, et la moitié d'entre elles n'a pas encore été calculée. */
         const A = [], FL = [], O = [];
         for (let i = 0; i < N; i++) {
-          const u = prog * (N + 0.55) - i - 0.75;
+          /* AND THE HAND HAS NO LEAD-IN. Three quarters of a slot of nothing
+           * at the front was the room the chapô needed to be read in; the
+           * chapô has its own act now and hands over at its own cue, so the
+           * first card stirs on the first turn of the wheel after it.
+           *
+           * THE PACE IS SOLVED FROM THE TWO ENDS, not nudged. Moving the front
+           * without moving it walks the whole hand forward by the same amount,
+           * and the last card then leaves BEFORE the run does — which takes
+           * the white flood with it, because the flood is that card's back
+           * growing to fill the window. `LEAD` puts the first card on nought;
+           * `RATE` is what it takes for the last one to be still held at one. */
+          const u = prog * RATE - i - LEAD;
           A[i] = sm(cl((u + 0.34) / 0.78));
           FL[i] = sm(cl((u + 0.34) / 0.66));
           O[i] = sm(cl((u - 0.78) / 0.55));
@@ -3540,7 +3902,7 @@
           const py = pty * (11 * lead + 14 * hand);
           /* Trois stations sur une seule verticale : en bas à moitié dehors,
            * au milieu retournée et lisible, puis hors du cadre par le haut. */
-          const rest = bottom + F.dip + (1 - gate) * (cw * 0.85);
+          const rest = restOf(F.z) + F.dip + (1 - gate) * (cw * 0.85);
           /* La sortie n'est pas une translation seule : une dérive de côté et
            * un quart de degré de roulis, sinon la carte quitte le cadre comme
            * un ascenseur. */
@@ -3629,13 +3991,13 @@
       };
       const wake = () => { if (live && !raf) raf = requestAnimationFrame(frame); };
       addEventListener('scroll', () => { readProg(); }, { passive: true });
-      addEventListener('resize', () => { readProg(); }, { passive: true });
+      addEventListener('resize', () => { gaugeAct(); readProg(); }, { passive: true });
       if (typeof IntersectionObserver === 'function') {
         new IntersectionObserver((es) => {
           for (const e of es) { live = e.isIntersecting; readProg(); wake(); }
         }, { threshold: 0 }).observe(run);
       } else { live = true; wake(); }
-      readProg(); live = true; wake();
+      gaugeAct(); readProg(); live = true; wake();
     }
   }
 
@@ -3661,7 +4023,45 @@
    * alors aucun effet. Elle repose sur la remise en place — ce qui dépasse est
    * défait dans la même frame, avant peinture. Ça marche quelle que soit
    * l'origine du déplacement, et sans écouteur non passif sur toute la page. */
-  const toBack = () => { bounds = false;
+  /* ---- LE TEMPS DU CHAPITRE ---------------------------------------------
+   * UN SEUL repère est tenu : celui où la réponse s'en va et où «Four reasons»
+   * prend sa place. Le lecteur l'APPELLE, il ne le joue pas — la page lui est
+   * prise, l'échange se joue à SA vitesse à elle, et elle lui est rendue de
+   * l'autre côté. Sans ça, un coup de molette un peu franc traverse les deux
+   * phrases dans la même inertie et il n'en voit aucune.
+   *
+   * Une fois la phrase debout, la page est à lui : il la quitte quand il veut,
+   * et sa sortie se joue toute seule au moment où il franchit la marque. Tenir
+   * ce second passage aussi, c'était lui reprendre la main deux fois de suite
+   * dans le même écran.
+   *
+   * Le repère est une borne, comme le plancher et le plafond du chapitre : on
+   * ne passe pas outre, dans un sens comme dans l'autre. Remonter rejoue donc
+   * l'échange à l'envers, ce qui est la seule façon de retrouver la page dans
+   * l'état où on l'a laissée.
+   *
+   * L'attente porte sur l'ÉTAT du module, pas sur une durée : c'est lui qui
+   * mène les deux fondus, et un délai écrit ici se décalerait dès qu'on
+   * retouche un réglage là-bas. */
+  /* Le premier échange a-t-il été joué ? C'est aussi ce qui dit au plateau
+     s'il a le droit d'écouter la molette : tant que le chapitre tient la page,
+     le lecteur n'a pas de molette à écouter. */
+  let beatAt = 0;
+  const setBeat = (n) => { beatAt = n; window.__csFree = n ? 1 : 0; };
+  const beatTo = async (n, y) => {
+    if (running) return;
+    running = true; freeBack = false; trigger = () => {};
+    setBeat(n);
+    lock(true); hold(y);
+    await until(() => window.__csSettled === 0, 400);   // le module a pris le repère
+    await until(() => window.__csSettled !== 0, 3000);  // et il a fini
+    /* `!== 0` et non `=== 1` : si le module n'a pas tourné du tout, le drapeau
+       n'existe pas et la page ne doit pas rester tenue trois secondes. */
+    lock(false);
+    running = false;
+  };
+
+  const toBack = () => { bounds = false; setBeat(0);
     trigger = backUp; fire = -1; freeBack = false; lock(true); hold(firstTop); backUp(); };
   const toExit = () => { bounds = false;
     trigger = toWhite; fire = 1; freeBack = false; lock(true); hold(exitY); toWhite(); };
@@ -3862,6 +4262,11 @@
   // remettre les pavés dans leurs bornes, quel que soit le chemin emprunté
   const inBounds = () => {
     bounds = true;
+    /* Rentré par un chemin qui n'a joué aucune séquence : les temps du
+       chapitre se relisent sur la position, sinon la borne suivante est celle
+       d'un état qu'on n'a pas. */
+    const bt = window.__csBeats;
+    if (bt) setBeat(scrollY > bt.y1 ? 1 : 0);
     if (!piled) { piled = true; entryK = 0; stack(); }
   };
 
@@ -4088,7 +4493,15 @@
     if (running || locked || armed) return;
 
     if (bounds) {
+      /* LES REPÈRES DU CHAPITRE SE LISENT AVANT SES BORNES. Un seul geste franc
+       * passe par-dessus tout ce qui est sur son chemin, et c'est le repère le
+       * PLUS PROCHE qui doit l'arrêter, pas le plus loin : lus après le
+       * plancher, un coup de molette qui remonte de la moitié du chapitre
+       * ressortait au hero sans que la phrase soit revenue. */
+      const bt = window.__csBeats;
+      if (bt && beatAt > 0 && scrollY < bt.y1 - 2) { scrollTo(0, bt.y1 - 2); beatTo(0, bt.y1 - 2); return; }
       if (scrollY < firstTop) { scrollTo(0, firstTop); toBack(); return; }
+      if (bt && beatAt < 1 && scrollY > bt.y1 + 2) { scrollTo(0, bt.y1 + 2); beatTo(1, bt.y1 + 2); return; }
       if (scrollY > exitY) { scrollTo(0, exitY); toExit(); return; }
       return;
     }
@@ -4138,6 +4551,8 @@
       if (lastCard) lastCard.classList.remove('out');
     } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
       armed = true; hero.classList.remove('gone');
+      if (h1) h1.classList.remove('turn', 'back');
+      setHead(HEAD_REST);
       window.__webOut = 0;                   // et le papier revient avec lui
       window.__heroHold = 0;                 // sans laisser le verrou derrière
       document.body.classList.remove('crossing');
@@ -5384,7 +5799,13 @@
  */
 (function boot(){
   var el = document.getElementById('boot');
-  if (!el) return;
+  /* L'UI DU HERO EST-ELLE ARRIVÉE ? Tant que non, la traversée ne part pas :
+   * l'écran de chargement parti, le hero se pose encore pendant sept dixièmes
+   * de seconde, et un geste fait là-dedans emportait le lecteur dans le
+   * chapitre sans qu'il ait vu le hero se poser. Sans écran de chargement du
+   * tout, il n'y a rien à attendre. */
+  window.__uiIn = 0;
+  if (!el) { window.__uiIn = 1; return; }
   document.body.classList.add('booting');
   var grp = el.querySelector('.bt-grp'), nm = el.querySelector('.bt-nm');
   var t0 = Date.now(), CAP = 9000, FLOOR = 1250;
@@ -5419,6 +5840,21 @@
         el.remove();
         document.body.classList.remove('booting');
         document.body.classList.add('settling');
+        /* Et on attend la FIN de sa pose, pas une durée écrite ici : c'est la
+         * feuille de style qui la mène, et un nombre recopié à cet endroit se
+         * décalerait au premier changement là-bas. Le filet existe parce
+         * qu'une transition peut ne jamais rendre son événement — page
+         * cachée, mouvement réduit, hero absent. */
+        var hero = document.querySelector('.hero');
+        var settled = function () { window.__uiIn = 1; };
+        setTimeout(settled, 1600);
+        if (!hero) return settled();
+        var end = function (ev) {
+          if (ev.target !== hero || ev.propertyName !== 'opacity') return;
+          hero.removeEventListener('transitionend', end);
+          settled();
+        };
+        hero.addEventListener('transitionend', end);
         return;
       }
       requestAnimationFrame(eat);
@@ -5433,5 +5869,502 @@
   })();
 })();
 </script>
+
+<script>
+/* ===================================================================
+   THE WALK. Small drawings standing in the depth around the answer;
+   the scroll walks the camera straight through them.
+
+   One transform and one opacity per tile per frame. Nothing reflows
+   after the tiles are built, and the loop runs only while the section
+   holds the frame.
+   =================================================================== */
+(() => {
+  const sec = document.querySelector('.answer');
+  if (!sec) return;
+  const field = sec.querySelector('.avfield');
+  if (!field) return;
+  const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  const COUNT = 28;
+  const DEPTH = 2400;   // how far back the set stands, in pixels of z
+  /* A NOMINAL SPAN, and it is only used to space the STARTS out. How far a
+     tile actually walks is its own — it is turned round the moment its near
+     edge has cleared the window, which depends on where it stands. */
+  const SPAN = DEPTH + 300;
+  const PERSP = 1000;   // the same number the stage's perspective is set to
+  const RATE = 1150;    // pixels of depth walked a second, filling the room
+  const CRUISE = 320;   // and the drift it keeps once the room is full
+  const tiles = [];
+  const SALT = ((Math.random() * 0xffffffff) >>> 0) || 0x9e3779b9;
+
+  /* ONE STREAM OF CHANCE FOR THE WHOLE SECTION, and it never rewinds. Every
+     tile is dressed from it — its format, its drawing, its ink, its ground,
+     whether it moves, where it stands — and it is dressed AGAIN each time it
+     comes round. Held for the life of the page, a tile was the same drawing
+     in the same place in the same colour on every pass; twenty-eight of them
+     made a loop a reader sees twice. What comes back is a new tile wearing
+     the old one's slot. */
+  let a = SALT;
+  const rnd = () => {
+    a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+    return ((a >>> 0) % 1e6) / 1e6;
+  };
+  let KINDS = [];
+
+  const dress = (t) => {
+    const vw = innerWidth, vh = innerHeight;
+    /* THREE FORMATS, NAMED — wide, square, upright — and not a continuous
+       spread between them. Drawn from a range the proportions clustered near
+       the middle and the set read as one shape with a wobble in it; drawn
+       from three, a landscape is plainly a landscape. */
+    const FORMS = [1.62, 1.0, 0.7];
+    const ar = FORMS[Math.floor(rnd() * 3)] * (0.94 + rnd() * 0.12);
+    const long = Math.round(Math.max(120, Math.min(310, vw * (0.085 + rnd() * 0.075))));
+    const w = ar >= 1 ? long : Math.round(long * ar);
+    const h = ar >= 1 ? Math.round(long / ar) : long;
+    /* The drawing is DRAWN, not dealt round. A cursor walking the twelve in
+       order meant the same twelve came back in the same order for ever; a
+       tile takes one at random from the ones its shape will hold. */
+    const fits = KINDS.filter((n) =>
+      !window.__artFits || window.__artFits(n, w / h));
+    const pool = fits.length ? fits : KINDS;
+    const kind = pool[Math.floor(rnd() * pool.length)];
+    /* ALWAYS A PRINTING COLOUR. The grey share is nought: this board is the
+       page saying what it can make, and a grey chart says the smallest part
+       of it. The reel behind the hero keeps its greys — it is newsprint —
+       which is why the share is an argument rather than a constant. */
+    const seed = Math.floor(rnd() * 1e9) + 1;
+    const tone = window.__artInk(seed, 0);
+    const c = rgbOf(tone);
+    const el = t.el;
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.marginLeft = (-w / 2) + 'px';
+    el.style.marginTop = (-h / 2) + 'px';
+    /* THE GROUND IS DRAWN TOO, and a third of them are dark. A board that is
+       all light cards covers half of what this page says it can make. Six
+       treatments: the paper, white, the table, a wash of the tile's own ink,
+       the ink itself, and a dark wash of that ink. */
+    const dark = rnd() < 0.34;
+    el.classList.toggle('avdark', dark);
+    if (dark) {
+      el.style.background = rnd() < 0.5
+        ? '#14141c'
+        : mix(INK, c, 0.14 + rnd() * 0.16);
+    } else {
+      const g = rnd();
+      el.style.background = g < 0.3 ? '#edeae3'
+        : g < 0.5 ? '#ffffff'
+        : g < 0.62 ? '#e6e2d9'
+        : mix(PAPER, c, 0.08 + rnd() * 0.14);
+    }
+    /* SCATTERED, BUT NOT DEAD AHEAD.
+     *
+     * What hides a tile is the band the type occupies, measured on the glass
+     * — and a perspective converges, so a tile standing near the middle line
+     * stays inside that band almost the whole way in and only clears it when
+     * it is already past the screen and enormous. Measured: eleven per cent
+     * of arrivals came into sight IN FRONT of the screen plane, one of them
+     * at six hundred pixels this side of it. That is a card appearing in the
+     * reader's face rather than at the far end.
+     *
+     * So a place is drawn and then CHECKED: it has to be far enough off the
+     * middle that it is out of the band by the time it is still seven
+     * hundred pixels back. The check is the same division the browser does,
+     * turned round. Eight tries, and if the draw is that stubborn the point
+     * is pushed out along its own line — which keeps the scatter free
+     * everywhere except where it cannot be. */
+    /* Far enough off the middle to be out of the band early — and far enough
+       to be OUT OF THE WINDOW before it has doubled. The second is what keeps
+       a drawing off the camera: a tile only a little off the middle line
+       needs to come almost into the lens before its edge clears the frame,
+       and by then it fills it. */
+    const MX = vw * 0.42, MY = vh * 0.44;
+    let x = 0, y = 0;
+    for (let n = 0; n < 8; n++) {
+      x = (rnd() * 2 - 1) * vw * 0.88;
+      y = (rnd() * 2 - 1) * vh * 0.78;
+      if (Math.abs(x) >= MX || Math.abs(y) >= MY) break;
+      if (n === 7) {
+        const m = Math.max(Math.abs(x) / MX, Math.abs(y) / MY, 0.14);
+        x /= m; y /= m;
+      }
+    }
+    t.kind = kind; t.w = w; t.h = h; t.seed = seed; t.tone = tone;
+    t.x = x; t.y = y;
+    /* A LEAN OF ITS OWN, ON ALL THREE AXES. Every tile faced the glass
+       square on and differed only in what was drawn on it, so a board of
+       twenty-eight read as one sheet of stickers. A few degrees of pitch and
+       yaw give each one its own plane — the perspective then foreshortens it
+       differently from its neighbours, which is what makes them read as
+       objects standing in a room rather than as pictures pasted on it. Small
+       on purpose: past ten degrees the type on the card starts to go. */
+    t.rx = (rnd() - 0.5) * 15;
+    t.ry = (rnd() - 0.5) * 19;
+    t.rz = (rnd() - 0.5) * 7;
+    /* How much of the pointer this one takes. Drawn, so the board does not
+       answer the hand in one piece. */
+    t.hand = 0.4 + rnd() * 1.3;
+    /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
+       tiles is a board of pictures; the ones that stand finished are the
+       exception. Its own tempo and its own place in it, so no two are in
+       step. */
+    /* FOUR IN FIVE MOVE, and most of them move INSIDE rather than arriving.
+       A drawing that only appears and clears is a transition played over and
+       over; a drawing whose numbers shift is a thing being watched. Two in
+       three of the moving ones live — their values breathe under a layout
+       that stays put — and the rest keep the arrival gesture, so both are on
+       the board. */
+    t.anim = rnd() < 0.8 && !reduced;
+    t.live = t.anim && rnd() < 0.68;
+    if (t.live) {
+      t.vals = [];
+      t.vph = [];
+      t.vsp = [];
+      for (let n = 0; n < 16; n++) {
+        t.vals.push(0.2 + rnd() * 0.68);
+        t.vph.push(rnd() * 6.283);
+        /* SLOW ENOUGH TO BE WATCHED. At one to two radians a second the
+           values were changing faster than the fifteen steps a second they
+           are redrawn at, so what should have been a bar breathing came out
+           as a bar flickering. A third to one radian is six to eighteen
+           seconds to a full swing — a visible change over the second a tile
+           is in the frame, and a small one between any two redraws, which is
+           what smooth is. */
+        t.vsp.push(0.35 + rnd() * 0.65);
+      }
+    } else {
+      t.vals = null;
+    }
+    /* HOW MANY TIMES IT DRAWS ITSELF ON THE WAY IN — not how many seconds a
+       gesture takes. A tile is only in the frame for a second or so, and the
+       gesture was running on a clock of four to seven seconds: whichever part
+       of it happened to be showing was usually the hold, so a moving tile
+       read as a still one. Tied to its own walk instead, every tile is seen
+       drawing itself, once or twice over, before it goes. That is the loop —
+       it starts again with the next tile in the slot. */
+    /* AND THE ARRIVAL GESTURE IS SLOWER TOO. Two and a half gestures over a
+       flight of a couple of seconds gave each one half a second to be made
+       and cleared, which is a flicker rather than a drawing. Around one, so
+       the making of it takes about as long as the tile is in the frame. */
+    /* AND IT IS MEASURED IN SECONDS, NOT IN WALKS. The count used to be
+       gestures per flight, because a tile was only in the frame for a second
+       or so. The board stands still now — a tile is in the frame for as long
+       as the reader is on the screen — so a gesture tied to the walk would
+       be a gesture frozen halfway. Six to eleven seconds: slow enough to be
+       watched being made. */
+    t.per = 6.5 + rnd() * 4.5;
+    t.ph = rnd();
+    t.drew = -1;
+    /* WHERE IT LEAVES THE FRAME, worked out for this tile and no other. A
+       tile wide of the middle is gone by the time it has doubled; one almost
+       dead ahead never leaves at all. The projection is a division, so the
+       scale at which its near edge clears the window is solved rather than
+       guessed, and the walk it makes is as long as that. */
+    t.span = DEPTH + zOut(w, h, x, y, vw, vh);
+    paint(t, 1, 0);
+  };
+
+  /* THE QUEUE, PUT BACK. Every tile's start is rewritten to the moment it
+     last came round, so after a minute on the section the starts are minutes
+     deep — and when the walk is reset to nought, on going back up to the
+     hero, `travel` would have to climb all the way back to them before
+     anything appeared. Coming down a second time showed an empty frame that
+     stayed empty. The starts are dealt again from scratch instead, and every
+     tile is dressed again with them, so a second visit is a fresh board
+     arriving the same way the first one did. */
+  const restage = () => {
+    for (const t of tiles) {
+      dress(t);
+      t.off = (t.slot / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
+      t.on = false;
+      t.el.style.opacity = '0';
+    }
+  };
+
+  const build = () => {
+    KINDS = (window.__artKinds && window.__artKinds()) || [];
+    if (!KINDS.length) return false;
+    field.textContent = '';
+    tiles.length = 0;
+    a = SALT;
+    for (let i = 0; i < COUNT; i++) {
+      const el = document.createElement('div');
+      el.className = 'avfly';
+      field.appendChild(el);
+      const t = { el };
+      dress(t);
+      /* WHEN IT SETS OFF, not where it is standing. At the moment the paper
+         lifts and the line is there, the frame holds the line and nothing
+         else; the drawings start arriving after it, one behind another, and
+         every one of them enters at the far end.
+
+         THE STARTS ARE SPREAD OVER A WHOLE DEPTH, not over half of one.
+         Packed into half, the set stayed a clump for ever: it wraps, so the
+         gap it left came round again and again — a crowded frame, then a thin
+         one, then a crowded one. */
+      t.slot = i;
+      t.on = false;
+      t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
+      tiles.push(t);
+    }
+    return true;
+  };
+
+  /* A wash of an ink over a ground: the tile's own paper, or its own ink,
+     tinted with the colour the drawing is in. */
+  /* The scale at which a tile's near edge clears the window, turned back
+     into a depth. `k = PERSP / (PERSP - z)`, so `z = PERSP (1 - 1/k)`; and it
+     is out when `k (|x| - w/2) > half the window`. Capped, because a tile
+     close to the middle never clears anything and would otherwise be walked
+     into the camera. */
+  const zOut = (w, h, x, y, vw, vh) => {
+    const ax = Math.abs(x) - w / 2, ay = Math.abs(y) - h / 2;
+    const kx = ax > 1 ? (vw / 2) / ax : Infinity;
+    const ky = ay > 1 ? (vh / 2) / ay : Infinity;
+    /* And it is never walked past twice its size, whatever the arithmetic
+       says: two is a drawing coming by, three is a drawing arriving in the
+       reader's lap. */
+    /* The margin covers the corners a turned tile throws past its own box:
+       the solve is on an upright rectangle, and these are not quite upright. */
+    const k = Math.min(2, Math.max(1.06, Math.min(kx, ky)) * 1.12);
+    return PERSP * (1 - 1 / k);
+  };
+  const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const mix = (a, b, k) =>
+    'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',') + ')';
+  const PAPER = [237, 234, 227], INK = [20, 20, 28];
+  /* One drawing, at a point in its gesture. Redrawing is a string and an
+     innerHTML, which is cheap at this size — but only cheap enough if it is
+     not done sixty times a second, so the loop below rations it. */
+  const paint = (t, p, q, vals) => {
+    t.el.innerHTML = window.__artTile(t.kind, t.w, t.h, t.seed,
+      { p: p, q: q, tone: t.tone, vals: vals });
+  };
+  let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
+  let travel = 0, prevTravel = 0, auto = 0, last = 0, free0 = -1;
+
+  const frame = (now) => {
+    if (!live) { raf = 0; last = 0; return; }
+    raf = requestAnimationFrame(frame);
+    /* THE WALK RUNS ON A CLOCK, NOT ON THE SCROLL. Driven by the scroll the
+     * drawings only arrived if the reader kept scrolling, so the line landed
+     * and the frame sat empty until a wheel was turned. They come on their
+     * own now, straight after the line, and the scroll is left to do the one
+     * thing it was already doing: carry the page. */
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
+    last = now;
+    const r = sec.getBoundingClientRect();
+    /* Above the section, nothing has set off yet: coming back to it plays
+     * the arrival again rather than dropping the reader into the middle of a
+     * flight that has been running without them. */
+    /* THE ARRIVAL RUNS ITSELF, AND THEN THE BOARD STANDS STILL.
+     *
+     * The drawings have to come on their own or the frame sits empty behind
+     * the line until a wheel is turned. Once they are here they stay where
+     * they are: the clock fills the board — one depth of it, once — and
+     * nothing advances it afterwards.
+     *
+     * Above the section nothing has set off yet, and the queue is dealt
+     * again: coming back plays the arrival rather than dropping the reader
+     * into a room that filled without them. */
+    if (r.top > 0) {
+      if (auto !== 0) { auto = 0; restage(); }
+    } else if (!reduced) {
+      /* THE WALK NEVER STOPS, AND IT NEVER CHANGES GEAR. Quick while the room
+         is filling — a reader who has just arrived should not wait for it —
+         then the drift it keeps for good. Switched between the two at the
+         moment the room was full, the board went from a walk to a crawl in
+         one frame, and a break like that is the one thing a continuous
+         movement cannot survive. It EASES from one to the other instead: the
+         extra speed decays over half a depth, so the arrival slows into the
+         cruise and there is no seam to see. */
+      auto += dt * (CRUISE + (RATE - CRUISE) * Math.exp(-auto / (SPAN * 0.5)));
+    }
+    /* AND THE SCROLL PUSHES THE WALK ALONG — BUT ONLY ONCE IT IS THE READER'S.
+       The chapter holds the page for its first exchange, and during that hold
+       there is no wheel to answer: a room that speeds up while the reader has
+       no say over it is a room moving on its own. The extra pace starts where
+       the page is handed back, and it is counted FROM THERE — reckoned from
+       the top of the chapter instead, the board would jump forward by
+       everything the held part was worth at the moment of the handover.
+
+       It is added to the clock, not put in its place: the drawings come
+       forward on their own, and turning the wheel drives them forward faster
+       — two and a half depths of it over the rest of the chapter, which at
+       reading speed is several times the drift. Stop, and the room goes back
+       to its own pace. */
+    const spanRun = Math.max(1, r.height - innerHeight);
+    const prog = Math.max(0, Math.min(1, -r.top / spanRun));
+    if (!window.__csFree) free0 = -1;
+    else if (free0 < 0) free0 = prog;
+    travel = auto + (free0 < 0 ? 0 : (prog - free0) * SPAN * 2.4);
+    mvx += (tvx - mvx) * 0.06;
+    mvy += (tvy - mvy) * 0.06;
+    /* The hand leans the depth rather than sliding it: two degrees of yaw
+       reads as a room looked around, where the same amount as a slide reads
+       as a fault. */
+    field.style.transform =
+      'rotateY(' + (mvx * 2.4).toFixed(2) + 'deg) rotateX(' +
+      (-mvy * 1.6).toFixed(2) + 'deg)';
+    /* AND A CEILING ON THE REDRAWING. Ten drawings in the frame, each wanting
+       twenty steps of its gesture, is a great deal of markup a second; four a
+       frame is enough for the gestures to look continuous and puts a floor
+       under the frame rate whatever the board is doing. */
+    /* Eight, not six: a step that has to wait for the next frame is a step
+       skipped, and a skipped step in a slow movement is exactly the stutter
+       the slowing down was meant to remove. */
+    let budget = 8;
+    /* WHICH WAY THE ROOM IS GOING, decided once for the whole board. A tile
+       is dealt again at the far wall on the way in and at the near one on the
+       way out, and if both tests are live at once a tile sitting on either
+       boundary is thrown from one wall to the other and back, frame after
+       frame. Only the test that matches the direction runs. Half a pixel of
+       slack, so a board that is all but still does not flicker between the
+       two. */
+    const back = travel < prevTravel - 0.5;
+    prevTravel = travel;
+    for (const t of tiles) {
+      /* Nothing before its turn: until the walk has gone as far as this
+         tile's start, it is not in the room at all. */
+      let raw = travel - t.off;
+      if (raw < 0) {
+        /* PAST THE FAR WALL. Going forward that is a tile whose turn has not
+           come — it is not in the room at all, which is what makes the board
+           fill one drawing after another instead of all at once. Going back
+           it is a tile the room has pushed out through the far wall, and it
+           comes in again at the NEAR one, dressed anew: the walk backwards is
+           the walk forwards, turned round. */
+        if (back && t.on) {
+          dress(t);
+          /* A hair inside its own walk, not on the boundary: landed exactly
+             on it, one frame of drift answers the other test and the tile is
+             thrown straight back across the room. */
+          t.off = travel - t.span + 120;
+          raw = t.span - 120;
+        } else {
+          if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
+          continue;
+        }
+      } else if (raw >= t.span) {
+        /* AND PAST THE NEAR ONE. Going forward a new tile wears the old one's
+           slot — another format, another drawing, another ink, another place,
+           starting from the far end rather than part way in. Going back there
+           is nothing to deal: it is simply out of the frame until the room
+           reaches it again. */
+        if (back) {
+          if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
+          continue;
+        }
+        t.off = travel; dress(t); raw = 0;
+      }
+      t.on = true;
+      const z = raw - DEPTH;
+      /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
+         A perspective has one vanishing point and it is behind the sentence,
+         so every tile crosses the words on its way out however wide it
+         started; fading by depth alone left one sitting on «should» and
+         another on «communicating». The projection is a division — the same
+         one the browser does — so the tile's place on the screen is known,
+         and it is faded by its distance from the band the type occupies. */
+      const k = PERSP / (PERSP - z);
+      const band = Math.max(
+        Math.abs(t.x * k) / (innerWidth * 0.32),
+        Math.abs(t.y * k) / (innerHeight * 0.24),
+      );
+      const clear = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
+      /* NOTHING FADES OUT AT THE END. A drawing that thins as it comes past
+         reads as a thing being switched off; it should simply go by the edge
+         of the window, and it does — each tile is turned round at the depth
+         where its own near edge has cleared the frame, so the only thing
+         that removes it is the frame. What is still faded is the band the
+         type occupies, which is a different job. */
+      const vis = clear;
+      t.el.style.opacity = vis.toFixed(3);
+      /* The gesture, for the ones that have one, and only while the tile can
+         be seen. Twenty steps to a gesture rather than one a frame: the eye
+         reads a bar rising the same either way, and the difference is three
+         times the work. */
+      if (t.anim && vis > 0.06) {
+        if (t.live) {
+          /* THE NUMBERS MOVE, THE DRAWING STAYS. Each value has its own
+             tempo and its own place in it, so the set breathes rather than
+             pulsing together — bars trading heights, a line reshaping, a
+             map's classes shifting under fixed boundaries. */
+          const step = Math.round((now / 1000 + t.ph) * 15);
+          if (step !== t.drew && budget > 0) {
+            budget--;
+            t.drew = step;
+            const c = now / 1000;
+            const vv = [];
+            for (let n = 0; n < 16; n++) {
+              const v = t.vals[n] + 0.26 * Math.sin(c * t.vsp[n] + t.vph[n]);
+              vv.push(v < 0.08 ? 0.08 : v > 0.99 ? 0.99 : v);
+            }
+            paint(t, 1, 0, vv);
+          }
+        } else {
+          const u = ((now / 1000) / t.per + t.ph) % 1;
+          const step = Math.round(u * 20);
+          /* In over the first two fifths, held, then out over the last
+             quarter — a drawing being made, standing, and clearing. */
+          if (step !== t.drew && budget > 0) {
+            budget--;
+            t.drew = step;
+            const pp = Math.min(1, u / 0.42);
+            const qq = u > 0.74 ? Math.min(1, (u - 0.74) / 0.26) : 0;
+            paint(t, pp, qq);
+          }
+        }
+      }
+      /* AND THE HAND TURNS EACH ONE A LITTLE. The pointer already leans the
+         whole depth, which moves everything by the same amount and therefore
+         says nothing about any one tile. A degree or two on top, its own,
+         and the board answers as a set of objects rather than as one plane
+         being tilted. Its share is its own lean, so no two answer alike. */
+      const hx = t.rx + mvy * t.hand * 1.1;
+      const hy = t.ry + mvx * t.hand * 1.4;
+      t.el.style.transform =
+        'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
+        z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
+        hy.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
+    }
+  };
+
+  addEventListener('pointermove', (e) => {
+    if (reduced) return;
+    tvx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
+    tvy = (e.clientY / Math.max(1, innerHeight)) * 2 - 1;
+  }, { passive: true });
+
+  const io = new IntersectionObserver((es) => {
+    for (const e of es) {
+      live = e.isIntersecting;
+      if (live && !raf) raf = requestAnimationFrame(frame);
+    }
+  }, { rootMargin: '20% 0px' });
+
+  const start = () => {
+    if (!build()) return false;
+    if (reduced) travel = SPAN * 0.7;   // stood still, not flying
+    io.observe(sec);
+    frame();
+    return true;
+  };
+  if (!start()) {
+    let tries = 0;
+    const wait = setInterval(() => {
+      if (start() || ++tries > 80) clearInterval(wait);
+    }, 120);
+  }
+  let rt = 0;
+  addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(build, 220);
+  }, { passive: true });
+})();
+</script>
+
 </body>
 </html>
