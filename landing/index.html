@@ -442,12 +442,19 @@
 
      It is one viewport tall and nothing in it is pinned, because there is
      nothing to pin: the line is read once and scrolled past. */
-  .answer{height:100vh;height:100dvh}
-  .anwrap{height:100%;display:grid;place-content:center;justify-items:center;
-          text-align:center}
-  .answer h2{margin:0;font-family:var(--D);font-weight:300;
-             letter-spacing:-.035em;line-height:1.02;text-wrap:balance;
-             font-size:clamp(30px,5.4vw,86px);max-width:min(15ch,88vw)}
+  /* AND IT IS SET LIKE THE HERO'S OWN LINE — same face, same measure, same
+     optical centre at 57% of the frame, second line in amber. The hero used to
+     turn its headline over to this sentence before the paper lifted; the
+     sentence has a screen of its own now, so the turn is gone and the swap
+     happens BEHIND the paper: one line leaves with the webs, the other is
+     already standing exactly where the first one stood. */
+  .answer{height:100vh;height:100dvh;position:relative}
+  .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
+             transform:translateY(-50%);margin:0;
+             font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
+             text-align:center;letter-spacing:-.045em}
+  .answer h2>span,.answer h2>em{display:block}
+  .answer h2>em{font-style:normal;color:var(--amber)}
   /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
      au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
      passer devant : il est au centre du panneau collé, et les cartes lui
@@ -2030,9 +2037,7 @@
      leaving downward is how the reader is brought onto it. -->
 <!-- ============ THE ANSWER — one screen, one line ============ -->
 <section class="chapter answer" data-ground="#14141c">
-  <div class="anwrap">
-    <h2>We should be communicating visually</h2>
-  </div>
+  <h2><span>We should be</span><em>communicating visually</em></h2>
 </section>
 
 <section class="chapter cards" data-ground="#14141c">
@@ -2946,7 +2951,6 @@
    * que le premier scroll amène. Elles sont gardées ici, ensemble, parce que
    * le retour doit pouvoir remettre la première. */
   const HEAD_REST = ['Reporting is still', 'text heavy'];
-  const HEAD_ANSWER = ['We should be', 'communicating visually'];
   const h1 = hero && hero.querySelector('h1');
   const setHead = (t) => {
     if (!h1) return;
@@ -2954,29 +2958,18 @@
     if (a) a.textContent = t[0];
     if (b) b.textContent = t[1];
   };
-  const turnHead = async (t) => {
-    if (!h1) { return; }
-    h1.classList.remove('back');
-    h1.classList.add('turn');
-    await wait(470);        // la ligne est partie par le haut
-    setHead(t);
-    h1.classList.remove('turn');
-    h1.classList.add('back');
-    await wait(820);        // et la réponse est posée
-  };
-
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
-    /* D'abord la réponse, et rien d'autre ne bouge pendant qu'elle s'écrit :
-     * la page est déjà tenue, l'en-tête est encore là, le papier tourne
-     * derrière. On la laisse se lire une demi-seconde. */
-    await turnHead(HEAD_ANSWER);
-    await wait(500);
-    /* Puis la traversée, exactement comme avant. `.back` s'en va d'abord :
-     * il est plus spécifique que la sortie du hero et retiendrait le titre. */
+    /* LE HERO GARDE SA LIGNE. Il retournait son titre vers la réponse avant
+     * que le papier se lève — la phrase était donc dite deux fois à cinq
+     * secondes d'intervalle une fois qu'elle a eu son propre écran. Elle est
+     * dite une fois, par la section, et le hero reste sur la sienne : la
+     * traversée part directement. */
+    /* `.back` s'en va d'abord : il est plus spécifique que la sortie du hero
+     * et retiendrait le titre. */
     if (h1) h1.classList.remove('turn', 'back');
     document.body.classList.add('crossing');
     hero.classList.add('gone');
