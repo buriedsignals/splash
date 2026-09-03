@@ -5723,8 +5723,45 @@
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
        step. */
-    t.anim = rnd() < 0.67 && !reduced;
-    t.per = 4.2 + rnd() * 3.4;
+    /* FOUR IN FIVE MOVE, and most of them move INSIDE rather than arriving.
+       A drawing that only appears and clears is a transition played over and
+       over; a drawing whose numbers shift is a thing being watched. Two in
+       three of the moving ones live — their values breathe under a layout
+       that stays put — and the rest keep the arrival gesture, so both are on
+       the board. */
+    t.anim = rnd() < 0.8 && !reduced;
+    t.live = t.anim && rnd() < 0.68;
+    if (t.live) {
+      t.vals = [];
+      t.vph = [];
+      t.vsp = [];
+      for (let n = 0; n < 16; n++) {
+        t.vals.push(0.2 + rnd() * 0.68);
+        t.vph.push(rnd() * 6.283);
+        /* SLOW ENOUGH TO BE WATCHED. At one to two radians a second the
+           values were changing faster than the fifteen steps a second they
+           are redrawn at, so what should have been a bar breathing came out
+           as a bar flickering. A third to one radian is six to eighteen
+           seconds to a full swing — a visible change over the second a tile
+           is in the frame, and a small one between any two redraws, which is
+           what smooth is. */
+        t.vsp.push(0.35 + rnd() * 0.65);
+      }
+    } else {
+      t.vals = null;
+    }
+    /* HOW MANY TIMES IT DRAWS ITSELF ON THE WAY IN — not how many seconds a
+       gesture takes. A tile is only in the frame for a second or so, and the
+       gesture was running on a clock of four to seven seconds: whichever part
+       of it happened to be showing was usually the hold, so a moving tile
+       read as a still one. Tied to its own walk instead, every tile is seen
+       drawing itself, once or twice over, before it goes. That is the loop —
+       it starts again with the next tile in the slot. */
+    /* AND THE ARRIVAL GESTURE IS SLOWER TOO. Two and a half gestures over a
+       flight of a couple of seconds gave each one half a second to be made
+       and cleared, which is a flicker rather than a drawing. Around one, so
+       the making of it takes about as long as the tile is in the frame. */
+    t.cycles = 0.8 + rnd() * 0.7;
     t.ph = rnd();
     t.drew = -1;
     /* WHERE IT LEAVES THE FRAME, worked out for this tile and no other. A
@@ -5787,9 +5824,9 @@
   /* One drawing, at a point in its gesture. Redrawing is a string and an
      innerHTML, which is cheap at this size — but only cheap enough if it is
      not done sixty times a second, so the loop below rations it. */
-  const paint = (t, p, q) => {
+  const paint = (t, p, q, vals) => {
     t.el.innerHTML = window.__artTile(t.kind, t.w, t.h, t.seed,
-      { p: p, q: q, tone: t.tone });
+      { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
   let travel = 0, last = 0;
@@ -5817,6 +5854,14 @@
     field.style.transform =
       'rotateY(' + (mvx * 2.4).toFixed(2) + 'deg) rotateX(' +
       (-mvy * 1.6).toFixed(2) + 'deg)';
+    /* AND A CEILING ON THE REDRAWING. Ten drawings in the frame, each wanting
+       twenty steps of its gesture, is a great deal of markup a second; four a
+       frame is enough for the gestures to look continuous and puts a floor
+       under the frame rate whatever the board is doing. */
+    /* Eight, not six: a step that has to wait for the next frame is a step
+       skipped, and a skipped step in a slow movement is exactly the stutter
+       the slowing down was meant to remove. */
+    let budget = 8;
     for (const t of tiles) {
       /* Nothing before its turn: until the walk has gone as far as this
          tile's start, it is not in the room at all. */
@@ -5852,19 +5897,40 @@
          type occupies, which is a different job. */
       const vis = clear;
       t.el.style.opacity = vis.toFixed(3);
-      /* The gesture, for the ones that have one — and only while the tile
-         can be seen. Redrawn at fourteen steps a second, not at sixty: the
-         eye reads a bar rising the same either way, and the difference is
-         four times the work. */
+      /* The gesture, for the ones that have one, and only while the tile can
+         be seen. Twenty steps to a gesture rather than one a frame: the eye
+         reads a bar rising the same either way, and the difference is three
+         times the work. */
       if (t.anim && vis > 0.06) {
-        const u = ((now / 1000 / t.per) + t.ph) % 1;
-        const step = Math.round(u * 14 * t.per);
-        if (step !== t.drew) {
-          t.drew = step;
-          /* In over the first third, held, then out over the last quarter. */
-          const pp = Math.min(1, u / 0.34);
-          const qq = u > 0.76 ? Math.min(1, (u - 0.76) / 0.24) : 0;
-          paint(t, pp, qq);
+        if (t.live) {
+          /* THE NUMBERS MOVE, THE DRAWING STAYS. Each value has its own
+             tempo and its own place in it, so the set breathes rather than
+             pulsing together — bars trading heights, a line reshaping, a
+             map's classes shifting under fixed boundaries. */
+          const step = Math.round((now / 1000 + t.ph) * 15);
+          if (step !== t.drew && budget > 0) {
+            budget--;
+            t.drew = step;
+            const c = now / 1000;
+            const vv = [];
+            for (let n = 0; n < 16; n++) {
+              const v = t.vals[n] + 0.26 * Math.sin(c * t.vsp[n] + t.vph[n]);
+              vv.push(v < 0.08 ? 0.08 : v > 0.99 ? 0.99 : v);
+            }
+            paint(t, 1, 0, vv);
+          }
+        } else {
+          const u = ((raw / t.span) * t.cycles + t.ph) % 1;
+          const step = Math.round(u * 20);
+          /* In over the first two fifths, held, then out over the last
+             quarter — a drawing being made, standing, and clearing. */
+          if (step !== t.drew && budget > 0) {
+            budget--;
+            t.drew = step;
+            const pp = Math.min(1, u / 0.42);
+            const qq = u > 0.74 ? Math.min(1, (u - 0.74) / 0.26) : 0;
+            paint(t, pp, qq);
+          }
         }
       }
       t.el.style.transform =

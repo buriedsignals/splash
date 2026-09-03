@@ -5875,7 +5875,12 @@ Stage.register(
       const tone = o.tone || inkFor(rnd, o.grey);
       const p = o.p === undefined ? 1 : o.p;
       const q = o.q === undefined ? 0 : o.q;
-      return paint(w, h, p, q, castValues(rnd), tone, rnd, 0);
+      /* THE CAST IS DRAWN EVEN WHEN IT IS NOT USED. `vals` lets a caller move
+       * the numbers under a drawing that otherwise stays put — but the same
+       * stream lays the chart out, so skipping the draw would shift every
+       * position after it and the drawing would jump instead of move. */
+      const cast = castValues(rnd);
+      return paint(w, h, p, q, o.vals || cast, tone, rnd, 0);
     };
 
     const PORTRAIT = 0.95;
