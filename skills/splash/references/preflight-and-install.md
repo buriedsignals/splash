@@ -136,9 +136,9 @@ One command backed by an Engine plan/apply transaction, with distinct owned loca
 
 Operations run the installed checkout in place with package installation and automatic `.env`
 loading disabled; they receive only their declared credential IDs and canonical external paths. No
-per-run copy of checkout, dependency tree, Bun runtime, or browser is made. Flat skill links are
-reconciled inside the same Engine apply/uninstall transaction; legacy `place-skills.mjs` is not a
-second managed installer. The shell wrapper does not create the stories root ahead of Engine; a
+per-run copy of checkout, dependency tree, Bun runtime, or browser is made. Skill links and runtime
+adapters are reconciled inside the same Engine apply/uninstall transaction; this repository ships
+no placement code of its own. The shell wrapper does not create the stories root ahead of Engine; a
 missing root is created by adoption and removed if that transaction rolls back while empty.
 `scripts/splash-root.mjs` and the root template remain bounded read-only compatibility for an
 explicitly operated copied root. The setup server has no plaintext branch: new setup uses the Splash

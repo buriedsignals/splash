@@ -163,6 +163,35 @@ Stories and newsroom configuration remain outside the replaceable checkout.
 For the canonical manifest, runtime, data-path, and Goose-registration health
 check, run `bsig doctor --product splash`.
 
+## Install from source (agents)
+
+Engine is the supported path above. An agent pointed at this repository can
+install the runtime set without cloning the whole repository: `install-set.txt`
+names the directories a runtime needs; everything else is documentation, proofs,
+and development tooling.
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/buriedsignals/splash.git splash
+cd splash
+git sparse-checkout set $(grep -v '^#' install-set.txt)
+bun install --frozen-lockfile --production --ignore-scripts
+```
+
+Rendering drives Chrome: an installed Google Chrome is found automatically, or
+set `CHROME_PATH`, or run `bunx @puppeteer/browsers install chrome@stable`.
+
+Then link the skills into your agent's skills directory (Windows: use
+`New-Item -ItemType Junction` in place of `ln -s`):
+
+| Agent | Link |
+|---|---|
+| Goose, Cursor, Codex, Gemini (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
+| Claude Code | `ln -s "$PWD" ~/.claude/skills/splash` |
+
+These are the same links Engine creates; a later Engine install adopts or
+replaces them. Provider keys are never read from this checkout — see
+[Credentials](#credentials).
+
 ## Skills
 
 | Skill | Purpose |

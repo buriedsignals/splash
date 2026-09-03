@@ -71,8 +71,10 @@ and uninstall. Do not add a second Splash lifecycle or mutate those paths after 
 
 Engine projects every directory under `skills/` containing `SKILL.md` as one flat link in the shared
 agents store. Derive that inventory from the filesystem; do not maintain another hard-coded skill
-list or add separate Goose or Claude skill links. `installer/place-skills.mjs` is retained only as a
-non-mutating compatibility/dry-run model. It is not an installer.
+list. `install-set.txt` is the only product-boundary file: it names the directories a runtime needs.
+README's "Install from source (agents)" section documents the unmanaged sparse-checkout path that
+uses it; a later managed install adopts or replaces those links. There is no other placement code
+in this repository: Engine owns projection and runtime adapters (`docs/engine/skill-placement.md`).
 
 Stories and `NEWSROOM.md` are external, data-bearing state. Provider credentials and validation
 receipts belong only to Engine's operating-system credential broker. The adopted checkout,
@@ -96,7 +98,6 @@ Engine doctor or lifecycle checks appropriate to the change:
 
 ```bash
 bun --no-env-file test installer/test apps/goose/test
-bun installer/place-skills.mjs --root "$PWD" --home /tmp/splash-skills-check --dry-run
 bsig doctor --product splash
 ```
 

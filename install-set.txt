@@ -1,0 +1,16 @@
+# Splash install set — the directories a runtime needs to run the skills.
+# Root files (package.json, bun.lock, AGENTS.md, NEWSROOM.md, LICENSE) are always
+# included by git cone-mode sparse checkout, so only directories are listed.
+#
+#   git sparse-checkout set $(grep -v '^#' install-set.txt)
+#
+# Not listed (development only): proof/ stories/ landing/ docs/ test/ scratchpads/
+skills
+shared
+scripts
+apps
+catalog
+agents
+installer
+.claude-plugin
+.agents
