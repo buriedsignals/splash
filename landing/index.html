@@ -455,9 +455,11 @@
      read as black bands down the edges. The type keeps its gutter; it sets
      its own. */
   .answer{position:relative;padding:0}
-  /* Long enough to hold the frame while the drawings come in and are read.
-     It is not what advances them any more — that runs on a clock. */
-  .avrun{height:220vh}
+  /* One screen to hold the frame while the drawings come in, and a little
+     over half a screen for the exchange: the line goes out on that scroll
+     and «Four reasons» comes up straight behind it. The drawings do not
+     move for it — they are the ground both lines stand on. */
+  .avrun{height:170vh}
   .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
            perspective:1000px;perspective-origin:50% 50%}
   .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
@@ -5779,7 +5781,13 @@
        flight of a couple of seconds gave each one half a second to be made
        and cleared, which is a flicker rather than a drawing. Around one, so
        the making of it takes about as long as the tile is in the frame. */
-    t.cycles = 0.8 + rnd() * 0.7;
+    /* AND IT IS MEASURED IN SECONDS, NOT IN WALKS. The count used to be
+       gestures per flight, because a tile was only in the frame for a second
+       or so. The board stands still now — a tile is in the frame for as long
+       as the reader is on the screen — so a gesture tied to the walk would
+       be a gesture frozen halfway. Six to eleven seconds: slow enough to be
+       watched being made. */
+    t.per = 6.5 + rnd() * 4.5;
     t.ph = rnd();
     t.drew = -1;
     /* WHERE IT LEAVES THE FRAME, worked out for this tile and no other. A
@@ -5884,17 +5892,16 @@
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
-    /* THE ARRIVAL RUNS ITSELF, THE WALK IS CARRIED BY THE SCROLL.
+    /* THE ARRIVAL RUNS ITSELF, AND THEN THE BOARD STANDS STILL.
      *
      * The drawings have to come on their own or the frame sits empty behind
-     * the line until a wheel is turned. But once they are here, a board that
-     * keeps advancing by itself is a thing playing at the reader rather than
-     * a thing the reader is going through. So the clock only fills the board
-     * — one depth of it, once — and everything after that is the scroll.
+     * the line until a wheel is turned. Once they are here they stay where
+     * they are: the clock fills the board — one depth of it, once — and
+     * nothing advances it afterwards.
      *
      * Above the section nothing has set off yet, and the queue is dealt
      * again: coming back plays the arrival rather than dropping the reader
-     * into the middle of a walk that ran without them. */
+     * into a room that filled without them. */
     const spanRun = Math.max(1, r.height - innerHeight);
     const prog = Math.max(0, Math.min(1, -r.top / spanRun));
     if (r.top > 0) {
@@ -5902,10 +5909,16 @@
     } else if (!reduced && auto < SPAN) {
       auto = Math.min(SPAN, auto + dt * RATE);
     }
-    travel = auto + prog * SPAN * 2.4;
-    /* And the line goes out on the last quarter, so the section hands over
-       to «Four reasons» rather than scrolling away from it. */
-    const fade = Math.max(0, Math.min(1, (prog - 0.74) / 0.22));
+    /* AND THE SCROLL DOES NOT MOVE THEM. It has one job on this screen: to
+       take the line off and put «Four reasons» in its place. Walked forward
+       under that exchange the drawings became a third event, and the two
+       lines were read across a moving ground; they are the ground, so they
+       hold still while it happens. */
+    travel = auto;
+    /* The line goes out on the scroll, and it is gone before the pane
+       releases — so the section hands over to «Four reasons» rather than
+       scrolling away from it. */
+    const fade = Math.max(0, Math.min(1, (prog - 0.18) / 0.62));
     if (fade !== lastFade) {
       lastFade = fade;
       if (h2) h2.style.opacity = (1 - fade).toFixed(3);
@@ -5985,7 +5998,7 @@
             paint(t, 1, 0, vv);
           }
         } else {
-          const u = ((raw / t.span) * t.cycles + t.ph) % 1;
+          const u = ((now / 1000) / t.per + t.ph) % 1;
           const step = Math.round(u * 20);
           /* In over the first two fifths, held, then out over the last
              quarter — a drawing being made, standing, and clearing. */
