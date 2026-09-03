@@ -177,6 +177,40 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 
 ## Files
 
+- `TYPEFACE.md` — **the face this skill draws in, and a REQUIRED gate: a render refuses without
+  one.** `readTypeface` walks up from the beat's own directory, so a story root's own
+  `TYPEFACE.md` overrides this skill's; `useTypeface` then puts the answer in force before
+  anything is laid out. `origin` records WHO chose — `newsroom` or `journalist` means somebody
+  did, `default` means nobody did and the stack is the substrate's own.
+
+  Two things about it are load-bearing and neither is obvious. **A newsroom's face is proposed,
+  never imposed:** `newsroom-charter` measures what a newsroom publishes in and `NEWSROOM.md`
+  records it, but the journalist decides whether the graphic uses it, and `origin` is where that
+  decision is kept. **A face that cannot be resolved is refused, never substituted:** resvg,
+  Chrome and Canvas `measureText` all render a fallback for a family they cannot find and report
+  nothing, so `useTypeface` lays a probe string out in the recorded family and in a family that
+  exists nowhere and refuses when the two produce identical ink. A journalist told "this machine
+  does not have Marr Sans" has chosen; a silent stack has not.
+
+  This file's own prose says all of that and said it only to itself: no `SKILL.md` mentioned
+  `TYPEFACE.md` at all, so the first an author heard of the gate was a render stopping — after
+  preflight, intake, G1, the storyboard exchange, the palette gate, the analyst and the bake.
+  The refusal names what to do, but it arrives phases after the point where a journalist should
+  have been asked, and after the expensive work.
+
+  **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
+  `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
+  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet. Measured, not assumed:
+  `splash/test/typeface-gate-is-documented.test.ts` derives that roster from the call sites and
+  refuses a skill that gains the gate without documenting it.
+
+  **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
+  palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"
+  and asks only about colour, so the honest common case for a real newsroom — measured faces that
+  are not installed on this machine — is a refusal nobody was given the chance to answer. That
+  wants a proposal with availability measured, next to the palette's, and it should land with
+  issue #41.
+
 - `references/types/` — six prose sheets, one per map type, harvested from the sibling parameterised engine and read before writing that type's beat; see its own `README.md` for what is covered and what is not.
 - `scripts/bake-plate.mjs` — the camera, the gate, the plate, the projection, the culling. Refuses a
   frame taller than its geography can fill BEFORE the capture (`assertStageServesGeography`), and

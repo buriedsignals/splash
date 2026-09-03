@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture, readPalette } from "./render-still.mjs";
+import { deriveFurniture, readPalette, readTypeface, useTypeface } from "./render-still.mjs";
 import { CO2_TIMING } from "../assets/timing.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +40,18 @@ const data = rainfallRaw.map(row => ({ year: row.year, mt: row.value }));
 
 // Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its colours
 // the same way a beat does.
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force before
+// anything is laid out — `FONT_FAMILY` is a live binding, so the seed draws in whatever this
+// resolves and `measureText` measures in the same thing. A face that does not resolve on this
+// machine refuses here rather than being silently substituted.
+//
+// This skill shipped a `TYPEFACE.md` and called neither reader, so it drew in the built-in default
+// whatever the newsroom or the journalist had recorded — silently, which is the exact outcome
+// `useTypeface`'s probe-string refusal exists to prevent. Found by
+// `splash/test/typeface-gate-is-documented.test.ts`, which derives its roster from the call sites:
+// this skill had the gate file and the machinery and no caller.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
+
 const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
   stopAt: join(HERE, ".."),
 });
