@@ -5752,12 +5752,14 @@
      * factor with the count spreads the angles across the depths instead, so
      * every band of the tunnel is filled all the way round. */
     t.ang = ((((t.slot || 0) * 9) % COUNT) / COUNT) * 6.283 + (rnd() - 0.5) * 0.34;
-    const tr = 0.36 + rnd() * 0.12;
-    t.tx = tr * vw;
-    t.ty = tr * vh * 1.04;
+    /* THE WALL IS A CYLINDER, so the radius is one number and not two: an
+       ellipse fitted to the frame is a ring drawn on the glass, and what is
+       wanted is a pipe in the room that the frame happens to cut. It varies a
+       little from tile to tile so the wall has a thickness. */
+    t.tr = (0.42 + rnd() * 0.1) * vh;
     /* How far it can walk once it is on the wall: the same solve, done for
        where it will be standing rather than where it stands now. */
-    t.spanRing = DEPTH + zOut(w, h, t.tx, t.ty, vw, vh);
+    t.spanRing = DEPTH + zOut(w, h, t.tr, t.tr, vw, vh);
     /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
@@ -5971,14 +5973,14 @@
          against each other is not a wall — and the depth carries on running
          underneath it, which is what makes it a tunnel rather than a wheel. */
       const a = t.ang + (now / 1000) * 0.13;
-      const X = t.x + (Math.cos(a) * t.tx - t.x) * turn;
-      const Y = t.y + (Math.sin(a) * t.ty - t.y) * turn;
+      const X = t.x * (1 - turn);
+      const Y = t.y * (1 - turn);
       const Z = z;
+      /* Where it lands on the glass, for the fade and for nothing else: on
+         the wall it is out at the radius, whatever angle it is at. */
+      const off2 = t.tr * turn + Math.max(Math.abs(t.x), Math.abs(t.y)) * (1 - turn);
       const k = PERSP / (PERSP - Z);
-      const band = Math.max(
-        Math.abs(X * k) / (innerWidth * 0.32),
-        Math.abs(Y * k) / (innerHeight * 0.24),
-      );
+      const band = (off2 * k) / (innerHeight * 0.24);
       /* The band is there to keep the words readable. Once they have gone
          there is nothing to keep clear of, so it lets go with them. */
       const clear0 = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
@@ -6034,10 +6036,22 @@
          being tilted. Its share is its own lean, so no two answer alike. */
       const hx = t.rx + mvy * t.hand * 1.1;
       const hy = t.ry + mvx * t.hand * 1.4;
+      /* AND IT LIES ON THE WALL, it does not float in front of it. A tile
+         kept facing the reader is a card hung in a ring; laid on the pipe —
+         swung round the axis, pushed out to the radius, then turned a quarter
+         to face the axis — it is a surface, and the reader is inside it. The
+         chain degenerates to the scatter at turn nought, so one expression
+         serves both halves of the section instead of two that have to be
+         blended. */
+      const deg = (a * 180) / Math.PI;
       t.el.style.transform =
         'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' +
-        Z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
-        hy.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
+        Z.toFixed(1) + 'px) rotateZ(' + (deg * turn).toFixed(2) +
+        'deg) translateX(' + (t.tr * turn).toFixed(1) + 'px) rotateY(' +
+        (-90 * turn).toFixed(2) + 'deg) rotateZ(' + (-90 * turn).toFixed(2) +
+        'deg) rotateX(' + hx.toFixed(2) +
+        'deg) rotateY(' + hy.toFixed(2) + 'deg) rotateZ(' +
+        t.rz.toFixed(2) + 'deg)';
     }
   };
 
