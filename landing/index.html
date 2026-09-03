@@ -3100,11 +3100,12 @@
   };
   const leave = async () => {
     if (!armed || running || !chapter) return;
-    /* ET PAS TANT QUE L'ÉCRAN DE CHARGEMENT EST LÀ. Un geste fait devant une
-       page qui charge n'est pas une décision de traverser : la traversée se
-       jouait derrière l'écran, et le lecteur arrivait dans un chapitre sans
-       avoir vu le hero. */
-    if (document.getElementById('boot')) return;
+    /* ET PAS TANT QUE LE HERO N'EST PAS ARRIVÉ. Un geste fait devant une page
+       qui charge n'est pas une décision de traverser : la traversée se jouait
+       derrière l'écran de chargement, et le lecteur arrivait dans un chapitre
+       sans avoir vu le hero. L'attente ne s'arrête pas au retrait de l'écran —
+       le hero se pose encore après lui. */
+    if (window.__uiIn === 0) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
@@ -5798,7 +5799,13 @@
  */
 (function boot(){
   var el = document.getElementById('boot');
-  if (!el) return;
+  /* L'UI DU HERO EST-ELLE ARRIVÉE ? Tant que non, la traversée ne part pas :
+   * l'écran de chargement parti, le hero se pose encore pendant sept dixièmes
+   * de seconde, et un geste fait là-dedans emportait le lecteur dans le
+   * chapitre sans qu'il ait vu le hero se poser. Sans écran de chargement du
+   * tout, il n'y a rien à attendre. */
+  window.__uiIn = 0;
+  if (!el) { window.__uiIn = 1; return; }
   document.body.classList.add('booting');
   var grp = el.querySelector('.bt-grp'), nm = el.querySelector('.bt-nm');
   var t0 = Date.now(), CAP = 9000, FLOOR = 1250;
@@ -5833,6 +5840,21 @@
         el.remove();
         document.body.classList.remove('booting');
         document.body.classList.add('settling');
+        /* Et on attend la FIN de sa pose, pas une durée écrite ici : c'est la
+         * feuille de style qui la mène, et un nombre recopié à cet endroit se
+         * décalerait au premier changement là-bas. Le filet existe parce
+         * qu'une transition peut ne jamais rendre son événement — page
+         * cachée, mouvement réduit, hero absent. */
+        var hero = document.querySelector('.hero');
+        var settled = function () { window.__uiIn = 1; };
+        setTimeout(settled, 1600);
+        if (!hero) return settled();
+        var end = function (ev) {
+          if (ev.target !== hero || ev.propertyName !== 'opacity') return;
+          hero.removeEventListener('transitionend', end);
+          settled();
+        };
+        hero.addEventListener('transitionend', end);
         return;
       }
       requestAnimationFrame(eat);
