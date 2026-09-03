@@ -5731,26 +5731,33 @@
     /* How much of the pointer this one takes. Drawn, so the board does not
        answer the hand in one piece. */
     t.hand = 0.4 + rnd() * 1.3;
-    /* AND A PLACE IN THE RING, for the second half of the section.
+    /* AND A PLACE ON THE WALL OF THE TUNNEL, for the second half of the
+     * section.
      *
-     * ITS ANGLE IS ITS SLOT, not a draw. Drawn, the twenty-eight angles
-     * clumped and the ring came out as a crowd on one side; taken from the
-     * slot they are evenly spaced, and a jitter keeps it from looking
-     * stamped.
+     * A RING IS NOT A TUNNEL. Put every tile on one circle at one depth and
+     * what turns is a wheel seen flat on; a tunnel is the same circle held
+     * at a CONSTANT WIDTH IN THE ROOM while the depth keeps running, so the
+     * perspective does the rest — far tiles converge to a point in the
+     * middle, near ones sweep out past the edges, and the reader is going
+     * down it rather than looking at it.
      *
-     * AND THE RADIUS IS SOLVED FOR THE DEPTH IT SETTLES AT. A perspective
-     * divides, so the same world radius at two depths lands at two different
-     * radii on the glass — the ring was a ring in the room and a smear on the
-     * screen. Dividing the radius by the tile's own scale puts them all on
-     * the same circle where the reader is, while they stay at their own
-     * distances in the room. Half go round the other way, which is what
-     * stops it reading as a carousel. */
-    t.park = -DEPTH * (0.06 + rnd() * 0.5);
-    const kPark = PERSP / (PERSP - t.park);
-    t.ang = ((t.slot || 0) / COUNT) * 6.283 + (rnd() - 0.5) * 0.34;
-    t.radX = ((0.3 + rnd() * 0.1) * vw) / kPark;
-    t.radY = ((0.29 + rnd() * 0.1) * vh) / kPark;
-    t.dir = rnd() < 0.5 ? -1 : 1;
+     * The angle is its slot, not a draw: drawn, twenty-eight angles clump and
+     * the wall comes out as a crowd on one side. The jitter keeps it from
+     * looking stamped, and the radius varies a little so the wall has a
+     * thickness. */
+    /* AND THE ANGLE MUST NOT FOLLOW THE DEPTH. The starts are dealt down the
+     * slots and so were the angles, so the two advanced together and the
+     * wall came out as a HELIX — a staircase winding away, with the near end
+     * all on one side and the far end on the other. A stride that shares no
+     * factor with the count spreads the angles across the depths instead, so
+     * every band of the tunnel is filled all the way round. */
+    t.ang = ((((t.slot || 0) * 9) % COUNT) / COUNT) * 6.283 + (rnd() - 0.5) * 0.34;
+    const tr = 0.36 + rnd() * 0.12;
+    t.tx = tr * vw;
+    t.ty = tr * vh * 1.04;
+    /* How far it can walk once it is on the wall: the same solve, done for
+       where it will be standing rather than where it stands now. */
+    t.spanRing = DEPTH + zOut(w, h, t.tx, t.ty, vw, vh);
     /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
@@ -5944,7 +5951,10 @@
          dressed again — another format, another drawing, another ink, another
          place — and its clock is set to now, so it starts from the far end
          rather than reappearing part way in. */
-      if (raw >= t.span) { t.off = travel; dress(t); raw = 0; }
+      /* How far this tile walks depends on where it is standing, and where
+         it is standing is moving: the two solves are blended by the turn. */
+      const spanNow = t.span + ((t.spanRing || t.span) - t.span) * turn;
+      if (raw >= spanNow) { t.off = travel; dress(t); raw = 0; }
       const z = raw - DEPTH;
       /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
          A perspective has one vanishing point and it is behind the sentence,
@@ -5956,12 +5966,14 @@
       /* Where it stands: its own place on the walk, eased into its place in
          the ring. The ring turns on the clock, not on the scroll — the scroll
          has already said what it had to say by then. */
-      const a = t.ang + (now / 1000) * 0.26 * t.dir;
-      const rx0 = Math.cos(a) * t.radX;
-      const ry0 = Math.sin(a) * t.radY;
-      const X = t.x + (rx0 - t.x) * turn;
-      const Y = t.y + (ry0 - t.y) * turn;
-      const Z = z + (t.park - z) * turn;
+      /* THE WALL TURNS, THE WALK GOES ON. One slow rotation for the whole
+         tunnel — every tile the same way, because a wall whose halves turn
+         against each other is not a wall — and the depth carries on running
+         underneath it, which is what makes it a tunnel rather than a wheel. */
+      const a = t.ang + (now / 1000) * 0.13;
+      const X = t.x + (Math.cos(a) * t.tx - t.x) * turn;
+      const Y = t.y + (Math.sin(a) * t.ty - t.y) * turn;
+      const Z = z;
       const k = PERSP / (PERSP - Z);
       const band = Math.max(
         Math.abs(X * k) / (innerWidth * 0.32),
