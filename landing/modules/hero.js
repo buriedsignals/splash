@@ -4017,12 +4017,36 @@ Stage.register(
           deck: "866 Rescued by Carpathia, Probably 1,250 Perish",
         },
         {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, NOVEMBER 11, 1918",
+          edition: "ALL THE NEWS THAT'S FIT TO PRINT",
+          head: "ARMISTICE SIGNED, END OF THE WAR!",
+          deck: "Berlin Seized by Revolutionists",
+        },
+        {
           style: "band",
           paper: "VARIETY",
           when: "WEDNESDAY, OCTOBER 30, 1929",
           edition: "NEW YORK",
           head: "WALL ST. LAYS AN EGG",
           deck: "The crash, in the trade paper's own language",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "MONDAY, DECEMBER 8, 1941",
+          edition: "LATE CITY EDITION",
+          head: "JAPAN WARS ON U.S. AND BRITAIN",
+          deck: "Makes Sudden Attack on Hawaii; Heavy Fighting at Sea Reported",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "TUESDAY, MAY 8, 1945",
+          edition: "LATE CITY EDITION",
+          head: "THE WAR IN EUROPE IS ENDED!",
+          deck: "Surrender Is Unconditional",
         },
         {
           style: "band",
@@ -4041,12 +4065,36 @@ Stage.register(
           deck: "Astronauts Land on Plain; Collect Rocks, Plant Flag",
         },
         {
+          style: "centre",
+          paper: "The New York Times",
+          when: "SUNDAY, JUNE 13, 1971",
+          edition: "LATE CITY EDITION",
+          head: "VIETNAM ARCHIVE: PENTAGON STUDY TRACES 3 DECADES OF GROWING U.S. INVOLVEMENT",
+          deck: "A series drawn from a secret history of the war",
+        },
+        {
+          style: "shoulder",
+          paper: "The Washington Post",
+          when: "SUNDAY, JUNE 18, 1972",
+          edition: "FINAL",
+          head: "5 HELD IN PLOT TO BUG DEMOCRATS' OFFICE HERE",
+          deck: "The break-in at the Watergate, on the morning after",
+        },
+        {
           style: "shoulder",
           paper: "The Washington Post",
           when: "FRIDAY, AUGUST 9, 1974",
           edition: "FINAL",
           head: "NIXON RESIGNS",
           deck: "The first President of the United States to leave the office",
+        },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "WEDNESDAY, SEPTEMBER 12, 2001",
+          edition: "LATE EDITION",
+          head: "U.S. ATTACKED",
+          deck: "Hijacked Jets Destroy Twin Towers and Hit Pentagon in Day of Terror",
         },
         {
           style: "boxed",
@@ -4056,9 +4104,49 @@ Stage.register(
           head: "CHURCH ALLOWED ABUSE BY PRIEST FOR YEARS",
           deck: "Aware of Geoghan record, archdiocese still shuttled him from parish to parish",
         },
+        {
+          style: "centre",
+          paper: "The New York Times",
+          when: "THURSDAY, OCTOBER 5, 2017",
+          edition: "LATE EDITION",
+          head: "HARVEY WEINSTEIN PAID OFF SEXUAL HARASSMENT ACCUSERS FOR DECADES",
+          deck: "Three decades of allegations, and the settlements that kept them quiet",
+        },
       ],
       // ---- the United Kingdom
       GB: [
+        {
+          style: "centre",
+          paper: "The Daily Universal Register",
+          when: "SATURDAY, JANUARY 1, 1785",
+          edition: "FIRST ISSUE",
+          head: "FIRST ISSUE",
+          deck: "John Walter's paper, renamed The Times three years later",
+        },
+        {
+          style: "tracked",
+          paper: "THE OBSERVER",
+          when: "SUNDAY, DECEMBER 4, 1791",
+          edition: "FIRST ISSUE",
+          head: "FIRST ISSUE",
+          deck: "The first Sunday newspaper in the world",
+        },
+        {
+          style: "left",
+          paper: "The Manchester Guardian",
+          when: "SATURDAY, MAY 5, 1821",
+          edition: "FIRST ISSUE",
+          head: "FIRST ISSUE",
+          deck: "John Edward Taylor's paper, a hundred years before it lost the Manchester",
+        },
+        {
+          style: "centre",
+          paper: "Daily Mail",
+          when: "MONDAY, JANUARY 15, 1934",
+          edition: "LONDON",
+          head: "HURRAH FOR THE BLACKSHIRTS",
+          deck: "Lord Rothermere for Mosley, in the paper's own words",
+        },
         {
           style: "left",
           paper: "The Sunday Times",
@@ -4082,6 +4170,30 @@ Stage.register(
           edition: "WORLD EXCLUSIVE",
           head: "WORLD EXCLUSIVE",
           deck: "Six pages of the Hitler diaries, before the forgery was known",
+        },
+        {
+          style: "left",
+          paper: "The Sunday Times",
+          when: "SUNDAY, OCTOBER 5, 1986",
+          edition: "INSIGHT",
+          head: "REVEALED: THE SECRETS OF ISRAEL'S NUCLEAR ARSENAL",
+          deck: "Mordechai Vanunu's account, and the photographs he took inside Dimona",
+        },
+        {
+          style: "boxed",
+          paper: "THE INDEPENDENT",
+          when: "TUESDAY, OCTOBER 7, 1986",
+          edition: "FIRST ISSUE",
+          head: "FIRST ISSUE",
+          deck: "Launched on the line «It is. Are you?»",
+        },
+        {
+          style: "band",
+          paper: "THE SUN",
+          when: "WEDNESDAY, APRIL 19, 1989",
+          edition: "LONDON",
+          head: "THE TRUTH",
+          deck: "What the paper printed about Hillsborough, and later retracted",
         },
         {
           style: "band",
@@ -4135,6 +4247,22 @@ Stage.register(
       // ---- France
       FR: [
         {
+          style: "centre",
+          paper: "LE FIGARO",
+          when: "DIMANCHE 15 JANVIER 1826",
+          edition: "PREMIER NUMÉRO",
+          head: "PREMIER NUMÉRO",
+          deck: "Maurice Alhoy et Étienne Arago lancent un journal «satirique, spirituel et batailleur»",
+        },
+        {
+          style: "band",
+          paper: "LE PETIT JOURNAL",
+          when: "DIMANCHE 1 FÉVRIER 1863",
+          edition: "PREMIER NUMÉRO",
+          head: "PREMIER NUMÉRO",
+          deck: "Moïse Millaud lance le quotidien à cinq centimes",
+        },
+        {
           style: "tracked",
           paper: "L'AURORE",
           when: "JEUDI 13 JANVIER 1898",
@@ -4159,6 +4287,14 @@ Stage.register(
           deck: "L'article fondateur de Jean Jaurès, en première page",
         },
         {
+          style: "boxed",
+          paper: "LE CANARD ENCHAÎNÉ",
+          when: "VENDREDI 10 SEPTEMBRE 1915",
+          edition: "PREMIER NUMÉRO",
+          head: "PREMIER NUMÉRO",
+          deck: "Maurice Maréchal et H.-P. Gassier lancent le journal en pleine guerre",
+        },
+        {
           style: "left",
           paper: "LE MONDE",
           when: "MARDI 19 DÉCEMBRE 1944",
@@ -4168,11 +4304,43 @@ Stage.register(
         },
         {
           style: "shoulder",
+          paper: "LE PARISIEN LIBÉRÉ",
+          when: "MARDI 22 AOÛT 1944",
+          edition: "PREMIER NUMÉRO",
+          head: "PREMIER NUMÉRO",
+          deck: "Il paraît pendant que les combats continuent dans Paris",
+        },
+        {
+          style: "band",
+          paper: "L'ÉQUIPE",
+          when: "JEUDI 28 FÉVRIER 1946",
+          edition: "PREMIER NUMÉRO",
+          head: "PREMIER NUMÉRO",
+          deck: "Jacques Goddet succède à «L'Auto», trois fois par semaine",
+        },
+        {
+          style: "tracked",
+          paper: "HARA-KIRI HEBDO",
+          when: "LUNDI 16 NOVEMBRE 1970",
+          edition: "N° 94",
+          head: "BAL TRAGIQUE À COLOMBEY : 1 MORT",
+          deck: "La une qui a fait interdire l'hebdomadaire, et naître «Charlie»",
+        },
+        {
+          style: "shoulder",
           paper: "Libération",
           when: "MERCREDI 18 AVRIL 1973",
           edition: "PARIS",
           head: "PREMIÈRE ÉDITION",
           deck: "Le quotidien fondé sous l'égide de Jean-Paul Sartre",
+        },
+        {
+          style: "boxed",
+          paper: "LE CANARD ENCHAÎNÉ",
+          when: "MERCREDI 10 OCTOBRE 1979",
+          edition: "PARIS",
+          head: "QUAND GISCARD EMPOCHAIT LES DIAMANTS DE BOKASSA",
+          deck: "Le fac-similé d'une commande, sorti par Pierre Péan",
         },
         {
           style: "band",
@@ -4199,7 +4367,7 @@ Stage.register(
           deck: "Au lendemain du premier tour, Le Pen qualifié pour le second",
         },
         {
-          style: "shoulder",
+          style: "left",
           paper: "Charlie Hebdo",
           when: "MERCREDI 14 JANVIER 2015",
           edition: "N° 1178",
@@ -4208,14 +4376,14 @@ Stage.register(
         },
       ],
       /* SWITZERLAND, out of the Journal de Genève and Gazette de Lausanne
-       * archive — the one Swiss press archive digitised page by page and
-       * citable, and the ancestor of Le Temps.
+       * archive and Le Temps's own bicentenary series — the one Swiss press
+       * archive digitised page by page and citable.
        *
-       * Five of these nine carry the paper's OWN wording, quoted in Le Temps's
-       * bicentenary series with a link to the scanned page. The other four are
-       * pages whose existence and date are documented but whose title is not,
-       * so what stands in the headline's place says plainly what the page is
-       * rather than pretending to quote it. */
+       * Five of these carry the paper's OWN wording, quoted with a link to
+       * the scanned page. The rest are pages whose existence and date are
+       * documented but whose title is not, so what stands in the headline's
+       * place says plainly what the page is rather than pretending to quote
+       * it. Same rule as the first issues on the other three shelves. */
       CH: [
         {
           style: "centre",
@@ -4224,6 +4392,14 @@ Stage.register(
           edition: "GENÈVE",
           head: "PREMIER NUMÉRO",
           deck: "Le «Journal de Genève» paraît pour la première fois",
+        },
+        {
+          style: "left",
+          paper: "Journal de Genève",
+          when: "MARDI 8 MAI 1945",
+          edition: "GENÈVE",
+          head: "LA FIN DE LA GUERRE EN EUROPE",
+          deck: "Une des rares unes illustrées du «Journal», trois vainqueurs en pied de page",
         },
         {
           style: "left",
@@ -4267,6 +4443,14 @@ Stage.register(
         },
         {
           style: "centre",
+          paper: "Le Nouveau Quotidien",
+          when: "JEUDI 20 FÉVRIER 1997",
+          edition: "LAUSANNE",
+          head: "LA MORT DE DENG XIAOPING",
+          deck: "Le dernier patriarche de l'Empire du Milieu",
+        },
+        {
+          style: "centre",
           paper: "Le Temps",
           when: "MERCREDI 18 MARS 1998",
           edition: "GENÈVE",
@@ -4282,12 +4466,52 @@ Stage.register(
           deck: "Cinq semaines de recomptage, et la Cour suprême tranche",
         },
         {
+          style: "band",
+          paper: "Le Temps",
+          when: "MERCREDI 12 SEPTEMBRE 2001",
+          edition: "ÉDITION SPÉCIALE",
+          head: "LE 11-SEPTEMBRE",
+          deck: "Vingt pages spéciales, et une photographie qu'il n'a pas fallu légender",
+        },
+        {
           style: "left",
+          paper: "Le Temps",
+          when: "JEUDI 10 AVRIL 2003",
+          edition: "GENÈVE",
+          head: "LA CHUTE DE SADDAM HUSSEIN",
+          deck: "La statue de Bagdad, avant qu'elle ne soit déboulonnée",
+        },
+        {
+          style: "tracked",
+          paper: "Le Temps",
+          when: "LUNDI 28 FÉVRIER 2011",
+          edition: "GENÈVE",
+          head: "LES PRINTEMPS ARABES",
+          deck: "Une quinzaine de journalistes envoyés du Maroc à la Jordanie",
+        },
+        {
+          style: "boxed",
           paper: "Le Temps",
           when: "DIMANCHE 15 NOVEMBRE 2015",
           edition: "ÉDITION SPÉCIALE",
           head: "TERREUR SUR PARIS",
           deck: "Le seul dimanche de son histoire où le journal a paru",
+        },
+        {
+          style: "band",
+          paper: "Le Temps",
+          when: "JEUDI 10 NOVEMBRE 2016",
+          edition: "GENÈVE",
+          head: "L'ÉLECTION DE DONALD TRUMP",
+          deck: "La une renversée d'un numéro préparé pour l'autre résultat",
+        },
+        {
+          style: "shoulder",
+          paper: "Le Temps",
+          when: "JEUDI 13 JUIN 2019",
+          edition: "ÉDITION SPÉCIALE",
+          head: "LA GRÈVE DES FEMMES",
+          deck: "Trente pages, la veille du 14 juin",
         },
       ],
     };
@@ -8022,7 +8246,14 @@ const flowCol = (A, o) => {
        * size: nine each would be ninety megabytes of texture. Eighteen
        * distinct pages across the three is twice the variety the one shared
        * column of nine had, and no web can repeat another's. */
-      const PER_COL = 6;
+      /* HOW MANY PAGES A COLUMN GETS — read off the shelf, not fixed at six.
+       * Sixteen front pages over three columns of six is eighteen slots, so
+       * two of them would be printed twice and two webs could line up on the
+       * same page; the guard against that has always been that a column holds
+       * pages nobody else holds. Five apiece uses fifteen of the sixteen and
+       * nothing repeats. The English fallback is thirty-two and takes the cap
+       * of six. Which page sits out rotates with the load's own seed. */
+      const PER_COL = Math.max(2, Math.min(6, Math.floor(ARCHIVE.length / 3)));
       /* The supersample, and then the measure, both capped by the card in
        * both directions — three columns across and the reel down. Guessed
        * rather than measured, this fails SILENTLY: the upload is refused and
@@ -8639,6 +8870,11 @@ void main(){
        * relation to one another — the middle web is still the slow one and
        * the right the quick one, which is what stops the set reading as one
        * sheet — and the whole press simply runs faster. */
+      /* THREE AND A HALF TIMES the original rate, tuned by eye. Left as
+       * tuned: a column went from six pages to five when the shelves went to
+       * sixteen, so the lap is shorter and the pace on the glass may read a
+       * little different — that is a judgement to make by looking, not a
+       * number to derive. */
       webSpd0: 0.044,
       webSpd1: 0.037,
       webSpd2: 0.0475,
