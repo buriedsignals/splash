@@ -3129,10 +3129,22 @@
     cutOn();
     await wait(300);
 
-    await glide(firstTop, 620);
-    await wait(120);
-
+    /* LE PAPIER PART PENDANT LE TRAJET, PAS APRÈS LUI.
+     *
+     * Les trois temps étaient joués bout à bout : le mobilier tombe, la page
+     * est portée, PUIS le papier se retire. Mesuré, ça faisait 3,08 s dont
+     * 1,76 s à regarder une feuille partir une fois tout le reste fini — et
+     * ce qui se lisait comme de la lenteur, ce n'était pas la durée de la
+     * sortie, c'était son ATTENTE. Le journal reste immobile pendant que la
+     * page voyage derrière lui, alors qu'il n'a rien à attendre : ce qu'il
+     * découvre est déjà là, au bon endroit, sous lui.
+     *
+     * Il part donc en même temps que le trajet. Les deux gestes n'en sont
+     * qu'un — la page arrive PAR le papier qui s'en va — et aucune durée n'a
+     * été raccourcie : le retrait dure exactement ce qu'il durait. */
+    const travel = glide(firstTop, 620);
     window.__webOut = 1;
+    await travel;
     await until(webbedOut, 4000);
 
     cutOff();
