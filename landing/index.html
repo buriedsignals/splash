@@ -5731,35 +5731,6 @@
     /* How much of the pointer this one takes. Drawn, so the board does not
        answer the hand in one piece. */
     t.hand = 0.4 + rnd() * 1.3;
-    /* AND A PLACE ON THE WALL OF THE TUNNEL, for the second half of the
-     * section.
-     *
-     * A RING IS NOT A TUNNEL. Put every tile on one circle at one depth and
-     * what turns is a wheel seen flat on; a tunnel is the same circle held
-     * at a CONSTANT WIDTH IN THE ROOM while the depth keeps running, so the
-     * perspective does the rest — far tiles converge to a point in the
-     * middle, near ones sweep out past the edges, and the reader is going
-     * down it rather than looking at it.
-     *
-     * The angle is its slot, not a draw: drawn, twenty-eight angles clump and
-     * the wall comes out as a crowd on one side. The jitter keeps it from
-     * looking stamped, and the radius varies a little so the wall has a
-     * thickness. */
-    /* AND THE ANGLE MUST NOT FOLLOW THE DEPTH. The starts are dealt down the
-     * slots and so were the angles, so the two advanced together and the
-     * wall came out as a HELIX — a staircase winding away, with the near end
-     * all on one side and the far end on the other. A stride that shares no
-     * factor with the count spreads the angles across the depths instead, so
-     * every band of the tunnel is filled all the way round. */
-    t.ang = ((((t.slot || 0) * 9) % COUNT) / COUNT) * 6.283 + (rnd() - 0.5) * 0.34;
-    /* THE WALL IS A CYLINDER, so the radius is one number and not two: an
-       ellipse fitted to the frame is a ring drawn on the glass, and what is
-       wanted is a pipe in the room that the frame happens to cut. It varies a
-       little from tile to tile so the wall has a thickness. */
-    t.tr = (0.42 + rnd() * 0.1) * vh;
-    /* How far it can walk once it is on the wall: the same solve, done for
-       where it will be standing rather than where it stands now. */
-    t.spanRing = DEPTH + zOut(w, h, t.tr, t.tr, vw, vh);
     /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
@@ -5840,7 +5811,7 @@
       const el = document.createElement('div');
       el.className = 'avfly';
       field.appendChild(el);
-      const t = { el, slot: i };
+      const t = { el };
       dress(t);
       /* WHEN IT SETS OFF, not where it is standing. At the moment the paper
          lifts and the line is there, the frame holds the line and nothing
@@ -5851,6 +5822,7 @@
          Packed into half, the set stayed a clump for ever: it wraps, so the
          gap it left came round again and again — a crowded frame, then a thin
          one, then a crowded one. */
+      t.slot = i;
       t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
       tiles.push(t);
     }
@@ -5888,9 +5860,7 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, last = 0, lastTurn = -1;
-  const h2 = sec.querySelector('h2');
-  const scrim = sec.querySelector('.avscrim');
+  let travel = 0, last = 0;
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -5903,20 +5873,6 @@
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
     last = now;
     const r = run.getBoundingClientRect();
-    /* HOW FAR DOWN THE SECTION WE ARE, and with it the turn: the walk gives
-     * way to a ring over the middle third, the sentence goes with it, and
-     * what is left is the drawings going round. The line has been read by
-     * then — holding it while the board takes over would be two things
-     * asking for the same attention. */
-    const span0 = Math.max(1, r.height - innerHeight);
-    const prog = Math.max(0, Math.min(1, -r.top / span0));
-    const tr = Math.max(0, Math.min(1, (prog - 0.34) / 0.3));
-    const turn = tr * tr * (3 - 2 * tr);
-    if (turn !== lastTurn) {
-      lastTurn = turn;
-      if (h2) h2.style.opacity = (1 - turn).toFixed(3);
-      if (scrim) scrim.style.opacity = (1 - turn * 0.9).toFixed(3);
-    }
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
@@ -5953,10 +5909,7 @@
          dressed again — another format, another drawing, another ink, another
          place — and its clock is set to now, so it starts from the far end
          rather than reappearing part way in. */
-      /* How far this tile walks depends on where it is standing, and where
-         it is standing is moving: the two solves are blended by the turn. */
-      const spanNow = t.span + ((t.spanRing || t.span) - t.span) * turn;
-      if (raw >= spanNow) { t.off = travel; dress(t); raw = 0; }
+      if (raw >= t.span) { t.off = travel; dress(t); raw = 0; }
       const z = raw - DEPTH;
       /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
          A perspective has one vanishing point and it is behind the sentence,
@@ -5965,26 +5918,12 @@
          another on «communicating». The projection is a division — the same
          one the browser does — so the tile's place on the screen is known,
          and it is faded by its distance from the band the type occupies. */
-      /* Where it stands: its own place on the walk, eased into its place in
-         the ring. The ring turns on the clock, not on the scroll — the scroll
-         has already said what it had to say by then. */
-      /* THE WALL TURNS, THE WALK GOES ON. One slow rotation for the whole
-         tunnel — every tile the same way, because a wall whose halves turn
-         against each other is not a wall — and the depth carries on running
-         underneath it, which is what makes it a tunnel rather than a wheel. */
-      const a = t.ang + (now / 1000) * 0.13;
-      const X = t.x * (1 - turn);
-      const Y = t.y * (1 - turn);
-      const Z = z;
-      /* Where it lands on the glass, for the fade and for nothing else: on
-         the wall it is out at the radius, whatever angle it is at. */
-      const off2 = t.tr * turn + Math.max(Math.abs(t.x), Math.abs(t.y)) * (1 - turn);
-      const k = PERSP / (PERSP - Z);
-      const band = (off2 * k) / (innerHeight * 0.24);
-      /* The band is there to keep the words readable. Once they have gone
-         there is nothing to keep clear of, so it lets go with them. */
-      const clear0 = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
-      const clear = clear0 + (1 - clear0) * turn;
+      const k = PERSP / (PERSP - z);
+      const band = Math.max(
+        Math.abs(t.x * k) / (innerWidth * 0.32),
+        Math.abs(t.y * k) / (innerHeight * 0.24),
+      );
+      const clear = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
       /* NOTHING FADES OUT AT THE END. A drawing that thins as it comes past
          reads as a thing being switched off; it should simply go by the edge
          of the window, and it does — each tile is turned round at the depth
@@ -6036,22 +5975,10 @@
          being tilted. Its share is its own lean, so no two answer alike. */
       const hx = t.rx + mvy * t.hand * 1.1;
       const hy = t.ry + mvx * t.hand * 1.4;
-      /* AND IT LIES ON THE WALL, it does not float in front of it. A tile
-         kept facing the reader is a card hung in a ring; laid on the pipe —
-         swung round the axis, pushed out to the radius, then turned a quarter
-         to face the axis — it is a surface, and the reader is inside it. The
-         chain degenerates to the scatter at turn nought, so one expression
-         serves both halves of the section instead of two that have to be
-         blended. */
-      const deg = (a * 180) / Math.PI;
       t.el.style.transform =
-        'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' +
-        Z.toFixed(1) + 'px) rotateZ(' + (deg * turn).toFixed(2) +
-        'deg) translateX(' + (t.tr * turn).toFixed(1) + 'px) rotateY(' +
-        (-90 * turn).toFixed(2) + 'deg) rotateZ(' + (-90 * turn).toFixed(2) +
-        'deg) rotateX(' + hx.toFixed(2) +
-        'deg) rotateY(' + hy.toFixed(2) + 'deg) rotateZ(' +
-        t.rz.toFixed(2) + 'deg)';
+        'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
+        z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
+        hy.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
     }
   };
 
