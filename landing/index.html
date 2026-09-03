@@ -450,8 +450,9 @@
      happens BEHIND the paper: one line leaves with the webs, the other is
      already standing exactly where the first one stood. */
   .answer{position:relative}
-  /* Long enough for the whole set to cross once, and no longer. */
-  .avrun{height:300vh}
+  /* Long enough to hold the frame while the drawings come in and are read.
+     It is not what advances them any more — that runs on a clock. */
+  .avrun{height:220vh}
   .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
            perspective:1000px;perspective-origin:50% 50%}
   .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
@@ -5600,8 +5601,9 @@
                         // put back at the far end
   const SPAN = DEPTH + PAST;
   const PERSP = 1000;   // the same number the stage's perspective is set to
-  const LAPS = 2.2;     // walks of the whole depth over the section
+  const RATE = 1150;    // pixels of depth walked a second, once the line is in
   const tiles = [];
+  const SALT = ((Math.random() * 0xffffffff) >>> 0) || 0x9e3779b9;
 
   const build = () => {
     const kinds = (window.__artKinds && window.__artKinds()) || [];
@@ -5609,7 +5611,12 @@
     field.textContent = '';
     tiles.length = 0;
     const vw = innerWidth, vh = innerHeight;
-    let a = 0x9e3779b9;
+    /* A DIFFERENT SET EVERY LOAD. Which drawing, at what size, on which
+       line, and how far back it starts — all of it comes off one number
+       drawn when the page opens, so no two visits are the same board.
+       It is drawn ONCE and reused, so a resize rebuilds the set it had
+       rather than dealing a new one under the reader. */
+    let a = SALT;
     const rnd = () => {
       a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
       return ((a >>> 0) % 1e6) / 1e6;
@@ -5633,7 +5640,9 @@
       el.style.height = h + 'px';
       el.style.marginLeft = (-w / 2) + 'px';
       el.style.marginTop = (-h / 2) + 'px';
-      el.innerHTML = window.__artTile(kind, w, h, i * 7919 + 13);
+      /* And the numbers inside it are drawn too: the same kind of chart
+         twice on one board should not be the same chart. */
+      el.innerHTML = window.__artTile(kind, w, h, Math.floor(rnd() * 1e9) + 1);
       field.appendChild(el);
       /* SCATTERED, and off the middle. A ring would put every tile at the
          same distance from the vanishing point, so the whole set would
@@ -5659,14 +5668,23 @@
 
   const wrap = (v, m) => ((v % m) + m) % m;
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
+  let travel = 0, last = 0;
 
-  const frame = () => {
-    if (!live) { raf = 0; return; }
+  const frame = (now) => {
+    if (!live) { raf = 0; last = 0; return; }
     raf = requestAnimationFrame(frame);
+    /* THE WALK RUNS ON A CLOCK, NOT ON THE SCROLL. Driven by the scroll the
+     * drawings only arrived if the reader kept scrolling, so the line landed
+     * and the frame sat empty until a wheel was turned. They come on their
+     * own now, straight after the line, and the scroll is left to do the one
+     * thing it was already doing: carry the page. */
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
+    last = now;
     const r = run.getBoundingClientRect();
-    const span = Math.max(1, r.height - innerHeight);
-    const p = Math.max(0, Math.min(1, -r.top / span));
-    const travel = p * SPAN * LAPS;
+    /* Above the section, nothing has set off yet: coming back to it plays
+     * the arrival again rather than dropping the reader into the middle of a
+     * flight that has been running without them. */
+    if (r.top > 0) { travel = 0; } else if (!reduced) { travel += dt * RATE; }
     mvx += (tvx - mvx) * 0.06;
     mvy += (tvy - mvy) * 0.06;
     /* The hand leans the depth rather than sliding it: two degrees of yaw
@@ -5720,6 +5738,7 @@
 
   const start = () => {
     if (!build()) return false;
+    if (reduced) travel = SPAN * 0.7;   // stood still, not flying
     io.observe(sec);
     frame();
     return true;
