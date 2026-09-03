@@ -439,7 +439,7 @@
      It sets its own gutter, because the section cannot: the board has to
      reach the edges of the window and `.answer` takes the chapter's padding
      off for it. */
-  .csrun{--n:4;--a1:70;max-width:var(--max);margin:0 auto;padding:0 var(--gut);
+  .csrun{--n:4;--a1:46;max-width:var(--max);margin:0 auto;padding:0 var(--gut);
          position:relative;z-index:1;
          height:calc(var(--a1) * 1vh + var(--n) * 74vh + 100vh)}
 
@@ -3082,6 +3082,7 @@
     running = false;
     await wait(80);
     lock(false);
+    beatAt = 0;                // le chapitre s'ouvre sur sa première phrase
     bounds = true;
   };
 
@@ -3642,7 +3643,17 @@
         const pr = cl(-r.top / span);
         const act = Math.min(0.9, a1 / span);
         const u = cl(pr / act);
-        stage = u < 0.06 ? 0 : u < 0.5 ? 1 : 2;
+        /* THE SECOND CUE IS THE END OF THE ACT, not a mark inside it. Set
+         * halfway, the sentence had gone and the reader still had a third of a
+         * screen of nothing to scroll before the first card would stir. The
+         * act stops where «Four reasons» stops, and the hand starts there. */
+        stage = u < 0.12 ? 0 : u < 1 ? 1 : 2;
+        /* AND IT SAYS WHERE ITS CUES ARE. The page holds the reader at each of
+         * them while the sentence plays, and it cannot work the marks out for
+         * itself without writing this act's length a second time. */
+        const top = r.top + scrollY;
+        window.__csBeats = { y1: Math.round(top + a1 * 0.12),
+                             y2: Math.round(top + a1) };
         /* And the hand is dealt over what is left of the run, so the four
          * cards keep exactly the pacing they had as a section of their own. */
         prog = cl((pr - act) / (1 - act));
@@ -3663,6 +3674,11 @@
         if (intro && introK !== introOp) {
           introOp = introK; intro.style.opacity = sm(cl(introK)).toFixed(3);
         }
+        /* And whether both are where the cue asked them to be. The page waits
+         * on THIS, never on a number of milliseconds: the two would come apart
+         * the first time the fade is retuned. */
+        window.__csSettled =
+          (Math.abs(wl - lineK) < 0.002 && Math.abs(wi - introK) < 0.002) ? 1 : 0;
       };
       addEventListener('pointermove', (e) => {
         tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
@@ -3742,8 +3758,20 @@
          * ne peut pas — la place d'une carte dépend de l'avancement des
          * autres, et la moitié d'entre elles n'a pas encore été calculée. */
         const A = [], FL = [], O = [];
+        const LEAD = 0.34, RATE = N - 1 + LEAD + 0.78;
         for (let i = 0; i < N; i++) {
-          const u = prog * (N + 0.55) - i - 0.75;
+          /* AND THE HAND HAS NO LEAD-IN. Three quarters of a slot of nothing
+           * at the front was the room the chapô needed to be read in; the
+           * chapô has its own act now and hands over at its own cue, so the
+           * first card stirs on the first turn of the wheel after it.
+           *
+           * THE PACE IS SOLVED FROM THE TWO ENDS, not nudged. Moving the front
+           * without moving it walks the whole hand forward by the same amount,
+           * and the last card then leaves BEFORE the run does — which takes
+           * the white flood with it, because the flood is that card's back
+           * growing to fill the window. `LEAD` puts the first card on nought;
+           * `RATE` is what it takes for the last one to be still held at one. */
+          const u = prog * RATE - i - LEAD;
           A[i] = sm(cl((u + 0.34) / 0.78));
           FL[i] = sm(cl((u + 0.34) / 0.66));
           O[i] = sm(cl((u - 0.78) / 0.55));
@@ -3910,7 +3938,36 @@
    * alors aucun effet. Elle repose sur la remise en place — ce qui dépasse est
    * défait dans la même frame, avant peinture. Ça marche quelle que soit
    * l'origine du déplacement, et sans écouteur non passif sur toute la page. */
-  const toBack = () => { bounds = false;
+  /* ---- LES TEMPS DU CHAPITRE --------------------------------------------
+   * Deux phrases, chacune avec son animation. Le lecteur les APPELLE, il ne
+   * les joue pas : au moment où il franchit un repère, la page lui est prise,
+   * l'échange se joue à SA vitesse à elle, et elle lui est rendue de l'autre
+   * côté. Sans ça, un coup de molette un peu franc traverse les deux repères
+   * dans la même inertie et il ne voit ni l'une ni l'autre partir.
+   *
+   * Les repères sont des bornes, comme le plancher et le plafond du chapitre :
+   * on ne passe pas outre, dans un sens comme dans l'autre. Remonter rejoue
+   * donc l'échange à l'envers, ce qui est la seule façon de retrouver la page
+   * dans l'état où on l'a laissée.
+   *
+   * L'attente porte sur l'ÉTAT du module, pas sur une durée : c'est lui qui
+   * mène les deux fondus, et un délai écrit ici se décalerait dès qu'on
+   * retouche un réglage là-bas. */
+  let beatAt = 0;              // combien de temps du chapitre ont été joués
+  const beatTo = async (n, y) => {
+    if (running) return;
+    running = true; freeBack = false; trigger = () => {};
+    beatAt = n;
+    lock(true); hold(y);
+    await until(() => window.__csSettled === 0, 400);   // le module a pris le repère
+    await until(() => window.__csSettled !== 0, 3000);  // et il a fini
+    /* `!== 0` et non `=== 1` : si le module n'a pas tourné du tout, le drapeau
+       n'existe pas et la page ne doit pas rester tenue trois secondes. */
+    lock(false);
+    running = false;
+  };
+
+  const toBack = () => { bounds = false; beatAt = 0;
     trigger = backUp; fire = -1; freeBack = false; lock(true); hold(firstTop); backUp(); };
   const toExit = () => { bounds = false;
     trigger = toWhite; fire = 1; freeBack = false; lock(true); hold(exitY); toWhite(); };
@@ -4111,6 +4168,11 @@
   // remettre les pavés dans leurs bornes, quel que soit le chemin emprunté
   const inBounds = () => {
     bounds = true;
+    /* Rentré par un chemin qui n'a joué aucune séquence : les temps du
+       chapitre se relisent sur la position, sinon la borne suivante est celle
+       d'un état qu'on n'a pas. */
+    const bt = window.__csBeats;
+    if (bt) beatAt = scrollY > bt.y2 ? 2 : scrollY > bt.y1 ? 1 : 0;
     if (!piled) { piled = true; entryK = 0; stack(); }
   };
 
@@ -4337,7 +4399,17 @@
     if (running || locked || armed) return;
 
     if (bounds) {
+      /* LES REPÈRES DU CHAPITRE SE LISENT AVANT SES BORNES. Un seul geste franc
+       * passe par-dessus tout ce qui est sur son chemin, et c'est le repère le
+       * PLUS PROCHE qui doit l'arrêter, pas le plus loin : lus après le
+       * plancher, un coup de molette qui remonte de la moitié du chapitre
+       * ressortait au hero sans que la phrase soit revenue. */
+      const bt = window.__csBeats;
+      if (bt && beatAt > 1 && scrollY < bt.y2 - 2) { scrollTo(0, bt.y2 - 2); beatTo(1, bt.y2 - 2); return; }
+      if (bt && beatAt > 0 && scrollY < bt.y1 - 2) { scrollTo(0, bt.y1 - 2); beatTo(0, bt.y1 - 2); return; }
       if (scrollY < firstTop) { scrollTo(0, firstTop); toBack(); return; }
+      if (bt && beatAt < 1 && scrollY > bt.y1 + 2) { scrollTo(0, bt.y1 + 2); beatTo(1, bt.y1 + 2); return; }
+      if (bt && beatAt < 2 && scrollY > bt.y2 + 2) { scrollTo(0, bt.y2 + 2); beatTo(2, bt.y2 + 2); return; }
       if (scrollY > exitY) { scrollTo(0, exitY); toExit(); return; }
       return;
     }
