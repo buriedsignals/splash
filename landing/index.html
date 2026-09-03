@@ -449,7 +449,12 @@
      sentence has a screen of its own now, so the turn is gone and the swap
      happens BEHIND the paper: one line leaves with the webs, the other is
      already standing exactly where the first one stood. */
-  .answer{position:relative}
+  /* NO GUTTER ON THIS ONE. `.chapter` insets its sides, and the sticky
+     stage clips what leaves it — so the drawings were cut off thirty-six
+     pixels short of the window and the two strips they could never reach
+     read as black bands down the edges. The type keeps its gutter; it sets
+     its own. */
+  .answer{position:relative;padding:0}
   /* Long enough to hold the frame while the drawings come in and are read.
      It is not what advances them any more — that runs on a clock. */
   .avrun{height:220vh}
