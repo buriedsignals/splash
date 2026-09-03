@@ -455,7 +455,7 @@
   .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
            perspective:1000px;perspective-origin:50% 50%}
   .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
-             transform:translateY(-50%);margin:0;z-index:0;
+             transform:translateY(-50%);margin:0;z-index:2;
              font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
              text-align:center;letter-spacing:-.045em}
   .answer h2>span,.answer h2>em{display:block}
@@ -480,7 +480,11 @@
      fades up over the first half of its approach and is at full strength
      only once it has spread out past the type.
      =================================================================== */
-  .avfield{position:absolute;inset:0;z-index:2;pointer-events:none;
+  /* THE ORDER IS: DRAWINGS, THEN THE SCRIM, THEN THE WORDS. The scrim is
+     there to darken what passes behind the sentence, so it has to be over
+     the drawings and under the type. Written the other way round it was a
+     black gradient laid across the line itself. */
+  .avfield{position:absolute;inset:0;z-index:0;pointer-events:none;
            transform-style:preserve-3d;will-change:transform}
   .avfly{position:absolute;left:50%;top:50%;
          border-radius:var(--rad);background:var(--paper);overflow:hidden;
@@ -5641,7 +5645,12 @@
         el,
         x: sx * (0.2 + rnd() * 0.5) * vw,
         y: sy * (0.16 + rnd() * 0.42) * vh,
-        z: (i / COUNT) * SPAN + rnd() * (SPAN / COUNT),
+        /* WHEN IT SETS OFF, not where it is standing. At the moment the
+           paper lifts and the line is there, the frame holds the line and
+           nothing else; the drawings start arriving after it, one behind
+           another. Spread over half the depth, the set is complete about a
+           quarter of the way down the section. */
+        off: (i / COUNT) * SPAN * 0.55 + rnd() * (SPAN / COUNT) * 0.4,
         r: (rnd() - 0.5) * 3.2,
       });
     }
@@ -5667,7 +5676,14 @@
       'rotateY(' + (mvx * 2.4).toFixed(2) + 'deg) rotateX(' +
       (-mvy * 1.6).toFixed(2) + 'deg)';
     for (const t of tiles) {
-      const z = wrap(t.z + travel, SPAN) - DEPTH;
+      /* Nothing before its turn: until the walk has gone as far as this
+         tile's start, it is not in the room at all. */
+      const raw = travel - t.off;
+      if (raw < 0) {
+        if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
+        continue;
+      }
+      const z = wrap(raw, SPAN) - DEPTH;
       /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
          A perspective has one vanishing point and it is behind the sentence,
          so every tile crosses the words on its way out however wide it
