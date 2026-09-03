@@ -4361,10 +4361,11 @@ Stage.register(
      * means. The English shelf is now the fallback and nothing else: it is
      * what a country we hold no pages for gets, and it is the only case where
      * two shelves are put end to end. */
-    const ARCHIVE =
-      (HOME && SHELF[HOME]) || SHELF.US.concat(SHELF.GB);
+    const shelfFor = (c) => (c && SHELF[c]) || SHELF.US.concat(SHELF.GB);
+    let ARCHIVE = shelfFor(HOME);
     window.__archiveHome = HOME; // so the shelf on the reel can be asked for
     window.__archiveCount = ARCHIVE.length;
+    window.__archiveBy = "clock";
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
@@ -4375,7 +4376,7 @@ Stage.register(
      * and eighteen is exactly how many pages the sheet carries — so they are
      * shuffled once and dealt out, and no two pages on the whole reel share
      * a skeleton, let alone two that are up at the same moment. */
-    const TEMPLATE_DECK = (() => {
+    const dealDeck = () => {
       /* ONE SLOT PER ARCHIVE. The deck used to be every masthead crossed with
        * every measure, which made eighteen skeletons; it is the eighteen front
        * pages themselves now, each keeping the masthead its paper uses, and
@@ -4391,7 +4392,78 @@ Stage.register(
         d[j] = t;
       }
       return d;
-    })();
+    };
+    let TEMPLATE_DECK = dealDeck();
+
+    /* THE CLOCK ANSWERS FIRST, THE CONNECTION ANSWERS BETTER.
+     *
+     * A timezone is read in nought milliseconds and needs nobody's
+     * permission, but it says where the MACHINE thinks it is: a laptop
+     * carried across a border keeps the clock it was set to, and this one is
+     * a nomad's. So the clock composes the reel — the boot never waits on a
+     * network — and the connection is asked in parallel. If it names a
+     * different country, and that country has a shelf, the reel is composed
+     * again on the same path the photographs already use, which is a rebuild
+     * the page is built to do.
+     *
+     * Cloudflare's trace is the one asked: it is the edge the request already
+     * passes through on its way anywhere, it needs no key, and it answers in
+     * one line. api.country.is is the second try. Either way it is ONE call
+     * that carries nothing but the request itself — no cookie, no identifier,
+     * no analytics — and it is skipped entirely when the shelf was named in
+     * the URL. Nothing is stored.
+     *
+     * It cannot be exact and does not claim to be: a VPN answers for the VPN.
+     * That is why the answer, and which signal gave it, are printed. */
+    let regalley = null; // set by the GL side once the reel is on the card
+    const GEO_MS = 1500;
+    const askTheConnection = async () => {
+      if (/[?&]archives=/.test(location.search)) return;
+      const pull = async (url, read) => {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), GEO_MS);
+        try {
+          const r = await fetch(url, { signal: ctl.signal, cache: "no-store" });
+          if (!r.ok) return null;
+          return read(await r.text());
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(t);
+        }
+      };
+      const loc =
+        (await pull("https://www.cloudflare.com/cdn-cgi/trace", (t) => {
+          const m = /(?:^|\n)loc=([A-Z]{2})/.exec(t);
+          return m ? m[1] : null;
+        })) ||
+        (await pull("https://api.country.is/", (t) => {
+          try {
+            return (JSON.parse(t).country || "").toUpperCase() || null;
+          } catch {
+            return null;
+          }
+        }));
+      if (!loc) {
+        console.info("[splash] archives · connection did not answer · keeping " + (HOME || "English"));
+        return;
+      }
+      const same = loc === HOME;
+      const has = !!SHELF[loc];
+      console.info(
+        "[splash] archives · connection says " + loc +
+          (same ? " · agrees with the clock" : " · the clock said " + (HOME || "nothing")) +
+          " · " + (has ? "own shelf" : "no shelf — English"),
+      );
+      if (same) return;
+      ARCHIVE = shelfFor(has ? loc : null);
+      TEMPLATE_DECK = dealDeck();
+      window.__archiveHome = has ? loc : null;
+      window.__archiveCount = ARCHIVE.length;
+      window.__archiveBy = "connection";
+      if (regalley) regalley();
+    };
+
     /* A COLUMN OF THE REEL. Each web reads one of these and only that one,
      * so the three can never hold the same page — and therefore never the
      * same drawing — however far their speeds pull their offsets apart. */
@@ -9574,6 +9646,12 @@ void main(){
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
         uploadGalley();
+        /* And the same rebuild is what the connection's answer uses, if it
+         * disagrees with the clock. It is handed over only once the reel is
+         * on the card, so an answer that arrives early cannot rebuild a sheet
+         * that does not exist yet. */
+        regalley = uploadGalley;
+        askTheConnection();
         /* THE ONE SIGNAL THE PAGE CAN WAIT ON. Not "the script ran" and not
          * "a frame was drawn" — the reel exists and is on the card, which is
          * the moment there is something to show. The boot screen holds until
