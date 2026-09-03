@@ -3617,9 +3617,21 @@
        * one another for half a screen; the answer goes out first, and «Four
        * reasons» comes up into the frame it leaves. The board behind them does
        * not move for either. */
+      /* AND THE SCROLL ONLY CUES THEM. Scrubbed on the scroll position, a
+       * sentence goes out at whatever speed the hand on the wheel happens to
+       * have — it stops half gone, it comes back a little, it is a slider and
+       * not a sentence leaving. Each of the two plays ITS OWN animation, at
+       * its own pace; what the reader does is decide WHEN. Three cues, and
+       * the reader crosses them in either direction:
+       *   before the first  — the answer stands
+       *   between the two   — «Four reasons» stands, and the answer has gone
+       *   past the second   — both have gone, and the hand is dealt.
+       * The second cue is well before the first card, so the case is never
+       * read through a sentence that is still leaving. */
       const line = document.querySelector('.avline');
       const intro = run.querySelector('.csintro');
-      let a1 = 0, lineOp = -1, introOp = -1;
+      const FADE = 0.62;    // seconds, what either of them takes to come or go
+      let a1 = 0, stage = 0, lineK = 1, introK = 0, lineOp = -1, introOp = -1;
       const gaugeAct = () => {
         const v = parseFloat(getComputedStyle(run).getPropertyValue('--a1'));
         a1 = (v > 0 ? v : 70) * innerHeight / 100;
@@ -3630,13 +3642,27 @@
         const pr = cl(-r.top / span);
         const act = Math.min(0.9, a1 / span);
         const u = cl(pr / act);
-        const lo = 1 - cl((u - 0.04) / 0.48);
-        const ii = cl((u - 0.56) / 0.36);
-        if (lo !== lineOp) { lineOp = lo; if (line) line.style.opacity = lo.toFixed(3); }
-        if (ii !== introOp) { introOp = ii; if (intro) intro.style.opacity = ii.toFixed(3); }
+        stage = u < 0.06 ? 0 : u < 0.5 ? 1 : 2;
         /* And the hand is dealt over what is left of the run, so the four
          * cards keep exactly the pacing they had as a section of their own. */
         prog = cl((pr - act) / (1 - act));
+      };
+      /* ONE AT A TIME, NEVER BOTH. Nothing comes up until the other has gone:
+       * two sentences dissolving through each other in the same place is a
+       * fault, not a transition. */
+      const beats = (dtv) => {
+        const step = dtv / FADE;
+        const wl = stage === 0 ? 1 : 0, wi = stage === 1 ? 1 : 0;
+        if (wl <= lineK || introK < 0.02)
+          lineK += Math.max(-step, Math.min(step, wl - lineK));
+        if (wi <= introK || lineK < 0.02)
+          introK += Math.max(-step, Math.min(step, wi - introK));
+        if (line && lineK !== lineOp) {
+          lineOp = lineK; line.style.opacity = sm(cl(lineK)).toFixed(3);
+        }
+        if (intro && introK !== introOp) {
+          introOp = introK; intro.style.opacity = sm(cl(introK)).toFixed(3);
+        }
       };
       addEventListener('pointermove', (e) => {
         tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
@@ -3666,6 +3692,7 @@
          * milieu, ce qui est ce qu'on appelle fluide. */
         const dtv = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
         lastT = now;
+        beats(dtv);
         const tgt = window.__csFlood ? 1 : 0;
         const step2 = dtv / FLOOD_DUR;
         flood += Math.max(-step2, Math.min(step2, tgt - flood));
@@ -3702,8 +3729,13 @@
            avoir lu la raison. Il est descendu d'une demi-carte de plus : rien
            n'est dans la fenêtre tant qu'une carte n'est pas appelée, et
            chacune arrive du dehors. */
-        const bottom = H / 2 + cds[0].offsetHeight * 0.98;
         const cw = cds[0].offsetWidth || 340;
+        /* AND IT IS MEASURED ON THE CARD'S WIDTH. At rest a card is turned a
+           quarter turn, so what it takes up DOWN the frame is its width, not
+           its height — measured on the height, the top of the fan sat a few
+           pixels inside the window and the chapter opened on a sliver of
+           card. Nothing of the hand is in the frame until one is called. */
+        const bottom = H / 2 + Math.max(cds[0].offsetHeight, cw) * 0.92;
         let front = 0;
         /* Deux passes : la première dit où en est chaque carte, la seconde
          * place la main autour de celles qui y sont encore. Une seule passe
@@ -5926,7 +5958,7 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, auto = 0, last = 0;
+  let travel = 0, prevTravel = 0, auto = 0, last = 0;
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -5955,11 +5987,15 @@
     if (r.top > 0) {
       if (auto !== 0) { auto = 0; restage(); }
     } else if (!reduced) {
-      /* THE WALK NEVER STOPS, IT ONLY CHANGES PACE. Quick while the room is
-         filling — a reader who has just arrived should not wait for it — and
-         a drift afterwards, a quarter of that, which is a room with something
-         going on in it rather than a board on its way somewhere. */
-      auto += dt * (auto < SPAN ? RATE : CRUISE);
+      /* THE WALK NEVER STOPS, AND IT NEVER CHANGES GEAR. Quick while the room
+         is filling — a reader who has just arrived should not wait for it —
+         then the drift it keeps for good. Switched between the two at the
+         moment the room was full, the board went from a walk to a crawl in
+         one frame, and a break like that is the one thing a continuous
+         movement cannot survive. It EASES from one to the other instead: the
+         extra speed decays over half a depth, so the arrival slows into the
+         cruise and there is no seam to see. */
+      auto += dt * (CRUISE + (RATE - CRUISE) * Math.exp(-auto / (SPAN * 0.5)));
     }
     /* AND THE SCROLL PUSHES THE WALK ALONG. It is added to the clock, not put
        in its place: the drawings come forward on their own, and turning the
@@ -5985,38 +6021,47 @@
        skipped, and a skipped step in a slow movement is exactly the stutter
        the slowing down was meant to remove. */
     let budget = 8;
+    /* WHICH WAY THE ROOM IS GOING, decided once for the whole board. A tile
+       is dealt again at the far wall on the way in and at the near one on the
+       way out, and if both tests are live at once a tile sitting on either
+       boundary is thrown from one wall to the other and back, frame after
+       frame. Only the test that matches the direction runs. Half a pixel of
+       slack, so a board that is all but still does not flicker between the
+       two. */
+    const back = travel < prevTravel - 0.5;
+    prevTravel = travel;
     for (const t of tiles) {
       /* Nothing before its turn: until the walk has gone as far as this
          tile's start, it is not in the room at all. */
       let raw = travel - t.off;
       if (raw < 0) {
-        /* Nothing before its turn: on the way in, a tile whose start the walk
-           has not reached yet is not in the room at all — that is what makes
-           the board fill one drawing after another instead of all at once. */
-        if (!t.on) {
+        /* PAST THE FAR WALL. Going forward that is a tile whose turn has not
+           come — it is not in the room at all, which is what makes the board
+           fill one drawing after another instead of all at once. Going back
+           it is a tile the room has pushed out through the far wall, and it
+           comes in again at the NEAR one, dressed anew: the walk backwards is
+           the walk forwards, turned round. */
+        if (back && t.on) {
+          dress(t);
+          /* A hair inside its own walk, not on the boundary: landed exactly
+             on it, one frame of drift answers the other test and the tile is
+             thrown straight back across the room. */
+          t.off = travel - t.span + 120;
+          raw = t.span - 120;
+        } else {
           if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
           continue;
         }
-        /* BUT THE WALK GOES BOTH WAYS. Read as «not yet begun», a tile that
-           had already been through was simply switched off when the reader
-           scrolled back — so going up, the board emptied out of the far end
-           and nothing ever came the other way. A tile that has been in the
-           room and is pushed back past its own start is put at the NEAR end
-           instead, dressed again, so walking backwards is walking backwards
-           through a room and not out of one. */
-        dress(t);
-        /* A HAIR INSIDE ITS OWN WALK, not exactly at the end of it. Landed on
-           the boundary, the tile answers the forward test in the same breath
-           and is dealt straight back to the far end — and every tile it
-           happens to at once lands on the same depth, which is the clump the
-           spread of the starts exists to prevent. */
-        t.off = travel - t.span + 120;
-        raw = t.span - 120;
       } else if (raw >= t.span) {
-        /* A NEW TILE WEARS THE OLD ONE'S SLOT. Once its walk is done it is
-           dressed again — another format, another drawing, another ink,
-           another place — and its clock is set to now, so it starts from the
-           far end rather than reappearing part way in. */
+        /* AND PAST THE NEAR ONE. Going forward a new tile wears the old one's
+           slot — another format, another drawing, another ink, another place,
+           starting from the far end rather than part way in. Going back there
+           is nothing to deal: it is simply out of the frame until the room
+           reaches it again. */
+        if (back) {
+          if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
+          continue;
+        }
         t.off = travel; dress(t); raw = 0;
       }
       t.on = true;
