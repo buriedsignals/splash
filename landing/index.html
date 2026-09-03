@@ -331,6 +331,36 @@
   @media (prefers-reduced-motion:reduce){
     .hero.gone .rise{animation:none;opacity:0}
   }
+
+  /* LE TITRE SE RETOURNE AVANT QUE LA PAGE PARTE.
+     Le premier scroll ne lance pas la traversée tout de suite. La ligne du
+     repos pose le problème — le reportage est encore fait de texte — et la
+     réponse ne s'écrit pas ailleurs sur la page : elle prend la place de la
+     question, au même endroit et dans le même corps. La traversée ne part
+     qu'après, sinon les deux gestes se marchent dessus.
+
+     Un seul titre, deux phrases : le texte est remplacé ENTRE les deux
+     animations, donc rien n'est empilé, rien ne se chevauche, et la boîte
+     centrée sur son axe encaisse une ligne plus longue sans bouger.
+
+     `.rise` porte déjà une animation sur ces mêmes éléments, avec un `both`
+     qui en tient l'état final ; ces règles-ci sont plus spécifiques, donc
+     elles la remplacent au lieu de se battre avec elle. La sortie du hero
+     l'est plus encore, mais dans l'autre sens — d'où le retrait de `.back`
+     avant `.gone` côté script, sans quoi le titre resterait quand tout le
+     reste s'en va. */
+  .hero h1.turn>span,.hero h1.turn>em{
+    animation:fallC .40s cubic-bezier(.4,0,.2,1) both}
+  .hero h1.turn>em{animation-delay:0s}
+  .hero h1.turn>span{animation-delay:.07s}
+  .hero h1.back>span,.hero h1.back>em{
+    animation:riseC .80s cubic-bezier(.16,.84,.3,1) both}
+  .hero h1.back>span{animation-delay:0s}
+  .hero h1.back>em{animation-delay:.10s}
+  @media (prefers-reduced-motion:reduce){
+    .hero h1.turn>span,.hero h1.turn>em,
+    .hero h1.back>span,.hero h1.back>em{animation:none;opacity:1}
+  }
   .hero h1 em{font-style:normal;color:var(--amber);display:block}
   .heroft{display:flex;justify-content:space-between;align-items:flex-end;gap:34px;flex-wrap:wrap}
   .heroft p{margin:0;max-width:38ch;font-size:13.5px;opacity:.58}
@@ -401,6 +431,23 @@
            padding:0 var(--gut)}
   .csrun{--n:4;max-width:var(--max);margin:0 auto;
          height:calc(var(--n) * 74vh + 100vh)}
+
+  /* ===================================================================
+     THE ANSWER, ON ITS OWN SCREEN.
+
+     The crossing out of the hero used to land on the hand of cards. It
+     lands here first: one screen, one line, the same ink the chapter has
+     always had — so what the paper lifts off is a sentence and nothing
+     else. The cards keep their own screenfuls underneath.
+
+     It is one viewport tall and nothing in it is pinned, because there is
+     nothing to pin: the line is read once and scrolled past. */
+  .answer{height:100vh;height:100dvh}
+  .anwrap{height:100%;display:grid;place-content:center;justify-items:center;
+          text-align:center}
+  .answer h2{margin:0;font-family:var(--D);font-weight:300;
+             letter-spacing:-.035em;line-height:1.02;text-wrap:balance;
+             font-size:clamp(30px,5.4vw,86px);max-width:min(15ch,88vw)}
   /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
      au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
      passer devant : il est au centre du panneau collé, et les cartes lui
@@ -1981,7 +2028,14 @@
      break and no field of plates, because those were choreography for
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
-<section class="chapter" data-ground="#14141c">
+<!-- ============ THE ANSWER — one screen, one line ============ -->
+<section class="chapter answer" data-ground="#14141c">
+  <div class="anwrap">
+    <h2>We should be communicating visually</h2>
+  </div>
+</section>
+
+<section class="chapter cards" data-ground="#14141c">
   <div class="csrun">
     <div class="csstick">
       <div class="csintro">
@@ -2631,6 +2685,9 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   const hero = document.querySelector('.hero');
   const chapter = document.querySelector('.chapter');
+  /* The crossing's target and the white's departure are no longer the
+   * same section: the answer takes the first screen, the cards follow. */
+  const cardsSec = document.querySelector('.chapter.cards');
   const firstCard = document.querySelector('.card');
   let armed = true, running = false;
   /* Les repères de la page — où se pose chaque verrou. Mesurés une fois par
@@ -2884,11 +2941,43 @@
    * pendant le trajet c'est la section qui passe devant les journaux : sans
    * elle on verrait le texte monter par-dessus le papier au lieu de le voir
    * sortir de dessous. */
+  /* Les deux lignes du hero. Celle du repos est aussi celle du balisage —
+   * écrite là pour qu'elle soit lue sans script — et celle-ci est la réponse
+   * que le premier scroll amène. Elles sont gardées ici, ensemble, parce que
+   * le retour doit pouvoir remettre la première. */
+  const HEAD_REST = ['Reporting is still', 'text heavy'];
+  const HEAD_ANSWER = ['We should be', 'communicating visually'];
+  const h1 = hero && hero.querySelector('h1');
+  const setHead = (t) => {
+    if (!h1) return;
+    const a = h1.querySelector('span'), b = h1.querySelector('em');
+    if (a) a.textContent = t[0];
+    if (b) b.textContent = t[1];
+  };
+  const turnHead = async (t) => {
+    if (!h1) { return; }
+    h1.classList.remove('back');
+    h1.classList.add('turn');
+    await wait(470);        // la ligne est partie par le haut
+    setHead(t);
+    h1.classList.remove('turn');
+    h1.classList.add('back');
+    await wait(820);        // et la réponse est posée
+  };
+
   const leave = async () => {
     if (!armed || running || !chapter) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
+    /* D'abord la réponse, et rien d'autre ne bouge pendant qu'elle s'écrit :
+     * la page est déjà tenue, l'en-tête est encore là, le papier tourne
+     * derrière. On la laisse se lire une demi-seconde. */
+    await turnHead(HEAD_ANSWER);
+    await wait(500);
+    /* Puis la traversée, exactement comme avant. `.back` s'en va d'abord :
+     * il est plus spécifique que la sortie du hero et retiendrait le titre. */
+    if (h1) h1.classList.remove('turn', 'back');
     document.body.classList.add('crossing');
     hero.classList.add('gone');
     if (cstage) cstage.classList.add('in');
@@ -2925,6 +3014,10 @@
     window.__heroHold = 1;
     document.body.classList.add('crossing');
     cutOn();
+    /* La question revient AVANT que le hero se remontre — le papier le
+     * couvre encore à cet instant, donc le remplacement ne se voit pas. */
+    if (h1) h1.classList.remove('turn', 'back');
+    setHead(HEAD_REST);
 
     // 1. le papier redescend et recouvre la section — l'aller finissait par
     //    son retrait, donc le retour commence par son retour
@@ -2990,9 +3083,16 @@
       const N = piles.length;
       chapter.style.height = N ? ((INTRO + N + DWELL) * slotH) + 'px' : '';
       firstTop = Math.round(chapter.getBoundingClientRect().top + scrollY);
-      exitY = firstTop + (N
-        ? Math.round((INTRO + N - 1 + DWELL) * slotH)
-        : Math.max(0, chapter.offsetHeight - slotH));
+      /* THE CROSSING LANDS ON THE FIRST SECTION, THE WHITE LEAVES FROM THE
+         LAST. They used to be one and the same. There are two now — the answer
+         on its own screen, then the hand of cards — so the exit is measured on
+         the last of them; measured on the first, the reader would be taken to
+         the white before a single card had been dealt. */
+      const last = cardsSec || chapter;
+      const lastTop = Math.round(last.getBoundingClientRect().top + scrollY);
+      exitY = N
+        ? firstTop + Math.round((INTRO + N - 1 + DWELL) * slotH)
+        : lastTop + Math.max(0, last.offsetHeight - slotH);
     }
     whiteY = Math.round(sec.getBoundingClientRect().top + scrollY);
     /* La frontière vers la section suivante : son sommet, et la porte un
@@ -4138,6 +4238,8 @@
       if (lastCard) lastCard.classList.remove('out');
     } else if (scrollY < 4 && !armed) {      // filet : Home, barre, restauration
       armed = true; hero.classList.remove('gone');
+      if (h1) h1.classList.remove('turn', 'back');
+      setHead(HEAD_REST);
       window.__webOut = 0;                   // et le papier revient avec lui
       window.__heroHold = 0;                 // sans laisser le verrou derrière
       document.body.classList.remove('crossing');
