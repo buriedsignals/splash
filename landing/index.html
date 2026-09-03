@@ -3644,7 +3644,13 @@
                      innerHeight / cds[0].offsetHeight) * 1.34
           : 1;
         const H = deck.clientHeight || innerHeight;
-        const bottom = H / 2;      // le bord bas : là où se pose le centre d'une carte
+        /* LA MAIN ATTEND HORS DU CADRE. Le centre d'une carte était posé sur
+           le bord bas, donc l'éventail dépassait de moitié et la section
+           s'ouvrait sur des cartes déjà là — on voyait le jeu avant d'en
+           avoir lu la raison. Il est descendu d'une demi-carte de plus : rien
+           n'est dans la fenêtre tant qu'une carte n'est pas appelée, et
+           chacune arrive du dehors. */
+        const bottom = H / 2 + cds[0].offsetHeight * 0.98;
         const cw = cds[0].offsetWidth || 340;
         let front = 0;
         /* Deux passes : la première dit où en est chaque carte, la seconde
@@ -5860,7 +5866,9 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, last = 0;
+  let travel = 0, auto = 0, last = 0, lastFade = -1;
+  const h2 = sec.querySelector('h2');
+  const scrim = sec.querySelector('.avscrim');
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -5876,10 +5884,32 @@
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
+    /* THE ARRIVAL RUNS ITSELF, THE WALK IS CARRIED BY THE SCROLL.
+     *
+     * The drawings have to come on their own or the frame sits empty behind
+     * the line until a wheel is turned. But once they are here, a board that
+     * keeps advancing by itself is a thing playing at the reader rather than
+     * a thing the reader is going through. So the clock only fills the board
+     * — one depth of it, once — and everything after that is the scroll.
+     *
+     * Above the section nothing has set off yet, and the queue is dealt
+     * again: coming back plays the arrival rather than dropping the reader
+     * into the middle of a walk that ran without them. */
+    const spanRun = Math.max(1, r.height - innerHeight);
+    const prog = Math.max(0, Math.min(1, -r.top / spanRun));
     if (r.top > 0) {
-      if (travel !== 0) { travel = 0; restage(); }
-    } else if (!reduced) {
-      travel += dt * RATE;
+      if (auto !== 0) { auto = 0; restage(); }
+    } else if (!reduced && auto < SPAN) {
+      auto = Math.min(SPAN, auto + dt * RATE);
+    }
+    travel = auto + prog * SPAN * 2.4;
+    /* And the line goes out on the last quarter, so the section hands over
+       to «Four reasons» rather than scrolling away from it. */
+    const fade = Math.max(0, Math.min(1, (prog - 0.74) / 0.22));
+    if (fade !== lastFade) {
+      lastFade = fade;
+      if (h2) h2.style.opacity = (1 - fade).toFixed(3);
+      if (scrim) scrim.style.opacity = (1 - fade).toFixed(3);
     }
     mvx += (tvx - mvx) * 0.06;
     mvy += (tvy - mvy) * 0.06;
