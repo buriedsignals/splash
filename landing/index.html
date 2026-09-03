@@ -3548,6 +3548,10 @@
       });
 
       const N = cds.length;
+      /* LES DEUX BOUTS DE LA MAIN, résolus et non tâtonnés : la première carte
+       * bouge à zéro, la dernière est encore tenue à un. Elles servent aussi
+       * au chapitre, qui a besoin de savoir OÙ la première a fini d'arriver. */
+      const LEAD = 0.34, RATE = N - 1 + LEAD + 0.78;
       const sm = (u) => u * u * u * (u * (u * 6 - 15) + 10);
       const cl = (u) => Math.max(0, Math.min(1, u));
       // l'éventail : quatre poses, tenues en main
@@ -3654,6 +3658,12 @@
         const top = r.top + scrollY;
         window.__csBeats = { y1: Math.round(top + a1 * 0.12),
                              y2: Math.round(top + a1) };
+        /* ET OÙ LA PREMIÈRE CARTE A FINI D'ARRIVER. La phrase qui s'en va est
+         * ce qui appelle la carte ; une carte qui n'arrive que si le lecteur
+         * continue de tourner la molette est une carte qu'il peut manquer. Le
+         * chapitre porte donc la page jusque-là, dans le même temps. */
+        const pc = act + (0.78 / RATE) * (1 - act);
+        window.__csCardY = Math.round(top + pc * span);
         /* And the hand is dealt over what is left of the run, so the four
          * cards keep exactly the pacing they had as a section of their own. */
         prog = cl((pr - act) / (1 - act));
@@ -3758,7 +3768,6 @@
          * ne peut pas — la place d'une carte dépend de l'avancement des
          * autres, et la moitié d'entre elles n'a pas encore été calculée. */
         const A = [], FL = [], O = [];
-        const LEAD = 0.34, RATE = N - 1 + LEAD + 0.78;
         for (let i = 0; i < N; i++) {
           /* AND THE HAND HAS NO LEAD-IN. Three quarters of a slot of nothing
            * at the front was the room the chapô needed to be read in; the
@@ -3963,6 +3972,12 @@
     await until(() => window.__csSettled !== 0, 3000);  // et il a fini
     /* `!== 0` et non `=== 1` : si le module n'a pas tourné du tout, le drapeau
        n'existe pas et la page ne doit pas rester tenue trois secondes. */
+    /* PUIS LA PREMIÈRE CARTE, DANS LE MÊME TEMPS. Le second repère fait partir
+       le chapô ; ce qui prend sa place, c'est la carte, et le lecteur doit la
+       voir arriver — pas la découvrir en scrollant, ou ne pas la découvrir du
+       tout. La page est portée jusqu'à l'endroit où elle a fini d'arriver,
+       l'un APRÈS l'autre et jamais en même temps, comme partout ailleurs. */
+    if (n === 2 && window.__csCardY > scrollY) await glide(window.__csCardY, 900);
     lock(false);
     running = false;
   };
