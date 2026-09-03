@@ -4416,36 +4416,71 @@ Stage.register(
      * It cannot be exact and does not claim to be: a VPN answers for the VPN.
      * That is why the answer, and which signal gave it, are printed. */
     let regalley = null; // set by the GL side once the reel is on the card
-    const GEO_MS = 1500;
+    /* FOUR PLACES TO ASK, AND IT SAYS WHY EACH ONE FAILED.
+     *
+     * Every one of these answers a plain GET with `access-control-allow-origin: *`
+     * — checked against all four — so a browser can read them from any origin,
+     * a local file included. What stops them is on the reader's side: a
+     * content blocker with a "privacy" list, a network that swallows them, a
+     * browser that refuses cross-origin reads from file:// at all (Safari
+     * does). None of that is worth a broken hero, so a failure costs the page
+     * nothing and the clock's answer stands.
+     *
+     * But a silent failure is not diagnosable, so each attempt prints what it
+     * hit: blocked, timed out, or a status. Three lines in a console beat one
+     * shrug. */
+    const GEO_MS = 2500;
+    const GEO_SOURCES = [
+      ["cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", (t) => {
+        const m = /(?:^|\n)loc=([A-Z]{2})/.exec(t);
+        return m ? m[1] : null;
+      }],
+      ["geojs", "https://get.geojs.io/v1/ip/country.json", (t) => {
+        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
+      }],
+      ["country.is", "https://api.country.is/", (t) => {
+        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
+      }],
+      ["ipwho.is", "https://ipwho.is/", (t) => {
+        try { return (JSON.parse(t).country_code || "").toUpperCase() || null; } catch { return null; }
+      }],
+    ];
     const askTheConnection = async () => {
       if (/[?&]archives=/.test(location.search)) return;
-      const pull = async (url, read) => {
+      let loc = null;
+      const tried = [];
+      for (const [name, url, read] of GEO_SOURCES) {
         const ctl = new AbortController();
         const t = setTimeout(() => ctl.abort(), GEO_MS);
+        const t0 = performance.now();
         try {
           const r = await fetch(url, { signal: ctl.signal, cache: "no-store" });
-          if (!r.ok) return null;
-          return read(await r.text());
-        } catch {
-          return null;
+          const ms = Math.round(performance.now() - t0);
+          if (!r.ok) {
+            tried.push(name + " " + r.status + " (" + ms + "ms)");
+            continue;
+          }
+          loc = read(await r.text());
+          tried.push(name + (loc ? " → " + loc : " → unreadable") + " (" + ms + "ms)");
+          if (loc) break;
+        } catch (e) {
+          const ms = Math.round(performance.now() - t0);
+          /* An abort is our own timeout; anything else is the request never
+           * leaving — a blocker, or a browser that will not read across
+           * origins from here. */
+          tried.push(
+            name + " " + (e && e.name === "AbortError" ? "timed out" : "blocked or offline") +
+              " (" + ms + "ms)",
+          );
         } finally {
           clearTimeout(t);
         }
-      };
-      const loc =
-        (await pull("https://www.cloudflare.com/cdn-cgi/trace", (t) => {
-          const m = /(?:^|\n)loc=([A-Z]{2})/.exec(t);
-          return m ? m[1] : null;
-        })) ||
-        (await pull("https://api.country.is/", (t) => {
-          try {
-            return (JSON.parse(t).country || "").toUpperCase() || null;
-          } catch {
-            return null;
-          }
-        }));
+      }
       if (!loc) {
-        console.info("[splash] archives · connection did not answer · keeping " + (HOME || "English"));
+        console.info(
+          "[splash] archives · connection did not answer · keeping " +
+            (HOME || "English") + " · tried " + tried.join(" · "),
+        );
         return;
       }
       const same = loc === HOME;
@@ -4453,7 +4488,8 @@ Stage.register(
       console.info(
         "[splash] archives · connection says " + loc +
           (same ? " · agrees with the clock" : " · the clock said " + (HOME || "nothing")) +
-          " · " + (has ? "own shelf" : "no shelf — English"),
+          " · " + (has ? "own shelf" : "no shelf — English") +
+          " · " + tried.join(" · "),
       );
       if (same) return;
       ARCHIVE = shelfFor(has ? loc : null);
