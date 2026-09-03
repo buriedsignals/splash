@@ -5668,8 +5668,16 @@
         /* WHEN IT SETS OFF, not where it is standing. At the moment the
            paper lifts and the line is there, the frame holds the line and
            nothing else; the drawings start arriving after it, one behind
-           another. */
-        off: (i / COUNT) * SPAN * 0.55 + rnd() * (SPAN / COUNT) * 0.4,
+           another, and every one of them enters at the far end.
+           
+           THE STARTS ARE SPREAD OVER A WHOLE DEPTH, not over half of one.
+           Packed into half, the set stayed a clump for ever: it wraps, so
+           the gap it left came round again and again — a crowded frame, then
+           a thin one, then a crowded one. Spread over the full span they end
+           up evenly spaced through the depth and stay that way, which is one
+           leaving as one arrives. The jitter is a fraction of the gap: enough
+           that the file does not tick, not enough to bunch. */
+        off: (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5,
         r: (rnd() - 0.5) * 3.2,
         anim: anim && !reduced,
         /* Its own tempo and its own place in it, so the animated ones are
