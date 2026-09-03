@@ -3082,7 +3082,7 @@
     running = false;
     await wait(80);
     lock(false);
-    beatAt = 0;                // le chapitre s'ouvre sur sa première phrase
+    setBeat(0);                // le chapitre s'ouvre sur sa première phrase
     bounds = true;
   };
 
@@ -3966,11 +3966,15 @@
    * L'attente porte sur l'ÉTAT du module, pas sur une durée : c'est lui qui
    * mène les deux fondus, et un délai écrit ici se décalerait dès qu'on
    * retouche un réglage là-bas. */
-  let beatAt = 0;              // le premier échange a-t-il été joué ?
+  /* Le premier échange a-t-il été joué ? C'est aussi ce qui dit au plateau
+     s'il a le droit d'écouter la molette : tant que le chapitre tient la page,
+     le lecteur n'a pas de molette à écouter. */
+  let beatAt = 0;
+  const setBeat = (n) => { beatAt = n; window.__csFree = n ? 1 : 0; };
   const beatTo = async (n, y) => {
     if (running) return;
     running = true; freeBack = false; trigger = () => {};
-    beatAt = n;
+    setBeat(n);
     lock(true); hold(y);
     await until(() => window.__csSettled === 0, 400);   // le module a pris le repère
     await until(() => window.__csSettled !== 0, 3000);  // et il a fini
@@ -3980,7 +3984,7 @@
     running = false;
   };
 
-  const toBack = () => { bounds = false; beatAt = 0;
+  const toBack = () => { bounds = false; setBeat(0);
     trigger = backUp; fire = -1; freeBack = false; lock(true); hold(firstTop); backUp(); };
   const toExit = () => { bounds = false;
     trigger = toWhite; fire = 1; freeBack = false; lock(true); hold(exitY); toWhite(); };
@@ -4185,7 +4189,7 @@
        chapitre se relisent sur la position, sinon la borne suivante est celle
        d'un état qu'on n'a pas. */
     const bt = window.__csBeats;
-    if (bt) beatAt = scrollY > bt.y1 ? 1 : 0;
+    if (bt) setBeat(scrollY > bt.y1 ? 1 : 0);
     if (!piled) { piled = true; entryK = 0; stack(); }
   };
 
@@ -6041,7 +6045,7 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, prevTravel = 0, auto = 0, last = 0;
+  let travel = 0, prevTravel = 0, auto = 0, last = 0, free0 = -1;
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -6080,14 +6084,24 @@
          cruise and there is no seam to see. */
       auto += dt * (CRUISE + (RATE - CRUISE) * Math.exp(-auto / (SPAN * 0.5)));
     }
-    /* AND THE SCROLL PUSHES THE WALK ALONG. It is added to the clock, not put
-       in its place: the drawings come forward on their own, and turning the
-       wheel drives them forward faster — two and a half depths of it from the
-       first line to the last card, which at reading speed is several times
-       the drift. Stop, and the room goes back to its own pace. */
+    /* AND THE SCROLL PUSHES THE WALK ALONG — BUT ONLY ONCE IT IS THE READER'S.
+       The chapter holds the page for its first exchange, and during that hold
+       there is no wheel to answer: a room that speeds up while the reader has
+       no say over it is a room moving on its own. The extra pace starts where
+       the page is handed back, and it is counted FROM THERE — reckoned from
+       the top of the chapter instead, the board would jump forward by
+       everything the held part was worth at the moment of the handover.
+
+       It is added to the clock, not put in its place: the drawings come
+       forward on their own, and turning the wheel drives them forward faster
+       — two and a half depths of it over the rest of the chapter, which at
+       reading speed is several times the drift. Stop, and the room goes back
+       to its own pace. */
     const spanRun = Math.max(1, r.height - innerHeight);
     const prog = Math.max(0, Math.min(1, -r.top / spanRun));
-    travel = auto + prog * SPAN * 2.4;
+    if (!window.__csFree) free0 = -1;
+    else if (free0 < 0) free0 = prog;
+    travel = auto + (free0 < 0 ? 0 : (prog - free0) * SPAN * 2.4);
     mvx += (tvx - mvx) * 0.06;
     mvy += (tvy - mvy) * 0.06;
     /* The hand leans the depth rather than sliding it: two degrees of yaw
