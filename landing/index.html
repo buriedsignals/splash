@@ -5785,6 +5785,22 @@
     paint(t, 1, 0);
   };
 
+  /* THE QUEUE, PUT BACK. Every tile's start is rewritten to the moment it
+     last came round, so after a minute on the section the starts are minutes
+     deep — and when the walk is reset to nought, on going back up to the
+     hero, `travel` would have to climb all the way back to them before
+     anything appeared. Coming down a second time showed an empty frame that
+     stayed empty. The starts are dealt again from scratch instead, and every
+     tile is dressed again with them, so a second visit is a fresh board
+     arriving the same way the first one did. */
+  const restage = () => {
+    for (const t of tiles) {
+      dress(t);
+      t.off = (t.slot / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
+      t.el.style.opacity = '0';
+    }
+  };
+
   const build = () => {
     KINDS = (window.__artKinds && window.__artKinds()) || [];
     if (!KINDS.length) return false;
@@ -5806,6 +5822,7 @@
          Packed into half, the set stayed a clump for ever: it wraps, so the
          gap it left came round again and again — a crowded frame, then a thin
          one, then a crowded one. */
+      t.slot = i;
       t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
       tiles.push(t);
     }
@@ -5859,7 +5876,11 @@
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
-    if (r.top > 0) { travel = 0; } else if (!reduced) { travel += dt * RATE; }
+    if (r.top > 0) {
+      if (travel !== 0) { travel = 0; restage(); }
+    } else if (!reduced) {
+      travel += dt * RATE;
+    }
     mvx += (tvx - mvx) * 0.06;
     mvy += (tvy - mvy) * 0.06;
     /* The hand leans the depth rather than sliding it: two degrees of yaw

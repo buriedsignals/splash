@@ -4123,24 +4123,24 @@ Stage.register(
           paper: "The Daily Universal Register",
           when: "SATURDAY, JANUARY 1, 1785",
           edition: "FIRST ISSUE",
-          head: "FIRST ISSUE",
-          deck: "John Walter's paper, renamed The Times three years later",
+          head: "No. 1, JOHN WALTER'S PAPER",
+          deck: "Renamed The Times three years later",
         },
         {
           style: "tracked",
           paper: "THE OBSERVER",
           when: "SUNDAY, DECEMBER 4, 1791",
           edition: "FIRST ISSUE",
-          head: "FIRST ISSUE",
-          deck: "The first Sunday newspaper in the world",
+          head: "No. 1, THE FIRST SUNDAY PAPER IN THE WORLD",
+          deck: "W. S. Bourne's, and it is still going",
         },
         {
           style: "left",
           paper: "The Manchester Guardian",
           when: "SATURDAY, MAY 5, 1821",
           edition: "FIRST ISSUE",
-          head: "FIRST ISSUE",
-          deck: "John Edward Taylor's paper, a hundred years before it lost the Manchester",
+          head: "No. 1, JOHN EDWARD TAYLOR'S PAPER",
+          deck: "A hundred and thirty years before it lost the Manchester",
         },
         {
           style: "centre",
@@ -4187,8 +4187,8 @@ Stage.register(
           paper: "THE INDEPENDENT",
           when: "TUESDAY, OCTOBER 7, 1986",
           edition: "FIRST ISSUE",
-          head: "FIRST ISSUE",
-          deck: "Launched on the line «It is. Are you?»",
+          head: "No. 1, «IT IS. ARE YOU?»",
+          deck: "The line it was launched on",
         },
         {
           style: "band",
@@ -4253,17 +4253,17 @@ Stage.register(
           style: "centre",
           paper: "LE FIGARO",
           when: "DIMANCHE 15 JANVIER 1826",
-          edition: "PREMIER NUMÉRO",
-          head: "PREMIER NUMÉRO",
-          deck: "Maurice Alhoy et Étienne Arago lancent un journal «satirique, spirituel et batailleur»",
+          edition: "N° 1",
+          head: "SANS LA LIBERTÉ DE BLÂMER, IL N'EST POINT D'ÉLOGE FLATTEUR",
+          deck: "L'épigraphe de Beaumarchais, portée par le journal dès son premier numéro",
         },
         {
           style: "band",
-          paper: "LE PETIT JOURNAL",
-          when: "DIMANCHE 1 FÉVRIER 1863",
-          edition: "PREMIER NUMÉRO",
-          head: "PREMIER NUMÉRO",
-          deck: "Moïse Millaud lance le quotidien à cinq centimes",
+          paper: "COMBAT",
+          when: "JEUDI 24 AOÛT 1944",
+          edition: "PARIS",
+          head: "LE SANG DE LA LIBERTÉ",
+          deck: "L'éditorial d'Albert Camus, Paris se soulevant",
         },
         {
           style: "tracked",
@@ -4293,33 +4293,33 @@ Stage.register(
           style: "boxed",
           paper: "LE CANARD ENCHAÎNÉ",
           when: "VENDREDI 10 SEPTEMBRE 1915",
-          edition: "PREMIER NUMÉRO",
-          head: "PREMIER NUMÉRO",
-          deck: "Maurice Maréchal et H.-P. Gassier lancent le journal en pleine guerre",
+          edition: "N° 1",
+          head: "N° 1, EN PLEINE GUERRE",
+          deck: "Maurice Maréchal et H.-P. Gassier lancent le journal",
         },
         {
           style: "left",
           paper: "LE MONDE",
           when: "MARDI 19 DÉCEMBRE 1944",
-          edition: "PARIS",
-          head: "PREMIER NUMÉRO",
-          deck: "Le premier numéro du «Monde», d'Hubert Beuve-Méry",
+          edition: "N° 1",
+          head: "N° 1, APRÈS LA LIBÉRATION",
+          deck: "Le quotidien d'Hubert Beuve-Méry paraît pour la première fois",
         },
         {
           style: "shoulder",
           paper: "LE PARISIEN LIBÉRÉ",
-          when: "MARDI 22 AOÛT 1944",
-          edition: "PREMIER NUMÉRO",
-          head: "PREMIER NUMÉRO",
-          deck: "Il paraît pendant que les combats continuent dans Paris",
+          when: "MERCREDI 23 AOÛT 1944",
+          edition: "N° 2",
+          head: "LA BATAILLE DANS PARIS CONTINUE !",
+          deck: "Le deuxième numéro, paru le lendemain du premier",
         },
         {
           style: "band",
           paper: "L'ÉQUIPE",
           when: "JEUDI 28 FÉVRIER 1946",
-          edition: "PREMIER NUMÉRO",
-          head: "PREMIER NUMÉRO",
-          deck: "Jacques Goddet succède à «L'Auto», trois fois par semaine",
+          edition: "N° 1",
+          head: "N° 1, APRÈS «L'AUTO»",
+          deck: "Jacques Goddet reprend le titre, trois fois par semaine",
         },
         {
           style: "tracked",
@@ -4333,9 +4333,9 @@ Stage.register(
           style: "shoulder",
           paper: "Libération",
           when: "MERCREDI 18 AVRIL 1973",
-          edition: "PARIS",
-          head: "PREMIÈRE ÉDITION",
-          deck: "Le quotidien fondé sous l'égide de Jean-Paul Sartre",
+          edition: "N° 1",
+          head: "N° 1, SOUS L'ÉGIDE DE SARTRE",
+          deck: "Le quotidien paraît pour la première fois",
         },
         {
           style: "boxed",
@@ -4392,8 +4392,8 @@ Stage.register(
           style: "centre",
           paper: "Journal de Genève",
           when: "JEUDI 5 JANVIER 1826",
-          edition: "GENÈVE",
-          head: "PREMIER NUMÉRO",
+          edition: "N° 1",
+          head: "N° 1, IL Y A DEUX CENTS ANS",
           deck: "Le «Journal de Genève» paraît pour la première fois",
         },
         {
@@ -4440,9 +4440,9 @@ Stage.register(
           style: "shoulder",
           paper: "Le Nouveau Quotidien",
           when: "MARDI 24 SEPTEMBRE 1991",
-          edition: "LAUSANNE",
-          head: "PREMIÈRE ÉDITION",
-          deck: "Un «Nouveau Quotidien» pour une Suisse «différente»",
+          edition: "N° 1",
+          head: "N° 1, POUR UNE SUISSE «DIFFÉRENTE»",
+          deck: "Jacques Pilet lance «un cadrage différent de l'actualité»",
         },
         {
           style: "centre",
@@ -5465,15 +5465,20 @@ Stage.register(
           let out = yAxis(pw, ph, top, gut);
           for (let i = 0; i < n; i++) {
             const k = sweep(i, n, p, q, 1.35);
+            /* WHERE A DOT SITS IS ITS VALUE. Both axes were a draw, so a
+             * scatter never moved when its numbers did — and a scatter is
+             * two measures or it is confetti. The spread across the plot is
+             * still a draw; the height and the size are read. */
+            const vv = v[i % v.length];
             const x = gut + 4 + rnd() * (pw - gut - 8),
-              y = 4 + rnd() * (ph - 8),
-              r0 = 1.8 + rnd() * 2.8;
+              y = 4 + (1 - vv) * (ph - 8) + (rnd() - 0.5) * ph * 0.12,
+              r0 = 1.6 + vv * 3.0;
             if (k <= 0) continue;
             out +=
               '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
               (r0 * k).toFixed(1) + '" fill="' +
               // a dot's value is its size, which is the second measure
-              value(0.34 + ((r0 - 1.8) / 2.8) * 0.66, tone) + '" opacity=".95"/>';
+              value(0.34 + vv * 0.66, tone) + '" opacity=".95"/>';
           }
           return svgWrap(pw, ph, out);
         });
@@ -5492,7 +5497,15 @@ Stage.register(
     LIVE_ART.donut = (w, h, p, q, v, tone, rnd) =>
       chrome(w, h, "Of the whole", "Per cent, rounded to the nearest",
         (pw, ph) => {
-          const parts = [0.36, 0.27, 0.19, 0.11, 0.07];
+          /* THE SLICES ARE THE NUMBERS, normalised — they were five literals,
+           * so every share-of-the-whole ever drawn cut the circle in exactly
+           * the same places. Sorted large to small, because a pie read
+           * clockwise from the biggest is the only kind worth drawing. */
+          const raw5 = [v[0], v[1], v[2], v[3], v[4]]
+            .map((x) => 0.05 + x * 0.95)
+            .sort((a, b) => b - a);
+          const sum5 = raw5.reduce((a, b) => a + b, 0);
+          const parts = raw5.map((x) => x / sum5);
           // five classes over the whole spectrum, biggest darkest
           const shade = [1, 0.78, 0.56, 0.34, 0.12].map((t) => value(t, tone));
           const ar = pw / ph;
@@ -5782,8 +5795,12 @@ Stage.register(
               dots = "";
             for (let i = Math.ceil(from); i <= Math.floor(to); i++) {
               d += " L" + S[i][1] + " " + S[i][2];
+              /* A STOP CARRIES A NUMBER TOO — how much was picked up there.
+               * Drawn at one size the route was the one drawing on the board
+               * that could not answer its own data. */
+              const sv = v[i % v.length];
               dots += '<circle cx="' + S[i][1] + '" cy="' + S[i][2] + '" r="' +
-                (2.6 * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
+                ((1.7 + sv * 2.6) * u).toFixed(2) + '" fill="#fff" stroke="' + DINK +
                 '" stroke-width="' + (1.3 * u).toFixed(2) + '"/>';
             }
             d += " L" + b[0].toFixed(1) + " " + b[1].toFixed(1);
@@ -5829,7 +5846,16 @@ Stage.register(
             for (let i = n - 1; i >= 0; i--) {
               const k = sweep(n - 1 - i, n, p, q, 1.2);
               if (k <= 0) continue;
-              const r = max * ((i + 1) / n) * k;
+              /* THE BANDS ARE THE NUMBERS. Evenly spaced they were the same
+               * five rings on every map whatever was measured; read off the
+               * cast they widen and narrow with it, and the outermost still
+               * lands on `max`, which is what keeps the set inside the
+               * frame. */
+              const step = 0.55 + v[i % v.length] * 0.9;
+              let acc = 0, tot = 0;
+              for (let j = 0; j < n; j++) tot += 0.55 + v[j % v.length] * 0.9;
+              for (let j = 0; j <= i; j++) acc += 0.55 + v[j % v.length] * 0.9;
+              const r = max * (acc / tot) * k * (step > 0 ? 1 : 1);
               out += '<circle cx="' + c[1] + '" cy="' + c[2] + '" r="' + r.toFixed(1) +
                 '" fill="' + tone + '" fill-opacity="' + (0.05).toFixed(2) +
                 '" stroke="' + tone + '" stroke-width="' + (1.2 * u).toFixed(2) +
@@ -5860,12 +5886,18 @@ Stage.register(
                * the webs however light its cells were. A fifth of a cell
                * survives the paper. */
               const gap = Math.max(0.8, cell * 0.2);
+              /* THE SHARE IS READ OFF THE NUMBERS. It was the literal 0.72,
+               * so every unit chart ever drawn showed the same proportion
+               * filled however different its data was — and a chart whose
+               * bars can move while its squares cannot is not one chart
+               * short of animated, it is one chart that is not a chart. */
+              const share = 0.28 + v[0] * 0.56;
               out +=
                 '<rect x="' + (c * cell + gap / 2).toFixed(2) + '" y="' +
                 (oy + r * cell + gap / 2).toFixed(2) + '" width="' +
                 (cell - gap).toFixed(2) + '" height="' + (cell - gap).toFixed(2) +
                 '" fill="' +
-                (k > 0.5 ? value(i / n > 0.72 ? 0.26 : 0.86, tone) : PALE) + '"/>';
+                (k > 0.5 ? value(i / n > share ? 0.26 : 0.86, tone) : PALE) + '"/>';
             }
           return svgWrap(pw, ph, out);
         });
