@@ -450,42 +450,45 @@
      happens BEHIND the paper: one line leaves with the webs, the other is
      already standing exactly where the first one stood. */
   .answer{position:relative}
-  .avrun{height:340vh}
+  /* Long enough for the whole set to cross once, and no longer. */
+  .avrun{height:300vh}
   .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
            perspective:900px;perspective-origin:50% 50%}
   .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
-             transform:translateY(-50%);margin:0;z-index:3;
+             transform:translateY(-50%);margin:0;z-index:0;
              font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
              text-align:center;letter-spacing:-.045em}
   .answer h2>span,.answer h2>em{display:block}
   .answer h2>em{font-style:normal;color:var(--amber)}
 
   /* ===================================================================
-     THE DRAWINGS COME TOWARDS YOU.
+     THE DRAWINGS CROSS THE FRAME, THE WAY THE TILES DO OVER THE WORDMARK.
 
-     Charts and maps standing in the depth behind the sentence, and the
-     scroll walks the camera INTO them: each tile grows out of the dark,
-     passes the frame and is gone, and the one that leaves is put back at
-     the far end — so the flight never runs out of board.
+     Not a ring, not a pile: the page already has a grammar for small tiles
+     moving around a big line — the ones that cross the horizontal track
+     under the word Splash — and this is that grammar with charts and maps
+     in it. Each tile has a LANE, a size and a SPEED, and crosses the frame
+     right to left as the section is scrolled. What makes the depth is that
+     the speeds differ; nothing is scaled and nothing is blurred.
 
-     They stand on a RING, not on a plane. Filling the middle would put a
-     drawing over the sentence every second, and the sentence is what they
-     are about; on a ring they come past its shoulders and leave the words
-     alone. The pointer LEANS the depth rather than sliding it: three
-     degrees of yaw reads as looking around a room, where the same amount as
-     a slide reads as a fault.
+     The pointer answers in the same order: a tile's depth IS its speed, so
+     the one that overtakes the others also leans further under the hand.
+     Answered equally, the two movements would describe two different
+     depths.
      =================================================================== */
-  .avfield{position:absolute;inset:0;z-index:1;transform-style:preserve-3d;
-           will-change:transform;pointer-events:none}
-  .avtile{position:absolute;left:50%;top:50%;margin:0;
-          border-radius:var(--rad);background:var(--paper);overflow:hidden;
-          will-change:transform,opacity;backface-visibility:hidden;
-          box-shadow:0 40px 90px -38px rgba(0,0,0,.8)}
-  /* The words keep their contrast whatever passes behind them. */
-  .avscrim{position:absolute;inset:0;z-index:2;pointer-events:none;
+  .avfield{position:absolute;inset:calc(var(--bar) + var(--vs-s)) 0 var(--vs-s);
+           z-index:2;pointer-events:none}
+  .avfly{position:absolute;left:0;top:calc(50% + var(--t) * 1px);
+         width:clamp(118px, calc(var(--w) * 1vw), 300px);
+         aspect-ratio:var(--ar,1.4);
+         border-radius:var(--rad);background:var(--paper);overflow:hidden;
+         box-shadow:0 26px 60px -34px rgba(20,20,28,.85)}
+  .avfly>div{width:100%;height:100%}
+  /* The words keep their contrast under whatever crosses them. */
+  .avscrim{position:absolute;inset:0;z-index:1;pointer-events:none;
            background:radial-gradient(56% 26% at 50% 57%,
-             rgba(20,20,28,.9) 0%, rgba(20,20,28,.78) 46%,
-             rgba(20,20,28,.26) 78%, rgba(20,20,28,0) 100%)}
+             rgba(20,20,28,.86) 0%, rgba(20,20,28,.7) 46%,
+             rgba(20,20,28,.2) 78%, rgba(20,20,28,0) 100%)}
 
   /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
      au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
@@ -5569,11 +5572,12 @@
 
 <script>
 /* ===================================================================
-   THE FLIGHT. Charts and maps standing in the depth behind the answer;
-   the scroll walks the camera into them.
+   THE DRAWINGS CROSS THE ANSWER. The same grammar the tiles use over
+   the wordmark: a lane, a size, a speed, and the frame crossed right to
+   left as the section is scrolled.
 
-   One transform per tile per frame. Nothing reflows after the tiles are
-   built, and the loop runs only while the section holds the frame.
+   The speeds are what make the depth, and the pointer answers in the
+   same order — a tile's lean is its speed.
    =================================================================== */
 (() => {
   const sec = document.querySelector('.answer');
@@ -5583,62 +5587,66 @@
   if (!run || !field) return;
   const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  const COUNT = 22;
-  const DEPTH = 2600;   // how far back the board goes, in pixels of z
-  const PAST = 420;     // and how far past the frame a tile flies before it
-                        // is put back at the far end
-  const SPAN = DEPTH + PAST;
-  const LAPS = 2.4;     // turns of the whole depth over the section
+  const COUNT = 12;
+  const START = 1.08;   // where the set stands before the section is entered
+  let RUN = 3.1, SPREAD = 1;
   const tiles = [];
+
+  const gauge = () => {
+    const w = innerWidth;
+    if (w > 860) { SPREAD = 1; RUN = 3.1; }
+    else if (w > 560) { SPREAD = 1.45; RUN = 4.2; }
+    else { SPREAD = 1.7; RUN = 4.8; }
+  };
 
   const build = () => {
     const kinds = (window.__artKinds && window.__artKinds()) || [];
     if (!kinds.length) return false;
     field.textContent = '';
     tiles.length = 0;
-    const vw = innerWidth, vh = innerHeight;
-    const w0 = Math.round(Math.max(150, Math.min(300, vw * 0.2)));
+    const vh = innerHeight;
     let a = 0x9e3779b9;
     const rnd = () => {
       a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
       return ((a >>> 0) % 1e6) / 1e6;
     };
-    let k = 0;
+    let k = Math.floor(rnd() * kinds.length);
     for (let i = 0; i < COUNT; i++) {
-      const w = Math.round(w0 * (0.8 + rnd() * 0.55));
-      const h = Math.round(w * (0.6 + rnd() * 0.36));
+      const wv = 11 + rnd() * 9;                  // its width, in vw
+      const ar = 1.15 + rnd() * 0.5;              // and its format
+      const w = Math.round(Math.max(118, Math.min(300, innerWidth * wv / 100)));
+      const h = Math.round(w / ar);
+      /* Charts and maps in turn: dealt in the deck's own order the set came
+         out six charts and then six maps, which is two halves, not a mix. */
       let kind = kinds[k % kinds.length], guard = 0;
-      while (window.__artFits && !window.__artFits(kind, w / h) && guard++ < kinds.length) {
+      while (window.__artFits && !window.__artFits(kind, ar) && guard++ < kinds.length) {
         k++; kind = kinds[k % kinds.length];
       }
-      k++;
-      /* ON A RING. The angle is spread evenly and jittered, the radius kept
-         off the middle: a drawing dead ahead would sit on the sentence for
-         the whole of its approach. */
-      const ang = (i / COUNT) * Math.PI * 2 + rnd() * 0.5;
-      const rad = 0.62 + rnd() * 0.72;
+      k += 5;
+      /* THE LANE, off the median rather than off a foot line: tiles of
+         different formats aligned on their bottoms make a plinth, centred on
+         their middles they make a drift. And the lanes keep off the middle
+         band, which is where the sentence is. */
+      const side = i % 2 ? 1 : -1;
+      const t = Math.round(side * (0.2 + rnd() * 0.26) * vh);
       const el = document.createElement('div');
-      el.className = 'avtile';
-      el.style.width = w + 'px';
-      el.style.height = h + 'px';
-      el.style.marginLeft = (-w / 2) + 'px';
-      el.style.marginTop = (-h / 2) + 'px';
+      el.className = 'avfly';
+      el.style.setProperty('--t', t);
+      el.style.setProperty('--w', wv.toFixed(2));
+      el.style.setProperty('--ar', ar.toFixed(3));
       el.innerHTML = window.__artTile(kind, w, h, i * 7919 + 13);
       field.appendChild(el);
       tiles.push({
         el,
-        x: Math.cos(ang) * rad * vw * 0.44,
-        y: Math.sin(ang) * rad * vh * 0.5,
-        /* Its own place in the queue, so they arrive spread out rather than
-           in one wave. */
-        z: (i / COUNT) * SPAN + rnd() * (SPAN / COUNT),
+        x: (i / COUNT) * 1.9 + rnd() * 0.12,      // its place in the queue
+        s: 0.86 + rnd() * 0.5,                    // its speed, and its depth
+        r: (rnd() - 0.5) * 3.2,                   // and a degree or two of tilt
       });
     }
     return true;
   };
 
-  const wrap = (v, m) => ((v % m) + m) % m;
-  let tx = 0, ty = 0, px = 0, py = 0, raf = 0, live = false;
+  let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
 
   const frame = () => {
     if (!live) { raf = 0; return; }
@@ -5646,33 +5654,25 @@
     const r = run.getBoundingClientRect();
     const span = Math.max(1, r.height - innerHeight);
     const p = Math.max(0, Math.min(1, -r.top / span));
-    const travel = p * SPAN * LAPS;
-    px += (tx - px) * 0.06;
-    py += (ty - py) * 0.06;
-    /* The lean is on the DEPTH, not on the tiles: turning the field is what
-       makes it read as a room you are looking around. */
-    field.style.transform =
-      'rotateY(' + (px * 3.2).toFixed(2) + 'deg) rotateX(' +
-      (-py * 2.2).toFixed(2) + 'deg) translate3d(' +
-      (px * -26).toFixed(1) + 'px,' + (py * -18).toFixed(1) + 'px,0)';
+    mvx += (tvx - mvx) * 0.07;
+    mvy += (tvy - mvy) * 0.07;
+    const W = innerWidth;
     for (const t of tiles) {
-      /* Far to near: -DEPTH is the back of the board, +PAST is behind you. */
-      const z = wrap(t.z + travel, SPAN) - DEPTH;
-      /* It fades up out of the dark and fades out as it goes by, so neither
-         end of the loop is a pop. */
-      const inK = Math.min(1, (z + DEPTH) / 520);
-      const outK = z > 0 ? Math.max(0, 1 - z / PAST) : 1;
-      t.el.style.opacity = (inK * outK).toFixed(3);
+      /* Its depth IS its speed: the tile that overtakes the others also
+         leans further under the hand, or the two movements would describe
+         two different depths. */
+      const d = (t.s - 0.86) * 300 + 12;
+      const x = W * (START + t.x * SPREAD) - p * W * RUN * t.s + mvx * d;
       t.el.style.transform =
-        'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
-        z.toFixed(1) + 'px)';
+        'translate3d(' + x.toFixed(1) + 'px,calc(-50% + ' +
+        (mvy * d * 0.5).toFixed(1) + 'px),0) rotate(' + t.r.toFixed(2) + 'deg)';
     }
   };
 
   addEventListener('pointermove', (e) => {
     if (reduced) return;
-    tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
-    ty = (e.clientY / Math.max(1, innerHeight)) * 2 - 1;
+    tvx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
+    tvy = (e.clientY / Math.max(1, innerHeight)) * 2 - 1;
   }, { passive: true });
 
   const io = new IntersectionObserver((es) => {
@@ -5683,6 +5683,7 @@
   }, { rootMargin: '20% 0px' });
 
   const start = () => {
+    gauge();
     if (!build()) return false;
     io.observe(sec);
     frame();
@@ -5697,7 +5698,7 @@
   let rt = 0;
   addEventListener('resize', () => {
     clearTimeout(rt);
-    rt = setTimeout(build, 220);
+    rt = setTimeout(() => { gauge(); build(); }, 220);
   }, { passive: true });
 })();
 </script>
