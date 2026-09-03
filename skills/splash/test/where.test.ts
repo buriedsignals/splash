@@ -78,6 +78,11 @@ const SLOT: Record<string, string> = {
   format: "static",
   size: "landscape",
   reachable: "yes",
+  // The record of the house's own ranking having been walked (#48). Before these existed, the
+  // treatment was the one major decision in the exchange with no recorded justification, and a
+  // slot whose form was picked by vibes closed Gate 2 as long as `reference:` carried a string.
+  intent: '"show a trend over time"',
+  rankingWalk: '"chart-choice.md § show a trend over time — rank 1 Line kept; Slope removed (more than two moments)."',
   chosen: "trajectory",
   candidates: "[trajectory, comparison]",
 };
@@ -178,6 +183,8 @@ function secondSlot(): string {
     "    format: static\n" +
     "    size: landscape\n" +
     "    reachable: yes\n" +
+    '    intent: "show the gap between exactly two values"\n' +
+    '    rankingWalk: "chart-choice.md § show the gap between exactly two values — rank 1 Dumbbell removed (only one pair); rank 2 comparison chosen."\n' +
     "    chosen: comparison\n" +
     "    candidates: [comparison, dumbbell]"
   );
@@ -1144,6 +1151,70 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     // Naming what IS accepted, not only what is not — the `sizeFor`/`readPalette` discipline, at
     // the gate rather than at the renderer.
     expect(gap).toContain("landscape, square, portrait");
+  });
+});
+
+// THE HOUSE'S OWN KNOWLEDGE, RECORDED — issue #48.
+//
+// Treatment selection was the one major decision in this exchange with no recorded justification.
+// The two knowledge sources were enforced with wildly different force: `chart-choice.md` sat at
+// movement 4 with no gate, no field and nothing able to tell whether it had been walked, while the
+// external reference lookup sat at movement 8 with its own gate and a `reference:` scalar Gate 2
+// could not close without. An agent optimises for the thing that is checked, and on a real run one
+// did — proposing a Scatter the ranking's own move-down column removes ("most points need labels",
+// on eight named communes where the finding is about two of them by name), overriding a Dumbbell
+// the editor persona had independently offered. Gate 2 closed, because `reference:` held a string.
+// The only thing that caught it was the journalist looking at the published graphic.
+describe("gate 2: the internal ranking is walked, and the walk is written down", () => {
+  const frozen = async (slot: Record<string, string> | null) => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+    await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
+    return whereIs(dir);
+  };
+
+  it("should refuse a slot whose narrow intent was never named", async () => {
+    const state = await frozen(without(SLOT, "intent"));
+    expect(state.phase).toBe("storyboard");
+    expect(state.resume).toContain("G2-intent");
+  });
+
+  it("should refuse a slot whose ranking walk was never written down", async () => {
+    const state = await frozen(without(SLOT, "rankingWalk"));
+    expect(state.phase).toBe("storyboard");
+    expect(state.resume).toContain("G2-ranking");
+  });
+
+  it("should ask for the walk BEFORE the treatment, because it is what the treatment is chosen from", async () => {
+    // A justification written after the decision is a justification for a decision already taken,
+    // which is the shape this record exists to stop. So a slot missing BOTH the walk and a valid
+    // treatment stops at the walk.
+    const state = await frozen({ ...without(SLOT, "rankingWalk"), chosen: "not-a-candidate" });
+    expect(state.resume).toContain("G2-ranking");
+    expect(state.resume).not.toContain("G2-treatment");
+  });
+
+  it("should agree with storyboard's own gate on both fields", async () => {
+    // The two gate readers carry the contract separately and must not drift — the discipline the
+    // rest of this file exists for.
+    for (const field of ["intent", "rankingWalk"]) {
+      const text = build(SCALARS, without(SLOT, field));
+      const { meta } = parseStoryboard(text);
+      const storyboardRefuses = checkStoryboard(meta).length > 0;
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "data.csv"), "col\n1");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+      await writeFile(join(dir, "STORYBOARD.md"), text);
+      const whereRefuses = (await whereIs(dir)).phase === "storyboard";
+      expect([field, storyboardRefuses, whereRefuses]).toEqual([field, true, true]);
+    }
+  });
+
+  it("should close gate 2 when both are recorded", async () => {
+    expect((await frozen(SLOT)).phase).not.toBe("storyboard");
   });
 });
 

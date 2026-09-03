@@ -232,6 +232,8 @@ describe("gate 2 refuses a half-recorded answer", () => {
         format: "static",
         size: "landscape",
         reachable: "yes",
+        intent: "compare values across categories",
+        rankingWalk: "chart-choice.md § compare values across categories — rank 1 Bar and column kept.",
         candidates: ["Bar and column"],
         chosen: "Bar and column",
         producer: "custom",

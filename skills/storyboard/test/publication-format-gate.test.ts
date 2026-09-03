@@ -294,7 +294,7 @@ describe("ordered persisted state across the format reply", () => {
   });
 
   for (const format of ["web", "scrolly"]) {
-    it(`records ${format} with no size and advances to the reference loop`, async () => {
+    it(`records ${format} with no size and advances to the ranking walk`, async () => {
       await mutateStoryboard(storyboardPath, {
         slot: { id: 1, fields: { format, reachable: "yes" } },
       });
@@ -304,9 +304,13 @@ describe("ordered persisted state across the format reply", () => {
         reachable: "yes",
       });
       expect(parseStoryboard(written).meta.slots[0].size).toBeUndefined();
+      // G2-intent, not G2-reference. Issue #48 moved the internal ranking AHEAD of the
+      // inspiration loop: a reference is a way of executing a form well, not evidence that the
+      // form is right, so it is consulted after the intent is named and the ranking walked rather
+      // than in the middle of the treatment decision with a gate attached.
       expect(await whereIs(storyDir)).toEqual(
         expectedStoryboardState(
-          "Stop at G2-reference; the journalist must provide reference.",
+          "Stop at G2-intent for slot 1; the journalist must provide intent.",
         ),
       );
     });
@@ -359,9 +363,12 @@ describe("ordered persisted state across the format reply", () => {
     );
 
     await mutateStoryboard(storyboardPath, { slot: { id: 2, fields: { size: "landscape" } } });
+    // BOTH slots are through G2c — which is what this test is about — and the next gate is the
+    // ranking walk for slot 1, not the reference loop. #48 put the house's own chooser ahead of
+    // the inspiration lookup, and the second pass is what keeps that from jumping slot 2's G2a.
     expect(await whereIs(storyDir)).toEqual(
       expectedStoryboardState(
-        "Stop at G2-reference; the journalist must provide reference.",
+        "Stop at G2-intent for slot 1; the journalist must provide intent.",
       ),
     );
     expect(parseStoryboard(await readFile(storyboardPath, "utf8")).meta.slots.map((s: any) => s.id)).toEqual([
@@ -394,8 +401,8 @@ describe("the two independent persisted-state readers", () => {
       expect(state).toEqual(
         expectedStoryboardState(
           fixture.legacy
-            ? "Stop at G2-reference; the journalist must provide reference. Resume from the migrated legacy publication-format field."
-            : "Stop at G2-reference; the journalist must provide reference.",
+            ? "Stop at G2-intent for slot 1; the journalist must provide intent. Resume from the migrated legacy publication-format field."
+            : "Stop at G2-intent for slot 1; the journalist must provide intent.",
         ),
       );
     }

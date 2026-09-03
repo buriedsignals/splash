@@ -17,6 +17,8 @@ slots:
     format: web
     reachable: yes
     candidates: ["Dot strip", "Histogram", "Lollipop"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Dot strip"
 ---
 

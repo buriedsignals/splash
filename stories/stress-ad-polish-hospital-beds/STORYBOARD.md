@@ -17,6 +17,8 @@ slots:
     size: "landscape"
     reachable: "yes"
     candidates: ["Bar and column", "Scatter (and bubble)"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Bar and column"
     producer: "custom"
 ---

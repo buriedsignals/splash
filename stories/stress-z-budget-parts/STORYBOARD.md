@@ -16,6 +16,8 @@ slots:
     format: web
     reachable: yes
     candidates: ["Diverging bar", "Pie and donut", "Waterfall (bridge)"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Diverging bar"
 ---
 

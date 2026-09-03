@@ -16,6 +16,8 @@ slots:
     format: "web"
     reachable: "yes"
     candidates: ["Slope (slopegraph)", "Dumbbell (range plot)", "Line"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Slope (slopegraph)"
     producer: "custom"
 ---

@@ -23,6 +23,8 @@ slots:
     destination: "screen"
     reachable: "yes"
     candidates: ["Line", "Slope", "Small multiples"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Line"
     producer: "custom"
 ---

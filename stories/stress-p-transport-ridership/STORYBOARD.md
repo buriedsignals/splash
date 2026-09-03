@@ -17,6 +17,8 @@ slots:
     size: "landscape"
     reachable: "yes"
     candidates: ["Bar and column", "Lollipop", "Treemap"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Bar and column"
     producer: "custom"
   - id: 2
@@ -25,6 +27,8 @@ slots:
     format: "web"
     reachable: "yes"
     candidates: ["Slope (slopegraph)","Dumbbell (range plot)","Grouped bar"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Slope (slopegraph)"
     producer: custom
   - id: 3
@@ -34,6 +38,8 @@ slots:
     size: "landscape"
     reachable: "yes"
     candidates: ["Lollipop", "Bar and column"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Lollipop"
 ---
 

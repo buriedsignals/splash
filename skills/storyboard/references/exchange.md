@@ -204,6 +204,27 @@ rank only the types this story's frozen profile can actually support. Then name:
   `capabilityGap` for you and hand back every row with its own refusal attached. A medium closed by
   a missing key is said HERE, with what would open it, not three movements later.
 
+**ASK THE INTENT OUT LOUD, and record it.** Step 1 of `chart-choice.md` is the highest-leverage
+line in the whole document, and it used to happen silently inside the agent's head. *"Show
+association"* and *"show departure from an expected ordering"* reach different rank-1 forms from the
+same two columns of data — a question a journalist answers instantly and an agent gets wrong. On a
+real run one did: the intent was assumed to be association, Scatter is rank 1 there, and the claim
+was actually that one commune departs from an expected ordering, where the rank-1 forms are the
+diverging bar and the dumbbell. The editor persona had independently offered the dumbbell. Nothing
+downstream could tell, because nothing was written down.
+
+So the slot now records `intent:` and `rankingWalk:`, and BOTH gate readers refuse without them
+(`checkStoryboard`, `where.mjs`). The walk names the section the intent lands in, which
+higher-ranked forms were removed and by which move-down condition, and — when a lower-ranked form
+wins — why the higher surviving form lost. That last is step 6, and it was being skipped: the
+selected type's own sheet was never opened.
+
+**A reference is not evidence that a form is right.** If the inspiration lookup at ⑧ argues for a
+candidate the ranking REMOVED, state the conflict and resolve it; do not settle it silently in the
+reference's favour. On the run above, the external chart justified Scatter on the strength of a
+fitted expectation line, and the chosen producer could not draw one — so the justifying mechanism
+was never built. A reference is a way of executing a form well.
+
 The chooser is advisory. Its first surviving type is the recommendation, not a dispatch rule. A
 lower-ranked type may lead when the subject, comparison, limits, placement or delivery context gives
 it a stronger story-specific reason; say why the higher surviving type lost. Reachability is checked

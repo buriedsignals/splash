@@ -17,6 +17,8 @@ slots:
     reachable: "yes"
     assembles: ["map", "image", "chart"]
     candidates: ["Scrollytelling (locator map, then a drawn diagram of the two terrains, then the two counts over 88 winters, then the forecast level)", "Stacked area chart, static", "Small multiples, one panel per decade, static"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Scrollytelling (locator map, then a drawn diagram of the two terrains, then the two counts over 88 winters, then the forecast level)"
 ---
 

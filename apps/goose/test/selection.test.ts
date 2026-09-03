@@ -55,6 +55,8 @@ function treatmentGate({ chosen = false } = {}) {
     medium: chart
     format: web
     reachable: yes
+    intent: "show a trend over time"
+    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."
     candidates: [Line, "Slope (slopegraph)"]${chosen ? '\n    chosen: "Slope (slopegraph)"' : ""}`,
     { reference: true },
   );

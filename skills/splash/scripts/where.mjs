@@ -235,7 +235,11 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 // The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
 // loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
 export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
-export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "chosen"];
+// `intent` and `rankingWalk` mirror storyboard's own contract — issue #48. The internal ranking was
+// advisory, unrecorded and unverifiable while the external reference lookup was compulsory,
+// recorded and gate-blocking, so the house's own accumulated knowledge lost to a lookup of what
+// other newsrooms did. Both gates now read the record of the walk, neither re-derives it.
+export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "intent", "rankingWalk", "chosen"];
 
 // Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
 // `HAND` is spelled out independently: two readings of one rule, cross-checked by a test, never
@@ -454,6 +458,9 @@ function slotGap(field, label) {
   if (field === "proves") return `slot ${label}: no confirmed claim was recorded in proves`;
   if (field === "chosen") return `slot ${label}: nothing chosen`;
   if (field === "reachable") return `slot ${label}: this medium and format were never confirmed reachable`;
+  if (field === "intent") return `slot ${label}: no narrow intent was named — step 1 of chart-choice.md`;
+  if (field === "rankingWalk")
+    return `slot ${label}: the internal ranking was never walked, or the walk was not written down`;
   return `slot ${label}: no ${field} was ever chosen`;
 }
 
@@ -637,6 +644,22 @@ function orderedStoryboardGate(frontmatter, slots) {
     if (slot.size && !EXPORT_SIZES.includes(slot.size)) {
       return { gate: "G2c", awaiting: "size", slotId };
     }
+  }
+
+  // A SECOND PASS, and it has to be second. G2a/G2b/G2c finish for EVERY slot before any later gate
+  // opens — that is the sequence this gate documents and pins — so asking slot 1 for its intent
+  // while slot 2 still has no medium would jump a slot's basic identity to answer a question about
+  // another slot's craft. Written inside the first loop, it did exactly that.
+  //
+  // And it runs BEFORE the reference loop, which is the ordering issue #48 argues for: a reference
+  // is a way of executing a form well, not evidence that the form is right. Consulted in the middle
+  // of the treatment decision with a gate attached, it competed with the house's own ranking and
+  // won — the ranking being advisory, unrecorded and unverifiable while the lookup was compulsory,
+  // recorded and gate-blocking. Named intent first, ranking walked second, inspiration third.
+  for (const [index, slot] of slots.entries()) {
+    const slotId = String(slot.id ?? index + 1);
+    if (!slot.intent) return { gate: "G2-intent", awaiting: "intent", slotId };
+    if (!slot.rankingWalk) return { gate: "G2-ranking", awaiting: "rankingWalk", slotId };
   }
 
   if (!scalarFieldValue(frontmatter, "reference")) {

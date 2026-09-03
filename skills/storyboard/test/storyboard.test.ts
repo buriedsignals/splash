@@ -26,6 +26,8 @@ slots:
     format: "static"
     size: "landscape"
     reachable: "yes"
+    intent: "show a trend over time"
+    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."
     candidates: ["trajectory", "comparison"]
     chosen: "trajectory"
 ---
@@ -48,7 +50,7 @@ describe("parseStoryboard", () => {
     expect(() => parseStoryboard(VALID.replace("    chosen: \"trajectory\"", "    producer: custom\n    producer: datawrapper\n    chosen: \"trajectory\""))).toThrow(/duplicate key "producer"/);
     const duplicateSlot = VALID.replace(
       "---\n\nThe prose",
-      '  - id: 1\n    proves: "A second claim."\n    medium: chart\n    format: static\n    size: landscape\n    reachable: yes\n    candidates: [comparison]\n    chosen: comparison\n---\n\nThe prose',
+      '  - id: 1\n    proves: "A second claim."\n    medium: chart\n    format: static\n    size: landscape\n    reachable: yes\n    intent: "show a trend over time"\n    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."\n    candidates: [comparison]\n    chosen: comparison\n---\n\nThe prose',
     );
     expect(() => parseStoryboard(duplicateSlot)).toThrow(/duplicate slot id "1"/);
   });

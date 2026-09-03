@@ -77,6 +77,8 @@ slots:
     format: ${format}
 ${sized}    reachable: yes
     candidates: ${JSON.stringify(candidates)}
+    intent: "show the gap between exactly two values"
+    rankingWalk: "chart-choice.md § show the gap between exactly two values — rank 1 Dumbbell removed; Slope chosen."
     chosen: ${JSON.stringify(treatment)}
 ${producer ? `    producer: ${producer}\n` : ""}${datawrapperType ? `    datawrapperType: ${datawrapperType}\n` : ""}---
 `;
@@ -302,6 +304,8 @@ describe("persisted producer state", () => {
     medium: chart
     format: web
     reachable: yes
+    intent: "compare values across categories"
+    rankingWalk: "chart-choice.md § compare values across categories — rank 1 Bar and column kept."
     candidates: ["Line", "Bar and column"]
 ---
 `,

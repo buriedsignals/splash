@@ -16,6 +16,8 @@ slots:
     size: landscape
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Stacked bar"
     producer: custom
   - id: 2
@@ -25,6 +27,8 @@ slots:
     size: landscape
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
+    intent: unrecorded
+    rankingWalk: unrecorded
     chosen: "Stacked bar"
     producer: custom
 ---
