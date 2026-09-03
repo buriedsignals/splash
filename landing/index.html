@@ -3596,6 +3596,15 @@
                  rz: -d * (10 + 7 * tight), z: -260 - slot * 96 };
       };
       let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
+      /* Le point de fuite du plateau est dans la feuille de style, et il change
+       * avec la largeur : le lire est la seule façon de ne pas l'écrire deux
+       * fois. */
+      let PSP = 1500;
+      const gaugePsp = () => {
+        PSP = parseFloat(getComputedStyle(deck).perspective) || 1500;
+      };
+      gaugePsp();
+      addEventListener('resize', gaugePsp, { passive: true });
       /* CHAQUE CARTE A SA PROPRE SOURIS. Un seul curseur lissé une fois et
        * distribué aux quatre, c'est un bloc qui glisse : elles partent
        * ensemble, arrivent ensemble, et la main n'a plus d'épaisseur. Chacune
@@ -3755,12 +3764,26 @@
            n'est dans la fenêtre tant qu'une carte n'est pas appelée, et
            chacune arrive du dehors. */
         const cw = cds[0].offsetWidth || 340;
-        /* AND IT IS MEASURED ON THE CARD'S WIDTH. At rest a card is turned a
-           quarter turn, so what it takes up DOWN the frame is its width, not
-           its height — measured on the height, the top of the fan sat a few
-           pixels inside the window and the chapter opened on a sliver of
-           card. Nothing of the hand is in the frame until one is called. */
-        const bottom = H / 2 + Math.max(cds[0].offsetHeight, cw) * 0.92;
+        const chh = cds[0].offsetHeight || 240;
+        /* Ce que vaut une carte quand elle SORT par le haut : une hauteur de
+           cadre et de quoi la faire disparaître. */
+        const bottom = H / 2 + Math.max(chh, cw) * 0.92;
+        /* ET CE QU'IL FAUT POUR QU'ELLE SOIT HORS DU CADRE EN BAS — carte par
+           carte, parce que ce n'est pas la même distance pour chacune.
+           L'éventail est étagé en profondeur, et la perspective RAMÈNE une
+           carte lointaine vers le centre du cadre : mesurée une fois pour
+           toutes sur la carte de devant, les trois qui sont derrière
+           dépassaient par le bas. Sur un téléphone, où le point de fuite est
+           plus près (1000 au lieu de 1500), elles étaient carrément dans le
+           cadre — trois cartes visibles avant d'avoir scrollé.
+           La projection est une division : on la retourne. Et ce qu'une carte
+           occupe dans la hauteur, c'est sa LARGEUR, parce qu'au repos elle est
+           tournée d'un quart de tour — plus la part de sa hauteur que les
+           quelques degrés qui manquent au quart de tour lui rendent. */
+        const restOf = (fz) => {
+          const kz = PSP / (PSP + Math.abs(fz));
+          return H / (2 * kz) + (cw + chh * 0.28) / 2 + 22;
+        };
         let front = 0;
         /* Deux passes : la première dit où en est chaque carte, la seconde
          * place la main autour de celles qui y sont encore. Une seule passe
@@ -3825,7 +3848,7 @@
           const py = pty * (11 * lead + 14 * hand);
           /* Trois stations sur une seule verticale : en bas à moitié dehors,
            * au milieu retournée et lisible, puis hors du cadre par le haut. */
-          const rest = bottom + F.dip + (1 - gate) * (cw * 0.85);
+          const rest = restOf(F.z) + F.dip + (1 - gate) * (cw * 0.85);
           /* La sortie n'est pas une translation seule : une dérive de côté et
            * un quart de degré de roulis, sinon la carte quitte le cadre comme
            * un ascenseur. */
