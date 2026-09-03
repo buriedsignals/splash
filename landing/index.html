@@ -5612,121 +5612,124 @@
   if (!run || !field) return;
   const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  const COUNT = 22;
+  const COUNT = 28;
   const DEPTH = 2400;   // how far back the set stands, in pixels of z
-  const PAST = 300;     // and how far past the frame a tile goes before it is
-                        // put back at the far end
-  const SPAN = DEPTH + PAST;
+  /* A NOMINAL SPAN, and it is only used to space the STARTS out. How far a
+     tile actually walks is its own — it is turned round the moment its near
+     edge has cleared the window, which depends on where it stands. */
+  const SPAN = DEPTH + 300;
   const PERSP = 1000;   // the same number the stage's perspective is set to
   const RATE = 1150;    // pixels of depth walked a second, once the line is in
   const tiles = [];
   const SALT = ((Math.random() * 0xffffffff) >>> 0) || 0x9e3779b9;
 
+  /* ONE STREAM OF CHANCE FOR THE WHOLE SECTION, and it never rewinds. Every
+     tile is dressed from it — its format, its drawing, its ink, its ground,
+     whether it moves, where it stands — and it is dressed AGAIN each time it
+     comes round. Held for the life of the page, a tile was the same drawing
+     in the same place in the same colour on every pass; twenty-eight of them
+     made a loop a reader sees twice. What comes back is a new tile wearing
+     the old one's slot. */
+  let a = SALT;
+  const rnd = () => {
+    a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+    return ((a >>> 0) % 1e6) / 1e6;
+  };
+  let KINDS = [];
+
+  const dress = (t) => {
+    const vw = innerWidth, vh = innerHeight;
+    /* THREE FORMATS, NAMED — wide, square, upright — and not a continuous
+       spread between them. Drawn from a range the proportions clustered near
+       the middle and the set read as one shape with a wobble in it; drawn
+       from three, a landscape is plainly a landscape. */
+    const FORMS = [1.62, 1.0, 0.7];
+    const ar = FORMS[Math.floor(rnd() * 3)] * (0.94 + rnd() * 0.12);
+    const long = Math.round(Math.max(120, Math.min(310, vw * (0.085 + rnd() * 0.075))));
+    const w = ar >= 1 ? long : Math.round(long * ar);
+    const h = ar >= 1 ? Math.round(long / ar) : long;
+    /* The drawing is DRAWN, not dealt round. A cursor walking the twelve in
+       order meant the same twelve came back in the same order for ever; a
+       tile takes one at random from the ones its shape will hold. */
+    const fits = KINDS.filter((n) =>
+      !window.__artFits || window.__artFits(n, w / h));
+    const pool = fits.length ? fits : KINDS;
+    const kind = pool[Math.floor(rnd() * pool.length)];
+    /* FOUR IN FIVE IN A PRINTING COLOUR, one in five in grey. Every painter
+       takes the ink, so a chart and a map get the same treatment. */
+    const grey = rnd() < 0.2;
+    const seed = Math.floor(rnd() * 1e9) + 1;
+    const tone = window.__artInk(seed, grey ? 1 : 0);
+    const c = rgbOf(tone);
+    const el = t.el;
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.marginLeft = (-w / 2) + 'px';
+    el.style.marginTop = (-h / 2) + 'px';
+    /* THE GROUND IS DRAWN TOO, and a third of them are dark. A board that is
+       all light cards covers half of what this page says it can make. Six
+       treatments: the paper, white, the table, a wash of the tile's own ink,
+       the ink itself, and a dark wash of that ink. */
+    const dark = rnd() < 0.34;
+    el.classList.toggle('avdark', dark);
+    if (dark) {
+      el.style.background = rnd() < 0.5
+        ? '#14141c'
+        : mix(INK, c, 0.14 + rnd() * 0.16);
+    } else {
+      const g = rnd();
+      el.style.background = g < 0.3 ? '#edeae3'
+        : g < 0.5 ? '#ffffff'
+        : g < 0.62 ? '#e6e2d9'
+        : mix(PAPER, c, 0.08 + rnd() * 0.14);
+    }
+    /* SCATTERED, FREELY. Quadrant by quadrant it was an even spread and read
+       as a pattern; what keeps a tile off the words is where it lands on the
+       glass, measured every frame, so the position has nothing to hold back. */
+    const x = (rnd() * 2 - 1) * vw * 0.72;
+    const y = (rnd() * 2 - 1) * vh * 0.62;
+    t.kind = kind; t.w = w; t.h = h; t.seed = seed; t.tone = tone;
+    t.x = x; t.y = y;
+    t.r = (rnd() - 0.5) * 3.2;
+    /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
+       tiles is a board of pictures; the ones that stand finished are the
+       exception. Its own tempo and its own place in it, so no two are in
+       step. */
+    t.anim = rnd() < 0.67 && !reduced;
+    t.per = 4.2 + rnd() * 3.4;
+    t.ph = rnd();
+    t.drew = -1;
+    /* WHERE IT LEAVES THE FRAME, worked out for this tile and no other. A
+       tile wide of the middle is gone by the time it has doubled; one almost
+       dead ahead never leaves at all. The projection is a division, so the
+       scale at which its near edge clears the window is solved rather than
+       guessed, and the walk it makes is as long as that. */
+    t.span = DEPTH + zOut(w, h, x, y, vw, vh);
+    paint(t, 1, 0);
+  };
+
   const build = () => {
-    const kinds = (window.__artKinds && window.__artKinds()) || [];
-    if (!kinds.length) return false;
+    KINDS = (window.__artKinds && window.__artKinds()) || [];
+    if (!KINDS.length) return false;
     field.textContent = '';
     tiles.length = 0;
-    const vw = innerWidth, vh = innerHeight;
-    /* A DIFFERENT SET EVERY LOAD. Which drawing, at what size, on which
-       line, and how far back it starts — all of it comes off one number
-       drawn when the page opens, so no two visits are the same board.
-       It is drawn ONCE and reused, so a resize rebuilds the set it had
-       rather than dealing a new one under the reader. */
-    let a = SALT;
-    const rnd = () => {
-      a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
-      return ((a >>> 0) % 1e6) / 1e6;
-    };
-    let k = Math.floor(rnd() * kinds.length);
+    a = SALT;
     for (let i = 0; i < COUNT; i++) {
-      /* THREE FORMATS, NAMED — wide, square, upright — and not a continuous
-         spread between them. Drawn from a range, the proportions clustered
-         near the middle and the set read as one shape with a wobble in it;
-         drawn from three, a landscape is plainly a landscape and a portrait
-         plainly a portrait. The jitter is small enough to keep each one
-         recognisably its own format. */
-      const FORMS = [1.62, 1.0, 0.7];
-      const ar = FORMS[i % 3] * (0.94 + rnd() * 0.12);
-      const long = Math.round(Math.max(120, Math.min(310, vw * (0.085 + rnd() * 0.075))));
-      const w = ar >= 1 ? long : Math.round(long * ar);
-      const h = ar >= 1 ? Math.round(long / ar) : long;
-      let kind = kinds[k % kinds.length], guard = 0;
-      while (window.__artFits && !window.__artFits(kind, w / h) && guard++ < kinds.length) {
-        k++; kind = kinds[k % kinds.length];
-      }
-      k += 5;
-      /* FOUR IN FIVE IN A PRINTING COLOUR, one in five in grey. The ink is
-         drawn per tile and every painter takes one, so a chart and a map get
-         the same treatment and no two boards are the same. */
-      const grey = rnd() < 0.2;
-      const seed = Math.floor(rnd() * 1e9) + 1;
-      const tone = window.__artInk(seed, grey ? 1 : 0);
       const el = document.createElement('div');
       el.className = 'avfly';
-      el.style.width = w + 'px';
-      el.style.height = h + 'px';
-      el.style.marginLeft = (-w / 2) + 'px';
-      el.style.marginTop = (-h / 2) + 'px';
-      /* THE GROUND IS DRAWN TOO, and a third of them are dark. A board that
-         is all light cards covers one half of what this page has to say it
-         can make; the panel is wider than that. Six treatments — the paper,
-         white, the table, a wash of the tile's own ink, the ink itself, and
-         a dark wash of that ink — so a set of twenty is never a set of one
-         card repeated. */
-      const dark = rnd() < 0.34;
-      const c = rgbOf(tone);
-      if (dark) {
-        el.classList.add('avdark');
-        el.style.background = rnd() < 0.5
-          ? '#14141c'
-          : mix(INK, c, 0.14 + rnd() * 0.16);
-      } else {
-        const g = rnd();
-        el.style.background = g < 0.3 ? '#edeae3'
-          : g < 0.5 ? '#ffffff'
-          : g < 0.62 ? '#e6e2d9'
-          : mix(PAPER, c, 0.08 + rnd() * 0.14);
-      }
       field.appendChild(el);
-      /* SOME DRAW THEMSELVES, OVER AND OVER. A board where nothing moves
-         inside the tiles is a board of pictures; a board where everything
-         does is a fairground. About a third of them run their own gesture on
-         a loop — the bars come up, the line is traced, the map fills — and
-         the rest stand finished. */
-      /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside
-         the tiles is a board of pictures; the ones that stand finished are
-         now the exception rather than the rule. */
-      const anim = rnd() < 0.67;
-      const t = {
-        el, kind, w, h, seed, tone,
-        /* SCATTERED, FREELY. Quadrant by quadrant it was an even spread and
-           read as a pattern; the place on the glass is what keeps a tile off
-           the words, so the position itself has nothing to hold back. */
-        x: (rnd() * 2 - 1) * vw * 0.72,
-        y: (rnd() * 2 - 1) * vh * 0.62,
-        /* WHEN IT SETS OFF, not where it is standing. At the moment the
-           paper lifts and the line is there, the frame holds the line and
-           nothing else; the drawings start arriving after it, one behind
-           another, and every one of them enters at the far end.
-           
-           THE STARTS ARE SPREAD OVER A WHOLE DEPTH, not over half of one.
-           Packed into half, the set stayed a clump for ever: it wraps, so
-           the gap it left came round again and again — a crowded frame, then
-           a thin one, then a crowded one. Spread over the full span they end
-           up evenly spaced through the depth and stay that way, which is one
-           leaving as one arrives. The jitter is a fraction of the gap: enough
-           that the file does not tick, not enough to bunch. */
-        off: (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5,
-        r: (rnd() - 0.5) * 3.2,
-        anim: anim && !reduced,
-        /* Its own tempo and its own place in it, so the animated ones are
-           never in step with each other. */
-        per: 4.2 + rnd() * 3.4,
-        ph: rnd(),
-        drew: -1,
-      };
-      paint(t, 1, 0);
+      const t = { el };
+      dress(t);
+      /* WHEN IT SETS OFF, not where it is standing. At the moment the paper
+         lifts and the line is there, the frame holds the line and nothing
+         else; the drawings start arriving after it, one behind another, and
+         every one of them enters at the far end.
+
+         THE STARTS ARE SPREAD OVER A WHOLE DEPTH, not over half of one.
+         Packed into half, the set stayed a clump for ever: it wraps, so the
+         gap it left came round again and again — a crowded frame, then a thin
+         one, then a crowded one. */
+      t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
       tiles.push(t);
     }
     return true;
@@ -5734,6 +5737,18 @@
 
   /* A wash of an ink over a ground: the tile's own paper, or its own ink,
      tinted with the colour the drawing is in. */
+  /* The scale at which a tile's near edge clears the window, turned back
+     into a depth. `k = PERSP / (PERSP - z)`, so `z = PERSP (1 - 1/k)`; and it
+     is out when `k (|x| - w/2) > half the window`. Capped, because a tile
+     close to the middle never clears anything and would otherwise be walked
+     into the camera. */
+  const zOut = (w, h, x, y, vw, vh) => {
+    const ax = Math.abs(x) - w / 2, ay = Math.abs(y) - h / 2;
+    const kx = ax > 1 ? (vw / 2) / ax : Infinity;
+    const ky = ay > 1 ? (vh / 2) / ay : Infinity;
+    const k = Math.min(3.1, Math.max(1.06, Math.min(kx, ky)) * 1.06);
+    return PERSP * (1 - 1 / k);
+  };
   const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   const mix = (a, b, k) =>
     'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',') + ')';
@@ -5745,7 +5760,6 @@
     t.el.innerHTML = window.__artTile(t.kind, t.w, t.h, t.seed,
       { p: p, q: q, tone: t.tone });
   };
-  const wrap = (v, m) => ((v % m) + m) % m;
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
   let travel = 0, last = 0;
 
@@ -5775,12 +5789,17 @@
     for (const t of tiles) {
       /* Nothing before its turn: until the walk has gone as far as this
          tile's start, it is not in the room at all. */
-      const raw = travel - t.off;
+      let raw = travel - t.off;
       if (raw < 0) {
         if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
         continue;
       }
-      const z = wrap(raw, SPAN) - DEPTH;
+      /* A NEW TILE WEARS THE OLD ONE'S SLOT. Once its walk is done it is
+         dressed again — another format, another drawing, another ink, another
+         place — and its clock is set to now, so it starts from the far end
+         rather than reappearing part way in. */
+      if (raw >= t.span) { t.off = travel; dress(t); raw = 0; }
+      const z = raw - DEPTH;
       /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
          A perspective has one vanishing point and it is behind the sentence,
          so every tile crosses the words on its way out however wide it
@@ -5794,8 +5813,13 @@
         Math.abs(t.y * k) / (innerHeight * 0.24),
       );
       const clear = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
-      const outK = z > 0 ? Math.max(0, 1 - z / PAST) : 1;
-      const vis = clear * outK;
+      /* NOTHING FADES OUT AT THE END. A drawing that thins as it comes past
+         reads as a thing being switched off; it should simply go by the edge
+         of the window, and it does — each tile is turned round at the depth
+         where its own near edge has cleared the frame, so the only thing
+         that removes it is the frame. What is still faded is the band the
+         type occupies, which is a different job. */
+      const vis = clear;
       t.el.style.opacity = vis.toFixed(3);
       /* The gesture, for the ones that have one — and only while the tile
          can be seen. Redrawn at fourteen steps a second, not at sixty: the
