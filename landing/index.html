@@ -5731,6 +5731,26 @@
     /* How much of the pointer this one takes. Drawn, so the board does not
        answer the hand in one piece. */
     t.hand = 0.4 + rnd() * 1.3;
+    /* AND A PLACE IN THE RING, for the second half of the section.
+     *
+     * ITS ANGLE IS ITS SLOT, not a draw. Drawn, the twenty-eight angles
+     * clumped and the ring came out as a crowd on one side; taken from the
+     * slot they are evenly spaced, and a jitter keeps it from looking
+     * stamped.
+     *
+     * AND THE RADIUS IS SOLVED FOR THE DEPTH IT SETTLES AT. A perspective
+     * divides, so the same world radius at two depths lands at two different
+     * radii on the glass — the ring was a ring in the room and a smear on the
+     * screen. Dividing the radius by the tile's own scale puts them all on
+     * the same circle where the reader is, while they stay at their own
+     * distances in the room. Half go round the other way, which is what
+     * stops it reading as a carousel. */
+    t.park = -DEPTH * (0.06 + rnd() * 0.5);
+    const kPark = PERSP / (PERSP - t.park);
+    t.ang = ((t.slot || 0) / COUNT) * 6.283 + (rnd() - 0.5) * 0.34;
+    t.radX = ((0.3 + rnd() * 0.1) * vw) / kPark;
+    t.radY = ((0.29 + rnd() * 0.1) * vh) / kPark;
+    t.dir = rnd() < 0.5 ? -1 : 1;
     /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
@@ -5811,7 +5831,7 @@
       const el = document.createElement('div');
       el.className = 'avfly';
       field.appendChild(el);
-      const t = { el };
+      const t = { el, slot: i };
       dress(t);
       /* WHEN IT SETS OFF, not where it is standing. At the moment the paper
          lifts and the line is there, the frame holds the line and nothing
@@ -5822,7 +5842,6 @@
          Packed into half, the set stayed a clump for ever: it wraps, so the
          gap it left came round again and again — a crowded frame, then a thin
          one, then a crowded one. */
-      t.slot = i;
       t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
       tiles.push(t);
     }
@@ -5860,7 +5879,9 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, last = 0;
+  let travel = 0, last = 0, lastTurn = -1;
+  const h2 = sec.querySelector('h2');
+  const scrim = sec.querySelector('.avscrim');
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -5873,6 +5894,20 @@
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
     last = now;
     const r = run.getBoundingClientRect();
+    /* HOW FAR DOWN THE SECTION WE ARE, and with it the turn: the walk gives
+     * way to a ring over the middle third, the sentence goes with it, and
+     * what is left is the drawings going round. The line has been read by
+     * then — holding it while the board takes over would be two things
+     * asking for the same attention. */
+    const span0 = Math.max(1, r.height - innerHeight);
+    const prog = Math.max(0, Math.min(1, -r.top / span0));
+    const tr = Math.max(0, Math.min(1, (prog - 0.34) / 0.3));
+    const turn = tr * tr * (3 - 2 * tr);
+    if (turn !== lastTurn) {
+      lastTurn = turn;
+      if (h2) h2.style.opacity = (1 - turn).toFixed(3);
+      if (scrim) scrim.style.opacity = (1 - turn * 0.9).toFixed(3);
+    }
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
@@ -5918,12 +5953,24 @@
          another on «communicating». The projection is a division — the same
          one the browser does — so the tile's place on the screen is known,
          and it is faded by its distance from the band the type occupies. */
-      const k = PERSP / (PERSP - z);
+      /* Where it stands: its own place on the walk, eased into its place in
+         the ring. The ring turns on the clock, not on the scroll — the scroll
+         has already said what it had to say by then. */
+      const a = t.ang + (now / 1000) * 0.26 * t.dir;
+      const rx0 = Math.cos(a) * t.radX;
+      const ry0 = Math.sin(a) * t.radY;
+      const X = t.x + (rx0 - t.x) * turn;
+      const Y = t.y + (ry0 - t.y) * turn;
+      const Z = z + (t.park - z) * turn;
+      const k = PERSP / (PERSP - Z);
       const band = Math.max(
-        Math.abs(t.x * k) / (innerWidth * 0.32),
-        Math.abs(t.y * k) / (innerHeight * 0.24),
+        Math.abs(X * k) / (innerWidth * 0.32),
+        Math.abs(Y * k) / (innerHeight * 0.24),
       );
-      const clear = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
+      /* The band is there to keep the words readable. Once they have gone
+         there is nothing to keep clear of, so it lets go with them. */
+      const clear0 = Math.min(1, Math.max(0, (band - 0.72) / 0.34));
+      const clear = clear0 + (1 - clear0) * turn;
       /* NOTHING FADES OUT AT THE END. A drawing that thins as it comes past
          reads as a thing being switched off; it should simply go by the edge
          of the window, and it does — each tile is turned round at the depth
@@ -5976,8 +6023,8 @@
       const hx = t.rx + mvy * t.hand * 1.1;
       const hy = t.ry + mvx * t.hand * 1.4;
       t.el.style.transform =
-        'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
-        z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
+        'translate3d(' + X.toFixed(1) + 'px,' + Y.toFixed(1) + 'px,' +
+        Z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
         hy.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
     }
   };
