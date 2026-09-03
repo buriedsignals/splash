@@ -2069,6 +2069,51 @@
 </style>
 </head>
 <body>
+<script>
+/* ===================================================================
+   THE PAGE IS HELD BEFORE ANYTHING ELSE EXISTS.
+
+   The real lock is installed by the main script, at the far end of the
+   body — which is thousands of lines and one WebGL module after the
+   first paint. Everything in between was scrollable, and it did not
+   merely scroll: the lock, arriving late, anchors the page WHERE IT
+   FINDS IT, so a flick during the loading screen pinned the page half
+   a chapter down and set the crossing running behind the screen. A
+   wheel at 60ms put it at 900, and five seconds later it was at 10989
+   with the hero never played.
+
+   So the hold starts here, inline, before the loading screen is even
+   parsed: the page is put at the top, kept there, and the gesture is
+   swallowed. The real lock supersedes it the moment it is installed —
+   `lock()` calls the release itself, so the two can never both be on.
+
+   And it lets go on its own after twelve seconds. If the main script
+   fails to load at all, the page must still be readable; an
+   unscrollable page is a worse failure than an unchoreographed one.
+   =================================================================== */
+(function () {
+  try { history.scrollRestoration = 'manual'; } catch (e) {}
+  if (scrollY) scrollTo(0, 0);
+  var KEY = /^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/;
+  var eat = function (e) { e.preventDefault(); };
+  var key = function (e) { if (KEY.test(e.key)) e.preventDefault(); };
+  var snap = function () { if (scrollY) scrollTo(0, 0); };
+  addEventListener('wheel', eat, { passive: false });
+  addEventListener('touchmove', eat, { passive: false });
+  addEventListener('keydown', key, { passive: false });
+  addEventListener('scroll', snap, { passive: true });
+  var off = function () {
+    if (!window.__preLock) return;
+    window.__preLock = null;
+    removeEventListener('wheel', eat, { passive: false });
+    removeEventListener('touchmove', eat, { passive: false });
+    removeEventListener('keydown', key, { passive: false });
+    removeEventListener('scroll', snap);
+  };
+  window.__preLock = off;
+  setTimeout(off, 12000);
+})();
+</script>
 <div id="boot" role="status" aria-label="Loading">
   <div class="bt-grp"><svg class="bt-mark" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span class="bt-nm">Splash</span></div>
 </div>
@@ -2890,6 +2935,9 @@
   let locked = false;
   const lock = (on) => {
     if (on === locked) return;
+    /* Et il relève la tenue d'avant le chargement : deux verrous posés en même
+       temps, c'est l'ancre de l'un contre le rappel à zéro de l'autre. */
+    if (on && window.__preLock) window.__preLock();
     locked = on;
     const f = on ? 'addEventListener' : 'removeEventListener';
     window[f]('wheel', eat, { passive: false });
@@ -3052,6 +3100,11 @@
   };
   const leave = async () => {
     if (!armed || running || !chapter) return;
+    /* ET PAS TANT QUE L'ÉCRAN DE CHARGEMENT EST LÀ. Un geste fait devant une
+       page qui charge n'est pas une décision de traverser : la traversée se
+       jouait derrière l'écran, et le lecteur arrivait dans un chapitre sans
+       avoir vu le hero. */
+    if (document.getElementById('boot')) return;
     armed = false; running = true;
 
     window.__heroHold = 1;
