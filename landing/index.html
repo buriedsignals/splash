@@ -429,8 +429,19 @@
      donneraient la main au dernier écrit. */
   .chapter{position:relative;background:var(--ink);color:var(--paper);
            padding:0 var(--gut)}
-  .csrun{--n:4;max-width:var(--max);margin:0 auto;
-         height:calc(var(--n) * 74vh + 100vh)}
+  /* ONE RUN FOR THE WHOLE CHAPTER. The answer used to be a section of its
+     own ahead of this one, so its pane rode out of the frame — taking the
+     board with it — before «Four reasons» could come in, and there was a
+     screen of nothing between the two lines. They are one section now:
+     `--a1` is the scroll the first line has to itself, the four cards keep
+     the run they always had, and the board stands behind all of it.
+
+     It sets its own gutter, because the section cannot: the board has to
+     reach the edges of the window and `.answer` takes the chapter's padding
+     off for it. */
+  .csrun{--n:4;--a1:70;max-width:var(--max);margin:0 auto;padding:0 var(--gut);
+         position:relative;z-index:1;
+         height:calc(var(--a1) * 1vh + var(--n) * 74vh + 100vh)}
 
   /* ===================================================================
      THE ANSWER, ON ITS OWN SCREEN.
@@ -459,15 +470,25 @@
      over half a screen for the exchange: the line goes out on that scroll
      and «Four reasons» comes up straight behind it. The drawings do not
      move for it — they are the ground both lines stand on. */
-  .avrun{height:170vh}
-  .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
+  /* THE BOARD IS THE GROUND OF THE CHAPTER, NOT OF ONE SCREEN OF IT. A
+     holder laid over the whole section — absolute, so it takes no room in
+     the flow — and inside it a pane that sticks to the top of the window.
+     The pane is therefore pinned from the first line to the last card: the
+     drawings stand behind the answer, behind «Four reasons», and behind the
+     hand, and nothing about them moves when the reader scrolls. */
+  .avhold{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .avstage{position:sticky;top:0;height:100vh;overflow:hidden;
            perspective:1000px;perspective-origin:50% 50%}
-  .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
-             transform:translateY(-50%);margin:0;z-index:2;
-             font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
-             text-align:center;letter-spacing:-.045em}
-  .answer h2>span,.answer h2>em{display:block}
-  .answer h2>em{font-style:normal;color:var(--amber)}
+  /* THE LINE IS IN THE PANE, not in the column: it is set to the window the
+     way the hero's line is, and the column below it is capped and guttered.
+     It is named, not reached for as «the h2 of the answer» — there are two
+     headings in this section now, and the other one is «Four reasons». */
+  .avline{position:absolute;left:var(--gut);right:var(--gut);top:57%;
+          transform:translateY(-50%);margin:0;z-index:2;
+          font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
+          text-align:center;letter-spacing:-.045em}
+  .avline>span,.avline>em{display:block}
+  .avline>em{font-style:normal;color:var(--amber)}
 
   /* ===================================================================
      THE DRAWINGS COME STRAIGHT AT YOU.
@@ -2097,18 +2118,21 @@
      break and no field of plates, because those were choreography for
      the tiles. What is left is one screen of ground, and the paper
      leaving downward is how the reader is brought onto it. -->
-<!-- ============ THE ANSWER — one screen, one line ============ -->
-<section class="chapter answer" data-ground="#14141c">
-  <div class="avrun">
-    <div class="avstick">
+<!-- ====== THE CHAPTER — one board, two lines, four cards ======
+     The answer and the case used to be two sections. Two sections means two
+     pinned panes, and a pane leaves the frame before the next one arrives:
+     the drawings rode out with the first line and «Four reasons» came up
+     over nothing. One section, one board standing behind the whole of it. -->
+<section class="chapter answer cards" data-ground="#14141c">
+  <!-- The board, and the first line standing in it. Pinned for the whole
+       chapter, so what follows is read over the same drawings. -->
+  <div class="avhold">
+    <div class="avstage">
       <div class="avfield" aria-hidden="true"></div>
       <div class="avscrim" aria-hidden="true"></div>
-      <h2><span>We should be</span><em>communicating visually</em></h2>
+      <h2 class="avline"><span>We should be</span><em>communicating visually</em></h2>
     </div>
   </div>
-</section>
-
-<section class="chapter cards" data-ground="#14141c">
   <div class="csrun">
     <div class="csstick">
       <div class="csintro">
@@ -3583,10 +3607,36 @@
        * couleur, c'est un objet qu'on suit. */
       const FLOOD_DUR = 0.95;   // secondes, la même mesure que les autres passages
       let flood = 0, wasWide = false, floodDirty = false, radPx = 0, lastT = 0;
+      /* ACT ONE BELONGS TO THE FIRST LINE. The run carries it at the front —
+       * `--a1` screens of scroll before the first card is dealt — and it is
+       * read off the stylesheet rather than written twice, so the height of
+       * the section and the length of the act cannot drift apart.
+       *
+       * In that act one line leaves and the other arrives, IN THAT ORDER.
+       * Crossed over each other they would be two sentences printed on top of
+       * one another for half a screen; the answer goes out first, and «Four
+       * reasons» comes up into the frame it leaves. The board behind them does
+       * not move for either. */
+      const line = document.querySelector('.avline');
+      const intro = run.querySelector('.csintro');
+      let a1 = 0, lineOp = -1, introOp = -1;
+      const gaugeAct = () => {
+        const v = parseFloat(getComputedStyle(run).getPropertyValue('--a1'));
+        a1 = (v > 0 ? v : 70) * innerHeight / 100;
+      };
       const readProg = () => {
         const r = run.getBoundingClientRect();
         const span = Math.max(1, r.height - innerHeight);
-        prog = cl(-r.top / span);
+        const pr = cl(-r.top / span);
+        const act = Math.min(0.9, a1 / span);
+        const u = cl(pr / act);
+        const lo = 1 - cl((u - 0.04) / 0.48);
+        const ii = cl((u - 0.56) / 0.36);
+        if (lo !== lineOp) { lineOp = lo; if (line) line.style.opacity = lo.toFixed(3); }
+        if (ii !== introOp) { introOp = ii; if (intro) intro.style.opacity = ii.toFixed(3); }
+        /* And the hand is dealt over what is left of the run, so the four
+         * cards keep exactly the pacing they had as a section of their own. */
+        prog = cl((pr - act) / (1 - act));
       };
       addEventListener('pointermove', (e) => {
         tx = (e.clientX / Math.max(1, innerWidth)) * 2 - 1;
@@ -3796,13 +3846,13 @@
       };
       const wake = () => { if (live && !raf) raf = requestAnimationFrame(frame); };
       addEventListener('scroll', () => { readProg(); }, { passive: true });
-      addEventListener('resize', () => { readProg(); }, { passive: true });
+      addEventListener('resize', () => { gaugeAct(); readProg(); }, { passive: true });
       if (typeof IntersectionObserver === 'function') {
         new IntersectionObserver((es) => {
           for (const e of es) { live = e.isIntersecting; readProg(); wake(); }
         }, { threshold: 0 }).observe(run);
       } else { live = true; wake(); }
-      readProg(); live = true; wake();
+      gaugeAct(); readProg(); live = true; wake();
     }
   }
 
@@ -5615,9 +5665,8 @@
 (() => {
   const sec = document.querySelector('.answer');
   if (!sec) return;
-  const run = sec.querySelector('.avrun');
   const field = sec.querySelector('.avfield');
-  if (!run || !field) return;
+  if (!field) return;
   const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   const COUNT = 28;
@@ -5874,9 +5923,7 @@
       { p: p, q: q, tone: t.tone, vals: vals });
   };
   let mvx = 0, mvy = 0, tvx = 0, tvy = 0, raf = 0, live = false;
-  let travel = 0, auto = 0, last = 0, lastFade = -1;
-  const h2 = sec.querySelector('h2');
-  const scrim = sec.querySelector('.avscrim');
+  let travel = 0, auto = 0, last = 0;
 
   const frame = (now) => {
     if (!live) { raf = 0; last = 0; return; }
@@ -5888,7 +5935,7 @@
      * thing it was already doing: carry the page. */
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
     last = now;
-    const r = run.getBoundingClientRect();
+    const r = sec.getBoundingClientRect();
     /* Above the section, nothing has set off yet: coming back to it plays
      * the arrival again rather than dropping the reader into the middle of a
      * flight that has been running without them. */
@@ -5902,28 +5949,20 @@
      * Above the section nothing has set off yet, and the queue is dealt
      * again: coming back plays the arrival rather than dropping the reader
      * into a room that filled without them. */
-    const spanRun = Math.max(1, r.height - innerHeight);
-    const prog = Math.max(0, Math.min(1, -r.top / spanRun));
     if (r.top > 0) {
       if (auto !== 0) { auto = 0; restage(); }
     } else if (!reduced && auto < SPAN) {
       auto = Math.min(SPAN, auto + dt * RATE);
     }
-    /* AND THE SCROLL DOES NOT MOVE THEM. It has one job on this screen: to
-       take the line off and put «Four reasons» in its place. Walked forward
-       under that exchange the drawings became a third event, and the two
-       lines were read across a moving ground; they are the ground, so they
-       hold still while it happens. */
-    travel = auto;
-    /* The line goes out on the scroll, and it is gone before the pane
-       releases — so the section hands over to «Four reasons» rather than
-       scrolling away from it. */
-    const fade = Math.max(0, Math.min(1, (prog - 0.18) / 0.62));
-    if (fade !== lastFade) {
-      lastFade = fade;
-      if (h2) h2.style.opacity = (1 - fade).toFixed(3);
-      if (scrim) scrim.style.opacity = (1 - fade).toFixed(3);
-    }
+    /* AND THEN THE SCROLL WALKS THROUGH THEM. The board is the ground of the
+       whole chapter now, not of one screen of it, so the walk is spread over
+       the whole run — two and a half depths from the first line to the last
+       card, where it used to be the same two and a half over half a screen.
+       Same constant, five times the run: a room gone through at reading
+       pace rather than a board flying past. */
+    const spanRun = Math.max(1, r.height - innerHeight);
+    const prog = Math.max(0, Math.min(1, -r.top / spanRun));
+    travel = auto + prog * SPAN * 2.4;
     mvx += (tvx - mvx) * 0.06;
     mvy += (tvy - mvy) * 0.06;
     /* The hand leans the depth rather than sliding it: two degrees of yaw
