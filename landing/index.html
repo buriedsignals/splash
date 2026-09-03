@@ -440,70 +440,53 @@
      always had — so what the paper lifts off is a sentence and nothing
      else. The cards keep their own screenfuls underneath.
 
-     It is one viewport tall and nothing in it is pinned, because there is
-     nothing to pin: the line is read once and scrolled past. */
+     The line is pinned for the length of the section, because the drawings
+     arrive AROUND IT: the sentence is the thing they are about, so it is the
+     thing they come towards. */
   /* AND IT IS SET LIKE THE HERO'S OWN LINE — same face, same measure, same
      optical centre at 57% of the frame, second line in amber. The hero used to
      turn its headline over to this sentence before the paper lifted; the
      sentence has a screen of its own now, so the turn is gone and the swap
      happens BEHIND the paper: one line leaves with the webs, the other is
      already standing exactly where the first one stood. */
-  .answer{height:100vh;height:100dvh;position:relative}
+  .answer{position:relative}
+  .avrun{height:340vh}
+  .avstick{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;
+           perspective:900px;perspective-origin:50% 50%}
   .answer h2{position:absolute;left:var(--gut);right:var(--gut);top:57%;
-             transform:translateY(-50%);margin:0;
+             transform:translateY(-50%);margin:0;z-index:3;
              font-size:clamp(44px,min(10.2vw,17vh),204px);line-height:.86;
              text-align:center;letter-spacing:-.045em}
   .answer h2>span,.answer h2>em{display:block}
   .answer h2>em{font-style:normal;color:var(--amber)}
 
   /* ===================================================================
-     THE FIELD — an endless board of charts and maps.
+     THE DRAWINGS COME TOWARDS YOU.
 
-     The answer says we should be communicating visually; what follows is
-     the thing itself, laid out flat and walked across. A plane of drawings
-     on the ink, moved BY THE SCROLL and by nothing else — no drag, no
-     inertia, no autoplay — with the pointer adding a lean, deeper on the
-     tiles that read as nearer.
+     Charts and maps standing in the depth behind the sentence, and the
+     scroll walks the camera INTO them: each tile grows out of the dark,
+     passes the frame and is gone, and the one that leaves is put back at
+     the far end — so the flight never runs out of board.
 
-     It never ends because it wraps: every tile is placed modulo the board,
-     so one that leaves by the top edge comes back at the bottom. Twenty
-     tiles are therefore an infinite canvas, and twenty is what the frame
-     can hold at once.
+     They stand on a RING, not on a plane. Filling the middle would put a
+     drawing over the sentence every second, and the sentence is what they
+     are about; on a ring they come past its shoulders and leave the words
+     alone. The pointer LEANS the depth rather than sliding it: three
+     degrees of yaw reads as looking around a room, where the same amount as
+     a slide reads as a fault.
+     =================================================================== */
+  .avfield{position:absolute;inset:0;z-index:1;transform-style:preserve-3d;
+           will-change:transform;pointer-events:none}
+  .avtile{position:absolute;left:50%;top:50%;margin:0;
+          border-radius:var(--rad);background:var(--paper);overflow:hidden;
+          will-change:transform,opacity;backface-visibility:hidden;
+          box-shadow:0 40px 90px -38px rgba(0,0,0,.8)}
+  /* The words keep their contrast whatever passes behind them. */
+  .avscrim{position:absolute;inset:0;z-index:2;pointer-events:none;
+           background:radial-gradient(56% 26% at 50% 57%,
+             rgba(20,20,28,.9) 0%, rgba(20,20,28,.78) 46%,
+             rgba(20,20,28,.26) 78%, rgba(20,20,28,0) 100%)}
 
-     The drawings are the reel's own twelve — six charts, six maps — asked
-     for by name from hero.js, finished rather than being made. */
-  .field{position:relative;height:320vh;background:var(--ink)}
-  .fstage{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden}
-  /* The board sits behind everything the section says over it. */
-  .fplane{position:absolute;inset:0;will-change:transform}
-  .ftile{position:absolute;left:0;top:0;border-radius:var(--rad);
-         background:var(--paper);overflow:hidden;will-change:transform;
-         box-shadow:0 30px 70px -34px rgba(0,0,0,.72);
-         backface-visibility:hidden}
-  /* The drawing fills its tile and is not interactive: this is a surface to
-     look across, not a set of widgets to poke. */
-  .ftile>div{pointer-events:none}
-  /* A LINE OVER THE BOARD, and the board dims under it — otherwise the words
-     are read against whatever tile happens to pass behind them. */
-  /* THE SCRIM IS A BAND, NOT A FOG. Spread over the whole stage it dimmed
-     every drawing to a grey ghost — which is the one thing this section
-     cannot afford, since the drawings ARE the argument. It covers the two
-     lines of type and lets go within a screen-width of them. */
-  .fveil{position:absolute;inset:0;pointer-events:none;
-         background:radial-gradient(58% 26% at 50% 50%,
-           rgba(20,20,28,.94) 0%, rgba(20,20,28,.86) 42%,
-           rgba(20,20,28,.34) 76%, rgba(20,20,28,0) 100%)}
-  .fsay{position:absolute;left:var(--gut);right:var(--gut);top:50%;
-        transform:translateY(-50%);text-align:center;pointer-events:none}
-  /* The eyebrow reads at half opacity on ink and vanishes on a tile that
-     happens to pass under it. The line carries the section on its own. */
-  .fsay .cseye{display:none}
-  .fsay p{margin:0 auto;max-width:34ch;font-family:var(--D);font-weight:300;
-          letter-spacing:-.02em;line-height:1.12;
-          font-size:clamp(20px,2.4vw,38px);color:var(--paper);text-wrap:balance}
-  @media (prefers-reduced-motion:reduce){
-    .fplane,.ftile{transition:none}
-  }
   /* LE CHAPÔ EST AU MILIEU DE LA FENÊTRE ET IL Y RESTE. Posé dans le flux
      au-dessus du jeu il montait avec lui, et la carte n'avait alors rien à
      passer devant : il est au centre du panneau collé, et les cartes lui
@@ -2086,17 +2069,11 @@
      leaving downward is how the reader is brought onto it. -->
 <!-- ============ THE ANSWER — one screen, one line ============ -->
 <section class="chapter answer" data-ground="#14141c">
-  <h2><span>We should be</span><em>communicating visually</em></h2>
-</section>
-
-<!-- ============ THE FIELD — charts and maps, walked across ============ -->
-<section class="field" id="field" data-ground="#14141c">
-  <div class="fstage">
-    <div class="fplane" aria-hidden="true"></div>
-    <div class="fveil" aria-hidden="true"></div>
-    <div class="fsay">
-      <div class="cseye"><i></i>What it draws</div>
-      <p>Charts and maps, made at the desk from the reporting already done.</p>
+  <div class="avrun">
+    <div class="avstick">
+      <div class="avfield" aria-hidden="true"></div>
+      <div class="avscrim" aria-hidden="true"></div>
+      <h2><span>We should be</span><em>communicating visually</em></h2>
     </div>
   </div>
 </section>
@@ -5592,70 +5569,70 @@
 
 <script>
 /* ===================================================================
-   THE FIELD. A board of drawings, moved by the scroll and leaned by the
-   pointer, wrapping so it never runs out.
+   THE FLIGHT. Charts and maps standing in the depth behind the answer;
+   the scroll walks the camera into them.
 
-   Everything here is a transform. Nothing reflows after the tiles are
-   built, and the loop only runs while the section is on screen.
+   One transform per tile per frame. Nothing reflows after the tiles are
+   built, and the loop runs only while the section holds the frame.
    =================================================================== */
 (() => {
-  const sec = document.getElementById('field');
+  const sec = document.querySelector('.answer');
   if (!sec) return;
-  const plane = sec.querySelector('.fplane');
-  if (!plane) return;
+  const run = sec.querySelector('.avrun');
+  const field = sec.querySelector('.avfield');
+  if (!run || !field) return;
   const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  /* The board, in cells. Wide enough that a full turn of the wrap always
-     has a tile ready at every edge: the pitch times the count has to clear
-     the frame plus one pitch, or a gap crosses the screen. */
-  const COLS = 5, ROWS = 4;
+  const COUNT = 22;
+  const DEPTH = 2600;   // how far back the board goes, in pixels of z
+  const PAST = 420;     // and how far past the frame a tile flies before it
+                        // is put back at the far end
+  const SPAN = DEPTH + PAST;
+  const LAPS = 2.4;     // turns of the whole depth over the section
   const tiles = [];
-  let PX = 0, PY = 0, FW = 0, FH = 0;
 
-  /* Which drawing goes where. The twelve are dealt round rather than picked
-     at random, so no two neighbours are the same chart, and a tile only ever
-     gets a drawing that fits its shape — hero.js knows which. */
   const build = () => {
     const kinds = (window.__artKinds && window.__artKinds()) || [];
     if (!kinds.length) return false;
-    plane.textContent = '';
+    field.textContent = '';
     tiles.length = 0;
     const vw = innerWidth, vh = innerHeight;
-    const w0 = Math.round(Math.max(190, Math.min(330, vw * 0.22)));
-    PX = Math.round(w0 * 1.34);
-    PY = Math.round(w0 * 1.16);
-    FW = PX * COLS;
-    FH = PY * ROWS;
-    const rnd = (() => { let a = 0x9e3779b9; return () => {
-      a ^= a << 13; a ^= a >>> 17; a ^= a << 5; return ((a >>> 0) % 1e6) / 1e6; };
-    })();
+    const w0 = Math.round(Math.max(150, Math.min(300, vw * 0.2)));
+    let a = 0x9e3779b9;
+    const rnd = () => {
+      a ^= a << 13; a ^= a >>> 17; a ^= a << 5;
+      return ((a >>> 0) % 1e6) / 1e6;
+    };
     let k = 0;
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        /* Not a grid, a scatter ON a grid: each tile keeps its cell — that is
-           what makes the wrap seamless — and is nudged inside it. */
-        const w = Math.round(w0 * (0.82 + rnd() * 0.5));
-        const h = Math.round(w * (0.62 + rnd() * 0.34));
-        let kind = kinds[k % kinds.length], guard = 0;
-        while (window.__artFits && !window.__artFits(kind, w / h) && guard++ < kinds.length) {
-          k++; kind = kinds[k % kinds.length];
-        }
-        k++;
-        const el = document.createElement('div');
-        el.className = 'ftile';
-        el.style.width = w + 'px';
-        el.style.height = h + 'px';
-        el.innerHTML = window.__artTile(kind, w, h, (r * COLS + c) * 7919 + 13);
-        plane.appendChild(el);
-        tiles.push({
-          el,
-          bx: c * PX + Math.round((rnd() - 0.5) * PX * 0.3),
-          by: r * PY + Math.round((rnd() - 0.5) * PY * 0.3),
-          /* How near it reads, and therefore how far it leans. */
-          d: 0.45 + rnd() * 0.85,
-          x: 0, y: 0,
-        });
+    for (let i = 0; i < COUNT; i++) {
+      const w = Math.round(w0 * (0.8 + rnd() * 0.55));
+      const h = Math.round(w * (0.6 + rnd() * 0.36));
+      let kind = kinds[k % kinds.length], guard = 0;
+      while (window.__artFits && !window.__artFits(kind, w / h) && guard++ < kinds.length) {
+        k++; kind = kinds[k % kinds.length];
       }
+      k++;
+      /* ON A RING. The angle is spread evenly and jittered, the radius kept
+         off the middle: a drawing dead ahead would sit on the sentence for
+         the whole of its approach. */
+      const ang = (i / COUNT) * Math.PI * 2 + rnd() * 0.5;
+      const rad = 0.62 + rnd() * 0.72;
+      const el = document.createElement('div');
+      el.className = 'avtile';
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.style.marginLeft = (-w / 2) + 'px';
+      el.style.marginTop = (-h / 2) + 'px';
+      el.innerHTML = window.__artTile(kind, w, h, i * 7919 + 13);
+      field.appendChild(el);
+      tiles.push({
+        el,
+        x: Math.cos(ang) * rad * vw * 0.44,
+        y: Math.sin(ang) * rad * vh * 0.5,
+        /* Its own place in the queue, so they arrive spread out rather than
+           in one wave. */
+        z: (i / COUNT) * SPAN + rnd() * (SPAN / COUNT),
+      });
     }
     return true;
   };
@@ -5666,20 +5643,29 @@
   const frame = () => {
     if (!live) { raf = 0; return; }
     raf = requestAnimationFrame(frame);
-    /* Where the scroll has got to through the section, nought to one. */
-    const r = sec.getBoundingClientRect();
+    const r = run.getBoundingClientRect();
     const span = Math.max(1, r.height - innerHeight);
     const p = Math.max(0, Math.min(1, -r.top / span));
-    /* The walk: down the page is up and across the board. */
-    const ox = p * FW * 1.15;
-    const oy = p * FH * 1.9;
-    px += (tx - px) * 0.07;
-    py += (ty - py) * 0.07;
+    const travel = p * SPAN * LAPS;
+    px += (tx - px) * 0.06;
+    py += (ty - py) * 0.06;
+    /* The lean is on the DEPTH, not on the tiles: turning the field is what
+       makes it read as a room you are looking around. */
+    field.style.transform =
+      'rotateY(' + (px * 3.2).toFixed(2) + 'deg) rotateX(' +
+      (-py * 2.2).toFixed(2) + 'deg) translate3d(' +
+      (px * -26).toFixed(1) + 'px,' + (py * -18).toFixed(1) + 'px,0)';
     for (const t of tiles) {
-      const x = wrap(t.bx - ox, FW) - PX + px * 30 * t.d;
-      const y = wrap(t.by - oy, FH) - PY + py * 20 * t.d;
+      /* Far to near: -DEPTH is the back of the board, +PAST is behind you. */
+      const z = wrap(t.z + travel, SPAN) - DEPTH;
+      /* It fades up out of the dark and fades out as it goes by, so neither
+         end of the loop is a pop. */
+      const inK = Math.min(1, (z + DEPTH) / 520);
+      const outK = z > 0 ? Math.max(0, 1 - z / PAST) : 1;
+      t.el.style.opacity = (inK * outK).toFixed(3);
       t.el.style.transform =
-        'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)';
+        'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
+        z.toFixed(1) + 'px)';
     }
   };
 
@@ -5689,7 +5675,6 @@
     ty = (e.clientY / Math.max(1, innerHeight)) * 2 - 1;
   }, { passive: true });
 
-  /* The loop runs while the board is in the frame and not one frame longer. */
   const io = new IntersectionObserver((es) => {
     for (const e of es) {
       live = e.isIntersecting;
@@ -5697,7 +5682,6 @@
     }
   }, { rootMargin: '20% 0px' });
 
-  /* The drawings come from hero.js, which is ready when the reel is. */
   const start = () => {
     if (!build()) return false;
     io.observe(sec);
@@ -5713,9 +5697,10 @@
   let rt = 0;
   addEventListener('resize', () => {
     clearTimeout(rt);
-    rt = setTimeout(() => { build(); }, 220);
+    rt = setTimeout(build, 220);
   }, { passive: true });
 })();
 </script>
+
 </body>
 </html>
