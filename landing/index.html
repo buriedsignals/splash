@@ -3647,23 +3647,22 @@
         const pr = cl(-r.top / span);
         const act = Math.min(0.9, a1 / span);
         const u = cl(pr / act);
-        /* THE SECOND CUE IS THE END OF THE ACT, not a mark inside it. Set
-         * halfway, the sentence had gone and the reader still had a third of a
-         * screen of nothing to scroll before the first card would stir. The
-         * act stops where «Four reasons» stops, and the hand starts there. */
-        stage = u < 0.12 ? 0 : u < 1 ? 1 : 2;
+        /* ONE CUE IS HELD, THE SECOND IS ONLY A THRESHOLD. The chapter takes
+         * the page for the first exchange — the answer out, «Four reasons» in
+         * — because a single flick of the wheel would otherwise carry the
+         * reader through both of them in one inertia. Once the sentence is
+         * standing the page is his again: he leaves it when he likes, and the
+         * going of it plays itself the moment he crosses the mark.
+         *
+         * The mark sits a little before the end of the act, so the sentence is
+         * on its way out before the first card stirs rather than the two
+         * starting together. */
+        stage = u < 0.12 ? 0 : u < 0.72 ? 1 : 2;
         /* AND IT SAYS WHERE ITS CUES ARE. The page holds the reader at each of
          * them while the sentence plays, and it cannot work the marks out for
          * itself without writing this act's length a second time. */
         const top = r.top + scrollY;
-        window.__csBeats = { y1: Math.round(top + a1 * 0.12),
-                             y2: Math.round(top + a1) };
-        /* ET OÙ LA PREMIÈRE CARTE A FINI D'ARRIVER. La phrase qui s'en va est
-         * ce qui appelle la carte ; une carte qui n'arrive que si le lecteur
-         * continue de tourner la molette est une carte qu'il peut manquer. Le
-         * chapitre porte donc la page jusque-là, dans le même temps. */
-        const pc = act + (0.78 / RATE) * (1 - act);
-        window.__csCardY = Math.round(top + pc * span);
+        window.__csBeats = { y1: Math.round(top + a1 * 0.12) };
         /* And the hand is dealt over what is left of the run, so the four
          * cards keep exactly the pacing they had as a section of their own. */
         prog = cl((pr - act) / (1 - act));
@@ -3947,22 +3946,27 @@
    * alors aucun effet. Elle repose sur la remise en place — ce qui dépasse est
    * défait dans la même frame, avant peinture. Ça marche quelle que soit
    * l'origine du déplacement, et sans écouteur non passif sur toute la page. */
-  /* ---- LES TEMPS DU CHAPITRE --------------------------------------------
-   * Deux phrases, chacune avec son animation. Le lecteur les APPELLE, il ne
-   * les joue pas : au moment où il franchit un repère, la page lui est prise,
-   * l'échange se joue à SA vitesse à elle, et elle lui est rendue de l'autre
-   * côté. Sans ça, un coup de molette un peu franc traverse les deux repères
-   * dans la même inertie et il ne voit ni l'une ni l'autre partir.
+  /* ---- LE TEMPS DU CHAPITRE ---------------------------------------------
+   * UN SEUL repère est tenu : celui où la réponse s'en va et où «Four reasons»
+   * prend sa place. Le lecteur l'APPELLE, il ne le joue pas — la page lui est
+   * prise, l'échange se joue à SA vitesse à elle, et elle lui est rendue de
+   * l'autre côté. Sans ça, un coup de molette un peu franc traverse les deux
+   * phrases dans la même inertie et il n'en voit aucune.
    *
-   * Les repères sont des bornes, comme le plancher et le plafond du chapitre :
-   * on ne passe pas outre, dans un sens comme dans l'autre. Remonter rejoue
-   * donc l'échange à l'envers, ce qui est la seule façon de retrouver la page
-   * dans l'état où on l'a laissée.
+   * Une fois la phrase debout, la page est à lui : il la quitte quand il veut,
+   * et sa sortie se joue toute seule au moment où il franchit la marque. Tenir
+   * ce second passage aussi, c'était lui reprendre la main deux fois de suite
+   * dans le même écran.
+   *
+   * Le repère est une borne, comme le plancher et le plafond du chapitre : on
+   * ne passe pas outre, dans un sens comme dans l'autre. Remonter rejoue donc
+   * l'échange à l'envers, ce qui est la seule façon de retrouver la page dans
+   * l'état où on l'a laissée.
    *
    * L'attente porte sur l'ÉTAT du module, pas sur une durée : c'est lui qui
    * mène les deux fondus, et un délai écrit ici se décalerait dès qu'on
    * retouche un réglage là-bas. */
-  let beatAt = 0;              // combien de temps du chapitre ont été joués
+  let beatAt = 0;              // le premier échange a-t-il été joué ?
   const beatTo = async (n, y) => {
     if (running) return;
     running = true; freeBack = false; trigger = () => {};
@@ -3972,12 +3976,6 @@
     await until(() => window.__csSettled !== 0, 3000);  // et il a fini
     /* `!== 0` et non `=== 1` : si le module n'a pas tourné du tout, le drapeau
        n'existe pas et la page ne doit pas rester tenue trois secondes. */
-    /* PUIS LA PREMIÈRE CARTE, DANS LE MÊME TEMPS. Le second repère fait partir
-       le chapô ; ce qui prend sa place, c'est la carte, et le lecteur doit la
-       voir arriver — pas la découvrir en scrollant, ou ne pas la découvrir du
-       tout. La page est portée jusqu'à l'endroit où elle a fini d'arriver,
-       l'un APRÈS l'autre et jamais en même temps, comme partout ailleurs. */
-    if (n === 2 && window.__csCardY > scrollY) await glide(window.__csCardY, 900);
     lock(false);
     running = false;
   };
@@ -4187,7 +4185,7 @@
        chapitre se relisent sur la position, sinon la borne suivante est celle
        d'un état qu'on n'a pas. */
     const bt = window.__csBeats;
-    if (bt) beatAt = scrollY > bt.y2 ? 2 : scrollY > bt.y1 ? 1 : 0;
+    if (bt) beatAt = scrollY > bt.y1 ? 1 : 0;
     if (!piled) { piled = true; entryK = 0; stack(); }
   };
 
@@ -4420,11 +4418,9 @@
        * plancher, un coup de molette qui remonte de la moitié du chapitre
        * ressortait au hero sans que la phrase soit revenue. */
       const bt = window.__csBeats;
-      if (bt && beatAt > 1 && scrollY < bt.y2 - 2) { scrollTo(0, bt.y2 - 2); beatTo(1, bt.y2 - 2); return; }
       if (bt && beatAt > 0 && scrollY < bt.y1 - 2) { scrollTo(0, bt.y1 - 2); beatTo(0, bt.y1 - 2); return; }
       if (scrollY < firstTop) { scrollTo(0, firstTop); toBack(); return; }
       if (bt && beatAt < 1 && scrollY > bt.y1 + 2) { scrollTo(0, bt.y1 + 2); beatTo(1, bt.y1 + 2); return; }
-      if (bt && beatAt < 2 && scrollY > bt.y2 + 2) { scrollTo(0, bt.y2 + 2); beatTo(2, bt.y2 + 2); return; }
       if (scrollY > exitY) { scrollTo(0, exitY); toExit(); return; }
       return;
     }
