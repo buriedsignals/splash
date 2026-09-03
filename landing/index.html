@@ -439,9 +439,15 @@
      It sets its own gutter, because the section cannot: the board has to
      reach the edges of the window and `.answer` takes the chapter's padding
      off for it. */
+  /* 88vh PAR CARTE, ET C'EST UNE MESURE D'ACCESSIBILITÉ, pas de confort. Un
+     cran de molette vaut 100 px CSS et c'est le geste le plus FIN qu'une
+     souris puisse produire : à 74vh la carte n'était posée et lisible que sur
+     176 px d'un écran de 720 — moins de deux crans. Le lecteur au trackpad ne
+     voyait rien de ce problème, celui à la molette n'a jamais pu lire une
+     carte. */
   .csrun{--n:4;--a1:46;max-width:var(--max);margin:0 auto;padding:0 var(--gut);
          position:relative;z-index:1;
-         height:calc(var(--a1) * 1vh + var(--n) * 74vh + 100vh)}
+         height:calc(var(--a1) * 1vh + var(--n) * 88vh + 100vh)}
 
   /* ===================================================================
      THE ANSWER, ON ITS OWN SCREEN.
@@ -3602,10 +3608,18 @@
       });
 
       const N = cds.length;
-      /* LES DEUX BOUTS DE LA MAIN, résolus et non tâtonnés : la première carte
-       * bouge à zéro, la dernière est encore tenue à un. Elles servent aussi
-       * au chapitre, qui a besoin de savoir OÙ la première a fini d'arriver. */
-      const LEAD = 0.34, RATE = N - 1 + LEAD + 0.78;
+      /* LES TROIS TEMPS D'UNE CARTE, en unités de course, et la part qui va à
+       * la LECTURE plutôt qu'à l'approche. L'approche était plus longue que la
+       * pose — deux tiers du temps de la carte passaient à la regarder venir,
+       * un tiers à la lire. C'est l'inverse qu'il faut : l'arrivée se lit très
+       * bien en moins de distance, la phrase dessus ne se lit pas.
+       *
+       * LEAD est ce qu'il lui reste à parcourir à l'ouverture de sa fenêtre —
+       * la première carte bouge donc dès le premier pixel. Et RATE tombe des
+       * deux bouts : à un, la dernière carte doit commencer à partir, pas être
+       * déjà partie, sinon la crue blanche part avec elle. */
+      const IN = 0.58, HOLD = 0.62, OUT = 0.55, LEAD = 0.34;
+      const RATE = N - 1 + IN + HOLD;
       const sm = (u) => u * u * u * (u * (u * 6 - 15) + 10);
       const cl = (u) => Math.max(0, Math.min(1, u));
       // l'éventail : quatre poses, tenues en main
@@ -3649,7 +3663,7 @@
         return { x: d * sx, dip: Math.abs(d) * (26 + 10 * tight),
                  rz: -d * (10 + 7 * tight), z: -260 - slot * 96 };
       };
-      let prog = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
+      let prog = 0, progT = 0, live = false, tx = 0, ty = 0, raf = 0, shown = -1;
       /* Le point de fuite du plateau est dans la feuille de style, et il change
        * avec la largeur : le lire est la seule façon de ne pas l'écrire deux
        * fois. */
@@ -3727,8 +3741,10 @@
         const top = r.top + scrollY;
         window.__csBeats = { y1: Math.round(top + a1 * 0.12) };
         /* And the hand is dealt over what is left of the run, so the four
-         * cards keep exactly the pacing they had as a section of their own. */
-        prog = cl((pr - act) / (1 - act));
+         * cards keep exactly the pacing they had as a section of their own.
+         * C'est la CIBLE : ce qui est joué la rejoint, il ne s'y téléporte
+         * pas. Voir le lissage dans la frame. */
+        progT = cl((pr - act) / (1 - act));
       };
       /* ONE AT A TIME, NEVER BOTH. Nothing comes up until the other has gone:
        * two sentences dissolving through each other in the same place is a
@@ -3781,6 +3797,28 @@
         const dtv = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0.016;
         lastT = now;
         beats(dtv);
+        /* LE DÉFILEMENT EST AMORTI, ET C'EST LÀ QU'EST L'UNIVERSALITÉ.
+         *
+         * La chorégraphie est menée par la POSITION, donc la même distance
+         * donne le même résultat sur toutes les machines — ça, c'était déjà
+         * vrai. Mais un cran de molette vaut cent pixels d'un coup, et c'est
+         * le geste le PLUS FIN qu'une souris puisse produire : joué tel quel,
+         * le saut est instantané et la carte est ailleurs à la frame suivante.
+         * Un testeur à la souris ne pouvait donc pas ralentir, quoi qu'il
+         * fasse. Amorti, le même cran se déroule sur un tiers de seconde et se
+         * regarde. Le trackpad envoie déjà des deltas plus petits que
+         * l'amortissement : il ne sent rien changer.
+         *
+         * `exp(-dt/τ)` et non un facteur par frame : à 144 Hz un facteur fixe
+         * amortit deux fois plus vite qu'à 72, et le lissage n'a alors pas la
+         * même durée d'une machine à l'autre — ce qui serait exactement le
+         * défaut qu'on corrige.
+         *
+         * Et quand la page est TENUE, l'état colle à la position sans retard :
+         * une séquence qui attend la fin d'une course ne doit pas attendre en
+         * plus la fin d'un lissage. */
+        prog += (progT - prog) * (1 - Math.exp(-dtv / 0.10));
+        if (window.__locked || Math.abs(progT - prog) < 0.0005) prog = progT;
         const tgt = window.__csFlood ? 1 : 0;
         const step2 = dtv / FLOOD_DUR;
         flood += Math.max(-step2, Math.min(step2, tgt - flood));
@@ -3857,9 +3895,12 @@
            * growing to fill the window. `LEAD` puts the first card on nought;
            * `RATE` is what it takes for the last one to be still held at one. */
           const u = prog * RATE - i - LEAD;
-          A[i] = sm(cl((u + 0.34) / 0.78));
-          FL[i] = sm(cl((u + 0.34) / 0.66));
-          O[i] = sm(cl((u - 0.78) / 0.55));
+          A[i] = sm(cl((u + LEAD) / IN));
+          /* Le retournement est fini avant l'atterrissage : mené sur toute
+             l'arrivée, la carte passe de chant au moment où elle est grande et
+             au milieu du cadre — un trait vertical en plein centre. */
+          FL[i] = sm(cl((u + LEAD) / (IN * 0.85)));
+          O[i] = sm(cl((u - (IN + HOLD - LEAD)) / OUT));
         }
         let goneAll = 0;
         for (let i = 0; i < N; i++) goneAll += A[i];
