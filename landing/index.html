@@ -5728,6 +5728,9 @@
     t.rx = (rnd() - 0.5) * 15;
     t.ry = (rnd() - 0.5) * 19;
     t.rz = (rnd() - 0.5) * 7;
+    /* How much of the pointer this one takes. Drawn, so the board does not
+       answer the hand in one piece. */
+    t.hand = 0.4 + rnd() * 1.3;
     /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside the
        tiles is a board of pictures; the ones that stand finished are the
        exception. Its own tempo and its own place in it, so no two are in
@@ -5944,10 +5947,17 @@
           }
         }
       }
+      /* AND THE HAND TURNS EACH ONE A LITTLE. The pointer already leans the
+         whole depth, which moves everything by the same amount and therefore
+         says nothing about any one tile. A degree or two on top, its own,
+         and the board answers as a set of objects rather than as one plane
+         being tilted. Its share is its own lean, so no two answer alike. */
+      const hx = t.rx + mvy * t.hand * 1.1;
+      const hy = t.ry + mvx * t.hand * 1.4;
       t.el.style.transform =
         'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,' +
-        z.toFixed(1) + 'px) rotateX(' + t.rx.toFixed(2) + 'deg) rotateY(' +
-        t.ry.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
+        z.toFixed(1) + 'px) rotateX(' + hx.toFixed(2) + 'deg) rotateY(' +
+        hy.toFixed(2) + 'deg) rotateZ(' + t.rz.toFixed(2) + 'deg)';
     }
   };
 

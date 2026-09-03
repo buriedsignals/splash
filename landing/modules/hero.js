@@ -4604,21 +4604,59 @@ Stage.register(
      * shuffled once and dealt out, and no two pages on the whole reel share
      * a skeleton, let alone two that are up at the same moment. */
     const dealDeck = () => {
-      /* ONE SLOT PER ARCHIVE. The deck used to be every masthead crossed with
-       * every measure, which made eighteen skeletons; it is the eighteen front
-       * pages themselves now, each keeping the masthead its paper uses, and
-       * the measure is what still varies between them. Three columns of six
-       * come to eighteen, so every page on the shelf is on the reel exactly
-       * once and no web can hold the same one as another. */
-      const d = ARCHIVE.map((a, i) => ({ head: a.style, cols: 1 + (i % 3), arch: i }));
+      /* ONE SLOT PER ARCHIVE, AND THE PAPERS SPREAD OUT.
+       *
+       * Shuffled at random the deck put a paper's pages next to each other:
+       * measured on the American shelf, one column ran three New York Timeses
+       * in a row and the Swiss one ran three Le Temps. Sixteen front pages
+       * came out looking like five. The articles were all different — the
+       * three columns take three disjoint blocks, so the same page can never
+       * be on two webs at once — but three identical mastheads down one web
+       * reads as a repeat whatever is printed under them.
+       *
+       * So the deck is arranged rather than shuffled: at every turn it takes
+       * the paper with the most pages left that is NOT the one just taken.
+       * Which of that paper's pages comes first is still a draw, and so is
+       * the tie between two papers holding the same number — the order is
+       * different every load, and no two neighbours share a masthead unless
+       * the shelf leaves no other choice. */
       const r = seeded(LOAD_SALT + 7717);
-      for (let i = d.length - 1; i > 0; i--) {
-        const j = Math.floor(r() * (i + 1));
-        const t = d[i];
-        d[i] = d[j];
-        d[j] = t;
+      const by = new Map();
+      ARCHIVE.forEach((a, i) => {
+        if (!by.has(a.paper)) by.set(a.paper, []);
+        by.get(a.paper).push(i);
+      });
+      for (const v of by.values())
+        for (let i = v.length - 1; i > 0; i--) {
+          const j = Math.floor(r() * (i + 1));
+          const t = v[i];
+          v[i] = v[j];
+          v[j] = t;
+        }
+      const out = [];
+      let last = null;
+      while (out.length < ARCHIVE.length) {
+        let best = null,
+          bestN = -1;
+        for (const [k, v] of by) {
+          if (!v.length || k === last) continue;
+          // the tie goes to a draw, so two papers of equal weight do not
+          // always come out in the same order
+          const n = v.length + r() * 0.5;
+          if (n > bestN) {
+            bestN = n;
+            best = k;
+          }
+        }
+        if (best === null) for (const [k, v] of by) if (v.length) { best = k; break; }
+        out.push(by.get(best).pop());
+        last = best;
       }
-      return d;
+      return out.map((idx, n) => ({
+        head: ARCHIVE[idx].style,
+        cols: 1 + (n % 3),
+        arch: idx,
+      }));
     };
     let TEMPLATE_DECK = dealDeck();
 
@@ -8441,7 +8479,20 @@ const flowCol = (A, o) => {
          * reads it — the catalogue bench that did has been taken out — and it
          * is kept because it is the only way to ASK the reel what it printed
          * without reading pixels back off a texture. It costs one array. */
-        if (c === 0) PAGES.push({
+        /* Every column, not just the first: what the bench wants to know is
+         * whether two webs can be holding the same page, and one column
+         * cannot answer that. */
+        PAGES.push({
+          col: c,
+          arch: E.spec && E.spec.arch !== undefined ? E.spec.arch : -1,
+          paper:
+            E.spec && E.spec.arch !== undefined && ARCHIVE[E.spec.arch]
+              ? ARCHIVE[E.spec.arch].paper
+              : "",
+          head:
+            E.spec && E.spec.arch !== undefined && ARCHIVE[E.spec.arch]
+              ? ARCHIVE[E.spec.arch].head
+              : "",
           /* The rung is what the page IS, never when it was printed. A
            * founding plate is an image whatever its year, so it says which
            * rung it belongs to itself: Snow is one ink, the other four were
