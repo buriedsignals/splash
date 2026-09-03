@@ -497,6 +497,18 @@
          will-change:transform,opacity;backface-visibility:hidden;
          box-shadow:0 26px 60px -34px rgba(20,20,28,.85)}
   .avfly>div{width:100%;height:100%}
+  /* A DARK TILE IS THE SAME DRAWING, TURNED OVER. The twelve painters bake
+     their palette in — near-black type, a pale grid, land a shade off paper
+     — and threading a theme through all of them would be a rewrite of the
+     module the reel runs on. Inverting the drawing and rotating the hue back
+     gives the dark version of the same chart: the type goes light, the grid
+     falls to a whisper, and the colour keeps its own hue. The card's ground
+     is not inverted, because it is not inside the filter. */
+  .avfly.avdark>div{filter:invert(1) hue-rotate(180deg)}
+  /* And it needs a rim: a dark card on a dark ground has no edge, and the
+     shadow it casts is invisible. */
+  .avfly.avdark{box-shadow:0 26px 60px -34px rgba(0,0,0,.9),
+                inset 0 0 0 1px rgba(237,234,227,.16)}
   /* The words keep their contrast under whatever passes them. */
   .avscrim{position:absolute;inset:0;z-index:1;pointer-events:none;
            background:radial-gradient(56% 26% at 50% 57%,
@@ -5628,25 +5640,26 @@
     };
     let k = Math.floor(rnd() * kinds.length);
     for (let i = 0; i < COUNT; i++) {
-      /* EVERY FORMAT, not one. The set had a single landscape proportion, so
-         twelve different drawings arrived as twelve identical rectangles.
-         The shape is drawn first — upright, square or wide — and the kind is
-         then chosen from the ones that will take it; the module knows which
-         drawing works in which shape. */
-      const w = Math.round(Math.max(112, Math.min(300, vw * (0.085 + rnd() * 0.075))));
-      const ar = 0.72 + rnd() * 1.1;
-      const h = Math.round(Math.max(96, w / ar));
+      /* THREE FORMATS, NAMED — wide, square, upright — and not a continuous
+         spread between them. Drawn from a range, the proportions clustered
+         near the middle and the set read as one shape with a wobble in it;
+         drawn from three, a landscape is plainly a landscape and a portrait
+         plainly a portrait. The jitter is small enough to keep each one
+         recognisably its own format. */
+      const FORMS = [1.62, 1.0, 0.7];
+      const ar = FORMS[i % 3] * (0.94 + rnd() * 0.12);
+      const long = Math.round(Math.max(120, Math.min(310, vw * (0.085 + rnd() * 0.075))));
+      const w = ar >= 1 ? long : Math.round(long * ar);
+      const h = ar >= 1 ? Math.round(long / ar) : long;
       let kind = kinds[k % kinds.length], guard = 0;
       while (window.__artFits && !window.__artFits(kind, w / h) && guard++ < kinds.length) {
         k++; kind = kinds[k % kinds.length];
       }
       k += 5;
-      /* GREY, OR A PRINTING COLOUR — and when it is a colour, the ground
-         takes a wash of the same ink. A coloured drawing on a white card is
-         a chart with a highlight in it; the card tinted with its own ink is
-         a coloured thing. The wash is weak on purpose: the drawing has to
-         stay readable, and the ground is not the subject. */
-      const grey = rnd() < 0.55;
+      /* FOUR IN FIVE IN A PRINTING COLOUR, one in five in grey. The ink is
+         drawn per tile and every painter takes one, so a chart and a map get
+         the same treatment and no two boards are the same. */
+      const grey = rnd() < 0.2;
       const seed = Math.floor(rnd() * 1e9) + 1;
       const tone = window.__artInk(seed, grey ? 1 : 0);
       const el = document.createElement('div');
@@ -5655,14 +5668,36 @@
       el.style.height = h + 'px';
       el.style.marginLeft = (-w / 2) + 'px';
       el.style.marginTop = (-h / 2) + 'px';
-      if (!grey && rnd() < 0.62) el.style.background = wash(tone, 0.13);
+      /* THE GROUND IS DRAWN TOO, and a third of them are dark. A board that
+         is all light cards covers one half of what this page has to say it
+         can make; the panel is wider than that. Six treatments — the paper,
+         white, the table, a wash of the tile's own ink, the ink itself, and
+         a dark wash of that ink — so a set of twenty is never a set of one
+         card repeated. */
+      const dark = rnd() < 0.34;
+      const c = rgbOf(tone);
+      if (dark) {
+        el.classList.add('avdark');
+        el.style.background = rnd() < 0.5
+          ? '#14141c'
+          : mix(INK, c, 0.14 + rnd() * 0.16);
+      } else {
+        const g = rnd();
+        el.style.background = g < 0.3 ? '#edeae3'
+          : g < 0.5 ? '#ffffff'
+          : g < 0.62 ? '#e6e2d9'
+          : mix(PAPER, c, 0.08 + rnd() * 0.14);
+      }
       field.appendChild(el);
       /* SOME DRAW THEMSELVES, OVER AND OVER. A board where nothing moves
          inside the tiles is a board of pictures; a board where everything
          does is a fairground. About a third of them run their own gesture on
          a loop — the bars come up, the line is traced, the map fills — and
          the rest stand finished. */
-      const anim = rnd() < 0.34;
+      /* TWO IN THREE DRAW THEMSELVES. A board where nothing moves inside
+         the tiles is a board of pictures; the ones that stand finished are
+         now the exception rather than the rule. */
+      const anim = rnd() < 0.67;
       const t = {
         el, kind, w, h, seed, tone,
         /* SCATTERED, FREELY. Quadrant by quadrant it was an even spread and
@@ -5697,13 +5732,12 @@
     return true;
   };
 
-  /* A wash of an ink over the paper: the tile's own ground, tinted. */
-  const PAPER = [237, 234, 227];
-  const wash = (hex, k) => {
-    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    return 'rgb(' + c.map((v, i) =>
-      Math.round(PAPER[i] + (v - PAPER[i]) * k)).join(',') + ')';
-  };
+  /* A wash of an ink over a ground: the tile's own paper, or its own ink,
+     tinted with the colour the drawing is in. */
+  const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const mix = (a, b, k) =>
+    'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',') + ')';
+  const PAPER = [237, 234, 227], INK = [20, 20, 28];
   /* One drawing, at a point in its gesture. Redrawing is a string and an
      innerHTML, which is cheap at this size — but only cheap enough if it is
      not done sixty times a second, so the loop below rations it. */
