@@ -69,6 +69,17 @@ const flag = (name, fallback) => {
 };
 
 const size = Number(flag("--size", "620"));
+// BAKE AND COMPOSE AT THE SAME ASPECT. `--size` was used for BOTH dimensions, so every plate this
+// script produced was square — which was invisible for as long as the composition was square too.
+// Now that `Root.tsx` renders at the size gate 2c pinned, a landscape beat that baked here got a
+// 16:9 composition and a 1:1 plate, and `fitBounds` silently widened whichever axis did not bind:
+// geo-discipline.md rule 12's second clause measures that cost at roughly 2x the latitude a study
+// set asked for. `--height` defaults to `--size`, so every existing call site bakes exactly what it
+// baked before.
+const bakeWidth = size;
+const bakeHeight = Number(flag("--height", String(size)));
+if (!Number.isFinite(bakeHeight) || bakeHeight <= 0)
+  throw new Error(`--height must be a positive number of pixels, got ${JSON.stringify(flag("--height", null))}`);
 const outDir = flag("--out", `/tmp/map-twin/plate-${size}`);
 const shapesPath = flag("--shapes", "/tmp/map-twin/ne50.geojson");
 const settleMs = Number(flag("--settle", "15000"));
@@ -219,7 +230,7 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
 // point where the world still fills the canvas vertically. This bake is square, so at 59° it costs
 // nothing — it is here so that the day this beat is asked for a 1080x1920 story the refusal names
 // the stage that works instead of silently delivering 203° of world.
-assertStageServesGeography(size, size, BEAT.bounds[1][0] - BEAT.bounds[0][0]);
+assertStageServesGeography(bakeWidth, bakeHeight, BEAT.bounds[1][0] - BEAT.bounds[0][0]);
 
 const env = sealed ? {} : parseEnvFile(await readFile(keyPath, "utf8"));
 const sealedStyle = sealedStylePath ? JSON.parse(await readFile(sealedStylePath, "utf8")) : null;
@@ -272,7 +283,7 @@ const browser = await puppeteer.launch({
   ],
 });
 const page = await browser.newPage();
-await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
+await page.setViewport({ width: bakeWidth, height: bakeHeight, deviceScaleFactor: 2 });
 if (sealed) {
   await page.setContent(
     `<!doctype html><html><head>
@@ -344,7 +355,7 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: bakeWidth, height: bakeHeight },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -354,7 +365,7 @@ assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
-await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: size } });
+await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: bakeWidth, height: bakeHeight } });
 
 // ── The projection (rule 3 and rule 4) ─────────────────────────────────────────────────────────
 const projected = await page.evaluate((shapes) => {
@@ -383,7 +394,7 @@ const anchors = await page.evaluate((points) => {
 await browser.close();
 
 // ── Cull and thin, in node, with the pure functions the tests cover ────────────────────────────
-const frame = { width: size, height: size };
+const frame = { width: bakeWidth, height: bakeHeight };
 const minGap = 0.6;
 let ringsIn = 0;
 let ringsOut = 0;

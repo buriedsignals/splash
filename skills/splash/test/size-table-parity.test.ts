@@ -121,6 +121,10 @@ const CANONICAL = join(
 // deriving the answer from the thing it is checking.
 const ROWS = ["landscape", "square", "portrait"];
 
+// See the exemption's own test at the foot of this file. Named once, here, so the roster assertion
+// and the assertion that keeps it honest cannot drift apart.
+const VARIABLE_HEIGHT_PRODUCER = "image-beat";
+
 function findAll(dir: string, basename: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.name === "node_modules" || e.name === ".git") continue;
@@ -429,5 +433,73 @@ describe("the export-size table — every copy in the tree, discovered rather th
     const row = canonical!.sizeFor("square");
     row.width = 4;
     expect(canonical!.SIZES.square.width).toBe(1080);
+  });
+
+  // ── ABSENCE IS NOT EXEMPTION ────────────────────────────────────────────────────────────────
+  //
+  // This guard WALKS for files named `sizes.mjs`, which is its strength and was its one blind spot:
+  // a skill with no copy at all is indistinguishable from a skill it has nothing to check. `map-beat`
+  // had no table for as long as it shipped video, and this file was green throughout — while gate 2c
+  // asked every video beat for a size, `checkStoryboard` refused three ways on the answer, `where.mjs`
+  // mirrored those refusals string for string, and `map-beat/assets/Root.tsx` rendered 1080x1080
+  // whatever the slot said. A journalist who chose landscape, and for whom a 16:9 plate was baked,
+  // got a square mp4 with that plate letterboxed into it.
+  //
+  // So the roster is DERIVED, from `FORMAT_CATALOG` and `SIZED_FORMATS` — the same two facts the gate
+  // itself reasons from — and never typed here. A new craft skill that produces a sized format is
+  // required to carry the table the moment the catalogue says it can, with nobody remembering to
+  // add it to a list.
+  it("should refuse an absent table in any skill FORMAT_CATALOG says produces a sized format", async () => {
+    const { FORMAT_CATALOG } = await import(
+      join(TWIN, "skills", "storyboard", "scripts", "format-catalog.mjs")
+    );
+    const { SIZED_FORMATS } = await import(
+      join(TWIN, "skills", "storyboard", "scripts", "storyboard.mjs")
+    );
+    const producers = new Set<string>();
+    for (const [pair, row] of Object.entries(FORMAT_CATALOG as Record<string, { producerSkill: string }>)) {
+      const format = pair.split("/")[1];
+      if (SIZED_FORMATS.includes(format)) producers.add(row.producerSkill);
+    }
+    // Premise, so this cannot go vacuously green on an empty roster.
+    expect(producers.size).toBeGreaterThan(2);
+
+    for (const skill of [...producers].sort()) {
+      if (skill === VARIABLE_HEIGHT_PRODUCER) continue;
+      expect([skill, "carries a size table", existsSync(join(TWIN, "skills", skill, "scripts", "sizes.mjs"))]).toEqual([
+        skill,
+        "carries a size table",
+        true,
+      ]);
+    }
+  });
+
+  // THE ONE EXEMPTION, and it is not a list — it is a single name with a reason and a check under it.
+  //
+  // `image-beat` produces `image/static`, which `SIZED_FORMATS` calls sized, and it carries no table.
+  // That is NOT the `map-beat` defect wearing another hat: a photo essay's frame HEIGHT is derived
+  // from its own content — how many photographs, how far each caption wraps — and the skill says so
+  // in `imageBeatLayout`'s own header, "never a fixed constant the way the chart format's FRAME is".
+  // Three fixed rows cannot describe that, and inventing a fourth variable-height row is a decision
+  // nobody has taken. What SHOULD happen when gate 2c asks a photo essay for one of three sizes is a
+  // real open question and belongs in its own issue, not in a silent exemption here.
+  //
+  // So the exemption is asserted rather than trusted: if `image-beat` ever grows a fixed frame, or
+  // grows a table, this reddens and the exemption has to be re-argued.
+  it("should keep the one exemption honest — a photo essay's height is still derived, not fixed", () => {
+    const layout = readFileSync(
+      join(TWIN, "skills", VARIABLE_HEIGHT_PRODUCER, "assets", "ImageBeatSeed.tsx"),
+      "utf8",
+    );
+    expect([
+      VARIABLE_HEIGHT_PRODUCER,
+      "still derives its height",
+      /never a fixed constant/.test(layout),
+    ]).toEqual([VARIABLE_HEIGHT_PRODUCER, "still derives its height", true]);
+    expect([
+      VARIABLE_HEIGHT_PRODUCER,
+      "still carries no table",
+      existsSync(join(TWIN, "skills", VARIABLE_HEIGHT_PRODUCER, "scripts", "sizes.mjs")),
+    ]).toEqual([VARIABLE_HEIGHT_PRODUCER, "still carries no table", false]);
   });
 });

@@ -177,6 +177,12 @@ const allKeys = points.map((p) => p.key).sort();
 
 let htmlPath = flag("--html", null);
 let tmpRoot = null;
+// THE OTHER SUPPORTED CONFIGURATION. `regionTable` is opt-in, the skill argues at length for
+// turning it on, and nothing in the tree had ever rendered a page with it on — so the fit checks
+// below ran against one of the two states this format ships, and the table-on page overflowed the
+// window by the height of its own collapsed disclosure at every width. Rendered here beside the
+// default rather than instead of it: both are supported, so both are driven.
+let tableOnPath = null;
 if (!htmlPath) {
   tmpRoot = await mkdtemp(join(tmpdir(), "map-web-verify-"));
   const { outPath } = await render({
@@ -186,6 +192,14 @@ if (!htmlPath) {
     name: "verify.html",
   });
   htmlPath = outPath;
+  const withTable = await render({
+    dataPath: DEFAULT_DATA_PATH,
+    plateDir: DEFAULT_PLATE_DIR,
+    outDir: tmpRoot,
+    name: "verify-table.html",
+    regionTable: true,
+  });
+  tableOnPath = withTable.outPath;
 }
 const url = `file://${resolve(htmlPath)}`;
 console.log(`driving ${url}\n`);
@@ -226,10 +240,14 @@ try {
     `live plan present ${layer.hasLivePlan}, html.mw-live ${layer.live}, fallback shown ${layer.fallbackShown}`,
   );
 
-  // ── 1. FIT: the beat is one window tall, at every width, and the plate keeps its own shape ────
+  // ── 1. FIT: the beat is one window tall, at every width, IN BOTH TABLE STATES, and the plate
+  //      keeps its own shape ──────────────────────────────────────────────────────────────────
+  const fitPages = [{ label: "", at: url }];
+  if (tableOnPath) fitPages.push({ label: " · table on", at: `file://${resolve(tableOnPath)}` });
+  for (const { label, at } of fitPages)
   for (const { w, h } of VIEWPORTS) {
     await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
-    await page.goto(url, { waitUntil: "load" });
+    await page.goto(at, { waitUntil: "load" });
     const fit = await page.evaluate(() => {
       const vp = document.querySelector(".mw-viewport");
       const svg = vp.querySelector("svg.map");
@@ -255,17 +273,17 @@ try {
     });
     const overflow = fit.docHeight - fit.windowHeight;
     check(
-      `fit ${w}x${h}: the whole beat is inside the window`,
+      `fit ${w}x${h}${label}: the whole beat is inside the window`,
       overflow <= 1 && fit.mapBottom <= fit.windowHeight + 1,
       `page ${fit.docHeight}px in a ${fit.windowHeight}px window (overflow ${overflow}px), map ${Math.round(fit.mapWidth)}x${Math.round(fit.mapHeight)} ending at ${Math.round(fit.mapBottom)}px`,
     );
     check(
-      `fit ${w}x${h}: nothing scrolls inside the visual`,
+      `fit ${w}x${h}${label}: nothing scrolls inside the visual`,
       !fit.innerScroll,
       fit.innerScroll ? "the map box has its own scrollbar" : "no inner scroll",
     );
     check(
-      `fit ${w}x${h}: the plate is not stretched`,
+      `fit ${w}x${h}${label}: the plate is not stretched`,
       Math.abs(fit.drawnAspect - fit.bakedAspect) < 0.005,
       `baked ${fit.bakedAspect.toFixed(4)} vs drawn ${fit.drawnAspect.toFixed(4)}`,
     );

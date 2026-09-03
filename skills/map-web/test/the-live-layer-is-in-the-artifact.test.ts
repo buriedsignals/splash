@@ -281,6 +281,10 @@ describe("every committed map-web page is a live map", () => {
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
+      // The seed at its other supported setting (#52). It is the same render with `regionTable`
+      // on, so ruling R1 applies to it exactly as it applies to the default — a web map you cannot
+      // move through is a picture whether or not a table hangs beneath it.
+      "skills/map-web/output-proof/population-with-table.html",
       "skills/map-web/output-proof/population.html",
     ]);
   });

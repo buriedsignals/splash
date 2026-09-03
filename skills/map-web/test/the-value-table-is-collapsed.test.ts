@@ -146,14 +146,20 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
+      // The seed at its OTHER supported setting (#52). This format ships two table states and only
+      // one of them had ever been rendered by anything in the tree, which is how the table-on page
+      // came to overflow the window by the height of its own disclosure at every width.
+      "skills/map-web/output-proof/population-with-table.html",
       "skills/map-web/output-proof/population.html",
     ]);
   });
 
   it("should be looking at pages that actually have a table to collapse", () => {
     // The second anti-vacuity clause, and the one that matters most here: "no page renders an
-    // expanded table" is trivially true of a tree with no tables in it. The seed ships
-    // `regionTable: false` and has none, so the floor is the five beats that opt in.
+    // expanded table" is trivially true of a tree with no tables in it. The seed's DEFAULT ships
+    // `regionTable: false` and has none, so the floor is the five beats that opt in — plus, since
+    // #52, the seed's own table-on proof, which is the only page here produced by the skill rather
+    // than by a beat and therefore the only one that guards the seed's own disclosure markup.
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
       "proof/mapgen-choropleth-web/render/choropleth.html",
@@ -161,6 +167,7 @@ describe("every committed map page keeps its value table collapsed", () => {
       "proof/mapgen-hexgrid-web/hex-grid.html",
       "proof/mapgen-locator-web/locator.html",
       "proof/mapgen-symbol-web/quake-symbol.html",
+      "skills/map-web/output-proof/population-with-table.html",
     ]);
   });
 

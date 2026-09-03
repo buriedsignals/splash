@@ -456,7 +456,6 @@ body {
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.map-web-page { width: 100%; }
 /* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
    window tall: every piece of furniture takes the height it needs, and .mw-stage is handed
    whatever is left. Nothing scrolls inside the visual, at any width — before this, the map's own
@@ -464,13 +463,36 @@ body {
    claim ("Paris is the largest") sat 800px below the fold, unseen.
    'svh', not 'vh': on a phone with a retracting toolbar, 'vh' is the LARGE viewport, which is
    exactly the height the beat must not assume it has. The 'vh' line above it is the fallback for a
-   browser without 'svh', and errs one toolbar too tall rather than clipping. */
-.map-web {
+   browser without 'svh', and errs one toolbar too tall rather than clipping.
+
+   THE WINDOW IS BOUNDED HERE, ON THE PAGE, NOT ON .map-web. It used to be bounded one level in,
+   and the accessible table is SSR'd as .map-web's SIBLING — so a beat that turned "regionTable"
+   on got a full window of map PLUS a 44px collapsed disclosure under it, and overflowed by exactly
+   that at every width tested (1600x900, 1280x800, 768x1024, 375x667). The stage takes "the
+   leftover height" and the table was never part of what it had left over.
+
+   That is worse than 44 pixels, because the skill argues hard for BOTH things: fit the window is
+   its own fourth documented trap, and "read it before choosing; do not choose by not deciding" is
+   what it says about the table. A conscientious author did the accessible thing and got a page
+   that no longer fit — with no warning, and by an amount small enough to miss. Every committed
+   artifact ships regionTable false, which is why nothing caught it. */
+.map-web-page {
   width: 100%;
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--page-pad) * 2);
   height: calc(100svh - var(--page-pad) * 2);
+}
+/* The disclosure takes the height it needs; the map column gives up the rest. min-height 0 is
+   what lets a flex child shrink below its content's own height — without it the map column keeps
+   its full basis and the page overflows again, silently. */
+.map-web-page > .mw-table-disclosure { flex: 0 0 auto; }
+.map-web {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 /* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
    'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
@@ -750,7 +772,7 @@ async function loadPlate(plateDir) {
 /** The seed beat's own runner: bakes the plate if missing, reads the seed's own points, hands the
  *  seed component and `RegionTable` (imported above from this skill's own `assets/`) to the
  *  format's generic `renderMapWeb`. */
-async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
+async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME, regionTable = SEED.regionTable }) {
   await ensurePlate(plateDir);
   const { geometry, plate } = await loadPlate(plateDir);
 
@@ -779,7 +801,9 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     },
     outDir,
     name,
-    regionTable: SEED.regionTable,
+    // Overridable so `verify-interaction.mjs` can drive BOTH table states. Both are supported
+    // configurations, and only the one the seed ships had ever been rendered by anything.
+    regionTable,
     tableRowNoun: SEED.tableRowNoun,
     live: SEED.live,
     plan: SEED.live
@@ -808,6 +832,22 @@ if (import.meta.main) {
 
   const { outPath, points } = await render({ dataPath, plateDir, outDir });
   console.log(`map-web beat → ${outPath}  [${points} points]`);
+
+  // AND THE OTHER SUPPORTED CONFIGURATION. The skill argues at length for turning the accessible
+  // table on — "read it before choosing; do not choose by not deciding" — and nothing in this tree
+  // demonstrated it, which is how a supported configuration ends up with no coverage and a page
+  // that overflowed the window by the height of its own disclosure. `--no-table-proof` skips it for
+  // a story render that wants one file.
+  if (!argv.includes("--no-table-proof")) {
+    const withTable = await render({
+      dataPath,
+      plateDir,
+      outDir,
+      name: OUTPUT_NAME.replace(/\.html$/, "-with-table.html"),
+      regionTable: true,
+    });
+    console.log(`map-web beat → ${withTable.outPath}  [table on]`);
+  }
 }
 
 export {

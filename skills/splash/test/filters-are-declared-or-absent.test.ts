@@ -165,6 +165,10 @@ const LEGACY_MAP_VOCABULARY = [
   "proof/mapgen-locator-web/locator.html",
   "proof/mapgen-symbol-web/quake-symbol.html",
   "skills/map-web/output-proof/population.html",
+  // The same seed at its other supported setting (#52), so the same renderer and therefore the
+  // same `data-group` mechanism — one page, not a second migration. It reddened here the moment it
+  // was committed, which is the self-closing property this list exists for working correctly.
+  "skills/map-web/output-proof/population-with-table.html",
 ];
 
 const PAGES: Page[] = trackedWebPages().map((path) => {

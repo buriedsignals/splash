@@ -36,6 +36,7 @@ import {
   assertDrawnInActiveTypeface,
 } from "./render-still.mjs";
 import { toDataUri } from "./inline-asset.mjs";
+import { sizeFor } from "./sizes.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
 import {
   CO2_ALIAS,
@@ -112,6 +113,11 @@ const videoPlate = flag("--video-plate", "/tmp/map-twin/plate-620");
 const wantStill = argv.includes("--still");
 const wantFinalFrame = argv.includes("--final-frame");
 const wantVideo = argv.includes("--video");
+// THE SIZE GATE 2c PINNED, reaching the producer. Until this existed the slot recorded one thing
+// and `Root.tsx` rendered 1080x1080 whatever it said. `sizes.mjs` throws naming all three on
+// anything else, so a typo refuses here rather than shipping at a size nobody chose.
+const size = flag("--size", "square");
+sizeFor(size);
 
 // ── The data, the join, the claim ──────────────────────────────────────────────────────────────
 const values = valuesFromCsv(await readFile(dataPath, "utf8"), BEAT.year);
@@ -219,7 +225,9 @@ function remotion(args) {
 if (wantFinalFrame || wantVideo) {
   const { geometry, plate } = await plateOf(videoPlate);
   const propsPath = join(outDir, "video-props.json");
-  await writeFile(propsPath, JSON.stringify({ ...shared, geometry, plate }));
+  // `size` travels in the props because `calculateMetadata` is the only place Remotion will take a
+  // frame from, and `--props` is the only channel this script has into it.
+  await writeFile(propsPath, JSON.stringify({ ...shared, geometry, plate, size }));
 
   const framePath = join(outDir, "final-frame.png");
   const stillSeconds = remotion([

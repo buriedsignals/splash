@@ -100,6 +100,20 @@ hydrates the key and its recorded browser.
 6. **For video: write the timing contract before the drawing**, `checkTiming` it in a test, render
    the **final frame first**, then the mp4, then extract four frames — one inside `reference`, one
    mid-`reveal`, one as the subject lands, and the last — and look at all four.
+7. **Pass the size gate 2c pinned** — `--size landscape|square|portrait` — and bake the plate at the
+   same aspect. `Root.tsx` takes its `width`/`height` from that answer through `calculateMetadata`,
+   the way `durationInFrames` already comes from the timing contract. Before this the composition
+   was two literals (1080x1080), so a landscape slot with a 16:9 plate produced a SQUARE mp4 with
+   the plate letterboxed into it and the camera work discarded — and nothing warned, because gate
+   2c's three careful refusals validated an answer no producer read. `scripts/sizes.mjs` is this
+   skill's copy of the three rows; `sizeFor` throws naming all three rather than defaulting.
+7. **Pass the size gate 2c pinned** — `--size landscape|square|portrait`, and bake the plate at the
+   same aspect. `Root.tsx` takes its `width`/`height` from that answer through `calculateMetadata`,
+   the way `durationInFrames` already comes from the timing contract. Before this, the composition
+   was two literals (1080 x 1080), so a landscape slot with a 16:9 plate produced a SQUARE mp4 with
+   the plate letterboxed into it and the camera work discarded, and nothing warned: gate 2c's three
+   careful refusals validated an answer no producer read. `scripts/sizes.mjs` is this skill's copy
+   of the three rows; `sizeFor` throws naming all three rather than defaulting.
 
 ## Quick start
 
@@ -107,6 +121,16 @@ hydrates the key and its recorded browser.
 # the bake: one per drawn size, same bounds — the still draws 496, the video draws 620
 bun skills/map-beat/scripts/bake-plate.mjs --size 496 --out /tmp/map-twin/plate-496
 bun skills/map-beat/scripts/bake-plate.mjs --size 620 --out /tmp/map-twin/plate-620
+
+# a video at a NON-SQUARE size bakes at that aspect and renders at it — bake and compose agree.
+# `--size` alone still means a square plate, which is what it has always meant.
+bun skills/map-beat/scripts/bake-plate.mjs --size 1104 --height 621 --out /tmp/map-twin/plate-16x9
+bun skills/map-beat/scripts/render-map.mjs --video --size landscape --video-plate /tmp/map-twin/plate-16x9
+
+# a video at a NON-SQUARE size bakes at that aspect and renders at it — bake and compose agree.
+# `--size` alone means a square plate, which is what it has always meant.
+bun skills/map-beat/scripts/bake-plate.mjs --size 1104 --height 621 --out /tmp/map-twin/plate-16x9
+bun skills/map-beat/scripts/render-map.mjs --video --size landscape --video-plate /tmp/map-twin/plate-16x9
 
 # rung 1: the still (~2 s). Then open it and look at it.
 bun skills/map-beat/scripts/render-map.mjs --still
