@@ -5843,6 +5843,28 @@ Stage.register(
      * The maps take any shape, which is the whole point of choosing the crop
      * by proportion — there is always a piece of the world that is the shape
      * of the hole. */
+    /* ---------------------------------------------------- lent to the page
+     * THE TWELVE DRAWINGS, OFFERED TO WHOEVER ASKS. They were built for the
+     * reel and the reel no longer prints them; they are still the only charts
+     * and maps this site draws in its own hand, and the field under the answer
+     * wants exactly that. So the module publishes a way to ask for one: a
+     * kind, a size, a seed, and it returns the markup — the same markup the
+     * rasteriser wraps, so what the field shows and what the paper used to
+     * print are the same drawing.
+     *
+     * FINISHED, NOT BEING MADE — and that is p=1, q=0, not p=q=1. The two
+     * run the same way down the set: p brings each element in, q takes it
+     * away, and the drawing is what is left between them. Asked with both at
+     * one, every element had arrived AND left, so the tiles came out as
+     * furniture with nothing in it: axes, titles, coastlines, no data. */
+    window.__artKinds = () => Object.keys(LIVE_ART);
+    window.__artFits = (kind, ar) => (FITS[kind] ? FITS[kind](ar) : true);
+    window.__artTile = (kind, w, h, seed) => {
+      const rnd = seeded(seed >>> 0 || 1);
+      const paint = LIVE_ART[kind] || LIVE_ART.bars;
+      return paint(w, h, 1, 0, castValues(rnd), inkFor(rnd), rnd, 0);
+    };
+
     const PORTRAIT = 0.95;
     const FITS = {
       bars: (ar) => ar >= PORTRAIT,
