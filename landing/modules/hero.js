@@ -10547,13 +10547,16 @@ void main(){
         if (section) {
           const out = away * innerHeight * 0.55;
           const fade = Math.max(0, 1 - away * 2.1);
-          const h1 = section.querySelector("h1");
-          if (h1) {
-            h1.style.transform =
+          // what leaves is the whole centred stack — title, dek, buttons,
+          // star — not the title alone. It carries the -50% that centres it,
+          // so the exit has to be written into the same transform.
+          const core = section.querySelector(".herocore");
+          if (core) {
+            core.style.transform =
               "translateY(calc(-50% - " + out.toFixed(1) + "px))";
-            h1.style.opacity = fade;
+            core.style.opacity = fade;
           }
-          const foot = section.querySelector("h1 ~ div");
+          const foot = section.querySelector(".heroft");
           if (foot) {
             foot.style.transform =
               "translateY(" + (-out * 1.35).toFixed(1) + "px)";
