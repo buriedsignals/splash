@@ -15,9 +15,11 @@ export type SymbolPoint = {
   lon: number;
   lat: number;
   value: number;
-  /** The filter dimension (`references/map-web-discipline.md`, "Filters") — every point declares
-   *  one, even a beat that never renders a filter UI (`groupsOf` would just report one group). */
-  group: string;
+  /** The filter dimension (`references/map-web-discipline.md`, "Filters") — OPTIONAL, because the
+   *  discipline argues against adding a filter to most beats and SKILL.md documents the ungrouped
+   *  beat as the normal case. It was typed as required, which is not what the rest of this file
+   *  believed: `groupsOf` tolerated its absence and three other call sites did not. */
+  group?: string;
 };
 
 /** A point once the bake has projected it into the plate's own pixel space. */
@@ -35,14 +37,56 @@ export function radiusScale(maxValue: number, maxRadiusPx: number) {
     maxRadiusPx * Math.sqrt(Math.max(0, value) / maxValue);
 }
 
-/** Three round reference sizes for the legend, evenly stepped down from the rounded max. */
+/** The nice-number ladder — 1, 2, 2.5, 5 × 10ⁿ. The magnitudes a reader already holds. */
+const NICE_LADDER = [1, 2, 2.5, 5];
+
+/**
+ * THREE ROUND REFERENCE SIZES FOR THE LEGEND.
+ *
+ * This was named for a nice-number algorithm and implemented none: it returned the max, two thirds
+ * of it and one third of it, so a legend over counts read 9 815 · 19 629 · 29 444. A proportional-
+ * symbol map has NO AXIS. The size legend is the only thing that tells a reader what an area means,
+ * and it works by giving two or three round magnitudes the eye can carry back to the map. 19 629 is
+ * not a magnitude anyone holds; it is one datum's arithmetic showing through, and a reader cannot
+ * use it to estimate a circle they are looking at, which is the single job the legend has.
+ *
+ * It was masked by the seed, where population-in-millions at 11 / 7.3 / 3.7 still reads as roughly
+ * a-third-and-two-thirds and the numbers are short — and by this function's own test, which
+ * asserted the values were decreasing and at most `count` but never that they were ROUND.
+ *
+ * Two rules, and the second is not in the ladder:
+ *
+ *   1. Every value is a ladder rung at or below the data maximum.
+ *   2. Each is at most HALF the one before it.
+ *
+ * Rule 2 is what stops 29 444 from yielding 25 000 · 20 000 · 10 000. Those are all round, and the
+ * first two draw circles whose radii differ by 12% — a legend with two marks a reader cannot tell
+ * apart is the same failure in a tidier hand. Halving keeps every circle visibly distinct, which is
+ * the reason the legend has more than one entry at all.
+ */
 export function niceReferenceValues(maxValue: number, count = 3): number[] {
-  const top = Math.round(maxValue * 2) / 2;
-  const step = top / count;
+  if (!Number.isFinite(maxValue) || maxValue <= 0) return [];
   const values: number[] = [];
-  for (let i = 0; i < count; i++) {
-    const v = Math.round((top - i * step) * 10) / 10;
-    if (v > 0) values.push(v);
+  // The largest rung at or below `ceiling`, walked down decade by decade. The epsilon absorbs the
+  // float error that would otherwise reject 10 as a rung of exactly 10.
+  const rungAtOrBelow = (ceiling: number): number | null => {
+    if (!(ceiling > 0)) return null;
+    for (let e = Math.floor(Math.log10(ceiling)) + 1; e > -13; e--) {
+      const decade = Math.pow(10, e);
+      for (let i = NICE_LADDER.length - 1; i >= 0; i--) {
+        const rung = NICE_LADDER[i]! * decade;
+        if (rung <= ceiling * (1 + 1e-9)) return rung;
+      }
+    }
+    return null;
+  };
+  let ceiling = maxValue;
+  while (values.length < count) {
+    const rung = rungAtOrBelow(ceiling);
+    if (rung === null || rung <= 0) break;
+    // Round off the float dust a power of ten leaves behind (2.5 * 1e-3 is 0.0025000000000000005).
+    values.push(Number(rung.toPrecision(12)));
+    ceiling = rung / 2;
   }
   return values;
 }
@@ -114,8 +158,16 @@ export function fr(value: number, decimals = 1): string {
  * has to generate the matching `:has()` CSS rule per group) so the two never drift out of sync.
  
  *  @parity-exempt: groups by the field this beat's own points carry (`.arc` on a subduction catalogue, `.group` on the general seed). */
-export function groupsOf(points: { group: string }[]): string[] {
-  return Array.from(new Set(points.map((p) => p.group))).sort();
+export function groupsOf(points: { group?: string }[]): string[] {
+  // An ABSENT group is not a filter group, so it does not appear here. It used to: an ungrouped
+  // study set reported `[undefined]`, one entry, which read as "one group, so no filter" at the
+  // `groups.length > 1` gate and read as a group name everywhere the value itself was used —
+  // `assertDistinctSlugs`, `buildCss`'s `:has()` rules and `markLayers` all handed it to `slugOf`,
+  // which takes a string and immediately lowercases it. Dropping it here is the same verdict said
+  // once instead of four times, and `groupsOf(points).length <= 1` — the condition SKILL.md and
+  // the discipline both name for shipping no filter — is still true of the empty list.
+  const named = points.map((p) => p.group).filter((g) => g !== undefined && g !== null && g !== "");
+  return Array.from(new Set(named)).sort();
 }
 
 /**
@@ -177,7 +229,12 @@ export function markLayers(
       key: point.key,
       name: point.name,
       value: point.value,
-      group: slugOf(point.group),
+      // Tolerated the way `groupsOf` tolerates it. A beat with no filter dimension is the
+      // documented normal case, and ruling R1 made the live layer mandatory for every map × web
+      // beat — so this line crashing on an absent group meant such a beat could not be rendered
+      // at all. `null` rather than a made-up slug: no filter exists to match it against, and the
+      // seed's own data grouped all thirteen points, which is why no test saw this.
+      group: point.group == null ? null : slugOf(point.group),
       subject: point.key === options.subjectKey,
       r: radiusOf(point.value),
     },

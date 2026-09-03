@@ -15,6 +15,7 @@ import {
   labelPlacement,
   keepPoint,
   groupsOf,
+  markLayers,
   slugOf,
   fr,
 } from "../assets/geo-symbol.ts";
@@ -96,7 +97,44 @@ describe("radiusScale", () => {
   });
 });
 
+// The legend is the only thing on a proportional-symbol map that says what an area MEANS — there
+// is no axis. So these assert the property the name promises, not merely that the list descends:
+// the previous test said "round, decreasing, at most count" and checked only the last two, which is
+// why a legend reading 9 815 · 19 629 · 29 444 was green for as long as it existed.
 describe("niceReferenceValues", () => {
+  const LADDER = [1, 2, 2.5, 5];
+  const isRoundMagnitude = (value: number) => {
+    const mantissa = value / Math.pow(10, Math.floor(Math.log10(value)));
+    return LADDER.some((rung) => Math.abs(rung - mantissa) < 1e-9);
+  };
+
+  it("should return values a reader can hold — 1/2/2.5/5 x 10^n, not one datum's arithmetic", () => {
+    // Counts, which is the honest use of this chart type: the type sheet is explicit that circle
+    // area encodes a TOTAL, and totals are rarely single digits. This is the case the old
+    // implementation read 9 814.7 on.
+    expect(niceReferenceValues(29444, 3)).toEqual([25000, 10000, 5000]);
+    expect(niceReferenceValues(11.0, 3)).toEqual([10, 5, 2.5]);
+  });
+
+  it("should keep every value round at any magnitude", () => {
+    for (const max of [0.4, 1, 3, 7, 100, 250, 999999, 0.0031]) {
+      for (const value of niceReferenceValues(max, 3)) {
+        expect(isRoundMagnitude(value)).toBe(true);
+        expect(value).toBeLessThanOrEqual(max);
+      }
+    }
+  });
+
+  it("should halve, so no two legend circles are a radius apart the eye cannot separate", () => {
+    // 25 000 / 20 000 / 10 000 is three round numbers and a broken legend: the first two draw
+    // circles whose radii differ by 12%. Consecutive ladder rungs are not enough.
+    for (const max of [29444, 11.0, 0.4, 250]) {
+      const values = niceReferenceValues(max, 3);
+      for (let i = 1; i < values.length; i++)
+        expect(values[i]!).toBeLessThanOrEqual(values[i - 1]! / 2);
+    }
+  });
+
   it("should return round, decreasing values, at most `count`", () => {
     const values = niceReferenceValues(11.0, 3);
     expect(values.length).toBeLessThanOrEqual(3);
@@ -106,6 +144,50 @@ describe("niceReferenceValues", () => {
 
   it("should never return a non-positive value", () => {
     for (const v of niceReferenceValues(0.4, 3)) expect(v).toBeGreaterThan(0);
+    // And nothing at all rather than a nonsense rung when there is no positive maximum.
+    expect(niceReferenceValues(0, 3)).toEqual([]);
+    expect(niceReferenceValues(-5, 3)).toEqual([]);
+  });
+});
+
+// An ungrouped study set - issue #51. SKILL.md documents the beat with no filter as the NORMAL
+// case and the discipline argues against adding one, but every point in `regions.json` carries a
+// group (it is the beat that demonstrates the filter), so the ungrouped path had no coverage and
+// `slugOf(undefined)` crashed the live layer, the slug guard and the filter CSS in turn. Since
+// ruling R1 made the live map mandatory for every map x web beat, that meant such a beat could not
+// be rendered at all.
+describe("a beat with no filter dimension", () => {
+  const UNGROUPED = [
+    { key: "a", name: "A", lon: 1, lat: 1, value: 10, px: 0, py: 0 },
+    { key: "b", name: "B", lon: 2, lat: 2, value: 20, px: 1, py: 1 },
+  ];
+  const LAYER = {
+    maxValue: 20,
+    maxRadiusFrameUnits: 10,
+    subjectKey: "a",
+    accent: "#f00",
+    muted: "#999",
+  };
+
+  it("should report no filter groups at all, so nothing downstream slugs an absent one", () => {
+    expect(groupsOf(UNGROUPED)).toEqual([]);
+    // The condition SKILL.md and the discipline both name for shipping no filter.
+    expect(groupsOf(UNGROUPED).length).toBeLessThanOrEqual(1);
+  });
+
+  it("should build the live layer without crashing, carrying a null group", () => {
+    const { source } = markLayers(UNGROUPED, LAYER);
+    expect(source.features.map((f) => f.properties.group)).toEqual([null, null]);
+  });
+
+  it("should still slug a real group when the beat declares one", () => {
+    const grouped = UNGROUPED.map((p, i) => ({ ...p, group: i ? "East" : "Western Europe" }));
+    expect(groupsOf(grouped)).toEqual(["East", "Western Europe"]);
+    const { source } = markLayers(grouped, LAYER);
+    expect(source.features.map((f) => f.properties.group).sort()).toEqual([
+      "east",
+      "western-europe",
+    ]);
   });
 });
 

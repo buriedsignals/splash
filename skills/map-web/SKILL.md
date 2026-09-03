@@ -180,6 +180,14 @@ cost thirteen separate interactions. Read it before choosing; do not choose by n
    ones missed the frame (`keepPoint`), and overrides the basemap's water colour before capture. Size
    it for the widest container the beat will actually sit in (see "The plate strategy") — never for
    one fixed layout, because there is no longer one to tune it for.
+   **A beat's own points need a beat's own camera: pass `--bounds "west,south,east,north"` beside
+   `--data`.** The bake used to accept `--data` and no `--bounds`, so a study set anywhere on earth
+   baked against this seed's Europe box and came back a plate of Europe with the marks off-frame,
+   refusing nothing — `assertCameraReachesBounds` checks the camera against the bounds it was asked
+   for, and it was asked for Europe. `--data` without `--bounds` is now refused, with the study
+   set's own padded extent printed as somewhere to start. The camera stays CHOSEN, from the
+   geography and the study set (`geo-discipline.md` rule 12); an extent fitted automatically is the
+   default that rule exists to refuse.
 3. **Draw the circles in the SVG, sized by value, largest-first** (`drawOrder`) so smaller circles
    stay paintable on top rather than buried — geometry only, no text (`references/map-web-discipline.md`, "Text is HTML, not SVG"). **Draw everything else — point labels, the per-point hit
    target, the legend, the title/source/caveat, the filter, the optional zoom toggle — as HTML**,

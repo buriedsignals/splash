@@ -69,7 +69,31 @@ const flag = (name, fallback) => {
 
 const size = Number(flag("--size", "1000"));
 const outDir = flag("--out", `/tmp/map-twin-web/plate-${size}`);
-const dataPath = flag("--data", join(HERE, "../assets/sample-data/regions.json"));
+const SEED_DATA = join(HERE, "../assets/sample-data/regions.json");
+const dataPath = flag("--data", SEED_DATA);
+// A BEAT'S OWN POINTS NEED A BEAT'S OWN CAMERA. `--data` was accepted and `--bounds` was not, so a
+// study set anywhere on earth baked against `BEAT.bounds` above — this seed's Europe box, Lisbon to
+// Stockholm — and came back a plate of Europe with the beat's marks projected off-frame. Nothing
+// refused: `assertCameraReachesBounds` checks the camera against the bounds it was ASKED for, and
+// it was asked for Europe, so it agreed.
+//
+// The camera is not derived from the data here, deliberately. Rule 12 of geo-discipline.md says the
+// camera is CHOSEN, from the geography and the study set, and the layout adapts to the plate that
+// comes back; a box fitted automatically to the extent is the "default" that rule exists to refuse.
+// So a beat states its camera, and a beat that states none is refused with its own extent printed,
+// which is a starting point rather than an answer.
+const boundsFlag = flag("--bounds", null);
+const parseBounds = (text) => {
+  const n = String(text).split(/[\s,]+/).filter(Boolean).map(Number);
+  if (n.length !== 4 || n.some((v) => !Number.isFinite(v))) {
+    throw new Error(`--bounds takes four numbers, west,south,east,north — got ${JSON.stringify(text)}`);
+  }
+  const [west, south, east, north] = n;
+  if (west >= east) throw new Error(`--bounds west (${west}) must be less than east (${east})`);
+  if (south >= north) throw new Error(`--bounds south (${south}) must be less than north (${north})`);
+  if (south < -85 || north > 85) throw new Error(`--bounds latitudes must sit inside -85..85 — got ${south}..${north}`);
+  return [[west, south], [east, north]];
+};
 const settleMs = Number(flag("--settle", "15000"));
 const sealedBrowserPath = flag("--browser", null);
 const sealedMaplibreJsPath = flag("--maplibre-js", null);
@@ -222,6 +246,29 @@ if (sealed) {
 
 const points = JSON.parse(await readFile(dataPath, "utf8"));
 
+// Resolved here rather than beside the other flags because the refusal quotes the study set, and
+// the study set is only on disk by now.
+const beatBounds = (() => {
+  if (boundsFlag !== null) return parseBounds(boundsFlag);
+  if (dataPath === SEED_DATA) return BEAT.bounds;
+  const lons = points.map((p) => p.lon);
+  const lats = points.map((p) => p.lat);
+  const pad = 5;
+  const suggestion = [
+    Math.floor(Math.min(...lons) - pad),
+    Math.floor(Math.min(...lats) - pad),
+    Math.ceil(Math.max(...lons) + pad),
+    Math.ceil(Math.max(...lats) + pad),
+  ].join(",");
+  throw new Error(
+    `--data was given without --bounds, so this bake would use the seed's own Europe camera ` +
+      `(${JSON.stringify(BEAT.bounds)}) for ${dataPath}. The camera is chosen from the geography ` +
+      `and the study set, never defaulted (doctrine/references/geo-discipline.md rule 12). This ` +
+      `study set's extent padded by ${pad} degrees is --bounds "${suggestion}" — a place to start ` +
+      `looking, not a camera anyone has looked at.`,
+  );
+})();
+
 // ── The capture ────────────────────────────────────────────────────────────────────────────────
 const browser = await puppeteer.launch({
   headless: true,
@@ -312,13 +359,13 @@ const gate = await page.evaluate(
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: beatBounds, settleMs, width: size, height: size },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
 assertWorldFillsFrame(camera, size);
-assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
+assertCameraReachesBounds(frameCorners, beatBounds, size);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -344,7 +391,7 @@ const offFrame = projectedPoints.filter((p) => !keepPoint(p, frame)).map((p) => 
 
 const geometry = {
   frame,
-  bounds: BEAT.bounds,
+  bounds: beatBounds,
   style: BEAT.style,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
