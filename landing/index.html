@@ -5676,7 +5676,8 @@
      edge has cleared the window, which depends on where it stands. */
   const SPAN = DEPTH + 300;
   const PERSP = 1000;   // the same number the stage's perspective is set to
-  const RATE = 1150;    // pixels of depth walked a second, once the line is in
+  const RATE = 1150;    // pixels of depth walked a second, filling the room
+  const CRUISE = 320;   // and the drift it keeps once the room is full
   const tiles = [];
   const SALT = ((Math.random() * 0xffffffff) >>> 0) || 0x9e3779b9;
 
@@ -5860,6 +5861,7 @@
     for (const t of tiles) {
       dress(t);
       t.off = (t.slot / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
+      t.on = false;
       t.el.style.opacity = '0';
     }
   };
@@ -5886,6 +5888,7 @@
          gap it left came round again and again — a crowded frame, then a thin
          one, then a crowded one. */
       t.slot = i;
+      t.on = false;
       t.off = (i / COUNT) * SPAN + (rnd() - 0.5) * (SPAN / COUNT) * 0.5;
       tiles.push(t);
     }
@@ -5951,15 +5954,18 @@
      * into a room that filled without them. */
     if (r.top > 0) {
       if (auto !== 0) { auto = 0; restage(); }
-    } else if (!reduced && auto < SPAN) {
-      auto = Math.min(SPAN, auto + dt * RATE);
+    } else if (!reduced) {
+      /* THE WALK NEVER STOPS, IT ONLY CHANGES PACE. Quick while the room is
+         filling — a reader who has just arrived should not wait for it — and
+         a drift afterwards, a quarter of that, which is a room with something
+         going on in it rather than a board on its way somewhere. */
+      auto += dt * (auto < SPAN ? RATE : CRUISE);
     }
-    /* AND THEN THE SCROLL WALKS THROUGH THEM. The board is the ground of the
-       whole chapter now, not of one screen of it, so the walk is spread over
-       the whole run — two and a half depths from the first line to the last
-       card, where it used to be the same two and a half over half a screen.
-       Same constant, five times the run: a room gone through at reading
-       pace rather than a board flying past. */
+    /* AND THE SCROLL PUSHES THE WALK ALONG. It is added to the clock, not put
+       in its place: the drawings come forward on their own, and turning the
+       wheel drives them forward faster — two and a half depths of it from the
+       first line to the last card, which at reading speed is several times
+       the drift. Stop, and the room goes back to its own pace. */
     const spanRun = Math.max(1, r.height - innerHeight);
     const prog = Math.max(0, Math.min(1, -r.top / spanRun));
     travel = auto + prog * SPAN * 2.4;
@@ -5984,14 +5990,36 @@
          tile's start, it is not in the room at all. */
       let raw = travel - t.off;
       if (raw < 0) {
-        if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
-        continue;
+        /* Nothing before its turn: on the way in, a tile whose start the walk
+           has not reached yet is not in the room at all — that is what makes
+           the board fill one drawing after another instead of all at once. */
+        if (!t.on) {
+          if (t.el.style.opacity !== '0') t.el.style.opacity = '0';
+          continue;
+        }
+        /* BUT THE WALK GOES BOTH WAYS. Read as «not yet begun», a tile that
+           had already been through was simply switched off when the reader
+           scrolled back — so going up, the board emptied out of the far end
+           and nothing ever came the other way. A tile that has been in the
+           room and is pushed back past its own start is put at the NEAR end
+           instead, dressed again, so walking backwards is walking backwards
+           through a room and not out of one. */
+        dress(t);
+        /* A HAIR INSIDE ITS OWN WALK, not exactly at the end of it. Landed on
+           the boundary, the tile answers the forward test in the same breath
+           and is dealt straight back to the far end — and every tile it
+           happens to at once lands on the same depth, which is the clump the
+           spread of the starts exists to prevent. */
+        t.off = travel - t.span + 120;
+        raw = t.span - 120;
+      } else if (raw >= t.span) {
+        /* A NEW TILE WEARS THE OLD ONE'S SLOT. Once its walk is done it is
+           dressed again — another format, another drawing, another ink,
+           another place — and its clock is set to now, so it starts from the
+           far end rather than reappearing part way in. */
+        t.off = travel; dress(t); raw = 0;
       }
-      /* A NEW TILE WEARS THE OLD ONE'S SLOT. Once its walk is done it is
-         dressed again — another format, another drawing, another ink, another
-         place — and its clock is set to now, so it starts from the far end
-         rather than reappearing part way in. */
-      if (raw >= t.span) { t.off = travel; dress(t); raw = 0; }
+      t.on = true;
       const z = raw - DEPTH;
       /* WHAT DECIDES IS WHERE IT LANDS ON THE GLASS, not how far back it is.
          A perspective has one vanishing point and it is behind the sentence,
