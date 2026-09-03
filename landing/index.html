@@ -5655,11 +5655,12 @@
       !window.__artFits || window.__artFits(n, w / h));
     const pool = fits.length ? fits : KINDS;
     const kind = pool[Math.floor(rnd() * pool.length)];
-    /* FOUR IN FIVE IN A PRINTING COLOUR, one in five in grey. Every painter
-       takes the ink, so a chart and a map get the same treatment. */
-    const grey = rnd() < 0.2;
+    /* ALWAYS A PRINTING COLOUR. The grey share is nought: this board is the
+       page saying what it can make, and a grey chart says the smallest part
+       of it. The reel behind the hero keeps its greys — it is newsprint —
+       which is why the share is an argument rather than a constant. */
     const seed = Math.floor(rnd() * 1e9) + 1;
-    const tone = window.__artInk(seed, grey ? 1 : 0);
+    const tone = window.__artInk(seed, 0);
     const c = rgbOf(tone);
     const el = t.el;
     el.style.width = w + 'px';
@@ -5683,11 +5684,38 @@
         : g < 0.62 ? '#e6e2d9'
         : mix(PAPER, c, 0.08 + rnd() * 0.14);
     }
-    /* SCATTERED, FREELY. Quadrant by quadrant it was an even spread and read
-       as a pattern; what keeps a tile off the words is where it lands on the
-       glass, measured every frame, so the position has nothing to hold back. */
-    const x = (rnd() * 2 - 1) * vw * 0.72;
-    const y = (rnd() * 2 - 1) * vh * 0.62;
+    /* SCATTERED, BUT NOT DEAD AHEAD.
+     *
+     * What hides a tile is the band the type occupies, measured on the glass
+     * — and a perspective converges, so a tile standing near the middle line
+     * stays inside that band almost the whole way in and only clears it when
+     * it is already past the screen and enormous. Measured: eleven per cent
+     * of arrivals came into sight IN FRONT of the screen plane, one of them
+     * at six hundred pixels this side of it. That is a card appearing in the
+     * reader's face rather than at the far end.
+     *
+     * So a place is drawn and then CHECKED: it has to be far enough off the
+     * middle that it is out of the band by the time it is still seven
+     * hundred pixels back. The check is the same division the browser does,
+     * turned round. Eight tries, and if the draw is that stubborn the point
+     * is pushed out along its own line — which keeps the scatter free
+     * everywhere except where it cannot be. */
+    /* Far enough off the middle to be out of the band early — and far enough
+       to be OUT OF THE WINDOW before it has doubled. The second is what keeps
+       a drawing off the camera: a tile only a little off the middle line
+       needs to come almost into the lens before its edge clears the frame,
+       and by then it fills it. */
+    const MX = vw * 0.42, MY = vh * 0.44;
+    let x = 0, y = 0;
+    for (let n = 0; n < 8; n++) {
+      x = (rnd() * 2 - 1) * vw * 0.88;
+      y = (rnd() * 2 - 1) * vh * 0.78;
+      if (Math.abs(x) >= MX || Math.abs(y) >= MY) break;
+      if (n === 7) {
+        const m = Math.max(Math.abs(x) / MX, Math.abs(y) / MY, 0.14);
+        x /= m; y /= m;
+      }
+    }
     t.kind = kind; t.w = w; t.h = h; t.seed = seed; t.tone = tone;
     t.x = x; t.y = y;
     t.r = (rnd() - 0.5) * 3.2;
@@ -5746,7 +5774,10 @@
     const ax = Math.abs(x) - w / 2, ay = Math.abs(y) - h / 2;
     const kx = ax > 1 ? (vw / 2) / ax : Infinity;
     const ky = ay > 1 ? (vh / 2) / ay : Infinity;
-    const k = Math.min(3.1, Math.max(1.06, Math.min(kx, ky)) * 1.06);
+    /* And it is never walked past twice its size, whatever the arithmetic
+       says: two is a drawing coming by, three is a drawing arriving in the
+       reader's lap. */
+    const k = Math.min(2, Math.max(1.06, Math.min(kx, ky)) * 1.06);
     return PERSP * (1 - 1 / k);
   };
   const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
