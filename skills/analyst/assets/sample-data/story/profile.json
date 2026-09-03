@@ -115,9 +115,9 @@
       "sous-notifiés"
     ],
     "column": "year",
-    "readProse": false,
+    "readProse": true,
     "claims": [],
     "unplaced": [],
-    "says": "no prose was handed to this profiler, so nothing was read: this is not a statement that the \"year\" column is complete"
+    "says": "the frozen prose states no incompleteness in English and French; a dataset that states one in another language is not read here"
   }
 }

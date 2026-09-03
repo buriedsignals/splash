@@ -80,13 +80,18 @@ describe("buildData behavior", () => {
     "2022,690,124",
   ].join("\n");
   // What intake would have frozen for this table — computed with the SAME carried profiler
-  // build-data.mjs verifies against, so the fixture can never drift from the real shape.
-  const profile = JSON.stringify(profileTable(parseCsv(csv)));
+  // build-data.mjs verifies against, AND WITH THE SAME INTAKE, so the fixture can never drift
+  // from the real shape. Profiling here without the article is what let #43 through: the
+  // fixture matched a recompute that no `intake` run produces, and every real frozen story
+  // refused while every test passed.
+  const article = "Rainfall has fallen across the basin for eight years running.\n";
+  const profile = JSON.stringify(profileTable(parseCsv(csv), { prose: article }));
 
   let dir;
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "analyst-"));
     await mkdir(join(dir, "source"), { recursive: true });
+    await writeFile(join(dir, "source", "article.md"), article);
     await writeFile(join(dir, "source", "data.csv"), csv);
     await writeFile(join(dir, "source", "profile.json"), profile);
   });
@@ -248,9 +253,13 @@ describe("output proof is current", () => {
     try {
       const fixture = join(SKILL, "assets", "sample-data", "story");
       await mkdir(join(story, "source"), { recursive: true });
-      for (const name of ["article.md", "STORYBOARD.md"]) {
-        await writeFile(join(story, name), await readFile(join(fixture, name)));
-      }
+      await writeFile(join(story, "STORYBOARD.md"), await readFile(join(fixture, "STORYBOARD.md")));
+      // source/article.md, where `intake` freezes it and where `where.mjs` looks for it —
+      // not the story root, which is where this fixture used to put it.
+      await writeFile(
+        join(story, "source", "article.md"),
+        await readFile(join(fixture, "article.md")),
+      );
       await writeFile(
         join(story, "source", "data.csv"),
         await readFile(join(SKILL, "assets", "sample-data", "rainfall.csv")),

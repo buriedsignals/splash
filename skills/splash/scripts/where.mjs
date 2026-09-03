@@ -132,6 +132,28 @@ async function read(path) {
   try { return await readFile(path, "utf8"); } catch { return null; }
 }
 
+// GATE 2 CLOSES INTO TWO FILES. Carried copy of storyboard/scripts/storyboard.mjs's `surveyGap`,
+// worded VERBATIM as that copy words it, for the same reason as `HAND` and the three size refusals
+// above: skills in this branch install independently and do not import across a skill boundary at
+// runtime, so the only way both gate-2 readers can agree is for both to hold the sentence.
+//
+// `STORYBOARD.md` is the record of what will be DRAWN; `SUBJECTS.md` is the record of what the
+// survey found and did NOT draw. `surveyGap` was written, is good, and nothing asked it — so Gate 2
+// closed into one file in practice, `whereIs` reported `ready` through storyboard, production and
+// delivery, and the cost landed at the closing offer, where `otherSubjectsFor` had nothing to give
+// and `subjects: "none"` was indistinguishable on disk from a survey never written down.
+async function surveyGap(storyDir) {
+  const recorded = await read(join(storyDir, "SUBJECTS.md"));
+  if (recorded !== null) return null;
+  return (
+    "the survey of the article's other angles: no SUBJECTS.md in this story's own directory. It " +
+    "belongs to movement 10 of the storyboard exchange, where the angles still exist — call " +
+    "recordSurveyedSubjects({ storyDir, subjects }) there with every angle the survey found, kept " +
+    "or dropped. An article that yielded nothing else records the EMPTY survey (subjects: []): " +
+    '"there was nothing else" is an answer, and an answer is written down like any other.'
+  );
+}
+
 async function regularFileStat(path) {
   try {
     const found = await lstat(path);
@@ -1156,6 +1178,21 @@ async function resolveStoryState(storyDir) {
       ...orderedStoryboardGate(frontmatter, gateState.slots),
       ...legacyState,
       missing: gateState.gaps,
+    };
+  }
+
+  // The storyboard's front matter is complete — and Gate 2 is still not closed, because it closes
+  // into TWO files. The survey belongs to movement 10, where the angles the journalist dropped are
+  // still in the room; asked for any later they have to be remembered, which is the failure the
+  // file exists to prevent. Reported before production so the refusal lands where the answer is.
+  const subjects = await surveyGap(storyDir);
+  if (subjects !== null) {
+    return {
+      phase: "storyboard",
+      gate: "G2-subjects",
+      awaiting: "subjects",
+      ...legacyState,
+      missing: [subjects],
     };
   }
 

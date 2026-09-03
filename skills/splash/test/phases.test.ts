@@ -136,6 +136,8 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
   await writeFile(join(storyDir, "source", "article.md"), "text");
   await writeFile(join(storyDir, "source", "data.csv"), "col\n1");
   await writeFile(join(storyDir, "source", "profile.json"), "{}");
+  // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+  await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
   observed.add((await whereIs(storyDir)).phase); // framing: source frozen, no STORYBOARD.md yet
 
   await writeFile(join(storyDir, "STORYBOARD.md"), "---\nslots: []\n---\n");
@@ -204,6 +206,8 @@ describe("the orchestrator's prose and its code agree", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+    await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
     await writeFile(join(dir, "STORYBOARD.md"), confirmedStoryboard);
     expect(await whereIs(dir)).toMatchObject({
       phase: "production",
@@ -268,6 +272,8 @@ describe("the orchestrator's prose and its code agree", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+    await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
     const stale = await whereIs(dir);
     expect(stale.owner).toEqual({ kind: "persona", id: "editor" });
 
@@ -293,6 +299,8 @@ describe("the orchestrator's prose and its code agree", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+    await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
     const before = await whereIs(dir);
     expect(before).toMatchObject({
       phase: "framing",

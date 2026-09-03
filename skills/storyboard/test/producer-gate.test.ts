@@ -249,6 +249,8 @@ describe("persisted producer state", () => {
     await writeFile(join(storyDir, "source", "article.md"), "article");
     await writeFile(join(storyDir, "source", "data.csv"), "country,value\nFrance,1\n");
     await writeFile(join(storyDir, "source", "profile.json"), "{}");
+    // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+    await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
   });
 
   // The analyst pre-step of production: a chosen chart slot does not leave for craft until
@@ -261,6 +263,8 @@ describe("persisted producer state", () => {
       join(storyDir, "source", "profile.json"),
       JSON.stringify(profileTable(parseCsv(csv))),
     );
+    // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+    await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
     await buildData({ storyDir, slotId: "1" });
   }
 

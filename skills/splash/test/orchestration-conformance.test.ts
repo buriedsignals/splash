@@ -121,6 +121,8 @@ async function freezeAndRender() {
   await writeFile(join(storyDir, "source", "article.md"), "Rainfall fell.\n");
   await writeFile(join(storyDir, "source", "data.csv"), "year,rainfall\n2025,100\n2026,67\n");
   await writeFile(join(storyDir, "source", "profile.json"), "{}\n");
+  // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+  await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
   await writeFile(join(storyDir, "STORYBOARD.md"), STORYBOARD);
   await writeCurrentBrief();
   await writeCurrentAnalystData();

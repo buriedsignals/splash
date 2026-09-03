@@ -16,6 +16,7 @@ import { invokeResolvedOwner } from "../scripts/orchestration.mjs";
 import {
   checkStoryboard,
   parseStoryboard,
+  surveyGap,
   REQUIRED_SCALARS as STORYBOARD_SCALARS,
   REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../storyboard/scripts/storyboard.mjs";
@@ -25,6 +26,23 @@ import {
   publishStagedDelivery,
   replacementArtifacts,
 } from "../../deliver/scripts/delivery-replacement.mjs";
+
+// GATE 2 CLOSES INTO TWO FILES. `STORYBOARD.md` records what will be DRAWN; SUBJECTS.md records
+// what the survey found and did NOT draw, written at movement 10 while the angles still exist.
+// Every fixture below that means "this story's gate 2 is closed" writes BOTH, because a fixture
+// that wrote only the storyboard is what let `surveyGap` go unasked: it existed, it was good, and
+// `whereIs` reported ready straight through to delivery without it. The dedicated gate test lower
+// down is the one that deliberately omits it.
+const SURVEYED = [
+  "---",
+  "subjects:",
+  "  - id: rainfall-by-station",
+  '    learns: "which stations fell fastest"',
+  "    medium: chart",
+  "    format: static",
+  "---",
+  "",
+].join("\n");
 
 let dir: string;
 beforeEach(async () => {
@@ -183,6 +201,7 @@ describe("whereIs", () => {
 
   it("should report intake with only article.md and data.csv missing", async () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     const state = await whereIs(dir);
     expect(state.phase).toBe("intake");
     expect(state.missing).toContain("source/article.md");
@@ -193,6 +212,7 @@ describe("whereIs", () => {
   it("should report intake with only data.csv missing — article plus profile is not frozen", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     const state = await whereIs(dir);
     expect(state.phase).toBe("intake");
     expect(state.missing).toEqual(["source/data.csv"]);
@@ -202,6 +222,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     const state = await whereIs(dir);
     expect(state.phase).toBe("framing");
     expect(state.missing).toEqual(["a confirmed takeaway"]);
@@ -214,6 +235,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
@@ -226,6 +248,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(SCALARS, { ...SLOT, medium: "image" }),
@@ -242,6 +265,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
@@ -277,6 +301,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, null));
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -287,6 +312,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(SCALARS, without(SLOT, "chosen")),
@@ -300,6 +326,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(SCALARS, without(SLOT, "candidates")),
@@ -315,6 +342,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(SCALARS, { ...SLOT, candidates: "[comparison, dumbbell]" }),
@@ -330,6 +358,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(without(without(SCALARS, "credit"), "effectiveDate")),
@@ -350,6 +379,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(without(SCALARS, "grounding")),
@@ -363,6 +393,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build({ ...SCALARS, grounding: "contradicted" }),
@@ -374,6 +405,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
 
     await writeFile(
       join(dir, "STORYBOARD.md"),
@@ -395,6 +427,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(without(SCALARS, "reference")),
@@ -408,6 +441,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build({ ...SCALARS, reference: '"none — both rejected"' }),
@@ -419,6 +453,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     // `size` refuses in storyboard's OWN words rather than this file's generic ones, because
     // W4 Task 9 makes it the one slot field the two gates word identically on purpose — a
     // journalist reading one gate's reason while the other holds is the A7/A14 defect with better
@@ -443,6 +478,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       build(SCALARS, { ...SLOT, reachable: "no" }),
@@ -458,6 +494,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), "---\nslots: []\n---\n");
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -474,6 +511,7 @@ describe("whereIs", () => {
       await writeFile(join(dir, "source", "article.md"), "text");
       await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
       await writeFile(
         join(dir, "STORYBOARD.md"),
         build({ ...SCALARS, takeaway: value }, null),
@@ -488,6 +526,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
       `---\nslots: []\n---\nThis takeaway: is in prose, not frontmatter.\n`,
@@ -505,6 +544,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
@@ -526,6 +566,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
@@ -544,6 +585,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
     await analyseBound(dir, "1-rainfall");
@@ -564,6 +606,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
@@ -583,6 +626,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
@@ -640,6 +684,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     const beatDir = join(dir, "beats", "1-rainfall");
@@ -672,6 +717,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
     await analyseBound(dir, "1-rainfall");
     await analyseBound(dir, "2-snowpack");
@@ -696,6 +742,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), twoSlotStoryboard());
     await analyseBound(dir, "1-rainfall");
     await analyseBound(dir, "2-snowpack");
@@ -726,6 +773,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "1-rainfall", "renders"), { recursive: true });
@@ -745,6 +793,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await writeFile(join(dir, "export", "rainfall.png"), "x");
@@ -760,6 +809,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), '---\ntakeaway: "Rainfall fell."\n');
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -773,6 +823,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await writeFile(join(dir, "source", "data.csv"), "col\n2");
@@ -792,6 +843,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await writeFile(join(dir, "STORYBOARD.md"), build({ ...SCALARS, credit: '"Data: MeteoSwiss, revised"' }));
@@ -811,6 +863,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     await analyseBound(dir, "1-rainfall");
     await mkdir(join(dir, "beats", "9-ghost"), { recursive: true });
@@ -995,6 +1048,7 @@ describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every 
       await writeFile(join(dir, "source", "article.md"), "text");
       await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
       await writeFile(join(dir, "STORYBOARD.md"), text);
 
       const state = await whereIs(dir);
@@ -1054,6 +1108,7 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
       await writeFile(join(dir, "source", "article.md"), "text");
       await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
       await writeFile(join(dir, "STORYBOARD.md"), text);
 
       const state = await whereIs(dir);
@@ -1071,6 +1126,7 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
       await writeFile(join(dir, "source", "article.md"), "text");
       await writeFile(join(dir, "source", "data.csv"), "col\n1");
       await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
       await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
       return (await whereIs(dir)).phase !== "storyboard";
     };
@@ -1088,5 +1144,59 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
     // Naming what IS accepted, not only what is not — the `sizeFor`/`readPalette` discipline, at
     // the gate rather than at the renderer.
     expect(gap).toContain("landscape, square, portrait");
+  });
+});
+
+// GATE 2's SECOND HALF — issue #49. `surveyGap` was written, works, words its refusal well, and
+// nothing ever called it. `where.mjs` had no mention of it, of `G2-subjects`, or of `SUBJECTS.md`.
+//
+// The cost of that lands at the very END of a run, which is what made it survivable for six
+// rounds: at delivery, `otherSubjectsFor` has nothing to offer, so the closing offer can only be
+// answered `none` — and `none` is a legitimate recorded answer meaning "this article yielded
+// nothing else". It is indistinguishable on disk from "the survey was never written down", and
+// `deliveryClosed` then reports `{"closed":true,"missing":[],"subjects":"none"}`, which is a true
+// statement about the receipts and a false impression about the story.
+//
+// So this block asserts the two things the wiring must do, and does not settle for one: that a
+// complete storyboard with no survey is HELD in the storyboard phase, and that the refusal it is
+// held with is the one `surveyGap` actually wrote — a refusal that does not name the file, the
+// movement and the call is how six runs each had to rediscover the same call.
+describe("gate 2's second half: the survey is asked for where the angles still exist", () => {
+  const frozenWithStoryboard = async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, SLOT));
+  };
+
+  it("should hold a gate-2-complete storyboard in the storyboard phase with no SUBJECTS.md", async () => {
+    await frozenWithStoryboard();
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    // `gate` is internal to the resolver — `projectResolverResult` projects it into the resume
+    // line, which is what a resumed session actually reads.
+    expect(state.resume).toContain("G2-subjects");
+    expect(state.resume).toContain("subjects");
+  });
+
+  it("should refuse in surveyGap's own words, naming the file, the movement and the call", async () => {
+    await frozenWithStoryboard();
+    const [gap] = (await whereIs(dir)).missing;
+    expect(gap).toBe(await surveyGap(dir));
+    expect(gap).toContain("SUBJECTS.md");
+    expect(gap).toContain("movement 10");
+    expect(gap).toContain("recordSurveyedSubjects({ storyDir, subjects })");
+  });
+
+  it("should accept the EMPTY survey — nothing else found is an answer, not an absence", async () => {
+    await frozenWithStoryboard();
+    await writeFile(join(dir, "SUBJECTS.md"), "---\nsubjects:\n---\n");
+    expect((await whereIs(dir)).phase).not.toBe("storyboard");
+  });
+
+  it("should let the story move on once the survey is recorded", async () => {
+    await frozenWithStoryboard();
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+    expect((await whereIs(dir)).phase).not.toBe("storyboard");
   });
 });

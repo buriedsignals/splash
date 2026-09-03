@@ -90,6 +90,8 @@ beforeEach(async () => {
   await writeFile(join(storyPath, "source", "article.md"), "Article\n");
   await writeFile(join(storyPath, "source", "data.csv"), "country,value\nFrance,1\n");
   await writeFile(join(storyPath, "source", "profile.json"), "{}\n");
+  // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+  await writeFile(join(storyPath, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
   await writeFile(join(storyPath, "STORYBOARD.md"), formatGate());
   const randomValues = [
     "binding-challenge-123456789",

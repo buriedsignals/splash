@@ -92,6 +92,8 @@ beforeEach(async () => {
     "country,adoption_2021,adoption_2025\nFrance,38.2,71.4\nGermany,41.0,74.9\n",
   );
   await writeFile(join(storyDir, "source", "profile.json"), "{}");
+  // Gate 2 closes into TWO files (surveyGap): a fixture that means "past storyboard" writes both.
+  await writeFile(join(storyDir, "SUBJECTS.md"), "---\nsubjects:\n  - id: other-angle\n    learns: \"an angle the survey found and did not draw\"\n    medium: chart\n    format: static\n---\n");
   await writeFile(
     join(storyDir, "source", "context.md"),
     "Prefer a full-width web treatment with a static fallback.",

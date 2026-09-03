@@ -175,11 +175,24 @@ export async function buildData({
   } catch {
     throw new Error("refused: source/profile.json is missing — intake never froze the profile");
   }
+  // The ARTICLE is part of the frozen pair, not a companion to it. `intake` profiles the table
+  // WITH the prose in hand (freeze.mjs: `profileTable(parseCsv(data), { prose: article })`),
+  // because a dataset that states its own incompleteness states it in a sentence and never in a
+  // column. A recompute without it is a recompute with different arguments, and the profiler
+  // records which it had — `statedIncompleteness.readProse` — so the two can never agree.
+  let articleBytes;
+  try {
+    articleBytes = await fs.readFile(join(storyDir, "source", "article.md"));
+  } catch {
+    throw new Error("refused: source/article.md is missing — intake never froze the article");
+  }
 
   // The profile must still describe the data. Recomputing it from the frozen CSV with the same
-  // profiler intake used catches a swapped or hand-edited file either way.
+  // profiler AND THE SAME INTAKE catches a swapped or hand-edited file either way.
   const recorded = JSON.parse(profileBytes.toString("utf8"));
-  const recomputed = profileTable(parseCsv(dataBytes.toString("utf8")));
+  const recomputed = profileTable(parseCsv(dataBytes.toString("utf8")), {
+    prose: articleBytes.toString("utf8"),
+  });
   if (JSON.stringify(recorded) !== JSON.stringify(recomputed)) {
     throw new Error(
       "refused: source/profile.json disagrees with source/data.csv — the frozen pair no longer matches",
