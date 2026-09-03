@@ -82,7 +82,6 @@ const SLOT: Record<string, string> = {
   // treatment was the one major decision in the exchange with no recorded justification, and a
   // slot whose form was picked by vibes closed Gate 2 as long as `reference:` carried a string.
   intent: '"show a trend over time"',
-  rankingWalk: '"chart-choice.md § show a trend over time — rank 1 Line kept; Slope removed (more than two moments)."',
   chosen: "trajectory",
   candidates: "[trajectory, comparison]",
 };
@@ -184,7 +183,6 @@ function secondSlot(): string {
     "    size: landscape\n" +
     "    reachable: yes\n" +
     '    intent: "show the gap between exactly two values"\n' +
-    '    rankingWalk: "chart-choice.md § show the gap between exactly two values — rank 1 Dumbbell removed (only one pair); rank 2 comparison chosen."\n' +
     "    chosen: comparison\n" +
     "    candidates: [comparison, dumbbell]"
   );
@@ -258,7 +256,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
     await writeFile(
       join(dir, "STORYBOARD.md"),
-      build(SCALARS, { ...SLOT, medium: "image" }),
+      build(SCALARS, { ...without(SLOT, "size"), medium: "image" }),
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
@@ -268,6 +266,36 @@ describe("whereIs", () => {
   // The analyst precondition must not erase the later gate's explicit diagnosis. Once the
   // analyst artifact exists, an unapproved render selects independent design review, and that
   // bounded review cannot supply the journalist's approval.
+  // Issue #46. State here is derived from the directory, and nothing on the directory changes when
+  // a persona dies to an HTTP 529 — so this branch re-issued the same instruction that had just
+  // failed, indefinitely. `REVIEW-ATTEMPTS.json` is what makes "could not run" visible and distinct
+  // from "not yet run".
+  it("should stop re-issuing a review that already failed twice, and disclose instead", async () => {
+    const { recordFailedReview } = await import("../scripts/review-attempts.mjs");
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await analyseBound(dir, "1-rainfall");
+    const beat = join(dir, "beats", "1-rainfall");
+    await mkdir(join(beat, "renders"), { recursive: true });
+    await writeFile(join(beat, "renders", "still.png"), "x");
+
+    expect((await whereIs(dir)).owner).toEqual({ kind: "persona", id: "designer" });
+
+    await recordFailedReview(beat, { persona: "designer", error: "API Error: 500 Internal server error" });
+    // One failure is not a reason to give up on an independent read.
+    expect((await whereIs(dir)).status).toBe("ready");
+
+    await recordFailedReview(beat, { persona: "designer", error: "API Error: 529 Overloaded" });
+    const after = await whereIs(dir);
+    expect(after.status).toBe("blocked");
+    expect(after.missing.join(" ")).toContain("could not be obtained");
+    // And it does not pretend the beat is defective: the render is still there and still unapproved.
+    expect(after.missing.join(" ")).toContain("rendered but not currently approved");
+  });
+
   it("should select designer for an unapproved render without closing the human gate", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
@@ -430,7 +458,13 @@ describe("whereIs", () => {
     expect((await whereIs(dir)).phase).toBe("storyboard");
   });
 
-  it("should stay in storyboard when the reference loop never closed into a field", async () => {
+  // INSPIRATION IS OPT-IN — issue #40. The reference loop used to be a compulsory movement between
+  // the size gate and the palette, ending in a scalar Gate 2 could not close without. Its intent
+  // was always about inspiration rather than validation, and its own answer vocabulary gave it
+  // away: the documented recording for "neither appealed" was `none — both rejected`, which the
+  // doctrine then had to argue was "a fact, not a loss". A movement that must defend its own null
+  // answer should not be mandatory.
+  it("should close gate 2 with no reference at all", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
     await writeFile(join(dir, "source", "profile.json"), "{}");
@@ -440,8 +474,18 @@ describe("whereIs", () => {
       build(without(SCALARS, "reference")),
     );
     const state = await whereIs(dir);
-    expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("the reference loop's answer");
+    expect(state.phase).not.toBe("storyboard");
+    expect(state.missing).not.toContain("the reference loop's answer");
+  });
+
+  it("should still carry a reference the journalist did take", async () => {
+    // Opt-in, not removed: a journalist who reached for inspiration has it recorded as before.
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+    await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS));
+    expect((await whereIs(dir)).phase).not.toBe("storyboard");
   });
 
   it("should treat 'none — both rejected' as a real answer to the reference loop", async () => {
@@ -1165,7 +1209,7 @@ describe("gate 2c: both readings of R2's format × size rule, string for string"
 // on eight named communes where the finding is about two of them by name), overriding a Dumbbell
 // the editor persona had independently offered. Gate 2 closed, because `reference:` held a string.
 // The only thing that caught it was the journalist looking at the published graphic.
-describe("gate 2: the internal ranking is walked, and the walk is written down", () => {
+describe("gate 2: the chooser was consulted, and the intent is written down", () => {
   const frozen = async (slot: Record<string, string> | null) => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "data.csv"), "col\n1");
@@ -1181,39 +1225,20 @@ describe("gate 2: the internal ranking is walked, and the walk is written down",
     expect(state.resume).toContain("G2-intent");
   });
 
-  it("should refuse a slot whose ranking walk was never written down", async () => {
-    const state = await frozen(without(SLOT, "rankingWalk"));
-    expect(state.phase).toBe("storyboard");
-    expect(state.resume).toContain("G2-ranking");
+  it("should agree with storyboard's own gate", async () => {
+    // The two readers carry the contract separately and must not drift.
+    const text = build(SCALARS, without(SLOT, "intent"));
+    const { meta } = parseStoryboard(text);
+    expect(checkStoryboard(meta).length).toBeGreaterThan(0);
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "data.csv"), "col\n1");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
+    await writeFile(join(dir, "STORYBOARD.md"), text);
+    expect((await whereIs(dir)).phase).toBe("storyboard");
   });
 
-  it("should ask for the walk BEFORE the treatment, because it is what the treatment is chosen from", async () => {
-    // A justification written after the decision is a justification for a decision already taken,
-    // which is the shape this record exists to stop. So a slot missing BOTH the walk and a valid
-    // treatment stops at the walk.
-    const state = await frozen({ ...without(SLOT, "rankingWalk"), chosen: "not-a-candidate" });
-    expect(state.resume).toContain("G2-ranking");
-    expect(state.resume).not.toContain("G2-treatment");
-  });
-
-  it("should agree with storyboard's own gate on both fields", async () => {
-    // The two gate readers carry the contract separately and must not drift — the discipline the
-    // rest of this file exists for.
-    for (const field of ["intent", "rankingWalk"]) {
-      const text = build(SCALARS, without(SLOT, field));
-      const { meta } = parseStoryboard(text);
-      const storyboardRefuses = checkStoryboard(meta).length > 0;
-      await writeFile(join(dir, "source", "article.md"), "text");
-      await writeFile(join(dir, "source", "data.csv"), "col\n1");
-      await writeFile(join(dir, "source", "profile.json"), "{}");
-      await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
-      await writeFile(join(dir, "STORYBOARD.md"), text);
-      const whereRefuses = (await whereIs(dir)).phase === "storyboard";
-      expect([field, storyboardRefuses, whereRefuses]).toEqual([field, true, true]);
-    }
-  });
-
-  it("should close gate 2 when both are recorded", async () => {
+  it("should close gate 2 once the intent is named", async () => {
     expect((await frozen(SLOT)).phase).not.toBe("storyboard");
   });
 });

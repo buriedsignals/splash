@@ -71,7 +71,6 @@ The confirmed framing, before the publication-format decision.
   // ANSWERS about that storyboard, so they move when the gate sequence legitimately moves, and
   // pretending otherwise would pin a stale contract under the authority of a transcript.
   //
-  // They last moved for issue #48, which added `intent` and `rankingWalk` to the slot contract and
   // put the house's own ranking AHEAD of the inspiration loop. The recorded run saw
   // "Stop at G2-reference"; a run of the same storyboard today stops at G2-intent first, because
   // this fixture's slot — like every slot written before #48 — records no walk.
@@ -80,11 +79,9 @@ The confirmed framing, before the publication-format decision.
     status: "ready",
     owner: { kind: "skill", id: "storyboard" },
     missing: [
-      "the reference loop's answer",
       "slot 1: no format was ever chosen",
       "slot 1: this medium and format were never confirmed reachable",
       "slot 1: no narrow intent was named — step 1 of chart-choice.md",
-      "slot 1: the internal ranking was never walked, or the walk was not written down",
       "slot 1: nothing chosen",
     ],
     attempts: 0,
@@ -95,9 +92,7 @@ The confirmed framing, before the publication-format decision.
     status: "ready",
     owner: { kind: "skill", id: "storyboard" },
     missing: [
-      "the reference loop's answer",
       "slot 1: no narrow intent was named — step 1 of chart-choice.md",
-      "slot 1: the internal ranking was never walked, or the walk was not written down",
       "slot 1: nothing chosen",
     ],
     attempts: 0,

@@ -19,7 +19,6 @@ slots:
     reachable: yes
     candidates: ["Area (and stacked area)", "Line", "Bar and column"]
     intent: unrecorded
-    rankingWalk: unrecorded
     chosen: "Area (and stacked area)"
     producer: custom
 ---

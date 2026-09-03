@@ -38,6 +38,11 @@ const SKILLS = join(TWIN, "skills");
 const SHEET_SETS = [
   { medium: "chart", dir: join(SKILLS, "chart-beat", "references", "types") },
   { medium: "map", dir: join(SKILLS, "map-beat", "references", "types") },
+  // `image` had no sheet set at all until #38, so `proposeMediums` marked it reachable and handed
+  // back an empty `types` array: movement 4 had nothing to enumerate, movement 10 had nothing to
+  // put in `candidates`, and a journalist who chose image was refused by `checkStoryboard` several
+  // movements later for having chosen nothing. The gap was real; it was just discovered downstream.
+  { medium: "image", dir: join(SKILLS, "image-beat", "references", "types") },
 ];
 
 /** Lowercase word tokens, punctuation dropped — the shape both sides of the join are compared in. */
@@ -226,7 +231,7 @@ export function readTypeSheets() {
       sheets.push({
         medium,
         title,
-        sheet: `${medium === "chart" ? "chart-beat" : "map-beat"}/references/types/${name}`,
+        sheet: `${{ chart: "chart-beat", map: "map-beat", image: "image-beat" }[medium]}/references/types/${name}`,
         aliases: aliasesFor(file, title),
         purpose: firstSentence(purpose),
         refusal,
@@ -295,11 +300,14 @@ function render(sheets, beats) {
     "",
   ];
 
-  for (const medium of ["chart", "map"]) {
+  // Driven off the sheet sets rather than a literal pair, so a medium that gains a sheet directory
+  // gains a section here with no second edit — which is how `image` came to have zero rows while
+  // its sheets would have been read (#38).
+  for (const { medium } of SHEET_SETS) {
     const set = sheets.filter((s) => s.medium === medium);
     const reachable = set.filter((s) => provenFormats(s, beats).length > 0);
     lines.push(
-      `## ${medium === "chart" ? "Chart" : "Map"} types — ${set.length} sheets, ${reachable.length} with at least one format proven on disk`,
+      `## ${medium[0].toUpperCase()}${medium.slice(1)} types — ${set.length} sheets, ${reachable.length} with at least one format proven on disk`,
       "",
       "| type | what it is for | when NOT to reach for it | refuses when | same idea as | proven formats | sheet |",
       "|---|---|---|---|---|---|---|",

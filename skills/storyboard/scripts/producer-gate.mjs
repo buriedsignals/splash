@@ -145,6 +145,11 @@ const NAMES_BY_MAPPING = new Map(
  */
 export function datawrapperMatch({ medium, format, treatment }) {
   if (!SUPPORTED_MEDIA.has(medium) || !SUPPORTED_FORMATS.has(format)) return null;
+  // A row whose `datawrapperTypes` is EMPTY is a treatment this provider cannot honour, recorded
+  // with its reason rather than deleted so nobody re-adds it from the type list. It is not a match:
+  // the gate asks nothing and production stays custom, which is the documented behaviour for an
+  // unmapped treatment. `Scatter (and bubble)` is the first — see #44 for what Datawrapper does to
+  // a scatter's colour and its y-range.
   const asked = treatmentNames(treatment);
   let best = null;
   for (const [mapping, names] of NAMES_BY_MAPPING) {
@@ -158,7 +163,8 @@ export function datawrapperMatch({ medium, format, treatment }) {
       if (wins) best = { mapping, words };
     }
   }
-  return best?.mapping.medium === medium ? best.mapping : null;
+  if (best?.mapping.medium !== medium) return null;
+  return best.mapping.datawrapperTypes.length > 0 ? best.mapping : null;
 }
 
 export function producerGap(slot) {
@@ -270,6 +276,15 @@ export function formatProducerGate({ treatment, match, format, capabilities }) {
     `The selected **${treatment}** treatment is available in Datawrapper (${providerLabels}). Which production path do you prefer?`,
     "",
     `- **Datawrapper** — a persisted Splash spec backed by a reusable newsroom chart ID; Splash's mapped implementation for this treatment is ${defaultLabel}.`,
+    // WHAT THE JOURNALIST GIVES UP, said at the gate rather than discovered in the render (#45).
+    // Choosing a delegated provider means accepting its rendering, and that is a legitimate
+    // choice — but only if it is a CHOICE. Splash carries the newsroom's accent and its own
+    // annotations to the line/bar family and nothing further: axis ticks, gridlines, value
+    // formatting, mark shape and the rest are Datawrapper's, and a treatment whose colour cannot
+    // be applied is not offered here at all rather than published in a colour nobody chose.
+    "  Splash sends the newsroom's accent and your annotations; everything else — axis ticks," +
+      " gridlines, value formatting, mark shape — is Datawrapper's own, and the chart is edited" +
+      " afterwards in Datawrapper rather than here.",
     "- **Custom** — a bespoke Splash component with full control over geometry and interaction.",
     "",
     "Datawrapper or custom?",

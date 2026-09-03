@@ -422,6 +422,7 @@ export function validateVisualCatalog(
     sheets.map((sheet) => [sheet.sheet, sheet]),
   );
   const referencedSheets = new Set();
+  const SHEET_MEDIUMS = new Set(sheets.map((sheet) => sheet.medium));
   const treatmentsWithProof = [];
   for (const row of catalog.treatments) {
     if (!mediums.has(row.medium))
@@ -454,7 +455,10 @@ export function validateVisualCatalog(
     if (checkFilesystem && !existsSync(target))
       fail(`treatment ${row.id} reference is missing: ${row.reference}`);
     const sheet = sheetsByReference.get(row.reference);
-    if (row.medium === "chart" || row.medium === "map") {
+    // Any medium that HAS a sheet set, not a hard-coded pair. `image` gained one in #38, and this
+    // condition would have kept its treatment unregistered — so the sheet then read as an orphan
+    // and the whole catalogue refused to generate.
+    if (SHEET_MEDIUMS.has(row.medium)) {
       if (checkFilesystem && !sheet)
         fail(
           `treatment ${row.id} does not name a current ${row.medium} type sheet`,
@@ -543,6 +547,15 @@ export function validateVisualCatalog(
       }
     }
     for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
+      // An intentionally unmapped row reaches nothing BY DESIGN and carries its reason (#44).
+      if (mapping.datawrapperTypes.length === 0) {
+        if (!mapping.unmappedReason)
+          fail(
+            `Datawrapper treatment ${JSON.stringify(mapping.treatment)} maps to no type and gives ` +
+              `no unmappedReason — an empty mapping has to say why, or it reads as an oversight`,
+          );
+        continue;
+      }
       if (!usedMappings.has(mapping.treatment)) {
         fail(
           `Datawrapper treatment mapping ${JSON.stringify(mapping.treatment)} reaches no canonical catalogue treatment`,

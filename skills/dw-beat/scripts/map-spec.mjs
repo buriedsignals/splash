@@ -124,13 +124,17 @@ export function buildTextAnnotation(entry, id) {
     align: style.align ?? "tl",
     dx: style.dx ?? 0,
     dy: style.dy ?? 0,
-    bg: style.bg ?? false,
     width: style.width ?? 20,
-    bold: style.bold ?? false,
-    italic: style.italic ?? false,
-    underline: style.underline ?? false,
-    color: style.color ?? false,
-    size: style.size ?? 14,
+    // THE HOUSE CONVENTION, not a per-annotation choice (#47). Datawrapper needs each of these
+    // keys present, so they are still sent — as one settled answer rather than as six knobs a beat
+    // can turn. What an annotation is FOR is its position and its words; how it looks is the
+    // newsroom's, decided once.
+    bg: false,
+    bold: false,
+    italic: false,
+    underline: false,
+    color: false,
+    size: 14,
     showMobile: true,
     showDesktop: true,
     mobileFallback: true,
@@ -202,6 +206,9 @@ export function buildChartPayload(spec) {
 
   const visualize = {
     "custom-colors": { [seriesLabel]: spec.color },
+    // Only when a beat asked. Sending Datawrapper's own default back to it is noise in the metadata
+    // and a second place for the default to drift from theirs.
+    ...(spec.markSize === undefined ? {} : { size: spec.markSize }),
     "text-annotations": [...textAnnotations, ...rangeEntries.map((entry) => entry.label)],
     "range-annotations": rangeEntries.map((entry) => entry.rule),
   };

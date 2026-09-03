@@ -56,7 +56,6 @@ function treatmentGate({ chosen = false } = {}) {
     format: web
     reachable: yes
     intent: "show a trend over time"
-    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."
     candidates: [Line, "Slope (slopegraph)"]${chosen ? '\n    chosen: "Slope (slopegraph)"' : ""}`,
     { reference: true },
   );
@@ -147,12 +146,9 @@ describe("shared revision-safe selection domain", () => {
     expect(model.gate).toEqual({ id: "G2b", awaiting: "format" });
     expect(
       model.choices.filter((row: any) => row.enabled).map((row: any) => row.id),
-    ).toEqual([
-      "format.static",
-      "format.web",
-      "format.video",
-      "format.scrolly",
-    ]);
+    // No scrolly: this slot is a CHART, and #39 removed `chart/scrolly` — the catalogue promised
+    // to advance a fixed chart through explicit steps, which the scrolly skill says it does not do.
+    ).toEqual(["format.static", "format.web", "format.video"]);
     expect(model.revisions.catalogue).toBe(
       visualCatalogRevision(currentCatalog),
     );

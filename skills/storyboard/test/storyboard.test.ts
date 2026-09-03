@@ -27,7 +27,6 @@ slots:
     size: "landscape"
     reachable: "yes"
     intent: "show a trend over time"
-    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."
     candidates: ["trajectory", "comparison"]
     chosen: "trajectory"
 ---
@@ -50,7 +49,7 @@ describe("parseStoryboard", () => {
     expect(() => parseStoryboard(VALID.replace("    chosen: \"trajectory\"", "    producer: custom\n    producer: datawrapper\n    chosen: \"trajectory\""))).toThrow(/duplicate key "producer"/);
     const duplicateSlot = VALID.replace(
       "---\n\nThe prose",
-      '  - id: 1\n    proves: "A second claim."\n    medium: chart\n    format: static\n    size: landscape\n    reachable: yes\n    intent: "show a trend over time"\n    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."\n    candidates: [comparison]\n    chosen: comparison\n---\n\nThe prose',
+      '  - id: 1\n    proves: "A second claim."\n    medium: chart\n    format: static\n    size: landscape\n    reachable: yes\n    intent: "show a trend over time"\n    candidates: [comparison]\n    chosen: comparison\n---\n\nThe prose',
     );
     expect(() => parseStoryboard(duplicateSlot)).toThrow(/duplicate slot id "1"/);
   });
@@ -178,13 +177,13 @@ describe("checkStoryboard", () => {
     );
   });
 
-  it("should refuse a storyboard whose reference loop never closed into a field, and accept a recorded rejection", () => {
+  it("should accept a storyboard with no reference — inspiration is opt-in (#40)", () => {
     const missing = parseStoryboard(VALID).meta;
     delete missing.reference;
-    expect(checkStoryboard(missing).join(" ")).toContain(
-      "reference is missing",
-    );
+    expect(checkStoryboard(missing)).toEqual([]);
 
+    // And still accepts one that was taken, including the recorded rejection, which is now an
+    // ordinary value rather than a null answer the gate had to be argued into accepting.
     const rejected = parseStoryboard(VALID).meta;
     rejected.reference = "none — both rejected";
     expect(checkStoryboard(rejected)).toEqual([]);

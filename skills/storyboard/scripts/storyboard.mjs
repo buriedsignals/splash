@@ -312,7 +312,15 @@ export function proposeCredit({ newsroom, article } = {}) {
 // the render and the approval. `exchange.md`'s ruling R4 exists because a hand-over came out in
 // English on a French story for want of it, and `stories/milan-cortina-la-glace-des-sponsors` sat
 // in this tree as a French story whose gate-2 verdict was `[]` and whose hand-over threw.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
+// `reference` is NOT here — issue #40. The reference loop was a compulsory movement between the
+// size gate and the palette, terminating in a required scalar Gate 2 could not close without. Its
+// own intent is about INSPIRATION ("the model gains a concrete target, the journalist gains
+// vocabulary"), and inspiration is something a journalist reaches for, not a toll gate between
+// choosing a size and choosing a colour. The tell was its answer vocabulary: the documented
+// recording for "neither appealed" was `none — both rejected`, and the doctrine had to argue that
+// this is "a fact, not a loss". A movement that must defend its own null answer should not be
+// mandatory. It is now offered at the treatment decision, and recorded when it is taken.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "language"];
 
 // Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
 // EXPORT_SIZES / SIZED_FORMATS below — but it stays in this list because the list is what the parity
@@ -323,22 +331,11 @@ export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", 
 // it entirely. Its fixtures are written out in `splash/test/where.test.ts` and compared string for
 // string against `where.mjs`'s copy, because a field no constant implies is a field no generator
 // can reach.
-// `intent` and `rankingWalk` are the RECORD OF THE HOUSE'S OWN KNOWLEDGE HAVING BEEN USED — issue
-// #48. Treatment selection was the one major decision in this exchange with no recorded
-// justification, and the two knowledge sources were enforced with wildly different force: the
-// internal ranking (`references/chart-choice.md`) sat at movement 4 with no gate, no recorded
-// field and nothing downstream able to tell whether it was walked, while the external reference
-// lookup sat at movement 8 with its own gate and a `reference:` scalar in REQUIRED_SCALARS that
-// Gate 2 could not close without. An agent under pressure optimises for the thing that is checked,
-// and on a real run one did: it went from the type survey straight to its own judgement and
-// proposed a Scatter that the ranking's own move-down column removes — "most points need labels",
-// on eight named communes where the finding is about two of them by name. The editor persona had
-// independently offered the Dumbbell the ranking would have reached. `checkStoryboard` closed Gate
-// 2 anyway, because the treatment carried a `reference:` string.
-//
-// So the walk is recorded by the phase that owns it and both gates read the record, which is the
-// same discipline `grounding:` and `reachable:` already follow — neither gate re-derives a verdict
-// the other structurally cannot re-run.
+// `intent` is the record that the chooser was consulted — issue #48. Treatment selection was the
+// only major decision here with nothing written down, while the external reference lookup had its
+// own gate and a required scalar; an agent optimises for what is checked, and one did, proposing a
+// Scatter that `chart-choice.md`'s own move-down column removes. ONE field, because naming the
+// narrow intent is step 1 of that guide and the step that would have caught it.
 export const REQUIRED_SLOT_FIELDS = [
   "id",
   "proves",
@@ -347,7 +344,6 @@ export const REQUIRED_SLOT_FIELDS = [
   "size",
   "reachable",
   "intent",
-  "rankingWalk",
   "chosen",
 ];
 
@@ -378,9 +374,19 @@ export const SIZED_FORMATS = ["static", "video"];
  * cost this project a gate reporting `production` on a storyboard the other gate was refusing
  * (FEEDBACK-2026-08-10.md, A7/A14).
  */
-export function sizeGap(format, size, id) {
-  const takesASize = SIZED_FORMATS.includes(format);
+export function sizeGap(medium, format, size, id) {
   const sizes = recorded(size);
+  // A PHOTO ESSAY HAS NO FIXED EXPORT SIZE. `image/static` is a "sized" format by the format table,
+  // so gate 2c required one of landscape/square/portrait — and `image-beat` reads none of them,
+  // because its frame HEIGHT is derived from its own content: how many photographs, how far each
+  // caption wraps. `imageBeatLayout` says so in its own header. Asking for a size nothing can
+  // honour is the #55 defect in a second place, so the honest fix is to stop asking rather than to
+  // invent a fourth variable-height row nobody has decided on.
+  if (medium === "image")
+    return sizes.length > 0
+      ? `slot ${id}: an image beat takes no size — a photo essay is exactly as tall as its own captions make it, so leave the field out`
+      : null;
+  const takesASize = SIZED_FORMATS.includes(format);
   if (!takesASize && sizes.length > 0)
     return `slot ${id}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
   if (!takesASize) return null;
@@ -540,18 +546,9 @@ const SLOT_SUB_GATE = { medium: "2a", format: "2b", size: "2c" };
 // `reachable` carries the recorded verdict of formatGap + capabilityGap, run once at G2b by the
 // phase that owns them. The gate reads the record; it never re-runs the check, because the other
 // gate structurally cannot.
-// THE HONEST WORD FOR "NOBODY RECORDED THIS", and the reason it is a value rather than an absence.
-//
-// `intent` and `rankingWalk` arrived after fifteen stories had already been produced and delivered.
-// Their walks cannot be reconstructed — nobody can say now whether `chart-choice.md` was opened for
-// a slot chosen months ago — and WRITING ONE WOULD BE THE EXACT DISHONESTY THESE FIELDS EXIST TO
-// PREVENT: a justification composed after the fact for a decision already taken. So a slot that
-// predates the contract records `unrecorded`, which is `TYPEFACE.md`'s `origin: default` idiom
-// applied to the same problem — "nobody chose" said out loud, where anything downstream can see it,
-// rather than left as a silence indistinguishable from an answer.
-//
-// It is deliberately NOT a bypass anybody should reach for. `splash/test/ranking-walk-ratchet.test.ts`
-// pins the exact set of slots carrying it, so the number can fall and never rise.
+// `unrecorded` is what a slot written before this field existed carries. Sixteen stories were
+// already delivered and nobody can say now what intent was named for them; inventing one would be
+// the dishonesty the field exists to prevent. Same idiom as `TYPEFACE.md`'s `origin: default`.
 export const UNRECORDED = "unrecorded";
 
 const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
@@ -567,18 +564,10 @@ function slotGap(field, id) {
     return `slot ${id}: this medium and format were never confirmed reachable`;
   if (field === "intent")
     return (
-      `slot ${id}: no narrow intent was named — step 1 of references/chart-choice.md, and the ` +
-      `highest-leverage line in it. "Show association" and "show departure from an expected ` +
-      `ordering" reach different rank-1 forms from the same two columns of data, and the ` +
-      `difference is a question a journalist answers instantly and an agent gets wrong.`
-    );
-  if (field === "rankingWalk")
-    return (
-      `slot ${id}: the internal ranking was never walked, or the walk was not written down. ` +
-      `Record which section of references/chart-choice.md the named intent lands in, which ` +
-      `higher-ranked forms were removed and by which move-down condition, and — when a ` +
-      `lower-ranked form wins — why the higher surviving form lost (step 6). A treatment chosen ` +
-      `without this is chosen by vibes, and nothing downstream could tell the difference.`
+      `slot ${id}: no narrow intent was named — step 1 of references/chart-choice.md. ` +
+      `"Show association" and "show departure from an expected ordering" reach different rank-1 ` +
+      `forms from the same two columns of data, and it is a question a journalist answers ` +
+      `instantly and an agent gets wrong.`
     );
   const subGate = SLOT_SUB_GATE[field];
   return subGate
@@ -1202,7 +1191,7 @@ export function checkStoryboard(meta) {
         errors.push(slotGap(field, slot.id));
     }
 
-    const gap = sizeGap(slot.format, slot.size, slot.id);
+    const gap = sizeGap(slot.medium, slot.format, slot.size, slot.id);
     if (gap) errors.push(gap);
 
     const destination = destinationGap(slot.format, slot.destination, slot.id);

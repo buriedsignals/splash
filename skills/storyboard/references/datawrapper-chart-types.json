@@ -7,124 +7,269 @@
     "symbol": "VisualizationType"
   },
   "visualizationTypes": [
-    { "id": "column-chart", "label": "Column chart", "kind": "chart" },
-    { "id": "d3-area", "label": "Area chart", "kind": "chart" },
-    { "id": "d3-arrow-plot", "label": "Arrow plot", "kind": "chart" },
-    { "id": "d3-bars-bullet", "label": "Bullet bars", "kind": "chart" },
-    { "id": "d3-bars-grouped", "label": "Grouped bars", "kind": "chart" },
-    { "id": "d3-bars-split", "label": "Split bars", "kind": "chart" },
-    { "id": "d3-bars-stacked", "label": "Stacked bars", "kind": "chart" },
-    { "id": "d3-bars", "label": "Bar chart", "kind": "chart" },
-    { "id": "d3-donuts", "label": "Donut chart", "kind": "chart" },
-    { "id": "d3-dot-plot", "label": "Dot plot", "kind": "chart" },
-    { "id": "d3-lines", "label": "Line chart", "kind": "chart" },
-    { "id": "d3-maps-choropleth", "label": "Choropleth map", "kind": "map" },
-    { "id": "d3-maps-symbols", "label": "Symbol map", "kind": "map" },
-    { "id": "d3-multiple-donuts", "label": "Multiple donuts", "kind": "chart" },
-    { "id": "d3-multiple-pies", "label": "Multiple pies", "kind": "chart" },
-    { "id": "d3-pies", "label": "Pie chart", "kind": "chart" },
-    { "id": "d3-range-plot", "label": "Range plot", "kind": "chart" },
-    { "id": "d3-scatter-plot", "label": "Scatter plot", "kind": "chart" },
-    { "id": "dual-axis", "label": "Dual-axis chart", "kind": "chart" },
-    { "id": "election-donut-chart", "label": "Election donut", "kind": "chart" },
-    { "id": "grouped-column-chart", "label": "Grouped columns", "kind": "chart" },
-    { "id": "locator-map", "label": "Locator map", "kind": "map" },
-    { "id": "multiple-lines", "label": "Multiple lines", "kind": "chart" },
-    { "id": "multiple-columns", "label": "Multiple columns", "kind": "chart" },
-    { "id": "stacked-column-chart", "label": "Stacked columns", "kind": "chart" },
-    { "id": "tables", "label": "Table", "kind": "table" },
-    { "id": "waterfall", "label": "Waterfall", "kind": "chart" }
+    {
+      "id": "column-chart",
+      "label": "Column chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-area",
+      "label": "Area chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-arrow-plot",
+      "label": "Arrow plot",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-bars-bullet",
+      "label": "Bullet bars",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-bars-grouped",
+      "label": "Grouped bars",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-bars-split",
+      "label": "Split bars",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-bars-stacked",
+      "label": "Stacked bars",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-bars",
+      "label": "Bar chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-donuts",
+      "label": "Donut chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-dot-plot",
+      "label": "Dot plot",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-lines",
+      "label": "Line chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-maps-choropleth",
+      "label": "Choropleth map",
+      "kind": "map"
+    },
+    {
+      "id": "d3-maps-symbols",
+      "label": "Symbol map",
+      "kind": "map"
+    },
+    {
+      "id": "d3-multiple-donuts",
+      "label": "Multiple donuts",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-multiple-pies",
+      "label": "Multiple pies",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-pies",
+      "label": "Pie chart",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-range-plot",
+      "label": "Range plot",
+      "kind": "chart"
+    },
+    {
+      "id": "d3-scatter-plot",
+      "label": "Scatter plot",
+      "kind": "chart"
+    },
+    {
+      "id": "dual-axis",
+      "label": "Dual-axis chart",
+      "kind": "chart"
+    },
+    {
+      "id": "election-donut-chart",
+      "label": "Election donut",
+      "kind": "chart"
+    },
+    {
+      "id": "grouped-column-chart",
+      "label": "Grouped columns",
+      "kind": "chart"
+    },
+    {
+      "id": "locator-map",
+      "label": "Locator map",
+      "kind": "map"
+    },
+    {
+      "id": "multiple-lines",
+      "label": "Multiple lines",
+      "kind": "chart"
+    },
+    {
+      "id": "multiple-columns",
+      "label": "Multiple columns",
+      "kind": "chart"
+    },
+    {
+      "id": "stacked-column-chart",
+      "label": "Stacked columns",
+      "kind": "chart"
+    },
+    {
+      "id": "tables",
+      "label": "Table",
+      "kind": "table"
+    },
+    {
+      "id": "waterfall",
+      "label": "Waterfall",
+      "kind": "chart"
+    }
   ],
   "splashTreatments": [
     {
       "treatment": "Area (and stacked area)",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-area"]
+      "datawrapperTypes": [
+        "d3-area"
+      ]
     },
     {
       "treatment": "Bar and column",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-bars", "column-chart"]
+      "datawrapperTypes": [
+        "d3-bars",
+        "column-chart"
+      ]
     },
     {
       "treatment": "Bullet",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-bars-bullet"]
+      "datawrapperTypes": [
+        "d3-bars-bullet"
+      ]
     },
     {
       "treatment": "Dumbbell (range plot)",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-range-plot"]
+      "datawrapperTypes": [
+        "d3-range-plot"
+      ]
     },
     {
       "treatment": "Grouped bar",
       "medium": "chart",
-      "aliases": ["grouped column"],
-      "datawrapperTypes": ["d3-bars-grouped", "grouped-column-chart"]
+      "aliases": [
+        "grouped column"
+      ],
+      "datawrapperTypes": [
+        "d3-bars-grouped",
+        "grouped-column-chart"
+      ]
     },
     {
       "treatment": "Line",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-lines"]
+      "datawrapperTypes": [
+        "d3-lines"
+      ]
     },
     {
       "treatment": "Pie and donut",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-pies", "d3-donuts"]
+      "datawrapperTypes": [
+        "d3-pies",
+        "d3-donuts"
+      ]
     },
     {
       "treatment": "Population pyramid",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-bars-split"]
+      "datawrapperTypes": [
+        "d3-bars-split"
+      ]
     },
     {
       "treatment": "Scatter (and bubble)",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-scatter-plot"]
+      "datawrapperTypes": [],
+      "unmappedReason": "d3-scatter-plot exists, and ChartSpec cannot express it. The spec is line/bar-shaped and two of its fields do the wrong thing on a scatter SILENTLY: spec.color becomes visualize['custom-colors'] keyed by the series label, which is the line/bar mechanism — Datawrapper colours a scatter by a COLUMN, so the newsroom's accent never reaches the marks and eight paths render in Datawrapper's default blue. And custom-range-y is computed from the data's 2nd column, which on a scatter is X: a euro range sent as the range of an axis holding ratios. The chart publishes and looks plausible, which is why this has to be refused here rather than caught at review. Left unmapped, the producer gate asks nothing and production stays custom — the same honest treatment Lollipop already gets. Issue #44."
     },
     {
       "treatment": "Slope (slopegraph)",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["d3-lines"]
+      "datawrapperTypes": [
+        "d3-lines"
+      ]
     },
     {
       "treatment": "Stacked bar",
       "medium": "chart",
-      "aliases": ["stacked column"],
-      "datawrapperTypes": ["d3-bars-stacked", "stacked-column-chart"]
+      "aliases": [
+        "stacked column"
+      ],
+      "datawrapperTypes": [
+        "d3-bars-stacked",
+        "stacked-column-chart"
+      ]
     },
     {
       "treatment": "Waterfall (bridge)",
       "medium": "chart",
       "aliases": [],
-      "datawrapperTypes": ["waterfall"]
+      "datawrapperTypes": [
+        "waterfall"
+      ]
     },
     {
       "treatment": "Choropleth",
       "medium": "map",
       "aliases": [],
-      "datawrapperTypes": ["d3-maps-choropleth"]
+      "datawrapperTypes": [
+        "d3-maps-choropleth"
+      ]
     },
     {
       "treatment": "Proportional symbol (symbol / bubble map)",
       "medium": "map",
       "aliases": [],
-      "datawrapperTypes": ["d3-maps-symbols"]
+      "datawrapperTypes": [
+        "d3-maps-symbols"
+      ]
     },
     {
       "treatment": "Locator",
       "medium": "map",
       "aliases": [],
-      "datawrapperTypes": ["locator-map"]
+      "datawrapperTypes": [
+        "locator-map"
+      ]
     }
   ]
 }

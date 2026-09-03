@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { blockingGap } from "./finding-severity.mjs";
 import { lstatSync, readFileSync, readdirSync } from "node:fs";
 import { rename, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
@@ -16,6 +17,22 @@ const SHA256 = /^sha256:[0-9a-f]{64}$/;
 function text(value, label) {
   if (typeof value !== "string" || value.trim() === "") {
     throw new Error(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+
+function overrides(value, label = "overrides") {
+  if (value === undefined) return {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object keyed by finding ID`);
+  }
+  for (const [id, entry] of Object.entries(value)) {
+    if (!entry || typeof entry !== "object") {
+      throw new Error(`${label}[${JSON.stringify(id)}] must record a reason and a time`);
+    }
+    text(entry.reason, `${label}[${JSON.stringify(id)}].reason`);
+    timestamp(entry.at, `${label}[${JSON.stringify(id)}].at`);
+    text(entry.by, `${label}[${JSON.stringify(id)}].by`);
   }
   return value;
 }
@@ -190,6 +207,7 @@ export function validateOutputReview(record) {
     throw new Error("OutputReview.draftDigest must be a sha256 digest");
   }
   findingIds(record.findingIds, "OutputReview.findingIds");
+  overrides(record.overrides, "OutputReview.overrides");
   if (!Array.isArray(record.qaRuns) || record.qaRuns.length === 0) {
     throw new Error("OutputReview.qaRuns must contain at least one QA run");
   }
@@ -236,6 +254,11 @@ function approvalAgainstCurrent(record, { beatDir, expectedPlanVersion, expected
   if (record.draftDigest !== digest) {
     throw new Error("OutputReview is stale because the rendered draft changed after review");
   }
+  // Issue #11: a blocking finding is not shippable on the same "approve" as a stylistic note.
+  // Checked HERE, after the digest, so an override is only ever honoured for the exact render it
+  // was given against — a re-render makes the review stale first, and the override dies with it.
+  const blocked = blockingGap(record.findingIds, record.overrides);
+  if (blocked) throw new Error(`OutputReview cannot approve: ${blocked}`);
   const currentFeedbackDigest = feedbackDigest(beatDir);
   if ((record.feedbackDigest ?? null) !== currentFeedbackDigest) {
     throw new Error("OutputReview is stale because it is not bound to the current editor feedback");

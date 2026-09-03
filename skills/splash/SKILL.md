@@ -75,6 +75,27 @@ owner's own skill or persona brief; this document duplicates no owner body.
    (implement → render → check → one targeted fix naming the cause). On the third failure:
    **blocked** — hand back to the journalist with the gaps named and what was tried. No silent
    fourth attempt, no auto-skip, no self-declared win.
+
+   **A PERSONA THAT CANNOT RUN IS NOT THAT CASE.** Clause 5 is about a beat whose RENDER keeps
+   failing. A review that died to an HTTP 500 or 529 never got to look at the render: there is no
+   gap in the beat to name, nothing to fix, and "a targeted fix naming the cause" is meaningless
+   when the cause is capacity in the model serving the subagent. So:
+
+   - **Two attempts, then proceed — disclosed.** A 529 is a capacity signal and a third immediate
+     attempt is likely to fail the same way.
+   - **Record each one** with `recordFailedReview` (`scripts/review-attempts.mjs`), which appends
+     to `beats/<id>/REVIEW-ATTEMPTS.json` with the persona, the timestamp and the transport error
+     verbatim, request id included. Nothing on the filesystem changes when a persona dies, so
+     without this record `whereIs` re-issues the instruction that just failed and a later session
+     cannot tell *"review not yet run"* from *"review run twice and killed by infrastructure"*.
+   - **It does not block G3.** The designer never approves pixels; G3 is the journalist's alone.
+     Once the attempts are exhausted `whereIs` reports the beat **blocked** with the disclosure
+     attached, and the journalist decides knowing no independent eye has read it. This is never a
+     licence to self-approve, and never a reason to skip the render check — those are yours to run
+     either way.
+   - **It is a disclosure, not a maintainer note.** `recordMaintainerNote` is for defects in our
+     code. A journalist whose beat was approved without an independent review needs to be told
+     that; it is theirs to know, not an internal note about us.
 6. **A refused step writes nothing.** Partial state is worse than no state; a refusal leaves the
    directory exactly as found.
 7. **Resume from the last completed gate file**, not from remembered intent: `whereIs` walks the

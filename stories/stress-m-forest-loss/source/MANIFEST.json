@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "article",
+      "path": "source/article.md",
+      "kind": "prose",
+      "digest": "sha256:0f2ced8ec4fd0ed969715b755763bc61dbb66b864f196cd3633935b0fc5f34de"
+    },
+    {
+      "id": "data",
+      "path": "source/data.csv",
+      "kind": "table",
+      "digest": "sha256:2ed982d15ce63560fcb2cadabfd2473d51862b31e5ec9c0ed109caa6663520b0",
+      "profile": "source/profile.json"
+    }
+  ]
+}

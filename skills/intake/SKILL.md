@@ -56,6 +56,26 @@ const { article, data, profile } = await freezeSource({
 
 ## Files
 
+- `scripts/manifest.mjs` — **`source/MANIFEST.json`: n sources, each bound by digest** (#37).
+  Freezing bought a real guarantee — the record of what was analysed cannot drift underneath it —
+  but the shape it took did not fit the material journalists arrive with. One article path, one
+  data path, three fixed filenames, and a refusal on the second call meant a real investigation with
+  20 article sections, 9 datasets and 14 photographs had to concatenate its sections into one
+  2,746-line file, keep one CSV and discard eight, and create a **second story** to reach its own
+  photographs. One piece of reporting became four stories or one impoverished one.
+
+  Content-addressing gets the same guarantee without the collapse, and it is the twin's own
+  established answer one phase earlier — `deliver`'s `.delivery-manifest.json` already binds
+  artifacts by digest and `whereIs` already reopens on a mismatch. A story now holds *n* sources by
+  `id`, `path`, `kind` and `digest`; every table is profiled; and a slot names the one it draws on
+  with `source:`. With one table a slot needs no `source:`; with nine it does, because picking one
+  for it is how a beat comes to cite a table it was not built from.
+
+  **What is still refused is SILENT change.** `driftedSources` names the source that moved, so the
+  beats that read it reopen and the rest of the story does not. The refusal on change *itself* is
+  gone: it never prevented the edit, it just meant the story was abandoned and recreated, and the
+  audit trail of what changed was lost rather than preserved.
+
 - `references/ourworldindata-csv-filter-trap.md` — how Our World in Data's CSV endpoint silently ignores country filters without `&csvType=filtered`, and the rule: always count rows to verify a dataset arrived as expected.
 - `scripts/csv.mjs` — `parseCsv`, the RFC 4180 reader.
 - `scripts/profile.mjs` — `profileTable`, the column profiler.

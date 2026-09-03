@@ -45,7 +45,10 @@ import { SUBJECT_OFFER_RECEIPT } from "./other-subjects.mjs";
 // for it. Mirrors `FORMAT_CATALOG`'s pairs. `image` reaching only static and scrolly is the point of
 // an ABSENT entry: an image beat is never offered a video it has no producer for.
 export const PRODUCIBLE_FORMATS = {
-  chart: ["static", "web", "video", "scrolly"],
+  // No scrolly for chart — issue #39. The catalogue advertised `chart/scrolly` promising to
+  // advance a fixed chart through explicit steps, and the scrolly skill says it "does not step a
+  // single chart through several states". The two scrollies that exist are map and image.
+  chart: ["static", "web", "video"],
   map: ["static", "web", "video", "scrolly"],
   image: ["static", "scrolly"],
 };

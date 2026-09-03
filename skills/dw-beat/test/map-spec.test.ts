@@ -9,6 +9,7 @@ import {
   isBarEncoded,
   computeYRange,
 } from "../scripts/map-spec.mjs";
+import { validateChartSpec } from "../scripts/validate-spec.mjs";
 
 const DATA = [
   { year: 1950, co2Mt: 10.25 },
@@ -48,14 +49,29 @@ describe("buildTextAnnotation", () => {
     expect(annotation.color).toBe(false);
   });
 
-  it("should honour an explicit style override", () => {
+  it("should honour position, and only position", () => {
+    // Issue #47. An annotation's own fields are where it sits and what it says; how it LOOKS is one
+    // house convention, decided once, not six knobs per annotation. `color` here is ignored — and
+    // `validateChartSpec` refuses it outright before a spec ever reaches this function.
     const annotation = buildTextAnnotation(
-      { x: 1, text: "t", align: "br", color: "#111111", dy: -6 },
+      { x: 1, text: "t", align: "br", dy: -6 },
       "id",
     );
     expect(annotation.align).toBe("br");
-    expect(annotation.color).toBe("#111111");
     expect(annotation.dy).toBe(-6);
+    expect(annotation.color).toBe(false);
+    expect(annotation.bold).toBe(false);
+    expect(annotation.size).toBe(14);
+  });
+
+  it("should refuse a spec that tries to style one annotation differently", () => {
+    const spec = {
+      takeaway: "t", limits: "l", credit: "c", effectiveDate: "2026-01-01", language: "en",
+      color: "#d5121e", chartType: "d3-lines", format: "web",
+      data: [["year", "value"], ["2020", "1"]],
+      textAnnotations: [{ x: 1, y: 1, text: "t", bold: true, size: 22 }],
+    };
+    expect(() => validateChartSpec(spec)).toThrow(/unknown field\(s\) bold, size/);
   });
 
   it("should always carry a disabled connectorLine object — Datawrapper's own type requires it present", () => {
@@ -375,5 +391,39 @@ describe("computeYRange", () => {
     );
     expect(min).toBeLessThan(5);
     expect(max).toBeGreaterThan(64);
+  });
+});
+
+/**
+ * MARK SIZE — issue #47. A scatter published with r = 2.5px marks, near-invisible at reading size,
+ * and nothing in the spec could change it, while six fields governed whether a caption was
+ * underlined. The journalist's own note was "label positions are bad, marker sizes are too small".
+ * That was the wrong trade: mark size decides whether the data can be read at all.
+ */
+describe("markSize is the parameter the styling made room for", () => {
+  const BASE = {
+    takeaway: "t", limits: "l", credit: "c", effectiveDate: "2026-01-01", language: "en",
+    color: "#d5121e", chartType: "d3-lines", format: "web",
+    data: [["year", "value"], ["2020", "1"]],
+  };
+
+  it("should be optional, and send nothing when a beat did not ask", () => {
+    // Sending Datawrapper's own default back to it is noise in the metadata and a second place for
+    // the default to drift from theirs.
+    expect(() => validateChartSpec(BASE)).not.toThrow();
+    const payload = buildChartPayload({ ...BASE, data: [{ year: 2020, value: 1 }] });
+    expect("size" in payload.metadata.visualize).toBe(false);
+  });
+
+  it("should reach the payload when a beat does ask", () => {
+    const payload = buildChartPayload({ ...BASE, data: [{ year: 2020, value: 1 }], markSize: 8 });
+    expect(payload.metadata.visualize.size).toBe(8);
+  });
+
+  it("should refuse the size that produced the defect", () => {
+    // A spec may go bigger; it may not reproduce 2.5px.
+    expect(() => validateChartSpec({ ...BASE, markSize: 2.5 })).toThrow(/under the 4px floor/);
+    expect(() => validateChartSpec({ ...BASE, markSize: 0 })).toThrow(/positive number/);
+    expect(() => validateChartSpec({ ...BASE, markSize: "big" })).toThrow(/positive number/);
   });
 });

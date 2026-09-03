@@ -66,12 +66,10 @@ describe("formatGap", () => {
 
 describe("formatsFor", () => {
   it("should list every format reachable for a medium, and nothing from another medium", () => {
-    expect(formatsFor("chart").sort()).toEqual([
-      "scrolly",
-      "static",
-      "video",
-      "web",
-    ]);
+    // No `scrolly` for chart — issue #39. It was advertised with the promise "an opaque prose card
+    // advances a fixed chart through explicit steps", which is the one thing the scrolly skill says
+    // it does not do. Absent rather than unreachable, so `formatGap` names it at the gate.
+    expect(formatsFor("chart").sort()).toEqual(["static", "video", "web"]);
     // image/web and image/video are deliberately absent — no producer exists, and the journalist
     // is told so AT THE FORMAT GATE rather than at the last phase.
     expect(formatsFor("image").sort()).toEqual(["scrolly", "static"]);

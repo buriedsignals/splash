@@ -18,7 +18,6 @@ slots:
     reachable: yes
     candidates: ["Scatter (and bubble)", "Dot strip", "Box plot"]
     intent: unrecorded
-    rankingWalk: unrecorded
     chosen: "Scatter (and bubble)"
     producer: datawrapper
     datawrapperType: d3-scatter-plot

@@ -18,7 +18,6 @@ slots:
     reachable: "yes"
     candidates: ["Histogram", "Box plot", "Beeswarm"]
     intent: unrecorded
-    rankingWalk: unrecorded
     chosen: "Histogram"
 ---
 

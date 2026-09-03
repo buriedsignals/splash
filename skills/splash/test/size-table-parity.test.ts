@@ -121,10 +121,6 @@ const CANONICAL = join(
 // deriving the answer from the thing it is checking.
 const ROWS = ["landscape", "square", "portrait"];
 
-// See the exemption's own test at the foot of this file. Named once, here, so the roster assertion
-// and the assertion that keeps it honest cannot drift apart.
-const VARIABLE_HEIGHT_PRODUCER = "image-beat";
-
 function findAll(dir: string, basename: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.name === "node_modules" || e.name === ".git") continue;
@@ -458,14 +454,16 @@ describe("the export-size table — every copy in the tree, discovered rather th
     );
     const producers = new Set<string>();
     for (const [pair, row] of Object.entries(FORMAT_CATALOG as Record<string, { producerSkill: string }>)) {
-      const format = pair.split("/")[1];
-      if (SIZED_FORMATS.includes(format)) producers.add(row.producerSkill);
+      const [medium, format] = pair.split("/");
+      // The SAME condition `sizeGap` uses, so the roster cannot drift from the gate. An image beat
+      // is never asked for a size — a photo essay is as tall as its own captions make it — so its
+      // producer needs no size table, and that falls out of the rule rather than out of a list.
+      if (medium !== "image" && SIZED_FORMATS.includes(format)) producers.add(row.producerSkill);
     }
     // Premise, so this cannot go vacuously green on an empty roster.
     expect(producers.size).toBeGreaterThan(2);
 
     for (const skill of [...producers].sort()) {
-      if (skill === VARIABLE_HEIGHT_PRODUCER) continue;
       expect([skill, "carries a size table", existsSync(join(TWIN, "skills", skill, "scripts", "sizes.mjs"))]).toEqual([
         skill,
         "carries a size table",
@@ -474,32 +472,9 @@ describe("the export-size table — every copy in the tree, discovered rather th
     }
   });
 
-  // THE ONE EXEMPTION, and it is not a list — it is a single name with a reason and a check under it.
-  //
-  // `image-beat` produces `image/static`, which `SIZED_FORMATS` calls sized, and it carries no table.
-  // That is NOT the `map-beat` defect wearing another hat: a photo essay's frame HEIGHT is derived
-  // from its own content — how many photographs, how far each caption wraps — and the skill says so
-  // in `imageBeatLayout`'s own header, "never a fixed constant the way the chart format's FRAME is".
-  // Three fixed rows cannot describe that, and inventing a fourth variable-height row is a decision
-  // nobody has taken. What SHOULD happen when gate 2c asks a photo essay for one of three sizes is a
-  // real open question and belongs in its own issue, not in a silent exemption here.
-  //
-  // So the exemption is asserted rather than trusted: if `image-beat` ever grows a fixed frame, or
-  // grows a table, this reddens and the exemption has to be re-argued.
-  it("should keep the one exemption honest — a photo essay's height is still derived, not fixed", () => {
-    const layout = readFileSync(
-      join(TWIN, "skills", VARIABLE_HEIGHT_PRODUCER, "assets", "ImageBeatSeed.tsx"),
-      "utf8",
-    );
-    expect([
-      VARIABLE_HEIGHT_PRODUCER,
-      "still derives its height",
-      /never a fixed constant/.test(layout),
-    ]).toEqual([VARIABLE_HEIGHT_PRODUCER, "still derives its height", true]);
-    expect([
-      VARIABLE_HEIGHT_PRODUCER,
-      "still carries no table",
-      existsSync(join(TWIN, "skills", VARIABLE_HEIGHT_PRODUCER, "scripts", "sizes.mjs")),
-    ]).toEqual([VARIABLE_HEIGHT_PRODUCER, "still carries no table", false]);
-  });
+  // NO EXEMPTIONS. `image-beat` used to need one: `image/static` counted as a sized format, so the
+  // gate demanded landscape/square/portrait from a photo essay whose height is derived from its own
+  // captions, and nothing could honour it. That was the same defect this guard exists to catch, so
+  // it was fixed at the gate — `sizeGap` no longer asks an image beat for a size — rather than
+  // written off here. An exemption list is where a defect goes to be forgotten.
 });

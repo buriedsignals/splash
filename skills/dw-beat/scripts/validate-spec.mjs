@@ -4,11 +4,28 @@
 // noticing until they look at the render (and by then it's shipped).
 
 const REQUIRED = ["takeaway", "limits", "credit", "effectiveDate", "language", "color", "chartType", "data", "format"];
-const OPTIONAL = ["textAnnotations", "rangeAnnotations", "seriesLabel"];
+// `markSize` is the ONE parameter added back where the styling came out (#47). A scatter's marks
+// published at r = 2.5px — near-invisible at reading size — and nothing in the spec could change it,
+// while six fields governed whether a caption was underlined. Mark size decides whether the data can
+// be READ; that is an information-design decision and it is the trade this spec was getting wrong.
+//
+// `labelColumn` is deliberately NOT here. It would be per-chart-type, and the case that wanted it —
+// a scatter of named places labelling itself — cannot reach this provider at all now that Scatter is
+// unmapped (#44). Adding a field for a path nothing can take is how a thin spec stops being thin.
+const OPTIONAL = ["textAnnotations", "rangeAnnotations", "seriesLabel", "markSize"];
 const ALLOWED = new Set([...REQUIRED, ...OPTIONAL]);
 
+// POSITION AND CONTENT, and nothing else — issue #47. This set carried six pure decorations
+// (`bold`, `italic`, `underline`, `color`, `size`, `bg`) and, meanwhile, the spec had no way to say
+// how big a mark should be. On a real published chart the journalist's own review note was "label
+// positions are bad, marker sizes are too small": the spec could address neither, and the surface it
+// did spend went on whether a caption is underlined.
+//
+// One house convention governs how an annotation LOOKS, the way the native path derives its
+// furniture from the ground rather than asking per beat. An annotation that needs a different weight
+// from every other annotation in the newsroom is a sign the chart is doing too much.
 const TEXT_ANNOTATION_FIELDS = new Set([
-  "x", "y", "text", "bold", "italic", "underline", "color", "size", "align", "dx", "dy", "bg", "width",
+  "x", "y", "text", "align", "dx", "dy", "width",
 ]);
 const RANGE_ANNOTATION_FIELDS = new Set([
   "value", "label", "axis", "to", "color", "display", "strokeWidth", "strokeType",
@@ -61,6 +78,14 @@ function checkRangeAnnotation(entry, index, errors) {
 
 // Throws a single Error carrying every problem found, not just the first — a beat re-running this
 // after a fix should see everything wrong at once, not one field at a time.
+// Datawrapper chart families whose marks take their colour from a data COLUMN rather than from the
+// series label `custom-colors` is keyed by. One predicate on the type name, in the shape
+// `isBarEncoded` already uses — not a per-type registry, which this skill deliberately does not have.
+const COLOURED_BY_COLUMN = /scatter|bubble/i;
+
+/** Measured off the defect: a published chart drew r = 2.5. Four is the smallest that reads. */
+const MIN_MARK_SIZE = 4;
+
 export function validateChartSpec(spec) {
   const errors = [];
 
@@ -70,6 +95,43 @@ export function validateChartSpec(spec) {
 
   const bad = unknownKeys(spec, ALLOWED);
   if (bad.length > 0) errors.push(`unknown field(s): ${bad.join(", ")}`);
+
+  if (spec?.markSize !== undefined) {
+    const size = spec.markSize;
+    if (typeof size !== "number" || !Number.isFinite(size) || size <= 0) {
+      errors.push("markSize must be a positive number of pixels");
+    } else if (size < MIN_MARK_SIZE) {
+      // The floor is the defect that produced this field: 2.5px marks on a published chart, which
+      // the journalist read as "marker sizes are too small". A spec may go bigger; it may not
+      // reproduce the thing that was wrong.
+      errors.push(
+        `markSize ${size} is under the ${MIN_MARK_SIZE}px floor — a mark smaller than this is not ` +
+          `readable at publication size, which is the defect this field exists to prevent`,
+      );
+    }
+  }
+
+  // REFUSE A CHART THIS SPEC CANNOT COLOUR — issue #44. `ChartSpec` is line/bar-shaped: `color`
+  // becomes `visualize["custom-colors"]` keyed by the resolved SERIES LABEL, which is how
+  // Datawrapper colours a line or a bar. It colours a scatter by a COLUMN, so on a scatter that key
+  // is written, accepted, and silently ignored — measured on a published chart, eight marks
+  // rendered in Datawrapper's default blue while the newsroom's own accent sat unused in the
+  // metadata. That is `palette`'s own stated defect class ("a newsroom's identity was collected and
+  // then never used") reappearing at the provider boundary after being fixed on the native path.
+  //
+  // `Scatter (and bubble)` is unmapped in `datawrapper-chart-types.json` for this reason, so a
+  // scatter should not reach here at all. This is the second line: a refusal BEFORE the first
+  // network call, which is this skill's own stated discipline, rather than a chart that publishes
+  // and looks plausible.
+  if (COLOURED_BY_COLUMN.test(String(spec?.chartType ?? "")) && spec?.color) {
+    errors.push(
+      `chartType ${JSON.stringify(spec.chartType)} is coloured by a COLUMN, not by a series ` +
+        `label, so this spec's \`color\` cannot reach its marks — Datawrapper would accept the ` +
+        `key and ignore it, and the chart would publish in its default blue. \`color\` is required ` +
+        `here and cannot be honoured there, so this treatment is not one this skill can produce: ` +
+        `it is left unmapped in datawrapper-chart-types.json and belongs on the native path.`,
+    );
+  }
 
   for (const field of REQUIRED) {
     if (spec[field] === undefined || spec[field] === null || spec[field] === "") {

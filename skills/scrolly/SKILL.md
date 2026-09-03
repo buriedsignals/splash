@@ -1,6 +1,6 @@
 ---
 name: scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). A VEHICLE, not a fourth chart format — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). The two scrollies that exist are the IMAGE scrolly (a sequence of the journalist's own photographs) and the MAP scrolly; each is ONE medium under a travelling prose card, and that is the ordinary case. Assembling several media behind one narrative is a documented extension the seed also demonstrates, not the thing to reach for first. It does not invent a second drawing engine and it does not step a single chart through several states — there is no chart scrolly.
 ---
 
 # scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
@@ -9,8 +9,23 @@ description: Use to produce a scroll-driven interactive (scrollytelling) — a F
 
 The scroll-driven vehicle. It does not hold a chart type and it is not a scrollytelling framework:
 it holds the **mechanism** — a FIXED graphic that fills the frame behind the reader's own scroll,
-with a pinned panel of prose sitting OVER it as N narrative steps go by — and **one worked beat**
-that carries that mechanism with **four genuinely different media**.
+with a pinned panel of prose sitting OVER it as N narrative steps go by.
+
+**START FROM THE SINGLE-MEDIUM CASE.** The two scrollies this toolchain produces are the **image
+scrolly** — a sequence of the journalist's own photographs under travelling prose, which is what
+most reporting actually wants — and the **map scrolly**. One medium, one fixed graphic, prose cards
+over it. A journalist with fourteen photographs asked why an image scrolly had not been suggested,
+and the reasons were structural rather than editorial (#38): the medium had no type sheet to
+enumerate, and this skill's own headline example was the complicated one.
+
+The data model was never in the way: `assemblyGap` returns `null` when `assembles` is empty, so a
+slot with `medium: image, format: scrolly` and no assembly list is already legal and already
+dispatches to one producer. Nothing had to be relaxed.
+
+**The four-track assembly is an EXTENSION**, not the lesson. The seed carries it — an IMAGE, a drawn
+diagram, a baked MAP and a real CHART — because the mechanism has to be shown surviving genuinely
+different media, and that is worth having on disk. It is not the shape to reach for first, and
+Splash does not aim to handle complex multi-track scrollies as its primary case.
 
 **The four tracks are the point of this skill, not decoration on it.** The seed steps through a
 drawn scene of a river gauge, a schematic of the instrument, a **baked basemap** with the station

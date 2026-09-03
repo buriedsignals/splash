@@ -18,7 +18,6 @@ slots:
     reachable: yes
     candidates: ["Choropleth", "Proportional symbol (symbol / bubble map)"]
     intent: unrecorded
-    rankingWalk: unrecorded
     chosen: "Choropleth"
 ---
 

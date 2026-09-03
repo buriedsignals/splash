@@ -260,7 +260,9 @@ describe("groundingScalar — contradicted never closes G1", () => {
 describe("the survey — what could be made of this data", () => {
   it("should read every type sheet the generated survey holds, with its own purpose sentence", () => {
     const rows = typeSurvey();
-    expect(rows.length).toBe(40);
+    // 41: 32 chart + 8 map + the image photograph-sequence sheet added in #38, which is what
+    // lets a journalist who chooses `image` at G2a reach a candidate list at all.
+    expect(rows.length).toBe(41);
     expect(rows.filter((r) => r.medium === "chart").length).toBe(32);
     expect(rows.filter((r) => r.medium === "map").length).toBe(8);
     for (const row of rows) {
@@ -317,14 +319,54 @@ describe("medium, then format, then size — each verified before it is offered"
     ).toBe(true);
   });
 
-  it("should offer scrolly for every medium that has a producer for it", () => {
-    for (const medium of ["chart", "map", "image"]) {
-      const scrolly = proposeFormats({ medium }).find(
-        (g) => g.format === "scrolly",
-      );
-      expect(scrolly?.reachable).toBe(true);
-      expect(scrolly?.producer).toBe("scrolly");
+  // Issue #39 removed `chart/scrolly`. The catalogue advertised it with the promise "an opaque
+  // prose card advances a fixed chart through explicit steps", and the scrolly skill says plainly
+  // that it "does not step a single chart through several states" — the table offered a thing the
+  // producer refuses to make. The two scrollies that exist are the map one and the image one.
+  it("should offer scrolly for the two media that have a producer for it, and refuse it for chart", () => {
+    for (const medium of ["map", "image"]) {
+      const scrolly = proposeFormats({ medium }).find((g) => g.format === "scrolly");
+      expect([medium, scrolly?.reachable, scrolly?.producer]).toEqual([medium, true, "scrolly"]);
     }
+    const chartScrolly = proposeFormats({ medium: "chart" }).find((g) => g.format === "scrolly");
+    expect(chartScrolly?.reachable).toBe(false);
+    // Named as absent rather than quietly omitted — the whole reason the catalogue is keyed on the
+    // pair, so the journalist hears the sentence at the gate.
+    expect(chartScrolly?.why).toContain("chart it can reach static, web, video");
+  });
+
+  // Issue #39's other half: a scrolly is a kind of thing to MAKE, so it is named at the medium
+  // question rather than met one movement later as a publication format.
+  it("should name the scrollies at the medium gate", () => {
+    const rows = proposeMediums({ capabilities: { map: true } });
+    const byMedium = new Map(rows.map((r) => [r.medium, r]));
+    expect(byMedium.get("map")?.scrolly).toEqual({ available: true, label: "map scrolly" });
+    expect(byMedium.get("image")?.scrolly).toEqual({ available: true, label: "image scrolly" });
+    expect(byMedium.get("chart")?.scrolly).toEqual({ available: false });
+  });
+
+  // Issue #38. `image` reached this gate with an empty `types` array, so movement 4 had nothing to
+  // enumerate and a journalist who chose it was refused by `checkStoryboard` several movements
+  // later for having chosen no candidate — the gap discovered downstream instead of reported at
+  // the gate. It has a sheet now, so no medium is in that state; the reporting stays, because the
+  // next medium to be added will arrive without one.
+  it("should report no gap now that every medium has a sheet to enumerate", () => {
+    for (const row of proposeMediums({ capabilities: { map: true } })) {
+      expect([row.medium, row.types.length > 0, row.proposable]).toEqual([row.medium, true, null]);
+    }
+  });
+
+  it("should say at the medium gate when a medium has no types to enumerate", () => {
+    // Driven with a survey that holds nothing for `image`, because the real one no longer does.
+    const rows = proposeMediums({
+      capabilities: { map: true },
+      survey: [{ medium: "chart", type: "Line" }],
+    });
+    const image = rows.find((r) => r.medium === "image");
+    expect(image?.proposable).toContain("no type sheets for image");
+    // And it says what to do about it rather than only that it is empty.
+    expect(image?.proposable).toContain("described");
+    expect(rows.find((r) => r.medium === "chart")?.proposable).toBeNull();
   });
 
   // An absent pair is NAMED as absent at the format gate rather than quietly omitted — that is the
@@ -362,7 +404,7 @@ describe("medium, then format, then size — each verified before it is offered"
 
 describe("confirmFormatReachable — the recorded verdict, computed", () => {
   it("should hand back the exact string the slot records, for a pair that is genuinely wired", () => {
-    expect(confirmFormatReachable({ medium: "chart", format: "scrolly" })).toBe(
+    expect(confirmFormatReachable({ medium: "map", format: "scrolly" })).toBe(
       "yes",
     );
     expect(confirmFormatReachable({ medium: "map", format: "web" })).toBe(
@@ -663,7 +705,7 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     );
     const survey = typeSurvey();
     const mediumsWithSheets = new Set(survey.map((row) => row.medium));
-    expect([...mediumsWithSheets].sort()).toEqual(["chart", "map"]);
+    expect([...mediumsWithSheets].sort()).toEqual(["chart", "image", "map"]);
     const unresolved = catalogue.treatments
       .filter((treatment: any) => mediumsWithSheets.has(treatment.medium))
       .filter(
@@ -678,14 +720,17 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     // A catalogued name the survey cannot resolve is a candidate whose refusal and whose row limit
     // both silently vanish at the menu.
     expect(unresolved).toEqual([]);
-    // And the one medium that holds no sheets is named rather than assumed: an image beat's
-    // candidate says out loud that no sheet can state what it refuses.
+    // `image` used to be the one medium holding no sheets, and its candidate had to say out loud
+    // that no sheet could state what it refuses. It has one now (#38), so the candidate carries a
+    // real refusal like any other — which is the whole point of giving it a sheet.
     const photographs = formatCandidates({
       medium: "image",
       profile: { rowCount: 0, columns: [] },
       candidates: [{ type: "Photograph sequence", why: "the quay before and after" }],
     });
-    expect(photographs).toMatch(/no type sheet/i);
+    expect(photographs).not.toMatch(/no type sheet/i);
+    expect(photographs).toContain("Not for:");
+    expect(photographs).toContain("refuses fewer than two");
   });
 
   // -------------------------------------------------------------------------------------------

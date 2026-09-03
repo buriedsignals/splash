@@ -431,3 +431,115 @@ export function assertLegible(colour, against, { role = "mark", where = "this co
         : `No variant of it clears that floor on this ground: choose another colour, or another ground.`),
   );
 }
+
+/**
+ * IS THERE ANYTHING HERE FOR THE JOURNALIST TO DECIDE? — issue #41.
+ *
+ * The palette question was asked at every story, and on most of them it had one possible answer.
+ * A journalist met it and said: *"I dont know what this is about. we have the newsroom.md no? […]
+ * I would remove it from the system and bake a preference by default based on the newsroom.md
+ * preflight answers"*. They are right, and nothing this skill exists for is lost by agreeing.
+ *
+ * What this skill exists for is the FLOOR and the PROVENANCE, not the prompt. Its origin defect was
+ * real — `brandColor` and `ground` were collected at preflight and then never threaded into a
+ * render, so eleven of twelve seed runners named hex literals with `// from NEWSROOM.md` beside
+ * them — and so is the contrast floor, since a `PALETTE.md` recording `#FFFF00` on white rendered a
+ * clean PNG. Neither of those requires a question. Both require a recorded, MEASURED default.
+ *
+ * There are exactly two situations where the journalist genuinely has something to decide:
+ *
+ *   1. **A subject convention applies.** Blue for water, green for renewables — it competes with
+ *      the house colour and it is doing work the legend would otherwise have to do. Four
+ *      conventions ship, so this is the rare case.
+ *   2. **The house pair fails the floor.** The newsroom's own recorded colours cannot be used as
+ *      they are, and someone has to choose the remedy.
+ *
+ * Everything else is fully determined: `brandColor` on `ground`, measured, with `accents` behind it
+ * in recorded order. `ask: false` means "write it and move on".
+ *
+ * The escape hatch is untouched: a journalist who wants a different colour for one beat drops a
+ * `PALETTE.md` beside it, and `readPalette` walks up from the beat's own directory and finds the
+ * nearest one first.
+ */
+export function paletteDecision({ newsroom, subject } = {}) {
+  const proposal = proposePalette({ newsroom, subject });
+
+  if (matchConvention(subject)) {
+    return {
+      ask: true,
+      reason:
+        "a convention the reader already holds applies to this subject, and it competes with the " +
+        "newsroom's own colours — that is a judgement, not a default",
+      proposal,
+    };
+  }
+
+  const house = proposal.options.find((option) => option.id === "house");
+  if (!house) {
+    return {
+      ask: true,
+      reason:
+        "NEWSROOM.md records no brandColor/ground pair to derive a default from — preflight is " +
+        "where that is set, and nothing here may invent one",
+      proposal,
+    };
+  }
+  if (!house.contrast.passes) {
+    return {
+      ask: true,
+      reason:
+        `the newsroom's own accent ${house.accent} measures ${house.contrast.ratio}:1 against its ` +
+        `ground ${house.ground}, under the ${NON_TEXT_CONTRAST_MIN}:1 floor — the recorded pair ` +
+        `cannot be used as it stands, and choosing the remedy is the journalist's` +
+        (house.remedy ? `. The nearest colour that clears it is ${house.remedy.accent}` : ""),
+      proposal,
+    };
+  }
+
+  return {
+    ask: false,
+    reason: "the newsroom recorded these colours at preflight and they clear the floor",
+    palette: {
+      ground: house.ground,
+      accent: house.accent,
+      accents: houseAccents(newsroom),
+      origin: "newsroom",
+    },
+    proposal,
+  };
+}
+
+/** The `PALETTE.md` a derived default writes. Measured on write, exactly as `parsePalette`
+ *  measures on read — a default that failed would surface as case 2 above rather than be
+ *  written silently. */
+export function formatPalette({ ground, accent, accents = [], origin }) {
+  for (const hex of [ground, accent, ...accents]) {
+    if (!HEX.test(hex)) throw new Error(`every colour must be #rrggbb, got ${JSON.stringify(hex)}`);
+  }
+  assertLegible(accent, ground, { role: "mark", where: `the accent ${accent}` });
+  const further = accents.filter((hex) => hex !== accent);
+  for (const hex of further) {
+    assertLegible(hex, ground, { role: "mark", where: `the further accent ${hex}` });
+  }
+  return [
+    "---",
+    `ground: "${ground}"`,
+    `accent: "${accent}"`,
+    ...(further.length ? [`accents: ${further.join(", ")}`] : []),
+    `origin: ${origin}`,
+    "---",
+    "",
+    "# The colours this story is drawn in",
+    "",
+    origin === "newsroom"
+      ? "Derived from `NEWSROOM.md`, which preflight validated, and measured on write against the" +
+        " same non-text contrast floor `parsePalette` measures on read. Nobody was asked, because" +
+        " there was nothing here to decide: no subject convention applies and the newsroom's own" +
+        " pair clears the floor."
+      : "Recorded from the palette proposal.",
+    "",
+    "A journalist who wants a different colour for one beat drops a `PALETTE.md` beside that beat —",
+    "`readPalette` walks up from the beat's own directory and finds the nearest one first.",
+    "",
+  ].join("\n");
+}

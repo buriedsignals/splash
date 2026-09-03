@@ -72,7 +72,6 @@ slots:
     size: landscape
     reachable: yes
     intent: "show a trend over time"
-    rankingWalk: "chart-choice.md § show a trend over time — rank 1 Line kept."
     chosen: trajectory
     candidates: [trajectory, comparison]
 ---

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "article",
+      "path": "source/article.md",
+      "kind": "prose",
+      "digest": "sha256:393d013421e4913521cffca32b767f4ddf90027063bd89d85e18f2af809b53ed"
+    },
+    {
+      "id": "data",
+      "path": "source/data.csv",
+      "kind": "table",
+      "digest": "sha256:fae0cfa0c3e7c885c2e1801c9360f5b0bcef28d5ea23c32f67e67cbebfcb1e85",
+      "profile": "source/profile.json"
+    },
+    {
+      "id": "ntd-rab2.raw",
+      "path": "source/NTD_RAB2.raw.json",
+      "kind": "document",
+      "digest": "sha256:1f38cf54a55bdf9c916628868639dd79b1789d0552bbeb327a5d12da0d30895a"
+    },
+    {
+      "id": "who-country-names",
+      "path": "source/who-country-names.json",
+      "kind": "document",
+      "digest": "sha256:7db1dabf96910634c222bb5d752ec1add3b2872d587684619b19666ef17ce410"
+    }
+  ]
+}

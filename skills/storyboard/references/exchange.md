@@ -125,7 +125,7 @@ medium existed.
 | *"In this data, who is the subject of your piece?"* | the subject, which the data does not designate — the maximum is not the subject | **the one element the visual emphasises, whatever its medium.** Real predecessor bug: a scatter labelled its max-y instead of the subject |
 | *"What does the reader compare it to — last year, the average, the announced target, the next town?"* | the editorially meaningful reference point | **the reference the reader measures against** — the mechanism that carries it is chosen with the medium, not here. A number alone says nothing |
 | *"What does this data NOT let you conclude?"* | the boundary the journalist knows and the data never states (sample, correlation vs causation, scope) | the anti-overclaim check on the title, and what an annotation is allowed to assert |
-| *"Which paragraph does this visual follow — and what does the text already say next to it?"* | what is already written | **do not duplicate** (if the axis carries `2024`, the callout gives the value, not the year) |
+| *"Where should we position this graphic?"* — then read the frozen article at that position and propose what it already says, for confirmation | what is already written | **do not duplicate** (if the axis carries `2024`, the callout gives the value, not the year) |
 | *"Who does this data come from, how do you credit them, and as of what date?"* | the SOURCE, credited — or, said plainly, that there is none | the visible source line, and traceability. **`unattributed` is a legitimate answer** and prints `Source: not stated` on the artefact |
 
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
@@ -134,6 +134,20 @@ The placement question used to carry a second clause — *"also feeds channel an
 clause was not a destination at all, it was a **decision taken out of order**: format and size settled
 at movement ③, before ④ had named a single type. It is now movements ⑥ and ⑦, where the journalist
 is actually asked. Placement keeps only its editorial half.
+
+**ASK THE POSITION; DON'T ASK THEM TO READ THE ARTICLE BACK.** This question used to be asked as
+*"Which paragraph does this visual follow — and what does the text already say next to it?"*, and a
+journalist answered: *"I have no idea what you are talking about … if the goal is placement the
+question needs to be framed differently like 'Where should we position this graphic'. I trust your
+opinion."* Their wording is the actual decision, and they engaged with it immediately.
+
+Two clauses were doing different jobs and only one of them belonged to the journalist. The frozen
+article on that run was 2,746 lines across 20 sections — *"which paragraph"* has no answer anybody
+produces from memory at that size, and the second clause lands as a comprehension test. **The
+position is theirs; what the text says at that position is ours to read out of the frozen article
+and propose back for confirmation.** The `do not duplicate` destination is unchanged and is still
+the reason the movement exists; it is just no longer harvested by asking a journalist to recite
+their own copy.
 
 ### When the answer is "I don't know" or "none"
 
@@ -213,11 +227,10 @@ was actually that one commune departs from an expected ordering, where the rank-
 diverging bar and the dumbbell. The editor persona had independently offered the dumbbell. Nothing
 downstream could tell, because nothing was written down.
 
-So the slot now records `intent:` and `rankingWalk:`, and BOTH gate readers refuse without them
-(`checkStoryboard`, `where.mjs`). The walk names the section the intent lands in, which
-higher-ranked forms were removed and by which move-down condition, and — when a lower-ranked form
-wins — why the higher surviving form lost. That last is step 6, and it was being skipped: the
-selected type's own sheet was never opened.
+So the slot records `intent:`, and both gate readers refuse without it. One field, asked where the
+slot is defined — naming what the slot is FOR is the same 2a question as naming its medium. Walking
+the ranking from there, and reading the selected type's own sheet before proposing it (step 6, which
+was being skipped), is what the guide asks; this records the step that decides the rest.
 
 **A reference is not evidence that a form is right.** If the inspiration lookup at ⑧ argues for a
 candidate the ranking REMOVED, state the conflict and resolve it; do not settle it silently in the
@@ -363,7 +376,7 @@ question nobody asked them. Absence is an answer — *not recorded* — and it i
 refuses is the phase that needs the fact: `palette`'s `proposePalette` cannot resolve a ground for a
 static beat without it and names this field, this movement and this question when it says so.
 
-## ⑧ The reference loop, shown
+## ⑧ The reference loop — OFFERED, not required
 
 Find two or three real newsroom treatments of **the same argument structure** and show them: *"the
 FT treated this class of argument this way, the NYT that way — the first foregrounds the trajectory,
@@ -371,22 +384,54 @@ the second the comparison."* Look the structure up by its own column in
 `doctrine/references/reference-set.md`; live research is run when the argument structure is new
 to the set — before coding a substantial chart or establishing a new chart family, never after.
 
-**This movement ends in a real question**, like every other one. It is the only movement in the
-journey that used to have none: the run showed two references and the next question was about the
-slot, so the journalist was never asked. The answer lands in `reference:` — and *"the journalist
-rejected both"* is recorded as `none — both rejected`, a fact, not a loss.
+**IT IS OFFERED AT THE TREATMENT DECISION, AS A THIRD OPTION** — beside the menu of candidates and
+the recommended process — and Gate 2 closes without it. `reference:` is no longer in
+`REQUIRED_SCALARS` and there is no `G2-reference` gate. When the journalist takes it, the answer
+lands in `reference:` exactly as before.
 
-It is the one point in the journey where taste travels both ways: the model gains a concrete target
-instead of an abstract rule, and the journalist gains vocabulary for saying what they want. This is
-quality lever number one.
+Why it stopped being compulsory: its intent is about INSPIRATION, not validation, and inspiration
+is something a journalist reaches for when they want it — not a toll gate between choosing a size
+and choosing a colour. By this point the medium, format and size are settled and the next real
+question is which treatment to produce; two published treatments arriving in between, each needing
+a paragraph of explanation, interrupt a decision the journalist is already making. Its own answer
+vocabulary gave it away: *"the journalist rejected both"* was recorded as `none — both rejected`,
+and this file had to insist that was "a fact, not a loss". **A movement that must defend its own
+null answer should not have been mandatory.**
+
+Taken deliberately it is still the one point where taste travels both ways — the model gains a
+concrete target instead of an abstract rule, and the journalist gains vocabulary for saying what
+they want. It is a strong lever, and a lever is pulled, not tripped over.
+
+**A reference never overrides a ranking removal** (#48). If the inspiration argues for a candidate
+`chart-choice.md` removed, say so and resolve it; a reference is a way of executing a form well, not
+evidence that the form is right.
 
 ## ⑨ The palette and the typeface — subject first, newsroom second, journalist third
 
-`palette`'s `proposePalette` proposes in that order and recommends in that order. A convention
-the reader already holds (blue for water, green for renewables) beats house colours for THIS chart,
-because it is doing work the legend would otherwise have to do. When no convention applies to the
-subject, the proposal SAYS so and the newsroom's colours lead — never silently reduced to one
-option with no explanation, which is what the run did.
+**ASK ONLY WHEN THERE IS SOMETHING TO DECIDE** (#41). Call `paletteDecision({ newsroom, subject })`
+first. On most stories it answers `ask: false` — no subject convention applies and the newsroom's
+own pair clears the floor — and the palette is DERIVED from `NEWSROOM.md`, measured on write, and
+written with `origin: newsroom`. Nobody is asked, because `NEWSROOM.md` already carries the answer
+and preflight already validated it.
+
+It asks in exactly two cases, and both are real decisions:
+
+1. **A subject convention competes** — blue for water, green for renewables. It is doing work the
+   legend would otherwise have to do, for THIS chart, and that beats looking like the masthead.
+2. **The house pair fails the floor.** The newsroom's own colours cannot be used as they stand, and
+   the remedy is the journalist's to choose. The refusal names the measurement and the nearest
+   colour that clears it.
+
+Nothing this movement exists for is lost by not asking. The value is the FLOOR and the PROVENANCE,
+not the prompt: `formatPalette` measures before it writes, so a failing pair surfaces as case 2
+rather than as a silent file, and `parsePalette` still measures again on read.
+
+When it does ask, `proposePalette` proposes in that order and recommends in that order. When no
+convention applies, the proposal SAYS so and the newsroom's colours lead — never silently reduced
+to one option with no explanation, which is what the run did.
+
+The escape hatch is unchanged: a journalist who wants a different colour for one beat drops a
+`PALETTE.md` beside it, and `readPalette` finds the nearest one first.
 
 Lands in `PALETTE.md`.
 

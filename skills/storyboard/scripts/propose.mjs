@@ -241,7 +241,10 @@ export function groundingScalar(resolved, { override } = {}) {
 const SURVEY_ROW_RE =
   /^\|\s*\*\*(.+?)\*\*\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*`(.+?)`\s*\|$/;
 const LIMIT_CELL_RE = /^([a-z]+) ([<>]) (\d+)$/;
-const SURVEY_SECTION_RE = /^##\s+(Chart|Map)\s+types/i;
+// Any medium's section, not a hard-coded pair. It was `(Chart|Map)`, so when `image` gained a sheet
+// set its rows were read under whichever section came before them — silently filed as map types
+// rather than ignored, which is the worse of the two failures (#38).
+const SURVEY_SECTION_RE = /^##\s+([A-Za-z]+)\s+types/i;
 
 /**
  * The generated survey, as rows. `references/type-survey.md` is written by
@@ -811,12 +814,37 @@ export function recommendVisualChoice({ model, profile = {} } = {}) {
 export function proposeMediums({ capabilities = {}, survey = typeSurvey() } = {}) {
   return knownMediums().map((medium) => {
     const gap = capabilityGap(capabilities, medium);
+    const types = survey.filter((row) => row.medium === medium);
+    const formats = formatsFor(medium);
     return {
       medium,
       reachable: gap === null,
       why: gap,
-      formats: formatsFor(medium),
-      types: survey.filter((row) => row.medium === medium),
+      formats,
+      types,
+      // A SCROLLY IS A KIND OF THING TO MAKE, NOT A WAY OF PUBLISHING — issue #39. It used to
+      // arrive at G2b as a fourth publication format, one movement after the journalist had
+      // already committed to a medium; but it has its own anatomy (a fixed graphic, prose cards
+      // travelling over it, the page itself not scrolling) and its own producer, which makes it a
+      // G2a question. Named HERE so the journalist meets the choice where it is actually made.
+      // `chart/scrolly` is no longer among them: the scrolly skill says plainly that it "does not
+      // step a single chart through several states", and the catalogue advertised exactly that.
+      scrolly: formats.includes("scrolly")
+        ? { available: true, label: `${medium} scrolly` }
+        : { available: false },
+      // WHAT THIS MEDIUM CAN BE PROPOSED AS, said at the medium gate — issue #38. `image` reaches
+      // this list with an empty `types`, because `image-beat` ships no `references/types/`
+      // directory and its anatomy lives in SKILL.md instead. A journalist who chose image was
+      // therefore refused by `checkStoryboard` several movements later for having no chosen
+      // candidate — the gap discovered downstream instead of reported at the gate, which is the
+      // one rule this branch applies everywhere else.
+      proposable:
+        types.length > 0
+          ? null
+          : `this toolchain holds no type sheets for ${medium}, so movement 4 has nothing to ` +
+            `enumerate and no candidate list can be built for it. An ${medium} beat is described ` +
+            `by its own skill rather than by a type: choose it knowing the treatment question ` +
+            `will be answered from that skill's anatomy, not from a menu.`,
     };
   });
 }

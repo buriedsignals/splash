@@ -17,7 +17,6 @@ slots:
     reachable: "yes"
     candidates: ["Line", "Slope (slopegraph)", "Waterfall (bridge)"]
     intent: unrecorded
-    rankingWalk: unrecorded
     chosen: "Line"
 ---
 

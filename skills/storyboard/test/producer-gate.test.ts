@@ -78,7 +78,6 @@ slots:
 ${sized}    reachable: yes
     candidates: ${JSON.stringify(candidates)}
     intent: "show the gap between exactly two values"
-    rankingWalk: "chart-choice.md § show the gap between exactly two values — rank 1 Dumbbell removed; Slope chosen."
     chosen: ${JSON.stringify(treatment)}
 ${producer ? `    producer: ${producer}\n` : ""}${datawrapperType ? `    datawrapperType: ${datawrapperType}\n` : ""}---
 `;
@@ -103,15 +102,26 @@ describe("the Datawrapper catalogue", () => {
   });
 
   it("keeps the state reader's carried mapping in parity with the catalogue itself", () => {
-    const expected = new Map(
-      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.datawrapperTypes]),
+    // MAPPED rows only. A row with an empty `datawrapperTypes` records a treatment this provider
+    // cannot honour, kept in the catalogue WITH its reason so nobody re-adds it from the type list
+    // (#44, Scatter). The state reader carries what it can dispatch, so an unmapped treatment is
+    // simply absent there — two representations of the same fact, and this compares the fact.
+    const mapped = DATAWRAPPER_CATALOG.splashTreatments.filter(
+      (mapping: any) => mapping.datawrapperTypes.length > 0,
     );
+    const unmapped = DATAWRAPPER_CATALOG.splashTreatments.filter(
+      (mapping: any) => mapping.datawrapperTypes.length === 0,
+    );
+    // Every deliberately-unmapped row says why, or it reads as an oversight.
+    for (const mapping of unmapped) {
+      expect([mapping.treatment, Boolean(mapping.unmappedReason)]).toEqual([mapping.treatment, true]);
+      expect(DATAWRAPPER_TREATMENTS.has(mapping.treatment)).toBe(false);
+    }
+    const expected = new Map(mapped.map((mapping: any) => [mapping.treatment, mapping.datawrapperTypes]));
     expect([...DATAWRAPPER_TREATMENTS.entries()]).toEqual([...expected.entries()]);
-    const media = new Map(
-      DATAWRAPPER_CATALOG.splashTreatments.map((mapping) => [mapping.treatment, mapping.medium]),
-    );
+    const media = new Map(mapped.map((mapping: any) => [mapping.treatment, mapping.medium]));
     expect([...DATAWRAPPER_TREATMENT_MEDIA.entries()]).toEqual([...media.entries()]);
-    for (const mapping of DATAWRAPPER_CATALOG.splashTreatments) {
+    for (const mapping of mapped) {
       for (const name of [...treatmentNames(mapping.treatment), ...mapping.aliases]) {
         expect(
           datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: name }),
@@ -305,7 +315,6 @@ describe("persisted producer state", () => {
     format: web
     reachable: yes
     intent: "compare values across categories"
-    rankingWalk: "chart-choice.md § compare values across categories — rank 1 Bar and column kept."
     candidates: ["Line", "Bar and column"]
 ---
 `,
@@ -382,5 +391,43 @@ describe("persisted producer state", () => {
       storyboard({ producer: "datawrapper", datawrapperType: "d3-bars" }),
     ).meta;
     expect(checkStoryboard(meta).join(" ")).toContain("does not implement");
+  });
+});
+
+/**
+ * WHAT A DELEGATED PROVIDER COSTS, SAID AT THE GATE — issue #45.
+ *
+ * The ruling in that issue is that house colour is NOT critical when a journalist chooses
+ * Datawrapper: they are accepting Datawrapper's rendering, and its palette is part of that. What
+ * was wrong was that Splash claimed to carry the house colour there, wrote a key that did nothing,
+ * and reported success — measured on a live chart, `custom-colors` written correctly and all eight
+ * marks still rendering Datawrapper's default blue.
+ *
+ * So the fix is a choice made knowingly, not a new abstraction. `validateChartSpec` refuses the
+ * families where the colour cannot land (#44), and the gate says what the journalist keeps.
+ */
+describe("the producer gate says what a delegated chart gives up", () => {
+  it("should name what Splash sends and what stays Datawrapper's", () => {
+    const match = datawrapperMatch({ medium: "chart", format: "web", treatment: "Line" });
+    const turn = formatProducerGate({
+      treatment: "Line",
+      match,
+      format: "web",
+      capabilities: { datawrapper: true },
+    });
+    expect(turn).toContain("the newsroom's accent and your annotations");
+    // The things it does NOT control, named rather than left to be discovered in the render.
+    for (const surrendered of ["axis ticks", "gridlines", "value formatting", "mark shape"]) {
+      expect(turn).toContain(surrendered);
+    }
+    // And where the chart is edited afterwards, which is the practical consequence.
+    expect(turn).toContain("edited afterwards in Datawrapper");
+  });
+
+  it("should not offer a treatment whose colour could never be applied", () => {
+    // The other half of the rule: a colour that cannot be applied must say so, never be written and
+    // ignored. Scatter is unmapped (#44), so the gate has nothing to offer for it and production
+    // stays custom rather than publishing in a colour nobody chose.
+    expect(datawrapperMatch({ medium: "chart", format: "web", treatment: "Scatter (and bubble)" })).toBeNull();
   });
 });

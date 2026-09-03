@@ -10,7 +10,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PUBLICATION_DESTINATIONS, destinationGap, sizeGap } from "../scripts/storyboard.mjs";
+import { PUBLICATION_DESTINATIONS, REQUIRED_SCALARS, destinationGap, sizeGap } from "../scripts/storyboard.mjs";
 import { proposeSizes } from "../scripts/propose.mjs";
 
 const EXCHANGE = readFileSync(
@@ -87,8 +87,11 @@ describe("the exchange keeps its documented order", () => {
     expect([...stated.keys()].sort()).toEqual(["scrolly", "static", "video", "web"]);
     for (const [format, sizes] of stated) {
       expect(sizes).toEqual(proposeSizes(format));
-      for (const size of sizes) expect(sizeGap(format, size, 1)).toBeNull();
-      if (sizes.length === 0) expect(sizeGap(format, undefined, 1)).toBeNull();
+      // `sizeGap` now takes the MEDIUM too: an image beat is asked for no size at all, because a
+      // photo essay's height comes from its own captions and nothing could honour a fixed one.
+      for (const size of sizes) expect(sizeGap("chart", format, size, 1)).toBeNull();
+      if (sizes.length === 0) expect(sizeGap("chart", format, undefined, 1)).toBeNull();
+      expect(sizeGap("image", format, undefined, 1)).toBeNull();
     }
   });
 
@@ -138,13 +141,21 @@ describe("the exchange keeps its documented order", () => {
     expect(size).toBeGreaterThan(format);
   });
 
-  it("should end the reference loop in a question rather than a display", () => {
+  // Issue #40 inverted this one. The loop used to be compulsory and the risk was that it displayed
+  // two references and moved on without asking; the guard was "ends in a real question". It is now
+  // OFFERED at the treatment decision and Gate 2 closes without it, so the risk is the opposite —
+  // that the file quietly goes back to requiring it — and the guard follows the change.
+  it("should offer the reference loop rather than require it", () => {
     const loop = EXCHANGE.slice(
       EXCHANGE.indexOf("## ⑧"),
       EXCHANGE.indexOf("## ⑨"),
     );
-    expect(loop).toContain("ends in a real question");
+    expect(loop).toContain("OFFERED, not required");
+    expect(loop).toContain("Gate 2 closes without it");
+    // It still lands somewhere when it IS taken — opt-in, not deleted.
     expect(loop).toContain("reference:");
+    // And the code agrees: the scalar is no longer required by either gate.
+    expect(REQUIRED_SCALARS).not.toContain("reference");
   });
 
   it("should forbid drawing a recommendation as a chart before a medium is chosen", () => {

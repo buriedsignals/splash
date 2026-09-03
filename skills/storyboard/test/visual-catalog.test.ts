@@ -27,7 +27,9 @@ describe("the canonical visual catalogue", () => {
     const catalog = readVisualCatalog();
     const entries = expandVisualCatalog(catalog);
     expect(catalog.treatments).toHaveLength(41);
-    expect(entries).toHaveLength(162);
+    // 130, not 162: issue #39 removed `chart/scrolly` and the scrolly format from all 32
+    // chart treatments, because the scrolly skill does not step a single chart through states.
+    expect(entries).toHaveLength(130);
     expect(new Set(entries.map((row) => row.id)).size).toBe(entries.length);
     expect(entries.every((row) => row.producer?.skill && row.deliveryForms.length > 0)).toBe(true);
     expect(entries.every((row) => row.dataShape.summary && row.dataShape.requires.length > 0)).toBe(true);

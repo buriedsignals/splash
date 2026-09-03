@@ -120,7 +120,9 @@ export function parseStoryboardForAnalyst(content) {
 export function slotRefusal({ scalars, slots }, slotId) {
   if (!scalars.grounding) return "the takeaway was never grounded (G1 never closed)";
   if (scalars.grounding === "contradicted") return "the takeaway's grounding verdict is contradicted";
-  if (!scalars.reference) return "the reference loop never closed";
+  // `reference` is NOT required — issue #40 made the inspiration loop opt-in and removed its gate.
+  // This refusal outlived it, so a story that never reached for a reference could close gate 2 in
+  // both readers and then be refused here, several movements later.
   const index = slots.findIndex((slot) => String(slot.id) === String(slotId));
   if (index === -1) return `no slot ${slotId} in STORYBOARD.md`;
   const slot = slots[index];
@@ -189,6 +191,11 @@ export async function buildData({
 
   // The profile must still describe the data. Recomputing it from the frozen CSV with the same
   // profiler AND THE SAME INTAKE catches a swapped or hand-edited file either way.
+  //
+  // Issue #37 kept this refusal and changed what it MEANS. It is no longer "frozen means frozen,
+  // start a new story" — `source/MANIFEST.json` binds each source by digest, so a journalist who
+  // corrects row 40 gets the beats that read that source reopened, and the rest of the story left
+  // alone. What is still refused is a source moving SILENTLY under an artifact that cites it.
   const recorded = JSON.parse(profileBytes.toString("utf8"));
   const recomputed = profileTable(parseCsv(dataBytes.toString("utf8")), {
     prose: articleBytes.toString("utf8"),

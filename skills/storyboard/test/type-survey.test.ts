@@ -18,6 +18,10 @@ const SURVEY = join(SKILLS, "storyboard", "references", "type-survey.md");
 const SHEET_DIRS = [
   join(SKILLS, "chart-beat", "references", "types"),
   join(SKILLS, "map-beat", "references", "types"),
+  // `image` gained a sheet set in #38 — before it, `proposeMediums` marked the medium reachable
+  // and handed back an empty `types` array, so a journalist who chose it was refused several
+  // movements later for having chosen no candidate.
+  join(SKILLS, "image-beat", "references", "types"),
 ];
 
 function sheetTitles(): string[] {

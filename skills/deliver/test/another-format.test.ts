@@ -89,7 +89,8 @@ describe("otherFormatsFor — what else this beat could be", () => {
       deliveredFormat: "web",
       language: "en",
     });
-    expect(rows.map((r) => r.format)).toEqual(["static", "video", "scrolly"]);
+    // No scrolly — issue #39 removed chart/scrolly; the two scrollies that exist are map and image.
+    expect(rows.map((r) => r.format)).toEqual(["static", "video"]);
     expect(rows.every((r) => r.verdict === "offered")).toBe(true);
   });
 

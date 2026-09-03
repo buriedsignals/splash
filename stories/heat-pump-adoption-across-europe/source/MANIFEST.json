@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "article",
+      "path": "source/article.md",
+      "kind": "prose",
+      "digest": "sha256:4a0087839e2dbb49c1edf8d9099a98342fc32d03c4325a965802c68e4b71cdc8"
+    },
+    {
+      "id": "context",
+      "path": "source/context.md",
+      "kind": "prose",
+      "digest": "sha256:a0a2c04db3f3425a82ea70023a347d1eee1ef34a632edf3d84155a80a541851c"
+    },
+    {
+      "id": "data",
+      "path": "source/data.csv",
+      "kind": "table",
+      "digest": "sha256:386867aee3f7e95a0b93350ea07fb62605ef24e73ddcecf9498bbbdb82369e76",
+      "profile": "source/profile.json"
+    },
+    {
+      "id": "text",
+      "path": "source/text.txt",
+      "kind": "document",
+      "digest": "sha256:2f7f560202e4da0b31229bd3628711cf8100f4aa8b22fdddc6404f0fa8065ee0"
+    }
+  ]
+}

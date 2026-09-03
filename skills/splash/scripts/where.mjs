@@ -11,6 +11,7 @@ import {
   PRODUCTION_ATTEMPTS_FILE,
   readProductionAttempts,
 } from "./production-reservation.mjs";
+import { readReviewAttempts, reviewDisclosure } from "./review-attempts.mjs";
 
 const CRAFT_SKILLS = Object.freeze({
   chart: Object.freeze({
@@ -234,12 +235,18 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 //
 // The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
 // loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference", "language"];
-// `intent` and `rankingWalk` mirror storyboard's own contract — issue #48. The internal ranking was
-// advisory, unrecorded and unverifiable while the external reference lookup was compulsory,
-// recorded and gate-blocking, so the house's own accumulated knowledge lost to a lookup of what
-// other newsrooms did. Both gates now read the record of the walk, neither re-derives it.
-export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "intent", "rankingWalk", "chosen"];
+// `reference` is NOT here — issue #40. The reference loop was a compulsory movement between the
+// size gate and the palette, terminating in a required scalar Gate 2 could not close without. Its
+// own intent is about INSPIRATION ("the model gains a concrete target, the journalist gains
+// vocabulary"), and inspiration is something a journalist reaches for, not a toll gate between
+// choosing a size and choosing a colour. The tell was its answer vocabulary: the documented
+// recording for "neither appealed" was `none — both rejected`, and the doctrine had to argue that
+// this is "a fact, not a loss". A movement that must defend its own null answer should not be
+// mandatory. It is now offered at the treatment decision, and recorded when it is taken.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "language"];
+// `intent` mirrors storyboard's own contract — issue #48. It is a 2a question ("what is this slot
+// FOR"), so it rides the existing loop and needs no gate of its own.
+export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "intent", "chosen"];
 
 // Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
 // `HAND` is spelled out independently: two readings of one rule, cross-checked by a test, never
@@ -264,7 +271,17 @@ const DELIVERY_MANIFEST_SCHEMA_VERSION = 1;
 // them. `splash/test/where.test.ts` compares the two gates' size verdicts string for string,
 // so a reworded message on either side reddens rather than quietly becoming two gates that refuse
 // the same storyboard for two different-sounding reasons.
-function sizeGapFor(format, size, label) {
+function sizeGapFor(medium, format, size, label) {
+  // A PHOTO ESSAY HAS NO FIXED EXPORT SIZE. `image/static` is a "sized" format by the format table,
+  // so gate 2c required one of landscape/square/portrait — and `image-beat` reads none of them,
+  // because its frame HEIGHT is derived from its own content: how many photographs, how far each
+  // caption wraps. `imageBeatLayout` says so in its own header. Asking for a size nothing can
+  // honour is the #55 defect in a second place, so the honest fix is to stop asking rather than to
+  // invent a fourth variable-height row nobody has decided on.
+  if (medium === "image")
+    return size
+      ? `slot ${label}: an image beat takes no size — a photo essay is exactly as tall as its own captions make it, so leave the field out`
+      : null;
   const takesASize = SIZED_FORMATS.includes(format);
   if (!takesASize && size)
     return `slot ${label}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
@@ -334,7 +351,9 @@ export const DATAWRAPPER_TREATMENTS = new Map([
   ["Line", ["d3-lines"]],
   ["Pie and donut", ["d3-pies", "d3-donuts"]],
   ["Population pyramid", ["d3-bars-split"]],
-  ["Scatter (and bubble)", ["d3-scatter-plot"]],
+  // "Scatter (and bubble)" is deliberately absent (#44): ChartSpec cannot colour a scatter — the
+  // accent goes to `custom-colors` keyed by series label, which Datawrapper ignores on a scatter —
+  // so the treatment is left unmapped and production stays custom.
   ["Slope (slopegraph)", ["d3-lines"]],
   ["Stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
   ["Waterfall (bridge)", ["waterfall"]],
@@ -459,8 +478,6 @@ function slotGap(field, label) {
   if (field === "chosen") return `slot ${label}: nothing chosen`;
   if (field === "reachable") return `slot ${label}: this medium and format were never confirmed reachable`;
   if (field === "intent") return `slot ${label}: no narrow intent was named — step 1 of chart-choice.md`;
-  if (field === "rankingWalk")
-    return `slot ${label}: the internal ranking was never walked, or the walk was not written down`;
   return `slot ${label}: no ${field} was ever chosen`;
 }
 
@@ -606,7 +623,7 @@ function missingForGate2(frontmatter) {
       if (vocabulary && !vocabulary(value)) gaps.push(slotGap(field, label));
     }
 
-    const sizeGap = sizeGapFor(slot.format, slot.size, label);
+    const sizeGap = sizeGapFor(slot.medium, slot.format, slot.size, label);
     if (sizeGap) gaps.push(sizeGap);
 
     if (!slot.chosen) return;
@@ -624,8 +641,7 @@ function missingForGate2(frontmatter) {
 }
 
 function orderedStoryboardGate(frontmatter, slots) {
-  const prerequisites = REQUIRED_SCALARS.filter((field) => field !== "reference");
-  if (prerequisites.some((field) => !scalarFieldValue(frontmatter, field))) return null;
+  if (REQUIRED_SCALARS.some((field) => !scalarFieldValue(frontmatter, field))) return null;
   if (slots.length === 0) return { gate: "G2a", awaiting: "slot" };
 
   for (const [index, slot] of slots.entries()) {
@@ -635,10 +651,14 @@ function orderedStoryboardGate(frontmatter, slots) {
     if (!slot.medium) return { gate: "G2a", awaiting: "medium", slotId };
     if (!slot.format) return { gate: "G2b", awaiting: "format", slotId };
     if (slot.reachable !== "yes") return { gate: "G2b", awaiting: "reachability", slotId };
-    if (SIZED_FORMATS.includes(slot.format) && !slot.size) {
+    // An image beat is never asked — see sizeGapFor.
+    if (slot.medium === "image" && slot.size) {
+      return { gate: "G2c", awaiting: "size-removal", slotId };
+    }
+    if (slot.medium !== "image" && SIZED_FORMATS.includes(slot.format) && !slot.size) {
       return { gate: "G2c", awaiting: "size", slotId };
     }
-    if (!SIZED_FORMATS.includes(slot.format) && slot.size) {
+    if (slot.medium !== "image" && !SIZED_FORMATS.includes(slot.format) && slot.size) {
       return { gate: "G2c", awaiting: "size-removal", slotId };
     }
     if (slot.size && !EXPORT_SIZES.includes(slot.size)) {
@@ -646,25 +666,15 @@ function orderedStoryboardGate(frontmatter, slots) {
     }
   }
 
-  // A SECOND PASS, and it has to be second. G2a/G2b/G2c finish for EVERY slot before any later gate
-  // opens — that is the sequence this gate documents and pins — so asking slot 1 for its intent
-  // while slot 2 still has no medium would jump a slot's basic identity to answer a question about
-  // another slot's craft. Written inside the first loop, it did exactly that.
-  //
-  // And it runs BEFORE the reference loop, which is the ordering issue #48 argues for: a reference
-  // is a way of executing a form well, not evidence that the form is right. Consulted in the middle
-  // of the treatment decision with a gate attached, it competed with the house's own ranking and
-  // won — the ranking being advisory, unrecorded and unverifiable while the lookup was compulsory,
-  // recorded and gate-blocking. Named intent first, ranking walked second, inspiration third.
+  // One pass, four lines, and it has to be its own: G2a/G2b/G2c finish for EVERY slot before any
+  // later gate opens, so asking slot 1 for its intent inside that loop jumps slot 2's medium. It
+  // sits ahead of the reference loop because that is the whole point of #48 — a reference is a way
+  // of executing a form well, not evidence the form is right.
   for (const [index, slot] of slots.entries()) {
-    const slotId = String(slot.id ?? index + 1);
-    if (!slot.intent) return { gate: "G2-intent", awaiting: "intent", slotId };
-    if (!slot.rankingWalk) return { gate: "G2-ranking", awaiting: "rankingWalk", slotId };
+    if (!slot.intent)
+      return { gate: "G2-intent", awaiting: "intent", slotId: String(slot.id ?? index + 1) };
   }
 
-  if (!scalarFieldValue(frontmatter, "reference")) {
-    return { gate: "G2-reference", awaiting: "reference" };
-  }
   for (const [index, slot] of slots.entries()) {
     if (!slot.chosen || !Array.isArray(slot.candidates) || !slot.candidates.includes(slot.chosen)) {
       return { gate: "G2-treatment", awaiting: "treatment", slotId: String(slot.id ?? index + 1) };
@@ -1289,6 +1299,25 @@ async function resolveStoryState(storyDir) {
     const nextBeat = current.beats.find((beat) =>
       (revision?.beats ?? completion.production).includes(beat.name)
     );
+    // AN INDEPENDENT REVIEW THAT CANNOT BE OBTAINED DOES NOT STALL THE STORY — issue #46. State
+    // here is derived from the filesystem, and nothing on the filesystem changes when a persona
+    // dies to an HTTP 529, so this branch used to re-issue the same instruction that had just
+    // failed twice, indefinitely. `REVIEW-ATTEMPTS.json` is what makes "could not run" visible in
+    // the directory, distinct from "not yet run", and once it is exhausted the beat goes to the
+    // journalist WITH the reason rather than going round again.
+    if (!revision && nextBeat) {
+      const disclosure = reviewDisclosure(await readReviewAttempts(nextBeat.path));
+      if (disclosure) {
+        return {
+          phase: "production",
+          step: "review",
+          status: "blocked",
+          slot: nextBeat.slot,
+          ...legacyState,
+          missing: [...missing, disclosure],
+        };
+      }
+    }
     return {
       phase: "production",
       step: revision ? "craft" : "review",
