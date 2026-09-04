@@ -56,7 +56,9 @@ const { article, data, profile } = await freezeSource({
 
 ## Files
 
-- `scripts/manifest.mjs` — **`source/MANIFEST.json`: n sources, each bound by digest** (#37).
+- `scripts/manifest.mjs` — **`source/MANIFEST.json`: n sources, each bound by digest** (#37). The
+  prose entry carries `sections` — the article's headings with id, level and line, derived at freeze
+  (`articleSections`, #61) — so the storyboard's placement question can offer real positions.
   Freezing bought a real guarantee — the record of what was analysed cannot drift underneath it —
   but the shape it took did not fit the material journalists arrive with. One article path, one
   data path, three fixed filenames, and a refusal on the second call meant a real investigation with

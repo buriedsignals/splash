@@ -54,7 +54,7 @@ function storyRelative(storyDir, path) {
  * rather than a filename — a story with nine datasets needs to say which one a beat draws on, and
  * `source/data.csv` cannot answer that.
  */
-export function sourceEntry({ id, path, kind, digest, profile = null, note = null }) {
+export function sourceEntry({ id, path, kind, digest, profile = null, note = null, sections = null }) {
   if (!id || !/^[a-z0-9][a-z0-9-]*$/.test(id)) {
     throw new Error(`a source id is lowercase words joined by hyphens — got ${JSON.stringify(id)}`);
   }
@@ -64,7 +64,51 @@ export function sourceEntry({ id, path, kind, digest, profile = null, note = nul
   if (!/^sha256:[0-9a-f]{64}$/.test(digest ?? "")) {
     throw new Error(`source ${id} must carry a sha256 digest of what was read`);
   }
-  return { id, path, kind, digest, ...(profile ? { profile } : {}), ...(note ? { note } : {}) };
+  if (sections !== null && kind !== "prose") {
+    throw new Error(`source ${id}: only a prose source carries a section index`);
+  }
+  return {
+    id,
+    path,
+    kind,
+    digest,
+    ...(profile ? { profile } : {}),
+    ...(note ? { note } : {}),
+    ...(sections ? { sections } : {}),
+  };
+}
+
+/**
+ * THE ARTICLE'S OWN STRUCTURE, RECORDED SO PLACEMENT CAN OFFER REAL POSITIONS — issue #61.
+ *
+ * Movement ③ asks "where should we position this graphic?", and with the article frozen as one
+ * undifferentiated file there was nothing to name: on the run that produced #37 the section
+ * boundaries of a 2,746-line article survived only as hand-inserted HTML comments. This reads the
+ * markdown headings out of the frozen text at freeze time — id, heading, line — and the manifest's
+ * prose entry carries them. DERIVED, so a re-freeze reproduces it byte for byte; nothing about
+ * `article.md` changes, and an article with no headings records an empty index, which is an answer.
+ */
+export function articleSections(text) {
+  const sections = [];
+  const seen = new Map();
+  String(text ?? "")
+    .split(/\r?\n/)
+    .forEach((line, index) => {
+      const match = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
+      if (!match) return;
+      const heading = match[2].trim();
+      const base =
+        heading
+          .toLowerCase()
+          .normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "section";
+      const count = (seen.get(base) ?? 0) + 1;
+      seen.set(base, count);
+      sections.push({ id: count === 1 ? base : `${base}-${count}`, level: match[1].length, heading, line: index + 1 });
+    });
+  return sections;
 }
 
 /** Write the manifest. Sorted by id so two runs over the same material produce the same bytes. */

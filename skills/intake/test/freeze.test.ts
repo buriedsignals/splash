@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { freezeSource } from "../scripts/freeze.mjs";
-import { driftedSources, sourceFor } from "../scripts/manifest.mjs";
+import { driftedSources, sourceFor, articleSections } from "../scripts/manifest.mjs";
 
 let dir: string;
 beforeEach(async () => {
@@ -142,5 +142,31 @@ describe("freezeSource", () => {
     expect(() => sourceFor(manifest, { id: 1, source: "missing" })).toThrow(/does not hold/);
     // Every extra table is profiled too, not only the primary one.
     expect(manifest.sources.find((s: any) => s.id === "rents").profile).toBe("source/rents.profile.json");
+  });
+});
+
+// THE ARTICLE'S STRUCTURE IS RECORDED AT FREEZE — issue #61. Movement ③ offers these headings as
+// positions; with one undifferentiated file it had nothing to name.
+describe("the article's section index", () => {
+  it("should record every heading with its id, level and line, derived from the frozen text", async () => {
+    const articlePath = join(dir, "draft.md");
+    const dataPath = join(dir, "rainfall.csv");
+    await writeFile(
+      articlePath,
+      "# Rainfall\n\nintro\n\n## The last decade\n\ntext\n\n## The last decade\n\n### Méthode\n",
+    );
+    await writeFile(dataPath, "year,rainfall\n2015,912\n");
+    const { manifest } = await freezeSource({ storyDir: dir, articlePath, dataPath });
+    const article = manifest.sources.find((s: any) => s.id === "article");
+    expect(article.sections).toEqual([
+      { id: "rainfall", level: 1, heading: "Rainfall", line: 1 },
+      { id: "the-last-decade", level: 2, heading: "The last decade", line: 5 },
+      { id: "the-last-decade-2", level: 2, heading: "The last decade", line: 9 },
+      { id: "methode", level: 3, heading: "Méthode", line: 11 },
+    ]);
+  });
+
+  it("should record an empty index for an article with no headings — an answer, not an absence", () => {
+    expect(articleSections("just prose\nmore prose\n")).toEqual([]);
   });
 });

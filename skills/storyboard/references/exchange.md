@@ -145,7 +145,10 @@ Two clauses were doing different jobs and only one of them belonged to the journ
 article on that run was 2,746 lines across 20 sections — *"which paragraph"* has no answer anybody
 produces from memory at that size, and the second clause lands as a comprehension test. **The
 position is theirs; what the text says at that position is ours to read out of the frozen article
-and propose back for confirmation.** The `do not duplicate` destination is unchanged and is still
+and propose back for confirmation.** The positions to offer are the article's own headings:
+`source/MANIFEST.json`'s prose entry carries a `sections` index (id, heading, line), derived from
+the frozen text at intake (issue #61). Offer those, by heading; read the frozen article at the one
+they choose; propose what the text already says there. The `do not duplicate` destination is unchanged and is still
 the reason the movement exists; it is just no longer harvested by asking a journalist to recite
 their own copy.
 

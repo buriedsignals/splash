@@ -1241,7 +1241,7 @@ command, or an unregistered Splash operation.
   `skills/dw-beat/scripts/prove-co2.mjs`,
   `skills/dw-beat/scripts/verify-range-annotation.mjs`,
   `skills/deliver/scripts/deliver.mjs`, `skills/deliver/scripts/deploy-embed.mjs`,
-  `scripts/open-live-copy.mjs`, and their adjacent tests.
+  and their adjacent tests.
 
 #### Approach
 

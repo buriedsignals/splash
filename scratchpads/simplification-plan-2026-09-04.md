@@ -1,5 +1,12 @@
 # Splash: simplification plan for #57–#65
 
+> **Status, 2026-09-04 (same day):** executed in this session, all nine issues closed, four commits
+> on top of `kswosvkm`. Deviations from the plan below: `helper-parity.test.ts` kept (its `wrap`/
+> `contrast` coverage of seeds, palette and charter has no other guard); `new-story.mjs` kept (the
+> splash SKILL.md does reference `createStory`); the heavy lane is a local pre-commit step, not a CI
+> step (CI hosts have no browser); the line-1 `// twin/<path>` convention already in the tree is the
+> carried-copy marker, not a new `CARRIED VERBATIM` line. `landing-matches-the-catalogue` untouched.
+
 Written 2026-09-04 after a whole-tree read. Every claim below was checked against the tree on that
 date; line numbers are from main at `kswosvkm` (986c2fd8). Run this in a fresh session, top to
 bottom. Batches are sized so that `bun test` runs once per batch, and one commit closes each batch.

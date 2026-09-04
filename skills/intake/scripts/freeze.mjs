@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { parseCsv } from "./csv.mjs";
 import { profileTable } from "./profile.mjs";
-import { digestOf, sourceEntry, writeManifest } from "./manifest.mjs";
+import { digestOf, sourceEntry, writeManifest, articleSections } from "./manifest.mjs";
 
 /** `rents.csv` → `rents`, so a slot names the journalist's own word for the table. */
 function idFor(path, fallback) {
@@ -40,7 +40,14 @@ export async function freezeSource({ storyDir, articlePath, dataPath, extraSourc
   await writeFile(join(sourceDir, "profile.json"), JSON.stringify(profile, null, 2));
 
   const sources = [
-    sourceEntry({ id: "article", path: "source/article.md", kind: "prose", digest: digestOf(article) }),
+    sourceEntry({
+      id: "article",
+      path: "source/article.md",
+      kind: "prose",
+      digest: digestOf(article),
+      // The article's headings, so movement ③ can offer real positions (issue #61).
+      sections: articleSections(article),
+    }),
     sourceEntry({
       id: idFor(dataPath, "data"),
       path: "source/data.csv",
