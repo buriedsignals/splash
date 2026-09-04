@@ -90,7 +90,7 @@ current delivery, never the source. For editor feedback, start with the
 story's `AGENTS.md`, edit the matching beat, render and approve again, then
 materialise the same delivery form.
 
-## Delivery and delivery
+## Delivery
 
 Delivery is selected per approved output:
 
