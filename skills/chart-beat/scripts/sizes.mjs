@@ -19,8 +19,8 @@
 // WHAT IS NOT HERE, deliberately: which formats exist (that is `format-catalog.mjs`'s question), and
 // which chart TYPES may enter which size (that is `type-at-size.mjs`'s question, in this same
 // skill). A size table that also gated would be the original Splash's one-table-two-jobs defect.
-// There is no `print` row either — the original carries a fourth channel (2480x1748); R2 named
-// three, and a fourth row is a decision nobody has taken.
+// There is no `print` row, and that is decided (issue #59): every export is a screen artefact at one
+// of these three sizes, and a printed edition re-lays it out downstream.
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // WHY EACH ROW CARRIES A `minTypePx`, AND WHERE THE NUMBER COMES FROM

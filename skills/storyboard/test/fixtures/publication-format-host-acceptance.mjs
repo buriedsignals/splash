@@ -33,7 +33,7 @@ The confirmed framing, before the publication-format decision.
 
 Recommended: **Interactive web**, because the article calls for a full-width web treatment and exact country values can remain available on interaction.
 
-- **Static / print:** one fixed graphic, suitable for print and non-interactive placement.
+- **Static:** one fixed graphic at a screen size; a printed edition re-lays it out downstream.
 - **Interactive web:** a responsive page with exact values available on hover, tap, and keyboard focus.
 - **Video:** a timed build for broadcast or social video.
 - **Scrollytelling:** a fixed visual whose state changes with the article's scroll sequence.

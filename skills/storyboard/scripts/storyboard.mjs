@@ -2,7 +2,7 @@
 // front matter is machine-checked; the prose beneath it is what the journalist actually reads.
 
 import { groundTakeaway } from "./ground-claim.mjs";
-import { scalar, recorded, parseStoryboard, checkStoryboard, destinationGap, SURVEY_GAP } from "./gate-contract.mjs";
+import { scalar, recorded, parseStoryboard, checkStoryboard, SURVEY_GAP } from "./gate-contract.mjs";
 import { formatGap } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { createHash, randomUUID } from "node:crypto";
@@ -529,20 +529,6 @@ function renderStoryboardMutation(original, { topLevel = {}, slot } = {}) {
   const reopensProducerGate = ["medium", "format", "chosen"].some((field) =>
     Object.prototype.hasOwnProperty.call(slotFields, field),
   );
-  // A NEW FORMAT UNSAYS WHERE THE OLD ONE WAS PUBLISHED. `destination` — `screen` or `print` — is a
-  // fact about a `static` beat and about nothing else: a `web`, `video` or `scrolly` beat has no
-  // second destination, and a beat that was static and is now web carries an answer to a question
-  // its format no longer asks. Left standing it is refused loudly by both gates, which is better
-  // than being believed, but a stale answer nobody wrote is still a stale answer. So a format change
-  // clears it, exactly as it clears the producer — and, exactly as with the producer, a mutation
-  // that sets the format AND the destination in one call is refused: they are two gate turns
-  // (2b and 2c), and the destination is only knowable once the format is recorded.
-  const reopensDestination = Object.prototype.hasOwnProperty.call(slotFields, "format");
-  if (reopensDestination && Object.prototype.hasOwnProperty.call(slotFields, "destination")) {
-    throw new Error(
-      "a format confirmation cannot also record where the beat is published; close gate 2c separately",
-    );
-  }
   if (
     reopensProducerGate &&
     (Object.prototype.hasOwnProperty.call(slotFields, "producer") ||
@@ -566,7 +552,6 @@ function renderStoryboardMutation(original, { topLevel = {}, slot } = {}) {
       replaceSlotField(lines, slot.id, "producer", null);
       replaceSlotField(lines, slot.id, "datawrapperType", null);
     }
-    if (reopensDestination) replaceSlotField(lines, slot.id, "destination", null);
   }
   const next = `${parts.opening}${lines.join("")}${parts.closing}${parts.prose}`;
   const parsed = parseStoryboard(next);
@@ -659,9 +644,6 @@ export {
   EXPORT_SIZES,
   SIZED_FORMATS,
   sizeGap,
-  PUBLICATION_DESTINATIONS,
-  DESTINED_FORMATS,
-  destinationGap,
   ASSEMBLING_FORMATS,
   assemblyGap,
   UNRECORDED,

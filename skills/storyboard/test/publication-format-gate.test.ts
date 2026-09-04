@@ -116,7 +116,7 @@ describe("the G2b assistant turn", () => {
     });
 
     expect(assistantTurn).toContain("Recommended: **Interactive web**");
-    for (const label of ["Static / print", "Interactive web", "Video", "Scrollytelling"]) {
+    for (const label of ["Static", "Interactive web", "Video", "Scrollytelling"]) {
       expect(assistantTurn).toContain(`**${label}:**`);
     }
     expect(assistantTurn).toContain("hover, tap, and keyboard focus");

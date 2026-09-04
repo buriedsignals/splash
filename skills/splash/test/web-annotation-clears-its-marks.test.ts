@@ -39,8 +39,12 @@
  *
  * WHAT IT DOES NOT COVER, and the two things it FOUND and does not fail.
  *   1. **It FAILS only on `.note.peak-label`.** Today that is `weby-population-pyramid-switzerland`
- *      and the format's own seed. Every other `.note` in the corpus is measured and REPORTED, because
- *      three of them are already over something and none is this chantier's to change:
+ *      and the format's own seed. Every other `.note` in the corpus is measured against `ACCEPTED`
+ *      below — the exact set of standing findings on committed proof pages, pinned by page, width
+ *      and text (issue #64). A finding outside that set FAILS, naming itself; a pinned finding that
+ *      is no longer found also fails, so a fixed page strikes its own pin. The set can only fall.
+ *      The detector samples 25 points per label and is approximate, which is why the two pages
+ *      are pinned rather than re-rendered here. The three known cases:
  *        - `webx-world-population` — "passed 1 billion in 1805" grazes the `#0B7A75` area's own
  *          edge, **1 of 25 sample points**, at 375, 768 and 1400. A real notch in the line, small.
  *        - `webx-life-expectancy` — "first year past 80" is printed **over** "Switzerland 84.0
@@ -48,8 +52,7 @@
  *        - `webz-diverging-bar-eu-per-capita` — "the only rise since 1990" sits inside the `#e2efee`
  *          row band, which is the wash case above and is deliberate (it is below the floor, so it
  *          does not even reach the report).
- *      The first two are printed on every run so they are visible to a person, which is not the same
- *      as being guarded, and they are recorded in `FEEDBACK-2026-08-10.md` under B6.6's row.
+ *      The first two are the pinned set; they are recorded in `FEEDBACK-2026-08-10.md` under B6.6's row.
  *   2. **It does not judge WHERE a label should be**, only that where it is does not damage a mark.
  *      A correctly-placed-but-useless annotation passes.
  *   3. **Four widths, one engine.**
@@ -211,6 +214,17 @@ const READ_ANNOTATIONS = (floor: number) => `(() => {
   });
 })()`;
 
+/**
+ * The standing findings on committed proof pages — the debt, counted. Key: `<page> @ <width>: <text>`.
+ * Remove a line when its page is fixed; never add one for a new page (fix the page instead).
+ */
+const ACCEPTED = new Set([
+  'proof/webx-life-expectancy/life-expectancy.html @ 375: "first year past 80" is printed over "Switzerland 84.0 (2023)"',
+  'proof/webx-world-population/world-population.html @ 375: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
+  'proof/webx-world-population/world-population.html @ 768: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
+  'proof/webx-world-population/world-population.html @ 1400: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
+]);
+
 type Annotation = {
   peak: boolean;
   text: string;
@@ -245,13 +259,11 @@ describe("a web annotation is placed by the shape it annotates", () => {
             if (!n.peak) {
               if (n.worst)
                 reported.push(
-                  `  ${rel} @ ${w}: "${n.text}" covers a ${n.worst.tag} filled ${n.worst.fill} ` +
-                    `at ${n.worst.covered}/25 sample points [reported, not failed]`,
+                  `${rel} @ ${w}: "${n.text}" covers a ${n.worst.tag} filled ${n.worst.fill} ` +
+                    `at ${n.worst.covered}/25 sample points`,
                 );
               if (n.collides)
-                reported.push(
-                  `  ${rel} @ ${w}: "${n.text}" is printed over "${n.collides}" [reported, not failed]`,
-                );
+                reported.push(`${rel} @ ${w}: "${n.text}" is printed over "${n.collides}"`);
               continue;
             }
             peaksSeen += 1;
@@ -278,8 +290,17 @@ describe("a web annotation is placed by the shape it annotates", () => {
       await browser.close();
     }
 
-    if (reported.length)
-      console.log(`other annotations over a mark:\n${reported.join("\n")}`);
+    // Standing findings are a pinned set, not a report: anything new fails, anything fixed strikes.
+    const unexpected = reported.filter((line) => !ACCEPTED.has(line));
+    const struck = [...ACCEPTED].filter((line) => !reported.includes(line));
+    expect(["annotations over a mark outside the pinned set", unexpected]).toEqual([
+      "annotations over a mark outside the pinned set",
+      [],
+    ]);
+    expect(["pinned findings no longer found — remove from ACCEPTED", struck]).toEqual([
+      "pinned findings no longer found — remove from ACCEPTED",
+      [],
+    ]);
     expect(peaksSeen).toBeGreaterThan(0);
     expect(failures.join("\n")).toBe("");
   });

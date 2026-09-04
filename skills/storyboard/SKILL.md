@@ -294,7 +294,7 @@ if (errors.length > 0) {
   at the recorded upstream source revision, plus the deliberately conservative Splash-treatment
   mappings that may open the producer preference gate. Unmapped treatments never trigger it.
 - `scripts/gate-contract.mjs` — the gate: `parseStoryboard`, `checkStoryboard`, `openGate`, the required
-  fields, the size/destination/assembly rules and every refusal's wording. Carried verbatim into
+  fields, the size and assembly rules and every refusal's wording. Carried verbatim into
   `splash/scripts/` and `analyst/scripts/`.
 - `scripts/storyboard.mjs` — re-exports the contract; owns the writer (`mutateStoryboard`,
   `writeStoryboardAtomic`), the credit proposal and `surveyGap`.

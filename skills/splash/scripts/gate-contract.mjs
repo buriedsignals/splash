@@ -7,7 +7,7 @@
 // across a skill boundary at runtime (`splash/test/no-cross-skill-imports.test.ts`). The previous
 // answer to that constraint was two hand-written readers held together by a test that compared
 // their refusals string for string — and on 2026-09-04 that test was green while `whereIs` waved
-// through a storyboard `checkStoryboard` refused four ways (`destination` on a web slot, an
+// through a storyboard `checkStoryboard` refused four ways (a stray field on a web slot, an
 // `assembles` list of one, a half-recorded `claimShape`): none of those rules had been written
 // into the second reader. Agreement between two people writing the same thing twice is a hope.
 // Agreement between two byte-identical files is a comparison, and `splash/test/carried-copies.test.ts`
@@ -139,52 +139,12 @@ export function sizeGap(medium, format, size, id) {
   return null;
 }
 
-// WHERE A PUBLISHED GRAPHIC LANDS — the two answers gate 2c takes for a static beat, and the one
-// format that has to be asked. `where.mjs` spells both out independently, exactly as it does
-// `SIZED_FORMATS`, and `destinationGap` below is walked byte for byte across the two files.
-//
-// `static` is the whole of `DESTINED_FORMATS`, and that is a measurement rather than a shortlist: a
-// web page, a video and a scrollytelling page are read on a display and cannot be run off on a
-// sheet, so their destination follows from the format alone. Only "Static / print" — half gate 2b's
-// own label — is two places.
-const PUBLICATION_DESTINATIONS = ["screen", "print"];
-const DESTINED_FORMATS = ["static"];
-export { PUBLICATION_DESTINATIONS, DESTINED_FORMATS };
-
-/**
- * WHERE THIS STATIC BEAT IS PUBLISHED — `null` when the slot's `destination` agrees with its
- * format, otherwise the one line the gate refuses in.
- *
- * ROUND SEVEN, defect D11. Gate 2b's own label is "Static / print", and that slash is a QUESTION
- * nothing in this toolchain ever asked: a static graphic lands on a screen (an embedded image in
- * the article) or on paper (the printed edition), and the two are not the same delivery.
- * `stories/stress-ad-polish-hospital-beds` is the beat that paid for the guess — its own gate turn
- * says "because the destination is a printed page", in prose nothing reads, and what it shipped
- * was measured for a screen.
- *
- * ABSENCE IS AN ANSWER, NOT A GAP, and this is the half that makes the field usable at all. Six
- * `format: static` slots across five frozen stories were recorded before this field existed;
- * requiring it would redden all six and teach nothing. A slot that never recorded the fact stays
- * valid here and says it does not know it downstream, where the fact is actually needed — a
- * default in this file would be a guess written into the record, which is the defect itself.
- *
- * A `web`, `video` or `scrolly` beat has no second destination, so the field is refused there
- * rather than tolerated as decoration — the same shape `sizeGap` holds for a format with no
- * exported frame.
- */
-export function destinationGap(format, destination, id) {
-  const takesADestination = DESTINED_FORMATS.includes(format);
-  const destinations = recorded(destination);
-  if (destinations.length === 0) return null;
-  if (!takesADestination)
-    return `slot ${id}: a ${format} beat is read on a display, so it records no destination — leave the field out`;
-  if (destinations.length > 1)
-    return `slot ${id}: destination records a list where this contract takes one answer — a beat published in two places is measured twice, which is two records and not one field holding both`;
-  const [only] = destinations;
-  if (!PUBLICATION_DESTINATIONS.includes(only))
-    return `slot ${id}: destination ${JSON.stringify(only)} is not one this toolchain publishes to — ${PUBLICATION_DESTINATIONS.join(", ")}`;
-  return null;
-}
+// THERE IS NO `destination` FIELD, AND NO PRINT SIZE — issue #59, decided 2026-09-04. Every export
+// is a screen artefact at one of the three sizes above; a printed edition re-lays it out
+// downstream. A `destination: screen | print` field used to be asked at G2c and validated here,
+// and nothing downstream ever read it — a recorded answer nobody reads is the #55 defect with a
+// different name, so the question was deleted rather than documented. A slot that still carries
+// the line (one frozen story does) is ignored, not refused.
 
 // The formats that carry SEVERAL MEDIA behind one narrative, and therefore the only ones a slot may
 // record an `assembles` list on. `where.mjs` spells this out independently, exactly as it does
@@ -578,9 +538,6 @@ export function checkStoryboard(meta) {
     const gap = sizeGap(slot.medium, slot.format, slot.size, slot.id);
     if (gap) errors.push(gap);
 
-    const destination = destinationGap(slot.format, slot.destination, slot.id);
-    if (destination) errors.push(destination);
-
     const assembly = assemblyGap(slot.medium, slot.format, slot.assembles, slot.id);
     if (assembly) errors.push(assembly);
 
@@ -633,8 +590,6 @@ export function openGate(meta) {
     if (slot.reachable !== "yes") return { gate: "G2b", awaiting: "reachability", slotId };
     const size = sizeGap(slot.medium, slot.format, slot.size, slot.id);
     if (size) return { gate: "G2c", awaiting: /takes no size/.test(size) ? "size-removal" : "size", slotId };
-    if (destinationGap(slot.format, slot.destination, slot.id))
-      return { gate: "G2c", awaiting: "destination", slotId };
   }
   for (const [index, slot] of slots.entries()) {
     if (recorded(slot.intent).length === 0)

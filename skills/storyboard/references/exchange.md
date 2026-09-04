@@ -297,7 +297,7 @@ format choice, ask which Splash should produce first, then **end the turn**. Not
 appear in that assistant message. A preference in `context.md` changes the recommendation; it never
 answers the question.
 
-*Static / print, Interactive web, Video, or Scrollytelling?* Offered **only where reachable for the medium just chosen** —
+*Static, Interactive web, Video, or Scrollytelling?* Offered **only where reachable for the medium just chosen** —
 `proposeFormats({medium, capabilities})` returns all four with a `reachable` flag and a `why`, so a
 format this medium cannot reach is named as absent rather than quietly omitted (`image` reaches
 `static` and `scrolly`; it has no web or video producer, and the journalist hears that here).
@@ -352,29 +352,10 @@ staging a question with one answer. Where it has more, ask. Where it is EMPTY th
 size at all and none is recorded. Either way widening the set later widens a set and re-plumbs
 nothing.
 
-**And a STATIC beat is asked one thing more here: where it is published.** Gate 2b's own label is
-*"Static / print"* — one option and two publications — and a static graphic lands either on a screen
-(an embedded image in the article) or on paper (the printed edition). Nothing in this toolchain ever
-asked which, so it was guessed: `stress-ad-polish-hospital-beds` shipped a 2.20:1 accent onto a
-printed page while its own gate turn recorded *"because the destination is a printed page"*, in
-prose nothing reads.
-
-Render that turn with `formatPublicationDestinationGate({format})`
-(`scripts/format-gate.mjs`), send it unchanged, and record the answer on the slot:
-
-    destination: screen
-    destination: print
-
-Ask it here, not at ⑥: the G2b turn is pinned byte for byte against a recorded host acceptance and
-must stop before every later movement. Ask it of a static beat only — a web, video or scrolly beat
-is read on a display whatever else is true of it, and both Gate-2 readings refuse the field on those
-formats (*"a web beat is read on a display, so it records no destination — leave the field out"*).
-
-The field is **optional**, and that is deliberate rather than lax: six `format: static` slots across
-five frozen stories were recorded before it existed, and requiring it would refuse all six for a
-question nobody asked them. Absence is an answer — *not recorded* — and it is never a default. What
-refuses is the phase that needs the fact: `palette`'s `proposePalette` cannot resolve a ground for a
-static beat without it and names this field, this movement and this question when it says so.
+**There is no print size and no print question.** Every export is a screen artefact at one of the
+three sizes above; a printed edition re-lays it out downstream, from the delivered file. A
+`destination: screen | print` field used to be asked here and read by nothing, and it was deleted
+for that reason (issue #59) — a recorded answer nobody reads is a guess written into the record.
 
 ## ⑧ The reference loop — OFFERED, not required
 
