@@ -45,6 +45,10 @@ export type PhotoInput = {
   caption?: string;
 };
 
+// THE ONE SIZE DECISION A PHOTO ESSAY HAS, and it is the house's, not the journalist's (issue #58).
+// Width is the article column this format is read in; height is derived below from the
+// photographs and how far each caption wraps. So gate 2c asks an image beat nothing, the catalogue
+// records `sizeRule: none` for it, and this constant is where the width is decided, once.
 const FRAME_WIDTH = 900;
 const PAD = 40;
 const TITLE = { fontSize: 26, fontWeight: 700, lead: 34 };

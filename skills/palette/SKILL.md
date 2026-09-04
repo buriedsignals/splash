@@ -46,12 +46,24 @@ the same way `NEWSROOM.md` is.
 ## When to use
 
 - Before the first beat of a story is rendered, once `NEWSROOM.md` is resolved (valid *or*
-  declined). The proposal is a question the journalist answers once per story.
+  declined). The proposal is a question the journalist answers once per story — and the same
+  movement decides the typeface (`scripts/typeface.mjs`), derived when the newsroom's recorded face
+  resolves on this machine and asked when it does not.
 - When a single beat needs to leave the story's decision — a renewables beat inside a story about
   something else. Drop a `PALETTE.md` beside that beat; `readPalette` finds the nearest one first.
 - **Not** to pick a categorical set, a sequential scale or a diverging scale. This skill proposes
   **one accent on one ground**. The rest are decisions with constraints a single-accent lookup has
   no business making — see `references/subject-conventions.md`, last section.
+
+  **A choropleth's ramp has an owner, and it is not a second question here** (issue #60). The ramp
+  is DERIVED from this file's answer: the map craft skill's own geometry core
+  (`map-beat/assets/geo.ts`: `dataRampEnd`, `sequentialRamp`) walks the recorded `accent` toward the
+  pole its `ground` is not, and `assertRampReads` measures the result at render — neighbouring
+  classes at least 0.02 relative luminance apart, the top class at 3:1 against the ground. The
+  journalist's decision is the accent; the ramp has no separate provenance because it has no
+  separate choice. How many classes and where the breaks fall is a fact about the data, and
+  `analyst` proposes it (`profile.mjs`, `classBreaksOf`) for the journalist to confirm. Doctrine
+  rule 8 (`doctrine/references/geo-discipline.md`) says what the ramp may and may not carry.
 - **Not** to derive a newsroom's charter from scratch. That is `newsroom-charter`, which
   measures the newsroom's own website; this skill starts from the result.
 
@@ -85,6 +97,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
 | Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject})` — the options, each with provenance, reasoning and measured contrast |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the question the journalist actually reads and answers |
+| Typeface | `scripts/typeface.mjs` | `typefaceDecision({newsroom})` — `paletteDecision`'s shape for the face: every recorded face measured on this machine (`familyResolves`), derived when the first resolves, asked when it does not; `formatTypefaceProposal`, `formatTypeface` write the question and the `TYPEFACE.md` every `render-still.mjs` reads |
 | Reader | `scripts/palette.mjs` | `readPalette(dir, {stopAt})`, `parsePalette` — reads the recorded answer back, throws naming every directory searched, and refuses an accent under the mark floor |
 | Refusal | `scripts/palette.mjs` | `assertLegible(colour, against, {role})` — one of `mark` (3:1, SC 1.4.11), `text` (4.5:1, SC 1.4.3) or `largeText` (3:1, the same criterion's relaxation). The caller names the role rather than the number, because the two floors coincide at 3:1 and mean different things |
 | Series inks | `chart-beat/scripts/render-still.mjs` | `seriesInks(palette, count)` — the recorded accents first, then shades derived from them; never the furniture grey, and a throw rather than a default when it runs out |
@@ -224,6 +237,9 @@ thing to get wrong. The copies are guarded against drift by `helper-parity.test.
   `LARGE_TEXT_CONTRAST_MIN`, `adjustToContrast`, `assertLegible`, `SUBJECT_CONVENTIONS`,
   `matchConvention`, `proposePalette`, `readPalette` and `parsePalette`. No write path.
 - `scripts/format-proposal.mjs` — `formatProposal`, the markdown the journalist reads and answers.
+- `scripts/typeface.mjs` — `typefaceDecision`, `proposeTypeface`, `familyResolves`, `formatTypefaceProposal`,
+  `formatTypeface`: the typeface half of movement ⑨ (issue #57). A face this machine cannot resolve is
+  refused, never substituted; `origin: default` records the fallback as a choice, because nobody chose it.
 - `assets/PALETTE.example.md` — the recorded-answer shape: `ground`, `accent`, the optional
   `accents` list, `origin`.
 - `references/subject-conventions.md` — the evidence behind each convention, why the table is short,

@@ -205,7 +205,7 @@ rule anywhere else.
      final action of the turn, and wait. After the reply,
      `confirmFormatReachable({medium, format, capabilities})` produces the recorded
      `"yes"`, or throws the refusal the journalist hears.
-   - **⑦** — `proposeSizes(format)`: the three export sizes for a static or a video, none for a page
+   - **⑦** — `proposeSizes(medium, format)`: the catalogue's `sizeRule` for the pair — the three export sizes for a static or video chart or map, none for a photo essay, none for a page
      that fills its container.
    - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates all name the same type
      (the run offered three and all three were bars of the same three numbers), and

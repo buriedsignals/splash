@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "splash.visual-catalog",
-  "catalogRevision": "sha256:71cb889169e0eded916bdaf7572ef534ceff81473e769caaa8b202115cdf7d47",
+  "catalogRevision": "sha256:a2fee6fd4f6f612d60b765b6a6425af92e3eeae3e09974912ac32bf842df7ebf",
   "mediums": [
     {
       "id": "chart",
@@ -659,12 +659,7 @@
       "format": "static",
       "producer": "image-beat",
       "sizeRule": {
-        "kind": "required",
-        "options": [
-          "landscape",
-          "square",
-          "portrait"
-        ]
+        "kind": "none"
       },
       "interaction": {
         "kind": "none",

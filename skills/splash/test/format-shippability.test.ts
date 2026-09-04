@@ -109,7 +109,9 @@ describe("storyboard's format catalog agrees with what actually ships", () => {
 
   for (const row of visualCatalog.formatPairs) {
     it(`should keep ${row.pair}'s size rule identical to the canonical storyboard gate`, () => {
-      if (SIZED_FORMATS.includes(row.format)) {
+      // The same condition `sizeGap` holds: a sized format takes a size, and a photo essay never does.
+      const takesASize = SIZED_FORMATS.includes(row.format) && row.medium !== "image";
+      if (takesASize) {
         expect(row.sizeRule).toEqual({ kind: "required", options: EXPORT_SIZES });
       } else {
         expect(row.sizeRule).toEqual({ kind: "none" });

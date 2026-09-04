@@ -138,6 +138,11 @@ const catalogSchema = z.strictObject({
 
 const EXPECTED_SIZES = ["landscape", "square", "portrait"];
 const SIZED_FORMATS = new Set(["static", "video"]);
+// A photo essay is exactly as tall as its own captions make it, and exactly as wide as the house
+// column (`image-beat/assets/ImageBeatSeed.tsx`'s FRAME_WIDTH). It takes no export size, whatever
+// its format (issue #58); `sizeGap` in the gate contract holds the same rule.
+const UNSIZED_MEDIA = new Set(["image"]);
+const takesASize = (row) => SIZED_FORMATS.has(row.format) && !UNSIZED_MEDIA.has(row.medium);
 const KNOWN_SETTINGS = new Set(["cloudflare-account-id"]);
 
 function fail(message) {
@@ -397,7 +402,7 @@ export function validateVisualCatalog(
         `format pair ${row.id} delivery forms drifted; expected ${actualForms.join(", ")}`,
       );
     }
-    if (SIZED_FORMATS.has(row.format)) {
+    if (takesASize(row)) {
       if (
         row.sizeRule.kind !== "required" ||
         !sameList(row.sizeRule.options, EXPECTED_SIZES)
@@ -408,7 +413,7 @@ export function validateVisualCatalog(
       }
     } else if (row.sizeRule.kind !== "none") {
       fail(
-        `format pair ${row.id} has an impossible size rule; ${row.format} takes no export size`,
+        `format pair ${row.id} has an impossible size rule; ${row.medium}/${row.format} takes no export size`,
       );
     }
   }

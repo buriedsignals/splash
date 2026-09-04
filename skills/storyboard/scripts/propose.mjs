@@ -871,13 +871,17 @@ export function proposeFormats({ medium, treatment, capabilities = {} }) {
 }
 
 /**
- * Movement ⑦. The sizes this format exports — `EXPORT_SIZES` for a static or a video, none at all
- * for a web or a scrolly page, which fills whatever container it is given. Where the set has one
- * member the movement STATES it; where it has more, it asks. Either way `size:` is recorded, or
- * deliberately absent, and `sizeGap` in both gates reads the same rule.
+ * Movement ⑦. The sizes THIS PAIR exports, read from the catalogue's own `sizeRule` — the three
+ * export sizes for a static or a video chart or map, none at all for a web or a scrolly page
+ * (which fills whatever container it is given) and none for a photo essay (which is exactly as
+ * tall as its own captions make it, issue #58). Where the set has one member the movement STATES
+ * it; where it has more, it asks. Either way `size:` is recorded, or deliberately absent, and
+ * `sizeGap` in the gate contract reads the same rule; `format-catalog.test.ts` holds the two
+ * together pair by pair.
  */
-export function proposeSizes(format) {
-  return SIZED_FORMATS.includes(format) ? [...EXPORT_SIZES] : [];
+export function proposeSizes(medium, format) {
+  const rule = FORMAT_CATALOG[`${medium}/${format}`]?.sizeRule;
+  return rule?.kind === "required" ? [...rule.options] : [];
 }
 
 /**

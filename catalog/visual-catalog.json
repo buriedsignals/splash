@@ -404,12 +404,7 @@
       "format": "static",
       "producer": "image-beat",
       "sizeRule": {
-        "kind": "required",
-        "options": [
-          "landscape",
-          "square",
-          "portrait"
-        ]
+        "kind": "none"
       },
       "interaction": {
         "kind": "none",

@@ -76,3 +76,22 @@ describe("formatsFor", () => {
     expect(formatsFor("hologram")).toEqual([]);
   });
 });
+
+// THE CATALOGUE AND THE GATE AGREE ON WHO TAKES A SIZE — issue #58. The catalogue used to say
+// `image/static` requires a size while `sizeGap` refused any size for an image beat, and
+// `proposeSizes` offered three sizes the gate then refused. Now `proposeSizes` reads the catalogue's
+// `sizeRule`, and this holds that rule to `sizeGap`, pair by pair, in both directions.
+describe("the catalogue's sizeRule and the gate's sizeGap are one rule", () => {
+  it("should require a size exactly where the gate refuses a missing one, for every pair", async () => {
+    const { sizeGap } = await import("../scripts/storyboard.mjs");
+    const { proposeSizes } = await import("../scripts/propose.mjs");
+    for (const [pair, row] of Object.entries(FORMAT_CATALOG as Record<string, any>)) {
+      const [medium, format] = pair.split("/");
+      const gateWantsOne = sizeGap(medium, format, undefined, 1) !== null;
+      expect([pair, "takes a size", row.sizeRule.kind === "required"]).toEqual([pair, "takes a size", gateWantsOne]);
+      for (const size of proposeSizes(medium, format)) {
+        expect([pair, size, sizeGap(medium, format, size, 1)]).toEqual([pair, size, null]);
+      }
+    }
+  });
+});

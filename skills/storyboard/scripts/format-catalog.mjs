@@ -32,7 +32,7 @@ import visualCatalog from "../references/visual-catalog.json" with { type: "json
 export const FORMAT_CATALOG = Object.fromEntries(
   visualCatalog.formatPairs.map((row) => [
     row.pair,
-    { producerSkill: row.producerSkill, delivered: row.delivered },
+    { producerSkill: row.producerSkill, delivered: row.delivered, sizeRule: row.sizeRule },
   ]),
 );
 

@@ -449,16 +449,13 @@ describe("the export-size table — every copy in the tree, discovered rather th
     const { FORMAT_CATALOG } = await import(
       join(TWIN, "skills", "storyboard", "scripts", "format-catalog.mjs")
     );
-    const { SIZED_FORMATS } = await import(
-      join(TWIN, "skills", "storyboard", "scripts", "storyboard.mjs")
-    );
     const producers = new Set<string>();
-    for (const [pair, row] of Object.entries(FORMAT_CATALOG as Record<string, { producerSkill: string }>)) {
-      const [medium, format] = pair.split("/");
-      // The SAME condition `sizeGap` uses, so the roster cannot drift from the gate. An image beat
-      // is never asked for a size — a photo essay is as tall as its own captions make it — so its
-      // producer needs no size table, and that falls out of the rule rather than out of a list.
-      if (medium !== "image" && SIZED_FORMATS.includes(format)) producers.add(row.producerSkill);
+    for (const row of Object.values(FORMAT_CATALOG as Record<string, { producerSkill: string; sizeRule: { kind: string } }>)) {
+      // The catalogue's own `sizeRule`, which `format-catalog.test.ts` holds to `sizeGap` pair by
+      // pair. An image beat is never asked for a size — a photo essay is as tall as its own
+      // captions make it — so its producer needs no size table, and that falls out of the
+      // catalogue rather than out of a list here.
+      if (row.sizeRule.kind === "required") producers.add(row.producerSkill);
     }
     // Premise, so this cannot go vacuously green on an empty roster.
     expect(producers.size).toBeGreaterThan(2);

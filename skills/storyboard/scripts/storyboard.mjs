@@ -209,7 +209,7 @@ export function attributionsIn(article) {
 }
 
 /**
- * The credit options a journalist reads and answers — the same movement `proposeTypeface` runs for
+ * The credit options a journalist reads and answers — the same movement `typefaceDecision` runs for
  * the face, one field over: every option carries where it was read, why it is offered, and what a
  * delivered artefact would PRINT if it were chosen.
  *

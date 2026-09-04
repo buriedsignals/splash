@@ -86,7 +86,7 @@ describe("the exchange keeps its documented order", () => {
     );
     expect([...stated.keys()].sort()).toEqual(["scrolly", "static", "video", "web"]);
     for (const [format, sizes] of stated) {
-      expect(sizes).toEqual(proposeSizes(format));
+      expect(sizes).toEqual(proposeSizes("chart", format));
       // `sizeGap` now takes the MEDIUM too: an image beat is asked for no size at all, because a
       // photo essay's height comes from its own captions and nothing could honour a fixed one.
       for (const size of sizes) expect(sizeGap("chart", format, size, 1)).toBeNull();

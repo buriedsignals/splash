@@ -395,10 +395,12 @@ describe("medium, then format, then size — each verified before it is offered"
   });
 
   it("should offer three sizes for a static or a video, and none for a page that fills its container", () => {
-    expect(proposeSizes("static")).toEqual(["landscape", "square", "portrait"]);
-    expect(proposeSizes("video")).toEqual(["landscape", "square", "portrait"]);
-    expect(proposeSizes("web")).toEqual([]);
-    expect(proposeSizes("scrolly")).toEqual([]);
+    expect(proposeSizes("chart", "static")).toEqual(["landscape", "square", "portrait"]);
+    expect(proposeSizes("map", "video")).toEqual(["landscape", "square", "portrait"]);
+    expect(proposeSizes("chart", "web")).toEqual([]);
+    expect(proposeSizes("map", "scrolly")).toEqual([]);
+    // A photo essay takes no size, whatever its format (issue #58).
+    expect(proposeSizes("image", "static")).toEqual([]);
   });
 });
 

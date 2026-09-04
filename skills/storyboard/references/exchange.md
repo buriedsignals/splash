@@ -416,20 +416,23 @@ The escape hatch is unchanged: a journalist who wants a different colour for one
 
 Lands in `PALETTE.md`.
 
-**And the same question for the TYPE, in the same movement.** `palette`'s `proposeTypeface({
-newsroom, resolves, sample })` offers every face `NEWSROOM.md` records, in the newsroom's own order,
-plus the substrate's own stack as an explicit option — each one MEASURED on the machine that will
-render, because resvg draws the fallback for a face it does not have and reports nothing. **Pass
-`sample`**: the strings this story will actually draw, category labels and all. Without it every
-answer is about a Latin probe, which on a Greek or Arabic story is an answer to another question —
-and the proposal's own `sampleLimit` says which of the two you are reading.
-`writeTypeface` records the answer. Lands in `TYPEFACE.md`, beside `PALETTE.md`.
+**And the same question for the TYPE, in the same movement.** `palette`'s
+`typefaceDecision({ newsroom })` (`scripts/typeface.mjs`) is `paletteDecision`'s shape applied to
+the face: it measures every face `NEWSROOM.md` records on the machine that will render — resvg
+draws the fallback for a face it does not have and reports nothing, so presence is measured, never
+assumed. When the newsroom's first recorded face resolves there is nothing to decide: `ask: false`,
+and `formatTypeface(decision.typeface)` is written as the story's `TYPEFACE.md`, `origin: newsroom`.
+When it does not, `ask: true`: send `formatTypefaceProposal(decision)` unchanged — it names which
+recorded faces are present and which are absent, and offers the substrate's own stack as an explicit
+choice — and record the answer with `formatTypeface({ family, origin })`, `origin: journalist` for a
+recorded face the journalist chose, `origin: default` for the fallback accepted as a stated choice.
+Lands in `TYPEFACE.md`, beside `PALETTE.md`, once per story.
 
 It is asked here, at the movement where the newsroom's own charter is already open, and not left to
-the render: five render paths refuse without that file, and until round four nothing anywhere wrote
-one — so a story reached its first render with a refusal naming three ways out and no way to take
-any of them. There is always an answer: a face this machine does not have is refused rather than
-swapped, and `origin: default` records the stated fallback as a choice with the gap named.
+the render: every render path refuses a face this machine does not have rather than substituting for
+it, and before this movement proposed anything a story reached its first render with a refusal
+naming three ways out and no way to take any of them. The probe is Latin; a story set in another
+script gets an answer about Latin glyphs, and that limit is stated rather than sampled around.
 
 ## ⑩ The storyboard proposal, and the beat brief
 
