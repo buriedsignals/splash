@@ -906,8 +906,16 @@
        Tout ce qu'elle porte est dérivé de `--cw` ; à 72vw sur un téléphone, le
        corps du texte tombait sous les onze pixels, ce qui n'est plus de la
        lecture. Elle s'élargit, ses planchers montent (voir plus bas), et sa
-       proportion suit — sinon le pied sort par le bas. */
-    .csc{--cw:min(88vw,340px);--ar:1.04}
+       proportion suit — sinon le pied sort par le bas.
+
+       ET ELLE SE MESURE SUR LA COLONNE, PAS SUR LA FENÊTRE. À 88vw elle
+       faisait 343 px dans un panneau qui n'en fait que 346 : la colonne pose
+       une gouttière de chaque côté, et la carte l'ignorait. Pire, AU REPOS
+       ELLE EST TOURNÉE D'UN QUART DE TOUR — ce qu'elle occupe en largeur est
+       donc sa HAUTEUR, et le panneau la coupait de vingt-huit pixels à
+       gauche. La largeur part de ce que la colonne offre, moins de quoi
+       tourner. */
+    .csc{--cw:min(calc(100vw - 2 * var(--gut) - 52px),340px);--ar:1.10}
   }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
@@ -4106,7 +4114,22 @@
        * fenêtre peut donner, et ce qu'elle ne donne pas est repris en ANGLE —
        * la main reste une main, elle est seulement tenue plus serrée. */
       const poseOf = (slot, count) => {
-        const room = Math.max(0, (innerWidth - (cds[0].offsetWidth || 300)) / 2);
+        /* LA PLACE QU'IL Y A, C'EST CELLE DE LA COLONNE, PAS CELLE DE LA
+           FENÊTRE. Le panneau qui découpe la main est la colonne moins ses
+           gouttières, et sur un téléphone c'est quarante-quatre pixels de
+           moins : l'éventail s'écartait donc de ce qu'il n'avait pas, et la
+           carte de gauche était coupée net par le bord du panneau. La mesure
+           part du plateau, qui EST le panneau.
+
+           Et ce qu'une carte occupe en largeur au repos, c'est sa HAUTEUR :
+           elle est tournée d'un quart de tour. C'est cette mesure-là qu'il
+           faut défalquer, pas sa largeur. */
+        const wide = deck.clientWidth || innerWidth;
+        /* Et douze pixels de marge : la carte est aussi inclinée de quelques
+           degrés sur deux autres axes, donc son encombrement réel déborde un
+           peu du rectangle qu'on vient de mesurer. */
+        const room = Math.max(0, (wide - Math.max(cds[0].offsetWidth || 300,
+                                                  cds[0].offsetHeight || 300) - 12) / 2);
         const sx = Math.min(152, room / 1.5);
         const tight = 1 - sx / 152;
         const d = slot - (count - 1) / 2;
