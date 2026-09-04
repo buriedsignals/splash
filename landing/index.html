@@ -4346,7 +4346,14 @@
           if (wide) {
             const m = Math.max(0, (document.documentElement.clientWidth -
                                    stk.getBoundingClientRect().width) / 2);
-            stk.style.marginLeft = stk.style.marginRight = (-m) + 'px';
+            /* ET ON N'ÉCRIT RIEN QUAND IL N'Y A RIEN À GAGNER. Sur téléphone le
+               panneau est DÉJÀ plein cadre — la feuille lui rend ses gouttières,
+               parce que la main est un objet qui traverse le cadre. La mesure
+               trouve donc zéro, et écrire `-0px` en ligne bat la feuille : le
+               panneau revenait à la colonne au moment précis où la plaque
+               blanche doit couvrir la fenêtre, d'où deux bandes noires sur les
+               côtés pendant tout le passage. */
+            if (m > 0.5) stk.style.marginLeft = stk.style.marginRight = (-m) + 'px';
           }
         }
         window.__csFloodK = flood;
