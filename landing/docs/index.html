@@ -219,6 +219,22 @@
   .foot nav{display:flex;flex-wrap:wrap;gap:22px;margin-top:14px}
   .foot a{text-decoration:none;border-bottom:1px solid transparent}
   .foot a:hover{border-bottom-color:currentColor}
+  /* ═══ LA PASSE MOBILE SUR LES CORPS ═════════════════════════════════════
+     Mesuré à 390 px : le corps de cette page — celui qu'on est venu LIRE —
+     était à 12,5 px, et les étiquettes des schémas à 9,5. C'est une page de
+     documentation : son texte courant est ce qu'elle a de plus important, et
+     il passe avant la densité.
+
+     Ce bloc est le dernier de la feuille : la moitié de ces règles reprend un
+     sélecteur qui existe déjà plus haut, à spécificité égale, et à égalité
+     c'est la dernière qui gagne. */
+  @media (max-width:640px){
+    .cell p,pre,details p,.foot nav a{font-size:14px;line-height:1.55}
+    code{font-size:12.5px}
+    th,.toc b,.fl-note{font-size:11px}
+    .tag,.fl-sub,.fl-gate{font-size:11px}
+    td{font-size:14px}
+  }
 </style>
 </head>
 <body>

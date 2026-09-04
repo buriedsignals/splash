@@ -962,6 +962,22 @@
        there are only 390px of height to spend here. */
     .sform input{font-size:clamp(18px,2.4vw,28px);padding-top:14px}
   }
+  /* ═══ LA PASSE MOBILE SUR LES CORPS ═════════════════════════════════════
+     Mesuré à 390 px : le chapô de l'accueil et le texte de la boîte de
+     connexion étaient à 12,5 px, la liste de l'abonnement à 13, et les
+     capitales espacées à 10. Ce bloc est le dernier de la feuille — la
+     plupart de ces règles reprennent un sélecteur déjà posé plus haut, à
+     spécificité égale, et à égalité c'est la dernière qui gagne. */
+  @media (max-width:640px){
+    .hlede,.modal p{font-size:14px;line-height:1.55}
+    .npro ul li,.nfree ul li{font-size:14px}
+    .btn{font-size:11px}
+    header{font-size:10.5px}
+    /* la source et la date sous chaque vignette, et le pied */
+    .rlink em,.rlink em u{font-size:11px}
+    .rsrc a,.fmeta span{font-size:11px}
+    .mhint,.masauth{font-size:12.5px}
+  }
 </style>
 </head>
 <body>

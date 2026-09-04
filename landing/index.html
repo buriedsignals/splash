@@ -902,7 +902,12 @@
   @media (max-width:1180px){ .csc{--ar:.74} }
   @media (max-width:820px){
     .csdeck{perspective:1000px}
-    .csc{--cw:min(72vw,340px);--ar:.82}
+    /* LA CARTE PREND LA LARGEUR QU'ELLE PEUT, ET LA HAUTEUR QU'IL LUI FAUT.
+       Tout ce qu'elle porte est dérivé de `--cw` ; à 72vw sur un téléphone, le
+       corps du texte tombait sous les onze pixels, ce qui n'est plus de la
+       lecture. Elle s'élargit, ses planchers montent (voir plus bas), et sa
+       proportion suit — sinon le pied sort par le bas. */
+    .csc{--cw:min(88vw,340px);--ar:1.04}
   }
 
   /* --- le passage horizontal, motif identique au test précédent --------- */
@@ -2333,6 +2338,46 @@
     .core{height:620vh}
     .tmark{font-size:clamp(28px,7.4vw,52px)}
     .tv.tool p{display:none}
+  }
+  /* ═══ LA PASSE MOBILE SUR LES CORPS ═════════════════════════════════════
+     Mesuré à 390 px : le texte de lecture descendait à 9,9-10,5 px et les
+     micro-étiquettes à 9. Un corps de lecture ne descend pas sous treize, et
+     une capitale espacée ne se lit plus sous onze.
+
+     CE BLOC EST LE DERNIER DE LA FEUILLE, et ce n'est pas de la mise en page :
+     la moitié de ces règles reprend un sélecteur qui existe déjà plus haut, à
+     spécificité égale. Placé avant, il perd — mesuré, six des dix n'avaient
+     aucun effet. Placé après, il gagne sans qu'on ait à surenchérir en
+     spécificité ni à écrire un seul `!important`.
+
+     Les tailles ne changent QUE sur téléphone : le desktop est réglé et n'a
+     rien demandé. */
+  @media (max-width:640px){
+    /* le constat porté par la carte, et sa source */
+    .cscwhy{font-size:13px;line-height:1.5}
+    .cscn,.cscsrc{font-size:11px}
+    /* la définition de chaque forme, dans le catalogue */
+    .lb-name u{font-size:12px}
+    .lbeye,.lbcount{font-size:11px}
+    /* les appels du hero : dix pixels de capitale espacée sur un bouton qu'on
+       vise au pouce, c'est petit pour les deux raisons à la fois */
+    .heroacts a,.heroacts button{font-size:11px}
+    /* les capitales espacées : mentions, listes de l'offre, crédit, outils */
+    .hfund span{font-size:10.5px;letter-spacing:.16em}
+    .fly.cta .ck,.fly.cta .cb{font-size:11px}
+    .offer ul li,.onl,.odisc,.okick .olaunch{font-size:11px}
+    .deye{font-size:11px}
+    .tv.tool em{font-size:11px}
+    /* le numéro d'ordre de chaque forme du catalogue */
+    .lb-name i{font-size:11px}
+    /* et la barre : deux mentions seulement sur un téléphone, elles peuvent
+       tenir leur corps */
+    header{font-size:10.5px}
+    .okick{font-size:11px}
+    /* le chapô du hero, et le texte des fiches d'outils : c'est de la lecture */
+    .herodek{font-size:13.5px}
+    .tv.tool p{font-size:13px;line-height:1.5}
+    .oaside{font-size:12.5px}
   }
 </style>
 </head>
