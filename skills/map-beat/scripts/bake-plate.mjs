@@ -127,9 +127,9 @@ function resolveChrome() {
 
 // A DUPLICATE of splash's own key-alias resolution (`scripts/keys.mjs`'s `KEY_ALIASES` /
 // `resolveEnvKey`), not an import — a skill directory has to stay copy-pasteable on its own (see
-// `../assets/geo.ts`'s own header, or `storyboard/scripts/capability-gap.mjs`, for the same
-// rule applied elsewhere in this branch). The sibling engine (splash's own skills/map-native,
-// skills/dw-chart) reads the map key under these names, not this project's own `MAPTILER_KEY` —
+// `../assets/geo.ts`'s own header for the same rule applied elsewhere in this branch). The original
+// Splash engine (a sibling repository, not in this tree) reads the map key under these names, not
+// this project's own `MAPTILER_KEY` —
 // measured in that repository's own scripts, not guessed. A newsroom whose engine `.env` already
 // works should not have to keep a second copy of the key under a different name just for this
 // toolchain. Canonical name wins when both happen to be set — read it first, fall back to each

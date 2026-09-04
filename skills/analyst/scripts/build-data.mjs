@@ -33,6 +33,7 @@ import { join } from "node:path";
 
 import { parseCsv } from "./csv.mjs";
 import { profileTable } from "./profile.mjs";
+import { parseStoryboard, checkStoryboard } from "./gate-contract.mjs";
 
 const SCHEMA_VERSION = 1;
 
@@ -43,97 +44,26 @@ function sha256(bytes) {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
-// A minimal front-matter reader in the shape where.mjs and storyboard already read: top-level
-// scalars plus the `slots:` list, quotes stripped, null sentinels resolved. Carried, not imported
-// — this file is what makes the analyst installable alone.
-function extractFrontmatter(content) {
-  if (!content.startsWith("---")) return null;
-  const end = content.indexOf("---", 3);
-  if (end === -1) return null;
-  return content.substring(3, end);
-}
-
-function scalarValue(raw) {
-  const value = raw.trim();
-  if (!value || value === '""' || value === "''" || value === "null" || value === "~") return null;
-  if (value.startsWith("[") && value.endsWith("]")) {
-    return value
-      .slice(1, -1)
-      .split(",")
-      .map((item) => item.trim().replace(/^["']|["']$/g, ""))
-      .filter(Boolean);
-  }
-  return value.replace(/^["']|["']$/g, "");
-}
-
+// THE STORYBOARD IS READ THROUGH THE ONE GATE CONTRACT. `./gate-contract.mjs` is storyboard's own
+// file, carried here verbatim (line 1 names the canonical; `splash/test/carried-copies.test.ts`
+// holds every copy byte for byte). This skill used to carry a third hand-written reader and a
+// hand-written list of gate refusals, and one of them (`reference`, issue #40) outlived the rule it
+// mirrored. Now there is nothing here to drift: the gate is closed, or `checkStoryboard` says why.
 export function parseStoryboardForAnalyst(content) {
-  const frontmatter = extractFrontmatter(content);
-  if (frontmatter === null) return { scalars: {}, slots: [] };
-  const scalars = {};
-  const slots = [];
-  let sawSlots = false;
-  let slot = null;
-  for (const line of frontmatter.split(/\r?\n/)) {
-    const topLevel = /^([A-Za-z]+):\s*(.*)$/.exec(line);
-    if (topLevel) {
-      scalars[topLevel[1]] = scalarValue(topLevel[2]);
-      if (topLevel[1] === "slots") sawSlots = true;
-      slot = null;
-      continue;
-    }
-    if (sawSlots && /^\s+-\s+/.test(line)) {
-      slot = {};
-      slots.push(slot);
-      const first = /^\s+-\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (first) slot[first[1]] = scalarValue(first[2]);
-      continue;
-    }
-    if (slot && /^\s{4,}[A-Za-z]+:/.test(line)) {
-      const pair = /^\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (pair) slot[pair[1]] = scalarValue(pair[2]);
-    }
-  }
-  // Legacy `genre:` slots normalize exactly as storyboard.mjs's own parseStoryboard does
-  // (genre-only copies into format; both present and conflicting refuses). Carried, not imported
-  // — same reason as the parser above — and held to storyboard's copy by test/parity.test.ts.
-  // Without this, a storyboard that closed both gates on a legacy field still yields
-  // `slot.format: null` here, which medium×format dispatch can never match.
-  for (const [index, parsedSlot] of slots.entries()) {
-    const hasFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "format");
-    const hasLegacyFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "genre");
-    if (!hasLegacyFormat) continue;
-    const label = parsedSlot.id ?? String(index + 1);
-    if (hasFormat && parsedSlot.format !== parsedSlot.genre) {
-      throw new Error(
-        `slot ${label}: conflicting publication format fields: format is ${JSON.stringify(parsedSlot.format)} but legacy genre is ${JSON.stringify(parsedSlot.genre)}`,
-      );
-    }
-    if (!hasFormat) parsedSlot.format = parsedSlot.genre;
-    delete parsedSlot.genre;
-  }
-   return { scalars, slots };
+  return parseStoryboard(content).meta;
 }
 
-// Every reason the named slot cannot leave the analyst gate yet. Empty means it can. Mirrors the
-// Gate-2 condition whereIs enforces (chosen among candidates, reachable yes, grounding resolved)
-// so a refusal here names the same decision a dispatcher would have reported.
-export function slotRefusal({ scalars, slots }, slotId) {
-  if (!scalars.grounding) return "the takeaway was never grounded (G1 never closed)";
-  if (scalars.grounding === "contradicted") return "the takeaway's grounding verdict is contradicted";
-  // `reference` is NOT required — issue #40 made the inspiration loop opt-in and removed its gate.
-  // This refusal outlived it, so a story that never reached for a reference could close gate 2 in
-  // both readers and then be refused here, several movements later.
-  const index = slots.findIndex((slot) => String(slot.id) === String(slotId));
-  if (index === -1) return `no slot ${slotId} in STORYBOARD.md`;
-  const slot = slots[index];
-  if (!slot.chosen) return `slot ${slotId}: nothing chosen`;
-  if (!Array.isArray(slot.candidates) || !slot.candidates.includes(slot.chosen)) {
-    return `slot ${slotId}: chosen is not among its candidates`;
-  }
+// Every reason the named slot cannot leave the analyst gate yet. Empty means it can: gate 2 is
+// closed on the whole storyboard (the same reading `whereIs` dispatches on), the slot exists, and
+// its medium is one that owes a data contract.
+export function slotRefusal(meta, slotId) {
+  const [gap] = checkStoryboard(meta);
+  if (gap) return gap;
+  const slot = (meta.slots ?? []).find((slot) => String(slot.id) === String(slotId));
+  if (!slot) return `no slot ${slotId} in STORYBOARD.md`;
   if (!ANALYST_MEDIUMS.has(slot.medium)) {
     return `slot ${slotId}: medium ${JSON.stringify(slot.medium)} carries no data contract`;
   }
-  if (slot.reachable !== "yes") return `slot ${slotId}: medium and format were never confirmed reachable`;
   return null;
 }
 

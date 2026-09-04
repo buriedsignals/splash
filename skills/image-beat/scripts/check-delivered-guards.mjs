@@ -1,3 +1,4 @@
+// twin/skills/map-beat/scripts/check-delivered-guards.mjs
 import {
   closeSync,
   lstatSync,

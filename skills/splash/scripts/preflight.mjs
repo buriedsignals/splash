@@ -244,16 +244,6 @@ export function assertPreflightReady(report) {
   throw new Error(`preflight is not ready — ${reasons}`);
 }
 
-// The seam a later phase (storyboard, when it proposes a slot) reads to keep from offering a
-// medium the environment cannot honour. Returns `null` when `medium` is open (or unrecognised —
-// this function is declarative, not a gate on mediums it has no opinion about); otherwise the
-// exact line to surface to the journalist, phrased as an unavailable CAPABILITY ("map beats are
-// unavailable: …"), never as an environment failure — the distinction this rebuild exists to
-// preserve. A chart-only story never calls this with "map" at all; a map story that does, with no
-// working MapTiler key, is told the truth about what is missing instead of being told its whole
-// environment is broken.
-export function capabilityGap(capabilities, medium) {
-  const row = capabilities[medium];
-  if (!row || row.available) return null;
-  return `${row.opens} are unavailable: ${row.reason}`;
-}
+// `capabilityGap` is storyboard's own `capability-gap.mjs`, carried here verbatim (line 1 of the
+// copy names the canonical; `test/carried-copies.test.ts` holds them byte for byte).
+export { capabilityGap } from "./capability-gap.mjs";

@@ -3,10 +3,9 @@
  *
  * `assets/filter.ts` is duplicated per skill and never imported across them — the twin's method
  * (`no-cross-skill-imports.test.ts`), which buys copy-pasteability and pays for it with the risk
- * of silent drift. This file is that payment: the copies are compared byte for byte past their own
- * first line (the path comment, the one line that is allowed to differ), AND every rule is
- * exercised through BOTH imports, so a copy that was edited in one skill and not the other reddens
- * whichever half moved.
+ * of silent drift. `carried-copies.test.ts` holds the two copies byte for byte (line 1 of the
+ * `map-web` copy names `chart-web`'s as canonical); this file exercises every rule through BOTH
+ * imports, so a behavioural change reddens against the vocabulary rather than only against bytes.
  *
  * Written the same day the vocabulary was: before it, `map-web` derived its filter from
  * whether points happened to carry more than one `group`, and `chart-web` hard-wired one
@@ -59,13 +58,6 @@ const BY_SIZE = {
 };
 
 describe("the two copies are one file", () => {
-  it("differ only in their own path comment", () => {
-    const [chart, map] = COPIES.map((p) => readFileSync(p, "utf8").split("\n"));
-    expect(chart[0]).toBe("// twin/skills/chart-web/assets/filter.ts");
-    expect(map[0]).toBe("// twin/skills/map-web/assets/filter.ts");
-    expect(map.slice(1).join("\n")).toBe(chart.slice(1).join("\n"));
-  });
-
   it("neither copy names a format's own class or id prefix — the scope is an argument", () => {
     for (const path of COPIES) {
       const source = readFileSync(path, "utf8");

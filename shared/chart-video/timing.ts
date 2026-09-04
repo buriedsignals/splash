@@ -1,3 +1,4 @@
+// twin/skills/chart-video/assets/timing.ts
 /**
  * The timing contract — the one object a journalist edits to retime a beat.
  *

@@ -1,0 +1,190 @@
+HEAVY	./apps/goose/test/a-la-carte.test.ts	browser launch via apps/goose/resources/a-la-carte.mjs
+fast	./apps/goose/test/app-client.test.ts	
+fast	./apps/goose/test/protocol-boundary.test.ts	
+HEAVY	./apps/goose/test/selection.test.ts	browser launch via catalog/visual-catalog.json; browser launch via skills/storyboard/references/visual-catalog.json
+fast	./apps/goose/test/server.test.ts	
+fast	./apps/goose/test/story-binding.test.ts	
+fast	./apps/goose/test/storyboard-choice.test.ts	
+fast	./apps/goose/test/studio.test.ts	
+fast	./installer/test/doctor.test.ts	
+fast	./installer/test/enrol-engine.test.ts	
+HEAVY	./installer/test/install-browser.test.ts	imports @puppeteer/browsers; installer/install-browser.mjs imports @puppeteer/browsers
+fast	./installer/test/legacy-env.test.ts	
+HEAVY	./installer/test/setup-security.test.ts	browser launch (direct)
+fast	./proof/life-expectancy/timing.test.ts	
+fast	./proof/mapmore-scrolly-danube/scroll.test.ts	
+fast	./proof/mapscrolly-one-map-europe-carbon/scroll.test.ts	
+fast	./proof/mapscrolly-quakes-three-ways/live-map.test.ts	
+fast	./proof/migration/timing.test.ts	
+fast	./proof/scrolly-image-grinnell-glacier/wipe.test.ts	
+fast	./proof/scrolly-mixed-grinnell-ice/scroll.test.ts	
+fast	./proof/scrolly-one-chart-swiss-life-expectancy/scroll.test.ts	
+fast	./proof/video-cumulative-co2-area/timing.test.ts	
+fast	./proof/video-population-growth-dumbbell/timing.test.ts	
+fast	./proof/vidx-grouped-bar-co2-per-capita/timing.test.ts	
+fast	./proof/vidx-line-life-expectancy/timing.test.ts	
+fast	./proof/vidx-scatter-income-life-expectancy/timing.test.ts	
+fast	./proof/vidx-slope-child-mortality/timing.test.ts	
+fast	./proof/vidx-stacked-bar-swiss-electricity/timing.test.ts	
+fast	./proof/vidy-boxplot-co2-by-continent/timing.test.ts	
+fast	./proof/vidy-heatmap-renewables-europe/timing.test.ts	
+fast	./proof/vidy-histogram-life-expectancy/timing.test.ts	
+fast	./proof/vidy-lollipop-renewables-share-europe/timing.test.ts	
+fast	./proof/vidy-pyramid-niger-population/timing.test.ts	
+fast	./proof/vidy-waterfall-germany-electricity-mix/timing.test.ts	
+fast	./proof/vidz-bar-column-top-emitters/timing.test.ts	
+fast	./proof/vidz-bump-emitter-rank/timing.test.ts	
+fast	./proof/vidz-diverging-bar-eu-per-capita/timing.test.ts	
+fast	./skills/analyst/test/canon.test.ts	
+fast	./skills/analyst/test/parity.test.ts	
+fast	./skills/chart-beat/test/annotation-ink.test.ts	
+HEAVY	./skills/chart-beat/test/canon.test.ts	spawns bun/node (direct)
+HEAVY	./skills/chart-beat/test/inspect-render.test.ts	skills/chart-beat/scripts/inspect-render.mjs imports @resvg/resvg-js
+HEAVY	./skills/chart-beat/test/render-still.test.ts	skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/chart-beat/test/seed-scales-with-its-size.test.ts	
+HEAVY	./skills/chart-beat/test/series-inks.test.ts	skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/chart-beat/test/size-reaches-the-render.test.ts	
+HEAVY	./skills/chart-beat/test/three-sizes-no-collision.test.ts	imports @resvg/resvg-js; skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/chart-video/test/canon.test.ts	spawns bun/node (direct)
+fast	./skills/chart-video/test/timing.test.ts	
+HEAVY	./skills/chart-web/test/canon.test.ts	spawns bun/node (direct)
+HEAVY	./skills/chart-web/test/render-web.test.ts	skills/chart-web/scripts/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/chart-web/test/seed-fluid-frame.test.ts	skills/chart-web/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/deliver/test/another-format.test.ts	
+fast	./skills/deliver/test/cms-insert.test.ts	
+HEAVY	./skills/deliver/test/cms-insertion-credential-boundary.test.ts	spawns bun/node via skills/deliver/test/git-authority-fixture.ts
+HEAVY	./skills/deliver/test/deliver.test.ts	spawns bun/node (direct)
+fast	./skills/deliver/test/delivery-identity.test.ts	
+fast	./skills/deliver/test/delivery-replacement.test.ts	
+fast	./skills/deliver/test/deploy-embed.test.ts	
+fast	./skills/deliver/test/finding-severity.test.ts	
+fast	./skills/deliver/test/format-handover.test.ts	
+fast	./skills/deliver/test/other-subjects.test.ts	
+fast	./skills/deliver/test/output-review.test.ts	
+fast	./skills/deliver/test/refusals-name-no-detour.test.ts	
+fast	./skills/deliver/test/sealed-operation.test.ts	
+fast	./skills/deliver/test/splash-iframe-scroller.test.ts	
+fast	./skills/deliver/test/story-index.test.ts	
+HEAVY	./skills/deliver/test/the-keyed-copy-cannot-be-committed.test.ts	spawns bun/node (direct); spawns bun/node via skills/deliver/test/git-authority-fixture.ts
+HEAVY	./skills/doctrine/test/guard-cli-failure.test.ts	spawns bun/node (direct)
+fast	./skills/doctrine/test/guard-parity.test.ts	
+fast	./skills/doctrine/test/guard-path-boundaries.test.ts	
+fast	./skills/doctrine/test/guard-walker-bounds.test.ts	
+fast	./skills/doctrine/test/guard-walker-contract.test.ts	
+fast	./skills/doctrine/test/reference-set.test.ts	
+fast	./skills/doctrine/test/traits.test.ts	
+fast	./skills/dw-beat/test/csv.test.ts	
+fast	./skills/dw-beat/test/dw-client.test.ts	
+fast	./skills/dw-beat/test/map-spec.test.ts	
+fast	./skills/dw-beat/test/produce.test.ts	
+fast	./skills/dw-beat/test/prove-co2.test.ts	
+fast	./skills/dw-beat/test/sealed-produce.test.ts	
+fast	./skills/dw-beat/test/validate-spec.test.ts	
+fast	./skills/dw-beat/test/verify-range-annotation.test.ts	
+HEAVY	./skills/image-beat/test/canon.test.ts	spawns bun/node (direct); skills/image-beat/scripts/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/image-beat/test/render-still.test.ts	skills/image-beat/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/intake/test/csv.test.ts	
+fast	./skills/intake/test/denominator-languages.test.ts	
+fast	./skills/intake/test/denominator-scripts.test.ts	
+fast	./skills/intake/test/freeze.test.ts	
+fast	./skills/intake/test/header.test.ts	
+fast	./skills/intake/test/panel.test.ts	
+fast	./skills/intake/test/profile.test.ts	
+HEAVY	./skills/map-beat/test/canon.test.ts	spawns bun/node (direct)
+fast	./skills/map-beat/test/geo.test.ts	
+fast	./skills/map-beat/test/timing.test.ts	
+HEAVY	./skills/map-web/test/canon.test.ts	spawns bun/node (direct)
+HEAVY	./skills/map-web/test/live-map.test.ts	skills/map-web/scripts/verify-live-map.mjs imports puppeteer-core; browser launch via skills/map-web/scripts/verify-live-map.mjs
+HEAVY	./skills/map-web/test/render-web.test.ts	skills/map-web/scripts/render-still.mjs imports @resvg/resvg-js; spawns bun/node via skills/map-web/scripts/render-web.mjs
+HEAVY	./skills/map-web/test/standalone.test.ts	imports puppeteer; browser launch (direct); skills/map-web/scripts/compare-png.mjs imports puppeteer
+HEAVY	./skills/map-web/test/the-live-layer-is-in-the-artifact.test.ts	spawns bun/node (direct); skills/map-web/scripts/render-still.mjs imports @resvg/resvg-js; spawns bun/node via skills/map-web/scripts/render-web.mjs
+HEAVY	./skills/map-web/test/the-value-table-is-collapsed.test.ts	spawns bun/node (direct); skills/map-web/scripts/render-still.mjs imports @resvg/resvg-js; spawns bun/node via skills/map-web/scripts/render-web.mjs
+fast	./skills/newsroom-charter/test/derive-charter.test.ts	
+fast	./skills/newsroom-charter/test/extract.test.ts	
+fast	./skills/newsroom-charter/test/fetch-document.test.ts	
+fast	./skills/newsroom-charter/test/format-proposal.test.ts	
+fast	./skills/palette/test/format-proposal.test.ts	
+fast	./skills/palette/test/palette-decision.test.ts	
+fast	./skills/palette/test/palette.test.ts	
+HEAVY	./skills/scrolly/test/canon.test.ts	spawns bun/node (direct)
+fast	./skills/scrolly/test/embed-exit.test.ts	
+HEAVY	./skills/scrolly/test/render-scrolly.test.ts	skills/scrolly/scripts/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/scrolly/test/scroll-integrity.test.ts	skills/scrolly/scripts/verify-scrolly.mjs imports puppeteer-core; browser launch via skills/scrolly/scripts/verify-scrolly.mjs
+HEAVY	./skills/scrolly/test/seed-tracks.test.ts	skills/scrolly/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/splash/test/annotation-ink-parity.test.ts	
+HEAVY	./skills/splash/test/annotation-reads-over-what-it-crosses.test.ts	imports @resvg/resvg-js
+fast	./skills/splash/test/bake-parity.test.ts	
+fast	./skills/splash/test/beat-format-produces-artifact.test.ts	
+fast	./skills/splash/test/camera-holds-the-study-set.test.ts	
+fast	./skills/splash/test/canon-shape.test.ts	
+fast	./skills/splash/test/claims-grounded-in-data.test.ts	
+fast	./skills/splash/test/credit-anchors-to-the-frame-bottom.test.ts	
+fast	./skills/splash/test/delivered-size-matches-the-pin.test.ts	
+fast	./skills/splash/test/env-example.test.ts	
+fast	./skills/splash/test/every-extent-band-is-produced.test.ts	
+fast	./skills/splash/test/filter-vocabulary-parity.test.ts	
+HEAVY	./skills/splash/test/filters-are-declared-or-absent.test.ts	imports puppeteer; browser launch (direct); spawns bun/node (direct)
+HEAVY	./skills/splash/test/fluid-decisions-are-retaken.test.ts	imports puppeteer; browser launch (direct)
+HEAVY	./skills/splash/test/format-shippability.test.ts	browser launch via skills/storyboard/references/visual-catalog.json
+fast	./skills/splash/test/geo-parity.test.ts	
+HEAVY	./skills/splash/test/helper-parity.test.ts	skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js; skills/chart-video/scripts/render-still.mjs imports @resvg/resvg-js; skills/chart-web/scripts/render-still.mjs imports @resvg/resvg-js; skills/map-beat/scripts/render-still.mjs imports @resvg/resvg-js; shared/chart-beat/render-still.mjs imports @resvg/resvg-js; skills/splash/assets/root-template/shared/chart-beat/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/splash/test/hoverable-line-answers.test.ts	imports puppeteer; browser launch (direct)
+fast	./skills/splash/test/hoverable-line-parity.test.ts	
+HEAVY	./skills/splash/test/interaction-promises-are-kept.test.ts	imports puppeteer; browser launch (direct)
+fast	./skills/splash/test/keys.test.ts	
+HEAVY	./skills/splash/test/landing-matches-the-catalogue.test.ts	spawns bun/node (direct)
+HEAVY	./skills/splash/test/map-bake.test.ts	skills/splash/scripts/sealed-map-bake.mjs imports puppeteer-core; browser launch via skills/splash/scripts/sealed-map-bake.mjs
+HEAVY	./skills/splash/test/map-scrollys-are-live.test.ts	spawns bun/node (direct)
+HEAVY	./skills/splash/test/matrix-is-current.test.ts	spawns bun/node (direct)
+fast	./skills/splash/test/new-story.test.ts	
+fast	./skills/splash/test/newsroom.test.ts	
+fast	./skills/splash/test/no-cross-skill-imports.test.ts	
+HEAVY	./skills/splash/test/no-key-in-the-repository.test.ts	spawns bun/node (direct); spawns bun/node via skills/deliver/test/git-authority-fixture.ts
+fast	./skills/splash/test/notes.test.ts	
+fast	./skills/splash/test/number-format-honest.test.ts	
+fast	./skills/splash/test/orchestration-conformance.test.ts	
+fast	./skills/splash/test/phases.test.ts	
+HEAVY	./skills/splash/test/preflight-resolves-in-the-tree.test.ts	spawns bun/node (direct)
+fast	./skills/splash/test/preflight.test.ts	
+fast	./skills/splash/test/render-output-lands-in-its-own-beat.test.ts	
+fast	./skills/splash/test/render-still-parity.test.ts	
+fast	./skills/splash/test/review-attempts.test.ts	
+fast	./skills/splash/test/root-template-shared.test.ts	
+fast	./skills/splash/test/root-template-tells-the-truth.test.ts	
+HEAVY	./skills/splash/test/run-operation.test.ts	browser launch (direct)
+fast	./skills/splash/test/sealed-bakes.live.test.ts	
+HEAVY	./skills/splash/test/seed-reads-a-recorded-palette.test.ts	skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js
+HEAVY	./skills/splash/test/seed-reads-a-recorded-typeface.test.ts	skills/chart-beat/scripts/render-still.mjs imports @resvg/resvg-js
+fast	./skills/splash/test/seed-renders-standalone.test.ts	
+fast	./skills/splash/test/size-table-parity.test.ts	
+fast	./skills/splash/test/skill-md-matches-code.test.ts	
+fast	./skills/splash/test/the-key-has-one-home.test.ts	
+HEAVY	./skills/splash/test/the-palette-reaches-the-pixels.test.ts	spawns bun/node (direct)
+fast	./skills/splash/test/typeface-gate-is-documented.test.ts	
+HEAVY	./skills/splash/test/video-first-frame-not-empty.test.ts	spawns bun/node (direct)
+HEAVY	./skills/splash/test/video-handover-is-a-cut.test.ts	imports remotion
+fast	./skills/splash/test/video-helper-parity.test.ts	
+HEAVY	./skills/splash/test/web-annotation-clears-its-marks.test.ts	imports puppeteer; browser launch (direct)
+HEAVY	./skills/splash/test/web-entrance-is-an-addition.test.ts	imports puppeteer; spawns bun/node (direct)
+HEAVY	./skills/splash/test/web-frame-is-fluid.test.ts	imports puppeteer; browser launch (direct)
+fast	./skills/splash/test/where.test.ts	
+fast	./skills/storyboard/test/capability-gap-parity.test.ts	
+fast	./skills/storyboard/test/chart-choice.test.ts	
+fast	./skills/storyboard/test/credit-vocabulary.test.ts	
+fast	./skills/storyboard/test/destination-follows-the-format.test.ts	
+fast	./skills/storyboard/test/exchange-shape.test.ts	
+fast	./skills/storyboard/test/format-catalog.test.ts	
+fast	./skills/storyboard/test/ground-claim.test.ts	
+fast	./skills/storyboard/test/lexicon-languages.test.ts	
+fast	./skills/storyboard/test/lexicon-scripts.test.ts	
+fast	./skills/storyboard/test/panel-grounding.test.ts	
+fast	./skills/storyboard/test/producer-gate.test.ts	
+fast	./skills/storyboard/test/propose.test.ts	
+fast	./skills/storyboard/test/publication-destination.test.ts	
+fast	./skills/storyboard/test/publication-format-gate.test.ts	
+fast	./skills/storyboard/test/recorded-claim-shape.test.ts	
+fast	./skills/storyboard/test/repeated-rows.test.ts	
+fast	./skills/storyboard/test/storyboard-writer.test.ts	
+fast	./skills/storyboard/test/storyboard.test.ts	
+fast	./skills/storyboard/test/type-survey.test.ts	
+HEAVY	./skills/storyboard/test/visual-catalog.test.ts	browser launch via scripts/visual-catalog.mjs

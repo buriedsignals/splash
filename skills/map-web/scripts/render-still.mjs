@@ -1,4 +1,4 @@
-// twin/skills/chart-beat/scripts/render-still.mjs
+// twin/skills/map-web/scripts/render-still.mjs
 //
 // Runs inside a Splash root: uses `react-dom/server` and `@resvg/resvg-js` from the root's
 // dependencies. Every other script in this twin is dependency-free; this one is not, and says so.

@@ -26,24 +26,8 @@ jobs:
       - name: Install dependencies from the lockfile
         run: bun install --frozen-lockfile
 
-      - name: Run secretless contract tests
-        run: |
-          bun test \
-            skills/deliver/test \
-            skills/intake/test \
-            skills/newsroom-charter/test \
-            skills/palette/test \
-            skills/doctrine/test/traits.test.ts \
-            skills/doctrine/test/guard-parity.test.ts \
-            skills/doctrine/test/guard-walker-contract.test.ts \
-            skills/doctrine/test/guard-path-boundaries.test.ts \
-            skills/doctrine/test/guard-walker-bounds.test.ts \
-            skills/doctrine/test/guard-cli-failure.test.ts \
-            skills/storyboard/test \
-            skills/splash/test/skill-md-matches-code.test.ts \
-            skills/splash/test/phases.test.ts \
-            skills/splash/test/where.test.ts \
-            skills/splash/test/landing-matches-the-catalogue.test.ts
+      - name: Fast lane — every test that needs no browser, renderer or subprocess (derived, not listed)
+        run: bun run test:lanes && bun run test
 
       - name: Assert the secretless job carries no provider credentials
         run: |

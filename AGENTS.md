@@ -45,8 +45,11 @@ current operating instructions unless a canonical document above links to them.
 - Use colocated Jujutsu for working-copy changes, history, bookmarks, fetches,
   and pushes. Treat Git as a read-only compatibility view.
 - Preserve unrelated working-copy changes and generated evidence.
-- Keep skills self-contained. Do not introduce cross-skill runtime imports where
-  the existing parity-copy pattern is deliberate.
+- Keep skills self-contained. No cross-skill runtime imports. A mechanism two skills
+  share is CARRIED: one canonical file whose line 1 is `// twin/<its own path>`,
+  copied byte for byte into the other skill (the copy keeps that line 1).
+  `skills/splash/test/carried-copies.test.ts` walks the tree and holds every copy to
+  its canonical. Never re-implement a shared rule in a second skill.
 - Use the smallest craft skill that fits the approved editorial intent. Ranking
   informs agent judgment; it does not replace that judgment or override the
   journalist's confirmed takeaway.
@@ -83,11 +86,20 @@ Engine-owned state.
 
 ## Verification
 
-Run checks in proportion to the change. The release baseline is:
+Run checks in proportion to the change. The suite has two lanes, derived by
+`scripts/test-lanes.mjs` from what each test imports or spawns (never from a list):
+
+- `bun run test` — the fast lane (about 120 files, seconds). Run it while iterating.
+- `bun run test:heavy` — the tests that render, measure pixels, drive Chrome or spawn a
+  process (about 65 files, minutes). Run it before a commit; CI runs only the fast lane
+  because its hosts carry no browser. `bun run test:all` runs both.
+- `bun run test:live` — credential- or browser-gated `*.live.test.ts`.
+
+The release baseline is:
 
 ```bash
 bun install --frozen-lockfile
-bun --no-env-file test
+bun --no-env-file run test:all
 bun --no-env-file run matrix:check
 bun --no-env-file run survey:check
 bun --no-env-file run catalog:check

@@ -100,15 +100,17 @@ chart and its source line cannot drift apart.
 | Want | Knob | Where |
 | --- | --- | --- |
 | Which mediums owe a data contract | `2` (`chart`, `map`) — mirrors `whereIs`'s own `ANALYST_MEDIUMS` | `ANALYST_MEDIUMS`, `build-data.mjs`; mirrored in `splash/scripts/where.mjs` |
-| Which slot fields must be recorded before the transform runs | `slotRefusal` — grounding, reference, chosen-among-candidates, reachable, medium | `slotRefusal`, `build-data.mjs` |
+| What must be true of the storyboard before the transform runs | gate 2 closed, as `checkStoryboard` reads it — the same contract `whereIs` dispatches on | `slotRefusal`, `build-data.mjs`; `scripts/gate-contract.mjs` (carried from `storyboard`) |
 | What a blank cell becomes | always `null` — there is no knob; imputation is refused by design | `references/data-rules.md` |
 | Artifact shape version | `schemaVersion: 1` | `SCHEMA_VERSION`, `build-data.mjs` |
 
 ## Files
 - `scripts/build-data.mjs` — the transform and the CLI (`bun scripts/build-data.mjs <storyDir>
   <slotId> [--rebuild]`; exit 1 refuses having written nothing).
-- `scripts/csv.mjs`, `scripts/profile.mjs` — carried copies of `intake`'s reader and profiler,
-  kept identical by `test/parity.test.ts`.
+- `scripts/csv.mjs`, `scripts/profile.mjs`, `scripts/header.mjs` — carried copies of `intake`'s reader and
+  profiler; `scripts/gate-contract.mjs`, `scripts/producer-gate.mjs` and
+  `references/datawrapper-chart-types.json` — carried copies of `storyboard`'s gate contract. All held
+  byte for byte by `splash/test/carried-copies.test.ts`.
 - `references/data-rules.md` — rounding, nulls, aggregation honesty, unit normalization.
 - `assets/sample-data/rainfall.csv` — eleven readings with one genuinely missing cell, so the
   seed proof shows how a hole is carried, never filled.
@@ -118,4 +120,3 @@ chart and its source line cannot drift apart.
   that fixture; `test/canon.test.ts` rebuilds them into a temp directory and requires equality.
 - `test/canon.test.ts` — the canon's shape plus behavior: refusals write nothing, hash mismatch
   refuses, nulls survive, the sample table clears eight rows.
-- `test/parity.test.ts` — the carried copies against their intake originals.

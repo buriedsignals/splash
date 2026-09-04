@@ -1,4 +1,4 @@
-// twin/skills/map-web/assets/filter.ts
+// twin/skills/chart-web/assets/filter.ts
 //
 // ONE FILTER VOCABULARY, DECLARED BY THE BEAT.
 //

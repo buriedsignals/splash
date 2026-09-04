@@ -12,6 +12,16 @@ import {
   readProductionAttempts,
 } from "./production-reservation.mjs";
 import { readReviewAttempts, reviewDisclosure } from "./review-attempts.mjs";
+import {
+  checkStoryboard,
+  openGate,
+  parseStoryboard,
+  REQUIRED_SCALARS,
+  REQUIRED_SLOT_FIELDS,
+  SURVEY_GAP,
+} from "./gate-contract.mjs";
+
+export { REQUIRED_SCALARS, REQUIRED_SLOT_FIELDS };
 
 const CRAFT_SKILLS = Object.freeze({
   chart: Object.freeze({
@@ -133,26 +143,13 @@ async function read(path) {
   try { return await readFile(path, "utf8"); } catch { return null; }
 }
 
-// GATE 2 CLOSES INTO TWO FILES. Carried copy of storyboard/scripts/storyboard.mjs's `surveyGap`,
-// worded VERBATIM as that copy words it, for the same reason as `HAND` and the three size refusals
-// above: skills in this branch install independently and do not import across a skill boundary at
-// runtime, so the only way both gate-2 readers can agree is for both to hold the sentence.
-//
-// `STORYBOARD.md` is the record of what will be DRAWN; `SUBJECTS.md` is the record of what the
-// survey found and did NOT draw. `surveyGap` was written, is good, and nothing asked it — so Gate 2
-// closed into one file in practice, `whereIs` reported `ready` through storyboard, production and
-// delivery, and the cost landed at the closing offer, where `otherSubjectsFor` had nothing to give
-// and `subjects: "none"` was indistinguishable on disk from a survey never written down.
+// GATE 2 IS READ FROM ONE CONTRACT. `./gate-contract.mjs` is storyboard's own file, carried here
+// verbatim (`splash/test/carried-copies.test.ts` holds the two byte for byte), so this reader and
+// `checkStoryboard` cannot disagree about what the storyboard must carry or the words a gap is
+// refused in — they are the same function.
 async function surveyGap(storyDir) {
   const recorded = await read(join(storyDir, "SUBJECTS.md"));
-  if (recorded !== null) return null;
-  return (
-    "the survey of the article's other angles: no SUBJECTS.md in this story's own directory. It " +
-    "belongs to movement 10 of the storyboard exchange, where the angles still exist — call " +
-    "recordSurveyedSubjects({ storyDir, subjects }) there with every angle the survey found, kept " +
-    "or dropped. An article that yielded nothing else records the EMPTY survey (subjects: []): " +
-    '"there was nothing else" is an answer, and an answer is written down like any other.'
-  );
+  return recorded === null ? SURVEY_GAP : null;
 }
 
 async function regularFileStat(path) {
@@ -178,513 +175,11 @@ async function json(path) {
   }
 }
 
-function extractFrontmatter(content) {
-  if (!content.startsWith("---")) return null;
-  const end = content.indexOf("---", 3);
-  if (end === -1) return null;
-  return content.substring(3, end);
-}
 
-// Whether a raw scalar's text is "missing" in the sense the whole gate cares about: absent,
-// blank, or one of the bare/quoted-empty YAML sentinels for null. Shared by every scalar field
-// this gate checks (the takeaway and each hand-of-the-journalist field), so "confirmed" always
-// means the same thing regardless of which field is being read.
-function isMissingScalar(value) {
-  if (!value) return true;
-  return value === '""' || value === "''" || value === "null" || value === "~";
-}
-
-// Reads one top-level scalar out of the front matter and resolves it the way storyboard's own
-// `scalar()` does — quotes stripped, the bare `null`/`~` sentinels resolved to a real missing
-// value — so the two gates read the same string out of the same line. Returns the VALUE rather
-// than a boolean because some scalars (`grounding`) are checked for their vocabulary, not merely
-// their presence; a falsy return means "missing" for the ones that are not.
-function scalarFieldValue(frontmatter, field) {
-  if (!frontmatter) return null;
-  const match = frontmatter.match(new RegExp(`^${field}:[ \\t]*([^\\n]+)$`, "m"));
-  if (!match) return null;
-  return scalarValue(match[1]);
-}
-
-function exactScalarFieldValue(frontmatter, field) {
-  if (!frontmatter) return null;
-  const matches = [
-    ...frontmatter.matchAll(new RegExp(`^${field}:[ \\t]*([^\\n]*)$`, "gm")),
-  ];
-  return matches.length === 1 ? scalarValue(matches[0][1]) : null;
-}
-
-// The six hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
-// membership rule below, mirror storyboard/scripts/storyboard.mjs's own `HAND` constant and
-// `checkStoryboard` — reimplemented here, not imported, because skills in this branch do not
-// import across skill boundaries (each treats the STORYBOARD.md file, not another skill's code,
-// as the shared contract — see that same file's `isNullSentinel` comment for the established
-// precedent: it already mirrors *this* file's takeaway-sentinel rule the same way). If you touch
-// either list, mirror the change in the other — a test in `test/where.test.ts` pins every branch
-// below so a real divergence fails loud rather than silently reporting `production` too early.
-const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
-
-// EVERY rule below reads a RECORDED SCALAR. That is the whole design, and it is what makes the
-// mirroring above safe rather than merely careful. `checkStoryboard` used to accept a `profile` and
-// a `capabilities` argument this gate structurally could not have, so it could refuse for three
-// reasons this file could not see — and it did: `whereIs` reported `production` on a storyboard the
-// other gate was refusing (twin/FEEDBACK-2026-08-10.md, A7/A14). The expensive checks now run ONCE,
-// in the phase that owns them (grounding at G1, format and capability at G2b), and write their
-// resolved verdict into `STORYBOARD.md`. Neither gate can run a check the other cannot, because
-// neither runs one at all.
-//
-// The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
-// loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
-// `reference` is NOT here — issue #40. The reference loop was a compulsory movement between the
-// size gate and the palette, terminating in a required scalar Gate 2 could not close without. Its
-// own intent is about INSPIRATION ("the model gains a concrete target, the journalist gains
-// vocabulary"), and inspiration is something a journalist reaches for, not a toll gate between
-// choosing a size and choosing a colour. The tell was its answer vocabulary: the documented
-// recording for "neither appealed" was `none — both rejected`, and the doctrine had to argue that
-// this is "a fact, not a loss". A movement that must defend its own null answer should not be
-// mandatory. It is now offered at the treatment decision, and recorded when it is taken.
-export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "language"];
-// `intent` mirrors storyboard's own contract — issue #48. It is a 2a question ("what is this slot
-// FOR"), so it rides the existing loop and needs no gate of its own.
-export const REQUIRED_SLOT_FIELDS = ["id", "proves", "medium", "format", "size", "reachable", "intent", "chosen"];
-
-// Ruling R2, spelled out here INDEPENDENTLY of storyboard's own copy, for the same reason
-// `HAND` is spelled out independently: two readings of one rule, cross-checked by a test, never
-// unified by an import that would make this file un-copy-pasteable.
-//
-// `web` is deliberately absent from the sized formats, and that absence IS R2's other half: web is
-// not a fourth export size, it fills whatever container the CMS gives it, like an embed component.
-// `scrolly` is absent because a scroll-driven piece has no single exported frame at all. The pixel
-// dimensions live in each craft skill's `scripts/sizes.mjs`; a gate has no business knowing them.
-//
-// Note the ORDERING difference from the original Splash, kept on purpose: it picks a CHANNEL and
-// DERIVES the allowed formats from it. A5 asks for medium, then format, then size, so the twin
-// CHECKS the triple after the journalist has chosen each part. `formatGap` already has that shape.
-const EXPORT_SIZES = ["landscape", "square", "portrait"];
-const SIZED_FORMATS = ["static", "video"];
 const SHA256 = /^sha256:[0-9a-f]{64}$/;
 const OUTPUT_REVIEW_SCHEMA_VERSION = 1;
 const QA_RUN_SCHEMA_VERSION = 1;
 const DELIVERY_MANIFEST_SCHEMA_VERSION = 1;
-
-// The three refusals, worded VERBATIM as storyboard/scripts/storyboard.mjs's `sizeGap` words
-// them. `splash/test/where.test.ts` compares the two gates' size verdicts string for string,
-// so a reworded message on either side reddens rather than quietly becoming two gates that refuse
-// the same storyboard for two different-sounding reasons.
-function sizeGapFor(medium, format, size, label) {
-  // A PHOTO ESSAY HAS NO FIXED EXPORT SIZE. `image/static` is a "sized" format by the format table,
-  // so gate 2c required one of landscape/square/portrait — and `image-beat` reads none of them,
-  // because its frame HEIGHT is derived from its own content: how many photographs, how far each
-  // caption wraps. `imageBeatLayout` says so in its own header. Asking for a size nothing can
-  // honour is the #55 defect in a second place, so the honest fix is to stop asking rather than to
-  // invent a fourth variable-height row nobody has decided on.
-  if (medium === "image")
-    return size
-      ? `slot ${label}: an image beat takes no size — a photo essay is exactly as tall as its own captions make it, so leave the field out`
-      : null;
-  const takesASize = SIZED_FORMATS.includes(format);
-  if (!takesASize && size)
-    return `slot ${label}: a ${format} beat takes no size — it fills the container it is given, so leave the field out; there is no "fluid" size`;
-  if (!takesASize) return null;
-  if (!size) return `slot ${label}: size is missing — gate 2c never closed`;
-  if (!EXPORT_SIZES.includes(size))
-    return `slot ${label}: size ${JSON.stringify(size)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
-  return null;
-}
-
-// The closed vocabulary of `grounding:`. Mirrors storyboard's own `isResolvedGrounding` for
-// the same reason `HAND` mirrors its `HAND`. `contradicted` is deliberately not a closing value: a
-// refuted takeaway is corrected, or overridden WITH A REASON.
-const GROUNDING_VERDICTS = ["supported", "unverifiable"];
-const OVERRIDE_RE = /^overridden\s*[—–-]\s*(.+)$/;
-
-function isResolvedGrounding(value) {
-  if (typeof value !== "string") return false;
-  const text = value.trim();
-  if (GROUNDING_VERDICTS.includes(text)) return true;
-  const override = OVERRIDE_RE.exec(text);
-  return Boolean(override && override[1].replace(/^["']|["']$/g, "").trim());
-}
-
-// `missing` is read aloud to somebody resuming a story three days later, so every entry names the
-// DECISION that has not been taken, not the field that is empty. A scalar with no entry here falls
-// back to the hand-of-the-journalist wording, which is what the six of them have always read as.
-const SCALAR_GAP = {
-  takeaway: "a confirmed takeaway",
-  grounding: "the G1 grounding verdict",
-  reference: "the reference loop's answer",
-  language: "the language this story's own delivery is written in",
-};
-
-const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/;
-
-function isLanguageTag(value) {
-  return typeof value === "string" && LANGUAGE_TAG.test(value.trim());
-}
-
-const SCALAR_VOCABULARY = { grounding: isResolvedGrounding, language: isLanguageTag };
-const SCALAR_VOCABULARY_GAP = {
-  grounding: (value) => `a resolved grounding verdict (found ${JSON.stringify(value)})`,
-  language: (value) => `a language code such as fr or de-CH, not a language's name (found ${JSON.stringify(value)})`,
-};
-
-const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
-
-// Carried copy of storyboard/scripts/producer-gate.mjs's treatment eligibility. Splash skills are
-// installed independently, so the state reader cannot import another skill at runtime. The parity
-// test imports both copies and compares the catalogue table, the media, and every name the shared
-// derivation yields, including the negative cases.
-//
-// KEYED BY THE TYPE SHEET'S OWN TITLE, not by a list of spellings (round seven, D7). This table
-// used to carry thirty hand-typed aliases and still missed "Stacked area" — the natural name for
-// the treatment and half of `chart-beat/references/types/area.md`'s own title — which silently
-// removed the custom-or-Datawrapper human gate on a real story. A list somebody has to remember to
-// extend is the shape; the answer is that a treatment answers to every name its own TITLE yields,
-// derived by `treatmentNames` below, which is byte-identical to the storyboard copy and held so by
-// the producer-gate parity test.
-export const DATAWRAPPER_TREATMENTS = new Map([
-  ["Area (and stacked area)", ["d3-area"]],
-  ["Bar and column", ["d3-bars", "column-chart"]],
-  ["Bullet", ["d3-bars-bullet"]],
-  ["Dumbbell (range plot)", ["d3-range-plot"]],
-  ["Grouped bar", ["d3-bars-grouped", "grouped-column-chart"]],
-  ["Line", ["d3-lines"]],
-  ["Pie and donut", ["d3-pies", "d3-donuts"]],
-  ["Population pyramid", ["d3-bars-split"]],
-  // "Scatter (and bubble)" is deliberately absent (#44): ChartSpec cannot colour a scatter — the
-  // accent goes to `custom-colors` keyed by series label, which Datawrapper ignores on a scatter —
-  // so the treatment is left unmapped and production stays custom.
-  ["Slope (slopegraph)", ["d3-lines"]],
-  ["Stacked bar", ["d3-bars-stacked", "stacked-column-chart"]],
-  ["Waterfall (bridge)", ["waterfall"]],
-  ["Choropleth", ["d3-maps-choropleth"]],
-  ["Proportional symbol (symbol / bubble map)", ["d3-maps-symbols"]],
-  ["Locator", ["locator-map"]],
-]);
-
-/** Spellings no title can yield, declared beside the treatment that owns them. */
-const DATAWRAPPER_DECLARED_ALIASES = new Map([
-  ["grouped column", "Grouped bar"],
-  ["stacked column", "Stacked bar"],
-]);
-
-const MAP_TREATMENTS = new Set([
-  "Choropleth",
-  "Proportional symbol (symbol / bubble map)",
-  "Locator",
-]);
-
-export const DATAWRAPPER_TREATMENT_MEDIA = new Map(
-  [...DATAWRAPPER_TREATMENTS.keys()].map((treatment) => [
-    treatment,
-    MAP_TREATMENTS.has(treatment) ? "map" : "chart",
-  ]),
-);
-
-function normalizeTreatment(value) {
-  return String(value ?? "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-const GENERIC_TREATMENT_WORDS = new Set(["map", "chart", "plot", "graph", "diagram", "graphic"]);
-
-export function treatmentNames(value) {
-  const raw = String(value ?? "");
-  const parts = [raw.replace(/[()]/g, " "), raw.split("(")[0]];
-  for (const paren of raw.matchAll(/\(([^)]*)\)/g)) parts.push(paren[1]);
-  const names = new Set();
-  for (const part of parts) {
-    for (const piece of [part, ...part.split(/\s*[/,;]\s*|\s+(?:and|or)\s+/iu)]) {
-      const name = normalizeTreatment(piece.replace(/[()]/g, " ")).replace(/^(?:and|or) /u, "");
-      if (!name) continue;
-      names.add(name);
-      const words = name.split(" ");
-      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[words.length - 1])) words.pop();
-      while (words.length > 1 && GENERIC_TREATMENT_WORDS.has(words[0])) words.shift();
-      if (!GENERIC_TREATMENT_WORDS.has(words[0])) names.add(words.join(" "));
-    }
-  }
-  return [...names];
-}
-
-function namesForTreatment(treatment) {
-  const declared = [...DATAWRAPPER_DECLARED_ALIASES]
-    .filter(([, owner]) => owner === treatment)
-    .map(([alias]) => alias);
-  return new Set([treatment, ...declared].flatMap(treatmentNames));
-}
-
-export function datawrapperTypesForTreatment({ medium, format, treatment }) {
-  if ((medium !== "chart" && medium !== "map") || (format !== "static" && format !== "web"))
-    return null;
-  const asked = treatmentNames(treatment);
-  let best = null;
-  for (const [candidate, types] of DATAWRAPPER_TREATMENTS) {
-    const own = namesForTreatment(candidate);
-    const candidateMedium = DATAWRAPPER_TREATMENT_MEDIA.get(candidate);
-    for (const name of asked) {
-      if (!own.has(name)) continue;
-      const words = name.split(" ").length;
-      const wins =
-        !best ||
-        words > best.words ||
-        (words === best.words && best.medium !== medium && candidateMedium === medium);
-      if (wins) best = { types, words, medium: candidateMedium };
-    }
-  }
-  return best?.medium === medium ? best.types : null;
-}
-
-function producerGapFor(slot) {
-  const types = datawrapperTypesForTreatment({
-    medium: slot?.medium,
-    format: slot?.format,
-    treatment: slot?.chosen,
-  });
-  const producer = slot?.producer;
-  const type = slot?.datawrapperType;
-  const id = slot?.id ?? "?";
-
-  if (!types) {
-    if (producer === "datawrapper") {
-      return `slot ${id}: ${JSON.stringify(slot?.chosen)} is not mapped to a Datawrapper chart for ${slot?.format ?? "this format"}`;
-    }
-    if (type) return `slot ${id}: datawrapperType is set but the selected treatment is not delegated to Datawrapper`;
-    if (producer && producer !== "custom") return `slot ${id}: producer must be custom or datawrapper`;
-    return null;
-  }
-  if (!producer) return `slot ${id}: custom or Datawrapper was never chosen after the treatment selection`;
-  if (producer !== "custom" && producer !== "datawrapper") return `slot ${id}: producer must be custom or datawrapper`;
-  if (producer === "custom") {
-    return type ? `slot ${id}: a custom chart must not carry a datawrapperType` : null;
-  }
-  if (!type) return `slot ${id}: the Datawrapper choice has no recorded Datawrapper chart type`;
-  if (!types.includes(type)) {
-    return `slot ${id}: Datawrapper type ${JSON.stringify(type)} does not implement the selected treatment`;
-  }
-  return null;
-}
-
-function slotGap(field, label) {
-  if (field === "id") return "a provisional slot has no id";
-  if (field === "proves") return `slot ${label}: no confirmed claim was recorded in proves`;
-  if (field === "chosen") return `slot ${label}: nothing chosen`;
-  if (field === "reachable") return `slot ${label}: this medium and format were never confirmed reachable`;
-  if (field === "intent") return `slot ${label}: no narrow intent was named — step 1 of chart-choice.md`;
-  return `slot ${label}: no ${field} was ever chosen`;
-}
-
-// Quote-aware comma split, so a candidate name that itself contains a comma inside quotes
-// (`["a, b", "c"]`) is not fragmented by a naive `.split(",")`. Mirrors
-// storyboard/scripts/storyboard.mjs's `splitArrayItems` for the same reason as `HAND` above.
-function splitArrayItems(inner) {
-  const items = [];
-  let current = "";
-  let quote = null;
-  for (const ch of inner) {
-    if (quote) {
-      current += ch;
-      if (ch === quote) quote = null;
-    } else if (ch === '"' || ch === "'") {
-      quote = ch;
-      current += ch;
-    } else if (ch === ",") {
-      items.push(current);
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  items.push(current);
-  return items;
-}
-
-function scalarValue(raw) {
-  const value = raw.trim();
-  if (value.startsWith("[") && value.endsWith("]")) {
-    return splitArrayItems(value.slice(1, -1))
-      .map((item) => item.trim().replace(/^["']|["']$/g, ""))
-      .filter(Boolean);
-  }
-  if (isMissingScalar(value)) return null;
-  return value.replace(/^["']|["']$/g, "");
-}
-
-// Reads only what this gate needs — each slot's `chosen` and `candidates` — from the `slots:`
-// block. Not a general STORYBOARD.md reader (that is `parseStoryboard`'s job, in storyboard);
-// this walks the same line shapes for the same reason `HAND` mirrors that file's field list.
-function parseSlotsForGate(frontmatter) {
-  const slots = [];
-  const topLevelKeys = new Set();
-  let legacy = false;
-  let sawSlots = false;
-  let slot = null;
-  for (const line of (frontmatter ?? "").split(/\r?\n/)) {
-    const topLevel = /^([A-Za-z]+):\s*(.*)$/.exec(line);
-    if (topLevel) {
-      const key = topLevel[1];
-      if (topLevelKeys.has(key)) throw new Error(`STORYBOARD.md has duplicate top-level key ${JSON.stringify(key)}`);
-      topLevelKeys.add(key);
-      if (key === "slots") sawSlots = true;
-      slot = null;
-      continue;
-    }
-    if (sawSlots && /^\s+-\s+/.test(line)) {
-      slot = {};
-      slots.push(slot);
-      const first = /^\s+-\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (first) slot[first[1]] = scalarValue(first[2]);
-      continue;
-    }
-    if (slot && /^\s{4,}[A-Za-z]+:/.test(line)) {
-      const pair = /^\s+([A-Za-z]+):\s*(.*)$/.exec(line);
-      if (pair) {
-        if (Object.prototype.hasOwnProperty.call(slot, pair[1])) {
-          throw new Error(`STORYBOARD.md slot has duplicate key ${JSON.stringify(pair[1])}`);
-        }
-        slot[pair[1]] = scalarValue(pair[2]);
-      }
-    }
-  }
-  for (const [index, parsedSlot] of slots.entries()) {
-    const hasFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "format");
-    const hasLegacyFormat = Object.prototype.hasOwnProperty.call(parsedSlot, "genre");
-    if (!hasLegacyFormat) continue;
-    legacy = true;
-    const label = parsedSlot.id ?? String(index + 1);
-    if (hasFormat && parsedSlot.format !== parsedSlot.genre) {
-      throw new Error(
-        `slot ${label}: conflicting publication format fields: format is ${JSON.stringify(parsedSlot.format)} but legacy genre is ${JSON.stringify(parsedSlot.genre)}`,
-      );
-    }
-    if (!hasFormat) parsedSlot.format = parsedSlot.genre;
-    delete parsedSlot.genre;
-  }
-  const slotIds = new Set();
-  for (const parsedSlot of slots) {
-    const id = parsedSlot.id;
-    if (!id) continue;
-    if (slotIds.has(String(id))) throw new Error(`STORYBOARD.md has duplicate slot id ${JSON.stringify(String(id))}`);
-    slotIds.add(String(id));
-  }
-  return { slots, legacy };
-}
-
-// The real Gate 2 condition (spec §4/§7): a confirmed takeaway alone is not enough to leave the
-// `storyboard` phase — every hand-of-the-journalist field must be present, at least one slot must
-// exist, and every slot's `chosen` must be a real choice drawn from its own listed `candidates`.
-// Returns every reason the gate has not closed; an empty array means it has. Accumulates rather
-// than stopping at the first gap, so a resumed session sees everything still missing at once.
-function missingForGate2(frontmatter) {
-  const gaps = [];
-
-  // Driven off REQUIRED_SCALARS rather than a hand-written sequence of checks, so the exported
-  // constant IS the rule. Remove a field from it and this gate stops requiring it — which is
-  // exactly the mutation the parity test has to catch, and can, because its fixtures are generated
-  // from the UNION of this list and storyboard's own.
-  for (const field of REQUIRED_SCALARS) {
-    const value = scalarFieldValue(frontmatter, field);
-    if (!value) {
-      gaps.push(SCALAR_GAP[field] ?? `the hand-of-the-journalist field "${field}"`);
-      continue;
-    }
-    const vocabulary = SCALAR_VOCABULARY[field];
-    if (vocabulary && !vocabulary(value)) gaps.push(SCALAR_VOCABULARY_GAP[field](value));
-  }
-
-  const parsed = parseSlotsForGate(frontmatter);
-  const { slots } = parsed;
-  if (slots.length === 0) {
-    gaps.push("no slot: nothing would be produced");
-    return { gaps, slots, legacy: parsed.legacy };
-  }
-
-  slots.forEach((slot, index) => {
-    const label = slot.id ?? String(index + 1);
-    const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
-
-    for (const field of REQUIRED_SLOT_FIELDS) {
-      // `size` is not a flat requirement — `sizeGapFor` owns it entirely, below, because whether
-      // it is required at all depends on the format.
-      if (field === "size") continue;
-      const value = slot[field];
-      if (!value) {
-        gaps.push(slotGap(field, label));
-        continue;
-      }
-      const vocabulary = SLOT_VOCABULARY[field];
-      if (vocabulary && !vocabulary(value)) gaps.push(slotGap(field, label));
-    }
-
-    const sizeGap = sizeGapFor(slot.medium, slot.format, slot.size, label);
-    if (sizeGap) gaps.push(sizeGap);
-
-    if (!slot.chosen) return;
-    if (candidates.length === 0) {
-      gaps.push(`slot ${label}: chosen but no candidates were ever listed`);
-    } else if (!candidates.includes(slot.chosen)) {
-      gaps.push(`slot ${label}: chosen is not among its candidates`);
-    } else {
-      const producerGap = producerGapFor(slot);
-      if (producerGap) gaps.push(producerGap);
-    }
-  });
-
-  return { gaps, slots, legacy: parsed.legacy };
-}
-
-function orderedStoryboardGate(frontmatter, slots) {
-  if (REQUIRED_SCALARS.some((field) => !scalarFieldValue(frontmatter, field))) return null;
-  if (slots.length === 0) return { gate: "G2a", awaiting: "slot" };
-
-  for (const [index, slot] of slots.entries()) {
-    const slotId = String(slot.id ?? index + 1);
-    if (!slot.id) return { gate: "G2a", awaiting: "id", slotId };
-    if (!slot.proves) return { gate: "G2a", awaiting: "proves", slotId };
-    if (!slot.medium) return { gate: "G2a", awaiting: "medium", slotId };
-    if (!slot.format) return { gate: "G2b", awaiting: "format", slotId };
-    if (slot.reachable !== "yes") return { gate: "G2b", awaiting: "reachability", slotId };
-    // An image beat is never asked — see sizeGapFor.
-    if (slot.medium === "image" && slot.size) {
-      return { gate: "G2c", awaiting: "size-removal", slotId };
-    }
-    if (slot.medium !== "image" && SIZED_FORMATS.includes(slot.format) && !slot.size) {
-      return { gate: "G2c", awaiting: "size", slotId };
-    }
-    if (slot.medium !== "image" && !SIZED_FORMATS.includes(slot.format) && slot.size) {
-      return { gate: "G2c", awaiting: "size-removal", slotId };
-    }
-    if (slot.size && !EXPORT_SIZES.includes(slot.size)) {
-      return { gate: "G2c", awaiting: "size", slotId };
-    }
-  }
-
-  // One pass, four lines, and it has to be its own: G2a/G2b/G2c finish for EVERY slot before any
-  // later gate opens, so asking slot 1 for its intent inside that loop jumps slot 2's medium. It
-  // sits ahead of the reference loop because that is the whole point of #48 — a reference is a way
-  // of executing a form well, not evidence the form is right.
-  for (const [index, slot] of slots.entries()) {
-    if (!slot.intent)
-      return { gate: "G2-intent", awaiting: "intent", slotId: String(slot.id ?? index + 1) };
-  }
-
-  for (const [index, slot] of slots.entries()) {
-    if (!slot.chosen || !Array.isArray(slot.candidates) || !slot.candidates.includes(slot.chosen)) {
-      return { gate: "G2-treatment", awaiting: "treatment", slotId: String(slot.id ?? index + 1) };
-    }
-    if (producerGapFor(slot)) {
-      return { gate: "G2-producer", awaiting: "producer", slotId: String(slot.id ?? index + 1) };
-    }
-  }
-  return null;
-}
 
 function isBeneath(root, candidate) {
   const path = relative(root, candidate);
@@ -854,6 +349,36 @@ function stringSet(value) {
 function sameStrings(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
+// BRIEF.md's own front matter — a different file from STORYBOARD.md, read with a deliberately
+// narrow scalar reader: `planVersion` and `findingIds` must each appear exactly once.
+function extractFrontmatter(content) {
+  if (!content.startsWith("---")) return null;
+  const end = content.indexOf("---", 3);
+  if (end === -1) return null;
+  return content.substring(3, end);
+}
+
+function scalarText(raw) {
+  const value = raw.trim();
+  if (!value || value === '""' || value === "''" || value === "null" || value === "~") return null;
+  if (value.startsWith("[") && value.endsWith("]")) {
+    return value
+      .slice(1, -1)
+      .split(",")
+      .map((item) => item.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+  }
+  return value.replace(/^["']|["']$/g, "");
+}
+
+function exactScalarFieldValue(frontmatter, field) {
+  if (!frontmatter) return null;
+  const matches = [
+    ...frontmatter.matchAll(new RegExp(`^${field}:[ \\t]*([^\\n]*)$`, "gm")),
+  ];
+  return matches.length === 1 ? scalarText(matches[0][1]) : null;
+}
+
 async function currentBriefBinding(beatDir) {
   const path = join(beatDir, "BRIEF.md");
   if (!(await regularFileStat(path))) return null;
@@ -1191,26 +716,27 @@ async function resolveStoryState(storyDir) {
     return {
       phase: "framing",
       gate: "G1",
-      awaiting: SCALAR_GAP.takeaway,
-      missing: [SCALAR_GAP.takeaway],
+      awaiting: "a confirmed takeaway",
+      missing: ["a confirmed takeaway"],
     };
   }
 
-  const frontmatter = extractFrontmatter(storyboard);
   // S4: a file that opens a `---` block and never closes it is ONE diagnosable fact. Reporting
   // every scalar as missing instead would send a resumed session back through nine gates to fix
   // one truncated write.
-  if (frontmatter === null && storyboard.startsWith("---")) {
+  if (storyboard.startsWith("---") && storyboard.indexOf("---", 3) === -1) {
     return { phase: "storyboard", missing: ["STORYBOARD.md frontmatter unterminated"] };
   }
-  const gateState = missingForGate2(frontmatter);
-  const legacyState = gateState.legacy ? { legacy: true } : {};
-  if (gateState.gaps.length > 0) {
+  const { meta, legacy } = parseStoryboard(storyboard);
+  const slots = meta.slots ?? [];
+  const legacyState = legacy ? { legacy: true } : {};
+  const gaps = checkStoryboard(meta);
+  if (gaps.length > 0) {
     return {
       phase: "storyboard",
-      ...orderedStoryboardGate(frontmatter, gateState.slots),
+      ...openGate(meta),
       ...legacyState,
-      missing: gateState.gaps,
+      missing: gaps,
     };
   }
 
@@ -1230,7 +756,7 @@ async function resolveStoryState(storyDir) {
   }
 
   const storyRoot = await realpath(storyDir);
-  const current = await currentBeats(storyRoot, storyDir, gateState.slots);
+  const current = await currentBeats(storyRoot, storyDir, slots);
   const exportRoot = await containedStoryDirectory(
     storyRoot,
     storyDir,
@@ -1246,7 +772,7 @@ async function resolveStoryState(storyDir) {
   const staleMissing = analyst.stale.map(
     (beat) => `beat ${beat}: analyst data stale — rebuild`,
   );
-  const orphanMissing = orphanedBeats(current.names, gateState.slots).map(
+  const orphanMissing = orphanedBeats(current.names, slots).map(
     (beat) => `beat ${beat}: orphaned — slot removed from storyboard`,
   );
   const analystMissing = [...dataMissing, ...staleMissing, ...orphanMissing];

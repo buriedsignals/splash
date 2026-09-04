@@ -75,17 +75,15 @@ should see, never silently upgraded to "supported."
   because the conversation felt complete.
 - **Not** for production. This skill's whole output is the file; it never renders a beat.
 
-## The one gotcha that will waste your day (read first)
+## The one rule that keeps the two readers honest (read first)
 
-**A "confirmed" takeaway and a `truthy` takeaway are not the same thing, and the two gates in
-this codebase must agree on which one they mean.** `where.mjs`'s `isMissingScalar` refuses
-the bare YAML sentinels `null` and `~` as well as an empty string — a `takeaway: null` line reports
-`phase: "storyboard"`, gate still open. A naive front-matter scalar reader that just trims and
-strips quotes turns `null` into the **non-empty string `"null"`**, which is truthy — `checkStoryboard`
-would then say Gate 2 is closed while `whereIs` still says it isn't. `scripts/storyboard.mjs`'s
-`scalar()` resolves the bare `null`/`~` tokens to a real `null` *before* `checkStoryboard` ever sees
-them, specifically so the two gates cannot diverge. If you touch `scalar()`, keep that resolution —
-and if you touch `where.mjs`'s sentinel list, mirror the change here.
+**Gate 2 has ONE definition, `scripts/gate-contract.mjs`, and it is CARRIED, not re-implemented.**
+`splash/scripts/where.mjs` and `analyst/scripts/build-data.mjs` each hold a byte-identical copy
+(line 1 names this canonical; `splash/test/carried-copies.test.ts` holds every copy to it). Before
+2026-09-04 `where.mjs` re-implemented the gate by hand and a test compared the two — and that test
+was green while `whereIs` waved through a storyboard `checkStoryboard` refused four ways. Edit the
+contract here, run `bun run test`, then copy the file over each carried copy; never write a gate
+rule anywhere else.
 
 ## Architecture
 
@@ -94,7 +92,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the formats proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
 | Choice guide | `references/chart-choice.md` | Splash's advisory intent rankings. Hard data requirements remove types before rank; editorial fit precedes reachability; a lower-ranked choice remains available when its candidate reason explains why the higher surviving form lost. `test/chart-choice.test.ts` keeps every local type sheet represented and every ranking consecutive |
 | Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · format · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
-| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
+| Reader + gate | `scripts/gate-contract.mjs` (re-exported by `scripts/storyboard.mjs`) | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars; `openGate(meta)` names the first gate still open, in the order the exchange asks. Carried verbatim into `splash` and `analyst` |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/format-catalog.mjs` | `FORMAT_CATALOG`, keyed on the **medium/format PAIR**, and `formatGap(medium, format)` — whether this kind of beat, in this format, has both a producer and a delivery path. `formatsFor(medium)` is what the format gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
 | Format gate prompt | `scripts/format-gate.mjs` | `formatPublicationFormatGate({recommended, rationale, options})` renders the complete G2b assistant turn from the reachability rows. Its output is the last action in the turn; never append a later movement |
@@ -131,8 +129,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    not a fourth size, it fills whatever container the CMS gives it, like an embed component; a
    `scrolly` has no single exported frame at all. `checkStoryboard` refuses all three ways: a size
    this toolchain does not export, a sized format with none, and an unsized format carrying one.
-   `splash/scripts/where.mjs` reads the same rule independently and words its refusals
-   identically, and `splash/test/where.test.ts` compares the two string for string.
+   `splash/scripts/where.mjs` reads the same rule through its carried copy of this contract.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
    in use here — scalars (quoted or bare, with `null`/`~` resolved to a real missing value), and a
    list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside
@@ -156,11 +153,9 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    argument, so it could not run any of the three, and the two gates disagreed for real: `whereIs`
    reported `production` on a storyboard this function was refusing. Each check now runs ONCE, in the phase that owns it —
    grounding at **G1**, format and capability at **G2b** — and records its verdict into
-   `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`). Both gates read the record. Neither
-   can run a check the other cannot, because neither runs one at all. Do not reintroduce a second
-   argument here without adding the same reading to `where.mjs`; the parity test
-   (`skills/splash/test/where.test.ts`) generates its fixtures from both sides' exported
-   `REQUIRED_SCALARS` / `REQUIRED_SLOT_FIELDS`, so a field added to one side alone turns red.
+   `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`). Both readers read the record
+   through the one carried contract. Do not reintroduce a second argument: a reader with no
+   profile and no capability probe has to reach the same answer.
 
    `grounding:` closes on `supported`, `unverifiable`, or `overridden — "<reason>"` with a
    non-empty reason. **`contradicted` is never a closing value**: a takeaway the data refutes is
@@ -298,7 +293,11 @@ if (errors.length > 0) {
 - `references/datawrapper-chart-types.json` — the complete Datawrapper visualization-type inventory
   at the recorded upstream source revision, plus the deliberately conservative Splash-treatment
   mappings that may open the producer preference gate. Unmapped treatments never trigger it.
-- `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
+- `scripts/gate-contract.mjs` — the gate: `parseStoryboard`, `checkStoryboard`, `openGate`, the required
+  fields, the size/destination/assembly rules and every refusal's wording. Carried verbatim into
+  `splash/scripts/` and `analyst/scripts/`.
+- `scripts/storyboard.mjs` — re-exports the contract; owns the writer (`mutateStoryboard`,
+  `writeStoryboardAtomic`), the credit proposal and `surveyGap`.
 - `scripts/format-gate.mjs` — `formatPublicationFormatGate`, the complete G2b assistant turn.
 - `scripts/producer-gate.mjs` — `datawrapperMatch`, `producerGap`,
   `formatProducerGate`, and `confirmProducerChoice`: eligibility, journalist-facing question, and
@@ -311,12 +310,8 @@ if (errors.length > 0) {
   profile: it reads the recorded `grounding:` scalar, which is what stops the two gates diverging.
 - `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard the **G2b phase**
   calls through `propose.mjs` (`proposeMediums`, `proposeFormats`, `confirmFormatReachable`), never
-  `checkStoryboard`, which takes no `capabilities` argument either. This is a **carried copy** of `splash`'s own
-  `capabilityGap` (`skills/splash/scripts/preflight.mjs`), not an import — a skill directory
-  has to stay copy-pasteable on its own, the same rule `format-catalog.mjs` follows for
-  `deliver`'s `FORMS_BY_FORMAT`. **Do not delete it as duplication**: `test/capability-gap-parity.test.ts`
-  is the guard against the two copies drifting apart, and it is the reason this file is allowed to exist
-  twice.
+  `checkStoryboard`, which takes no `capabilities` argument either. The canonical; `splash`'s
+  `preflight.mjs` re-exports a carried copy, held byte for byte by `splash/test/carried-copies.test.ts`.
 - `test/storyboard.test.ts` — `bun:test` coverage, including a regression test locking the
   `null`/`~` sentinel resolution described in the gotcha above, and the medium/capability gate.
 - `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
@@ -330,8 +325,3 @@ if (errors.length > 0) {
   before scanning, because its first draft stayed green through the mutation that deleted all three
   calls — `propose.mjs`'s header quotes the grep that found the hole, so the literals were sitting
   in a comment.
-- `test/capability-gap-parity.test.ts` — asserts this skill's `capabilityGap` copy agrees with
-  `splash`'s original across the full `{map, datawrapper, hostedEmbed} × {open, closed,
-  absent}` matrix (the one place a cross-skill import is legitimate: a `test/` directory asserting
-  two deliberate duplicates still agree — see `skills/splash/test/helper-parity.test.ts`, the
-  pattern this follows).

@@ -122,6 +122,7 @@ ${slot}
     format: static
     size: landscape
     reachable: yes
+    intent: "show a trend over time"
     chosen: trajectory
     candidates: [trajectory, comparison]`;
   }
@@ -234,7 +235,8 @@ ${slot}
   });
 
   it("should refuse an image slot as carrying no data contract", async () => {
-    await seed(storyboard().replace("medium: chart", "medium: image"));
+    // An image beat records no size (gate 2c), so the fixture drops it; what is refused here is the medium.
+    await seed(storyboard().replace("medium: chart", "medium: image").replace("    size: landscape\n", ""));
     expect(buildData({ storyDir: dir, slotId: "1" })).rejects.toThrow(/no data contract/);
     expect(await readdir(dir)).not.toContain("beats");
   });

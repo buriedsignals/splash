@@ -1,3 +1,4 @@
+// twin/skills/map-beat/scripts/trait-witness.mjs
 import { toDataUri } from "./inline-asset.mjs";
 
 export function witnessInlinedAssets() {

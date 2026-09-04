@@ -1,3 +1,4 @@
+// twin/skills/splash/scripts/splash-root.mjs
 // Legacy map runs once found `.env` with a fixed `../../../` climb. That happened to reach the
 // checkout root during development, but symlinked or namespaced installations could silently read a
 // developer's file instead of the copied root's file.

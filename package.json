@@ -6,7 +6,11 @@
     "#shared/*": "./shared/*"
   },
   "scripts": {
-    "test": "bun test",
+    "test": "bun test $(bun scripts/test-lanes.mjs --fast)",
+    "test:heavy": "bun test $(bun scripts/test-lanes.mjs --heavy)",
+    "test:live": "bun test $(bun scripts/test-lanes.mjs --live)",
+    "test:all": "bun test",
+    "test:lanes": "bun scripts/test-lanes.mjs --check",
     "guards": "bun scripts/guards.mjs",
     "guards:check": "bun scripts/guards.mjs --check",
     "landing:check": "bun scripts/landing.mjs --check",

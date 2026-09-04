@@ -3,23 +3,11 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import {
-  whereIs,
-  REQUIRED_SCALARS as WHERE_SCALARS,
-  REQUIRED_SLOT_FIELDS as WHERE_SLOT_FIELDS,
-} from "../scripts/where.mjs";
+import { whereIs } from "../scripts/where.mjs";
 import { invokeResolvedOwner } from "../scripts/orchestration.mjs";
-// A test-only cross-skill import, permitted specifically for this purpose: asserting that two
-// independent implementations of the same rule agree. Runtime code in this branch never imports
-// across a skill boundary (see the gotcha in ../SKILL.md); this file does, once, to prove
-// where.mjs's reimplementation of Gate 2 has not drifted from storyboard's own gate.
-import {
-  checkStoryboard,
-  parseStoryboard,
-  surveyGap,
-  REQUIRED_SCALARS as STORYBOARD_SCALARS,
-  REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
-} from "../../storyboard/scripts/storyboard.mjs";
+// Gate 2 is read from ONE contract, `../scripts/gate-contract.mjs`, carried verbatim from
+// storyboard's own copy and held byte for byte by `carried-copies.test.ts`. There is no second
+// implementation left for this file to compare against; the tests below read the one wording.
 import { approveCurrentOutput } from "../../deliver/test/output-review-fixture";
 import type { BoundReviewFixture } from "../../deliver/test/output-review-fixture";
 import {
@@ -354,7 +342,7 @@ describe("whereIs", () => {
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("slot 1: nothing chosen");
+    expect(state.missing).toContain("slot 1: nothing chosen — gate 2 is not closed");
   });
 
   it("should stay in storyboard when a slot's chosen has no candidates key at all", async () => {
@@ -369,7 +357,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain(
-      "slot 1: chosen but no candidates were ever listed",
+      'slot 1: chosen "trajectory" but no candidates were listed',
     );
   });
 
@@ -385,7 +373,7 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain(
-      "slot 1: chosen is not among its candidates",
+      'slot 1: chosen "trajectory" is not among its candidates',
     );
   });
 
@@ -401,10 +389,10 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain(
-      'the hand-of-the-journalist field "credit"',
+      "credit is missing",
     );
     expect(state.missing).toContain(
-      'the hand-of-the-journalist field "effectiveDate"',
+      "effectiveDate is missing",
     );
   });
 
@@ -421,7 +409,7 @@ describe("whereIs", () => {
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("the G1 grounding verdict");
+    expect(state.missing).toContain("grounding is missing — the takeaway was never grounded at G1");
   });
 
   it("should refuse a grounding verdict of 'contradicted' — a refuted takeaway is corrected or overridden, never left standing", async () => {
@@ -510,8 +498,8 @@ describe("whereIs", () => {
     // journalist reading one gate's reason while the other holds is the A7/A14 defect with better
     // manners. See "gate 2c: both readings of R2's format × size rule, string for string" below.
     const expected: Record<string, string> = {
-      medium: "slot 1: no medium was ever chosen",
-      format: "slot 1: no format was ever chosen",
+      medium: "slot 1: medium is missing — gate 2a never closed",
+      format: "slot 1: format is missing — gate 2b never closed",
       size: "slot 1: size is missing — gate 2c never closed",
     };
     for (const [field, message] of Object.entries(expected)) {
@@ -549,7 +537,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "STORYBOARD.md"), "---\nslots: []\n---\n");
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
+    expect(state.missing).toContain("takeaway is missing");
   });
 
   for (const [name, value] of [
@@ -569,7 +557,7 @@ describe("whereIs", () => {
       );
       const state = await whereIs(dir);
       expect(state.phase).toBe("storyboard");
-      expect(state.missing).toContain("a confirmed takeaway");
+      expect(state.missing).toContain("takeaway is missing");
     });
   }
 
@@ -584,7 +572,7 @@ describe("whereIs", () => {
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
+    expect(state.missing).toContain("takeaway is missing");
   });
 
   // G3 closes into a file, like every other gate. A render existing is not the journalist having
@@ -928,275 +916,6 @@ describe("whereIs", () => {
   });
 });
 
-// ---------------------------------------------------------------------------------------------
-// The parity guard, and why it is GENERATED rather than listed.
-//
-// The nine hand-written fixtures this replaced were the second half of the false green
-// (twin/FEEDBACK-2026-08-10.md, A14). The first half was `checkStoryboard(meta)` called with one
-// argument inside the test that exists to prove the two gates agree, which switched off the checks
-// only the second and third arguments enabled. `checkStoryboard` now genuinely takes one argument,
-// so that call is correct — but a hand-typed fixture list still cannot know about a rule added
-// after it was written, which is exactly how three rules (grounding, format, capability) landed and
-// this suite stayed green.
-//
-// So the field list is read from BOTH GATES' OWN EXPORTED CONSTANTS and unioned. Remove a field
-// from one side only and its fixture still exists, generated from the other side's copy — and the
-// two gates then disagree on it, loudly. This is the property `render-still-parity.test.ts` has and
-// `helper-parity.test.ts` lacks.
-// ---------------------------------------------------------------------------------------------
-
-const SCALAR_FIELDS = [...new Set([...WHERE_SCALARS, ...STORYBOARD_SCALARS])];
-const SLOT_FIELDS = [
-  ...new Set([...WHERE_SLOT_FIELDS, ...STORYBOARD_SLOT_FIELDS]),
-];
-
-// One value per field that is present and well-formed as YAML but outside what the gates accept.
-// A field with no vocabulary of its own (medium, format — the gates require them, they do not judge
-// them) still gets a fixture: that the two gates AGREE to tolerate the value is a parity fact worth
-// pinning, and it is the fixture that would redden if one side grew a vocabulary alone.
-//
-// `size` used to be in that no-vocabulary group. It is not any more (W4 Task 9, ruling R2): both
-// gates now know the three names this toolchain exports, and both know that a `web` slot takes no
-// size at all. This entry therefore moved from "both tolerate it" to "both refuse it" — and the
-// fixture below is what proved the move happened on BOTH sides at once rather than on one.
-const OUT_OF_VOCABULARY: Record<string, string> = {
-  takeaway: "~",
-  grounding: "contradicted",
-  reference: '""',
-  medium: "hologram",
-  format: "print",
-  size: "billboard",
-  reachable: "no",
-  chosen: "dumbbell",
-};
-
-// Ruling R2 as fixtures. The format×size triple is the one rule where a gate can be wrong in two
-// opposite directions — refusing a correct storyboard and closing on a wrong one — so both are
-// pinned, and so is the case the old shape got wrong: a `web` slot could not close gate 2 at all
-// without naming a size that would never be used.
-const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
-  { name: "static + landscape (control)", slot: { ...SLOT } },
-  { name: "static + square", slot: { ...SLOT, size: "square" } },
-  { name: "static + portrait", slot: { ...SLOT, size: "portrait" } },
-  {
-    name: "video + portrait",
-    slot: { ...SLOT, format: "video", size: "portrait" },
-  },
-  {
-    name: "static with a size nobody exports",
-    slot: { ...SLOT, size: "billboard" },
-  },
-  { name: "static with no size at all", slot: without(SLOT, "size") },
-  {
-    name: "web WITH a size — R2 says web is a range, not a fourth size",
-    slot: { ...SLOT, format: "web", size: "landscape" },
-  },
-  {
-    name: "web with NO size — the correct shape, which the old flat requirement refused",
-    slot: without(SLOT, "size", { format: "web" }),
-  },
-  {
-    name: "scrolly with no size — a scroll has no single exported frame",
-    slot: without(SLOT, "size", { format: "scrolly" }),
-  },
-];
-
-const GATE2_FIXTURES: Array<{
-  name: string;
-  text: string;
-  expectedResolverDiagnostic?: RegExp;
-}> = [
-  { name: "complete: every scalar, every slot field", text: build() },
-  { name: "no slots", text: build(SCALARS, null) },
-];
-
-for (const field of SCALAR_FIELDS) {
-  GATE2_FIXTURES.push({
-    name: `scalar "${field}" absent`,
-    text: build(without(SCALARS, field)),
-  });
-  GATE2_FIXTURES.push({
-    name: `scalar "${field}" bare null`,
-    text: build({ ...SCALARS, [field]: "null" }),
-  });
-  if (OUT_OF_VOCABULARY[field] !== undefined) {
-    GATE2_FIXTURES.push({
-      name: `scalar "${field}" set to ${OUT_OF_VOCABULARY[field]}`,
-      text: build({ ...SCALARS, [field]: OUT_OF_VOCABULARY[field] }),
-    });
-  }
-}
-
-for (const field of SLOT_FIELDS) {
-  GATE2_FIXTURES.push({
-    name: `slot field "${field}" absent`,
-    text: build(SCALARS, without(SLOT, field)),
-  });
-  GATE2_FIXTURES.push({
-    name: `slot field "${field}" bare null`,
-    text: build(SCALARS, { ...SLOT, [field]: "null" }),
-  });
-  if (OUT_OF_VOCABULARY[field] !== undefined) {
-    GATE2_FIXTURES.push({
-      name: `slot field "${field}" set to ${OUT_OF_VOCABULARY[field]}`,
-      text: build(SCALARS, { ...SLOT, [field]: OUT_OF_VOCABULARY[field] }),
-      expectedResolverDiagnostic:
-        field === "medium" ? /no Splash craft owner for "hologram"\/"static"/ : undefined,
-    });
-  }
-}
-
-// The two shape regressions no constant implies, kept explicitly. Both are about how the two
-// parsers read a LINE, not about which fields a gate requires, so no field list can generate them:
-// a quoted "null" must stay a literal string on both sides, and a comma inside a quoted array
-// element must not split it on either.
-GATE2_FIXTURES.push(
-  {
-    name: 'quoted "null" takeaway (control — a literal string, not the sentinel)',
-    text: build({ ...SCALARS, takeaway: '"null"' }),
-  },
-  {
-    name: "quoted comma inside an inline candidates array",
-    text: build(SCALARS, {
-      ...SLOT,
-      chosen: '"a, b"',
-      candidates: '["a, b", "c"]',
-    }),
-  },
-  {
-    name: "an override verdict carrying its reason",
-    text: build({
-      ...SCALARS,
-      grounding: `'overridden — "34 is the sum of glace_fondue_mt"'`,
-    }),
-  },
-  {
-    name: "an override verdict with no reason",
-    text: build({ ...SCALARS, grounding: "'overridden — '" }),
-  },
-);
-
-describe("gate 2: where.mjs and storyboard's own checkStoryboard agree on every fixture", () => {
-  it("should generate a fixture for every required field on both sides", () => {
-    // Guards the guard, and it reads the two gates' constants DIRECTLY rather than the local
-    // unions above — so replacing the generation with a hand-typed list reddens here, by name, the
-    // moment either gate grows a field the list has never heard of. That is the whole failure this
-    // file was rebuilt to end.
-    for (const field of [
-      ...WHERE_SCALARS,
-      ...STORYBOARD_SCALARS,
-      ...WHERE_SLOT_FIELDS,
-      ...STORYBOARD_SLOT_FIELDS,
-    ]) {
-      expect(GATE2_FIXTURES.some((f) => f.name.includes(`"${field}"`))).toBe(
-        true,
-      );
-    }
-  });
-
-  for (const { name, text, expectedResolverDiagnostic } of GATE2_FIXTURES) {
-    it(`should agree on: ${name}`, async () => {
-      await writeFile(join(dir, "source", "article.md"), "text");
-      await writeFile(join(dir, "source", "data.csv"), "col\n1");
-      await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
-      await writeFile(join(dir, "STORYBOARD.md"), text);
-
-      const state = await whereIs(dir);
-      const { meta } = parseStoryboard(text);
-      if (expectedResolverDiagnostic) {
-        expect(checkStoryboard(meta)).toEqual([]);
-        expect(state).toEqual({
-          phase: "production",
-          status: "blocked",
-          owner: null,
-          missing: [expect.stringMatching(expectedResolverDiagnostic)],
-          attempts: 0,
-          resume: "Stop and return control to the journalist.",
-        });
-        return;
-      }
-
-      const whereIsClosed = state.phase !== "storyboard";
-      const checkStoryboardClosed = checkStoryboard(meta).length === 0;
-      expect(whereIsClosed).toBe(checkStoryboardClosed);
-    });
-  }
-});
-
-// ── R2's format × size rule, held by BOTH gates, word for word ─────────────────────────────────
-//
-// The fixtures above compare a BOOLEAN: closed or not closed. That was enough while every slot rule
-// was a presence check, and it is not enough for this one. Two gates can agree that a storyboard is
-// refused and disagree about WHY — one refusing "size is missing", the other "a web beat takes no
-// size" — and a journalist reading the second while the first is what actually holds is back in
-// A7/A14 with better manners. So this block compares the refusal STRING.
-//
-// It compares only the size lines, deliberately and not out of laziness: the two gates word their
-// other gaps differently on purpose (`no medium was ever chosen` against `medium is missing — gate
-// 2a never closed`), each shaped for where it is read, and a blanket message comparison would go
-// red on all of that at once and be turned off. Widening it is a real follow-up; narrowing it to
-// nothing is what this replaces.
-//
-// THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, 2026-08-10:
-//
-//   where.mjs learns a fourth size the other gate does not         RED ×2
-//   storyboard.mjs starts treating `web` as a sized format          RED ×2
-//   where.mjs REWORDS one refusal, same verdict, other sentence    RED ×2  ← the boolean form missed this
-//   storyboard.mjs stops naming the three it accepts               RED ×2
-//   both gates drop the size rule together                         RED ×10
-//
-// The third row is the whole reason this block exists: the fixtures above, comparing closed-or-not,
-// stay GREEN for it. Two gates refusing the same storyboard for two different-sounding reasons is
-// A7/A14 with better manners, and only a string comparison sees it.
-describe("gate 2c: both readings of R2's format × size rule, string for string", () => {
-  const sizeLines = (gaps: string[]) =>
-    gaps.filter((g) => /\bsize\b/.test(g)).sort();
-
-  for (const { name, slot } of SIZE_FIXTURES) {
-    it(`should agree, verbatim, on: ${name}`, async () => {
-      const text = build(SCALARS, slot);
-      await writeFile(join(dir, "source", "article.md"), "text");
-      await writeFile(join(dir, "source", "data.csv"), "col\n1");
-      await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
-      await writeFile(join(dir, "STORYBOARD.md"), text);
-
-      const state = await whereIs(dir);
-      const { meta } = parseStoryboard(text);
-      expect(sizeLines(state.missing)).toEqual(
-        sizeLines(checkStoryboard(meta)),
-      );
-    });
-  }
-
-  it("should let a web slot close gate 2 with no size, and refuse one that names a size", async () => {
-    // The pair the old flat requirement got wrong in BOTH directions, asserted as a phase rather
-    // than as a message — this is the fact a journalist actually experiences.
-    const closes = async (slot: Record<string, string>) => {
-      await writeFile(join(dir, "source", "article.md"), "text");
-      await writeFile(join(dir, "source", "data.csv"), "col\n1");
-      await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
-      await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
-      return (await whereIs(dir)).phase !== "storyboard";
-    };
-    expect(await closes(without(SLOT, "size", { format: "web" }))).toBe(true);
-    expect(await closes({ ...SLOT, format: "web", size: "landscape" })).toBe(
-      false,
-    );
-  });
-
-  it("should name all three sizes when refusing one it does not export", () => {
-    const { meta } = parseStoryboard(
-      build(SCALARS, { ...SLOT, size: "billboard" }),
-    );
-    const [gap] = checkStoryboard(meta).filter((g) => g.includes("billboard"));
-    // Naming what IS accepted, not only what is not — the `sizeFor`/`readPalette` discipline, at
-    // the gate rather than at the renderer.
-    expect(gap).toContain("landscape, square, portrait");
-  });
-});
 
 // THE HOUSE'S OWN KNOWLEDGE, RECORDED — issue #48.
 //
@@ -1223,19 +942,6 @@ describe("gate 2: the chooser was consulted, and the intent is written down", ()
     const state = await frozen(without(SLOT, "intent"));
     expect(state.phase).toBe("storyboard");
     expect(state.resume).toContain("G2-intent");
-  });
-
-  it("should agree with storyboard's own gate", async () => {
-    // The two readers carry the contract separately and must not drift.
-    const text = build(SCALARS, without(SLOT, "intent"));
-    const { meta } = parseStoryboard(text);
-    expect(checkStoryboard(meta).length).toBeGreaterThan(0);
-    await writeFile(join(dir, "source", "article.md"), "text");
-    await writeFile(join(dir, "source", "data.csv"), "col\n1");
-    await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(join(dir, "SUBJECTS.md"), SURVEYED);
-    await writeFile(join(dir, "STORYBOARD.md"), text);
-    expect((await whereIs(dir)).phase).toBe("storyboard");
   });
 
   it("should close gate 2 once the intent is named", async () => {
@@ -1278,7 +984,6 @@ describe("gate 2's second half: the survey is asked for where the angles still e
   it("should refuse in surveyGap's own words, naming the file, the movement and the call", async () => {
     await frozenWithStoryboard();
     const [gap] = (await whereIs(dir)).missing;
-    expect(gap).toBe(await surveyGap(dir));
     expect(gap).toContain("SUBJECTS.md");
     expect(gap).toContain("movement 10");
     expect(gap).toContain("recordSurveyedSubjects({ storyDir, subjects })");

@@ -1,8 +1,8 @@
 // Real key probes plus read-only environment compatibility for copied roots.
 // Managed setup and production use Engine's record broker and closed operations.
 
-// Env var name resolution: this project's own short names stay canonical; the sibling engine
-// (splash's own skills/map-native, skills/dw-chart) reads these under different names —
+// Env var name resolution: this project's own short names stay canonical; the original Splash
+// engine (a sibling repository, not in this tree) reads these under different names —
 // MAPTILER_API_KEY / REMOTION_MAPTILER_KEY / VITE_MAPTILER_KEY for the map key,
 // DATAWRAPPER_API_TOKEN for the Datawrapper token (measured in that repository's own scripts, not
 // guessed). A newsroom that already has a working `.env` for the engine should not have to keep a

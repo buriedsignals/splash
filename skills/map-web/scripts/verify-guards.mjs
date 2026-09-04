@@ -1,3 +1,4 @@
+// twin/skills/map-beat/scripts/verify-guards.mjs
 export const GUARDS = ["weightAgainstCeiling"];
 
 export function weightAgainstCeiling(bytes, ceiling) {

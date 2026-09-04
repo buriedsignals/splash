@@ -3728,7 +3728,8 @@ function computeCoverage(text, claims) {
 // claim that agrees on the shape is left standing beside the recorded one, whatever column or entity
 // it picked — that is two readings of one shape, not two shapes, and the recorded verdict is the one
 // that decides.
-export const RECORDED_CLAIM_SHAPES = ["maximum", "minimum", "comparison", "total", "none"];
+import { RECORDED_CLAIM_SHAPES } from "./gate-contract.mjs";
+export { RECORDED_CLAIM_SHAPES };
 
 /** The shape a PARSED comparison asserts, in the recorded vocabulary — `null` where the parser's
  *  own kind is not one of the five (a bare "first time", a numeral). A shape of `null` is never a

@@ -11,12 +11,7 @@ import {
   treatmentNames,
 } from "../scripts/producer-gate.mjs";
 import { checkStoryboard, mutateStoryboard, parseStoryboard } from "../scripts/storyboard.mjs";
-import {
-  DATAWRAPPER_TREATMENTS,
-  DATAWRAPPER_TREATMENT_MEDIA,
-  datawrapperTypesForTreatment,
-  whereIs,
-} from "../../splash/scripts/where.mjs";
+import { whereIs } from "../../splash/scripts/where.mjs";
 import { buildData } from "../../analyst/scripts/build-data.mjs";
 import { parseCsv } from "../../analyst/scripts/csv.mjs";
 import { profileTable } from "../../analyst/scripts/profile.mjs";
@@ -101,51 +96,9 @@ describe("the Datawrapper catalogue", () => {
     expect(datawrapperMatch({ medium: "chart", format: "web", treatment: "Histogram" })).toBeNull();
   });
 
-  it("keeps the state reader's carried mapping in parity with the catalogue itself", () => {
-    // MAPPED rows only. A row with an empty `datawrapperTypes` records a treatment this provider
-    // cannot honour, kept in the catalogue WITH its reason so nobody re-adds it from the type list
-    // (#44, Scatter). The state reader carries what it can dispatch, so an unmapped treatment is
-    // simply absent there — two representations of the same fact, and this compares the fact.
-    const mapped = DATAWRAPPER_CATALOG.splashTreatments.filter(
-      (mapping: any) => mapping.datawrapperTypes.length > 0,
-    );
-    const unmapped = DATAWRAPPER_CATALOG.splashTreatments.filter(
-      (mapping: any) => mapping.datawrapperTypes.length === 0,
-    );
-    // Every deliberately-unmapped row says why, or it reads as an oversight.
-    for (const mapping of unmapped) {
-      expect([mapping.treatment, Boolean(mapping.unmappedReason)]).toEqual([mapping.treatment, true]);
-      expect(DATAWRAPPER_TREATMENTS.has(mapping.treatment)).toBe(false);
-    }
-    const expected = new Map(mapped.map((mapping: any) => [mapping.treatment, mapping.datawrapperTypes]));
-    expect([...DATAWRAPPER_TREATMENTS.entries()]).toEqual([...expected.entries()]);
-    const media = new Map(mapped.map((mapping: any) => [mapping.treatment, mapping.medium]));
-    expect([...DATAWRAPPER_TREATMENT_MEDIA.entries()]).toEqual([...media.entries()]);
-    for (const mapping of mapped) {
-      for (const name of [...treatmentNames(mapping.treatment), ...mapping.aliases]) {
-        expect(
-          datawrapperTypesForTreatment({ medium: mapping.medium, format: "web", treatment: name }),
-        ).toEqual(mapping.datawrapperTypes);
-        expect(
-          datawrapperMatch({ medium: mapping.medium, format: "web", treatment: name }),
-        ).toMatchObject({ treatment: mapping.treatment });
-        if (name === "bubble") continue;
-        expect(
-          datawrapperTypesForTreatment({
-            medium: mapping.medium === "chart" ? "map" : "chart",
-            format: "web",
-            treatment: name,
-          }),
-        ).toBeNull();
-      }
-    }
-    for (const treatment of ["Histogram", "Treemap", "Diverging stacked bar"]) {
-      expect(
-        datawrapperTypesForTreatment({ medium: "chart", format: "web", treatment }),
-      ).toBeNull();
-    }
-  });
-
+  // The state reader used to carry a hand-written copy of this mapping, held to the catalogue by a
+  // test here. It now carries `producer-gate.mjs` itself, byte for byte
+  // (`splash/test/carried-copies.test.ts`), so there is no second mapping left to compare.
   it("normalizes explanatory parentheticals without turning unrelated treatments into matches", () => {
     expect(normalizeTreatment("Dumbbell (range plot)")).toBe("dumbbell");
     expect(normalizeTreatment("Waterfall (bridge)")).toBe("waterfall");
