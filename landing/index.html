@@ -14,8 +14,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* LA PALETTE, ET ELLE EST FERMÉE. L'encre, le papier, la table, le bleu et
+     l'ambre — plus les deux tons de survol. Un orange avait été ajouté pour
+     que « Install » se détache de « Get inspired » ; il tenait sa place, mais
+     il faisait une TROISIÈME couleur chaude à côté de l'ambre, et deux chaudes
+     voisines ne se distinguent pas, elles se salissent. La distinction se fait
+     sur autre chose : l'ambre pour l'appel principal, le papier pour le
+     second. Deux pleins, deux valeurs opposées, aucune couleur en plus. */
   :root { --ink:#14141c; --paper:#edeae3; --table:#e6e2d9; --blue:#1a2ffb; --amber:#f2b13c; --amber-hi:#f7c260;
-          --rust:#e8823c; --rust-hi:#f0954f;
           --D:'Bricolage Grotesque',Helvetica,sans-serif;
           --C:'Space Grotesk',Helvetica,sans-serif;
           /* Un seul jeu de mesures pour toute la page. La gouttière est la
@@ -215,9 +221,9 @@
       background:color-mix(in srgb,currentColor 12%,transparent)}
   header .hnav a.cta{order:2;margin-left:-13px;padding:8px 14px;
       border:1px solid transparent;border-radius:var(--rad-s);
-      background:var(--rust);color:var(--ink);
+      background:var(--amber);color:var(--ink);
       transition:background .2s ease}
-  header .hnav a.cta:hover{background:var(--rust-hi)}
+  header .hnav a.cta:hover{background:var(--amber-hi)}
   /* Le dépôt descend du hero dans la barre. Il garde son contour — c'est ce
      qui le distinguait des deux liens nus — et perd sa flèche : la marque
      dit déjà qu'on quitte la page. */
@@ -428,18 +434,20 @@
      dans le bouton dit où il mène sans qu'un mot de plus soit écrit. */
   /* Trois appels, dans l'ordre de ce qu'on attend du lecteur : installer,
      regarder ce que ça donne, voir la démo. L'installation est en tête et
-     porte le seul plein qui ne soit pas l'ambre — un cran plus profond, pour
-     qu'elle se détache de « Get inspired » sans sortir de la famille. */
-  .heroacts .hinstall{background:var(--rust);color:var(--ink)}
-  .heroacts .hinspire{background:var(--amber);color:var(--ink)}
+     porte l'ambre, qui est la couleur d'appel du site ; « Get inspired » porte
+     le papier. Les deux sont pleins, donc de même poids, et ils se distinguent
+     par la VALEUR et non par la teinte — c'est ce qui tient à distance, et
+     c'est ce qui tient aussi pour un œil qui ne sépare pas les chaudes. */
+  .heroacts .hinstall{background:var(--amber);color:var(--ink)}
+  .heroacts .hinspire{background:var(--paper);color:var(--ink)}
   .heroacts .hdemo{border:1px solid rgba(237,234,227,.26);
                    background:transparent;color:var(--paper)}
   .heroacts a,.heroacts button{
             transition:background .2s ease,border-color .2s ease,
                        color .2s ease,transform .2s ease}
   .heroacts a:hover,.heroacts button:hover{transform:translateY(-1px)}
-  .heroacts .hinstall:hover{background:var(--rust-hi)}
-  .heroacts .hinspire:hover{background:var(--amber-hi)}
+  .heroacts .hinstall:hover{background:var(--amber-hi)}
+  .heroacts .hinspire:hover{background:var(--table)}
   .heroacts .hdemo:hover{background:rgba(237,234,227,.12);
                          border-color:rgba(237,234,227,.6)}
   /* Le dépôt n'est plus un bouton : la marque seule, sans filet, posée après
@@ -854,10 +862,10 @@
   .oform input::placeholder{color:rgba(237,234,227,.4)}
   .oform input:focus{outline:none;border-color:var(--amber)}
   .obtn{padding:11px 17px;border:0;border-radius:var(--rad-s);cursor:pointer;
-       background:var(--rust);color:var(--ink);font-family:var(--C);
+       background:var(--amber);color:var(--ink);font-family:var(--C);
        font-size:11px;font-weight:500;letter-spacing:.14em;
        text-transform:uppercase;transition:background .2s ease}
-  .obtn:hover{background:var(--rust-hi)}
+  .obtn:hover{background:var(--amber-hi)}
   .obtn:disabled{opacity:.5;cursor:default}
   .oghost{display:inline-block;padding:11px 17px;border-radius:var(--rad-s);
        border:1px solid rgba(237,234,227,.3);color:var(--paper);
@@ -869,7 +877,15 @@
   .oaside{color:var(--paper);opacity:.55;font-size:12px;text-decoration:none;
        border-bottom:1px solid transparent}
   .oaside:hover{opacity:.85;border-bottom-color:currentColor}
-  .oerr{margin:0 0 10px;color:#ff9b8a;font-size:12px}
+  /* L'ERREUR EST EN PAPIER, PAS EN ROUGE. Le site n'a pas de rouge, et lui en
+     inventer un pour deux lignes de formulaire ajoute une couleur à une
+     palette fermée. Elle ne peut pas non plus prendre l'ambre : c'est déjà le
+     message de SUCCÈS juste en dessous, et deux états opposés de la même
+     couleur ne sont plus deux états. Elle est donc en papier plein — plus
+     claire que le texte courant, posée sous le champ qu'elle concerne — et
+     c'est le mot qui dit ce qui ne va pas, ce qui vaut mieux qu'une teinte
+     de toute façon pour qui ne la distingue pas. */
+  .oerr{margin:0 0 10px;color:var(--paper);font-size:12px}
   .ook{margin:0;display:flex;align-items:center;gap:8px;color:var(--amber);
        font-size:13px}
   .ohide{display:none}
