@@ -1590,9 +1590,18 @@
      pour survolant une ligne, et une carte sortait pendant l'animation
      d'arrivée sans que personne ne l'ait demandée. Le clavier n'a pas ce
      défaut — le focus est toujours un geste — donc il n'est pas conditionné. */
-  .ways.wbouge .wlist>li:hover,.wlist>li:focus-visible{background:#191922}
-  .ways.wbouge .wlist>li:hover .wcard,
+  /* ET IL N'EXISTE QUE LÀ OÙ IL Y A UN POINTEUR. Sur un écran tactile il n'y
+     a pas de survol : le navigateur en simule un au premier appui, et il RESTE
+     — la ligne touchée gardait son fond, son filet et son bordereau sorti
+     jusqu'à ce qu'on en touche une autre. Un état qu'on ne peut pas quitter
+     n'est pas un survol. Le clavier, lui, garde le sien dans tous les cas :
+     `:focus-visible` est toujours un geste. */
+  .wlist>li:focus-visible{background:#191922}
   .wlist>li:focus-visible .wcard{pointer-events:auto}
+  @media (hover:hover){
+    .ways.wbouge .wlist>li:hover{background:#191922}
+    .ways.wbouge .wlist>li:hover .wcard{pointer-events:auto}
+  }
   /* Un filet ambre se tire sous la ligne survolée, PAR-DESSUS le sien : deux
      bordures qui se remplaceraient feraient sauter la hauteur de la ligne. */
   /* Le filet a DEUX temps, et c'est voulu. Il se retire vite — la courbe qui
@@ -1604,8 +1613,12 @@
                    height:1px;background:var(--amber);
                    transform:scaleX(0);transform-origin:0 50%;
                    transition:transform .46s cubic-bezier(.16,.84,.3,1)}
-  .ways.wbouge .wlist>li:hover::after,.wlist>li:focus-visible::after{
+  .wlist>li:focus-visible::after{
     transform:scaleX(1);transition:transform .95s cubic-bezier(.42,0,.24,1)}
+  @media (hover:hover){
+    .ways.wbouge .wlist>li:hover::after{
+      transform:scaleX(1);transition:transform .95s cubic-bezier(.42,0,.24,1)}
+  }
   .wlist>li>b{font-family:var(--C);font-size:11.5px;font-weight:500;
               letter-spacing:.16em;color:var(--amber)}
   .wlist>li>span{font-family:var(--D);font-weight:300;letter-spacing:-.02em;
@@ -1704,7 +1717,7 @@
      trait, où la ligne suivante le mange. À l'envers elle se soulevait au lieu
      de rester engagée, et on ne voyait plus une feuille à demi sortie mais un
      panneau posé de travers. */
-  .ways.wbouge .wlist>li:hover .wcard,.wlist>li:focus-visible .wcard{
+  .wlist>li:focus-visible .wcard{
     transform:translateY(var(--dy,30px)) rotate(var(--a,1.6deg));
     box-shadow:0 -14px 40px rgba(0,0,0,.55),
                inset 0 0 0 1px rgba(237,234,227,.16);
@@ -1712,6 +1725,16 @@
     transition:transform .52s cubic-bezier(.16,.84,.3,1),
                box-shadow .4s ease,
                visibility 0s}
+  @media (hover:hover){
+    .ways.wbouge .wlist>li:hover .wcard{
+      transform:translateY(var(--dy,30px)) rotate(var(--a,1.6deg));
+      box-shadow:0 -14px 40px rgba(0,0,0,.55),
+                 inset 0 0 0 1px rgba(237,234,227,.16);
+      visibility:visible;
+      transition:transform .52s cubic-bezier(.16,.84,.3,1),
+                 box-shadow .4s ease,
+                 visibility 0s}
+  }
   .wch{display:flex;justify-content:space-between;align-items:baseline;
        padding-bottom:12px;margin-bottom:12px;
        border-bottom:1px solid rgba(237,234,227,.14)}
