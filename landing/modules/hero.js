@@ -8769,7 +8769,17 @@ in float vEdge;
 // standfirst, and neither could then be read; it also lies about the press,
 // where the web comes out of the machine and goes back into it. Zero for every
 // plate — they keep their hard edges.
+//
+// TWO FADES, NOT ONE. The top has the navigation band over it and nothing
+// else, and it is a short one: the paper goes back into the machine there.
+// The foot is a different job — it carries the standfirst, three buttons and
+// the credit, all of it small type standing on a wall of body copy — so it is
+// not a hem but a FLOOR: it starts high, it comes on slowly, and it stops
+// short of taking the paper away. A hem at the foot reads as the press
+// ending; a long, capped fall reads as light going out of the room.
 uniform float uEdge;
+// where the floor starts, how long it takes, and how far it ever goes
+uniform vec3 uFoot;
 out vec4 outColor;
 void main(){
   // the sheet's v runs the other way from the canvas, so it is flipped here —
@@ -8804,9 +8814,18 @@ void main(){
   vec3  dn = clamp(col/max(R, 1e-3), 0.0, 1.0);
   col = mix(uBG*dn, mix(uBG, vec3(1.0), up), step(vec3(R), col));
   vec3 lit = mix(uBG, max(col, 0.0), uPresence);
-  float fade = uEdge > 0.0
-    ? 1.0 - smoothstep(uEdge, uEdge + 0.40, abs(vEdge))
-    : 1.0;
+  /* Deux fondus indépendants, multipliés — pas un seul dont on choisit la
+     hauteur selon la moitié du cadre où l'on est. Sur un téléphone la pile
+     du hero passe AU-DESSUS du milieu, donc un fondu réservé à la moitié
+     basse ne peut structurellement pas l'atteindre : le départ du plancher
+     doit pouvoir être négatif, c'est-à-dire plus haut que le centre.
+     (Pas d'accent grave dans ce commentaire : il est dans le littéral de
+     gabarit qui porte le shader, et il le fermerait.) */
+  float fade = 1.0;
+  if(uEdge > 0.0){
+    fade = (1.0 - smoothstep(uEdge, uEdge + 0.40, vEdge))
+         * (1.0 - uFoot.z * smoothstep(uFoot.x, uFoot.x + uFoot.y, -vEdge));
+  }
   outColor = vec4(mix(lit, uWashC, uWash), uAlpha * fade);
 }`;
 
@@ -8976,6 +8995,20 @@ void main(){
       // the height at which the paper goes back into the machine, which also
       // frees the header band from running over dense body type
       webEdge: 0.69,
+      /* Et la même chose en bas, plus tôt : c'est là que se tient tout ce qui
+       * se lit en petit. Le voile CSS qui faisait ce travail était ancré sur
+       * la SECTION et non sur la fenêtre — pendant la traversée il remontait
+       * avec le hero et se décrochait du bas de l'écran. Celui-ci est dans la
+       * scène, donc il est au cadre, et il n'a rien à suivre. */
+      /* LE PLANCHER : où il commence, sur quelle distance il tombe, et jusqu'où
+       * il va. Les trois comptent, et le troisième surtout — un fondu qui va
+       * jusqu'au bout enlève le papier, et le bas du cadre devient une bande
+       * d'encre à bord franc. Il s'arrête avant : il reste toujours un peu de
+       * presse sous le pied de page, c'est de la lumière qui baisse et pas du
+       * papier qui s'arrête. */
+      webFootAt: -0.28,
+      webFootLen: 1.28,
+      webFootMax: 0.78,
       /* HOW FAST EACH WEB UNROLLS, in laps of the galley per second, one
        * number each. They were a shared speed and three multipliers of it,
        * which is the wrong shape for a control: reading 0.930 tells you a
@@ -9147,7 +9180,10 @@ void main(){
         "the light on it",
         [
           ["webLift", 0.5, 2.2, 0.01, "how bright the paper is"],
-          ["webEdge", 0.25, 1.3, 0.01, "where it goes back into the machine"],
+          ["webEdge", 0.25, 1.3, 0.01, "where it goes back in, at the top"],
+          ["webFootAt", -0.9, 0.6, 0.01, "where the floor under the small type starts"],
+          ["webFootLen", 0.3, 2.0, 0.01, "how long the floor takes to fall"],
+          ["webFootMax", 0.3, 1.0, 0.01, "and how far it ever goes"],
         ],
       ],
       /* Behind the paper: what is being printed on it, and how often the
@@ -9915,6 +9951,7 @@ void main(){
           "uPtr",
           "uPtrK",
           "uEdge",
+          "uFoot",
           "uShade",
           "uCurve",
           "uWaveF",
@@ -11012,6 +11049,18 @@ void main(){
           gl.uniform3f(uq.uAy, 0, hh, 0);
           gl.uniform1f(uq.uBend, P.bend * hh * P.webBend);
           gl.uniform1f(uq.uEdge, P.webEdge);
+          /* ET LE PLANCHER MONTE AVEC LE FORMAT. Le mobilier du hero — chapô,
+             trois boutons, crédit — occupe une part du cadre d'autant plus
+             grande que la fenêtre est haute et étroite : sur un téléphone il
+             commence au-dessus du milieu, là où sur un écran large il tient
+             dans le tiers bas. Le plancher suit donc le même signal que la
+             largeur des bandes, qui mesure exactement ça. */
+          gl.uniform3f(
+            uq.uFoot,
+            P.webFootAt - (webFit - 1) * 0.18,
+            P.webFootLen,
+            P.webFootMax,
+          );
           gl.uniform1f(uq.uShade, P.webShade);
           gl.uniform1f(uq.uWaveF, P.webWaveF);
           /* THE RADIUS, FROM THE ANGLE AND THE FRAME. The control is the wrap
@@ -11260,6 +11309,7 @@ void main(){
           gl.uniform1f(uq.uBend, 0);
           gl.uniform3f(uq.uPtrK, 0, 1, 1);
           gl.uniform1f(uq.uEdge, 0);
+          gl.uniform3f(uq.uFoot, 0, 1, 0);
           gl.uniform3f(uq.uInkC, 0.5, 0.0, 0.0);
           gl.uniform3f(uq.uAz, 0, 0, 0);
           gl.uniform1f(uq.uAlpha, fade);

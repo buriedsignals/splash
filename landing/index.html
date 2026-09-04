@@ -257,16 +257,13 @@
      une bande de pied ; sous lui il y a maintenant quatre étages, donc le
      centre optique de l'ensemble redescend à 53 % et le titre remonte de
      lui-même. hero.js déplace .herocore, plus le h1 (voir la sortie). */
-  /* LE VOILE DU HERO. Le titre est assez gros pour tenir seul sur la scène ;
-     le chapô, les boutons et le crédit ne le sont pas — à 13 px sur une nuée
-     de pages de journal, ils se lisaient par-dessus des colonnes de texte.
-     Un dégradé sur la moitié basse leur donne un plancher, et il ne monte
-     jamais jusqu'au titre, qui garde la scène nette derrière lui. */
-  .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64%;
-               pointer-events:none;z-index:0;
-               background:linear-gradient(to bottom,
-                 rgba(20,20,28,0) 0%, rgba(20,20,28,.42) 34%,
-                 rgba(20,20,28,.68) 72%, rgba(20,20,28,.78) 100%)}
+  /* PAS DE VOILE SUR LE HERO. Un dégradé était posé sur la moitié basse de la
+     section pour donner un plancher au chapô et aux boutons. Il est ancré sur
+     la SECTION, pas sur la fenêtre : pendant la traversée le hero remonte, le
+     voile remonte avec lui, et il se décroche du bas de l'écran — on voit une
+     ombre glisser vers le haut, puis un bord net là où elle s'arrête. La
+     traversée n'a rien à voiler de toute façon : le papier couvre déjà tout
+     le cadre, et ce qui doit se lire dessus est parti avant. */
   .herocore,.heroft{z-index:2}
   .herocore{position:absolute;left:var(--gut);right:var(--gut);top:53%;
             transform:translateY(-50%);
@@ -1953,15 +1950,25 @@
                     rgba(20,20,28,.46) 68%, rgba(20,20,28,0) 92%)}
   .mmid{position:absolute;inset:0;display:grid;place-items:center;
         padding:0 var(--gut);pointer-events:none}
-  .mmid>div{max-width:min(50ch,86vw);text-align:center;pointer-events:auto}
+  /* LE TITRE A SA PROPRE MESURE, PAS CELLE DU PARAGRAPHE. Le bloc était coupé
+     à 50ch — une mesure de lecture, calculée sur le corps du paragraphe, donc
+     autour de 450 px. Un titre de 78 px n'y tient pas : chacune de ses deux
+     lignes se recassait en deux, et un titre écrit sur deux lignes en sortait
+     sur quatre, à 300 px de haut. Le bloc prend donc la largeur du titre, et
+     c'est le PARAGRAPHE qui garde sa mesure de lecture — c'est lui qui en a
+     besoin, pas lui qui doit l'imposer. */
+  .mmid>div{max-width:min(880px,88vw);text-align:center;pointer-events:auto}
   .meye{display:inline-flex;align-items:center;gap:9px;
         margin:0 0 clamp(16px,2.4vh,30px);font-family:var(--C);
         font-size:11.5px;font-weight:500;letter-spacing:.2em;
         text-transform:uppercase;opacity:.55}
   .meye i{width:7px;height:7px;background:var(--amber);flex:0 0 auto}
+  /* Et l'interligne respire : à .96 les jambages de « inspiration » et de
+     « graphics » venaient toucher les hampes de la ligne d'en dessous. */
   .mmid h2{margin:0;font-family:var(--D);font-weight:300;letter-spacing:-.034em;
-           line-height:.96;font-size:clamp(30px,5.2vw,78px)}
-  .mmid p{margin:clamp(16px,2.2vh,28px) 0 0;font-size:clamp(13.5px,1.15vw,16px);
+           line-height:1.04;font-size:clamp(30px,5.2vw,78px);text-wrap:balance}
+  .mmid p{margin:clamp(16px,2.2vh,28px) auto 0;max-width:52ch;
+          font-size:clamp(13.5px,1.15vw,16px);
           line-height:1.55;opacity:.68}
   .mgo{display:inline-flex;align-items:center;gap:10px;
        margin-top:clamp(22px,3.4vh,44px);
