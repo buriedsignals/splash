@@ -19,12 +19,8 @@
  * their photographs out honestly, not to add a single word or a single judgement of its own.
  */
 
-import {
-  deriveFurniture,
-  measureText,
-  FONT_FAMILY,
-  fitBox,
-} from "../scripts/render-still.mjs";
+import { deriveFurniture, measureText, FONT_FAMILY } from "../scripts/render-still.mjs";
+import { fitBox } from "../scripts/image-raster.mjs";
 
 export type PhotoInput = {
   /** A `data:` URI — see `scripts/render-still.mjs`'s `toDataUri`. This component never reads a

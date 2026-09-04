@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readImageMeta } from "../scripts/render-still.mjs";
+import { readImageMeta } from "../scripts/image-raster.mjs";
 
 const ASSETS = join(import.meta.dirname, "..", "assets");
 const SAMPLE = join(ASSETS, "sample-data");

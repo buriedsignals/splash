@@ -288,6 +288,9 @@ real beat writes its own runner in that same shape — never editing this skill'
 | The drawn step's own illustrated water level and day label (never a plotted value) | `{ waterLevelT, dayLabel }` | `DRAWN_VARIANT`, `render-scrolly.mjs` |
 
 ## Files
+- `TYPEFACE.md` — the recorded typeface this skill's still renders in (`origin: default`: nobody chose
+  it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
+  cannot resolve rather than substituting for it; a story root overrides it with its own file.
 
 - `references/scrolly-discipline.md` — the doctrine: what the card covers, measured, and the three
   things that follow (no band can be reserved, the card has two widths, some frames must be composed

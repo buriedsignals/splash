@@ -18,8 +18,32 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
-
-const HEX = /^#[0-9a-fA-F]{6}$/;
+// THE COLOUR MATHS AND THE PALETTE READER live in `./colour.mjs`, carried beside every copy of this
+// file and into `palette` and `newsroom-charter`, so the proposal, the charter and the render measure
+// with one function. Re-exported here so nothing that imports them from this file changes.
+import {
+  HEX,
+  channels,
+  contrast,
+  mix,
+  readPalette,
+  parsePalette,
+  NON_TEXT_CONTRAST_MIN,
+  TEXT_CONTRAST_MIN,
+  LARGE_TEXT_CONTRAST_MIN,
+  adjustToContrast,
+  assertLegible,
+} from "./colour.mjs";
+export {
+  contrast,
+  readPalette,
+  parsePalette,
+  NON_TEXT_CONTRAST_MIN,
+  TEXT_CONTRAST_MIN,
+  LARGE_TEXT_CONTRAST_MIN,
+  adjustToContrast,
+  assertLegible,
+};
 
 /**
  * THE FONT STACK IN FORCE. The seed draws with it and `measureText` measures with it — if the two
@@ -55,34 +79,6 @@ let ACTIVE_TYPEFACE = {
   source: "(the built-in default stack — nobody chose it)",
 };
 
-function channels(hex) {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-}
-
-/** WCAG 2.x relative luminance. */
-function luminance(hex) {
-  const [r, g, b] = channels(hex).map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** WCAG contrast ratio between two #rrggbb colours, 1..21. */
-export function contrast(a, b) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
-function mix(ground, toward, ratio) {
-  const target = channels(toward);
-  return (
-    "#" +
-    channels(ground)
-      .map((v, i) => Math.round(v + (target[i] - v) * ratio).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
 
 /**
  * Every colour in a beat except the accent comes from here, derived from the newsroom's own
@@ -121,203 +117,6 @@ export function deriveFurniture(ground) {
     }
   }
   return { ink, muted, grid: mix(ground, ink, 0.18) };
-}
-
-/**
- * The two colours a beat is drawn in — the ground and the one accent that carries the argument —
- * read back from the decision the journalist actually made.
- *
- * This lives HERE, beside `deriveFurniture`, rather than in `palette` where it is proposed: a
- * beat already imports this module to render at all, and a second import path for two colours is
- * one more thing to get wrong. `palette` owns the question; this owns the answer. The two
- * copies are the deliberate kind, guarded against drift by `helper-parity.test.ts`.
- *
- * Looks for `PALETTE.md` in `dir`, then in each ancestor up to `stopAt` — so one decision recorded
- * at the story root serves every beat under it, and a beat that genuinely needs its own can hold
- * one beside its data.
- *
- * This is a LOOKUP path, never a colour fallback. A search that finds nothing THROWS, naming every
- * directory it looked in. That is the point: a render that quietly defaulted to black-on-white
- * would publish a chart in a colour nobody chose, and it would look deliberate. Before this
- * existed, every beat named its colours as hex literals with a `// from NEWSROOM.md` comment
- * beside them — an instruction to copy by eye, which is exactly how a newsroom's identity gets
- * collected and then never used.
- */
-export function readPalette(dir, { stopAt } = {}) {
-  const start = resolve(dir);
-  const limit = stopAt ? resolve(stopAt) : null;
-  const searched = [];
-  let current = start;
-  for (;;) {
-    const candidate = join(current, "PALETTE.md");
-    searched.push(candidate);
-    if (existsSync(candidate)) return parsePalette(readFileSync(candidate, "utf8"), candidate);
-    if (limit && current === limit) break;
-    const parent = dirname(current);
-    if (parent === current) break;
-    current = parent;
-  }
-  throw new Error(
-    `No PALETTE.md found for ${start}. Run palette's proposal, let the journalist choose, ` +
-      `and record the answer. Looked in:\n  ${searched.join("\n  ")}`,
-  );
-}
-
-export function parsePalette(text, source = "PALETTE.md") {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
-  if (!match) throw new Error(`${source} has no front matter`);
-  const record = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line.trim());
-    if (!pair) continue;
-    record[pair[1]] = pair[2].replace(/^["']|["']$/g, "").trim();
-  }
-  for (const field of ["ground", "accent"]) {
-    if (!record[field]) throw new Error(`${source} is missing ${field}`);
-    if (!HEX.test(record[field])) {
-      throw new Error(`${source}: ${field} must be #rrggbb, got ${JSON.stringify(record[field])}`);
-    }
-  }
-  if (!["newsroom", "subject", "journalist"].includes(record.origin)) {
-    throw new Error(
-      `${source}: origin must be newsroom, subject or journalist — got ${JSON.stringify(record.origin)}. ` +
-        `It records WHO chose these colours, and a render is allowed to say so.`,
-    );
-  }
-  const further = String(record.accents ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-  for (const hex of further) {
-    if (!HEX.test(hex)) {
-      throw new Error(
-        `${source}: every entry in accents must be #rrggbb, got ${JSON.stringify(hex)}. ` +
-          `accents lists the FURTHER house colours beside the primary one, comma-separated.`,
-      );
-    }
-  }
-  const all = [record.accent, ...further];
-  const accents = all.filter((hex, index) => all.indexOf(hex) === index);
-  for (const hex of accents) {
-    assertLegible(hex, record.ground, {
-      role: "mark",
-      where: `${source}: the accent ${hex}`,
-    });
-  }
-  return {
-    ground: record.ground,
-    accent: record.accent,
-    accents,
-    origin: record.origin,
-    source,
-  };
-}
-
-/**
- * THE TWO FLOORS, AND WHY THEY ARE NOT ONE NUMBER.
- *
- * WCAG sets two different minimums for two different things, and collapsing them is the mistake
- * that looks like rigour (`palette/references/contrast-floors.md` argues it at length):
- *
- *   - `mark` — 3:1, SC 1.4.11 Non-text Contrast. The visual information a reader identifies a
- *     GRAPHICAL OBJECT by: the line, the bar, the circle, a choropleth class against the ground.
- *     An accent carries no text, and holding it to a text threshold rejects perfectly legible
- *     house colours for failing a criterion they were never subject to.
- *   - `text` — 4.5:1, SC 1.4.3 Contrast (Minimum). Words.
- *   - `largeText` — 3:1, the same criterion's own relaxation for 24px, or 18.66px bold, or larger.
- *     It is a relaxation of the TEXT rule, not the mark rule, and it exists here so a caller who
- *     needs it names it rather than reaching for `mark` because the number happens to match.
- */
-export const NON_TEXT_CONTRAST_MIN = 3;
-export const TEXT_CONTRAST_MIN = 4.5;
-export const LARGE_TEXT_CONTRAST_MIN = 3;
-
-/**
- * The nearest variant of `colour` that clears `min` against `ground`, found by walking it toward
- * whichever pole the ground is NOT — darkening on a light ground, lightening on a dark one — in 2%
- * steps and stopping at the first step that passes.
- *
- * It returns a REMEDY, never a replacement. Nothing in this file ever swaps it in: a render that
- * quietly substituted the nearest passing colour would put a hex nobody chose into a published
- * chart, and the journalist, seeing a colour that is not their brand, would have no way to learn
- * why. It is shown in the refusal so the answer is one edit away.
- *
- * A verbatim duplicate of `palette/scripts/palette.mjs`'s, deliberately — that skill owns the
- * question and this file owns the answer, and neither imports the other. `helper-parity.test.ts`
- * compares them over a table of colours and grounds.
- *
- * Returns `null` when no step passes. Measured over 4352 grounds in `palette`: zero nulls at
- * 3:1, zero at 4.5, the first at 5 — so the branch is for a caller who raises the floor, not for a
- * ground that defeats the default.
- */
-export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
-  if (!HEX.test(colour)) throw new Error(`colour must be #rrggbb, got ${JSON.stringify(colour)}`);
-  if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
-  const towards = luminance(ground) > 0.18 ? "#000000" : "#FFFFFF";
-  for (let step = 1; step <= 50; step++) {
-    const candidate = mix(colour, towards, step / 50);
-    if (contrast(candidate, ground) >= min) return candidate;
-  }
-  return null;
-}
-
-/**
- * REFUSE A COLOUR A READER CANNOT SEE, AND SAY WHAT WAS MEASURED.
- *
- * `palette`'s proposal measures every option it offers and never recommends one that fails.
- * That is the first line, and it is the only one that existed until now — measured on 2026-08-10,
- * a `PALETTE.md` recording `accent: "#FFFF00"` on `ground: "#FFFFFF"` (1.07:1) rendered a clean
- * PNG with no warning at all, the beat's whole number set in yellow on white.
- *
- * A `PALETTE.md` can be written by hand, copied from another story, or produced by a path that
- * never asked — `newsroom-charter` proposes a `brandColor` and a `ground` off a newsroom's
- * own site. So the floor is measured HERE too, where the colour meets the render, and the refusal
- * names the ratio, the floor, the criterion it comes from and the nearest colour that clears it.
- *
- * It refuses rather than adjusts, for the reason `adjustToContrast` states above.
- */
-export function assertLegible(colour, against, { role = "mark", where = "this colour" } = {}) {
-  const floors = {
-    mark: {
-      min: NON_TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.11 Non-text Contrast",
-      governs: "a graphical object a reader identifies the data by",
-    },
-    text: {
-      min: TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum)",
-      governs: "text",
-    },
-    largeText: {
-      min: LARGE_TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum), large-text relaxation",
-      governs: "text at 24px, or 18.66px bold, or larger",
-    },
-  };
-  const floor = floors[role];
-  if (!floor) {
-    throw new Error(
-      `assertLegible: role must be mark, text or largeText — got ${JSON.stringify(role)}. ` +
-        `The floors differ by criterion, so the caller has to say which one it is asking about.`,
-    );
-  }
-  if (!HEX.test(colour)) throw new Error(`${where} must be #rrggbb, got ${JSON.stringify(colour)}`);
-  if (!HEX.test(against)) {
-    throw new Error(
-      `${where} is read against ${JSON.stringify(against)}, which is not #rrggbb`,
-    );
-  }
-  const ratio = contrast(colour, against);
-  if (ratio >= floor.min) return ratio;
-  const remedy = adjustToContrast(colour, against, floor.min);
-  throw new Error(
-    `${where}: ${colour} on ${against} measures ${ratio.toFixed(2)}:1 — under the ${floor.min}:1 ` +
-      `floor ${floor.criterion} sets for ${floor.governs}. A reader cannot see it. ` +
-      (remedy
-        ? `The nearest variant that clears the floor is ${remedy}, at ${contrast(remedy, against).toFixed(2)}:1 — ` +
-          `record that, or another colour, or a ground it can be read on.`
-        : `No variant of it clears that floor on this ground: choose another colour, or another ground.`),
-  );
 }
 
 /**
@@ -535,7 +334,7 @@ export function declaredFontFamilies(svg) {
  * paint gets the old value while every gutter was measured in the new one. That is the §4-B defect
  * and it clips silently in the PNG, so it refuses here instead.
  *
- * It lives outside `renderStill` deliberately: `render-still-parity.test.ts` compares every copy of
+ * It lives outside `renderStill` deliberately: `carried-copies.test.ts` holds every copy of
  * a SHARED function body across all 22 copies of this file, and a copy that gained a changed
  * `renderStill` while its siblings did not would be drift. A new function is a superset, which that
  * guard permits. `seed-reads-a-recorded-typeface.test.ts` is what makes sure the runners call it.

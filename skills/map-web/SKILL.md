@@ -286,6 +286,9 @@ for its own generic function.
 | The PNG comparison's own tolerance (per-channel diff, and the allowed fraction of differing pixels) | tolerance `6`, max fraction `0.002` | `comparePngBuffers`'s options, `compare-png.mjs` |
 
 ## Files
+- `TYPEFACE.md` — the recorded typeface this skill's still renders in (`origin: default`: nobody chose
+  it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
+  cannot resolve rather than substituting for it; a story root overrides it with its own file.
 
 - `references/map-web-discipline.md` — the rules this format is written under, each attached to the
   reasoning that produced it. Read before writing a second beat.

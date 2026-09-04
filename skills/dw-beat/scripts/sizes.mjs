@@ -4,7 +4,7 @@
 // portrait for stories, square for social posts.
 //
 // WHY THIS IS ITS OWN FILE. `SIZES` could have gone into `render-still.mjs`, which every beat
-// already imports. It must not: `splash/test/render-still-parity.test.ts` states in its own
+// already imports. It must not: `splash/test/carried-copies.test.ts` states in its own
 // header, item 2, that "a drift in module-level CONSTANTS … are not compared". Putting the table
 // there would put it in the one place the tree's existing walker provably cannot see. Its own file,
 // its own walker (`splash/test/size-table-parity.test.ts`).

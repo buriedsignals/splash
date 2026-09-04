@@ -17,7 +17,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
-import { deriveFurniture, readPalette } from "./render-still.mjs";
+import { deriveFurniture, readPalette, readTypeface, useTypeface, assertDrawnInActiveTypeface } from "./render-still.mjs";
 import { STEPS_META, FRAME, DrawnGraphicFrame } from "../assets/ScrollySeed.tsx";
 
 const HERE = import.meta.dirname;
@@ -42,11 +42,17 @@ if (!drawnMeta)
 // Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its
 // colours the same way a beat does.
 const { ground, accent } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force before
+// anything is laid out; a face that does not resolve on this machine refuses here rather than
+// being silently substituted.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
+
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
   createElement(DrawnGraphicFrame, { ground, accent, ...furniture }),
 );
+assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
 const png = new Resvg(svg, { fitTo: { mode: "width", value: FRAME.width } })
   .render()

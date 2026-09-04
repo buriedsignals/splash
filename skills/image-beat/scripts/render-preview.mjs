@@ -15,13 +15,8 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
-import {
-  readImageMeta,
-  checkOrientation,
-  checkWeight,
-  readPalette,
-  toDataUri,
-} from "./render-still.mjs";
+import { readPalette, readTypeface, useTypeface, assertDrawnInActiveTypeface } from "./render-still.mjs";
+import { readImageMeta, checkOrientation, checkWeight, toDataUri } from "./image-raster.mjs";
 import { ImageBeatSeed, imageBeatLayout } from "../assets/ImageBeatSeed.tsx";
 
 const HERE = import.meta.dirname;
@@ -39,6 +34,11 @@ const MANIFEST = JSON.parse(await readFile(join(SAMPLE_DIR, "manifest.json"), "u
 // Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its
 // colours the same way a beat does.
 const { ground } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+// The typeface is a RECORDED ANSWER, read the same way the palette is and put in force before
+// anything is laid out; a face that does not resolve on this machine refuses here rather than
+// being silently substituted.
+useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
+
 const title = MANIFEST.title;
 
 const photos = await Promise.all(
@@ -71,6 +71,7 @@ const layout = imageBeatLayout(photos, title);
 const svg = renderToStaticMarkup(
   createElement(ImageBeatSeed, { photos, title, ground }),
 );
+assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
 const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
   .render()

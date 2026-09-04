@@ -10,89 +10,31 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
+// The colour maths and the palette reader are `./colour.mjs`, carried verbatim from
+// `chart-beat/scripts/colour.mjs` (line 1 names the canonical; `splash/test/carried-copies.test.ts`
+// holds it), so this proposal and every render measure with the same function. Re-exported here.
+import {
+  HEX,
+  contrast,
+  NON_TEXT_CONTRAST_MIN,
+  TEXT_CONTRAST_MIN,
+  LARGE_TEXT_CONTRAST_MIN,
+  adjustToContrast,
+  readPalette,
+  parsePalette,
+  assertLegible,
+} from "./colour.mjs";
+export {
+  contrast,
+  NON_TEXT_CONTRAST_MIN,
+  TEXT_CONTRAST_MIN,
+  LARGE_TEXT_CONTRAST_MIN,
+  adjustToContrast,
+  readPalette,
+  parsePalette,
+  assertLegible,
+};
 
-const HEX = /^#[0-9a-fA-F]{6}$/;
-
-function channels(hex) {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-}
-
-/** WCAG 2.x relative luminance. */
-function luminance(hex) {
-  const [r, g, b] = channels(hex).map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** WCAG contrast ratio between two #rrggbb colours, 1..21. */
-export function contrast(a, b) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
-/**
- * WCAG 2.2 SC 1.4.11 Non-text Contrast, Level AA: the visual information required to identify a
- * graphical object must clear 3:1 against its adjacent colour. A chart's accent IS that object —
- * the line, the bar, the highlighted circle — so 3:1 against the ground is the floor a proposal
- * has to clear before a journalist is asked to approve it.
- *
- * This is deliberately NOT 4.5:1. That threshold (SC 1.4.3) governs TEXT, and the beats already
- * meet it a different way: every word in a beat is drawn in `ink` or `muted`, both derived from
- * the ground by `deriveFurniture`, which escalates until it clears 4.5:1. Holding the accent to a
- * text threshold it never carries text at would reject perfectly legible house colours.
- */
-export const NON_TEXT_CONTRAST_MIN = 3;
-
-/**
- * The other floor, and the relaxation that belongs to it rather than to the one above. 4.5:1 is
- * SC 1.4.3 and it governs WORDS; its own large-text relaxation drops to 3:1 at 24px, or 18.66px
- * bold, or larger. The number coincides with the non-text floor and the criterion does not, which
- * is exactly why `assertLegible` below makes a caller name the role instead of the number.
- */
-export const TEXT_CONTRAST_MIN = 4.5;
-export const LARGE_TEXT_CONTRAST_MIN = 3;
-
-function toHex(values) {
-  return "#" + values.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
-}
-
-/**
- * The nearest variant of `colour` that clears `min` against `ground`, found by walking it toward
- * whichever pole the ground is NOT — darkening an accent on a light ground, lightening it on a
- * dark one — in 2% steps and stopping at the first step that passes.
- *
- * It returns a REMEDY, never a replacement. The caller shows the failing colour, says it fails,
- * and offers this beside it. A palette that silently swapped in the nearest passing colour would
- * put a hex nobody chose into a published chart, which is the one thing this skill exists to
- * prevent — and the journalist, seeing a colour that is not their brand, would have no way to
- * learn why.
- *
- * Returns `null` when no step passes — and MEASURED, not assumed, that never happens at the
- * default 3:1 floor. Swept over 4352 grounds (every one of the 256 greys plus a 16-step RGB
- * grid): zero nulls at `min` 3, zero at 4.5, the first at 5. The hardest ground found is `#747474`,
- * where the far pole lands at 3.0000809:1 — the mid-grey band is genuinely the tight spot, and it
- * still clears. That is not luck: `towards` switches poles at L = 0.18 precisely because both
- * poles clear 3:1 on either side of it, so the walk always terminates in a pass.
- *
- * The branch stays because `min` is a PARAMETER. A caller raising the floor can and does exhaust
- * the walk (340 of those same grounds at 5:1), and returning `null` says "this ground leaves no
- * room" rather than shipping a near-miss dressed as a pass. An earlier draft of this comment
- * claimed the mid-grey band produced nulls at 3:1; it does not, and the sweep above is why this
- * one states a number instead.
- */
-export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
-  if (!HEX.test(colour)) throw new Error(`colour must be #rrggbb, got ${JSON.stringify(colour)}`);
-  if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
-  const towards = luminance(ground) > 0.18 ? [0, 0, 0] : [255, 255, 255];
-  const from = channels(colour);
-  for (let step = 1; step <= 50; step++) {
-    const candidate = toHex(from.map((v, i) => v + (towards[i] - v) * (step / 50)));
-    if (contrast(candidate, ground) >= min) return candidate;
-  }
-  return null;
-}
 
 /**
  * Grounded subject conventions. Each entry is a convention a reader can be expected to already
@@ -290,146 +232,6 @@ export function proposePalette({ newsroom, subject } = {}) {
       null,
     escape: "Something else — give me the two hex codes and I will use those.",
   };
-}
-
-/**
- * Read the decision back.
- *
- * Looks for `PALETTE.md` in `dir`, then in each ancestor up to `stopAt` — so one decision recorded
- * at the story root serves every beat under it, and a beat that genuinely needs its own can hold
- * one beside its data. This is a LOOKUP path, not a colour fallback: nothing here invents a
- * colour, and a search that finds nothing throws naming every directory it looked in.
- *
- * The throw is the point. A render that silently defaulted to black-on-white when the decision was
- * missing would publish a chart in a colour no one chose, and it would look deliberate.
- */
-export function readPalette(dir, { stopAt } = {}) {
-  const start = resolve(dir);
-  const limit = stopAt ? resolve(stopAt) : null;
-  const searched = [];
-  let current = start;
-  for (;;) {
-    const candidate = join(current, "PALETTE.md");
-    searched.push(candidate);
-    if (existsSync(candidate)) return parsePalette(readFileSync(candidate, "utf8"), candidate);
-    if (limit && current === limit) break;
-    const parent = dirname(current);
-    if (parent === current) break;
-    current = parent;
-  }
-  throw new Error(
-    `No PALETTE.md found for ${start}. Run palette's proposal, let the journalist choose, ` +
-      `and record the answer. Looked in:\n  ${searched.join("\n  ")}`,
-  );
-}
-
-export function parsePalette(text, source = "PALETTE.md") {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
-  if (!match) throw new Error(`${source} has no front matter`);
-  const record = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line.trim());
-    if (!pair) continue;
-    record[pair[1]] = pair[2].replace(/^["']|["']$/g, "").trim();
-  }
-  for (const field of ["ground", "accent"]) {
-    if (!record[field]) throw new Error(`${source} is missing ${field}`);
-    if (!HEX.test(record[field])) {
-      throw new Error(`${source}: ${field} must be #rrggbb, got ${JSON.stringify(record[field])}`);
-    }
-  }
-  if (!["newsroom", "subject", "journalist"].includes(record.origin)) {
-    throw new Error(
-      `${source}: origin must be newsroom, subject or journalist — got ${JSON.stringify(record.origin)}. ` +
-        `It records WHO chose these colours, and a render is allowed to say so.`,
-    );
-  }
-  const further = String(record.accents ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item !== "");
-  for (const hex of further) {
-    if (!HEX.test(hex)) {
-      throw new Error(
-        `${source}: every entry in accents must be #rrggbb, got ${JSON.stringify(hex)}. ` +
-          `accents lists the FURTHER house colours beside the primary one, comma-separated.`,
-      );
-    }
-  }
-  const all = [record.accent, ...further];
-  const accents = all.filter((hex, index) => all.indexOf(hex) === index);
-  for (const hex of accents) {
-    assertLegible(hex, record.ground, {
-      role: "mark",
-      where: `${source}: the accent ${hex}`,
-    });
-  }
-  return {
-    ground: record.ground,
-    accent: record.accent,
-    accents,
-    origin: record.origin,
-    source,
-  };
-}
-
-/**
- * REFUSE A COLOUR A READER CANNOT SEE, AND SAY WHAT WAS MEASURED.
- *
- * `palette`'s proposal measures every option it offers and never recommends one that fails.
- * That is the first line, and it is the only one that existed until now — measured on 2026-08-10,
- * a `PALETTE.md` recording `accent: "#FFFF00"` on `ground: "#FFFFFF"` (1.07:1) rendered a clean
- * PNG with no warning at all, the beat's whole number set in yellow on white.
- *
- * A `PALETTE.md` can be written by hand, copied from another story, or produced by a path that
- * never asked — `newsroom-charter` proposes a `brandColor` and a `ground` off a newsroom's
- * own site. So the floor is measured HERE too, where the colour meets the render, and the refusal
- * names the ratio, the floor, the criterion it comes from and the nearest colour that clears it.
- *
- * It refuses rather than adjusts, for the reason `adjustToContrast` states above.
- */
-export function assertLegible(colour, against, { role = "mark", where = "this colour" } = {}) {
-  const floors = {
-    mark: {
-      min: NON_TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.11 Non-text Contrast",
-      governs: "a graphical object a reader identifies the data by",
-    },
-    text: {
-      min: TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum)",
-      governs: "text",
-    },
-    largeText: {
-      min: LARGE_TEXT_CONTRAST_MIN,
-      criterion: "WCAG 2.2 SC 1.4.3 Contrast (Minimum), large-text relaxation",
-      governs: "text at 24px, or 18.66px bold, or larger",
-    },
-  };
-  const floor = floors[role];
-  if (!floor) {
-    throw new Error(
-      `assertLegible: role must be mark, text or largeText — got ${JSON.stringify(role)}. ` +
-        `The floors differ by criterion, so the caller has to say which one it is asking about.`,
-    );
-  }
-  if (!HEX.test(colour)) throw new Error(`${where} must be #rrggbb, got ${JSON.stringify(colour)}`);
-  if (!HEX.test(against)) {
-    throw new Error(
-      `${where} is read against ${JSON.stringify(against)}, which is not #rrggbb`,
-    );
-  }
-  const ratio = contrast(colour, against);
-  if (ratio >= floor.min) return ratio;
-  const remedy = adjustToContrast(colour, against, floor.min);
-  throw new Error(
-    `${where}: ${colour} on ${against} measures ${ratio.toFixed(2)}:1 — under the ${floor.min}:1 ` +
-      `floor ${floor.criterion} sets for ${floor.governs}. A reader cannot see it. ` +
-      (remedy
-        ? `The nearest variant that clears the floor is ${remedy}, at ${contrast(remedy, against).toFixed(2)}:1 — ` +
-          `record that, or another colour, or a ground it can be read on.`
-        : `No variant of it clears that floor on this ground: choose another colour, or another ground.`),
-  );
 }
 
 /**

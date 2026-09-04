@@ -3,18 +3,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  deriveFurniture,
-  contrast,
-  measureText,
-  readImageMeta,
-  readOrientation,
-  checkOrientation,
-  fitBox,
-  toDataUri,
-  checkWeight,
-  WEIGHT_LIMIT_BYTES,
-} from "../scripts/render-still.mjs";
+import { deriveFurniture, contrast, measureText } from "../scripts/render-still.mjs";
+import { readImageMeta, readOrientation, checkOrientation, fitBox, toDataUri, checkWeight, WEIGHT_LIMIT_BYTES } from "../scripts/image-raster.mjs";
 import { imageBeatLayout, ImageBeatSeed } from "../assets/ImageBeatSeed.tsx";
 
 const SAMPLE = join(import.meta.dirname, "..", "assets", "sample-data");

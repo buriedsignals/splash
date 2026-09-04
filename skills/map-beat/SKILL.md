@@ -199,10 +199,9 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   have been asked, and after the expensive work.
 
   **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
-  `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet. Measured, not assumed:
-  `splash/test/typeface-gate-is-documented.test.ts` derives that roster from the call sites and
-  refuses a skill that gains the gate without documenting it.
+  `chart-video`, `chart-web`, `map-beat`, `map-web`, `scrolly`, `image-beat` — every skill that
+  rasterises a still. `dw-beat` lays out type server-side. The roster is
+  the set of skills whose render path calls `useTypeface`.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"

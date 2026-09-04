@@ -18,6 +18,11 @@ import {
   extractThemeColor,
   isNeutralHex,
 } from "./extract.mjs";
+// Colour maths from `./colour.mjs`, carried verbatim from `chart-beat/scripts/colour.mjs`, so the
+// charter measures a newsroom's pair with the same function the render measures it with.
+import { HEX, contrast, NON_TEXT_CONTRAST_MIN, adjustToContrast } from "./colour.mjs";
+export { contrast, NON_TEXT_CONTRAST_MIN, adjustToContrast };
+
 
 const DEFAULT_TIMEOUT_MS = 8000;
 const DEFAULT_MAX_STYLESHEETS = 4;
@@ -218,69 +223,6 @@ export async function deriveCharter({
     stylesheetsRead,
     stylesheetsFailed,
   };
-}
-
-/**
- * DOES THIS PAIR COME OUT LEGIBLE? Measured here, where the charter is PROPOSED, because this is
- * the skill a journalist with no profile is sent to and it had no contrast arithmetic at all
- * (`AUDIT-W2-palette-credits.md` H2: `grep -rn "contrast\\|luminance"` over the whole skill
- * returned nothing). It measured a newsroom's site, proposed a `brandColor` and a `ground`, and
- * never checked that the pair could be read together — and the render, until the same day, drew
- * whatever it was handed. A recorded `#FFFF00` on white produced a clean PNG with the beat's whole
- * number in it.
- *
- * A brand colour is a MARK on a chart — a line, a bar, a shaded region — so the floor is 3:1,
- * WCAG 2.2 SC 1.4.11, not the 4.5:1 that governs text. Words in a beat never take the brand colour:
- * they are drawn in ink derived from the ground and escalated until they clear 4.5:1. Holding a
- * newsroom's identity to a text floor it never carries text at would reject legible house colours,
- * and the newsroom would have no way to learn the wrong rule was applied.
- *
- * It measures and REPORTS. It does not adjust: `formatProposal` prints the failure, the nearest
- * passing variant beside it, and leaves the decision where every other decision in this skill
- * lives. A charter this skill quietly corrected would be a colour nobody chose wearing the
- * authority of a measurement.
- *
- * The maths is a duplicate of `palette/scripts/palette.mjs`'s, deliberately and by this
- * project's rule — a skill stays copy-pasteable on its own, so helpers are duplicated rather than
- * imported. `splash/test/helper-parity.test.ts` compares the copies.
- */
-const HEX = /^#[0-9a-fA-F]{6}$/;
-export const NON_TEXT_CONTRAST_MIN = 3;
-
-function channels(hex) {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-}
-
-function luminance(hex) {
-  const [r, g, b] = channels(hex).map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-export function contrast(a, b) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
-function toHex(values) {
-  return (
-    "#" +
-    values.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")
-  );
-}
-
-export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
-  if (!HEX.test(colour)) throw new Error(`colour must be #rrggbb, got ${JSON.stringify(colour)}`);
-  if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
-  const towards = luminance(ground) > 0.18 ? [0, 0, 0] : [255, 255, 255];
-  const from = channels(colour);
-  for (let step = 1; step <= 50; step++) {
-    const candidate = toHex(from.map((v, i) => v + (towards[i] - v) * (step / 50)));
-    if (contrast(candidate, ground) >= min) return candidate;
-  }
-  return null;
 }
 
 /**

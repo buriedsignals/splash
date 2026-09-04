@@ -92,7 +92,7 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Colour maths | `scripts/palette.mjs` | `contrast` — a verbatim copy of the block in `render-still.mjs`, guarded against drift by `helper-parity.test.ts` |
+| Colour maths | `scripts/colour.mjs` | `contrast`, `adjustToContrast`, `assertLegible`, `parsePalette`, `readPalette` — ONE file, carried verbatim from `chart-beat/scripts/colour.mjs` (held by `splash/test/carried-copies.test.ts`), so the proposal and the render measure with the same function |
 | Conventions | `scripts/palette.mjs` | `SUBJECT_CONVENTIONS`, `matchConvention` — a deliberately short table, one entry per association a reader already holds |
 | Scoring | `scripts/palette.mjs` | `NON_TEXT_CONTRAST_MIN`, `adjustToContrast` — the floor, and the remedy shown beside a failure rather than substituted for it |
 | Proposal | `scripts/palette.mjs` | `proposePalette({newsroom, subject})` — the options, each with provenance, reasoning and measured contrast |
