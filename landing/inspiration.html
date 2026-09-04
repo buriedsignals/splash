@@ -73,19 +73,59 @@
          justify-content:space-between;align-items:center;height:var(--bar);
          padding:0 var(--gut);color:#fff;
          font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.15em;
-         text-transform:uppercase;mix-blend-mode:difference}
+         text-transform:uppercase;color:var(--paper);
+         /* LA BARRE PORTE SON PROPRE SOL, comme sur la page de documentation.
+            Elle tenait sa lisibilité d'un `mix-blend-mode:difference`, qui
+            s'applique au GROUPE : un bouton plein posé dedans vire au bleu dès
+            que le fond s'éclaircit. Et ici elle ne peut pas non plus lire « la »
+            section qu'elle recouvre comme le fait la landing — l'écran
+            d'accueil est SCINDÉ, masthead encre à gauche et index papier à
+            droite, donc elle survole deux fonds à la fois. Un sol à elle règle
+            les deux : la nav est celle des autres pages, chacun avec sa vraie
+            couleur, et elle reste lisible sur n'importe quoi. */
+         background:rgba(20,20,28,.86);
+         -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
   header a{color:inherit;text-decoration:none;transition:opacity .25s ease}
   header a:hover{opacity:.62}
   .wordmark{display:inline-flex;align-items:center;gap:.42em}
   .wordmark .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block}
   .wordmark{font-family:var(--D);font-weight:800;font-size:22px;
             letter-spacing:-.035em;text-transform:none;line-height:1}
+  /* LA BARRE EST LA MÊME SUR TOUTES LES PAGES, et c'est le point : une barre
+     qui change d'une page à l'autre n'est plus une barre. Mêmes mentions,
+     même ordre, même traitement — seule la page courante diffère, et elle le
+     dit par `aria-current`, pas par une mise en forme à elle. */
   header .hnav{display:flex;gap:26px;align-items:center}
+  /* `difference` tenait la barre lisible du noir au blanc, mais il s'applique
+     au GROUPE : un bouton plein posé dedans vire au bleu sur les fonds
+     clairs. La barre lit le fond de la section qu'elle recouvre et bascule
+     son encre elle-même — donc tout rentre dans le même div, chacun avec sa
+     vraie couleur. */
+  header.onlight{color:var(--ink)}
   header .hnav a{white-space:nowrap}
-  /* The dashed rule is the call to action's whole signal. Five pixels of
-     offset because at three it reads as a strikethrough on 11px caps. */
-  header .hnav a.cta{text-decoration:underline;text-decoration-style:dashed;
-                     text-underline-offset:5px}
+  header .hnav a.ghb{order:1;
+      border:1px solid color-mix(in srgb,currentColor 40%,transparent);
+      border-radius:var(--rad-s);background:transparent;
+      display:inline-flex;align-items:center;gap:8px;padding:8px 13px;
+      transition:background .2s ease,border-color .2s ease}
+  header .hnav a.ghb:hover{border-color:currentColor;
+      background:color-mix(in srgb,currentColor 12%,transparent)}
+  header .hnav a.ghb svg{width:13px;height:13px;flex:0 0 auto;fill:currentColor}
+  header .hnav a.cta{order:2;margin-left:-13px;padding:8px 14px;
+      border:1px solid transparent;border-radius:var(--rad-s);
+      background:var(--amber);color:var(--ink);
+      transition:background .2s ease}
+  header .hnav a.cta:hover{background:var(--amber-hi)}
+  /* Les liens nus n'ont que le soulignement pour dire le survol, et la place
+     qu'il prend est REPRISE EN HAUT : la marge et le filet n'existent que
+     sous le texte, donc sans compensation le mot se retrouve un pixel et demi
+     plus haut que celui des deux boutons, que la barre centre par leur boîte. */
+  header .hnav a:not(.cta):not(.ghb){text-decoration:none;
+                     border-bottom:1px solid transparent;
+                     padding:3px 0 2px;
+                     transition:border-color .2s ease}
+  header .hnav a:not(.cta):not(.ghb):hover{border-bottom-color:currentColor}
+  header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 
   /* ---- THE MENU ------------------------------------------------------
      The bar cannot hold three mentions and a 22px wordmark on a 390px frame,
@@ -931,7 +971,9 @@
   <span class="hnav">
     <a href="docs/">Docs</a>
     <a href="inspiration.html" aria-current="page">Get inspiration</a>
-    <a class="cta" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">Get the skills &nearr;</a>
+    <a class="cta" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
+    <a class="ghb" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.02c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.97 10.97 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>GitHub</a>
     <button class="hmenu" id="hmenu" type="button"
             aria-expanded="false" aria-controls="menu">Menu</button>
   </span>
@@ -942,7 +984,8 @@
   <nav>
     <a href="docs/">Docs</a>
     <a href="inspiration.html" aria-current="page"><i></i>Get inspiration</a>
-    <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener">Get the skills <em>&nearr;</em></a>
+    <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">GitHub <em>&nearr;</em></a>
+    <a href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install <em>&nearr;</em></a>
   </nav>
 </div>
 

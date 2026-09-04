@@ -230,9 +230,16 @@
   header .hnav a.ghb{display:inline-flex;align-items:center;gap:8px;
                      padding:8px 13px}
   header .hnav a.ghb svg{width:13px;height:13px;flex:0 0 auto;fill:currentColor}
-  /* Les deux liens nus n'ont que le soulignement pour dire le survol. */
+  /* Les deux liens nus n'ont que le soulignement pour dire le survol.
+     ET LA PLACE QU'IL PREND EST REPRISE EN HAUT. La marge et le filet
+     n'existent que SOUS le texte : la boîte du lien s'allonge donc vers le
+     bas, et comme la barre centre les boîtes, le texte se retrouvait un pixel
+     et demi plus haut que celui des deux boutons — mesuré, centres à 26,47
+     contre 27,97. Trois pixels rendus au-dessus, et les quatre mots sont sur
+     la même ligne optique, soulignement compris. */
   header .hnav a:not(.cta):not(.ghb){text-decoration:none;
-                     border-bottom:1px solid transparent;padding-bottom:2px;
+                     border-bottom:1px solid transparent;
+                     padding:3px 0 2px;
                      transition:border-color .2s ease}
   header .hnav a:not(.cta):not(.ghb):hover{border-bottom-color:currentColor}
   header .hnav a:focus-visible,.heroacts a:focus-visible,
