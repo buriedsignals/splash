@@ -18,11 +18,49 @@
 // directions under `docs/design-base/directions/`.
 
 /**
- * Six, and the list is CLOSED. A seventh register is a design decision taken across the whole
- * system — every direction must then answer for it — not a convenience added by whichever beat
- * happened to need one.
+ * THE CORE: the voices every graphic has, whatever it draws. Closed, and a sixth core voice is a
+ * decision across the whole system, not a convenience.
+ *
+ * These are about VOICE, never about apparatus. A title, a category line, running text, an
+ * annotation, a number attached to a mark — a chart has all five, and so does a map, a video frame
+ * and a scrollytelling step.
  */
-export const REGISTERS = Object.freeze(["display", "eyebrow", "body", "axis", "annot", "value"]);
+export const CORE_REGISTERS = Object.freeze(["display", "eyebrow", "body", "annot", "value"]);
+
+/**
+ * THE APPARATUS: what a family uses to name its own measuring furniture, and it is NOT the same
+ * from family to family.
+ *
+ * A chart has an axis. A map has a legend and it has place names, and it has no axis at all —
+ * `proof/map-quake-symbol/QuakeSymbolStill.tsx` declares `LEGEND_LABEL` and `CAPTION` where a chart
+ * declares `AXIS`. A first version of this file froze SIX registers with `axis` among them, which
+ * was a chart's vocabulary imposed on every family; the map beat found it within minutes.
+ *
+ * Each family names its own, and says which core voice it DERIVES FROM when a direction — measured
+ * on a piece that had no such apparatus — does not define it. That derivation is what keeps a
+ * direction portable: `creme` was measured on a unit chart with no axis, and it can still govern a
+ * map without anybody inventing a legend voice for it.
+ */
+export const FAMILY_REGISTERS = Object.freeze({
+  chart: Object.freeze({ axis: "body" }),
+  map: Object.freeze({ legend: "body", place: "annot" }),
+  scrolly: Object.freeze({ step: "body" }),
+  video: Object.freeze({ axis: "body" }),
+});
+
+/** How much smaller a derived apparatus register is than the core voice it comes from: quiet enough
+ *  to recede, large enough to read. */
+const DERIVED_SIZE_RATIO = 0.88;
+
+/** Every register a beat of this family may write into: the core, plus the family's own. */
+export function registersFor(family = "chart") {
+  return Object.freeze([...CORE_REGISTERS, ...Object.keys(FAMILY_REGISTERS[family] ?? {})]);
+}
+
+/**
+ * Kept for callers that predate families, and equal to a chart's set. New code names its family.
+ */
+export const REGISTERS = registersFor("chart");
 
 /**
  * INK IS A ROLE, NEVER A COLOUR, and this is the rule that keeps a dark direction legible.
@@ -42,11 +80,30 @@ const INK_ROLES = Object.freeze(["ink", "muted", "accent"]);
  * @param {string} name  one of `REGISTERS`
  * @returns {{fontFamily: string, fontSize: number, fontWeight: number, fontStyle: "normal"|"italic", letterSpacing: number, transform: string, ink: "ink"|"muted"|"accent"}}
  */
-export function resolveRegister(direction, name) {
-  if (!REGISTERS.includes(name))
-    throw new Error(`no such register: ${name} — the six are ${REGISTERS.join(", ")}`);
+export function resolveRegister(direction, name, { family = "chart" } = {}) {
+  const known = registersFor(family);
+  if (!known.includes(name))
+    throw new Error(
+      `no such register for a ${family}: ${name} — it has ${known.join(", ")}`,
+    );
 
-  const spec = direction?.registers?.[name];
+  let spec = direction?.registers?.[name];
+  let derivedFrom = null;
+
+  // An apparatus register the direction never recorded is DERIVED from the core voice its family
+  // names, rather than invented or refused. A direction measured on a piece with no axis still
+  // governs a chart; a direction measured on a chart still governs a map's legend.
+  if (!spec && FAMILY_REGISTERS[family]?.[name]) {
+    derivedFrom = FAMILY_REGISTERS[family][name];
+    const source = direction?.registers?.[derivedFrom];
+    if (!source)
+      throw new Error(
+        `direction ${direction?.id ?? "(unnamed)"} defines neither ${name} nor the ${derivedFrom} ` +
+          `register a ${family} derives it from`,
+      );
+    spec = { ...source, size: Math.round(source.size * DERIVED_SIZE_RATIO * 10) / 10 };
+  }
+
   if (!spec)
     throw new Error(
       `direction ${direction?.id ?? "(unnamed)"} defines no ${name} register, and a treatment is asking to write into it`,
@@ -68,6 +125,9 @@ export function resolveRegister(direction, name) {
     letterSpacing: spec.tracking ?? 0,
     transform: spec.transform ?? "none",
     ink: spec.ink,
+    /** Null when the direction recorded this register itself; the core voice it came from when the
+     *  family derived it. A report says which, so nothing looks measured that was inferred. */
+    derivedFrom,
   };
 }
 

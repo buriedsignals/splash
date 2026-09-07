@@ -63,16 +63,35 @@ The two axes meet through **registers**, and only through registers.
 A treatment names the register it writes into. A direction says what that register looks like.
 Neither knows the other's internals.
 
-Registers, fixed by this spec:
+Registers are **a fixed core plus a per-family apparatus**, and that shape was corrected by the map
+family rather than designed for it. A first version froze six with `axis` among them — one family's
+vocabulary imposed on all of them — and `proof/map-quake-symbol/QuakeSymbolStill.tsx` refuted it
+within minutes: it declares `LEGEND_LABEL` and `CAPTION` and has no axis at all.
+
+**The core — five voices every family shares.** About voice, never apparatus.
 
 | register | what it is for |
 | --- | --- |
 | `display` | the title |
 | `eyebrow` | the category or section line above the title |
 | `body` | the caveat/standfirst and the source line |
-| `axis` | tick labels and axis furniture |
 | `annot` | annotation text — reference captions, event labels, callouts |
 | `value` | a number attached to a mark (end label, value label) |
+
+**The apparatus — named by the family, and each says which core voice it derives from.**
+
+| family | its own registers | derived from |
+| --- | --- | --- |
+| chart, video | `axis` | `body` |
+| map | `legend`, `place` | `body`, `annot` |
+| scrolly | `step` | `body` |
+
+**Derivation is what makes a direction portable.** `creme` was measured on a unit chart that has no
+legend; asked to govern a map it derives one from `body` at 0.88× rather than inventing a voice or
+refusing the direction outright. `resolveRegister` returns `derivedFrom` so a report can say which
+registers were measured and which were inferred — nothing inferred is allowed to look measured.
+
+Adding a family adds registers without touching a single filed direction.
 
 A direction supplies, per register: family, size, weight, italic, tracking, case, and the ink role
 (`ink`, `muted`, `accent`). Ink stays *derived* from the ground — `deriveFurniture` already handles
