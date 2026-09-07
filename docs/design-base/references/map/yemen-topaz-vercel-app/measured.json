@@ -1,0 +1,237 @@
+{
+  "url": "https://yemen-topaz.vercel.app",
+  "archive": "buried-signals",
+  "family": "map",
+  "id": "yemen-topaz-vercel-app",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": "\"Explore the map\"",
+  "style": {
+    "title": "The Yemen Tribute",
+    "ground": "rgb(6, 13, 0)",
+    "type": [
+      {
+        "family": "Nata-ExtraBlack",
+        "size": 35,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 4.2,
+        "transform": "uppercase",
+        "key": "Nata-ExtraBlack | 35 | 400 | normal | 4.2 | uppercase",
+        "count": 9,
+        "sample": "2015",
+        "colors": [
+          "rgb(229, 229, 229)"
+        ]
+      },
+      {
+        "family": "Nata-ExtraBlack",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 2.4,
+        "transform": "uppercase",
+        "key": "Nata-ExtraBlack | 20 | 400 | normal | 2.4 | uppercase",
+        "count": 2,
+        "sample": "Read the article",
+        "colors": [
+          "rgb(229, 229, 229)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "© MapTiler",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Newsreader",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 2.88,
+        "transform": "uppercase",
+        "key": "Newsreader | 16 | 500 | normal | 2.88 | uppercase",
+        "count": 1,
+        "sample": "Civilian casualties from coalition bombings and mines",
+        "colors": [
+          "rgb(229, 229, 229)"
+        ]
+      },
+      {
+        "family": "Nata-ExtraBlack",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1.92,
+        "transform": "uppercase",
+        "key": "Nata-ExtraBlack | 16 | 400 | normal | 1.92 | uppercase",
+        "count": 1,
+        "sample": "Filter by year",
+        "colors": [
+          "rgb(229, 229, 229)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(229, 229, 229)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 2
+      },
+      {
+        "colour": "fill url(\"#paint0_linear_403_122\")",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "canvas",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#2E2E2E",
+      "share": 0.6187824074074074,
+      "h": 0,
+      "s": 0,
+      "l": 0.18033640983571203,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#C82703",
+        "share": 0.00019675925925925926,
+        "h": 10.964467005076141,
+        "s": 0.9704433497536947,
+        "l": 0.3980392156862745,
+        "chroma": 0.7725490196078432
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#2E2E2E",
+        "share": 0.6187824074074074,
+        "h": 0,
+        "s": 0,
+        "l": 0.18033640983571203,
+        "chroma": 0
+      },
+      {
+        "hex": "#242424",
+        "share": 0.2806489197530864,
+        "h": 0,
+        "s": 0,
+        "l": 0.14127441249813813,
+        "chroma": 0
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.02719367283950617,
+        "h": 94.67889908259568,
+        "s": 0.021016774856974816,
+        "l": 0.9991343573720384,
+        "chroma": 0.000036386032436941385
+      },
+      {
+        "hex": "#5F655A",
+        "share": 0.018359567901234566,
+        "h": 92.72852317708733,
+        "s": 0.057589295930348124,
+        "l": 0.3745106279882719,
+        "chroma": 0.04313560676855421
+      },
+      {
+        "hex": "#323232",
+        "share": 0.012301697530864197,
+        "h": 0,
+        "s": 0,
+        "l": 0.19460307738475183,
+        "chroma": 0
+      },
+      {
+        "hex": "#434343",
+        "share": 0.005266975308641975,
+        "h": 0,
+        "s": 0,
+        "l": 0.26389066027817515,
+        "chroma": 0
+      },
+      {
+        "hex": "#3C3C3C",
+        "share": 0.005255401234567901,
+        "h": 0,
+        "s": 0,
+        "l": 0.23365605234899717,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0034544753086419755,
+        "h": 92.75902211873792,
+        "s": 0.0035971976197357114,
+        "l": 0.8954144713503002,
+        "chroma": 0.000752429629435003
+      },
+      {
+        "hex": "#929292",
+        "share": 0.002942901234567901,
+        "h": 94.28571428571429,
+        "s": 0.0003118366698251261,
+        "l": 0.573006056119354,
+        "chroma": 0.0002663047389904749
+      },
+      {
+        "hex": "#0A0A0A",
+        "share": 0.002859567901234568,
+        "h": 0,
+        "s": 0,
+        "l": 0.040474905558553695,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 11,
+        "share": 0.00019675925925925926,
+        "size": 1
+      }
+    ],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 1296000
+  }
+}

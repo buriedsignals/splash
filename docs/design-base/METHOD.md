@@ -265,3 +265,22 @@ along the way — La Nación's, whose labels are the provider's defaults, and ou
 the refusals are written into the register's own record.
 
 `legend` is still one publication. The Guardian draws one; no second desk has been read that does.
+
+
+**Correction 12 — the door, and the threshold set by eye that kept it shut.**
+
+The harvester now clicks through an entry screen: a longform piece that opens on a photograph and
+puts its graphic behind "Explore the map" or "Start watching". It is deliberately narrower than the
+consent handler — consent is a standardised wall in front of every page, an entry is one piece's own
+invitation — so it fires only when the page is a **single viewport tall**, which a real entry screen
+is and an article never is.
+
+It did not work the first time, and the reason is worth keeping. The guard required a control at
+least **24 px** tall, a number chosen by eye. `yemen`'s own "Explore the map" is a text link
+**148 × 19**. The threshold skipped the exact control the feature was written to click. Measured and
+lowered to 16, the door opened and a 1440 × 900 canvas was behind it — a map two earlier harvests
+had recorded as not existing.
+
+`kashmir-documentary` still does not open: its entry is neither a button nor a link, and widening
+the selector far enough to catch it would start clicking anything. It is left unreached and
+unfiled, which is the honest state.

@@ -155,6 +155,52 @@ function firecrawlScreenshot(url, out) {
   return link.split("?")[0];
 }
 
+/**
+ * THE ENTRY SCREEN: a longform piece that opens on a photograph and puts its graphic behind a door.
+ *
+ * Measured. Two of the three Buried Signals sites stop at their own entry — `kashmir-documentary`
+ * on "START WATCHING", `yemen` on "EXPLORE THE MAP" — and the harvester scrolled past nothing,
+ * because there was nothing below the fold to scroll to. Both were recorded as reaching no map,
+ * which was true and useless.
+ *
+ * NARROWER THAN THE CONSENT HANDLER, deliberately. Consent is a wall in front of every page and its
+ * buttons are standardised; an entry is one piece's own invitation and its words are its own. So
+ * this fires ONLY when the page is a single viewport tall — a real entry screen has nothing under
+ * it — and only on a control whose whole label is one of a short list of openings. A page with an
+ * article below the fold is already showing its content and is never touched.
+ */
+const ENTRY_WORDS =
+  /^(start( watching| reading| here)?|explore( the map| the data)?|enter|begin|view the (map|graphic|data)|see the (map|graphic|data)|launch|open the map)$/i;
+
+/** A page taller than this much of the viewport already has content to scroll to. */
+const ENTRY_MAX_PAGE_RATIO = 1.6;
+
+/**
+ * Click through an entry screen if the page is one. Returns what it clicked, or null — recorded,
+ * because a page read after a door was opened is a page in a state the harvester put it in.
+ */
+async function openEntry(page) {
+  return page.evaluate(
+    ({ source, maxRatio }) => {
+      const doc = document.documentElement;
+      if (doc.scrollHeight > window.innerHeight * maxRatio) return null;
+      const words = new RegExp(source, "i");
+      for (const control of document.querySelectorAll("button, a, [role='button']")) {
+        const label = (control.textContent ?? "").trim();
+        if (!words.test(label)) continue;
+        const r = control.getBoundingClientRect();
+        // 16, not 24: measured. `yemen`'s own "Explore the map" is a text link 148 x 19, and a
+        // threshold set by eye at 24 skipped the very control this was written to click.
+        if (r.width < 60 || r.height < 16) continue;
+        control.click();
+        return `"${label}"`;
+      }
+      return null;
+    },
+    { source: ENTRY_WORDS.source, maxRatio: ENTRY_MAX_PAGE_RATIO },
+  );
+}
+
 /** Below this the element is a logo, an icon or a spacer, not the piece's graphic. */
 const MIN_GRAPHIC_PX = { w: 200, h: 120 };
 
@@ -238,6 +284,9 @@ export async function harvestReference({ url, family, archive, id, browser, corp
     // routes report `ok` on it. See correction 3 in `docs/design-base/METHOD.md`.
     record.consent = await dismissConsent(page);
     if (record.consent) await new Promise((r) => setTimeout(r, 2000));
+    // Then the piece's own door, if it has one and nothing else.
+    record.entry = await openEntry(page);
+    if (record.entry) await new Promise((r) => setTimeout(r, 4000));
     // Scroll once and back, so lazy graphics and a scrollytelling first step actually paint.
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
     await new Promise((r) => setTimeout(r, AFTER_SCROLL_MS));
