@@ -33,6 +33,8 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+import { inkThatReadsOver } from "#shared/chart-beat/annotation-ink.mjs";
+import { NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 
 const FRAME = { width: 900, height: 560 };
 const UNIT = "Mt";
@@ -383,6 +385,32 @@ export function DirectedLine({
       </defs>
       <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
 
+      {/* THE REFERENCE LEVEL IS DRAWN BEHIND THE DATA, and that is a decision about PLACE.
+          Drawn over the marks it read 1.08:1 against the accent it crossed on `creme`, 1.14:1 on
+          `rapport`, 1.48:1 on `nocturne` — every one under the 3:1 a non-text mark owes (SC
+          1.4.11). Recolouring could not save it: on `rapport` black reached only 2.96:1 against the
+          accent and white 1.00:1 against the ground, so `inkThatReadsOver` threw, which is
+          `visual-system.md`'s third outcome — "when NEITHER pole clears, the annotation is in the
+          wrong PLACE, not the wrong colour." A level is what the data is measured against; it
+          belongs under it.
+
+          AND IT STOPS AT THE CROSSING. Run to the plot's right edge it passed straight through the
+          two accented discs sitting on the level — the crossing's own mark and 2024's — and
+          `backgroundAt` reports the topmost shape under each sample, so those two discs were what
+          it crossed. Stopping the rule where the series meets it removes the overlap and states the
+          finding at the same time: the level holds until 2023, and the rule ends where that stops
+          being true. */}
+      <line
+        x1={g.plot.left}
+        x2={g.crossing ? g.crossing.x - 10 : g.plot.right}
+        y1={g.referenceY}
+        y2={g.referenceY}
+        stroke={inkThatReadsOver([direction.ground], NON_TEXT_CONTRAST_MIN)}
+        strokeWidth={direction.stroke.rule}
+        strokeDasharray="5 4"
+        opacity={0.55}
+      />
+
       <text
         x={headerX}
         y={eyebrowBaseline}
@@ -514,15 +542,6 @@ export function DirectedLine({
         </text>
       ))}
 
-      <line
-        x1={g.plot.left}
-        x2={g.plot.right}
-        y1={g.referenceY}
-        y2={g.referenceY}
-        stroke={muted}
-        strokeWidth={direction.stroke.rule}
-        strokeDasharray="5 4"
-      />
 
       {smoothPath ? (
         <g>
