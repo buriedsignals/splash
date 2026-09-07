@@ -1,0 +1,496 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/four-years-of-the-russia-ukraine-war/",
+  "archive": "informationisbeautiful",
+  "family": "line",
+  "id": "informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "screenshot.png"
+    }
+  },
+  "style": {
+    "title": "Russia-Ukraine War Infographics & Data Visuals — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 71,
+        "sample": "last updated 24th Feb 2026",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 31,
+        "sample": "Trying to penetrate the statistical fog of war and surface s",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 7,
+        "sample": "Ukrainian War Dead & Wounded",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "UK Government Spending – Incomes & Outcomes",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "CHANGE LOG",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": ": uploaded One Year of the War graphic : uploaded Russian Ga",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "View the data",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "(Memory Book of the Fallen for Ukraine)",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Peak age of genius",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": null
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#000000",
+      "share": 0.5909405864197531,
+      "h": 145.2293426063918,
+      "s": 0.13024723753927125,
+      "l": 0.00035612196982247974,
+      "chroma": 0.00009276780559284341
+    },
+    "chromatic": [
+      {
+        "hex": "#089AAE",
+        "share": 0.02860570987654321,
+        "h": 187.23061128007404,
+        "s": 0.9120205122515672,
+        "l": 0.35658935761610766,
+        "chroma": 0.6504336171929996
+      },
+      {
+        "hex": "#B39400",
+        "share": 0.01769675925925926,
+        "h": 49.60671386474117,
+        "s": 1,
+        "l": 0.35066885529009945,
+        "chroma": 0.7013377105801989
+      },
+      {
+        "hex": "#0CDBF8",
+        "share": 0.008324074074074074,
+        "h": 187.3728813559322,
+        "s": 0.9440000000000002,
+        "l": 0.5098039215686274,
+        "chroma": 0.9254901960784314
+      },
+      {
+        "hex": "#D4537A",
+        "share": 0.006962962962962963,
+        "h": 341.85583267626674,
+        "s": 0.5966006858048302,
+        "l": 0.5787390488110138,
+        "chroma": 0.5026491447642886
+      },
+      {
+        "hex": "#EAAB4A",
+        "share": 0.006833333333333334,
+        "h": 36.53282755584156,
+        "s": 0.7921417648163551,
+        "l": 0.6038790583984271,
+        "chroma": 0.6275678835219725
+      },
+      {
+        "hex": "#ECB445",
+        "share": 0.006509259259259259,
+        "h": 39.7247096146958,
+        "s": 0.8153901784348356,
+        "l": 0.5989010682509134,
+        "chroma": 0.6541042590578194
+      },
+      {
+        "hex": "#E69B53",
+        "share": 0.006348765432098766,
+        "h": 29.656060041922352,
+        "s": 0.7457281624526486,
+        "l": 0.6129188233387667,
+        "chroma": 0.5773146691831812
+      },
+      {
+        "hex": "#DE7B64",
+        "share": 0.006299382716049383,
+        "h": 11.498662754021314,
+        "s": 0.6464085734609382,
+        "l": 0.6312947324936834,
+        "chroma": 0.47666849199258343
+      },
+      {
+        "hex": "#E28B5B",
+        "share": 0.00627391975308642,
+        "h": 21.440197774668988,
+        "s": 0.697736966121204,
+        "l": 0.6222549381331675,
+        "chroma": 0.5271333868684605
+      },
+      {
+        "hex": "#D65C76",
+        "share": 0.006120370370370371,
+        "h": 347.4012365604748,
+        "s": 0.5965398231399328,
+        "l": 0.5994719824389665,
+        "chroma": 0.47786182551689355
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#000000",
+        "share": 0.5909405864197531,
+        "h": 145.2293426063918,
+        "s": 0.13024723753927125,
+        "l": 0.00035612196982247974,
+        "chroma": 0.00009276780559284341
+      },
+      {
+        "hex": "#F9F9F9",
+        "share": 0.054225308641975306,
+        "h": 20.036900368807014,
+        "s": 0.000694369712157856,
+        "l": 0.9782213323601398,
+        "chroma": 0.000030244894360542673
+      },
+      {
+        "hex": "#B3B3B3",
+        "share": 0.023984567901234568,
+        "h": 240,
+        "s": 0.00001711376916827025,
+        "l": 0.7014395527867563,
+        "chroma": 0.000010218989152765978
+      },
+      {
+        "hex": "#656565",
+        "share": 0.01793904320987654,
+        "h": 240,
+        "s": 0.000012743669582121675,
+        "l": 0.39708391421431577,
+        "chroma": 0.000010120612398245576
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.01310030864197531,
+        "h": 240,
+        "s": 0.00006045119844466328,
+        "l": 0.9006559815586029,
+        "chroma": 0.000012010929946182358
+      },
+      {
+        "hex": "#0B0B0B",
+        "share": 0.005060185185185185,
+        "h": 0,
+        "s": 0,
+        "l": 0.0436473338954368,
+        "chroma": 0
+      },
+      {
+        "hex": "#EEEEEE",
+        "share": 0.0049436728395061726,
+        "h": 240,
+        "s": 0.00025409962520260516,
+        "l": 0.9325535489675814,
+        "chroma": 0.00003427623585716688
+      },
+      {
+        "hex": "#333333",
+        "share": 0.004007716049382716,
+        "h": 240,
+        "s": 0.000056341625568590007,
+        "l": 0.2010109704259062,
+        "chroma": 0.000022650569661830655
+      },
+      {
+        "hex": "#242424",
+        "share": 0.0038719135802469137,
+        "h": 0,
+        "s": 0,
+        "l": 0.13957361342304955,
+        "chroma": 0
+      },
+      {
+        "hex": "#545454",
+        "share": 0.00368287037037037,
+        "h": 240,
+        "s": 0.00006713512061948899,
+        "l": 0.3304322105963693,
+        "chroma": 0.000044367212629903285
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 187,
+        "share": 0.03874074074074074,
+        "size": 3
+      },
+      {
+        "hue": 50,
+        "share": 0.07880092592592594,
+        "size": 14
+      },
+      {
+        "hue": 342,
+        "share": 0.03171527777777778,
+        "size": 7
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 1296000
+  }
+}

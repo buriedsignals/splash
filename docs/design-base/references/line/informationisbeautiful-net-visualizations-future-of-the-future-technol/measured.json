@@ -1,0 +1,445 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/future-of-the-future-technological-predictions-made-about-the-future-in-2009/",
+  "archive": "informationisbeautiful",
+  "family": "line",
+  "id": "informationisbeautiful-net-visualizations-future-of-the-future-technol",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "screenshot.png"
+    }
+  },
+  "style": {
+    "title": "Technological Predictions Made in 2009 — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 21,
+        "sample": "Created for our book",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 7,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Timeline of the Far Future",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Longbets.org",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "The theories are out there....",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Predictions of the future made by experts in 2009. Interesti",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": null,
+    "graphic": null
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#EBE6E5",
+      "share": 0.2464945987654321,
+      "h": 10.004334416676668,
+      "s": 0.1304427696434546,
+      "l": 0.909787281813435,
+      "chroma": 0.02353519363463996
+    },
+    "chromatic": [
+      {
+        "hex": "#FBA341",
+        "share": 0.015054783950617283,
+        "h": 31.65911648066352,
+        "s": 0.9587083118357853,
+        "l": 0.6199791771559733,
+        "chroma": 0.7286582430624856
+      },
+      {
+        "hex": "#FBAB41",
+        "share": 0.013273148148148149,
+        "h": 34.33570281242517,
+        "s": 0.9587324137848352,
+        "l": 0.6196953842576445,
+        "chroma": 0.7292207244483655
+      },
+      {
+        "hex": "#FB5B7B",
+        "share": 0.012809413580246913,
+        "h": 347.8981162915741,
+        "s": 0.9522259365315939,
+        "l": 0.6708066251619617,
+        "chroma": 0.6269329393102943
+      },
+      {
+        "hex": "#FBB441",
+        "share": 0.011450617283950618,
+        "h": 37.099392340819726,
+        "s": 0.9587144440031811,
+        "l": 0.6197213413667353,
+        "chroma": 0.7291572855557317
+      },
+      {
+        "hex": "#FB4B8A",
+        "share": 0.010958333333333334,
+        "h": 338.47613449611936,
+        "s": 0.9562140973798352,
+        "l": 0.6389064230113958,
+        "chroma": 0.6905655375796285
+      },
+      {
+        "hex": "#FB9C43",
+        "share": 0.010583333333333333,
+        "h": 28.857559456409852,
+        "s": 0.9582191330819503,
+        "l": 0.6235730133406526,
+        "chroma": 0.7213990816507414
+      },
+      {
+        "hex": "#FB5383",
+        "share": 0.009963734567901235,
+        "h": 342.87032532663636,
+        "s": 0.953681800738515,
+        "l": 0.6553570425304792,
+        "chroma": 0.6573594325827599
+      },
+      {
+        "hex": "#FB4292",
+        "share": 0.00848996913580247,
+        "h": 333.9078819522823,
+        "s": 0.9584671449078229,
+        "l": 0.6211150969521682,
+        "chroma": 0.7262974625458654
+      },
+      {
+        "hex": "#FBC43D",
+        "share": 0.008339506172839507,
+        "h": 42.55342423624571,
+        "s": 0.9593401088925828,
+        "l": 0.6113788261418557,
+        "chroma": 0.745639758494071
+      },
+      {
+        "hex": "#FB7D5E",
+        "share": 0.008273919753086419,
+        "h": 12.081343212426765,
+        "s": 0.9515444891196848,
+        "l": 0.6755124133025401,
+        "chroma": 0.6175287498194278
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#EBE6E5",
+        "share": 0.2464945987654321,
+        "h": 10.004334416676668,
+        "s": 0.1304427696434546,
+        "l": 0.909787281813435,
+        "chroma": 0.02353519363463996
+      },
+      {
+        "hex": "#FAFAFA",
+        "share": 0.07657716049382716,
+        "h": 296.0869565217737,
+        "s": 0.0014042657114928488,
+        "l": 0.9805841969208786,
+        "chroma": 0.00005452989305021472
+      },
+      {
+        "hex": "#EEEEEE",
+        "share": 0.006484567901234568,
+        "h": 237.08376421923975,
+        "s": 0.003307577327874684,
+        "l": 0.931788084105608,
+        "chroma": 0.00045123237300637165
+      },
+      {
+        "hex": "#E4F7FB",
+        "share": 0.004135030864197531,
+        "h": 190.75280369583723,
+        "s": 0.7234089618270407,
+        "l": 0.938800039515713,
+        "chroma": 0.08854519975558794
+      },
+      {
+        "hex": "#DBF5FA",
+        "share": 0.0039722222222222225,
+        "h": 190.11352353004423,
+        "s": 0.762233716899909,
+        "l": 0.920990066578302,
+        "chroma": 0.12044807044807049
+      },
+      {
+        "hex": "#D4F3FB",
+        "share": 0.0035864197530864196,
+        "h": 192.11601611334905,
+        "s": 0.8308596436963611,
+        "l": 0.9086206169214674,
+        "chroma": 0.15184688333164587
+      },
+      {
+        "hex": "#010101",
+        "share": 0.003488425925925926,
+        "h": 296.22047244094483,
+        "s": 0.06782980238561519,
+        "l": 0.0024361259655377304,
+        "chroma": 0.0003304838856577805
+      },
+      {
+        "hex": "#ECF7FB",
+        "share": 0.0031766975308641977,
+        "h": 196.0360389194725,
+        "s": 0.6532438478747206,
+        "l": 0.9544414122219206,
+        "chroma": 0.05952173436778163
+      },
+      {
+        "hex": "#EEC3C4",
+        "share": 0.0015594135802469136,
+        "h": 358.78723622558914,
+        "s": 0.5668267087127066,
+        "l": 0.8498598053768762,
+        "chroma": 0.17020694472742093
+      },
+      {
+        "hex": "#DDDCDC",
+        "share": 0.001324074074074074,
+        "h": 355.8679245283024,
+        "s": 0.008995095127373984,
+        "l": 0.8653480506421682,
+        "chroma": 0.002422414187120081
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 32,
+        "share": 0.15121373456790121,
+        "size": 18
+      },
+      {
+        "hue": 348,
+        "share": 0.05530478395061729,
+        "size": 6
+      }
+    ],
+    "ramped": 0,
+    "shape": "diverging",
+    "pixels": 1296000
+  }
+}

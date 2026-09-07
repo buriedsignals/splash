@@ -62,9 +62,45 @@ drawing from.
 
 | family | archive | drawn | harvested | survived reading | filed |
 | --- | --- | ---: | ---: | ---: | ---: |
-| line | url-list | 1 | 1 | 1 | 0 |
+| line | url-list | 84 | 15 | 1 | 1 |
+| line | datavizproject | 100 | 5 | 5 | 0 |
+| line | informationisbeautiful | 4 | 4 | 4 | 0 |
 
-**line / url-list, 2026-09-07.** One reference harvested to prove the chain end to end, not as a
-sample of the family. It found two real defects in the pixel route — chroma against HSL saturation,
-and photographing the graphic instead of cropping the page shot — both now recorded in the spec and
-guarded by tests. The family's real pool is drawn in Task 5.
+**line, 2026-09-07 — and the three method corrections this yield produced.**
+
+Twenty-four references harvested, **both routes green on all twenty-four**. Then step 3, and eleven
+of them had never reached their graphic at all. What the harvester had photographed instead: a
+full-bleed hero photograph (Reuters wildfires ×2, fingfx ×2), a lazy-load placeholder still blurred
+(Boston Globe busing), an "Access Verification" bot check (SCMP ×2), a privacy modal (National
+Geographic), a subscription wall (Globe and Mail), an empty frame (Guardian Mekong, Reuters Water's
+Edge), a video still (Guardian Roe v. Wade). Two more reached something real that was not a graphic
+at all — a photograph of a shoe, a mosaic of press images.
+
+**Correction 1 — a generic harvester does not find "the graphic" on a modern news page.** It finds
+the opening. `largestGraphic` picks the largest painted element, which is precisely the hero. And
+nothing in the measurements said so: the routes reported `ok` on all twenty-four, because both had
+genuinely measured *something*. Only looking caught it. This is why step 3 is in the runbook and
+why it is marked as not automatable. Until the harvester handles consent overlays and scrolls to
+the article's own figures, **the yield from a news domain is roughly one in three**, and the pool
+must be drawn accordingly.
+
+**Correction 2 — a chart family cannot be drawn from a URL list.** A keyword filter selects a
+SUBJECT, never a FORM. A pool filtered on "climate, covid, decade, history" returned a treemap, unit
+charts, an arc timeline and proportional circles, and **not one temporal line**. Of the three
+archives only `100.datavizproject.com` is indexed by form (STORY / PROPERTY / SHAPE), so it is the
+only one from which a family can be drawn deliberately. The url list and
+`informationisbeautiful.net` are drawn for DIRECTIONS — where any strong published piece qualifies
+regardless of its chart type — and triaged visually.
+
+Fourteen references were removed from the corpus rather than filed: a record of a page that never
+showed its subject teaches nothing and would have been indexed as though it had. Their urls are in
+the pool files and can be retried once the harvester handles overlays.
+
+**Correction 3 — a modal can contaminate a measurement silently, and the record will look fine.**
+The first capture of IIB's "Left vs. Right" carried a newsletter modal across the centre of the
+poster. The pixel route dutifully measured the modal: ground `#B2B2B2`, poles at 340 and 38 degrees
+— the banner's own pink and grey — against the poster's real `#FEFEFE` and 18/207. Nothing was red;
+the route reported `ok`. It was caught only by comparing the record against an independent reading
+of the same page made earlier the same day, and fixed by re-harvesting, on which visit the modal did
+not appear. **A measurement that disagrees with the eye is the eye's to win.** Where a reference's
+reading looks wrong, re-harvest before writing a judgement on it.
