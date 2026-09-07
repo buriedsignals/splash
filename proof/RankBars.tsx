@@ -7,7 +7,7 @@
  * argument to make.
  *
  * Written fresh for "En Europe de l'Ouest, seule la Suède emet moins de CO2 par habitant que la
- * Suisse" — not a parameterisation of `EmissionsLine.tsx`'s shape, because nothing in that file's
+ * Suisse" — not a parameterisation of `co2-suisse/DirectedLine.tsx`'s shape, because nothing in that file's
  * geometry (a scale fitted to a run of years, an endpoint, a peak) applies to sixteen unordered
  * countries.
  */

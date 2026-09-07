@@ -19,4 +19,4 @@ Measured against this ground: 5.18:1, clear of the 3:1 non-text floor an accent 
 (WCAG 2.2 SC 1.4.11).
 
 `render-web.mjs` beside this file reads both values with `readPalette` and names no hex of its own;
-`EmissionsWeb.tsx`, `EmissionsLine.tsx` and `crossing-geometry.ts` never named one.
+`EmissionsWeb.tsx`, `DirectedLine.tsx` and `crossing-geometry.ts` never named one.

@@ -15,6 +15,8 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
+import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedLine } from "./DirectedLine.tsx";
 import { BEAT, readingsFromCsv } from "./render-web.mjs";
@@ -59,6 +61,24 @@ const textPerRegister = {
   annot: `${BEAT.referenceLabel} ${BEAT.peakLabel}`,
   value: `${data[data.length - 1].year} · ${String(data[data.length - 1].mt)} Mt`,
 };
+
+// WHAT THE JOURNALIST IS SHOWN, before anything is drawn. The composer assembles what holds up
+// from the filed directions and hands the choice over; it does not pick. Every part carries the
+// measurement that put it there, and every refusal carries its reason.
+const filed = readdirSync(DIRECTIONS)
+  .filter((f) => f.endsWith(".md"))
+  .map((f) => readDirection(join(DIRECTIONS, f)));
+const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+// `BRIEF.md` ranks this beat's evidence in four levels: the 2024 point, the 1967 reference, the
+// curve, the muted peak. That number is the beat's own, not a default.
+const BEAT_FACTS = { evidenceLevels: 4 };
+console.log(
+  report(
+    composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }),
+    { beat: BEAT_FACTS },
+  ),
+);
+console.log("");
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");

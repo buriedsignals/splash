@@ -82,7 +82,7 @@ first build's shipped output was that it did not fill its container (see "How it
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
   a story's web composition imports its own `crossing-geometry.ts`-shaped module **from its own
   workspace**, exactly as its static sibling does (`proof/co2-suisse/EmissionsWeb.tsx` and
-  `proof/co2-suisse/EmissionsLine.tsx` both import `proof/co2-suisse/crossing-geometry.ts`). That
+  `proof/co2-suisse/DirectedLine.tsx` both import `proof/co2-suisse/crossing-geometry.ts`). That
   sharing is between story files. A SKILL's seed is the exception and not an oversight: it carries its
   own copy (`chart-video/assets/EmissionsVideo.tsx` inlines the same arithmetic) because a skill
   directory has to build alone once copied into a journalist's root.
@@ -414,7 +414,7 @@ skill into a journalist's root — the whole premise — did not build.
   format's `renderWeb` from this skill, never the other way round), `EmissionsWeb.tsx`
   (composition — declares its own `WebLayout` type inline, not imported from this skill's seed, and
   predates this skill's fluid-frame redesign — see this file's own "Overview"),
-  `crossing-geometry.ts` (the pure core, shared with the static and video beats), `EmissionsLine.tsx`
+  `crossing-geometry.ts` (the pure core, shared with the static and video beats), `DirectedLine.tsx`
   (the static beat), `BRIEF.md`, `STORYBOARD.md`, `co2-suisse-still.png`. This skill's own `assets/`
   carries no story of its own beyond the seed — replace `proof/co2-suisse/` with the next story's own
   workspace, never edit those files in place expecting them to generalise.

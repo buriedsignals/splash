@@ -2,7 +2,7 @@
  * The web beat of "CO₂ suisse, retour au niveau de 1967" — the interactive format.
  *
  * Not a second chart: the coordinates and the number formatting come from
- * `./crossing-geometry.ts`, the same pure core the static beat (`EmissionsLine.tsx`, this same
+ * `./crossing-geometry.ts`, the same pure core the static beat (`DirectedLine.tsx`, this same
  * directory) and the video beat (`chart-video/assets/EmissionsVideo.tsx`) already share. What
  * this file adds is the one thing neither of those formats has — a reader who can ask the chart a
  * question and get an answer back, without anything the static frame already states being gated

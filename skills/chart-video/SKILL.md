@@ -70,7 +70,7 @@ against the first of these builds.
 **The geometry you want to reuse probably cannot be bundled for a browser.** The still path's
 `render-still.mjs` loads `@resvg/resvg-js` — a native module — at module scope, so anything that
 imports it, however indirectly, kills the Remotion bundle. The first version of
-`proof/co2-suisse/EmissionsLine.tsx` held both the pure geometry *and* that import in one file; the
+`proof/co2-suisse`'s former static component held both the pure geometry *and* that import in one file; the
 fix was to lift the pure half into its own module — `proof/co2-suisse/crossing-geometry.ts` — which
 that story's static and web beats both import.
 

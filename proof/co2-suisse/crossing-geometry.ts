@@ -3,10 +3,11 @@
  * French number furniture that labels them. No colour, no font, no React, and — the reason this
  * file exists as its own module — no `@resvg/resvg-js`.
  *
- * It was lifted out of `EmissionsLine.tsx` verbatim when the video beat arrived. The static beat
+ * It was lifted out of the static beat's own component verbatim when the video beat arrived, and
+ * that component is now `DirectedLine.tsx`. The static beat
  * imports it and draws an SVG on disk; the video beat imports it and draws the same coordinates
  * frame by frame in a browser. One geometry, two outputs — which is only possible if the geometry
- * carries no dependency the browser cannot load. `EmissionsLine.tsx` imports `measureText` from a
+ * carries no dependency the browser cannot load. `DirectedLine.tsx` imports `measureText` from a
  * script that loads a native rasteriser at module scope, so a Remotion bundle that reached it
  * would not build.
  */
