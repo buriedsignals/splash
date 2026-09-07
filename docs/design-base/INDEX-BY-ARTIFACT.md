@@ -7,7 +7,7 @@ What real work looks like for a given kind of graphic and a given export. The **
 structure the pixel route measured, in `100.datavizproject.com`'s own SHAPE vocabulary where it
 applies.
 
-10 references.
+12 references.
 
 | family | type | export | archive | palette shape | ground | reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -21,3 +21,5 @@ applies.
 | line | unit chart (isotype), with a comparison panel | static | informationisbeautiful | categorical | `#000000` | [informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr](references/line/informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr/NOTES.md) |
 | line | annotated timeline, icon marks | static | informationisbeautiful | diverging | `#EBE6E5` | [informationisbeautiful-net-visualizations-future-of-the-future-technol](references/line/informationisbeautiful-net-visualizations-future-of-the-future-technol/NOTES.md) |
 | line | diagram, two-pole comparison | static | informationisbeautiful | diverging | `#FEFEFE` | [informationisbeautiful-net-visualizations-left-vs-right](references/line/informationisbeautiful-net-visualizations-left-vs-right/NOTES.md) |
+| line | unit grid (waffle), scrollytelling | scrolly | url-list | sequential | `#E1E5E6` | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
+| line | explanatory diagram, scrollytelling | scrolly | url-list | sequential | `#111044` | [pudding-cool-2022-06-streaming](references/line/pudding-cool-2022-06-streaming/NOTES.md) |

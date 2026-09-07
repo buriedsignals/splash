@@ -1,0 +1,369 @@
+{
+  "url": "https://pudding.cool/2022/06/streaming/",
+  "archive": "url-list",
+  "family": "line",
+  "id": "pudding-cool-2022-06-streaming",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "How Artists Get Paid From Streaming",
+    "ground": "rgb(17, 16, 68)",
+    "type": [
+      {
+        "family": "National 2 Web",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 18 | 500 | normal | 0 | none",
+        "count": 48,
+        "sample": "Streaming platform revenue",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(11, 24, 50)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 18 | 700 | normal | 0 | none",
+        "count": 38,
+        "sample": "10,000,000,000",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(11, 24, 50)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 16 | 500 | normal | 0 | none",
+        "count": 11,
+        "sample": "This article is a short and simple introduction to some of t",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 20,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 20 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "FACEBOOK",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Poppins | 14 | 500 | normal | 0 | uppercase",
+        "count": 5,
+        "sample": "Artist",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 40,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Poppins | 40 | 300 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "Artist and Intermediaries",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 20 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "We analyzed 132,003 attempts to mow a virtual lawn efficient",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 64,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Poppins | 64 | 300 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "How Artists Get Paid Fr m Streaming",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 24,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Poppins | 24 | 300 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Notes",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 78
+      },
+      {
+        "colour": "fill rgb(30, 215, 96)",
+        "count": 42
+      },
+      {
+        "colour": "fill rgb(40, 40, 40)",
+        "count": 11
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 6
+      }
+    ],
+    "column": {
+      "px": 640,
+      "ch": 71
+    },
+    "graphic": {
+      "tag": "svg",
+      "x": 632,
+      "y": 1377,
+      "w": 630,
+      "h": 534,
+      "ratio": 1.18
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#111044",
+      "share": 0.953254859996433,
+      "h": 241.1498860611714,
+      "s": 0.6187746304874803,
+      "l": 0.16473918023619608,
+      "chroma": 0.20387285075492528
+    },
+    "chromatic": [
+      {
+        "hex": "#111044",
+        "share": 0.953254859996433,
+        "h": 241.1498860611714,
+        "s": 0.6187746304874803,
+        "l": 0.16473918023619608,
+        "chroma": 0.20387285075492528
+      },
+      {
+        "hex": "#FDF200",
+        "share": 0.003085428928125557,
+        "h": 57.39052929883902,
+        "s": 0.9998019711487196,
+        "l": 0.49602931731459443,
+        "chroma": 0.9918621783973705
+      },
+      {
+        "hex": "#5451CE",
+        "share": 0.002146126865227989,
+        "h": 241.47102972080458,
+        "s": 0.5583894700897153,
+        "l": 0.5625848677421107,
+        "chroma": 0.4884960078214111
+      },
+      {
+        "hex": "#FB576F",
+        "share": 0.002098567267106593,
+        "h": 351.1946631179627,
+        "s": 0.951771159745696,
+        "l": 0.6623146142309615,
+        "chroma": 0.6427984224851413
+      },
+      {
+        "hex": "#14134B",
+        "share": 0.0018221271030259794,
+        "h": 241.23368089021292,
+        "s": 0.5934688783734596,
+        "l": 0.18454083101429805,
+        "chroma": 0.21903847999232323
+      },
+      {
+        "hex": "#1DD55F",
+        "share": 0.0016110813863622851,
+        "h": 141.45788066605922,
+        "s": 0.7604178563542643,
+        "l": 0.4751356631213371,
+        "chroma": 0.722603284856378
+      },
+      {
+        "hex": "#1ED760",
+        "share": 0.0016021639617145235,
+        "h": 141.45871163859266,
+        "s": 0.7558904047259739,
+        "l": 0.4797082469351377,
+        "chroma": 0.7252137218523773
+      },
+      {
+        "hex": "#1A1345",
+        "share": 0.001545686938945366,
+        "h": 247.97774817832797,
+        "s": 0.5578234265734267,
+        "l": 0.17254901960784313,
+        "chroma": 0.19250377073906488
+      },
+      {
+        "hex": "#111B45",
+        "share": 0.0009125497889542833,
+        "h": 228.2308124648723,
+        "s": 0.6034671188995665,
+        "l": 0.16947691128568693,
+        "chroma": 0.20454748674714185
+      },
+      {
+        "hex": "#122346",
+        "share": 0.0008679626657154747,
+        "h": 220.02467532467531,
+        "s": 0.5989421281891725,
+        "l": 0.17265645984421166,
+        "chroma": 0.20682245500940105
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#1C1B41",
+        "share": 0.0007342012959990488,
+        "h": 242.49973564555356,
+        "s": 0.4191746819733167,
+        "l": 0.1790981979836469,
+        "chroma": 0.1501468603635786
+      },
+      {
+        "hex": "#25233E",
+        "share": 0.000588550026752274,
+        "h": 244.1691176470588,
+        "s": 0.2824800083082356,
+        "l": 0.1907110318875025,
+        "chroma": 0.10774410774410778
+      },
+      {
+        "hex": "#35323A",
+        "share": 0.0004220914333273884,
+        "h": 260.4218600191754,
+        "s": 0.0680676107811786,
+        "l": 0.2115851974592654,
+        "chroma": 0.02880419773543219
+      },
+      {
+        "hex": "#2D2A3C",
+        "share": 0.0003745318352059925,
+        "h": 248.32587287376904,
+        "s": 0.17320514808497445,
+        "l": 0.2007158418923125,
+        "chroma": 0.06953003423591661
+      },
+      {
+        "hex": "#FEFEFE",
+        "share": 0.0003329171868497711,
+        "h": 240,
+        "s": 0.14736842105263157,
+        "l": 0.9966736694677871,
+        "chroma": 0.0009803921568627416
+      },
+      {
+        "hex": "#29273D",
+        "share": 0.00029130253849354973,
+        "h": 246.20501138952167,
+        "s": 0.22487450056346694,
+        "l": 0.19529811924769908,
+        "chroma": 0.08783513405362148
+      },
+      {
+        "hex": "#4C214E",
+        "share": 0.000282385113845788,
+        "h": 296.5300866307656,
+        "s": 0.4017496002257549,
+        "l": 0.219422084623323,
+        "chroma": 0.17630546955624354
+      },
+      {
+        "hex": "#454235",
+        "share": 0.000282385113845788,
+        "h": 48.39237057220712,
+        "s": 0.1270775623268698,
+        "l": 0.23843137254901958,
+        "chroma": 0.0605985552115583
+      },
+      {
+        "hex": "#5A562F",
+        "share": 0.0002615777896676773,
+        "h": 54.04749340369393,
+        "s": 0.314470627281779,
+        "l": 0.2685383244206774,
+        "chroma": 0.16889483065953656
+      },
+      {
+        "hex": "#4D4A33",
+        "share": 0.00025860531478509005,
+        "h": 51.97599657093871,
+        "s": 0.20951953300404136,
+        "l": 0.2509578544061303,
+        "chroma": 0.10516114491773723
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 241,
+        "share": 0.9655222638368707,
+        "size": 16
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 336420
+  }
+}

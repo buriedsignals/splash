@@ -41,6 +41,21 @@ function markdownIn(path: string): string[] {
   return readdirSync(path).filter((f) => f.endsWith(".md"));
 }
 
+/** The publication behind every reference in the corpus, keyed by id: the host of the url the
+ *  record was harvested from, which is the only place independence can honestly be read. */
+function publicationById(): Map<string, string> {
+  const refs = join(BASE, "references");
+  const out = new Map<string, string>();
+  for (const family of dirsUnder(refs))
+    for (const id of dirsUnder(join(refs, family))) {
+      const record = JSON.parse(
+        readFileSync(join(refs, family, id, "measured.json"), "utf8"),
+      );
+      out.set(id, new URL(record.url).hostname.replace(/^www\./, ""));
+    }
+  return out;
+}
+
 describe("the design base", () => {
   it("should give every reference the five sections a judgement needs", () => {
     const refs = join(BASE, "references");
@@ -56,15 +71,24 @@ describe("the design base", () => {
       }
   });
 
-  it("should back every treatment with at least two independent references", () => {
+  it("should back every treatment with references from at least two distinct publications", () => {
+    // TWO RECORDS ARE NOT TWO USES IF THEY CAME FROM THE SAME DESK.
+    //
+    // A first version of this floor counted distinct reference ids, and the five
+    // `100.datavizproject.com` records would have satisfied it on their own — one publication, one
+    // house style, one designer, encoding one dataset five ways. That is a habit, which is exactly
+    // what the floor exists to exclude. Independence is measured at the PUBLICATION, and the
+    // publication is read off each cited record's own url rather than trusted from its id.
+    const publications = publicationById();
     for (const file of markdownIn(join(BASE, "treatments"))) {
       const text = readFileSync(join(BASE, "treatments", file), "utf8");
-      const evidence = [...text.matchAll(/^- evidence:\s*(\S+)/gm)].map(
-        (m) => m[1],
-      );
+      const cited = [
+        ...new Set([...text.matchAll(/^- evidence:\s*(\S+)/gm)].map((m) => m[1])),
+      ];
+      const desks = new Set(cited.map((id) => publications.get(id)).filter(Boolean));
       expect(
-        new Set(evidence).size,
-        `${file} cites ${new Set(evidence).size} distinct reference(s)`,
+        desks.size,
+        `${file} cites ${cited.length} reference(s) from ${desks.size} publication(s): ${[...desks].join(", ")}`,
       ).toBeGreaterThanOrEqual(2);
     }
   });

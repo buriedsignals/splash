@@ -62,9 +62,9 @@ drawing from.
 
 | family | archive | drawn | harvested | survived reading | filed |
 | --- | --- | ---: | ---: | ---: | ---: |
-| line | url-list | 84 | 15 | 1 | 1 |
-| line | datavizproject | 100 | 5 | 5 | 0 |
-| line | informationisbeautiful | 4 | 4 | 4 | 0 |
+| line | url-list | 84 | 17 | 3 | 3 |
+| line | datavizproject | 100 | 5 | 5 | 5 |
+| line | informationisbeautiful | 4 | 4 | 4 | 4 |
 
 **line, 2026-09-07 — and the three method corrections this yield produced.**
 
@@ -104,3 +104,13 @@ the route reported `ok`. It was caught only by comparing the record against an i
 of the same page made earlier the same day, and fixed by re-harvesting, on which visit the modal did
 not appear. **A measurement that disagrees with the eye is the eye's to win.** Where a reference's
 reading looks wrong, re-harvest before writing a judgement on it.
+
+
+**Correction 4 — two records are not two uses if they came from the same desk.**
+The evidence floor first counted distinct reference ids, and the five `100.datavizproject.com`
+records would have satisfied it on their own: one publication, one house style, one designer,
+encoding one dataset five ways. That is a habit, which is exactly what the floor exists to exclude.
+Independence is now measured at the PUBLICATION, read off each cited record's own url. Two
+treatments that were about to be filed did not survive the change — `two-points-are-not-a-line` and
+`before-nested-in-after`, both resting entirely on Ferdio — and they are **not filed**. They are
+real and they will be filed the day a second publication is found doing them.

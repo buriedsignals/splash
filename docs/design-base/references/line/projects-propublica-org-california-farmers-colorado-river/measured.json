@@ -1,0 +1,559 @@
+{
+  "url": "https://projects.propublica.org/california-farmers-colorado-river/",
+  "archive": "url-list",
+  "family": "line",
+  "id": "projects-propublica-org-california-farmers-colorado-river",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "The 20 Farming Families Who Use More Water From the Colorado River Than Some Western States — ProPublica",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Tiempos Text",
+        "size": 19.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 19.2 | 400 | normal | 0 | none",
+        "count": 87,
+        "sample": "As the Colorado River snakes through the deserts of the Sout",
+        "colors": [
+          "rgb(27, 27, 27)",
+          "rgb(0, 105, 151)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 56,
+        "sample": "Racial Justice",
+        "colors": [
+          "rgb(222, 227, 230)",
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 17.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 17.3 | 400 | normal | 0 | none",
+        "count": 53,
+        "sample": "260K",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 50,
+        "sample": "by , ProPublica, and , The Desert Sun",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13.3 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "Nov. 9, 2023",
+        "colors": [
+          "rgb(145, 145, 145)",
+          "rgb(27, 27, 27)",
+          "rgb(0, 0, 238)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 19.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 19.2 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Topics",
+        "colors": [
+          "rgb(222, 227, 230)",
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 20,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 20 | 500 | normal | 0 | none",
+        "count": 7,
+        "sample": "Wyo.",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 19.2,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 19.2 | 400 | italic | 0 | none",
+        "count": 7,
+        "sample": "ProPublica reporter Mark Olalde contributed reporting.",
+        "colors": [
+          "rgb(27, 27, 27)",
+          "rgb(0, 0, 238)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.8,
+        "transform": "uppercase",
+        "key": "Graphik | 16 | 700 | normal | 0.8 | uppercase",
+        "count": 6,
+        "sample": "Sites",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 19.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 19.2 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "California",
+        "colors": [
+          "rgb(0, 107, 154)",
+          "rgb(233, 132, 6)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "• Las Vegas",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 47.8,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "Graphik | 47.8 | 900 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "The Abatti Family: The Biggest Users of the River",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 16,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 16 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "ProPublica is a nonprofit newsroom that investigates abuses ",
+        "colors": [
+          "rgb(27, 27, 27)",
+          "rgb(0, 105, 151)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13.3 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Skip to content",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Tiempos Headline",
+        "size": 47.8,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Headline | 47.8 | 900 | normal | 0 | none",
+        "count": 1,
+        "sample": "The 20 Farming Families Who Use More Water From the Colorado",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 19.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 19.2 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Tens of millions of people — and millions of acres of farmla",
+        "colors": [
+          "rgb(71, 71, 71)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 23 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Accuracy and Caveats",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 19.2,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 19.2 | 700 | italic | 0 | none",
+        "count": 1,
+        "sample": "Correction, Nov. 10, 2023:",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 27.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 27.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Stay informed with the Daily Digest.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 13.3 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Investigative Journalism in the Public Interest",
+        "colors": [
+          "rgb(27, 27, 27)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 1631
+      },
+      {
+        "colour": "fill rgb(145, 167, 188)",
+        "count": 1625
+      },
+      {
+        "colour": "fill rgb(222, 227, 230)",
+        "count": 24
+      },
+      {
+        "colour": "fill rgb(43, 49, 55)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(27, 27, 27)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 6
+      },
+      {
+        "colour": "stroke rgb(27, 27, 27)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 751,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "svg",
+      "x": 0,
+      "y": 1887,
+      "w": 1440,
+      "h": 900,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#E1E5E6",
+      "share": 0.515391975308642,
+      "h": 197.04477087872124,
+      "s": 0.0929118732525974,
+      "l": 0.8927420145539098,
+      "chroma": 0.01993108069819216
+    },
+    "chromatic": [
+      {
+        "hex": "#DA352B",
+        "share": 0.0007885802469135803,
+        "h": 3.4287247961888148,
+        "s": 0.7028019019923764,
+        "l": 0.5117800544875484,
+        "chroma": 0.6862438125935305
+      },
+      {
+        "hex": "#DD453C",
+        "share": 0.000010030864197530864,
+        "h": 3.3810888252148983,
+        "s": 0.7012726054922974,
+        "l": 0.5496229260935143,
+        "chroma": 0.6316742081447964
+      },
+      {
+        "hex": "#EEA19D",
+        "share": 0.000005401234567901234,
+        "h": 3.4797891036906736,
+        "s": 0.7050805452292441,
+        "l": 0.7739495798319328,
+        "chroma": 0.3187675070028011
+      },
+      {
+        "hex": "#EB918C",
+        "share": 0.0000030864197530864196,
+        "h": 3.4554973821989416,
+        "s": 0.7047970479704794,
+        "l": 0.7343137254901961,
+        "chroma": 0.3745098039215685
+      },
+      {
+        "hex": "#DB3C32",
+        "share": 0.0000030864197530864196,
+        "h": 3.4615384615384612,
+        "s": 0.7027027027027029,
+        "l": 0.5284313725490196,
+        "chroma": 0.6627450980392158
+      },
+      {
+        "hex": "#E0554D",
+        "share": 0.0000023148148148148148,
+        "h": 3.2653061224489797,
+        "s": 0.7033492822966507,
+        "l": 0.5901960784313726,
+        "chroma": 0.5764705882352941
+      },
+      {
+        "hex": "#E15B53",
+        "share": 0.0000023148148148148148,
+        "h": 3.3802816901408446,
+        "s": 0.705298013245033,
+        "l": 0.6052287581699347,
+        "chroma": 0.5568627450980392
+      },
+      {
+        "hex": "#DF5047",
+        "share": 0.0000023148148148148148,
+        "h": 3.552631578947367,
+        "s": 0.7037037037037037,
+        "l": 0.5764705882352941,
+        "chroma": 0.596078431372549
+      },
+      {
+        "hex": "#F4C4C1",
+        "share": 0.0000015432098765432098,
+        "h": 3.495145631067981,
+        "s": 0.7006802721088441,
+        "l": 0.8558823529411765,
+        "chroma": 0.20196078431372555
+      },
+      {
+        "hex": "#E46A63",
+        "share": 0.0000015432098765432098,
+        "h": 3.2684824902723753,
+        "s": 0.7002724795640326,
+        "l": 0.6401960784313726,
+        "chroma": 0.503921568627451
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#E1E5E6",
+        "share": 0.515391975308642,
+        "h": 197.04477087872124,
+        "s": 0.0929118732525974,
+        "l": 0.8927420145539098,
+        "chroma": 0.01993108069819216
+      },
+      {
+        "hex": "#91A7BC",
+        "share": 0.31157407407407406,
+        "h": 209.30232558139537,
+        "s": 0.24293785310734473,
+        "l": 0.6529411764705882,
+        "chroma": 0.16862745098039222
+      },
+      {
+        "hex": "#FCFCFD",
+        "share": 0.09023765432098765,
+        "h": 227.21240760572422,
+        "s": 0.19862674427426566,
+        "l": 0.9887285081286337,
+        "chroma": 0.004477639467046712
+      },
+      {
+        "hex": "#C8D3DD",
+        "share": 0.019940586419753086,
+        "h": 208.57142857142864,
+        "s": 0.2359550561797754,
+        "l": 0.8254901960784313,
+        "chroma": 0.08235294117647063
+      },
+      {
+        "hex": "#E3E9EE",
+        "share": 0.019103395061728395,
+        "h": 207.24943209640185,
+        "s": 0.24378604221174055,
+        "l": 0.9117619339520282,
+        "chroma": 0.04302241778850646
+      },
+      {
+        "hex": "#A8BACA",
+        "share": 0.018950617283950616,
+        "h": 208.23529411764707,
+        "s": 0.24285714285714274,
+        "l": 0.7254901960784313,
+        "chroma": 0.1333333333333333
+      },
+      {
+        "hex": "#F3F5F6",
+        "share": 0.00953317901234568,
+        "h": 209.32197585823087,
+        "s": 0.1818280875439737,
+        "l": 0.9592182255338395,
+        "chroma": 0.014830544115663202
+      },
+      {
+        "hex": "#2F2F2F",
+        "share": 0.0018140432098765432,
+        "h": 210,
+        "s": 0.0007885863456728147,
+        "l": 0.18402515408545383,
+        "chroma": 0.00029023944754424935
+      },
+      {
+        "hex": "#F7F9FA",
+        "share": 0.0017430555555555556,
+        "h": 206.04144923214574,
+        "s": 0.22724038624428364,
+        "l": 0.9743813417354548,
+        "chroma": 0.011643187598191163
+      },
+      {
+        "hex": "#E9EDF2",
+        "share": 0.0011643518518518517,
+        "h": 213.3219912715439,
+        "s": 0.2560756160854656,
+        "l": 0.9314011356696423,
+        "chroma": 0.03513299289231919
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 3,
+        "share": 0.0008317901234567902,
+        "size": 21
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1296000
+  }
+}
