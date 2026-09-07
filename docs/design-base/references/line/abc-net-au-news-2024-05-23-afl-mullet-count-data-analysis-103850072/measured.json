@@ -1,0 +1,671 @@
+{
+  "url": "https://www.abc.net.au/news/2024-05-23/afl-mullet-count-data-analysis/103850072",
+  "archive": "url-list",
+  "family": "line",
+  "id": "abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "This comprehensive survey of every mullet in the AFL shows why the controversial hairstyle is making a comeback - ABC Ne",
+    "ground": "rgb(255, 252, 238)",
+    "type": [
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | normal | 0 | none",
+        "count": 52,
+        "sample": "Love it or hate it, the mullet has returned. The controversi",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(17, 17, 17)",
+          "rgb(0, 79, 184)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 10 | 700 | normal | 0 | none",
+        "count": 43,
+        "sample": "# 1",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "ABCSans | 10 | 700 | normal | 0 | uppercase",
+        "count": 43,
+        "sample": "A . Treloar",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 27,
+        "sample": "Western Bulldogs",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(96, 100, 108)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 14 | 700 | normal | 0 | none",
+        "count": 19,
+        "sample": "Adelaide Crows",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 11,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | italic | 0 | none",
+        "count": 11,
+        "sample": "(Getty Images: Daniel Pockett)",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(136, 136, 136)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "Bailey Smith of the Western Bulldogs has one of the most rec",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Leaked text reveals Australia's $980 million commitment to S",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(16, 49, 106)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "By , and",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Who made the cut?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "52.8%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 5,
+        "sample": "Your information is being handled in accordance with the  .",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 12 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sort by:",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "3h ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Hair length",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "Most hairstyles don’t",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 20 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Credits",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "The mullet is alive and well in AFL",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "The ABC investigates the numbers behind football’s most cont",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Around 7 per cent might reach shoulder length.",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 33
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(96, 100, 108)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 653,
+      "ch": 73
+    },
+    "graphic": {
+      "tag": "canvas",
+      "x": 0,
+      "y": 1840,
+      "w": 1440,
+      "h": 900,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFCEE",
+      "share": 0.9303371913580247,
+      "h": 49.41517115778862,
+      "s": 0.9991243240449603,
+      "l": 0.966646044326696,
+      "chroma": 0.06664949683263066
+    },
+    "chromatic": [
+      {
+        "hex": "#1757B6",
+        "share": 0.019638117283950617,
+        "h": 215.8490566037736,
+        "s": 0.775609756097561,
+        "l": 0.4019607843137255,
+        "chroma": 0.6235294117647059
+      },
+      {
+        "hex": "#1A59B7",
+        "share": 0.0015609567901234567,
+        "h": 215.8458385668011,
+        "s": 0.7541145888971976,
+        "l": 0.40828995958244896,
+        "chroma": 0.6157948300427438
+      },
+      {
+        "hex": "#2561B9",
+        "share": 0.0005817901234567901,
+        "h": 215.66744144466296,
+        "s": 0.6664283586535599,
+        "l": 0.43649555312841315,
+        "chroma": 0.5817860300618922
+      },
+      {
+        "hex": "#336BBD",
+        "share": 0.0005787037037037037,
+        "h": 215.51728472658706,
+        "s": 0.5748695057617584,
+        "l": 0.4703084967320261,
+        "chroma": 0.5407320261437909
+      },
+      {
+        "hex": "#2B65BB",
+        "share": 0.000517746913580247,
+        "h": 215.63476693971813,
+        "s": 0.6261258048410419,
+        "l": 0.45066771865228955,
+        "chroma": 0.564349376114082
+      },
+      {
+        "hex": "#4C7CC3",
+        "share": 0.00046219135802469136,
+        "h": 215.46354686029693,
+        "s": 0.4955629641487503,
+        "l": 0.5296834593603719,
+        "chroma": 0.46614291793512064
+      },
+      {
+        "hex": "#5482C5",
+        "share": 0.0004197530864197531,
+        "h": 215.4772856562373,
+        "s": 0.49203074142494996,
+        "l": 0.5492971453287198,
+        "chroma": 0.44351931949250295
+      },
+      {
+        "hex": "#1D5CB8",
+        "share": 0.0004197530864197531,
+        "h": 215.6973652978875,
+        "s": 0.7268053686643894,
+        "l": 0.41786332179930796,
+        "chroma": 0.6074106113033448
+      },
+      {
+        "hex": "#6C94CB",
+        "share": 0.00041203703703703704,
+        "h": 214.91444283990427,
+        "s": 0.4749203784256065,
+        "l": 0.6091613424395975,
+        "chroma": 0.3712344863038848
+      },
+      {
+        "hex": "#8BAAD2",
+        "share": 0.0003950617283950617,
+        "h": 214.22131373957242,
+        "s": 0.4404457746307515,
+        "l": 0.6852251838235295,
+        "chroma": 0.277282475490196
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFCEE",
+        "share": 0.9303371913580247,
+        "h": 49.41517115778862,
+        "s": 0.9991243240449603,
+        "l": 0.966646044326696,
+        "chroma": 0.06664949683263066
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.020317901234567903,
+        "h": 51.780821918118775,
+        "s": 0.04281524926695423,
+        "l": 0.9998730389922945,
+        "chroma": 0.000010871734384187981
+      },
+      {
+        "hex": "#777777",
+        "share": 0.002412037037037037,
+        "h": 0,
+        "s": 0,
+        "l": 0.4664446200745173,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F4EB",
+        "share": 0.0011612654320987655,
+        "h": 60.62389166532332,
+        "s": 0.26467827274278954,
+        "l": 0.9389329685362517,
+        "chroma": 0.032326232818708944
+      },
+      {
+        "hex": "#7B7B7A",
+        "share": 0.000998456790123457,
+        "h": 59.66527196652737,
+        "s": 0.0022595415998311113,
+        "l": 0.480833106039943,
+        "chroma": 0.0021729248113465105
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0008256172839506173,
+        "h": 0,
+        "s": 0,
+        "l": 0.00014660069635330766,
+        "chroma": 0
+      },
+      {
+        "hex": "#EBEDE9",
+        "share": 0.0008186728395061728,
+        "h": 93.54823417871566,
+        "s": 0.10149390170559794,
+        "l": 0.9231782816802498,
+        "chroma": 0.015593871855999697
+      },
+      {
+        "hex": "#DCE2E6",
+        "share": 0.0006412037037037037,
+        "h": 199.01710957408082,
+        "s": 0.16304928476742606,
+        "l": 0.8807413699535169,
+        "chroma": 0.03889006866284428
+      },
+      {
+        "hex": "#F9F7EB",
+        "share": 0.0005424382716049383,
+        "h": 50.38795357105511,
+        "s": 0.5211728159572738,
+        "l": 0.9488215769949516,
+        "chroma": 0.05334560566758717
+      },
+      {
+        "hex": "#D3DDE3",
+        "share": 0.0005393518518518518,
+        "h": 202.79873662045975,
+        "s": 0.2263573896810584,
+        "l": 0.8587505960896519,
+        "chroma": 0.0639456927263038
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 216,
+        "share": 0.028817129629629616,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1296000
+  }
+}

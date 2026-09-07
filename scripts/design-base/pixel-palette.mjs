@@ -11,7 +11,7 @@
 //
 // What it reports:
 //   ground      the modal colour — what most of the artifact is painted on
-//   chromatic   the saturated colours, by coverage: the direction's own palette
+//   chromatic   the genuinely coloured, by coverage: the direction's own palette
 //   neutral     the desaturated colours, by coverage: ink and furniture
 //   clusters    the hue poles, which is what the shape below is decided from
 //   shape       diverging | sequential | categorical | monochrome
@@ -31,9 +31,21 @@ import { PNG } from "pngjs";
 const BITS = 5;
 const SHIFT = 8 - BITS;
 
-/** Below this saturation a colour is furniture, not palette. Measured at the point where the IIB
- *  posters' own pale zone tints still separate from their greys. */
-const CHROMATIC_MIN_SATURATION = 0.22;
+/**
+ * Below this CHROMA a colour is furniture, not palette — chroma being `(max - min) / 255` on the
+ * raw channels, which is colourfulness as the eye meets it.
+ *
+ * NOT HSL SATURATION, and this is measured rather than preferred. ABC's cream ground `#FFFCEE`
+ * has an HSL saturation of **1.0**: saturation is `d / (2 - max - min)`, so it runs away toward
+ * both poles, and a two-percent warmth on near-white reads as fully saturated. Counted as palette,
+ * that ground outweighed the piece's real blue accent by coverage and the harvester reported a
+ * blue-accented chart as *monochrome at 49 degrees* — its own paper's hue. The same failure waits
+ * at the other pole for a warm near-black ink. Chroma puts cream at 0.067 and the accent at 0.62,
+ * which is the separation the reader actually sees.
+ *
+ * 0.18 sits above every paper and ink tint met so far and below every mark.
+ */
+const CHROMATIC_MIN_CHROMA = 0.18;
 
 /** A hue cluster carrying less than this share of the COLOURED ink is noise, not a pole.
  *
@@ -67,7 +79,8 @@ function hsl(r, g, b) {
   const max = Math.max(R, G, B);
   const min = Math.min(R, G, B);
   const l = (max + min) / 2;
-  if (max === min) return { h: 0, s: 0, l };
+  const chroma = max - min;
+  if (max === min) return { h: 0, s: 0, l, chroma: 0 };
   const d = max - min;
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   const h =
@@ -76,7 +89,7 @@ function hsl(r, g, b) {
       : max === G
         ? ((B - R) / d + 2) / 6
         : ((R - G) / d + 4) / 6;
-  return { h: h * 360, s, l };
+  return { h: h * 360, s, l, chroma };
 }
 
 function hex(r, g, b) {
@@ -159,7 +172,7 @@ export function readPixelPalette(file, { crop = null, top = 10 } = {}) {
     .sort((a, b) => b.share - a.share);
 
   const coloured = entries.filter(
-    (e) => e.s >= CHROMATIC_MIN_SATURATION && e.l > LIGHTNESS_FLOOR && e.l < LIGHTNESS_CEILING,
+    (e) => e.chroma >= CHROMATIC_MIN_CHROMA && e.l > LIGHTNESS_FLOOR && e.l < LIGHTNESS_CEILING,
   );
   const clusters = hueClusters(coloured.slice(0, CLUSTER_OVER));
   const ramped = clusters.filter((cl) => {
@@ -181,7 +194,7 @@ export function readPixelPalette(file, { crop = null, top = 10 } = {}) {
   return {
     ground: entries[0],
     chromatic: coloured.slice(0, top),
-    neutral: entries.filter((e) => e.s < CHROMATIC_MIN_SATURATION).slice(0, top),
+    neutral: entries.filter((e) => e.chroma < CHROMATIC_MIN_CHROMA).slice(0, top),
     clusters: clusters.map((c) => ({
       hue: Math.round(c.h),
       share: c.share,

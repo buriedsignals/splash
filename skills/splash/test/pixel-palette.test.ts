@@ -99,6 +99,35 @@ describe("the pixel route", () => {
     expect(out.clusters).toHaveLength(1);
   });
 
+  it("should read a near-white tinted ground as furniture, not as the palette", () => {
+    // MEASURED ON A REAL ARTIFACT. ABC's cream ground #FFFCEE has an HSL saturation of 1.0 —
+    // saturation runs away near white, where a two-percent warmth reads as fully saturated. Counted
+    // as palette it outweighs the real accent by coverage and reports the piece as monochrome at
+    // its own ground's hue. Colourfulness, not HSL saturation, is what separates a mark from a
+    // tinted paper.
+    const out = readPixelPalette(
+      paint("cream", [
+        [255, 252, 238],
+        [23, 87, 182],
+      ]),
+    );
+    expect(out.chromatic.map((c) => c.hex)).not.toContain("#FFFCEE");
+    expect(out.neutral.map((c) => c.hex)).toContain("#FFFCEE");
+    expect(out.chromatic[0].hex).toBe("#1757B6");
+  });
+
+  it("should read a near-black tinted ink as furniture too", () => {
+    // The same failure at the other pole: a warm near-black is ink, not an accent.
+    const out = readPixelPalette(
+      paint("charcoal", [
+        [20, 17, 12],
+        [23, 87, 182],
+      ]),
+    );
+    expect(out.chromatic.map((c) => c.hex)).not.toContain("#141110");
+    expect(out.chromatic[0].hex).toBe("#1757B6");
+  });
+
   it("should find every pole on a sparse graphic, where each covers under one percent", () => {
     // THE DEFECT THIS CLOSES. An absolute noise floor of 0.4% of all pixels called the IIB
     // "Who's Suing Whom in AI" network MONOCHROME — six hues from 5 to 331 degrees, each covering
