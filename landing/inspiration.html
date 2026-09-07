@@ -745,52 +745,6 @@
            font:inherit;text-decoration:underline;text-underline-offset:3px}
   @media (max-width:900px){ .mstage{grid-template-columns:1fr} }
 
-  /* ===================================================================
-     THE NEWSLETTER — paper. Buried Signals signs the page.
-     =================================================================== */
-  .news{padding:var(--vs) var(--gut)}
-  .nstage{max-width:1120px;margin:0 auto}
-  .nbrand{text-align:center;margin-bottom:clamp(34px,5vh,64px)}
-  /* The scan reveal, kept from the live site: an amber copy of the wordmark is
-     clipped to nothing and opens left to right behind a glowing bar. The path
-     data is written ONCE, in a hidden symbol, and drawn twice. */
-  .scan{position:relative;display:inline-block;color:var(--ink)}
-  .scan svg{height:clamp(30px,3.6vw,44px);width:auto;display:block}
-  .scan .amb{position:absolute;inset:0;color:var(--blue);
-             clip-path:inset(0 100% 0 0);transition:clip-path .5s ease-in-out}
-  .scan:hover .amb{clip-path:inset(0 0% 0 0)}
-  .scan::after{content:'';position:absolute;top:-4px;bottom:-4px;width:2px;
-               background:var(--blue);box-shadow:0 0 8px 2px rgba(26,47,251,.45);
-               left:0;opacity:0;pointer-events:none;
-               transition:left .5s ease-in-out,opacity .15s ease}
-  .scan:hover::after{left:100%;opacity:1}
-  .nbrand p{margin:14px 0 0;font-size:clamp(13.5px,1.2vw,17px);opacity:.55}
-  .ngrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-         gap:clamp(28px,4vw,64px);align-items:start}
-  .nform{display:flex;gap:9px;margin-top:18px;flex-wrap:wrap}
-  .nform input{flex:1 1 200px;min-width:0;padding:12px 15px;border-radius:var(--rad-s);
-               background:var(--table);border:1px solid rgba(20,20,28,.16);
-               color:var(--ink);font-family:var(--C);font-size:13px;outline:none;
-               transition:border-color .2s ease}
-  .nform input:focus{border-color:var(--blue)}
-  .nform input::placeholder{color:rgba(20,20,28,.4)}
-  .nnote{margin:13px 0 0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.42}
-  .nnote.ok{color:var(--blue);opacity:1;font-weight:500}
-  .nnote.ko{color:#a3261a;opacity:1;font-weight:500}
-  .npro{border:1px solid rgba(20,20,28,.18);border-radius:var(--rad);
-        padding:clamp(20px,2.4vw,30px);background:rgba(20,20,28,.03)}
-  .npro h3{font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.18em;
-           text-transform:uppercase;color:var(--blue)}
-  .npro h3 span{opacity:.45;color:var(--ink);font-weight:400;letter-spacing:.12em}
-  .npro ul{list-style:none;margin:18px 0 0;padding:0;display:flex;
-           flex-direction:column;gap:11px}
-  .npro li{position:relative;padding-left:20px;font-size:13px;line-height:1.5}
-  .npro li::before{content:'';position:absolute;left:0;top:.52em;
-                   width:8px;height:8px;background:var(--blue)}
-  .npill{display:inline-block;margin-top:20px;padding:7px 14px;border-radius:999px;
-         background:var(--blue);color:#fff;font-family:var(--C);font-size:11px;
-         font-weight:500;letter-spacing:.12em;text-transform:uppercase}
-  @media (max-width:820px){ .ngrid{grid-template-columns:1fr} }
 
   /* ===================================================================
      THE FOOT — ink, and COMMON to every page of the site.
@@ -987,6 +941,104 @@
        there are only 390px of height to spend here. */
     .sform input{font-size:clamp(18px,2.4vw,28px);padding-top:14px}
   }
+  /* ══ L'OFFRE — abonnement et conseil, repris de Spotlight ═══════════════
+     Même découpage et mêmes mots que sur spotlight.buriedsignals.com : deux
+     cartes, la lettre à gauche avec ses deux titres cochables, le conseil à
+     droite avec ses références. Ce qui change est l'encre — la page est en
+     Bricolage sur fond d'encre, pas en système Spotlight. */
+  .offers{background:var(--ink);color:var(--paper);
+          padding:clamp(72px,9vw,132px) var(--gut)}
+  .offers .oeye{display:flex;align-items:center;gap:9px;font-family:var(--C);
+          font-size:11px;font-weight:500;letter-spacing:.16em;
+          text-transform:uppercase;opacity:.6}
+  .offers .oeye i{width:9px;height:9px;flex:0 0 auto;background:var(--amber)}
+  .offers h2{margin:.5em 0 0;font-family:var(--D);font-weight:300;
+          letter-spacing:-.04em;line-height:.98;
+          font-size:clamp(32px,4.6vw,64px);max-width:16ch}
+  .offers .olede{margin:1em 0 0;max-width:58ch;font-size:clamp(13px,1.05vw,15px);
+          line-height:1.55;opacity:.62}
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,1.8vw,26px);
+         margin-top:clamp(34px,4vw,56px);align-items:start}
+  .offer{border:1px solid rgba(237,234,227,.16);border-radius:var(--rad);
+         padding:clamp(22px,2.2vw,34px);display:flex;flex-direction:column;
+         min-height:100%}
+  .okick{display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+         font-family:var(--C);font-size:10px;font-weight:500;
+         letter-spacing:.16em;text-transform:uppercase}
+  .okick .olaunch{padding:4px 8px;border-radius:99px;
+         background:rgba(242,177,60,.16);color:var(--amber)}
+  .offer h3{margin:.9em 0 0;font-family:var(--D);font-weight:300;
+         letter-spacing:-.03em;line-height:1.04;
+         font-size:clamp(21px,2.1vw,30px)}
+  .offer .olede2{margin:.75em 0 0;font-size:13px;line-height:1.55;opacity:.66}
+  .olab{display:inline-block;margin-top:1.1em;color:var(--amber);
+        text-decoration:none;font-family:var(--C);font-size:11px;
+        font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+        border-bottom:1px solid transparent;transition:border-color .2s ease}
+  .olab:hover{border-bottom-color:var(--amber)}
+  .offer ul{margin:1.2em 0 0;padding:0;list-style:none;display:flex;
+        flex-wrap:wrap;gap:7px}
+  .offer ul li{font-family:var(--C);font-size:10px;font-weight:500;
+        letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;
+        border:1px solid rgba(237,234,227,.18);border-radius:99px;opacity:.72}
+  .ofoot{margin-top:auto;padding-top:clamp(20px,2vw,30px)}
+  .onl{font-family:var(--C);font-size:10px;font-weight:500;letter-spacing:.16em;
+       text-transform:uppercase;opacity:.55;margin:0 0 12px}
+  .onlopt{display:grid;gap:8px}
+  .onltog{display:flex;gap:10px;text-align:left;background:none;cursor:pointer;
+       border:1px solid rgba(237,234,227,.16);border-radius:var(--rad-s);
+       padding:11px 13px;color:inherit;font-family:inherit;
+       transition:border-color .2s ease,background .2s ease}
+  .onltog:hover{border-color:rgba(237,234,227,.4)}
+  .onltog[aria-pressed="true"]{border-color:rgba(242,177,60,.5);
+       background:rgba(242,177,60,.07)}
+  .onlchk{flex:0 0 auto;width:15px;height:15px;border-radius:3px;
+       border:1px solid rgba(237,234,227,.3);display:flex;align-items:center;
+       justify-content:center;font-size:10px;margin-top:1px}
+  .onltog[aria-pressed="true"] .onlchk{background:var(--amber);color:var(--ink);
+       border-color:var(--amber)}
+  .onlt{display:block;font-family:var(--D);font-weight:400;font-size:14px;
+       letter-spacing:-.02em}
+  .onld{display:block;margin-top:3px;font-size:11.5px;line-height:1.45;
+       opacity:.6}
+  .odisc{margin:12px 0 0;font-family:var(--C);font-size:10px;font-weight:500;
+       letter-spacing:.14em;text-transform:uppercase;opacity:.45}
+  .oform{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .oform input{flex:1 1 190px;min-width:0;padding:11px 13px;font-family:inherit;
+       font-size:13px;color:var(--paper);background:rgba(237,234,227,.06);
+       border:1px solid rgba(237,234,227,.2);border-radius:var(--rad-s)}
+  .oform input::placeholder{color:rgba(237,234,227,.4)}
+  .oform input:focus{outline:none;border-color:var(--amber)}
+  .obtn{padding:11px 17px;border:0;border-radius:var(--rad-s);cursor:pointer;
+       background:var(--amber);color:var(--ink);font-family:var(--C);
+       font-size:11px;font-weight:500;letter-spacing:.14em;
+       text-transform:uppercase;transition:background .2s ease}
+  .obtn:hover{background:var(--amber-hi)}
+  .obtn:disabled{opacity:.5;cursor:default}
+  .oghost{display:inline-block;padding:11px 17px;border-radius:var(--rad-s);
+       border:1px solid rgba(237,234,227,.3);color:var(--paper);
+       text-decoration:none;font-family:var(--C);font-size:11px;
+       font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+       transition:background .2s ease,border-color .2s ease}
+  .oghost:hover{background:rgba(237,234,227,.12);border-color:var(--paper)}
+  .oacts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .oaside{color:var(--paper);opacity:.55;font-size:12px;text-decoration:none;
+       border-bottom:1px solid transparent}
+  .oaside:hover{opacity:.85;border-bottom-color:currentColor}
+  /* L'ERREUR EST EN PAPIER, PAS EN ROUGE. Le site n'a pas de rouge, et lui en
+     inventer un pour deux lignes de formulaire ajoute une couleur à une
+     palette fermée. Elle ne peut pas non plus prendre l'ambre : c'est déjà le
+     message de SUCCÈS juste en dessous, et deux états opposés de la même
+     couleur ne sont plus deux états. Elle est donc en papier plein — plus
+     claire que le texte courant, posée sous le champ qu'elle concerne — et
+     c'est le mot qui dit ce qui ne va pas, ce qui vaut mieux qu'une teinte
+     de toute façon pour qui ne la distingue pas. */
+  .oerr{margin:0 0 10px;color:var(--paper);font-size:12px}
+  .ook{margin:0;display:flex;align-items:center;gap:8px;color:var(--amber);
+       font-size:13px}
+  .ohide{display:none}
+  @media (max-width:860px){ .ogrid{grid-template-columns:1fr} }
+
   /* ═══ LA PASSE MOBILE SUR LES CORPS ═════════════════════════════════════
      Mesuré à 390 px : le chapô de l'accueil et le texte de la boîte de
      connexion étaient à 12,5 px, la liste de l'abonnement à 13, et les
@@ -995,13 +1047,15 @@
      spécificité égale, et à égalité c'est la dernière qui gagne. */
   @media (max-width:640px){
     .hlede,.modal p{font-size:14px;line-height:1.55}
-    .npro ul li,.nfree ul li{font-size:14px}
     .btn{font-size:11px}
     header{font-size:10.5px}
     /* la source et la date sous chaque vignette, et le pied */
     .rlink em,.rlink em u{font-size:11px}
     .rsrc a,.fmeta span{font-size:11px}
     .mhint,.masauth{font-size:12.5px}
+    /* et le bloc de l'offre, repris de la landing, où ces mêmes capitales
+       espacées sont relevées de la même façon */
+    .offer ul li,.onl,.odisc,.okick{font-size:11px}
   }
 </style>
 </head>
@@ -1136,40 +1190,65 @@
 </section>
 
 <!-- ===================== THE NEWSLETTER ===================== -->
-<section class="news on-paper arm">
-  <div class="nstage">
-    <div class="nbrand up">
-      <a class="scan" href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer"
-         aria-label="Buried Signals">
-        <svg viewBox="75 42 1194 191" aria-hidden="true"><use href="#bsw"/></svg>
-        <svg class="amb" viewBox="75 42 1194 191" aria-hidden="true"><use href="#bsw"/></svg>
-      </a>
-      <p>Investigations with AI. The tools to run your own.</p>
-    </div>
+<!-- L'OFFRE, REPRISE TELLE QUELLE DE LA LANDING. Le bloc « Buried Signals »
+     qui était ici disait la lettre et l'adhésion Pro ; celui-ci dit les deux
+     mêmes choses avec les mots et le découpage que le site porte partout
+     ailleurs — une seule offre écrite une seule fois. -->
+<section class="offers" id="offers" data-ground="#14141c">
+  <div class="oeye"><i></i>Work with me</div>
+  <h2>Two ways in</h2>
+  <p class="olede">I use Splash in my own reporting and in collaborative
+  stories with partner newsrooms. If you want to work with me around that
+  system, these are the two ways in.</p>
 
-    <div class="ngrid">
-      <div class="up">
-        <p style="margin:0;font-size:13.5px;opacity:.6">Free monthly investigations, tools, and methodology.</p>
-        <form class="nform" id="nform" autocomplete="off">
-          <label class="sr" for="nmail">Email address</label>
-          <input id="nmail" type="email" placeholder="your@email.com" required>
-          <button class="btn" type="submit" id="nbtn">Subscribe</button>
+  <div class="ogrid">
+    <article class="offer">
+      <div class="okick"><span>Indicator Lab</span><span class="olaunch">Launching September 2026</span></div>
+      <h3>Investigations with AI. The tools to run your own</h3>
+      <p class="olede2">Indicator Lab combines the Buried Signals tool suite with
+      a monthly investigation debrief, a practical Case Note, and office hours
+      every two weeks.</p>
+      <a class="olab" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Explore Indicator Lab &rarr;</a>
+      <div class="ofoot">
+        <p class="oerr ohide" id="nl-error"></p>
+        <p class="ook ohide" id="nl-success" role="status">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span id="nl-success-msg">You&rsquo;re subscribed.</span>
+        </p>
+        <p class="onl">Newsletters</p>
+        <div class="onlopt" id="nl-options" aria-label="Newsletter choices">
+          <button class="onltog" type="button" data-newsletter="buried_signals" aria-pressed="true">
+            <span class="onlchk" aria-hidden="true">&check;</span>
+            <span><span class="onlt">Buried Signals</span><span class="onld">Monthly dispatches on investigations and the changing practice of journalism with AI in the loop.</span></span>
+          </button>
+          <button class="onltog" type="button" data-newsletter="indicator_media" aria-pressed="true">
+            <span class="onlchk" aria-hidden="true">&check;</span>
+            <span><span class="onlt">Indicator Briefing</span><span class="onld">Weekly news, research, OSINT tools, and techniques for investigating digital deception.</span></span>
+          </button>
+        </div>
+        <p class="odisc" id="nl-disclaimer">1,000+ journalists already reading.</p>
+        <form class="oform" id="nl-form">
+          <input type="email" id="nl-email" placeholder="you@example.com" autocomplete="email" required>
+          <button type="submit" class="obtn" id="nl-submit">Subscribe &rarr;</button>
         </form>
-        <p class="nnote" id="nnote">Join 400+ journalists.</p>
       </div>
+    </article>
 
-      <div class="npro up">
-        <h3>Pro Membership <span>(Launching May 2026)</span></h3>
-        <ul>
-          <li>Collaborative investigations — shared leads, data &amp; methodology</li>
-          <li>Live workshops and hands-on training sessions</li>
-          <li>Expanded tool suite access and priority features</li>
-          <li>In-depth investigation methodologies and AI techniques</li>
-          <li>AI tools for content production and distribution</li>
-        </ul>
-        <span class="npill">From $25/mo</span>
+    <article class="offer">
+      <div class="okick"><span>Consulting</span></div>
+      <h3>I train newsrooms to investigate with AI</h3>
+      <p class="olede2">Workshops, custom tooling, and investigation collaborations.</p>
+      <ul>
+        <li>Le Temps</li><li>MAZ Journalistenschule</li><li>Republik</li>
+        <li>20 Minuten</li><li>MediaStorm</li><li>The New Humanitarian</li>
+      </ul>
+      <div class="ofoot">
+        <div class="oacts">
+          <a class="oghost" href="mailto:tom@buriedsignals.com">Get in touch &rarr;</a>
+          <a class="oaside" href="https://buriedsignals.com/consulting" target="_blank" rel="noopener">See case studies</a>
+        </div>
       </div>
-    </div>
+    </article>
   </div>
 </section>
 
@@ -1229,23 +1308,6 @@
 <!-- Path data written once, drawn twice: the wordmark's second copy is the
      amber scan layer, and `use` costs nothing beyond a reference. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
-<g id="bsw" fill="currentColor">
-<path d="M686.762 76.973C691.661 70.811 703.637 75.219 713.148 87.853L742.373 76.973C735.986 55.212 721.277 42 694.956 42C667.086 42 650.248 61.818 650.248 83.385C650.248 106.894 663.989 115.443 675.215 122.243L699.02 136.815C699.02 136.815 718.846 148.904 703.637 160.325C694.956 166.844 683.343 152.164 675.215 140.701L645.603 152.164C649.28 175.091 664.376 193.938 695.149 193.938C723.406 193.938 743.34 176.84 743.34 150.804C743.34 129.821 731.535 117.969 719.729 110.78L692.44 94.071C682.869 88.377 681.863 83.135 686.762 76.973Z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M156.674 115.443C172.931 122.243 179.318 137.204 179.318 151.193C179.318 173.148 160.738 190.829 133.642 190.829H75V45.109H130.933C158.028 45.109 176.221 60.458 176.221 84.356C176.221 96.402 170.608 109.42 156.674 115.443ZM127.062 74.447H109.063V103.785H126.869C136.739 103.785 141.965 97.179 141.965 89.019C141.965 80.664 136.739 74.447 127.062 74.447ZM109.063 161.102H129.772C139.449 161.102 144.868 154.496 144.868 146.336C144.868 138.37 139.449 131.569 129.578 131.569H109.063V161.102Z"/>
-<path d="M279.705 89.602V190.829H189.903V89.602H223.579V161.491H246.029V89.602H279.705Z"/>
-<path d="M295.784 89.602V190.829H329.46V119.329H346.491V89.602H295.784Z"/>
-<path d="M391.238 89.602V190.829H357.562V89.602H391.238Z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M497.304 174.897L478.144 154.496C472.531 161.685 466.338 164.405 457.048 164.405C445.629 164.405 438.856 159.353 436.533 149.639H504.078C504.659 146.724 504.852 143.227 504.852 139.924C504.852 108.448 485.305 86.493 455.694 86.493C423.759 86.493 401.696 108.448 401.696 140.313C401.696 171.594 423.566 193.938 456.081 193.938C473.306 193.938 486.853 188.497 497.304 174.897ZM454.919 114.86C464.403 114.86 470.596 120.883 471.951 130.015H436.34C438.662 120.3 444.855 114.86 454.919 114.86Z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M558.34 193.938C530.664 193.938 510.73 172.177 510.73 140.313C510.73 108.254 531.632 86.493 559.889 86.493C571.114 86.493 580.984 90.185 585.823 96.208H586.597C586.597 95.998 586.583 95.744 586.562 95.375C586.506 94.381 586.403 92.545 586.403 88.436V50.977H619.692V190.829H588.726V187.72C588.726 184.806 588.919 182.474 589.113 181.114H588.339C581.952 189.469 571.114 193.938 558.34 193.938ZM544.599 139.73C544.599 154.302 553.502 163.822 565.888 163.822C578.468 163.822 587.565 154.302 587.565 139.73C587.565 125.352 578.468 116.026 565.888 116.026C553.502 116.026 544.599 125.352 544.599 139.73Z"/>
-<path d="M788.495 89.602V190.829H754.819V89.602H788.495Z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M799.147 138.37C799.147 169.068 819.275 189.857 846.951 189.857C858.563 189.857 868.628 185.777 873.079 179.754H873.853C873.66 181.697 873.66 182.863 873.66 186.943V203.662H823.628V233H886.714L906.755 212.96V89.602H875.982V93.488C875.982 96.208 876.176 97.957 876.369 99.317H875.595C869.402 91.156 858.951 86.493 845.983 86.493C818.888 86.493 799.147 107.283 799.147 138.37ZM853.725 115.832C866.112 115.832 874.821 124.575 874.821 137.981C874.821 151.387 866.112 160.325 853.725 160.325C841.532 160.325 832.823 151.582 832.823 137.981C832.823 124.575 841.532 115.832 853.725 115.832Z"/>
-<path d="M922.732 190.829V89.602H1013.31V190.829H979.633V118.552H956.408V190.829H922.732Z"/>
-<path fill-rule="evenodd" clip-rule="evenodd" d="M1023.95 140.313C1023.95 172.177 1043.88 193.938 1071.56 193.938C1084.72 193.938 1095.37 189.275 1101.56 181.114H1102.33C1102.14 182.474 1101.95 184.417 1101.95 187.137V190.829H1132.72V89.602H1101.95V92.905C1101.95 96.014 1102.14 97.374 1102.33 98.345H1101.56C1095.95 90.962 1086.08 86.493 1073.11 86.493C1045.05 86.493 1023.95 108.254 1023.95 140.313ZM1079.11 164.211C1066.72 164.211 1057.82 154.496 1057.82 139.73C1057.82 125.352 1066.72 115.832 1079.11 115.832C1091.69 115.832 1100.78 125.352 1100.78 139.73C1100.78 154.496 1091.69 164.211 1079.11 164.211Z"/>
-<path d="M1182.11 190.829H1148.43L1150.06 50.977H1183.74L1182.11 190.829Z"/>
-<path d="M1224.97 116.22C1224.97 113.111 1227.3 110.974 1230.78 110.974C1237.36 110.974 1243.55 116.414 1246.65 121.66L1267.94 108.06C1261.75 96.597 1250.91 86.493 1230.01 86.493C1209.88 86.493 1194.97 101.065 1194.97 117.386C1194.97 136.038 1206.2 142.256 1217.43 148.473L1229.23 155.273C1234.46 157.993 1236.01 159.936 1236.01 162.462C1236.01 165.765 1233.49 167.902 1229.62 167.902C1220.72 167.902 1214.91 160.131 1213.55 155.856L1190.91 168.874C1194.97 181.503 1206.2 193.938 1229.62 193.938C1254 193.938 1268.13 180.531 1268.13 161.491C1268.13 144.198 1257.68 137.204 1247.23 131.569L1234.65 124.769C1227.3 120.883 1224.97 119.329 1224.97 116.22Z"/>
-<path d="M358.247 55.123H390.841V77.396H358.247V55.123Z"/>
-<path d="M786.558 55.123H753.965V77.396H786.558V55.123Z"/>
-</g>
 <g id="imj"><path d="M73.79,34.42c0,4.84-2.68,9.11-6.16,12.81l6.34,6.02c5.48-6.16,8.69-12.26,8.69-18.93V.88h-8.89l.02,33.54Z"/><path d="M59.24,38.6h8.72V15.44C67.95,3.67,63.55.12,54.51.12c-4.73,0-8.72,1.58-12.28,3.32C40.4,1.18,37.16.12,33.26.12c-3.57,0-6.72,1.28-9.71,2.87l-1.08-2.11h-7.22v37.73h8.72V9.33c2.32-.98,5.06-1.81,7.3-1.81,6.81,0,5.89,4.38,5.89,11.62v19.47h8.63V15.44c0-2.49-.17-3.92-.41-5.81,2.41-1.21,5.89-2.11,8.13-2.11,6.64,0,5.73,4.38,5.73,11.62v19.47Z"/><rect y=".88" width="8.72" height="37.73"/><rect x="91.76" y=".9" width="2.41" height="15.08"/><path d="M99.59,7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25Z"/><path d="M111.23,7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25Z"/><path d="M129.22,11.37v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84ZM126.79,11.41c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M138.24,4.73c-1.17,4.5-2.46,8.46-2.5,9.05-.11-.59-1.4-4.55-2.59-9.05h-2.41c1.22,4.52,2.66,8.94,3.37,11.25h3.14c.8-2.32,2.18-6.73,3.4-11.25h-2.41Z"/><path d="M145.66,9.23c-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25ZM148.04,13.37c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><path d="M158.7,15.75l-.25-1.94c-.64.11-1.26.18-1.86.18-.8,0-.85-.36-.85-1.98v-5.13h2.59v-2.16h-2.59v-2.59h-1.9l-.5,2.59-1.15.45v1.71h1.15v5.96c0,2.3.69,3.35,2.82,3.35,1.4,0,2.55-.45,2.55-.45Z"/><polygon points="162.9 2.52 162.9 .59 160.42 .59 160.42 3.2 162.41 3.2 162.9 2.52"/><rect x="160.44" y="4.73" width="2.41" height="11.25"/><path d="M170.08,16.21c3.1,0,4.43-1.53,4.43-4.84v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84ZM167.83,9.34c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07Z"/><path d="M183.51,15.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98Z"/><path d="M196.2,12.69c0-2.03-.67-2.75-3.44-3.47-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51Z"/><path d="M201.32,15.98V6.89h2.09v-2.16h-2.09v-.56c0-1.51,0-1.96.8-1.96.57,0,1.35.07,1.68.11l.28-1.94c-.39-.11-1.24-.38-2.34-.38-2.13,0-2.82,1.08-2.82,3.35v1.37l-1.15.45v1.71h1.15v9.09h2.41Z"/><path d="M213.9,11.37v-2.03c0-3.31-1.35-4.84-4.43-4.84s-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84ZM211.47,11.41c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M221.89,4.5c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41V7.25c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M234.63,15.98h2V.23h-2.41v4.64c-1.15-.23-2.25-.36-2.96-.36-2.13,0-3.51,1.28-3.51,4.57v2.34c0,3.13,1.24,4.79,3.51,4.79,1.12,0,2.11-.41,3.05-.9l.32.68ZM234.22,13.26c-.69.4-1.45.74-2.16.74-1.4,0-1.88-.83-1.88-2.3v-2.7c0-1.53.55-2.3,1.88-2.3.69,0,1.42.05,2.16.14v6.41Z"/><path d="M247.14,12.69c0-2.03-.67-2.75-3.44-3.47-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51Z"/><path d="M258.16,15.98V6.89h2.09v-2.16h-2.09v-.56c0-1.51,0-1.96.8-1.96.57,0,1.35.07,1.68.11l.28-1.94c-.39-.11-1.24-.38-2.34-.38-2.13,0-2.82,1.08-2.82,3.35v1.37l-1.15.45v1.71h1.15v9.09h2.41Z"/><polygon points="269.63 2.23 269.63 .68 267.41 .68 267.41 2.9 269.17 2.9 269.63 2.23"/><rect x="263.87" y=".68" width="2.23" height="2.23"/><path d="M268.85,15.33l.34.65h1.97V4.73h-2.41v8.73c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88Z"/><path d="M276.47,7.63c.57-.29,1.38-.5,2.09-.5.14,0,.5,0,.76.02l.18-2.48c-.11-.02-.3-.04-.5-.04-1.33,0-2.27.72-2.59.97l-.34-.88h-2v11.25h2.41V7.63Z"/><path d="M102.5,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M115.33,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><polygon points="120.75 37.61 121.46 38.48 123.16 38.48 123.16 22.73 120.75 22.73 120.75 37.61"/><path d="M129.54,36.5c-.8,0-.85-.36-.85-1.98v-5.13h2.59v-2.16h-2.59v-2.59h-1.9l-.5,2.59-1.15.45v1.71h1.15v5.96c0,2.3.69,3.35,2.82,3.35,1.4,0,2.55-.45,2.55-.45l-.25-1.94c-.64.11-1.26.18-1.86.18Z"/><polygon points="133.38 25.7 135.37 25.7 135.86 25.03 135.86 23.09 133.38 23.09 133.38 25.7"/><rect x="133.4" y="27.23" width="2.41" height="11.25"/><path d="M149.56,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M160.14,27.01c-2.87,0-4.43,1.53-4.43,4.84v2.03c0,3.83,1.95,4.84,4.98,4.84,1.17,0,2.23-.14,3.24-.58l-.3-1.96c-.64.14-1.63.34-2.94.34-1.72,0-2.59-.34-2.59-2.36v-.2h6.17s.05-1.06.05-2.16c0-3.71-1.84-4.77-4.18-4.77ZM161.95,31.82h-3.88v-.31c0-1.71.78-2.36,2.07-2.36,1.12,0,1.81.65,1.81,2.36v.31Z"/><path d="M172.93,27.37c-1.15-.23-2.25-.36-2.96-.36-2.13,0-3.51,1.28-3.51,4.57v2.34c0,3.13,1.24,4.79,3.51,4.79,1.12,0,2.11-.41,3.05-.9l.32.68h2v-15.75h-2.41v4.64ZM172.93,35.76c-.69.4-1.45.74-2.16.74-1.4,0-1.88-.83-1.88-2.3v-2.7c0-1.53.55-2.3,1.88-2.3.69,0,1.42.05,2.16.14v6.41Z"/><polygon points="178.32 25.7 180.32 25.7 180.8 25.03 180.8 23.09 178.32 23.09 178.32 25.7"/><rect x="178.34" y="27.23" width="2.41" height="11.25"/><path d="M187.2,27.01c-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84ZM189.18,35.87c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><polygon points="194.46 37.61 195.17 38.48 196.87 38.48 196.87 22.73 194.46 22.73 194.46 37.61"/><path d="M203.96,27.01c-2.87,0-4.43,1.53-4.43,4.84v2.03c0,3.83,1.95,4.84,4.98,4.84,1.17,0,2.23-.14,3.24-.58l-.3-1.96c-.64.14-1.63.34-2.94.34-1.72,0-2.59-.34-2.59-2.36v-.2h6.17s.05-1.06.05-2.16c0-3.71-1.84-4.77-4.18-4.77ZM205.77,31.82h-3.88v-.31c0-1.71.78-2.36,2.07-2.36,1.12,0,1.81.65,1.81,2.36v.31Z"/><path d="M216.06,27.01c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41v-8.73c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M228.16,35.78c0,1.91,0,1.94-1.93,2.93l.85,1.76c2.41-.36,3.49-1.49,3.49-4.68v-12.38h-2.41v12.38Z"/><path d="M237.91,27.01c-3.1,0-4.68,1.53-4.68,4.84v2.03c0,3.31,1.58,4.84,4.68,4.84s4.43-1.53,4.43-4.84v-2.03c0-3.31-1.35-4.84-4.43-4.84ZM239.91,33.92c0,2.07-.55,2.59-2,2.59-1.84,0-2.25-.52-2.25-2.59v-2.07c0-1.98.41-2.63,2.25-2.63,1.42,0,2,.61,2,2.63v2.07Z"/><path d="M251.22,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><path d="M258.87,28.11l-.34-.88h-2v11.25h2.41v-8.35c.57-.29,1.38-.5,2.09-.5.14,0,.5,0,.76.02l.18-2.48c-.11-.02-.3-.04-.5-.04-1.33,0-2.27.72-2.59.97Z"/><path d="M269.38,27.01c-1.01,0-2.27.41-3.12.88l-.37-.65h-1.95v11.25h2.41v-8.73c.76-.29,1.63-.54,2.29-.54,1.54,0,1.74.83,1.74,2.3v6.98h2.41v-6.91c0-3.15-1.15-4.57-3.42-4.57Z"/><path d="M279.14,27.01c-1.08,0-2.59.27-3.42.63l.32,1.96c.62-.14,1.72-.38,3.1-.38,1.86,0,1.97.34,1.97,2.59v.18c-.85-.16-1.7-.25-2.39-.25-2.91,0-3.6,1.49-3.6,3.78,0,1.46.64,3.2,2.87,3.2,1.19,0,2.13-.27,3.21-.88l.34.65h1.95v-6.64c0-3.62-.92-4.84-4.36-4.84ZM281.11,35.87c-.76.43-1.35.65-2.11.65-1.22,0-1.45-.59-1.45-1.35,0-1.01.28-1.44,1.95-1.44.5,0,1.01.02,1.61.04v2.09Z"/><polygon points="286.39 37.61 287.1 38.48 288.8 38.48 288.8 22.73 286.39 22.73 286.39 37.61"/><rect x="291.81" y="27.23" width="2.41" height="11.25"/><polygon points="291.78 25.7 293.78 25.7 294.26 25.03 294.26 23.09 291.78 23.09 291.78 25.7"/><path d="M301.17,31.73c-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51,0-2.03-.67-2.75-3.44-3.47Z"/><path d="M317.95,27.01c-1.31,0-2.41.47-3.4.99-.5-.68-1.4-.99-2.48-.99-.99,0-1.86.38-2.69.86l-.3-.63h-2v11.25h2.41v-8.73c.64-.29,1.4-.54,2.02-.54,1.88,0,1.63,1.31,1.63,3.47v5.81h2.39v-6.91c0-.74-.05-1.17-.11-1.73.67-.36,1.63-.63,2.25-.63,1.84,0,1.58,1.31,1.58,3.47v5.81h2.41v-6.91c0-3.51-1.22-4.57-3.72-4.57Z"/><path d="M330.78,35.96c-.62.32-1.63.54-2.29.54-1.31,0-1.74-.61-1.74-2.3v-6.98h-2.41v6.91c0,3.15,1.15,4.57,3.42,4.57,1.01,0,2.27-.41,3.12-.88l.34.65h1.97v-11.25h-2.41v8.73Z"/><path d="M340.15,31.73c-1.54-.41-1.93-.5-1.93-1.42s.5-1.1,1.74-1.1c.53,0,2,.11,3.08.34l.28-1.96c-1.22-.52-2.89-.59-3.86-.59-1.9,0-3.67.9-3.67,3.26,0,1.89.39,2.77,3.19,3.44,1.81.43,2.18.54,2.18,1.58s-.67,1.22-2.27,1.22c-.76,0-1.84-.11-2.94-.34l-.28,1.96c1.22.54,3.01.58,3.83.58,2.96,0,4.08-1.28,4.08-3.51,0-2.03-.67-2.75-3.44-3.47Z"/></g>
 <path id="hf" d="M16.781 3.277c2.997 1.704 4.844 4.851 4.844 8.258 0 .995-.155 1.955-.443 2.857a1.332 1.332 0 011.125.4 1.41 1.41 0 01.2 1.723c.204.165.352.385.428.632l.017.062c.06.222.12.69-.2 1.166.244.37.279.836.093 1.236-.255.57-.893 1.018-2.128 1.5l-.202.078-.131.048c-.478.173-.89.295-1.061.345l-.086.024c-.89.243-1.808.375-2.732.394-1.32 0-2.3-.36-2.923-1.067a9.852 9.852 0 01-3.18.018C9.778 21.647 8.802 22 7.494 22a11.249 11.249 0 01-2.541-.343l-.221-.06-.273-.08a16.574 16.574 0 01-1.175-.405c-1.237-.483-1.875-.93-2.13-1.501-.186-.4-.151-.867.093-1.236a1.42 1.42 0 01-.2-1.166 1.36 1.36 0 01.447-.694 1.41 1.41 0 01.2-1.723 1.332 1.332 0 011.124-.4 9.478 9.478 0 01-.443-2.857c0-3.407 1.847-6.554 4.844-8.258a9.798 9.798 0 019.562 0zM4.021 16.512a.532.532 0 00-.44.223c-.12.169-.114.328-.02.598l.03.081.037.09.043.098.098.211.056.12.176.377.05.115c.263.632.37 1.117.128 1.362-.055.055-.144.06-.246.03l-.06-.023-.064-.031a3.474 3.474 0 01-.317-.192l-.116-.08a4.68 4.68 0 00-.223-.145l-.11-.065c-.283-.16-.53-.223-.716-.14a.39.39 0 00-.22.28c-.058.29.135.55.5.79l.13.08.14.077.146.074.152.07.235.1.166.066.26.098.184.066.291.098.207.066.328.099.36.101.026.007c.7.19 1.42.297 2.144.317 1.152 0 1.887-.353 2.267-1.043l.055-.108c.42-.9.32-1.86-.28-2.7-.397-.554-.68-.928-.85-1.122-.657-.75-1.144-.393-1.276-.257l-.058.063a.822.822 0 00.033 1.096l.598.65c.24.28.4.63.16.87-.14.13-.32.11-.5-.02a3.652 3.652 0 01-.32-.28l-.161-.163-.185-.194-.278-.297-.474-.512-.242-.257-.221-.23-.135-.135a2.68 2.68 0 00-.152-.14l-.078-.061a1.023 1.023 0 00-.6-.226zm15.958 0a1.023 1.023 0 00-.6.226l-.078.062a2.68 2.68 0 00-.152.139l-.135.136-.22.229-.243.257-.474.512-.278.297-.185.194-.16.163a3.652 3.652 0 01-.321.28c-.18.13-.36.15-.5.02-.24-.24-.08-.59.16-.87l.598-.65a.822.822 0 00.033-1.096c-.12-.15-.6-.55-1.334.194-.17.194-.453.568-.85 1.122-.6.84-.7 1.8-.28 2.7l.055.108c.38.69 1.115 1.043 2.267 1.043a9.68 9.68 0 002.144-.317l.026-.007.36-.101.328-.1.207-.065.291-.098.184-.066.26-.098.166-.066.235-.1.152-.07.146-.074.14-.077.13-.08c.365-.24.558-.5.5-.79a.39.39 0 00-.22-.28c-.186-.083-.433-.02-.716.14l-.11.065a4.68 4.68 0 00-.223.145l-.116.08c-.113.076-.22.14-.317.192l-.064.031-.06.023c-.102.03-.191.025-.246-.03-.242-.245-.135-.73.128-1.362l.05-.115.176-.377.056-.12.098-.211.043-.098.037-.09.03-.081c.094-.27.1-.43-.02-.598a.532.532 0 00-.44-.223zM12 5.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM9.5 13a.5.5 0 01.5.5 2 2 0 004 0 .5.5 0 011 0 3 3 0 01-6 0 .5.5 0 01.5-.5zm-.25-3.75a1 1 0 110 2 1 1 0 010-2zm5.5 0a1 1 0 110 2 1 1 0 010-2z"/>
 </defs></svg>
@@ -1729,38 +1791,6 @@
     } catch { /* the clipboard API is refused in some contexts; nothing to say */ }
   });
 
-  /* ------------------------------------------------------- the newsletter */
-  $('nform').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const note = $('nnote');
-    const btn = $('nbtn');
-    btn.disabled = true;
-    btn.textContent = 'Subscribing…';
-    note.className = 'nnote';
-    try {
-      const res = await fetch(API + '/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: $('nmail').value }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok) {
-        note.className = 'nnote ok';
-        note.textContent = json.existing ? 'You’re already subscribed.' : 'Check your inbox.';
-        $('nform').hidden = true;
-      } else {
-        note.className = 'nnote ko';
-        note.textContent = json.error || json.detail || 'Something went wrong.';
-      }
-    } catch {
-      note.className = 'nnote ko';
-      note.textContent = 'Network error. Please try again.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Subscribe';
-    }
-  });
-
   /* ------------------------------------------------------------ the modal */
   const veil = $('veil');
   const openModal = (heading, subtitle) => {
@@ -1859,6 +1889,64 @@
 
   featured();
   status();
+})();
+</script>
+
+
+<script>
+/* L'inscription poste sur l'API Navigator, le point d'entrée commun à toutes
+   les propriétés Buried Signals (CORS autorisé). Repris tel quel de
+   Spotlight, aux identifiants près. */
+(function () {
+  const form = document.getElementById('nl-form');
+  const email = document.getElementById('nl-email');
+  const submit = document.getElementById('nl-submit');
+  const err = document.getElementById('nl-error');
+  const ok = document.getElementById('nl-success');
+  const okMsg = document.getElementById('nl-success-msg');
+  const opts = document.getElementById('nl-options');
+  const disc = document.getElementById('nl-disclaimer');
+  const togs = Array.from(document.querySelectorAll('#nl-options [data-newsletter]'));
+  if (!form || !email || !submit || !err || !ok || !okMsg || !opts || !disc || !togs.length) return;
+
+  const ENDPOINT = 'https://navigator.indicator.media/api/newsletter/subscribe';
+  const LABELS = { buried_signals: 'Buried Signals', indicator_media: 'Indicator Briefing' };
+  const chosen = () => togs.filter(t => t.getAttribute('aria-pressed') === 'true')
+                          .map(t => t.dataset.newsletter);
+
+  togs.forEach(t => t.addEventListener('click', () => {
+    const on = t.getAttribute('aria-pressed') === 'true';
+    if (on && chosen().length === 1) return;   // on n'en décoche jamais les deux
+    t.setAttribute('aria-pressed', String(!on));
+    t.querySelector('.onlchk').textContent = on ? '' : '\u2713';
+  }));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = email.value.trim();
+    const newsletters = chosen();
+    if (!value || !newsletters.length) return;
+    submit.disabled = true; email.disabled = true;
+    err.textContent = ''; err.classList.add('ohide');
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: value, newsletters })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || data.detail || 'Something went wrong. Please try again.');
+      form.classList.add('ohide'); opts.classList.add('ohide');
+      okMsg.textContent = newsletters.length === 2
+        ? "You're subscribed to both newsletters."
+        : `You're subscribed to ${LABELS[newsletters[0]]}.`;
+      ok.classList.remove('ohide');
+    } catch (error) {
+      err.textContent = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      err.classList.remove('ohide');
+      submit.disabled = false; email.disabled = false;
+    }
+  });
 })();
 </script>
 
