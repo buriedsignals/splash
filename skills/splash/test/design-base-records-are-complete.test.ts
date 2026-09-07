@@ -71,7 +71,29 @@ describe("the design base", () => {
       }
   });
 
-  it("should back every treatment with references from at least two distinct publications", () => {
+  it("should say, for every treatment, whether it draws a fact or imports a practice", () => {
+    // The two kinds are not a taxonomy for its own sake: they carry different burdens of proof, and
+    // a record that does not say which is asking for the wrong one.
+    for (const file of markdownIn(join(BASE, "treatments"))) {
+      const text = readFileSync(join(BASE, "treatments", file), "utf8");
+      const kind = text.match(/^- kind:\s*(\S+)/m)?.[1];
+      expect(["derived", "imported"], `${file} declares kind "${kind}"`).toContain(kind);
+    }
+  });
+
+  it("should require a detect and a rendered proof of every derived treatment", () => {
+    // A derived treatment borrows nothing, so no external reference can vouch for it. What stands
+    // in its place is that it MUST be measurable on the delivered artifact and MUST have been
+    // drawn: "the data already contains it" is not a licence to file an idea.
+    for (const file of markdownIn(join(BASE, "treatments"))) {
+      const text = readFileSync(join(BASE, "treatments", file), "utf8");
+      if (!/^- kind:\s*derived/m.test(text)) continue;
+      expect(text, `${file} has no detect`).toMatch(/^- detect:\s*\S/m);
+      expect(text, `${file} names no render that proves it`).toMatch(/^- provenBy:\s*\S/m);
+    }
+  });
+
+  it("should back every IMPORTED treatment with references from at least two distinct publications", () => {
     // TWO RECORDS ARE NOT TWO USES IF THEY CAME FROM THE SAME DESK.
     //
     // A first version of this floor counted distinct reference ids, and the five
@@ -82,6 +104,12 @@ describe("the design base", () => {
     const publications = publicationById();
     for (const file of markdownIn(join(BASE, "treatments"))) {
       const text = readFileSync(join(BASE, "treatments", file), "utf8");
+      // A DERIVED treatment draws a fact the beat itself carries — its own geometry, its own
+      // declared reference level, its own series. It imports nothing, so there is nothing for a
+      // second publication to corroborate. The floor was written against copying a newsroom's
+      // habit and mis-applied here refuses honest work: it kept the crossing this beat's own
+      // `crossingGeometry` already computes out of the picture for a whole day.
+      if (/^- kind:\s*derived/m.test(text)) continue;
       const cited = [
         ...new Set([...text.matchAll(/^- evidence:\s*(\S+)/gm)].map((m) => m[1])),
       ];

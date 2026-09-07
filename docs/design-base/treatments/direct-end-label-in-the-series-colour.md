@@ -1,5 +1,6 @@
 # direct-end-label-in-the-series-colour
 
+- kind: imported
 - name: Every series is named at its own end, in its own colour
 - applies: the beat draws one or more named series whose ends are separable at the delivered size
 - draws: value

@@ -18,7 +18,7 @@
 
 import { scaleLinear } from "d3-scale";
 import { tickStep } from "d3-array";
-import { line } from "d3-shape";
+import { area, line } from "d3-shape";
 import {
   crossingGeometry,
   fr,
@@ -52,6 +52,8 @@ export function DirectedLine({
   referenceLabel,
   peakLabel,
   direction,
+  treatments,
+  eras = [],
 }: {
   data: Reading[];
   title: string;
@@ -63,6 +65,10 @@ export function DirectedLine({
   referenceLabel: string;
   peakLabel: string;
   direction: any;
+  /** The ids `applicableTreatments` returned for this beat. A treatment absent from this list is
+   *  not drawn — the data shape decides, never the component. */
+  treatments: string[];
+  eras?: Array<{ from: number; to: number; label: string }>;
 }) {
   if (data.length < 2)
     throw new Error(
@@ -172,6 +178,39 @@ export function DirectedLine({
     .y((p) => p.y)
     .digits(1)(g.points)!;
 
+  const on = (id: string) => treatments.includes(id);
+  const xOfYear = (year: number) => g.points.find((p) => p.year === year)?.x ?? null;
+
+  /** A centred mean, defined only where the whole window exists: a smoothed path must never be
+   *  drawn past the readings that support it. */
+  const SMOOTH_WINDOW = 5;
+  const half = Math.floor(SMOOTH_WINDOW / 2);
+  const smoothed = on("raw-under-smoothed")
+    ? g.points.slice(half, g.points.length - half).map((_, i) => {
+        const at = i + half;
+        let sum = 0;
+        for (let k = at - half; k <= at + half; k += 1) sum += data[k].mt;
+        return { x: g.points[at].x, y: gridScale(sum / SMOOTH_WINDOW) };
+      })
+    : [];
+  const smoothPath = smoothed.length
+    ? line<{ x: number; y: number }>().x((p) => p.x).y((p) => p.y).digits(1)(smoothed)!
+    : null;
+
+  const bandPath = on("area-to-reference")
+    ? area<(typeof g.points)[number]>()
+        .x((p) => p.x)
+        .y0(g.referenceY)
+        .y1((p) => p.y)
+        .digits(1)(g.points)!
+    : null;
+
+  const drawnEras = on("era-bands")
+    ? eras
+        .map((e) => ({ ...e, x1: xOfYear(e.from), x2: xOfYear(e.to) }))
+        .filter((e): e is typeof e & { x1: number; x2: number } => e.x1 !== null && e.x2 !== null)
+    : [];
+
   const years = data.map((d) => d.year);
   const xStep = tickStep(Math.min(...years), Math.max(...years), X_TICK_HINT);
   const xTicks: number[] = [];
@@ -211,6 +250,26 @@ export function DirectedLine({
       priority: 5,
       register: annot,
     },
+    ...(on("crossing-marked") && g.crossing
+      ? [
+          {
+            id: "crossing",
+            treatment: "crossing-marked",
+            text: set(`sous le niveau dès ${g.crossing.year}`, annot),
+            at: { x: g.crossing.x, y: g.crossing.y },
+            priority: 8,
+            register: annot,
+          },
+        ]
+      : []),
+    ...drawnEras.map((e, i) => ({
+      id: `era-${i}`,
+      treatment: "era-bands",
+      text: set(e.label, eyebrowReg),
+      at: { x: (e.x1 + e.x2) / 2, y: g.plot.top + 6 },
+      priority: 1,
+      register: eyebrowReg,
+    })),
     {
       id: "peak",
       treatment: "accent-marks-the-thread",
@@ -303,6 +362,24 @@ export function DirectedLine({
       role="img"
     >
       <desc>{alt}</desc>
+      <defs>
+        <clipPath id="above-ref">
+          <rect
+            x={g.plot.left}
+            y={g.plot.top}
+            width={g.plot.right - g.plot.left}
+            height={Math.max(0, g.referenceY - g.plot.top)}
+          />
+        </clipPath>
+        <clipPath id="below-ref">
+          <rect
+            x={g.plot.left}
+            y={g.referenceY}
+            width={g.plot.right - g.plot.left}
+            height={Math.max(0, g.plot.bottom - g.referenceY)}
+          />
+        </clipPath>
+      </defs>
       <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
 
       <text
@@ -375,6 +452,25 @@ export function DirectedLine({
         {source}
       </text>
 
+      {drawnEras.map((e) => (
+        <rect
+          key={e.label}
+          x={e.x1}
+          y={g.plot.top}
+          width={e.x2 - e.x1}
+          height={g.plot.bottom - g.plot.top}
+          fill={muted}
+          opacity={0.09}
+        />
+      ))}
+
+      {bandPath ? (
+        <g>
+          <path d={bandPath} fill={direction.accent} opacity={0.15} clipPath="url(#above-ref)" />
+          <path d={bandPath} fill={muted} opacity={0.1} clipPath="url(#below-ref)" />
+        </g>
+      ) : null}
+
       {yTicks.map((v, i) => (
         <g key={v}>
           {v === reference ? null : (
@@ -427,18 +523,40 @@ export function DirectedLine({
         strokeDasharray="5 4"
       />
 
-      <path
-        d={path}
-        fill="none"
-        stroke={direction.accent}
-        strokeWidth={direction.stroke.series}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      {smoothPath ? (
+        <g>
+          {g.points.map((p) => (
+            <circle key={p.year} cx={p.x} cy={p.y} r={1.7} fill={direction.accent} opacity={0.3} />
+          ))}
+          <path
+            d={smoothPath}
+            fill="none"
+            stroke={direction.accent}
+            strokeWidth={direction.stroke.series * 1.25}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </g>
+      ) : (
+        <path
+          d={path}
+          fill="none"
+          stroke={direction.accent}
+          strokeWidth={direction.stroke.series}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
 
       <circle cx={g.peak.x} cy={g.peak.y} r={3} fill={muted} />
       <circle cx={g.end.x} cy={g.end.y} r={4} fill={direction.accent} />
 
+      {on("crossing-marked") && g.crossing ? (
+        <circle cx={g.crossing.x} cy={g.crossing.y} r={3.5} fill={ink} />
+      ) : null}
+
+      {drawnEras.map((_, i) => textAt(`era-${i}`))}
+      {textAt("crossing")}
       {textAt("reference")}
       {textAt("peak")}
       {textAt("end-value")}

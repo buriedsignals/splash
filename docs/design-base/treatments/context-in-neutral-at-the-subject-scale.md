@@ -1,5 +1,6 @@
 # context-in-neutral-at-the-subject-scale
 
+- kind: imported
 - name: The comparison set shares the subject's unit and is drawn in neutral
 - applies: the beat compares its subject against other entities, other periods, or historical
   precedents that are not themselves the subject

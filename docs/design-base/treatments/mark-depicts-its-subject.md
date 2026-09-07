@@ -1,5 +1,6 @@
 # mark-depicts-its-subject
 
+- kind: imported
 - name: The mark is a drawing of the thing being counted
 - applies: the unit being counted is concrete enough to draw, and the count is small enough for
   individual marks

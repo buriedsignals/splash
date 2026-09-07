@@ -23,6 +23,10 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 const EYEBROW = "Climat · Suisse";
+const ERAS = [
+  { from: 1973, to: 1975, label: "choc pétrolier" },
+  { from: 1979, to: 1981, label: "second choc" },
+];
 
 const data = readingsFromCsv(await readFile(join(HERE, "data.csv"), "utf8"), {
   entity: BEAT.entity,
@@ -31,7 +35,14 @@ const data = readingsFromCsv(await readFile(join(HERE, "data.csv"), "utf8"), {
 
 const facts = beatFacts(
   data.map((d) => ({ key: String(d.year), value: d.mt })),
-  { namedSeries: [BEAT.entity], subject: BEAT.entity },
+  {
+    namedSeries: [BEAT.entity],
+    subject: BEAT.entity,
+    reference: BEAT.reference,
+    // Two datable events inside this series' own span. Declared by the beat, like its reference
+    // level: `era-bands` draws what the beat carries and invents nothing.
+    eras: ERAS,
+  },
 );
 const offered = applicableTreatments(facts);
 console.log(
@@ -74,6 +85,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       referenceLabel: BEAT.referenceLabel,
       peakLabel: BEAT.peakLabel,
       direction,
+      treatments: offered.map((t) => t.id),
+      eras: ERAS,
     }),
     width: 900,
     height: 560,

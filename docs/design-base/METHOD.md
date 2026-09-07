@@ -136,3 +136,23 @@ treatments the probes proved and the evidence floor refuses — `area-to-referen
 `direct-end-label-in-the-series-colour`, filed on Our World in Data and Ferdio, and a first
 publication for `raw-under-smoothed` (ABC). That treatment still needs a second desk before it can
 be filed, and it is not filed.
+
+
+**Correction 7 — the evidence floor was written against one thing and applied to another.**
+It exists to stop a newsroom's HABIT being copied without its logic
+(`doctrine/references/anti-patterns.md`, closing entry). Applied to a treatment that draws a fact
+the beat itself carries, it refuses honest work — and it did. `crossing-marked` renders the value
+`proof/co2-suisse/crossing-geometry.ts` **already computes**, and it was kept out of the picture for
+a day for want of a second publication that could never have been relevant.
+
+Treatments now declare a **kind**:
+
+- **`derived`** — draws a fact the beat carries: its own geometry, its own declared reference level,
+  its own series, its own declared events. Cites no publication, because there is nothing for a
+  second one to corroborate. Owes a `detect` and a `provenBy` render instead, and the guard demands
+  both.
+- **`imported`** — takes a practice observed elsewhere. Two independent publications, unchanged.
+
+Filing the four derived treatments took the CO₂ beat from **two applicable treatments out of five**
+to **six out of nine**, and put the 2023 crossing — the editorial fact the chart was hiding — back on
+the picture.

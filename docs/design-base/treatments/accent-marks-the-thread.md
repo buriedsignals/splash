@@ -1,5 +1,6 @@
 # accent-marks-the-thread
 
+- kind: imported
 - name: The accent marks the argument's thread, never the largest value
 - applies: always, wherever an accent is assigned
 - draws: value, annot

@@ -1,5 +1,6 @@
 # value-on-the-mark
 
+- kind: imported
 - name: The value is printed on the mark it belongs to
 - applies: the series has few enough marks that every one can carry its own number without collision
 - draws: value
