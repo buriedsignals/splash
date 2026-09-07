@@ -14,6 +14,11 @@
 //
 // TWO RULES IT WILL NOT BEND.
 //
+//   0. A label never sits on the data. Measured on the first real render of the CO₂ beat: with
+//      only other LABELS avoided, the end value landed on its own series in all three directions —
+//      the arbiter tried `above` first, the point it named was on the line, and nothing told it the
+//      line was there. Marks are passed in as `avoid`, and the tree already refuses this class of
+//      defect elsewhere (`annotation-reads-over-what-it-crosses.test.ts`).
 //   1. A label never leaves the frame. An off-frame label is worse than an absent one, and the
 //      tree already refuses overflow elsewhere (`three-sizes-no-collision.test.ts` measures every
 //      run's real ink box against the frame edge). When there is no room, the label is DROPPED and
@@ -65,10 +70,12 @@ function collides(box, taken) {
  * Place every treatment's label, or drop it and say why.
  *
  * @param {Array<{id: string, treatment: string, text: string, at: {x: number, y: number}, priority?: number}>} requests
- * @param {{frame: {left: number, top: number, right: number, bottom: number}, measure: (text: string) => {width: number, height: number}}} options
+ * @param {{frame: {left, top, right, bottom}, measure: (text: string) => {width, height}, avoid?: Array<{x, y, width, height}>}} options
+ *   `avoid` carries the MARKS — the boxes a label must not sit on, which the caller knows and this
+ *   file cannot: a series path, a point, a bar.
  * @returns {{placed: Array<{id, treatment, text, anchor, box}>, dropped: Array<{id, treatment, why}>}}
  */
-export function placeLabels(requests, { frame, measure }) {
+export function placeLabels(requests, { frame, measure, avoid = [] }) {
   // Highest priority first, and ties broken by id so the result is a function of the request SET
   // rather than of the order it arrived in.
   const queue = [...requests].sort(
@@ -77,7 +84,9 @@ export function placeLabels(requests, { frame, measure }) {
 
   const placed = [];
   const dropped = [];
-  const taken = [];
+  // The marks are taken before anything is placed: they were on the canvas first, and a label
+  // yields to the data rather than the other way round.
+  const taken = [...avoid];
 
   for (const request of queue) {
     const size = measure(request.text);
@@ -100,7 +109,7 @@ export function placeLabels(requests, { frame, measure }) {
         treatment: request.treatment,
         text: request.text,
         why: anyFits
-          ? "would collide with a label already placed, and moving it would take it off the frame"
+          ? "every anchor would collide with a mark or with a label already placed, and moving it further would take it off the frame"
           : "there is no room for it inside the frame at any anchor",
       });
       continue;

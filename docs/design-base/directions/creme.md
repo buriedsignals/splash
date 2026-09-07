@@ -34,7 +34,7 @@ annotation and the tracked uppercase eyebrow are both taken from those counts, n
 
 ## Stroke
 
-- series 2.5, rule 1.
+- stroke: series 2.5, rule 1
 
 ## Not yet verified
 

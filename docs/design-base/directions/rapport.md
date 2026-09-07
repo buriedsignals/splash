@@ -35,7 +35,7 @@ split and the italic body are all measurements.
 
 ## Stroke
 
-- series 2.2, rule 1.
+- stroke: series 2.2, rule 1
 
 ## Not yet verified
 

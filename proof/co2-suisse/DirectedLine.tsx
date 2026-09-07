@@ -1,0 +1,447 @@
+/**
+ * Beat 1 of "CO₂ suisse, retour au niveau de 1967", drawn through the design base.
+ *
+ * This is `EmissionsLine.tsx`'s geometry with its typography taken out. Where that file declared
+ * `TITLE = { fontSize: 26, fontWeight: 700 }` and five siblings — constants copied from beat to
+ * beat until the whole tree used one family, four weights, and zero italic, tracking or case across
+ * 122 components — this one asks a DIRECTION what each register looks like, and never learns the
+ * answer. `resolveRegister` returns the attributes; `applyCase` decides whether the direction
+ * shouts; `deriveFurniture` turns an ink ROLE into a colour against the real ground.
+ *
+ * Its treatment labels go through the ARBITER rather than being placed one by one. That is the
+ * whole reason the arbiter exists: five treatments once put three labels in the same corner of this
+ * exact beat, each correctly placed by a treatment that could not see the others.
+ *
+ * The frame, the scales, the crossing and the peak all come from `crossing-geometry.ts`, unchanged
+ * and shared with the video beat.
+ */
+
+import { scaleLinear } from "d3-scale";
+import { tickStep } from "d3-array";
+import { line } from "d3-shape";
+import {
+  crossingGeometry,
+  fr,
+  yTickValues,
+  type Reading,
+} from "./crossing-geometry";
+import {
+  deriveFurniture,
+  measureText,
+  measureTextBand,
+} from "#shared/chart-beat/render-still.mjs";
+import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+
+const FRAME = { width: 900, height: 560 };
+const UNIT = "Mt";
+const Y_TICK_HINT = 5;
+const X_TICK_HINT = 6;
+const MIN_GRIDLINE_GAP_PX = 20;
+
+type RegisterName = "display" | "eyebrow" | "body" | "axis" | "annot" | "value";
+
+export function DirectedLine({
+  data,
+  title,
+  source,
+  alt,
+  limits,
+  eyebrow,
+  reference,
+  referenceLabel,
+  peakLabel,
+  direction,
+}: {
+  data: Reading[];
+  title: string;
+  source: string;
+  alt: string;
+  limits: string;
+  eyebrow: string;
+  reference: number;
+  referenceLabel: string;
+  peakLabel: string;
+  direction: any;
+}) {
+  if (data.length < 2)
+    throw new Error(
+      "a crossing beat needs at least two readings, got " + data.length,
+    );
+
+  const { width, height } = FRAME;
+  const { ink, muted, grid } = deriveFurniture(direction.ground);
+  const inkOf = { ink, muted, accent: direction.accent } as Record<
+    string,
+    string
+  >;
+  const PAD = direction.pad;
+
+  /** A register, resolved once, with its ink already turned from a role into a colour. */
+  const reg = (name: RegisterName) => {
+    const r = resolveRegister(direction, name);
+    return { ...r, fill: inkOf[r.ink] };
+  };
+  const display = reg("display");
+  const eyebrowReg = reg("eyebrow");
+  const body = reg("body");
+  const axis = reg("axis");
+  const annot = reg("annot");
+  const value = reg("value");
+
+  /** Every text this component draws goes through here, so no call site decides case for itself. */
+  const set = (text: string, r: { transform: string }) =>
+    applyCase(text, r.transform);
+  const sizeOf = (r: {
+    fontSize: number;
+    fontWeight: number;
+    fontFamily: string;
+  }) => ({
+    fontSize: r.fontSize,
+    fontWeight: r.fontWeight,
+    fontFamily: r.fontFamily,
+  });
+
+  function wrap(text: string, maxWidth: number, r: any): string[] {
+    const lines: string[] = [];
+    let current = "";
+    for (const word of text.split(/\s+/)) {
+      const trial = current ? `${current} ${word}` : word;
+      if (current && measureText(trial, sizeOf(r)) > maxWidth) {
+        lines.push(current);
+        current = word;
+      } else current = trial;
+    }
+    return current ? [...lines, current] : lines;
+  }
+
+  // ── the header, composed as the direction says ────────────────────────────
+  const split = direction.header === "split";
+  const centred = direction.header === "centre";
+  const titleWidth = split ? (width - PAD * 2) * 0.62 : width - PAD * 2;
+  const titleLines = wrap(set(title, display), titleWidth, display);
+  const lead = display.fontSize * 1.25;
+
+  const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+  const titleBaseline = eyebrowBaseline + 20 + display.fontSize;
+  const titleBottom = titleBaseline + (titleLines.length - 1) * lead;
+
+  const limitsWidth = split ? (width - PAD * 2) * 0.33 : width - PAD * 2;
+  const limitsLines = wrap(limits, limitsWidth, body);
+  const bodyLead = body.fontSize * 1.5;
+  const limitsBaseline = split ? titleBaseline : titleBottom + 26;
+  const limitsBottom = limitsBaseline + (limitsLines.length - 1) * bodyLead;
+
+  const ruleY = Math.max(titleBottom, limitsBottom) + 20;
+  const sourceBaseline = height - PAD;
+
+  // ── the plot ──────────────────────────────────────────────────────────────
+  const last = data[data.length - 1];
+  const endLabel = `${last.year} · ${fr(last.mt)} ${UNIT}`;
+  const [floor, , ceiling] = yTickValues(data, reference);
+  const plotTop = ruleY + (direction.headRule ? 34 : 26);
+  const plotBottom = height - (PAD + 26 + body.fontSize + 10);
+  const gridScale = scaleLinear()
+    .domain([floor, ceiling])
+    .range([plotBottom, plotTop]);
+  const referenceYProvisional = gridScale(reference);
+  const regularTicks = gridScale
+    .ticks(Y_TICK_HINT)
+    .filter(
+      (v) =>
+        Math.abs(gridScale(v) - referenceYProvisional) >= MIN_GRIDLINE_GAP_PX,
+    );
+  const yTicks = [...regularTicks, reference].sort((a, b) => a - b);
+  const topValue = Math.max(...yTicks);
+  const tickLabels = yTicks.map((v) =>
+    v === topValue ? `${fr(v, 0)} ${UNIT}` : fr(v, v === reference ? 1 : 0),
+  );
+  const padding = {
+    top: plotTop,
+    right: PAD + 12 + measureText(endLabel, sizeOf(value)),
+    bottom: PAD + 26 + body.fontSize + 10,
+    left:
+      PAD +
+      12 +
+      Math.max(...tickLabels.map((l) => measureText(l, sizeOf(axis)))),
+  };
+
+  const g = crossingGeometry(data, { width, height, padding, reference });
+  const path = line<(typeof g.points)[number]>()
+    .x((p) => p.x)
+    .y((p) => p.y)
+    .digits(1)(g.points)!;
+
+  const years = data.map((d) => d.year);
+  const xStep = tickStep(Math.min(...years), Math.max(...years), X_TICK_HINT);
+  const xTicks: number[] = [];
+  for (
+    let y = Math.ceil(Math.min(...years) / xStep) * xStep;
+    y <= Math.max(...years);
+    y += xStep
+  )
+    xTicks.push(y);
+  const ticksX = xTicks
+    .map((year) => ({ year, point: g.points.find((p) => p.year === year) }))
+    .filter(
+      (t): t is { year: number; point: (typeof g.points)[number] } =>
+        t.point !== undefined,
+    )
+    .map(({ year, point }) => ({ year, x: point.x }));
+
+  // ── the treatment layer, arbitrated ───────────────────────────────────────
+  // Each request names its register; the arbiter decides where — and whether — it lands. Nothing
+  // here places its own label, which is exactly the coupling the three-stacked-labels defect came
+  // from.
+  const requests = [
+    {
+      id: "end-value",
+      treatment: "direct-end-label-in-the-series-colour",
+      text: set(endLabel, value),
+      at: { x: g.end.x, y: g.end.y },
+      priority: 7,
+      register: value,
+      anchorPreference: "right",
+    },
+    {
+      id: "reference",
+      treatment: "accent-marks-the-thread",
+      text: set(referenceLabel, annot),
+      at: { x: g.plot.left + 60, y: g.referenceY },
+      priority: 5,
+      register: annot,
+    },
+    {
+      id: "peak",
+      treatment: "accent-marks-the-thread",
+      text: set(peakLabel, annot),
+      at: { x: g.peak.x, y: g.peak.y },
+      priority: 4,
+      register: annot,
+    },
+  ];
+
+  // THE MARKS THE ARBITER MUST NOT SIT ON. The series is a path; what a label has to clear is the
+  // band of pixels it occupies, so each reading contributes a small box around its own point and
+  // the two marked points contribute their discs. Without this the end value lands on its own
+  // line — measured on the first render of this beat, in all three directions at once.
+  const HALF = Math.max(3, direction.stroke.series);
+  const marks = [
+    ...g.points.map((p) => ({
+      x: p.x - HALF,
+      y: p.y - HALF,
+      width: HALF * 2,
+      height: HALF * 2,
+    })),
+    { x: g.peak.x - 4, y: g.peak.y - 4, width: 8, height: 8 },
+    { x: g.end.x - 5, y: g.end.y - 5, width: 10, height: 10 },
+  ];
+
+  const { placed, dropped } = placeLabels(
+    requests.map(({ id, treatment, text, at, priority }) => ({
+      id,
+      treatment,
+      text,
+      at,
+      priority,
+    })),
+    {
+      frame: {
+        left: PAD,
+        top: plotTop - 24,
+        right: width - PAD,
+        bottom: plotBottom + 30,
+      },
+      measure: (text: string) => {
+        const request = requests.find((r) => r.text === text)!;
+        const band = measureTextBand(text, sizeOf(request.register));
+        return {
+          width: measureText(text, sizeOf(request.register)),
+          height: band.ascent + band.descent,
+        };
+      },
+      avoid: marks,
+    },
+  );
+  if (dropped.length)
+    console.log(
+      `  arbiter dropped ${dropped.length}: ` +
+        dropped.map((d) => `${d.id} (${d.why})`).join("; "),
+    );
+  const byId = new Map(placed.map((p) => [p.id, p]));
+  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+
+  const textAt = (id: string) => {
+    const p = byId.get(id);
+    if (!p) return null;
+    const r = registerOf.get(id)!;
+    return (
+      <text
+        x={p.box.x}
+        y={p.box.y + r.fontSize}
+        fill={r.fill}
+        fontFamily={r.fontFamily}
+        fontSize={r.fontSize}
+        fontWeight={r.fontWeight}
+        fontStyle={r.fontStyle}
+        letterSpacing={r.letterSpacing}
+      >
+        {p.text}
+      </text>
+    );
+  };
+
+  const headerAnchor = centred ? "middle" : "start";
+  const headerX = centred ? width / 2 : PAD;
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+    >
+      <desc>{alt}</desc>
+      <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
+
+      <text
+        x={headerX}
+        y={eyebrowBaseline}
+        fill={eyebrowReg.fill}
+        fontFamily={eyebrowReg.fontFamily}
+        fontSize={eyebrowReg.fontSize}
+        fontWeight={eyebrowReg.fontWeight}
+        letterSpacing={eyebrowReg.letterSpacing}
+        textAnchor={headerAnchor}
+      >
+        {set(eyebrow, eyebrowReg)}
+      </text>
+
+      {titleLines.map((l, i) => (
+        <text
+          key={l}
+          x={headerX}
+          y={titleBaseline + i * lead}
+          fill={display.fill}
+          fontFamily={display.fontFamily}
+          fontSize={display.fontSize}
+          fontWeight={display.fontWeight}
+          fontStyle={display.fontStyle}
+          letterSpacing={display.letterSpacing}
+          textAnchor={headerAnchor}
+        >
+          {l}
+        </text>
+      ))}
+
+      {limitsLines.map((l, i) => (
+        <text
+          key={l}
+          x={split ? PAD + (width - PAD * 2) * 0.67 : headerX}
+          y={limitsBaseline + i * bodyLead}
+          fill={body.fill}
+          fontFamily={body.fontFamily}
+          fontSize={body.fontSize}
+          fontWeight={body.fontWeight}
+          fontStyle={body.fontStyle}
+          textAnchor={centred ? "middle" : "start"}
+        >
+          {l}
+        </text>
+      ))}
+
+      {direction.headRule ? (
+        <line
+          x1={PAD}
+          x2={width - PAD}
+          y1={ruleY}
+          y2={ruleY}
+          stroke={grid}
+          strokeWidth={direction.stroke.rule}
+        />
+      ) : null}
+
+      <text
+        x={centred ? width / 2 : PAD}
+        y={sourceBaseline}
+        fill={body.fill}
+        fontFamily={body.fontFamily}
+        fontSize={body.fontSize - 1}
+        fontWeight={body.fontWeight}
+        fontStyle={body.fontStyle}
+        textAnchor={centred ? "middle" : "start"}
+      >
+        {source}
+      </text>
+
+      {yTicks.map((v, i) => (
+        <g key={v}>
+          {v === reference ? null : (
+            <line
+              x1={g.plot.left}
+              x2={g.plot.right}
+              y1={gridScale(v)}
+              y2={gridScale(v)}
+              stroke={grid}
+              strokeWidth={direction.stroke.rule}
+            />
+          )}
+          <text
+            x={g.plot.left - 12}
+            y={gridScale(v) + 4}
+            fill={axis.fill}
+            fontFamily={axis.fontFamily}
+            fontSize={axis.fontSize}
+            fontWeight={axis.fontWeight}
+            letterSpacing={axis.letterSpacing}
+            textAnchor="end"
+          >
+            {set(tickLabels[i], axis)}
+          </text>
+        </g>
+      ))}
+      {ticksX.map((t) => (
+        <text
+          key={t.year}
+          x={t.x}
+          y={g.plot.bottom + 24}
+          fill={axis.fill}
+          fontFamily={axis.fontFamily}
+          fontSize={axis.fontSize}
+          fontWeight={axis.fontWeight}
+          letterSpacing={axis.letterSpacing}
+          textAnchor="middle"
+        >
+          {t.year}
+        </text>
+      ))}
+
+      <line
+        x1={g.plot.left}
+        x2={g.plot.right}
+        y1={g.referenceY}
+        y2={g.referenceY}
+        stroke={muted}
+        strokeWidth={direction.stroke.rule}
+        strokeDasharray="5 4"
+      />
+
+      <path
+        d={path}
+        fill="none"
+        stroke={direction.accent}
+        strokeWidth={direction.stroke.series}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+
+      <circle cx={g.peak.x} cy={g.peak.y} r={3} fill={muted} />
+      <circle cx={g.end.x} cy={g.end.y} r={4} fill={direction.accent} />
+
+      {textAt("reference")}
+      {textAt("peak")}
+      {textAt("end-value")}
+    </svg>
+  );
+}

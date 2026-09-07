@@ -35,8 +35,9 @@ weight is the reference's own; this repository has never used a weight below 400
 
 ## Stroke
 
-- series 1.8, rule 0.8 — thinner than the light directions, because a dark ground carries more
-  contrast per unit of ink.
+- stroke: series 1.8, rule 0.8
+
+Thinner than the light directions, because a dark ground carries more contrast per unit of ink.
 
 ## Not yet verified
 

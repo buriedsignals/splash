@@ -185,6 +185,39 @@ describe("the arbiter", () => {
     }
   });
 
+  it("should avoid the marks, not only the other labels", () => {
+    // MEASURED ON THE FIRST REAL RENDER. With only labels avoided, the CO2 beat's end value landed
+    // ON its own series in all three directions: the arbiter tried `above` first, the point it
+    // named was on the line, and nothing told it the line was there. A label a reader cannot
+    // separate from the data is the defect `annotation-reads-over-what-it-crosses` already refuses
+    // elsewhere in this tree.
+    // Exactly where the `above` anchor lands for this request — 4 characters at 6px, 12 tall,
+    // eight above the point — so a version that ignores `avoid` cannot pass by luck.
+    const onTheLine = { x: 380, y: 226, width: 44, height: 20 };
+    const { placed } = placeLabels(
+      [{ id: "end", treatment: "t", text: "2024", at: { x: 400, y: 250 }, priority: 1 }],
+      { frame: FRAME, measure, avoid: [onTheLine] },
+    );
+    expect(placed).toHaveLength(1);
+    expect(overlaps(placed[0].box, onTheLine)).toBe(false);
+  });
+
+  it("should still drop a label that no anchor can clear of the marks", () => {
+    // Marks on all four sides of the point, each wide enough to take the anchor it faces.
+    const boxed = [
+      { x: 330, y: 218, width: 140, height: 26 },
+      { x: 330, y: 256, width: 140, height: 26 },
+      { x: 300, y: 236, width: 105, height: 28 },
+      { x: 402, y: 236, width: 105, height: 28 },
+    ];
+    const { placed, dropped } = placeLabels(
+      [{ id: "hemmed", treatment: "t", text: "NO ROOM", at: { x: 400, y: 250 }, priority: 1 }],
+      { frame: FRAME, measure, avoid: boxed },
+    );
+    expect(placed).toHaveLength(0);
+    expect(dropped[0].why).toMatch(/collide|room/i);
+  });
+
   it("should place a lone label at its own anchor, unmoved", () => {
     // A guard that displaces correct work is a guard someone switches off.
     const { placed, dropped } = placeLabels(
