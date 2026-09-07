@@ -78,13 +78,23 @@ within minutes: it declares `LEGEND_LABEL` and `CAPTION` and has no axis at all.
 | `annot` | annotation text — reference captions, event labels, callouts |
 | `value` | a number attached to a mark (end label, value label) |
 
-**The apparatus — named by the family, and each says which core voice it derives from.**
+**The apparatus — named by the family, EVIDENCED, and each says which core voice it derives from.**
 
-| family | its own registers | derived from |
-| --- | --- | --- |
-| chart, video | `axis` | `body` |
-| map | `legend`, `place` | `body`, `annot` |
-| scrolly | `step` | `body` |
+| family | its own registers | derived from | evidence |
+| --- | --- | --- | --- |
+| chart, video | `axis` | `body` | Our World in Data, Ferdio |
+
+That is the whole table today, and the shortness is the point. A second version of this design held
+`map: { legend, place }` and `scrolly: { step }` — read off **this repository's own map component**
+rather than off any published piece. The corpus holds **no map reference at all**: fifteen
+references, not one a map. Inventing a vocabulary ahead of its evidence is the same parochialism the
+family split was created to fix, moved one level up, and it was removed.
+
+Each register has a record under `docs/design-base/registers/` citing the two independent
+publications that show it — the floor an imported treatment faces, because "families of this kind
+call it this" is a claim about what desks do, not a fact the data carries.
+`an-apparatus-register-is-evidenced.test.ts` holds the code and the corpus equal in both
+directions.
 
 **Derivation is what makes a direction portable.** `creme` was measured on a unit chart that has no
 legend; asked to govern a map it derives one from `body` at 0.88× rather than inventing a voice or

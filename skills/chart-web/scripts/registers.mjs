@@ -38,13 +38,22 @@ export const CORE_REGISTERS = Object.freeze(["display", "eyebrow", "body", "anno
  *
  * Each family names its own, and says which core voice it DERIVES FROM when a direction — measured
  * on a piece that had no such apparatus — does not define it. That derivation is what keeps a
- * direction portable: `creme` was measured on a unit chart with no axis, and it can still govern a
- * map without anybody inventing a legend voice for it.
+ * direction portable.
+ *
+ * THIS TABLE IS EVIDENCED, NOT DECLARED. Every entry has a record under
+ * `docs/design-base/registers/` citing the published pieces that show it, and
+ * `an-apparatus-register-is-evidenced.test.ts` holds the two equal in both directions — the same
+ * discipline `treatments.mjs` is under.
+ *
+ * A first version held `map: { legend, place }` and `scrolly: { step }`, read off THIS
+ * REPOSITORY'S OWN map component rather than off any published piece. The corpus holds no map
+ * reference at all — fifteen references, not one a map — so nothing evidenced what a published map
+ * calls its apparatus. They are gone until a map family is harvested and the references say. A
+ * vocabulary invented ahead of its evidence is the parochialism this table was created to fix,
+ * moved one level up.
  */
 export const FAMILY_REGISTERS = Object.freeze({
   chart: Object.freeze({ axis: "body" }),
-  map: Object.freeze({ legend: "body", place: "annot" }),
-  scrolly: Object.freeze({ step: "body" }),
   video: Object.freeze({ axis: "body" }),
 });
 

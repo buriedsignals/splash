@@ -89,32 +89,37 @@ describe("registers", () => {
     expect(Object.isFrozen(CORE_REGISTERS)).toBe(true);
   });
 
-  it("should give each family its own apparatus, because a map has no axis", () => {
+  it("should give a family only the apparatus its references evidence", () => {
     // A first version froze SIX registers with `axis` among them — one family's vocabulary imposed
-    // on every family. `proof/map-quake-symbol/QuakeSymbolStill.tsx` declares `LEGEND_LABEL` and
-    // `CAPTION` and no axis at all, and it found the mistake within minutes.
+    // on all of them — and `proof/map-quake-symbol/QuakeSymbolStill.tsx` refuted it within minutes.
+    // A second version fixed that by inventing `map: { legend, place }` from THAT SAME COMPONENT,
+    // which is the identical mistake one level up: the corpus holds no map reference at all. A
+    // family carries an apparatus register only once a published piece has been seen using it.
     expect(registersFor("chart")).toContain("axis");
-    expect(registersFor("map")).not.toContain("axis");
-    expect(registersFor("map")).toContain("legend");
-    expect(registersFor("map")).toContain("place");
+    expect(registersFor("map")).toEqual([...CORE_REGISTERS]);
     for (const family of Object.keys(FAMILY_REGISTERS))
       for (const voice of CORE_REGISTERS)
         expect(registersFor(family), family).toContain(voice);
   });
 
-  it("should refuse a register that belongs to another family", () => {
+  it("should refuse a register no family evidences", () => {
     expect(() => resolveRegister(DIRECTION, "legend", { family: "chart" })).toThrow(/legend/);
+    // Not because a map has no legend — it plainly does — but because no reference has been read
+    // that shows what a published map calls it.
     expect(() => resolveRegister(DIRECTION, "axis", { family: "map" })).toThrow(/axis/);
   });
 
   it("should derive a family's apparatus from a core voice when the direction has none", () => {
-    // What makes a direction PORTABLE. `creme` was measured on a unit chart that has no legend;
-    // asked to govern a map it derives one from `body` rather than inventing a voice or refusing
-    // the direction outright — and says so, so nothing inferred looks measured.
-    const legend = resolveRegister(DIRECTION, "legend", { family: "map" });
-    expect(legend.derivedFrom).toBe("body");
-    expect(legend.fontFamily).toBe(DIRECTION.registers.body.family);
-    expect(legend.fontSize).toBeLessThan(DIRECTION.registers.body.size);
+    // What makes a direction PORTABLE. `creme` was measured on ABC's unit chart, which has no
+    // scale at all; asked to govern a chart it derives an axis from `body` rather than inventing a
+    // voice or refusing the direction outright — and says so, so nothing inferred looks measured.
+    const noAxis = { ...DIRECTION, registers: { ...DIRECTION.registers } };
+    delete (noAxis.registers as Record<string, unknown>).axis;
+    const derived = resolveRegister(noAxis, "axis", { family: "chart" });
+    expect(derived.derivedFrom).toBe("body");
+    expect(derived.fontFamily).toBe(DIRECTION.registers.body.family);
+    expect(derived.fontSize).toBeLessThan(DIRECTION.registers.body.size);
+    // A register the direction DID record is never derived.
     expect(resolveRegister(DIRECTION, "axis", { family: "chart" }).derivedFrom).toBeNull();
   });
 
