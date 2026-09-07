@@ -394,10 +394,21 @@ exported `harvestStyles(page)` that calls `page.evaluate`. Line 1 is
 Run: `bun test skills/splash/test/harvest-styles.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Put it in the live lane**
+- [ ] **Step 5: Prove the tests bite, and check the lane is derived**
 
-This test drives a real browser. Add it to the live lane in `scripts/test-lanes.mjs` the way the
-existing browser tests are listed, and confirm `bun scripts/test-lanes.mjs --check` passes.
+`scripts/test-lanes.mjs` derives lanes **off the source**, following imports — there is no list to
+edit. A test importing `puppeteer-core` lands in the HEAVY lane on its own; only a `*.live.test.ts`
+filename means live. Confirm with `bun scripts/test-lanes.mjs --why | grep harvest-styles`.
+
+Then mutate three decisions and watch each kill a distinct test:
+
+1. drop `style`, `tracking` and `transform` from the tuple key → the four-register test goes red;
+2. record `letterSpacing: "normal"` as the word rather than `0` → the zero-tracking test goes red;
+3. remove the `painted(el)` guard → the not-painted test goes red.
+
+**A fixture whose runs differ on more than one axis cannot catch mutation 1.** Four spans agreeing
+on family, size and weight and differing one axis each are what make the key testable; without them
+the mutation stays green and the test proves nothing.
 
 - [ ] **Step 6: Commit**
 
