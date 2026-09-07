@@ -948,6 +948,13 @@
      Bricolage sur fond d'encre, pas en système Spotlight. */
   .offers{background:var(--ink);color:var(--paper);
           padding:clamp(72px,9vw,132px) var(--gut)}
+  /* MAIS PAS DE RESPIRATION EN HAUT ICI. Sur la landing ce bloc suit une
+     section à panneau collé, dont le padding est nul : sa propre respiration
+     EST l'écart. Sur cette page il suit une section ordinaire qui a déjà la
+     sienne, et les deux s'additionnaient — 256 px là où la page tient un
+     rythme de 124. C'est la section d'avant qui donne l'écart, comme partout
+     ailleurs ; le bloc n'a plus qu'à s'y poser. */
+  .offers{padding-top:0}
   .offers .oeye{display:flex;align-items:center;gap:9px;font-family:var(--C);
           font-size:11px;font-weight:500;letter-spacing:.16em;
           text-transform:uppercase;opacity:.6}
