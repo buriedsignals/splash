@@ -55,6 +55,7 @@ export const CORE_REGISTERS = Object.freeze(["display", "eyebrow", "body", "anno
 export const FAMILY_REGISTERS = Object.freeze({
   chart: Object.freeze({ axis: "body" }),
   video: Object.freeze({ axis: "body" }),
+  map: Object.freeze({ place: "annot" }),
 });
 
 /** How much smaller a derived apparatus register is than the core voice it comes from: quiet enough

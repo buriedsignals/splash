@@ -7,7 +7,7 @@ What real work looks like for a given kind of graphic and a given export. The **
 structure the pixel route measured, in `100.datavizproject.com`'s own SHAPE vocabulary where it
 applies.
 
-20 references.
+22 references.
 
 | family | type | export | archive | palette shape | ground | reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -26,7 +26,9 @@ applies.
 | line | unit grid (waffle), scrollytelling | scrolly | url-list | sequential | `#E1E5E6` | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
 | line | deviation stems off a diagonal reference | web | url-list | diverging | `#FFFFFF` | [pudding-cool-2017-03-redraft](references/line/pudding-cool-2017-03-redraft/NOTES.md) |
 | line | explanatory diagram, scrollytelling | scrolly | url-list | sequential | `#111044` | [pudding-cool-2022-06-streaming](references/line/pudding-cool-2022-06-streaming/NOTES.md) |
+| map | proportional-symbol map | web | buried-signals | sequential | `#DEEBED` | [gaza-nine-vercel-app](references/map/gaza-nine-vercel-app/NOTES.md) |
 | map | dot-density map, reader-located | web | url-list | diverging | `#FEFEFE` | [lanacion-com-ar-seguridad-mapa-del-delito-te-sentis-inseguro-en-la-ciu](references/map/lanacion-com-ar-seguridad-mapa-del-delito-te-sentis-inseguro-en-la-ciu/NOTES.md) |
+| map | locator map with named hydrography | web | url-list | diverging | `#FFFFFF` | [multimedia-scmp-com-infographics-news-china-article-3094790-china-floo](references/map/multimedia-scmp-com-infographics-news-china-article-3094790-china-floo/NOTES.md) |
 | map | dot map with annotated absences | static | url-list | monochrome | `#FFFFFF` | [projects-propublica-org-graphics-hatecrime-map](references/map/projects-propublica-org-graphics-hatecrime-map/NOTES.md) |
 | map | dot-density map, scrollytelling | scrolly | url-list | sequential | `#FDFDFD` | [projects-propublica-org-louisiana-toxic-air](references/map/projects-propublica-org-louisiana-toxic-air/NOTES.md) |
 | map | risk-surface map with named facilities | web | url-list | sequential | `#333333` | [projects-propublica-org-toxmap](references/map/projects-propublica-org-toxmap/NOTES.md) |

@@ -21,6 +21,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
 import { harvestStyles } from "./harvest-styles.mjs";
 import { readPixelPalette } from "./pixel-palette.mjs";
@@ -121,6 +122,39 @@ async function dismissConsent(page) {
   }, CONSENT_WORDS.source);
 }
 
+/**
+ * THE THIRD ROUTE: Firecrawl, for a wall the browser cannot pass.
+ *
+ * Measured. SCMP answers a headless Chrome with an "Access Verification" bot check — three pieces,
+ * three times — and that is a site declining automated reading, which the consent handler above
+ * deliberately does not work around. Firecrawl is a rendering service the account already pays for;
+ * it returns the page as a reader meets it. On SCMP's *China's worst floods* it returned the whole
+ * piece, and with it the second publication the map vocabulary had been missing for two waves.
+ *
+ * IT COSTS CREDITS AND IT IS NOT THE DEFAULT. It is asked for per pool, because a route that spends
+ * money should be chosen rather than fallen into.
+ *
+ * AND IT RETURNS PIXELS, NOT A DOM. The style route needs a live document to read computed styles
+ * from; through Firecrawl there is none, so that route is recorded `not-applicable` with its reason
+ * rather than quietly omitted. A record harvested this way carries the pixel route only, and says
+ * so.
+ */
+function firecrawlScreenshot(url, out) {
+  const run = spawnSync(
+    "firecrawl",
+    ["scrape", url, "--screenshot", "--wait-for", "8000", "--format", "screenshot"],
+    { encoding: "utf8", timeout: 120000 },
+  );
+  const link = (run.stdout ?? "").match(/https:\/\/storage\.googleapis\.com\S+/)?.[0];
+  if (!link)
+    throw new Error(
+      `firecrawl returned no screenshot for ${url}: ${(run.stderr || run.stdout || "").slice(0, 200)}`,
+    );
+  const fetched = spawnSync("curl", ["-sS", "-o", out, link], { encoding: "utf8", timeout: 120000 });
+  if (fetched.status !== 0) throw new Error(`could not fetch the firecrawl screenshot: ${fetched.stderr}`);
+  return link.split("?")[0];
+}
+
 /** Below this the element is a logo, an icon or a spacer, not the piece's graphic. */
 const MIN_GRAPHIC_PX = { w: 200, h: 120 };
 
@@ -154,7 +188,7 @@ async function largestGraphic(page) {
  *
  * @param {{url: string, family: string, archive: string, id?: string, browser: import("puppeteer-core").Browser, corpus?: string}} options
  */
-export async function harvestReference({ url, family, archive, id, browser, corpus = CORPUS }) {
+export async function harvestReference({ url, family, archive, id, browser, corpus = CORPUS, via = "browser" }) {
   const parsed = new URL(url);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
     throw new Error(`refusing a non-http url: ${url}`);
@@ -175,6 +209,25 @@ export async function harvestReference({ url, family, archive, id, browser, corp
     viewport: VIEWPORT,
     routes: { style: { state: "not-applicable" }, pixel: { state: "not-applicable" } },
   };
+
+  if (via === "firecrawl") {
+    record.via = "firecrawl";
+    try {
+      record.firecrawl = firecrawlScreenshot(url, shot);
+      record.routes.style = {
+        state: "not-applicable",
+        why: "fetched through Firecrawl, which returns rendered pixels rather than a live DOM",
+      };
+      record.pixel = readPixelPalette(shot);
+      record.routes.pixel = { state: "ok", measuredFrom: "screenshot.png" };
+    } catch (err) {
+      const why = String(err).slice(0, 300);
+      record.routes.style = { state: "failed", why };
+      record.routes.pixel = { state: "failed", why };
+    }
+    await writeFile(join(dir, "measured.json"), JSON.stringify(record, null, 2) + "\n");
+    return { dir, record };
+  }
 
   const page = await browser.newPage();
   try {
@@ -241,6 +294,8 @@ if (import.meta.main) {
   const archive = flag("--archive");
   const one = flag("--url");
   const pool = flag("--pool");
+  // Costs credits, so it is asked for and never fallen into.
+  const via = argv.includes("--via-firecrawl") ? "firecrawl" : "browser";
   if (!family || !archive || (!one && !pool))
     throw new Error(
       "usage: bun scripts/design-base/harvest.mjs --family <f> --archive <a> (--url <u> | --pool <file>)",
@@ -261,7 +316,7 @@ if (import.meta.main) {
   let ok = 0;
   try {
     for (const url of urls) {
-      const { dir, record } = await harvestReference({ url, family, archive, browser });
+      const { dir, record } = await harvestReference({ url, family, archive, browser, via });
       const states = Object.entries(record.routes)
         .map(([route, r]) => `${route} ${r.state}`)
         .join(", ");

@@ -96,16 +96,22 @@ describe("registers", () => {
     // which is the identical mistake one level up: the corpus holds no map reference at all. A
     // family carries an apparatus register only once a published piece has been seen using it.
     expect(registersFor("chart")).toContain("axis");
-    expect(registersFor("map")).toEqual([...CORE_REGISTERS]);
+    // A map has a `place` register because ProPublica and SCMP were both seen deciding their
+    // geography's typography — administrative area in tracked capitals, settlement in mixed case,
+    // water in italic — on two continents. It does NOT have an axis, and it does not yet have a
+    // `legend`: the Guardian shows one, and no second desk has been read that does.
+    expect(registersFor("map")).toContain("place");
+    expect(registersFor("map")).not.toContain("axis");
+    expect(registersFor("map")).not.toContain("legend");
     for (const family of Object.keys(FAMILY_REGISTERS))
       for (const voice of CORE_REGISTERS)
         expect(registersFor(family), family).toContain(voice);
   });
 
   it("should refuse a register no family evidences", () => {
-    expect(() => resolveRegister(DIRECTION, "legend", { family: "chart" })).toThrow(/legend/);
-    // Not because a map has no legend — it plainly does — but because no reference has been read
-    // that shows what a published map calls it.
+    expect(() => resolveRegister(DIRECTION, "legend", { family: "map" })).toThrow(/legend/);
+    // Not because a map has no legend — the Guardian plainly draws one — but because only one desk
+    // has been read that does, and one desk is a habit.
     expect(() => resolveRegister(DIRECTION, "axis", { family: "map" })).toThrow(/axis/);
   });
 

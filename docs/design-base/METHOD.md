@@ -65,7 +65,8 @@ drawing from.
 | line | url-list | 90 | 23 | 6 | 6 |
 | line | datavizproject | 100 | 5 | 5 | 5 |
 | line | informationisbeautiful | 4 | 4 | 4 | 4 |
-| map | url-list | 118 | 28 | 5 | 5 |
+| map | url-list | 118 | 38 | 6 | 6 |
+| map | buried-signals | 5 | 3 | 1 | 1 |
 | map | informationisbeautiful | 2 | 2 | 0 | 0 |
 
 **line, 2026-09-07 — and the three method corrections this yield produced.**
@@ -220,3 +221,47 @@ four, with the yield falling as the pool leaves the handful of desks that publis
 harvesting problem before it is a design one. The abstraction holds — a direction measured on a
 chart governs a map today, deriving any missing apparatus from `body` and saying so. What is scarce
 is evidence, and no amount of design will manufacture it.
+
+
+**Correction 9 — our own archive can teach, but it cannot corroborate.**
+
+The Buried Signals archive is named as a fourth pool in the spec and was drawn from for the first
+time here: `kashmir-documentary`, `yemen` and `gaza`, whose deployed sites carry real cartographic
+work. Two of the three stop at their own entry screen — the map sits behind "START WATCHING" and
+"EXPLORE THE MAP", and the harvester scrolls but does not click. The third, `gaza`, reaches a real
+proportional-symbol map.
+
+It is filed as a reference and it is **not** admissible as an independent publication. Buried
+Signals is the house this tool is being built with; using its own work to corroborate this tool's
+own vocabulary is the parochialism the evidence floor exists to refuse, wearing a different name.
+The pool stays useful for what a piece TEACHES; it counts for nothing when the question is whether
+two desks independently do a thing.
+
+**Correction 10 — a map behind an entry click is a map the harvester cannot see.**
+Two of the three Buried Signals sites, and by inference a whole class of longform pieces, put their
+graphic behind a deliberate entry. Scrolling does not reach it. This is a bounded improvement to the
+harvester — click a single obvious entry control before measuring, the way consent dialogs are now
+dismissed — and it is not made here; it is recorded so the next family knows the shape of what it
+is missing.
+
+
+**Correction 11 — three routes were tried against the access problem, and only one worked.**
+
+| route | what it cost | what it returned |
+| --- | --- | --- |
+| Buried Signals archive | nothing | two of three sites stop at an entry click; the third reaches a map but **cannot corroborate** (correction 9) |
+| Wayback Machine | nothing | **the document, not the graphic.** Eight recovered pieces — five NYT, one WaPo — came back as unstyled HTML shells: "Site Search Navigation", link lists, a serif headline, no CSS and no JavaScript. These pieces ARE their JavaScript. The WaPo one answered "Access Denied" even archived. Zero usable. |
+| **Firecrawl** | credits | **it passed the wall.** SCMP's "Access Verification" stopped a headless Chrome three times; Firecrawl returned *China's worst floods in decades* whole — and with it the second publication the `place` register had waited two waves for. |
+
+Firecrawl is now a third route in the harvester, asked for with `--via-firecrawl` and never fallen
+into, because a route that spends money should be chosen. It returns **pixels, not a DOM**: a record
+harvested through it carries the pixel route and records the style route as `not-applicable` with
+its reason, so nothing looks measured that was only looked at.
+
+**And `place` is filed.** ProPublica in Louisiana and SCMP on the Yangtze, two continents, two
+desks, the same three treatments in the same roles: administrative area in tracked capitals,
+settlement in mixed case, **water in italic**. Two other maps that name their geography were refused
+along the way — La Nación's, whose labels are the provider's defaults, and our own Gaza piece — and
+the refusals are written into the register's own record.
+
+`legend` is still one publication. The Guardian draws one; no second desk has been read that does.
