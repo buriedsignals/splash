@@ -92,7 +92,7 @@ One directory per reference under the corpus. Contains:
   from** (§6.1), title, page ground, every distinct
   `(family, size, weight, style, tracking, case)` tuple actually painted with its run count and a
   text sample, mark fills and strokes, text-column measure in characters, the largest graphic's box
-  and ratio — **and, from the pixel route (§6.3), the ground, the chromatic palette with each
+  and ratio — **and, from the pixel route (§6.2), the ground, the chromatic palette with each
   colour's coverage, the neutral furniture, and the palette's shape.** Each fact carries the route
   that produced it.
 - `screenshot.png` — the visual trace, at a fixed 1440×900 viewport.
@@ -141,11 +141,12 @@ re-invention, and so two families can run in parallel without colliding.
 files. Two families touch no shared file except the two indexes in §8, which are *generated*, never
 hand-edited. Two agents may therefore run steps 1–6 for different families at the same time.
 
-1. **Draw the candidate pool from all three archives.** They are not the same kind of source and
-   they do not feed the same axis — see §6.1. Every family draws from all three; a family whose
-   pool comes from one archive only is under-drawn and `METHOD.md` must say so.
+1. **Draw the candidate pool from all three archives.** They are different kinds of source and are
+   read by different routes, but every one of them feeds every axis — see §6.1. Every family draws
+   from all three; a family whose pool comes from one archive only is under-drawn and `METHOD.md`
+   must say so.
 2. **Harvest by BOTH routes, always.** The **style route** reads computed styles and reaches type
-   everywhere and marks wherever they are SVG. The **pixel route** (§6.3) reads the colour
+   everywhere and marks wherever they are SVG. The **pixel route** (§6.2) reads the colour
    signature off the rendered pixels and reaches everything else — posters, canvas, video frames.
    Run both on every reference and record which one produced each fact; neither is a fallback for
    the other, and a reference measured by one route only is under-measured. Failures are recorded
@@ -179,7 +180,7 @@ kind, and treating them alike would waste two of the three.
 this spec claimed only the url list could yield directions, on the grounds that IIB serves images
 with no computed styles. That confused *hard to measure mechanically* with *carries nothing*, and
 it would have discarded two archives out of three. A poster has an art direction — frequently a
-stronger one than a newsroom page. The pixel route (§6.3) exists to take it.
+stronger one than a newsroom page. The pixel route (§6.2) exists to take it.
 
 Two further notes for the runbook:
 
@@ -188,7 +189,7 @@ Two further notes for the runbook:
 - **DVP's own taxonomy (STORY / PROPERTY / SHAPE) is reused** as the vocabulary of
   `INDEX-BY-ARTIFACT.md`'s shape column, rather than inventing a parallel one.
 
-### 6.3 The pixel route
+### 6.2 The pixel route
 
 For any artifact whose graphic is a raster — an IIB poster, a canvas chart, an extracted video
 frame — the colour signature is read off the pixels: bucket at 5 bits per channel, split by
@@ -215,7 +216,7 @@ categorical (4 clusters, 3 ramped). Four for four against a reading by eye.
 The Buried Signals archive is a fourth pool, used for existing project references; it is drawn from
 the same way as the url list.
 
-### 6.2 The yield log
+### 6.3 The yield log
 
 **What this runbook must record as it goes, in a `METHOD.md` living beside the corpus:** the
 candidate pool's filter, how many candidates were drawn, how many harvested, how many survived
@@ -314,5 +315,5 @@ Throwaway, in `.sdd/design-probe/` (gitignored): `TreatmentLine.tsx` (five treat
 and to be promoted by the plan:
 
 - `ad-harvest.mjs` — the style route. Validated on six newsroom pieces and four IIB pieces.
-- `pixel-palette.mjs` — the pixel route (§6.3). Validated on four IIB pieces, four for four against
+- `pixel-palette.mjs` — the pixel route (§6.2). Validated on four IIB pieces, four for four against
   a reading by eye, after the two defects recorded there were fixed.
