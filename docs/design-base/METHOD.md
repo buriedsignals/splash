@@ -65,7 +65,7 @@ drawing from.
 | line | url-list | 90 | 23 | 6 | 6 |
 | line | datavizproject | 100 | 5 | 5 | 5 |
 | line | informationisbeautiful | 4 | 4 | 4 | 4 |
-| map | url-list | 118 | 10 | 4 | 4 |
+| map | url-list | 118 | 28 | 5 | 5 |
 | map | informationisbeautiful | 2 | 2 | 0 | 0 |
 
 **line, 2026-09-07 — and the three method corrections this yield produced.**
@@ -183,3 +183,40 @@ commits ago, against its own author, on the register he most wanted.
 **What a second wave must target**, therefore: a map with named geography from a desk that is not
 ProPublica, and a map with a legend from a desk that is not the Guardian. Not more maps — maps from
 elsewhere.
+
+
+**Correction 8 — the consent wall is the dominant failure mode, and it is half-fixable.**
+
+A second map wave, drawn deliberately from ten desks that were NOT ProPublica or the Guardian,
+returned **zero usable references out of twelve**. Nine of the twelve were walls rather than bad
+choices: three bot checks (SCMP), four consent dialogs (La Nación ×2, National Geographic ×2), a
+404 and a 403. Two more turned out not to be maps at all despite their urls — La Nación's
+"mapa_versus" is a flow diagram, `hs.fi`'s "pole" is a bicycle.
+
+The harvester now dismisses consent dialogs before it measures anything — known platform buttons
+first (OneTrust, Didomi, Quantcast, Sourcepoint), then a narrow text match on BUTTONS only, because
+matching link text clicks "Accept our terms" in a footer and navigates away from the piece. What it
+clicked is recorded in the reference, because a page read after a dialog was dismissed is a page in
+a state the harvester put it in.
+
+It works: three walls crossed by three different mechanisms — `.fc-cta-consent`, a button labelled
+"Aceptar", `#onetrust-accept-btn-handler`. **And behind them, one usable map out of four.** A second
+dialog waited behind the first on one (a push-notification prompt); one was a microscopy image; one
+was article prose.
+
+**Bot checks are not fixable this way and should not be.** SCMP's "Access Verification" is a site
+saying no to automated reading, and a harvester that worked around it would be taking something it
+was refused.
+
+**The map vocabulary still cannot be evidenced, after two waves and 28 candidates.** `place` and
+`legend` are plainly real — ProPublica shows the first as a designed system, the Guardian shows the
+second — but each rests on one publication. La Nación's *mapa del delito* names its geography too,
+and it was NOT accepted as the second: its labels are the basemap provider's defaults, left as
+delivered, and at this resolution a provider's default cannot honestly be told from an editorial
+decision. Filing a vocabulary on that reading would put an uncertainty into the foundation.
+
+**What this says about the programme.** Twenty-two families at roughly one usable reference in
+four, with the yield falling as the pool leaves the handful of desks that publish openly, is a
+harvesting problem before it is a design one. The abstraction holds — a direction measured on a
+chart governs a map today, deriving any missing apparatus from `body` and saying so. What is scarce
+is evidence, and no amount of design will manufacture it.

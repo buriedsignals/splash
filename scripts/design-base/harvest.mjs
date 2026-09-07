@@ -61,6 +61,66 @@ export function slugOf(url) {
     .toLowerCase();
 }
 
+/**
+ * THE CONSENT WALL IS THE DOMINANT FAILURE MODE, MEASURED.
+ *
+ * A second map wave returned zero usable references out of twelve. Nine of the twelve were walls
+ * rather than bad choices: three bot checks (SCMP), four consent dialogs (La Nación ×2, National
+ * Geographic ×2), a 404 and a 403. The four consent dialogs are the recoverable ones, and this is
+ * what recovers them.
+ *
+ * Known consent platforms first, because their buttons are stable and unambiguous. A text match
+ * follows for the rest — deliberately narrow, and only ever on a BUTTON: matching link text would
+ * click "Accept our terms" in a footer and navigate away from the piece.
+ */
+const CONSENT_SELECTORS = [
+  "#onetrust-accept-btn-handler",
+  ".onetrust-close-btn-handler",
+  "#didomi-notice-agree-button",
+  ".qc-cmp2-summary-buttons button[mode='primary']",
+  "button[title='Accept all']",
+  "button[aria-label*='Accept' i]",
+  ".fc-cta-consent",
+  "#truste-consent-button",
+  ".cmp-intro_acceptAll",
+  "[data-testid='GDPR-accept']",
+];
+
+/** Only these words, only on a button, only when it is actually painted. */
+const CONSENT_WORDS =
+  /^(accept|accept all|i accept|agree|i agree|allow all|got it|ok|continue|j.?accepte|tout accepter|accepter|aceptar|acepto|zustimmen|akzeptieren)$/i;
+
+/**
+ * Dismiss a consent dialog if one is in the way. Returns what it clicked, or null — recorded in the
+ * reference, because a page read after a dialog was dismissed is a page in a state the harvester
+ * put it in, and that belongs in the record.
+ */
+async function dismissConsent(page) {
+  for (const selector of CONSENT_SELECTORS) {
+    const handle = await page.$(selector);
+    if (!handle) continue;
+    const box = await handle.boundingBox();
+    if (box) {
+      await handle.click().catch(() => {});
+      await handle.dispose();
+      return selector;
+    }
+    await handle.dispose();
+  }
+  return page.evaluate((source) => {
+    const words = new RegExp(source, "i");
+    for (const button of document.querySelectorAll("button, [role='button']")) {
+      const label = (button.textContent ?? "").trim();
+      if (!words.test(label)) continue;
+      const r = button.getBoundingClientRect();
+      if (r.width < 40 || r.height < 20) continue;
+      button.click();
+      return `button "${label}"`;
+    }
+    return null;
+  }, CONSENT_WORDS.source);
+}
+
 /** Below this the element is a logo, an icon or a spacer, not the piece's graphic. */
 const MIN_GRAPHIC_PX = { w: 200, h: 120 };
 
@@ -121,6 +181,10 @@ export async function harvestReference({ url, family, archive, id, browser, corp
     await page.setViewport({ ...VIEWPORT, deviceScaleFactor: 1 });
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
     await new Promise((r) => setTimeout(r, SETTLE_MS));
+    // Before anything is measured: a dialog in the way is measured INSTEAD of the piece, and both
+    // routes report `ok` on it. See correction 3 in `docs/design-base/METHOD.md`.
+    record.consent = await dismissConsent(page);
+    if (record.consent) await new Promise((r) => setTimeout(r, 2000));
     // Scroll once and back, so lazy graphics and a scrollytelling first step actually paint.
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
     await new Promise((r) => setTimeout(r, AFTER_SCROLL_MS));

@@ -1,0 +1,691 @@
+{
+  "url": "https://www.lanacion.com.ar/seguridad/mapa-del-delito-te-sentis-inseguro-en-la-ciudad-comparti-tu-ubicacion-y-te-decimos-cuantos-delitos-nid23102024/",
+  "archive": "url-list",
+  "family": "map",
+  "id": "lanacion-com-ar-seguridad-mapa-del-delito-te-sentis-inseguro-en-la-ciu",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Aceptar\"",
+  "style": {
+    "title": "Mapa del delito. ¿Te sentís inseguro en la ciudad? Compartí tu ubicación y te decimos cuántos hechos ilícitos hubo en la",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 12 | 600 | normal | 0 | none",
+        "count": 48,
+        "sample": "16",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 14 | 400 | normal | 0 | none",
+        "count": 21,
+        "sample": "Nicolás Cassese",
+        "colors": [
+          "rgb(146, 146, 146)",
+          "rgb(200, 114, 83)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 16 | 400 | normal | 0 | none",
+        "count": 18,
+        "sample": "A FONDO",
+        "colors": [
+          "rgb(244, 244, 244)",
+          "rgb(77, 77, 77)",
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "Hurtos totales",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 17,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 17 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "Para realizar este especial tomamos los registros de los del",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 20 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Robos totales",
+        "colors": [
+          "rgb(77, 77, 77)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Total de Robos totales",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 26,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 26 | 100 | normal | 0 | none",
+        "count": 6,
+        "sample": "64.983",
+        "colors": [
+          "rgb(77, 77, 77)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Prumo | 13 | 400 | normal | 0 | uppercase",
+        "count": 6,
+        "sample": "EDICIÓN PERIODÍSTICA",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 20 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "El lunes de la semana pasada, justo antes del atardecer y co",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 26,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Prumo | 26 | 400 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "Delitos en la ciudad de Buenos Aires",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 16 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Disciplina mixta",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 23,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 23 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "En la ciudad de Buenos Aires, en 2023, crecieron los robos y",
+        "colors": [
+          "rgb(77, 77, 77)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Arial | 12 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Suscribite por $1.500",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 52,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Prumo | 52 | 400 | normal | -0.52 | none",
+        "count": 2,
+        "sample": "Mapa del delito",
+        "colors": [
+          "rgb(77, 77, 77)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Prumo | 20 | 400 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Créditos",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Prumo | 14 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Iniciar sesión",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(1, 1, 1)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Arial | 14 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "SECCIONES",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 15,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.4,
+        "transform": "uppercase",
+        "key": "Roboto | 15 | 600 | normal | -0.4 | uppercase",
+        "count": 1,
+        "sample": "¿Qué tan inseguro es el lugar donde estás?",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "roboto",
+        "size": 14,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "roboto | 14 | 900 | normal | 1 | uppercase",
+        "count": 1,
+        "sample": "Compartí ubicación",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "roboto",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "roboto | 10 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "La aplicación solo funciona en la ciudad de Buenos Aires",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "FILTROS",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 16,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 16 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "foils",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "roboto",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "roboto | 13 | 600 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "delitos por año",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 13,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 13 | 100 | normal | 0 | none",
+        "count": 1,
+        "sample": "2023",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 17,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 17 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "datos públicos",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Arial | 12 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Copyright 2024 - SA LA NACION | Todos los derechos reservado",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Prumo | 10 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subir",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Prumo | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Suscriptores",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Prumo",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.3,
+        "transform": "none",
+        "key": "Prumo | 24 | 400 | normal | -0.3 | none",
+        "count": 1,
+        "sample": "Sumate a la conversación",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.3,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | -0.3 | none",
+        "count": 1,
+        "sample": "Para comentar las notas, necesitás suscribirte",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(244, 244, 244)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(204, 204, 204)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 740,
+      "ch": 74
+    },
+    "graphic": {
+      "tag": "canvas",
+      "x": 1,
+      "y": 2927,
+      "w": 1438,
+      "h": 808,
+      "ratio": 1.78
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FEFEFE",
+      "share": 0.3958984563268566,
+      "h": 201.04370860921347,
+      "s": 0.0029694784809072695,
+      "l": 0.9945810824612457,
+      "chroma": 0.00003218271804228401
+    },
+    "chromatic": [
+      {
+        "hex": "#3AA8AC",
+        "share": 0.014253329018576406,
+        "h": 182.09824279635026,
+        "s": 0.4983548252070714,
+        "l": 0.45087099268183817,
+        "chroma": 0.44938746949779246
+      },
+      {
+        "hex": "#3A57AA",
+        "share": 0.011648122392211404,
+        "h": 224.46566444182162,
+        "s": 0.4912053571862587,
+        "l": 0.4470656328143789,
+        "chroma": 0.4392020677045755
+      },
+      {
+        "hex": "#3C5AAB",
+        "share": 0.005463446205538495,
+        "h": 223.61160211432446,
+        "s": 0.4820977674187027,
+        "l": 0.45163645798584084,
+        "chroma": 0.43546585615972916
+      },
+      {
+        "hex": "#3AA4AC",
+        "share": 0.0024967639323042177,
+        "h": 184.0637032799964,
+        "s": 0.4978633983881436,
+        "l": 0.4509472730836561,
+        "chroma": 0.4490202837425905
+      },
+      {
+        "hex": "#536CB4",
+        "share": 0.0015405747807047743,
+        "h": 224.35997543936884,
+        "s": 0.3905552212333322,
+        "l": 0.5158045788147662,
+        "chroma": 0.378210099682331
+      },
+      {
+        "hex": "#425EAD",
+        "share": 0.001508730497528195,
+        "h": 224.41644639922563,
+        "s": 0.4492186473436876,
+        "l": 0.46818227576255833,
+        "chroma": 0.4206324172566916
+      },
+      {
+        "hex": "#53B2B6",
+        "share": 0.0013701648328949725,
+        "h": 182.13689099562302,
+        "s": 0.4024404314727971,
+        "l": 0.5196410976450883,
+        "chroma": 0.3866316878510199
+      },
+      {
+        "hex": "#45ACB0",
+        "share": 0.001353812363155648,
+        "h": 182.2543117426811,
+        "s": 0.439749211098809,
+        "l": 0.4807386908991187,
+        "chroma": 0.4228089201351233
+      },
+      {
+        "hex": "#647BBA",
+        "share": 0.0012574188573238408,
+        "h": 224.23579785595226,
+        "s": 0.3873610316326124,
+        "l": 0.561429855994417,
+        "chroma": 0.3397699668505321
+      },
+      {
+        "hex": "#3B63AB",
+        "share": 0.0012574188573238408,
+        "h": 218.33205617846656,
+        "s": 0.48678466023879224,
+        "l": 0.4497362805491807,
+        "chroma": 0.43784944504838214
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FEFEFE",
+        "share": 0.3958984563268566,
+        "h": 201.04370860921347,
+        "s": 0.0029694784809072695,
+        "l": 0.9945810824612457,
+        "chroma": 0.00003218271804228401
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.35733330808741515,
+        "h": 202.64676215460946,
+        "s": 0.0010744358399017936,
+        "l": 0.9564232833048487,
+        "chroma": 0.00009364077240503477
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.07956165053222986,
+        "h": 204.50527962456286,
+        "s": 0.0021167913626296596,
+        "l": 0.9231348071827197,
+        "chroma": 0.00032541515248496466
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.011465663256172627,
+        "h": 232.57142857148605,
+        "s": 0.00011043273857417311,
+        "l": 0.8600567835601438,
+        "chroma": 0.00003090862527266314
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.008102218427684216,
+        "h": 202.29007633587923,
+        "s": 0.006915131762879622,
+        "l": 0.8934655102746432,
+        "chroma": 0.0014734000674839764
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.005920454701937509,
+        "h": 271.2500000000127,
+        "s": 0.00013551627465764168,
+        "l": 0.7980776959715417,
+        "chroma": 0.00005472751682444876
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.005120904997314752,
+        "h": 241.90476190479248,
+        "s": 0.0001218132776475781,
+        "l": 0.8295650024715768,
+        "chroma": 0.000041522491349588186
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.004867011388204189,
+        "h": 355.7253886010362,
+        "s": 0.002302580560493482,
+        "l": 0.7674964026282485,
+        "chroma": 0.001070716527105997
+      },
+      {
+        "hex": "#ECF2F2",
+        "share": 0.00284188710943417,
+        "h": 185.12550483104133,
+        "s": 0.18693437562714443,
+        "l": 0.9378623769313904,
+        "chroma": 0.02323131554257074
+      },
+      {
+        "hex": "#E4EBEC",
+        "share": 0.0027067640700092262,
+        "h": 190.4317912218268,
+        "s": 0.17793569267571935,
+        "l": 0.9113875120795536,
+        "chroma": 0.03153464883568691
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 182,
+        "share": 0.030469815062173812,
+        "size": 14
+      },
+      {
+        "hue": 224,
+        "share": 0.026957476693427337,
+        "size": 10
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 1161904
+  }
+}
