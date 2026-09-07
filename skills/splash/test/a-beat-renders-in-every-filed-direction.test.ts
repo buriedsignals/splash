@@ -69,6 +69,39 @@ describe("the line family's beat", () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
+  it("should carry every axis a direction declares into the delivered file", () => {
+    // MEASURED, AND THIS IS WHY THE GUARD EXISTS. Both `creme` and `rapport` write `**yes**` for an
+    // italic register — bold, for emphasis, in a record that is prose as much as data — and a
+    // strict `/^(yes|true)$/` read both as NO. Every render made under those directions came out
+    // upright where the record said italic. Nothing anywhere went red: the axis simply vanished
+    // between the record and the picture, which is the failure this whole design base exists to
+    // make impossible.
+    const strip = (cell: string) => cell.replace(/[*_`]/g, "").trim();
+    for (const id of filed()) {
+      const record = readFileSync(join(DIRECTIONS, `${id}.md`), "utf8");
+      const svg = readFileSync(join(RENDERS, `${id}.svg`), "utf8");
+      const rows = record
+        .split(/\r?\n/)
+        .filter((l) => l.startsWith("| ") && !/^\|\s*(register|-)/.test(l))
+        .map((l) => l.split("|").slice(1, -1).map(strip));
+
+      const wantsItalic = rows.some((c) => /^(yes|true)$/i.test(c[4] ?? ""));
+      const wantsTracking = rows.some((c) => Math.abs(Number((c[5] ?? "0").replace(/−/g, "-"))) >= 0.5);
+      const wantsCase = rows.some((c) => (c[6] ?? "none") !== "none");
+
+      if (wantsItalic)
+        expect(svg, `${id} declares an italic register and draws none`).toContain('font-style="italic"');
+      if (wantsTracking)
+        expect(svg, `${id} declares tracking and draws none`).toMatch(/letter-spacing="[^0][^"]*"/);
+      if (wantsCase) {
+        const shouted = [...svg.matchAll(/>([^<]{4,})</g)].some(
+          (m) => m[1] === m[1].toUpperCase() && /[A-ZÉÈÀÇ]/.test(m[1]),
+        );
+        expect(shouted, `${id} declares a case transform and draws no transformed run`).toBe(true);
+      }
+    }
+  });
+
   it("should let no label sit on the series in any delivered render", () => {
     // THE DEFECT THIS CLOSES, measured on this beat's first render: the end value landed ON its own
     // line in all three directions. The arbiter avoided other labels and nothing had told it where

@@ -39,12 +39,22 @@ function tableRows(text, firstColumn) {
  * than a hyphen, because it is prose as much as data.
  */
 function number(cell) {
-  const value = Number(String(cell).replace(/−/g, "-"));
+  const value = Number(plain(cell).replace(/−/g, "-"));
   if (!Number.isFinite(value)) throw new Error(`not a number in a direction record: ${cell}`);
   return value;
 }
 
-const yes = (cell) => /^(yes|true)$/i.test(String(cell).trim());
+/**
+ * A record is prose as much as data, and a person emphasising a cell must not change its meaning.
+ *
+ * MEASURED: `creme` and `rapport` both write `**yes**` for their italic body and annotation
+ * registers, and a strict `/^(yes|true)$/` read both as NO. Every render made under those two
+ * directions came out upright where the record said italic, and nothing anywhere went red — the
+ * axis simply vanished between the record and the picture. Markdown emphasis is stripped before the
+ * value is read.
+ */
+const plain = (cell) => String(cell).replace(/[*_`]/g, "").trim();
+const yes = (cell) => /^(yes|true)$/i.test(plain(cell));
 
 /**
  * @param {string} text  a direction record's Markdown
@@ -56,13 +66,13 @@ export function readDirectionFromMarkdown(text, id = "(unnamed)") {
     const [name, family, size, weight, italic, tracking, transform, ink] = cells;
     if (!name || cells.length < 8) continue;
     registers[name] = {
-      family,
+      family: plain(family),
       size: number(size),
       weight: number(weight),
       italic: yes(italic),
       tracking: number(tracking),
-      transform,
-      ink,
+      transform: plain(transform),
+      ink: plain(ink),
     };
   }
 
