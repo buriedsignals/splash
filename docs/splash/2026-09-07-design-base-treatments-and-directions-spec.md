@@ -197,9 +197,8 @@ saturation into the direction's **chromatic** palette and its **neutral** furnit
 ground as the modal colour. `pixel-palette.mjs` does this today.
 
 It also classifies the palette's **shape** — `diverging` | `sequential` | `categorical` |
-`monochrome` — by clustering hues. Two defects were found and fixed while validating it on four IIB
-pieces, and both are recorded because a later reader will otherwise reintroduce them:
-
+`monochrome` — by clustering hues. Four defects were found and fixed while building it, two on the
+IIB pieces and two on the first real harvest, and all four are recorded
 1. **Spread is not shape.** A first version used `max(hue) − min(hue)` and called "Left vs. Right"
    *categorical* at 207° — a poster whose whole mechanism is two opposed poles. Spread cannot tell
    two clusters from six. Cluster count decides; hue is circular, so 358° and 2° are four degrees
@@ -208,6 +207,19 @@ pieces, and both are recorded because a later reader will otherwise reintroduce 
    pixels called "Who's Suing Whom in AI" *monochrome* — six hues from 5° to 331°, each covering
    ~0.3 % of a page that is 90.9 % white. On a sparse graphic every real pole sits under any
    absolute floor. Measured against the coloured ink, they are all substantial.
+3. **Chroma, not HSL saturation, separates a mark from tinted paper.** Found on the first real
+   harvest: ABC's cream ground `#FFFCEE` has an HSL saturation of **1.0**, because saturation is
+   `d / (2 − max − min)` and runs away toward both poles — a two-percent warmth on near-white reads
+   as fully saturated. Counted as palette, that ground outweighed the piece's real blue accent by
+   coverage and the harvester reported a blue-accented chart as *monochrome at 49°*, its own paper's
+   hue. Chroma (`max − min` on the raw channels) puts cream at 0.067 and the accent at 0.62. The
+   same failure waits at the other pole for a warm near-black ink.
+4. **The graphic is photographed, never cropped out of the page shot.** A first version cropped the
+   viewport screenshot to the graphic's `getBoundingClientRect`. That box is viewport-relative and
+   the largest graphic is routinely below the fold: the first real harvest produced
+   `crop 0,1840,1440,900` against a 1440×900 image and read zero pixels. Screenshotting the element
+   scrolls it into view and captures exactly it — no coordinate arithmetic, and the palette read is
+   the graphic's rather than the site's chrome.
 
 Validated on 2026-09-07: Left vs. Right → diverging (19°, 225°, both ramped); $$$Billions →
 diverging (172° against 35°); Common Mythconceptions → categorical (3 clusters); Who's Suing Whom →
