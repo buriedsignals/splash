@@ -62,7 +62,7 @@ drawing from.
 
 | family | archive | drawn | harvested | survived reading | filed |
 | --- | --- | ---: | ---: | ---: | ---: |
-| line | url-list | 84 | 17 | 3 | 3 |
+| line | url-list | 90 | 23 | 6 | 6 |
 | line | datavizproject | 100 | 5 | 5 | 5 |
 | line | informationisbeautiful | 4 | 4 | 4 | 4 |
 
@@ -114,3 +114,25 @@ Independence is now measured at the PUBLICATION, read off each cited record's ow
 treatments that were about to be filed did not survive the change — `two-points-are-not-a-line` and
 `before-nested-in-after`, both resting entirely on Ferdio — and they are **not filed**. They are
 real and they will be filed the day a second publication is found doing them.
+
+
+**Correction 5 — a scroll-triggered chart is captured mid-animation, and the record looks complete.**
+The targeted line harvest caught ABC's *Buddy Franklin* chart with only the 1965–1975 portion of its
+series drawn: the harvester scrolls one viewport and back, which *triggers* a scroll-driven reveal
+without waiting for it to settle. Both routes reported `ok`. The reference is filed with the
+limitation stated in its own note rather than quietly, and the reading leans on
+`reference-set.md`'s independent description of the same chart. **A record of an animated chart is
+suspect until the harvester waits for the animation.**
+
+**Correction 6 — a number written before it is checked is the worst defect this corpus can carry.**
+A first draft of the Pudding *redraft* note asserted a near-black ground. The record says
+`#FFFFFF` at 90.6 % coverage. The mistake is left recorded inside that note. The corpus's entire
+value is that its numbers are measured; a plausible invented one is worse than an admitted gap,
+because nothing downstream can tell it apart from a real measurement.
+
+**Where the targeted line harvest landed.** It was run to find a second publication for the line
+treatments the probes proved and the evidence floor refuses — `area-to-reference`,
+`crossing-marked`, `raw-under-smoothed`. It did **not** find one. What it produced instead was
+`direct-end-label-in-the-series-colour`, filed on Our World in Data and Ferdio, and a first
+publication for `raw-under-smoothed` (ABC). That treatment still needs a second desk before it can
+be filed, and it is not filed.

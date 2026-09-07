@@ -7,7 +7,7 @@ What real work looks like for a given kind of graphic and a given export. The **
 structure the pixel route measured, in `100.datavizproject.com`'s own SHAPE vocabulary where it
 applies.
 
-12 references.
+15 references.
 
 | family | type | export | archive | palette shape | ground | reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -16,10 +16,13 @@ applies.
 | line | paired area marks ("mountains") | static | datavizproject | diverging | `#F4F7F7` | [100-datavizproject-com-data-type-viz34](references/line/100-datavizproject-com-data-type-viz34/NOTES.md) |
 | line | paired arcs (donut), one per entity | static | datavizproject | sequential | `#F4F7F7` | [100-datavizproject-com-data-type-viz57](references/line/100-datavizproject-com-data-type-viz57/NOTES.md) |
 | line | proportional circles, clustered | static | datavizproject | diverging | `#F4F7F7` | [100-datavizproject-com-data-type-viz78](references/line/100-datavizproject-com-data-type-viz78/NOTES.md) |
+| line | noisy time series under a smoothed line | scrolly | url-list | sequential | `#FEF4DD` | [abc-net-au-news-2022-03-26-is-lance-franklin-the-greatest-of-all-time-](references/line/abc-net-au-news-2022-03-26-is-lance-franklin-the-greatest-of-all-time-/NOTES.md) |
 | line | unit chart, small multiples | web | url-list | sequential | `#FFFCEE` | [abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072](references/line/abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072/NOTES.md) |
 | line | treemap | static | informationisbeautiful | diverging | `#FDFDFD` | [informationisbeautiful-net-visualizations-billions-2](references/line/informationisbeautiful-net-visualizations-billions-2/NOTES.md) |
 | line | unit chart (isotype), with a comparison panel | static | informationisbeautiful | categorical | `#000000` | [informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr](references/line/informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr/NOTES.md) |
 | line | annotated timeline, icon marks | static | informationisbeautiful | diverging | `#EBE6E5` | [informationisbeautiful-net-visualizations-future-of-the-future-technol](references/line/informationisbeautiful-net-visualizations-future-of-the-future-technol/NOTES.md) |
 | line | diagram, two-pole comparison | static | informationisbeautiful | diverging | `#FEFEFE` | [informationisbeautiful-net-visualizations-left-vs-right](references/line/informationisbeautiful-net-visualizations-left-vs-right/NOTES.md) |
+| line | multi-series time line | web | url-list | categorical | `#FFFFFF` | [ourworldindata-org-grapher-co-emissions-per-capita](references/line/ourworldindata-org-grapher-co-emissions-per-capita/NOTES.md) |
 | line | unit grid (waffle), scrollytelling | scrolly | url-list | sequential | `#E1E5E6` | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
+| line | deviation stems off a diagonal reference | web | url-list | diverging | `#FFFFFF` | [pudding-cool-2017-03-redraft](references/line/pudding-cool-2017-03-redraft/NOTES.md) |
 | line | explanatory diagram, scrollytelling | scrolly | url-list | sequential | `#111044` | [pudding-cool-2022-06-streaming](references/line/pudding-cool-2022-06-streaming/NOTES.md) |

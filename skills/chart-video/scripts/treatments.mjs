@@ -32,10 +32,16 @@ const MOST_MARKS_THAT_CAN_CARRY_A_LABEL = 40;
  * @param {Array<{key: string, label?: string, value: number}>} data
  * @param {{comparisonSet?: unknown[], unitMark?: string, subject?: string}} options
  */
-export function beatFacts(data, { comparisonSet = [], unitMark = null, subject = null } = {}) {
+export function beatFacts(
+  data,
+  { comparisonSet = [], unitMark = null, subject = null, namedSeries = [] } = {},
+) {
   const marks = Array.isArray(data) ? data : [];
   return {
     markCount: marks.length,
+    /** Series the beat can name at their own ends. One is the common case and still counts: a
+     *  single line's end label is the same decision as nine of them. */
+    seriesCount: namedSeries.length,
     /** Entities, periods or precedents the beat draws that are NOT its subject. */
     hasComparisonSet: comparisonSet.length > 0,
     comparisonSize: comparisonSet.length,
@@ -57,6 +63,16 @@ export const TREATMENTS = Object.freeze([
     applies: () => true,
     draws: Object.freeze(["value", "annot"]),
     priority: 9,
+  },
+  {
+    id: "direct-end-label-in-the-series-colour",
+    name: "Every series is named at its own end, in its own colour",
+    // The usual objection is that past three or four series direct labelling stops working. Our
+    // World in Data does it at NINE on one axis with no legend, which is where the evidence puts
+    // the threshold. Beyond that the arbiter drops or displaces rather than overlapping.
+    applies: (facts) => facts.seriesCount >= 1,
+    draws: Object.freeze(["value"]),
+    priority: 7,
   },
   {
     id: "context-in-neutral-at-the-subject-scale",

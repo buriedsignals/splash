@@ -9,7 +9,7 @@ a beat.
 A treatment is filed only with two independent references; a direction with one, because a direction
 is a coherent whole and averaging two would produce neither.
 
-7 levers.
+8 levers.
 
 | kind | id | name | applies when | evidence |
 | --- | --- | --- | --- | --- |
@@ -18,5 +18,6 @@ is a coherent whole and averaging two would produce neither.
 | direction | `rapport` | Rapport | — | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
 | treatment | `accent-marks-the-thread` | The accent marks the argument's thread, never the largest value | always, wherever an accent is assigned | [informationisbeautiful-net-visualizations-billions-2](references/line/informationisbeautiful-net-visualizations-billions-2/NOTES.md)<br>[100-datavizproject-com-data-type-viz57](references/line/100-datavizproject-com-data-type-viz57/NOTES.md) |
 | treatment | `context-in-neutral-at-the-subject-scale` | The comparison set shares the subject's unit and is drawn in neutral | the beat compares its subject against other entities, other periods, or historical | [informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr](references/line/informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr/NOTES.md)<br>[100-datavizproject-com-data-type-viz57](references/line/100-datavizproject-com-data-type-viz57/NOTES.md) |
+| treatment | `direct-end-label-in-the-series-colour` | Every series is named at its own end, in its own colour | the beat draws one or more named series whose ends are separable at the delivered size | [ourworldindata-org-grapher-co-emissions-per-capita](references/line/ourworldindata-org-grapher-co-emissions-per-capita/NOTES.md)<br>[100-datavizproject-com-data-type-viz1](references/line/100-datavizproject-com-data-type-viz1/NOTES.md) |
 | treatment | `mark-depicts-its-subject` | The mark is a drawing of the thing being counted | the unit being counted is concrete enough to draw, and the count is small enough for | [abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072](references/line/abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072/NOTES.md)<br>[informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr](references/line/informationisbeautiful-net-visualizations-four-years-of-the-russia-ukr/NOTES.md) |
 | treatment | `value-on-the-mark` | The value is printed on the mark it belongs to | the series has few enough marks that every one can carry its own number without collision | [100-datavizproject-com-data-type-viz1](references/line/100-datavizproject-com-data-type-viz1/NOTES.md)<br>[informationisbeautiful-net-visualizations-billions-2](references/line/informationisbeautiful-net-visualizations-billions-2/NOTES.md) |

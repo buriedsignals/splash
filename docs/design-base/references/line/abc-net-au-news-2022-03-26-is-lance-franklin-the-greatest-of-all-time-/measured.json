@@ -1,0 +1,620 @@
+{
+  "url": "https://www.abc.net.au/news/2022-03-26/is-lance-franklin-the-greatest-of-all-time-afl-vfl/100919332",
+  "archive": "url-list",
+  "family": "line",
+  "id": "abc-net-au-news-2022-03-26-is-lance-franklin-the-greatest-of-all-time-",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "The data behind Lance 'Buddy' Franklin's 1,000 AFL goals for Sydney and Hawthorn - ABC News",
+    "ground": "rgb(254, 244, 221)",
+    "type": [
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | normal | 0 | none",
+        "count": 61,
+        "sample": "AFL legend Kevin Bartlett, who kicked 778 goals for Richmond",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 18 | 400 | normal | 0 | none",
+        "count": 21,
+        "sample": "When Lance “Buddy” Franklin kicked his 1,000th goal, he beca",
+        "colors": [
+          "rgb(12, 63, 90)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 11,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 14 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "1000",
+        "colors": [
+          "rgb(12, 63, 90)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 14 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Tony Lockett",
+        "colors": [
+          "rgb(12, 63, 90)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Leaked text reveals Australia's $980 million commitment to S",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "World Politics",
+        "colors": [
+          "rgb(96, 100, 108)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(16, 49, 106)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 20 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "2007",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "By , , and",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "Lance Franklin in one of his first AFL games.",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | italic | 0 | none",
+        "count": 6,
+        "sample": "(Getty Images: Mark Dadswell)",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 5,
+        "sample": "Your information is being handled in accordance with the  .",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "11m ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14.4 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "abc.net.au/news/is-lance-franklin-the-greatest-of-all-time-a",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 700 | italic | 0 | none",
+        "count": 2,
+        "sample": "Data used in this story",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How Buddy Franklin scaled footy’s Everest",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "The greatest of all time?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 30
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(12, 63, 90)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(16, 49, 106)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(96, 100, 108)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 653,
+      "ch": 73
+    },
+    "graphic": {
+      "tag": "img",
+      "x": 296,
+      "y": 26995,
+      "w": 849,
+      "h": 1353,
+      "ratio": 0.63
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FEF4DD",
+      "share": 0.9088623074131964,
+      "h": 41.81827145489933,
+      "s": 0.9419589479722346,
+      "l": 0.9313171544122516,
+      "chroma": 0.12939284194714962
+    },
+    "chromatic": [
+      {
+        "hex": "#015BEA",
+        "share": 0.001317056492129061,
+        "h": 216.82380722068908,
+        "s": 0.989583040063065,
+        "l": 0.4612258148292429,
+        "chroma": 0.9128424879885729
+      },
+      {
+        "hex": "#B2C6E1",
+        "share": 0.0004710003349335715,
+        "h": 214.42366246193995,
+        "s": 0.43829182481498813,
+        "l": 0.7904901960784314,
+        "chroma": 0.18365286855482932
+      },
+      {
+        "hex": "#0C61E9",
+        "share": 0.000049716702020765883,
+        "h": 216.7934825595191,
+        "s": 0.9053347654851415,
+        "l": 0.4803921568627451,
+        "chroma": 0.8698314413484692
+      },
+      {
+        "hex": "#1265E9",
+        "share": 0.00003925002791113096,
+        "h": 216.75379687984295,
+        "s": 0.8566244800424817,
+        "l": 0.4923311546840959,
+        "chroma": 0.8434858387799565
+      },
+      {
+        "hex": "#1B6BE9",
+        "share": 0.00003488891369878307,
+        "h": 216.69831994156317,
+        "s": 0.8217286914765906,
+        "l": 0.51,
+        "chroma": 0.8052941176470588
+      },
+      {
+        "hex": "#83AAE3",
+        "share": 0.00002791113095902646,
+        "h": 215.75757575757578,
+        "s": 0.63343653250774,
+        "l": 0.703125,
+        "chroma": 0.3761029411764707
+      },
+      {
+        "hex": "#2C75E8",
+        "share": 0.00002791113095902646,
+        "h": 216.66333666333668,
+        "s": 0.8031559240438619,
+        "l": 0.5417892156862745,
+        "chroma": 0.7360294117647059
+      },
+      {
+        "hex": "#548DE6",
+        "share": 0.00002529446243161773,
+        "h": 216.33742911153118,
+        "s": 0.7434996486296556,
+        "l": 0.6151453684922245,
+        "chroma": 0.5722785665990533
+      },
+      {
+        "hex": "#2A556A",
+        "share": 0.000023550016746678574,
+        "h": 199.7573656845754,
+        "s": 0.4324256807394454,
+        "l": 0.29070442992011625,
+        "chroma": 0.2514161220043573
+      },
+      {
+        "hex": "#ABC2E1",
+        "share": 0.000022677793904209,
+        "h": 214.37768240343343,
+        "s": 0.4745417515274949,
+        "l": 0.7778280542986424,
+        "chroma": 0.21085972850678736
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FEF4DD",
+        "share": 0.9088623074131964,
+        "h": 41.81827145489933,
+        "s": 0.9419589479722346,
+        "l": 0.9313171544122516,
+        "chroma": 0.12939284194714962
+      },
+      {
+        "hex": "#000000",
+        "share": 0.014277415708384504,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#121212",
+        "share": 0.013160098247180976,
+        "h": 39.93749999999984,
+        "s": 0.012537781260494868,
+        "l": 0.06965410766639636,
+        "chroma": 0.0017466159316324725
+      },
+      {
+        "hex": "#F4EBD5",
+        "share": 0.00373049709724238,
+        "h": 42.14838656184281,
+        "s": 0.580830877942638,
+        "l": 0.8952862323325401,
+        "chroma": 0.12164197921394415
+      },
+      {
+        "hex": "#262421",
+        "share": 0.0021945126716534555,
+        "h": 36.73969744392285,
+        "s": 0.06448466092572654,
+        "l": 0.13900682689610025,
+        "chroma": 0.017927616197512375
+      },
+      {
+        "hex": "#6B665D",
+        "share": 0.0020575736853857317,
+        "h": 39.65608707582549,
+        "s": 0.06976595785412089,
+        "l": 0.390767939223167,
+        "chroma": 0.054524599157170284
+      },
+      {
+        "hex": "#E4DBC6",
+        "share": 0.002018323657474601,
+        "h": 41.87028349989803,
+        "s": 0.3531693764149002,
+        "l": 0.8353076753605504,
+        "chroma": 0.11632857118646944
+      },
+      {
+        "hex": "#ECE3CD",
+        "share": 0.0019939014178854526,
+        "h": 42.23291378495641,
+        "s": 0.44289492209052317,
+        "l": 0.8647496268848747,
+        "chroma": 0.11980340692707525
+      },
+      {
+        "hex": "#0D0C0B",
+        "share": 0.001965990286926426,
+        "h": 30,
+        "s": 0.08333333333333333,
+        "l": 0.047058823529411764,
+        "chroma": 0.00784313725490196
+      },
+      {
+        "hex": "#1C1B19",
+        "share": 0.0018683013285698336,
+        "h": 43.65114309906857,
+        "s": 0.051515812431842965,
+        "l": 0.1049275919518134,
+        "chroma": 0.01081086029182915
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 217,
+        "share": 0.0022712682817907772,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1146496
+  }
+}
