@@ -1,0 +1,584 @@
+{
+  "url": "https://projects.propublica.org/toxmap/",
+  "archive": "url-list",
+  "family": "map",
+  "id": "projects-propublica-org-toxmap",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "The Most Detailed Map of Cancer-Causing Industrial Air Pollution in the U.S. | ProPublica",
+    "ground": "rgb(68, 68, 68)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 48,
+        "sample": "Port Arthur,",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14.6 | 400 | normal | 0 | none",
+        "count": 35,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(221, 221, 221)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10 | 600 | normal | 0 | none",
+        "count": 34,
+        "sample": "• HUNTSMAN",
+        "colors": [
+          "rgb(232, 232, 232)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 400 | italic | 0 | none",
+        "count": 10,
+        "sample": "ProPublica is a nonprofit newsroom that investigates abuses ",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12.6,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12.6 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Baton Rouge",
+        "colors": [
+          "rgb(217, 217, 217)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "It’s not a secret that industrial facilities emit hazardous ",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14.6 | 400 | italic | 0 | none",
+        "count": 5,
+        "sample": "by and , November 2, 2021, Updated August 28, 2023",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.8 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "1 in 100,000",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Click on a hot spot or browse the map below to learn more ab",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10,
+        "weight": "500",
+        "style": "italic",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "Graphik | 10 | 500 | italic | 2 | uppercase",
+        "count": 4,
+        "sample": "Mississippi River",
+        "colors": [
+          "rgb(217, 217, 217)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16.2,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 3.24,
+        "transform": "none",
+        "key": "Graphik | 16.2 | 500 | normal | 3.24 | none",
+        "count": 3,
+        "sample": "HOUSTON",
+        "colors": [
+          "rgb(217, 217, 217)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "•  Huntsman Petrochemical facility",
+        "colors": [
+          "rgb(255, 234, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "© Mapbox",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Graphik | 14.6 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Leer en español",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Headline",
+        "size": 50,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Headline | 50 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "The Most Detailed Map of Cancer-Causing Industrial Air Pollu",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 14.4 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "The data in this map covers emissions from 2014 to 2018, and",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 12.6,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 12.6 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Each grid cell is 810 x 810 meters",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "North →",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.8 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "•  Beaumont",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "The estimated excess cancer risk around the facility is high",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Improve this map",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Click inside a hot spot to see how risks combine there.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sources: EPA Risk-Screening Environmental Indicators model, ",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 3
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(68, 68, 68)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(153, 153, 153)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(117, 117, 117)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1440,
+      "ch": 160
+    },
+    "graphic": {
+      "tag": "canvas",
+      "x": 0,
+      "y": 3534,
+      "w": 1440,
+      "h": 899,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#333333",
+      "share": 0.36355286738351256,
+      "h": 153.03043670042754,
+      "s": 0.000047208447076001456,
+      "l": 0.20006534683965227,
+      "chroma": 0.0000188895486760432
+    },
+    "chromatic": [
+      {
+        "hex": "#FCFCB3",
+        "share": 0.01171131504140403,
+        "h": 60.00043176378206,
+        "s": 0.9324241018746298,
+        "l": 0.8458003054793581,
+        "chroma": 0.2875590233455033
+      },
+      {
+        "hex": "#F3F3AE",
+        "share": 0.0035556482511432458,
+        "h": 60.00299530112136,
+        "s": 0.7457905563260327,
+        "l": 0.8169360987931996,
+        "chroma": 0.27305465744846713
+      },
+      {
+        "hex": "#E4E4A4",
+        "share": 0.002709801013471759,
+        "h": 60.01188011880118,
+        "s": 0.5360718300549534,
+        "l": 0.7682976725467838,
+        "chroma": 0.24841818141167527
+      },
+      {
+        "hex": "#ECECAA",
+        "share": 0.002596248918551477,
+        "h": 60.01494874715261,
+        "s": 0.642774619370632,
+        "l": 0.795996756334191,
+        "chroma": 0.26225621459532944
+      },
+      {
+        "hex": "#D4D49B",
+        "share": 0.0025444938820912127,
+        "h": 60.03334081364408,
+        "s": 0.3954822077592765,
+        "l": 0.7182994630760622,
+        "chroma": 0.22281510053930498
+      },
+      {
+        "hex": "#BCBC8D",
+        "share": 0.0020956927450253367,
+        "h": 60.09092542396716,
+        "s": 0.2596467245250414,
+        "l": 0.6436597934418884,
+        "chroma": 0.18504513489878072
+      },
+      {
+        "hex": "#C4C492",
+        "share": 0.001888672599184279,
+        "h": 60.102074708965546,
+        "s": 0.29970306236661476,
+        "l": 0.669697261317615,
+        "chroma": 0.19798548458238097
+      },
+      {
+        "hex": "#CBCB95",
+        "share": 0.0018083364231862562,
+        "h": 60.04852580836308,
+        "s": 0.33821545994724256,
+        "l": 0.6907321322377733,
+        "chroma": 0.2091983482842089
+      },
+      {
+        "hex": "#DADA9E",
+        "share": 0.0013935236682733902,
+        "h": 60.02799682702628,
+        "s": 0.4429631466898162,
+        "l": 0.7370712142950306,
+        "chroma": 0.23293552454241118
+      },
+      {
+        "hex": "#DEDEA1",
+        "share": 0.0012467556544308491,
+        "h": 60.02749574834263,
+        "s": 0.47623366230994935,
+        "l": 0.7495019073304663,
+        "chroma": 0.23859124814733823
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#333333",
+        "share": 0.36355286738351256,
+        "h": 153.03043670042754,
+        "s": 0.000047208447076001456,
+        "l": 0.20006534683965227,
+        "chroma": 0.0000188895486760432
+      },
+      {
+        "hex": "#5C7D7F",
+        "share": 0.33170343591645035,
+        "h": 183.42788631908147,
+        "s": 0.15972106934407743,
+        "l": 0.4293531708577798,
+        "chroma": 0.13715349515134995
+      },
+      {
+        "hex": "#000000",
+        "share": 0.07233731924360401,
+        "h": 180,
+        "s": 0.003773584905660363,
+        "l": 0.00000554869820211709,
+        "chroma": 4.1876967563147695e-8
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.023264275120504264,
+        "h": 25.714285713241672,
+        "s": 0.0016599478303104432,
+        "l": 0.9997254498306278,
+        "chroma": 9.114779159213882e-7
+      },
+      {
+        "hex": "#333B37",
+        "share": 0.020719781238413053,
+        "h": 150.2950904665665,
+        "s": 0.0707470641916113,
+        "l": 0.215239555166659,
+        "chroma": 0.03045513325189897
+      },
+      {
+        "hex": "#555554",
+        "share": 0.019870071684587813,
+        "h": 35.55663351928193,
+        "s": 0.0028446050819286844,
+        "l": 0.3314521298936711,
+        "chroma": 0.0018857008262232466
+      },
+      {
+        "hex": "#434343",
+        "share": 0.0198159992584353,
+        "h": 98.58337981037188,
+        "s": 0.0010458384030929226,
+        "l": 0.26208210177611757,
+        "chroma": 0.0005481910536015433
+      },
+      {
+        "hex": "#3C3C3C",
+        "share": 0.013404554443208504,
+        "h": 149.09090909091998,
+        "s": 0.00028559037877748345,
+        "l": 0.23501637847555318,
+        "chroma": 0.00013423683309549128
+      },
+      {
+        "hex": "#4C4C4B",
+        "share": 0.006060746508466197,
+        "h": 71.09164287823579,
+        "s": 0.008591621836707605,
+        "l": 0.2954998925392232,
+        "chroma": 0.005077646658969481
+      },
+      {
+        "hex": "#5C5B5A",
+        "share": 0.005288283277715981,
+        "h": 40.06843690117719,
+        "s": 0.005863290472835113,
+        "l": 0.35688737662754266,
+        "chroma": 0.004185068710510775
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 60,
+        "share": 0.03361914472871092,
+        "size": 16
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1294560
+  }
+}

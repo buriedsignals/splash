@@ -65,6 +65,8 @@ drawing from.
 | line | url-list | 90 | 23 | 6 | 6 |
 | line | datavizproject | 100 | 5 | 5 | 5 |
 | line | informationisbeautiful | 4 | 4 | 4 | 4 |
+| map | url-list | 118 | 10 | 4 | 4 |
+| map | informationisbeautiful | 2 | 2 | 0 | 0 |
 
 **line, 2026-09-07 — and the three method corrections this yield produced.**
 
@@ -156,3 +158,28 @@ Treatments now declare a **kind**:
 Filing the four derived treatments took the CO₂ beat from **two applicable treatments out of five**
 to **six out of nine**, and put the 2023 crossing — the editorial fact the chart was hiding — back on
 the picture.
+
+
+**map, 2026-09-07 — the family that was harvested to answer a question, and answered it "not yet".**
+
+Twelve harvested, **four reached a real map**: ProPublica's *toxmap*, *louisiana-toxic-air* and
+*hatecrime-map*, and the Guardian's *unaffordable-country*. Eight did not — a satellite photograph,
+a photo-collage hero, a black title card, a near-empty page, and two Information is Beautiful pieces
+that turned out to be a stream graph and a bubble cloud rather than maps at all. A yield of 4 in 12,
+in line with the 1-in-3 this log already records for news domains.
+
+**What the four showed, and it is a real vocabulary.** A published map names its geography in
+treatments a reader already carries: administrative areas in tracked capitals, settlements in mixed
+case, **water in italic** — ProPublica's *louisiana-toxic-air* uses all three on one plate, and
+*toxmap* keeps a second, separate register for the DATA's own names (facility labels, small white
+capitals) so the two label systems never confuse. The Guardian carries a legend that names its unit
+and leaves its top class open (`Multiple of £25,000 — 2 3 4 5 6 10+`).
+
+**And neither register could be filed.** `place` rests on two ProPublica pieces — **one
+publication** — and `legend` on the Guardian alone. The floor refused both, out loud:
+`place rests on 1 publication(s)`. That is the guard doing exactly what it was built for eight
+commits ago, against its own author, on the register he most wanted.
+
+**What a second wave must target**, therefore: a map with named geography from a desk that is not
+ProPublica, and a map with a legend from a desk that is not the Guardian. Not more maps — maps from
+elsewhere.

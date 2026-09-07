@@ -1,0 +1,468 @@
+{
+  "url": "https://www.theguardian.com/society/ng-interactive/2015/sep/02/unaffordable-country-where-can-you-afford-to-buy-a-house",
+  "archive": "url-list",
+  "family": "map",
+  "id": "theguardian-com-society-ng-interactive-2015-sep-02-unaffordable-countr",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "Unaffordable country: where can you afford to buy a house? | Society | The Guardian",
+    "ground": "rgb(125, 148, 155)",
+    "type": [
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 16 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "Search jobs",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 11 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "100%",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(18, 18, 18)",
+          "rgb(0, 86, 137)"
+        ]
+      },
+      {
+        "family": "Guardian Egyptian Web",
+        "size": 24,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Egyptian Web | 24 | 900 | normal | 0 | none",
+        "count": 10,
+        "sample": "News",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 16 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Money",
+        "colors": [
+          "rgb(18, 18, 18)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 12 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "national average",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)",
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Text Egyptian Web",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Egyptian Web | 18 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "of England and Wales",
+        "colors": [
+          "rgb(237, 61, 97)"
+        ]
+      },
+      {
+        "family": "Guardian Text Egyptian Web",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Egyptian Web | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "of the country",
+        "colors": [
+          "rgb(237, 61, 97)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 9 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Cheapest",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Guardian Text Egyptian Web",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Egyptian Web | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "On £ , would be beyond your means",
+        "colors": [
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 12 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Your salary will not be shared",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(18, 18, 18)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Guardian Text Egyptian Web",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Egyptian Web | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "If you wanted to buy a house at the median price and earned",
+        "colors": [
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Egyptian Web",
+        "size": 24,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Egyptian Web | 24 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "More",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Guardian Egyptian Web",
+        "size": 14,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Egyptian Web | 14 | 900 | normal | 0 | none",
+        "count": 1,
+        "sample": "Unaffordable country",
+        "colors": [
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Egyptian Web",
+        "size": 28,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Egyptian Web | 28 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Where can you afford to buy a house?",
+        "colors": [
+          "rgb(18, 18, 18)"
+        ]
+      },
+      {
+        "family": "Guardian Text Sans Web",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Guardian Text Sans Web | 12 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "This article was archived on 18 October 2021. Some elements ",
+        "colors": [
+          "rgb(18, 18, 18)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 229, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(223, 223, 223)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(223, 223, 223)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(5, 41, 98)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "canvas",
+      "x": -144,
+      "y": 163,
+      "w": 1728,
+      "h": 1022,
+      "ratio": 1.69
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#CCCCCC",
+      "share": 0.4241632012393999,
+      "h": 0,
+      "s": 0,
+      "l": 0.799998973903352,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#ED3D61",
+        "share": 0.08249075886062188,
+        "h": 347.72739511062906,
+        "s": 0.8302275334248299,
+        "l": 0.5843520986098998,
+        "chroma": 0.6901646638886196
+      },
+      {
+        "hex": "#052962",
+        "share": 0.060406587482786114,
+        "h": 216.77411629379523,
+        "s": 0.902896388437744,
+        "l": 0.2019637435303896,
+        "chroma": 0.3647046692579111
+      },
+      {
+        "hex": "#CA2345",
+        "share": 0.02452129539030224,
+        "h": 347.7844311377246,
+        "s": 0.7046413502109703,
+        "l": 0.4647058823529412,
+        "chroma": 0.6549019607843136
+      },
+      {
+        "hex": "#F58680",
+        "share": 0.02043865967239255,
+        "h": 3.0884027548385458,
+        "s": 0.8540145985401463,
+        "l": 0.7313725490196079,
+        "chroma": 0.45882352941176474
+      },
+      {
+        "hex": "#FDD09E",
+        "share": 0.011829451148800465,
+        "h": 31.578947368421044,
+        "s": 0.9595959595959598,
+        "l": 0.8058823529411765,
+        "chroma": 0.37254901960784315
+      },
+      {
+        "hex": "#DC3053",
+        "share": 0.0011489137131260418,
+        "h": 347.7906976744186,
+        "s": 0.7107438016528926,
+        "l": 0.5254901960784314,
+        "chroma": 0.6745098039215687
+      },
+      {
+        "hex": "#F16271",
+        "share": 0.0010452906428933826,
+        "h": 353.78470933183826,
+        "s": 0.8362573099415204,
+        "l": 0.6647058823529411,
+        "chroma": 0.5607843137254902
+      },
+      {
+        "hex": "#506991",
+        "share": 0.0010192433137638617,
+        "h": 216.89698524695316,
+        "s": 0.2883882567956531,
+        "l": 0.44165904139433554,
+        "chroma": 0.25473856209150325
+      },
+      {
+        "hex": "#005689",
+        "share": 0.0008403094875697615,
+        "h": 202.33579442884056,
+        "s": 0.9998327849663847,
+        "l": 0.2686578404946885,
+        "chroma": 0.5372258337297183
+      },
+      {
+        "hex": "#8AC7CD",
+        "share": 0.000827285823005001,
+        "h": 185.3731343283582,
+        "s": 0.40119760479041927,
+        "l": 0.6725490196078432,
+        "chroma": 0.26274509803921575
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#CCCCCC",
+        "share": 0.4241632012393999,
+        "h": 0,
+        "s": 0,
+        "l": 0.799998973903352,
+        "chroma": 0
+      },
+      {
+        "hex": "#7D949B",
+        "share": 0.16666666666666666,
+        "h": 193.99999999999994,
+        "s": 0.13043478260869562,
+        "l": 0.5490196078431372,
+        "chroma": 0.11764705882352938
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.14149985051098066,
+        "h": 300.8314087762419,
+        "s": 0.02594212449813372,
+        "l": 0.9998690330945077,
+        "chroma": 0.000006795119534830363
+      },
+      {
+        "hex": "#F5F5F5",
+        "share": 0.01672578277886497,
+        "h": 213.06122448996607,
+        "s": 0.000575678184146358,
+        "l": 0.9604484884210303,
+        "chroma": 0.00004553788473204978
+      },
+      {
+        "hex": "#C0C0C0",
+        "share": 0.008646580778430094,
+        "h": 0,
+        "s": 0,
+        "l": 0.7534905042567125,
+        "chroma": 0
+      },
+      {
+        "hex": "#DAEAC1",
+        "share": 0.004881609226643473,
+        "h": 83.41463414634146,
+        "s": 0.49397590361445753,
+        "l": 0.8372549019607842,
+        "chroma": 0.16078431372549018
+      },
+      {
+        "hex": "#DCDCDC",
+        "share": 0.004421817242878887,
+        "h": 339.99999999557843,
+        "s": 0.000005495018765414857,
+        "l": 0.8629160922916996,
+        "chroma": 0.0000015065572905870184
+      },
+      {
+        "hex": "#121212",
+        "share": 0.002962034319054867,
+        "h": 0,
+        "s": 0.0000052190160067529735,
+        "l": 0.07182183138979162,
+        "chroma": 7.496785753152713e-7
+      },
+      {
+        "hex": "#EAEAEA",
+        "share": 0.0024852549467275493,
+        "h": 207.09677419343976,
+        "s": 0.0001719671376353171,
+        "l": 0.9194657767413186,
+        "chroma": 0.000027698479710958068
+      },
+      {
+        "hex": "#FBD8DF",
+        "share": 0.0008204908675799086,
+        "h": 348,
+        "s": 0.813953488372093,
+        "l": 0.9156862745098039,
+        "chroma": 0.13725490196078427
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 348,
+        "share": 0.13410807150105097,
+        "size": 15
+      },
+      {
+        "hue": 217,
+        "share": 0.06361663767485685,
+        "size": 6
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 1766016
+  }
+}

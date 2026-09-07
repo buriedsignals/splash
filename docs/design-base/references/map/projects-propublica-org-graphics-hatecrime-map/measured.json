@@ -1,0 +1,441 @@
+{
+  "url": "https://projects.propublica.org/graphics/hatecrime-map",
+  "archive": "url-list",
+  "family": "map",
+  "id": "projects-propublica-org-graphics-hatecrime-map",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "This Is Where Hate Crimes Don’t Get Reported | ProPublica",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 15 | 400 | normal | 0 | none",
+        "count": 376,
+        "sample": "Hate Crimes Reported by State, 2016",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 101,
+        "sample": "931",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 15 | 400 | normal | 0 | none",
+        "count": 14,
+        "sample": "On Monday, the its latest tally of hate crimes in the U.S. D",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(34, 98, 204)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 9 | 400 | normal | 0 | none",
+        "count": 14,
+        "sample": "2007",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 11 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "1–2,499 people served",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "jaf-bernina-sans-condensed",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.9,
+        "transform": "uppercase",
+        "key": "jaf-bernina-sans-condensed | 15 | 400 | normal | 0.9 | uppercase",
+        "count": 5,
+        "sample": "Documenting Hate",
+        "colors": [
+          "rgb(199, 166, 82)",
+          "rgba(255, 255, 255, 0.5)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 11 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Every dot on this map, like this one, marks a gap in the FBI",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 15 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Agency",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 11,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 11 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "Source: Federal Bureau of Investigation Hate Crime Statistic",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 15 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "combined",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(34, 98, 204)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "By and , ProPublica, November 17, 2017",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(91, 152, 195)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 19,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 19 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Location Matters: Compliance in States Varies Widely",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 38,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 38 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Did not report",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 11.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 11.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Share on Facebook",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "0%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 13 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(87, 87, 87)"
+        ]
+      },
+      {
+        "family": "ff-meta-serif-web-pro",
+        "size": 38.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-meta-serif-web-pro | 38.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 12.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Tiempos Text | 12.5 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 34,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 34 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "This Is Where Hate Crimes Don’t Get Reported",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "Population",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(31, 120, 180)",
+        "count": 122
+      },
+      {
+        "colour": "fill rgb(166, 206, 227)",
+        "count": 71
+      },
+      {
+        "colour": "fill rgb(178, 223, 138)",
+        "count": 69
+      },
+      {
+        "colour": "fill rgb(224, 224, 224)",
+        "count": 51
+      },
+      {
+        "colour": "stroke rgb(71, 71, 71)",
+        "count": 10
+      }
+    ],
+    "column": {
+      "px": 540,
+      "ch": 72
+    },
+    "graphic": {
+      "tag": "svg",
+      "x": 5,
+      "y": 208,
+      "w": 1430,
+      "h": 912,
+      "ratio": 1.57
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.47806174089068826,
+      "h": 61.4233134661416,
+      "s": 0.5509504559308739,
+      "l": 0.9997596087847378,
+      "chroma": 0.0002648872993008533
+    },
+    "chromatic": [],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.47806174089068826,
+        "h": 61.4233134661416,
+        "s": 0.5509504559308739,
+        "l": 0.9997596087847378,
+        "chroma": 0.0002648872993008533
+      },
+      {
+        "hex": "#EDEEDD",
+        "share": 0.2488812722365354,
+        "h": 61.75991553375133,
+        "s": 0.3370627295481713,
+        "l": 0.8988645814323154,
+        "chroma": 0.06817796047284119
+      },
+      {
+        "hex": "#F2F2E3",
+        "share": 0.07674135075450865,
+        "h": 61.002892224169116,
+        "s": 0.36655149950539306,
+        "l": 0.9187987695702763,
+        "chroma": 0.05952886555139636
+      },
+      {
+        "hex": "#EAEBD5",
+        "share": 0.024793736964789596,
+        "h": 63.05398422951542,
+        "s": 0.3540997178023069,
+        "l": 0.8779675395749764,
+        "chroma": 0.08642331959844407
+      },
+      {
+        "hex": "#E3E4CB",
+        "share": 0.023442675745307326,
+        "h": 63.24832435282728,
+        "s": 0.31400868910068264,
+        "l": 0.845839818935457,
+        "chroma": 0.09681527273520207
+      },
+      {
+        "hex": "#EFF0DD",
+        "share": 0.017840602380076065,
+        "h": 63.910565360578055,
+        "s": 0.3856390994056433,
+        "l": 0.9046469922477093,
+        "chroma": 0.07354369607042543
+      },
+      {
+        "hex": "#EEEEE1",
+        "share": 0.01611612072138388,
+        "h": 60.407955161299576,
+        "s": 0.28634844274195015,
+        "l": 0.9086237939842414,
+        "chroma": 0.0523308685925602
+      },
+      {
+        "hex": "#F1F1DE",
+        "share": 0.013005306097411361,
+        "h": 62.35801185120359,
+        "s": 0.42122639544176577,
+        "l": 0.908433418765773,
+        "chroma": 0.07714052191243814
+      },
+      {
+        "hex": "#E1E3C5",
+        "share": 0.011907281315176052,
+        "h": 63.12272177617034,
+        "s": 0.3427933590111861,
+        "l": 0.8309428659093234,
+        "chroma": 0.11590332571949513
+      },
+      {
+        "hex": "#E5E5D2",
+        "share": 0.009847718071402282,
+        "h": 62.260236892184444,
+        "s": 0.27056502353617423,
+        "l": 0.8624159342160909,
+        "chroma": 0.07445087199405187
+      }
+    ],
+    "clusters": [],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 1304160
+  }
+}

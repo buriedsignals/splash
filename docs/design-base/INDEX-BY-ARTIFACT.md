@@ -7,7 +7,7 @@ What real work looks like for a given kind of graphic and a given export. The **
 structure the pixel route measured, in `100.datavizproject.com`'s own SHAPE vocabulary where it
 applies.
 
-15 references.
+19 references.
 
 | family | type | export | archive | palette shape | ground | reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -26,3 +26,7 @@ applies.
 | line | unit grid (waffle), scrollytelling | scrolly | url-list | sequential | `#E1E5E6` | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
 | line | deviation stems off a diagonal reference | web | url-list | diverging | `#FFFFFF` | [pudding-cool-2017-03-redraft](references/line/pudding-cool-2017-03-redraft/NOTES.md) |
 | line | explanatory diagram, scrollytelling | scrolly | url-list | sequential | `#111044` | [pudding-cool-2022-06-streaming](references/line/pudding-cool-2022-06-streaming/NOTES.md) |
+| map | dot map with annotated absences | static | url-list | monochrome | `#FFFFFF` | [projects-propublica-org-graphics-hatecrime-map](references/map/projects-propublica-org-graphics-hatecrime-map/NOTES.md) |
+| map | dot-density map, scrollytelling | scrolly | url-list | sequential | `#FDFDFD` | [projects-propublica-org-louisiana-toxic-air](references/map/projects-propublica-org-louisiana-toxic-air/NOTES.md) |
+| map | risk-surface map with named facilities | web | url-list | sequential | `#333333` | [projects-propublica-org-toxmap](references/map/projects-propublica-org-toxmap/NOTES.md) |
+| map | choropleth, reader-parameterised | web | url-list | diverging | `#CCCCCC` | [theguardian-com-society-ng-interactive-2015-sep-02-unaffordable-countr](references/map/theguardian-com-society-ng-interactive-2015-sep-02-unaffordable-countr/NOTES.md) |

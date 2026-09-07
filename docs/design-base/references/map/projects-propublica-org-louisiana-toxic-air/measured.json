@@ -1,0 +1,666 @@
+{
+  "url": "https://projects.propublica.org/louisiana-toxic-air/",
+  "archive": "url-list",
+  "family": "map",
+  "id": "projects-propublica-org-louisiana-toxic-air",
+  "harvestedAt": "2026-09-07",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "style": {
+    "title": "In a Notoriously Polluted Area of the Country, Massive New Chemical Plants Are Still Moving In | ProPublica",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "-apple-system",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 12 | 400 | normal | 0 | none",
+        "count": 430,
+        "sample": "BARRIERE CONSTRUCTION BOUTTE PLANT 625",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14.6 | 400 | normal | 0 | none",
+        "count": 36,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 400 | normal | 0 | none",
+        "count": 28,
+        "sample": "The industrial stretch of the Mississippi River between Bato",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)",
+          "rgb(33, 124, 227)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 600 | normal | 0 | none",
+        "count": 18,
+        "sample": "Gonzales",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12.6 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Air Toxicity Levels from Cancer-Causing Chemicals",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(136, 136, 136)",
+          "rgb(33, 124, 227)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 500 | normal | 0 | none",
+        "count": 13,
+        "sample": "Each point represents a facility.",
+        "colors": [
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13 | 500 | normal | 0 | none",
+        "count": 12,
+        "sample": "St. James",
+        "colors": [
+          "rgb(68, 68, 68)",
+          "rgb(117, 117, 117)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 11,
+        "weight": "500",
+        "style": "italic",
+        "tracking": 2.2,
+        "transform": "uppercase",
+        "key": "Graphik | 11 | 500 | italic | 2.2 | uppercase",
+        "count": 6,
+        "sample": "Mississippi River",
+        "colors": [
+          "rgb(117, 117, 117)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 11 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "0%",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 400 | italic | 0 | none",
+        "count": 5,
+        "sample": "This article was produced in partnership with The Times-Pica",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(136, 180, 211)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14.6 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "by , and , ProPublica, October 30, 2019",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 600 | normal | 0 | none",
+        "count": 4,
+        "sample": "Baton Rouge",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "© Mapbox",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "For example: , .",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(33, 124, 227)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Related Story:",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(136, 180, 211)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "italic",
+        "tracking": 2.8,
+        "transform": "uppercase",
+        "key": "Graphik | 14 | 500 | italic | 2.8 | uppercase",
+        "count": 2,
+        "sample": "Lake Pontchartrain",
+        "colors": [
+          "rgb(117, 117, 117)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 3.6,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 3.6 | none",
+        "count": 2,
+        "sample": "DISTRICT 5",
+        "colors": [
+          "rgb(255, 251, 148)",
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 11,
+        "weight": "500",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 11 | 500 | italic | 0 | none",
+        "count": 2,
+        "sample": "° New Orleans",
+        "colors": [
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": ": EPA RSEI, Louisiana Department of Environmental Quality, U",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sources",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Graphik | 14.6 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Sign Up",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Headline",
+        "size": 39.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Headline | 39.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "In a Notoriously Polluted Area of the Country, Massive New C",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "The River",
+        "colors": [
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0.72 | none",
+        "count": 1,
+        "sample": "LOUISIANA",
+        "colors": [
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Improve this map",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Get Notified When We Publish the National Map",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Want to see how the toxic levels of cancer-causing chemicals",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(34, 34, 34)",
+        "count": 203
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 203
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(117, 112, 179)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(217, 95, 2)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(68, 68, 68)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(37, 37, 37)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(117, 117, 117)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(245, 0, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(117, 117, 117)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 650,
+      "ch": 72
+    },
+    "graphic": {
+      "tag": "svg",
+      "x": 0,
+      "y": 1571,
+      "w": 1440,
+      "h": 900,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FDFDFD",
+      "share": 0.726386574074074,
+      "h": 358.21221235217195,
+      "s": 0.004652125344805221,
+      "l": 0.9935989602602906,
+      "chroma": 0.00005955687841241453
+    },
+    "chromatic": [
+      {
+        "hex": "#FFCC00",
+        "share": 0.0076226851851851855,
+        "h": 47.99996665512828,
+        "s": 1,
+        "l": 0.5000033741606775,
+        "chroma": 0.999993251678645
+      },
+      {
+        "hex": "#FDFBBD",
+        "share": 0.00012422839506172838,
+        "h": 57.85983566940553,
+        "s": 0.9477782867613371,
+        "l": 0.8670685665570576,
+        "chroma": 0.2519790524905614
+      },
+      {
+        "hex": "#FEFBA5",
+        "share": 0.00011342592592592593,
+        "h": 57.82718313087324,
+        "s": 0.9756988445769665,
+        "l": 0.821061758036548,
+        "chroma": 0.34917967186874754
+      },
+      {
+        "hex": "#F50000",
+        "share": 0.00010185185185185185,
+        "h": 0,
+        "s": 0.999629011315155,
+        "l": 0.4804812834224599,
+        "chroma": 0.9606060606060607
+      },
+      {
+        "hex": "#FEFBAC",
+        "share": 0.00009876543209876543,
+        "h": 57.78686186899894,
+        "s": 0.9760601280504781,
+        "l": 0.8349111519607844,
+        "chroma": 0.3222732843137255
+      },
+      {
+        "hex": "#FEFCC3",
+        "share": 0.00008487654320987654,
+        "h": 57.77437155119557,
+        "s": 0.9679525222551929,
+        "l": 0.8798573975044564,
+        "chroma": 0.23258467023172913
+      },
+      {
+        "hex": "#F53E3E",
+        "share": 0.00005169753086419753,
+        "h": 359.9463021723212,
+        "s": 0.9012979394294932,
+        "l": 0.600907228563067,
+        "chroma": 0.7194029850746269
+      },
+      {
+        "hex": "#FEFBB3",
+        "share": 0.00005169753086419753,
+        "h": 57.82696177062373,
+        "s": 0.9650485436893204,
+        "l": 0.849282996780802,
+        "chroma": 0.2908984489318115
+      },
+      {
+        "hex": "#FDFBCB",
+        "share": 0.000046296296296296294,
+        "h": 57.76447105788426,
+        "s": 0.9300742574257423,
+        "l": 0.8943790849673203,
+        "chroma": 0.19647058823529406
+      },
+      {
+        "hex": "#ADAC7A",
+        "share": 0.00003935185185185185,
+        "h": 57.8826237054085,
+        "s": 0.2384960204921783,
+        "l": 0.5797385620915033,
+        "chroma": 0.2004613610149943
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FDFDFD",
+        "share": 0.726386574074074,
+        "h": 358.21221235217195,
+        "s": 0.004652125344805221,
+        "l": 0.9935989602602906,
+        "chroma": 0.00005955687841241453
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.11104475308641976,
+        "h": 355.1469550905222,
+        "s": 0.0013054377482988524,
+        "l": 0.9556119572500679,
+        "chroma": 0.0001158916531577292
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.049748456790123456,
+        "h": 357.1764705882313,
+        "s": 0.0010736788147888126,
+        "l": 0.9253634692081381,
+        "chroma": 0.0001602713238411102
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.027460648148148147,
+        "h": 358.97294312536496,
+        "s": 0.0009324059729589529,
+        "l": 0.8929892415534874,
+        "chroma": 0.00019955494069279212
+      },
+      {
+        "hex": "#DCDCDC",
+        "share": 0.020636574074074075,
+        "h": 359.7920997920917,
+        "s": 0.0007638456957588483,
+        "l": 0.8615005920109677,
+        "chroma": 0.0002115843533151418
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.014604938271604938,
+        "h": 358.9591836734641,
+        "s": 0.0005989041276715901,
+        "l": 0.8304905690086686,
+        "chroma": 0.0002030397957999419
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.008988425925925926,
+        "h": 358.5283018867857,
+        "s": 0.0004441971095341937,
+        "l": 0.7991641123785767,
+        "chroma": 0.0001784214415443408
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.006300925925925926,
+        "h": 357.56756756755243,
+        "s": 0.0003820679998431069,
+        "l": 0.7674686529032382,
+        "chroma": 0.00017768557337216606
+      },
+      {
+        "hex": "#BCBCBC",
+        "share": 0.005042438271604938,
+        "h": 357.0212765957651,
+        "s": 0.00032046110034072685,
+        "l": 0.7359671152317087,
+        "chroma": 0.00016922453755796596
+      },
+      {
+        "hex": "#B4B4B4",
+        "share": 0.003673611111111111,
+        "h": 354.54545454543694,
+        "s": 0.0002915114379883696,
+        "l": 0.7047279571353852,
+        "chroma": 0.00017215035562645475
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 48,
+        "share": 0.008421296296296295,
+        "size": 21
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1296000
+  }
+}
