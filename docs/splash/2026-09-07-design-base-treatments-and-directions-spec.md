@@ -92,7 +92,9 @@ One directory per reference under the corpus. Contains:
   from** (§6.1), title, page ground, every distinct
   `(family, size, weight, style, tracking, case)` tuple actually painted with its run count and a
   text sample, mark fills and strokes, text-column measure in characters, the largest graphic's box
-  and ratio.
+  and ratio — **and, from the pixel route (§6.3), the ground, the chromatic palette with each
+  colour's coverage, the neutral furniture, and the palette's shape.** Each fact carries the route
+  that produced it.
 - `screenshot.png` — the visual trace, at a fixed 1440×900 viewport.
 - `NOTES.md` — hand-written, and the only place a judgement lives. Required sections:
   **What it is** (artifact type × export type) · **What it does with information** (any treatment
@@ -142,11 +144,12 @@ hand-edited. Two agents may therefore run steps 1–6 for different families at 
 1. **Draw the candidate pool from all three archives.** They are not the same kind of source and
    they do not feed the same axis — see §6.1. Every family draws from all three; a family whose
    pool comes from one archive only is under-drawn and `METHOD.md` must say so.
-2. **Harvest, by the route the archive requires** (§6.1). Live newsroom pages go through the
-   harvester, which records §5.1's `measured.json` and the screenshot. Image-artifact references
-   are captured and read by eye — there are no computed styles to read, and `NOTES.md` says which
-   route was used. Failures are recorded as failures; a reference that would not load is never
-   described from its metadata.
+2. **Harvest by BOTH routes, always.** The **style route** reads computed styles and reaches type
+   everywhere and marks wherever they are SVG. The **pixel route** (§6.3) reads the colour
+   signature off the rendered pixels and reaches everything else — posters, canvas, video frames.
+   Run both on every reference and record which one produced each fact; neither is a fallback for
+   the other, and a reference measured by one route only is under-measured. Failures are recorded
+   as failures; a reference that would not load is never described from its metadata.
 3. **Look at the pixels, and read what sits next to them.** This is `reference-set.md`'s own
    standing rule and it applies here unchanged: a lesson written from a promotional card, a
    metadata image or a design mockup is not a lesson. Note in `NOTES.md` which kind of artifact was
@@ -166,20 +169,48 @@ hand-edited. Two agents may therefore run steps 1–6 for different families at 
 Characterised on 2026-09-07 by loading each and reading it, not from reputation. They differ in
 kind, and treating them alike would waste two of the three.
 
-| archive | what it actually is | its own index | feeds | how it is read |
+| archive | what it actually is | its own index | feeds | read by |
 | --- | --- | --- | --- | --- |
-| `~/Downloads/infoviz-source-urls-alive.txt` | 3 827 published newsroom interactives across 525 domains — WaPo 547, NYT 490, Bloomberg 112, SCMP 103, Reuters 198, ProPublica 112, Guardian 46, ABC 61, Pudding 29 | none — a flat list | **directions** and treatments, across all four exports | live pages: the harvester reads their computed styles |
-| `informationisbeautiful.net` | an independent collective's poster-style infographics and data-visuals | subject — 11 themes, from "nature & climate" to "beautiful news" | **form invention and colour**, static | the artifact is a raster image; read by eye, with no computed styles to take |
-| `100.datavizproject.com` | **one** dataset (World Heritage Sites, 3 countries, 2 years) encoded **100 ways**, by Ferdio | STORY / PROPERTY / SHAPE | **treatments** — the form vocabulary: what else this data could be | one house style throughout, so it carries no direction value at all |
+| `~/Downloads/infoviz-source-urls-alive.txt` | 3 827 published newsroom interactives across 525 domains — WaPo 547, NYT 490, Bloomberg 112, SCMP 103, Reuters 198, ProPublica 112, Guardian 46, ABC 61, Pudding 29 | none — a flat list | directions, treatments, form, colour — across all four exports | **style route** (SVG marks expose computed styles) + pixel route |
+| `informationisbeautiful.net` | an independent collective's poster-style infographics and data-visuals | subject — 11 themes | directions, treatments, form, colour — statically | **pixel route** (its graphics are rasters: four pieces returned 17–23 type tuples and **zero** mark colours) + style route for the page's own type |
+| `100.datavizproject.com` | **one** dataset (World Heritage Sites, 3 countries, 2 years) encoded **100 ways**, by Ferdio | STORY / PROPERTY / SHAPE | treatments — the form vocabulary: what else this data could be | style route; carries little direction value, being one house style throughout |
 
-Three consequences for the runbook:
+**Every archive feeds every axis. What differs is the ROUTE, never the value.** An earlier draft of
+this spec claimed only the url list could yield directions, on the grounds that IIB serves images
+with no computed styles. That confused *hard to measure mechanically* with *carries nothing*, and
+it would have discarded two archives out of three. A poster has an art direction — frequently a
+stronger one than a newsroom page. The pixel route (§6.3) exists to take it.
 
-- **Only the url list yields directions.** The other two cannot: one serves images, the other is
-  uniform by construction. A family that draws directions from IIB or DVP has misread the source.
-- **DVP is the strongest treatment source and the weakest style source**, and its whole point is
-  that the dataset is held constant — which is exactly the control an encoding comparison needs.
+Two further notes for the runbook:
+
+- **DVP is the strongest treatment source**, and its whole point is that the dataset is held
+  constant — exactly the control an encoding comparison needs.
 - **DVP's own taxonomy (STORY / PROPERTY / SHAPE) is reused** as the vocabulary of
   `INDEX-BY-ARTIFACT.md`'s shape column, rather than inventing a parallel one.
+
+### 6.3 The pixel route
+
+For any artifact whose graphic is a raster — an IIB poster, a canvas chart, an extracted video
+frame — the colour signature is read off the pixels: bucket at 5 bits per channel, split by
+saturation into the direction's **chromatic** palette and its **neutral** furniture, and report the
+ground as the modal colour. `pixel-palette.mjs` does this today.
+
+It also classifies the palette's **shape** — `diverging` | `sequential` | `categorical` |
+`monochrome` — by clustering hues. Two defects were found and fixed while validating it on four IIB
+pieces, and both are recorded because a later reader will otherwise reintroduce them:
+
+1. **Spread is not shape.** A first version used `max(hue) − min(hue)` and called "Left vs. Right"
+   *categorical* at 207° — a poster whose whole mechanism is two opposed poles. Spread cannot tell
+   two clusters from six. Cluster count decides; hue is circular, so 358° and 2° are four degrees
+   apart.
+2. **The noise floor is relative to the ink, not to the image.** An absolute floor of 0.4 % of all
+   pixels called "Who's Suing Whom in AI" *monochrome* — six hues from 5° to 331°, each covering
+   ~0.3 % of a page that is 90.9 % white. On a sparse graphic every real pole sits under any
+   absolute floor. Measured against the coloured ink, they are all substantial.
+
+Validated on 2026-09-07: Left vs. Right → diverging (19°, 225°, both ramped); $$$Billions →
+diverging (172° against 35°); Common Mythconceptions → categorical (3 clusters); Who's Suing Whom →
+categorical (4 clusters, 3 ramped). Four for four against a reading by eye.
 
 The Buried Signals archive is a fourth pool, used for existing project references; it is drawn from
 the same way as the url list.
@@ -277,6 +308,11 @@ filed direction through the real engine.
 ## 12. Probe artifacts this spec argues from
 
 Throwaway, in `.sdd/design-probe/` (gitignored): `TreatmentLine.tsx` (five treatments),
-`ArtDirectedLine.tsx` (three directions), `glyph-probe.mjs`, and in the session scratchpad
-`ad-harvest.mjs` with six harvested references. The harvester is the one piece worth keeping and is
-the seed of step 2.
+`ArtDirectedLine.tsx` (three directions), `glyph-probe.mjs`.
+
+**Two pieces are not throwaway and are the seed of step 2**, currently in the session scratchpad
+and to be promoted by the plan:
+
+- `ad-harvest.mjs` — the style route. Validated on six newsroom pieces and four IIB pieces.
+- `pixel-palette.mjs` — the pixel route (§6.3). Validated on four IIB pieces, four for four against
+  a reading by eye, after the two defects recorded there were fixed.
