@@ -194,11 +194,15 @@ Two further notes for the runbook:
 For any artifact whose graphic is a raster — an IIB poster, a canvas chart, an extracted video
 frame — the colour signature is read off the pixels: bucket at 5 bits per channel, split by
 saturation into the direction's **chromatic** palette and its **neutral** furniture, and report the
-ground as the modal colour. `pixel-palette.mjs` does this today.
+ground as the modal colour, splitting the two by **chroma** rather than HSL saturation (defect 3
+below). `scripts/design-base/pixel-palette.mjs` does this today, and photographs the graphic
+element rather than cropping the page shot (defect 4).
 
 It also classifies the palette's **shape** — `diverging` | `sequential` | `categorical` |
 `monochrome` — by clustering hues. Four defects were found and fixed while building it, two on the
-IIB pieces and two on the first real harvest, and all four are recorded
+IIB pieces and two on the first real harvest, and all four are recorded here because a later
+reader will otherwise reintroduce them:
+
 1. **Spread is not shape.** A first version used `max(hue) − min(hue)` and called "Left vs. Right"
    *categorical* at 207° — a poster whose whole mechanism is two opposed poles. Spread cannot tell
    two clusters from six. Cluster count decides; hue is circular, so 358° and 2° are four degrees
