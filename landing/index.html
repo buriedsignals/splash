@@ -3,7 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Splash — too much text in your work?</title>
+<!-- LA CARTE DE PARTAGE. Ce qu'un lien vers Splash montre ailleurs : dans un
+     fil, un Slack, un message. Sans elle, l'URL arrive nue, et une page qui
+     parle de forme visuelle n'a pas le droit d'arriver sans la sienne.
+
+     L'IMAGE est laissée VIDE en attendant le visuel de partage. Une valeur
+     fausse serait PIRE qu'une valeur absente : un scraper suit ce qu'on lui
+     donne, et un lien mort dans `og:image` fait une carte cassée la ou
+     l'absence fait une carte sobre. Les balises restent en place, il n'y a
+     que l'URL a poser. -->
+<meta name="theme-color" content="#14141c">
+<meta name="description" content="An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.">
+<link rel="canonical" href="https://splash.buriedsignals.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Splash">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://splash.buriedsignals.com/">
+<meta property="og:title" content="Splash — an agent system for charts, maps and video">
+<meta property="og:description" content="An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.">
+<meta property="og:image" content="">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Splash — an agent system for charts, maps and video">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Splash — an agent system for charts, maps and video">
+<meta name="twitter:description" content="An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.">
+<meta name="twitter:image" content="">
+<title>Splash — an agent system for charts, maps and video</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
      tailles — un favicon en PNG est net à une seule. Sans fond : la marque
@@ -503,8 +529,26 @@
        font-family:inherit;font-size:11px;font-weight:500;letter-spacing:.16em;
        text-transform:uppercase;opacity:.6;padding:4px 0}
   .dmx:hover,.dmx:focus-visible{opacity:1;color:var(--amber)}
-  /* Le pied du hero ne porte plus que le bailleur. Voir .hfund. */
-  .heroft{display:flex;justify-content:center;align-items:flex-end}
+  /* LE PIED DU HERO PORTE DEUX CHOSES DE NATURE DIFFERENTE : a qui on doit la
+     page, et dans quoi le paquet s'installe. Une GRILLE en trois colonnes
+     plutot qu'un `space-between` : le bailleur reste sur l'axe du titre, ce
+     que `space-between` lui retirerait des que la liste de droite change de
+     largeur — et elle change, puisqu'elle est faite de mots. La colonne de
+     gauche est vide et porte la mesure ; c'est elle qui tient le centre. */
+  .heroft{display:grid;grid-template-columns:1fr auto 1fr;align-items:flex-end;
+          gap:var(--gut)}
+  .hfund{grid-column:2;justify-self:center}
+  /* CE AVEC QUOI SPLASH TOURNE. Cinq noms, pas des marques : le paquet
+     s'installe dans un magasin de skills partage, et ce qui compte au lecteur
+     est de trouver le sien dans la liste. Aligne a droite et en colonne pour
+     que le label ne soit jamais lu comme le sixieme nom. */
+  .hworks{grid-column:3;justify-self:end;display:flex;flex-direction:column;
+          align-items:flex-end;gap:7px;text-align:right}
+  .hworks .wlab{font-size:9.5px;font-weight:500;letter-spacing:.2em;
+                text-transform:uppercase;opacity:.5}
+  .hworks ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;
+             justify-content:flex-end;gap:5px 14px}
+  .hworks li{font-size:11px;opacity:.78;white-space:nowrap}
 
   /* Dans la version animée chaque pavé possède un écran de scroll à lui : il
      entre, on le lit, il sort, le suivant arrive. Sans animation, la même
@@ -817,10 +861,17 @@
   .offers .olede{margin:1em 0 0;max-width:58ch;font-size:clamp(13px,1.05vw,15px);
           line-height:1.55;opacity:.62}
   .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,1.8vw,26px);
-         margin-top:clamp(34px,4vw,56px);align-items:start}
+         margin-top:clamp(34px,4vw,56px)}
+  /* LES DEUX CARTES ONT LA MEME HAUTEUR — la grille les etire — mais elles
+     n'ont pas la meme quantite de matiere : a gauche deux bascules et un
+     formulaire, a droite six pastilles et deux liens. Le pied est donc pousse
+     au BAS de la carte (`margin-top:auto`), pour que « Get in touch » et
+     « Subscribe » partagent la meme ligne de fond d'une carte a l'autre. Le
+     mou de la carte courte remonte au-dessus de ses boutons : c'est le prix
+     de l'alignement, et deux boutons qui se repondent valent mieux qu'un bas
+     de cadre ragged. */
   .offer{border:1px solid rgba(237,234,227,.16);border-radius:var(--rad);
-         padding:clamp(22px,2.2vw,34px);display:flex;flex-direction:column;
-         min-height:100%}
+         padding:clamp(22px,2.2vw,34px);display:flex;flex-direction:column}
   .okick{display:flex;flex-wrap:wrap;align-items:center;gap:10px;
          font-family:var(--C);font-size:10px;font-weight:500;
          letter-spacing:.16em;text-transform:uppercase}
@@ -2168,6 +2219,12 @@
     .heroacts a,.heroacts button{padding:12px 14px;font-size:10px;letter-spacing:.1em}
     .hfund .imj{height:19px}
     .hfund span{font-size:9px}
+    /* La troisieme colonne n'a plus de place : le pied revient au seul
+       bailleur, centre, et la liste passe sous les boutons ou elle a la
+       largeur du cadre pour elle. */
+    .heroft{grid-template-columns:1fr}
+    .hfund{grid-column:1}
+    .hworks{display:none}
 
     /* ---- les pavés du chapitre --------------------------------------
        54vw d'un cadre de 390 px font 210 px : le pavé devenait une colonne
@@ -2345,6 +2402,7 @@
     .herodek{display:none}
     .herocore{gap:11px}
     .heroacts a,.heroacts button{padding:10px 12px}
+    .hworks{display:none}
 
     /* La nuée se resserre autant que le cadre : à --tk 0.8, une tuile posée à
        -230 sortait par le haut d'un cadre de 256 px de haut. */
@@ -2526,7 +2584,7 @@
   <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
   <div class="herocore">
     <h1><span class="rise" style="--d:.26s">Don&rsquo;t publish</span><em class="rise" style="--d:.38s">a wall of text</em></h1>
-    <p class="herodek rise" style="--d:.54s">Splash turns reporting material into web, video, scrollytelling and static visuals &mdash; storyboard approval, real rendered drafts, and per-output delivery, all in a journalist-owned story directory.</p>
+    <p class="herodek rise" style="--d:.54s">An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.</p>
     <div class="heroacts rise" style="--d:.66s">
       <a class="hinstall" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
       <a class="hinspire" href="inspiration.html">Get inspired</a>
@@ -2540,6 +2598,10 @@
       <span>With the support of</span>
       <svg class="imj" viewBox="0 0 86 53.25" role="img" aria-label="Initiative for Media Innovation"><use href="#imj"/></svg>
     </a>
+    <div class="hworks rise" style="--d:.90s">
+      <span class="wlab">Works with</span>
+      <ul><li>Claude Code</li><li>Claude Desktop</li><li>ChatGPT</li><li>Codex</li><li>Cursor</li><li>Gemini</li><li>Goose</li><li>Antigravity</li></ul>
+    </div>
   </div>
 </section>
 
@@ -2850,9 +2912,9 @@
     <div class="mmid">
       <div>
         <div class="meye"><i></i>The gallery</div>
-        <h2>Find inspiration<br>for your graphics</h2>
+        <h2>Find inspiration</h2>
         <p>A searchable gallery of visual journalism from newsrooms worldwide
-        &mdash; 8,000+ charts, maps and interactives as they were published.
+        &mdash; 4,500+ charts, maps and interactives as they were published.
         Browse it here, or query it straight from your agent while you&rsquo;re
         working.</p>
         <a class="mgo" href="inspiration.html">Get inspiration</a>
@@ -2872,9 +2934,8 @@
 <section class="offers" id="offers" data-ground="#14141c">
   <div class="oeye"><i></i>Work with me</div>
   <h2>Two ways in</h2>
-  <p class="olede">I use Splash in my own reporting and in collaborative
-  stories with partner newsrooms. If you want to work with me around that
-  system, these are the two ways in.</p>
+  <p class="olede">I build open-source tools for journalists and researchers
+  to investigate. Here are two ways to work with me.</p>
 
   <div class="ogrid">
     <article class="offer">
@@ -2915,7 +2976,7 @@
       <p class="olede2">Workshops, custom tooling, and investigation collaborations.</p>
       <ul>
         <li>Le Temps</li><li>MAZ Journalistenschule</li><li>Republik</li>
-        <li>20 Minuten</li><li>MediaStorm</li><li>The New Humanitarian</li>
+        <li>20 Minuten</li><li>SRF</li><li>The New Humanitarian</li>
       </ul>
       <div class="ofoot">
         <div class="oacts">
@@ -2931,17 +2992,16 @@
   <div class="fstage">
     <div class="fmain up">
       <a class="fmark" href="./">Splash</a>
-      <p class="flede">Splash is an open skill pack that gives any newsroom
-      <em>a visual desk</em> — the AI you already use, taught to build
-      scrollytelling maps, chart stories, interactive graphics and motion
-      video. Open source, key-free to try, and ready for any CMS.</p>
+      <p class="flede">Splash is an open-source agent system that turns your
+      reporting material into charts, maps and video. It installs into the AI
+      agent you already use, produces the graphics, and deploys them for
+      publication.</p>
 
       <nav class="flinks" aria-label="Splash">
         <a href="docs/">Docs</a>
         <a href="inspiration.html">Get inspiration</a>
         <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">GitHub &nearr;</a>
         <a href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install &nearr;</a>
-        <a href="https://buriedsignals.com/consulting" target="_blank" rel="noopener noreferrer">Work with me &nearr;</a>
         <a href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer">Buried Signals &nearr;</a>
       </nav>
     </div>

@@ -3,14 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inspiration — Splash</title>
+<!-- LA CARTE DE PARTAGE. Ce qu'un lien vers Splash montre ailleurs : dans un
+     fil, un Slack, un message. Sans elle, l'URL arrive nue, et une page qui
+     parle de forme visuelle n'a pas le droit d'arriver sans la sienne.
+
+     L'IMAGE est laissée VIDE en attendant le visuel de partage. Une valeur
+     fausse serait PIRE qu'une valeur absente : un scraper suit ce qu'on lui
+     donne, et un lien mort dans `og:image` fait une carte cassée la ou
+     l'absence fait une carte sobre. Les balises restent en place, il n'y a
+     que l'URL a poser. -->
+<meta name="theme-color" content="#14141c">
+<meta name="description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
+<link rel="canonical" href="https://splash.buriedsignals.com/inspiration.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Splash">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://splash.buriedsignals.com/inspiration.html">
+<meta property="og:title" content="Splash Catalog">
+<meta property="og:description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
+<meta property="og:image" content="">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Splash Catalog">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Splash Catalog">
+<meta name="twitter:description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
+<meta name="twitter:image" content="">
+<title>Splash Catalog</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
      tailles — un favicon en PNG est net à une seule. Sans fond : la marque
      est une forme, pas une pastille, et un carré posé sous elle en ferait
      un logo d'application. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20fill%3D%22%2314141c%22%20d%3D%22M51.043%2032.561L42.02%2051.064A11.148%2011.148%200%201%201%2030.616%2035.116Z%20M17.9%2041.122L6.387%2024.057A11.148%2011.148%200%201%201%2025.9%2022.154Z%20M27.057%208.139L47.593%206.701A11.148%2011.148%200%201%201%2039.484%2024.551Z%22%2F%3E%3C%2Fsvg%3E">
-<meta name="description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://towumekminbldlabbyss.supabase.co" crossorigin>
@@ -1153,14 +1178,13 @@
   <div class="fstage">
     <div class="fmain up">
       <a class="fmark" href="./">Splash</a>
-      <p class="flede">Splash is an open skill pack that gives any newsroom
-      <em>a visual desk</em> — the AI you already use, taught to build
-      scrollytelling maps, chart stories, interactive graphics and motion
-      video. Open source, key-free to try, and ready for any CMS.</p>
+      <p class="flede">Splash is an open-source agent system that turns your
+      reporting material into charts, maps and video. It installs into the AI
+      agent you already use, produces the graphics, and deploys them for
+      publication.</p>
 
       <nav class="flinks" aria-label="Splash">
         <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">Skill files</a>
-        <a href="https://buriedsignals.com/consulting" target="_blank" rel="noopener noreferrer">Work with me &nearr;</a>
         <a href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer">Buried Signals &nearr;</a>
       </nav>
     </div>
