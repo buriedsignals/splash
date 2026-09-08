@@ -308,6 +308,12 @@
             transform:translateY(-50%);
             display:flex;flex-direction:column;align-items:center;
             gap:clamp(16px,2.4vh,28px)}
+  .hero-beta{display:inline-flex;align-items:center;gap:8px;
+             padding:6px 12px;border:1px solid var(--amber);border-radius:999px;
+             background:var(--ink);color:var(--amber);font-family:var(--C);font-size:11px;
+             font-weight:500;letter-spacing:.14em;text-transform:uppercase;line-height:1.4}
+  .hero-beta::before{content:"";width:6px;height:6px;background:currentColor;
+                     border-radius:50%;flex:none}
   .hero h1{margin:0}
   /* Le bloc de verre n'est pas placé par le script : cette boîte marque le
      cadre qu'il doit remplir, et la caméra en dérive (hero.js lit
@@ -2583,6 +2589,7 @@
 <section class="hero" data-ground="#14141c">
   <div id="hero" aria-hidden="true"><div class="glass" data-glass></div></div>
   <div class="herocore">
+    <span class="hero-beta rise" style="--d:.18s">Public beta</span>
     <h1><span class="rise" style="--d:.26s">Don&rsquo;t publish</span><em class="rise" style="--d:.38s">a wall of text</em></h1>
     <p class="herodek rise" style="--d:.54s">An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.</p>
     <div class="heroacts rise" style="--d:.66s">
