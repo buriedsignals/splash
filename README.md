@@ -133,8 +133,8 @@ Two routes, one decision:
   real story, and for every journalist install.
 - **Source (lighter).** A sparse clone plus per-skill links, described under
   [Install from source](#install-from-source-agents). Skills load and preflight
-  runs, nothing else: no keys, no updates, no repair, and Chrome is your
-  problem. Choose this only when an agent or developer is working from a clone
+  runs, nothing else: no keys, no updates, no repair, Chrome is your problem,
+  and you still download Engine's `bsig` yourself to launch the studio. Choose this only when an agent or developer is working from a clone
   and will re-link after every pull.
 
 Managed journalist install is Indicator Labs on Mac or Windows. Join at
@@ -189,6 +189,21 @@ cd splash
 git sparse-checkout set $(grep -v '^#' install-set.txt)
 bun install --frozen-lockfile --production --ignore-scripts
 ```
+
+**Engine is still a prerequisite.** A source checkout contains no `bsig`, and
+the studio and the MCP server refuse to start without one: `open.mjs` exits
+with `Splash studio needs bsig on PATH or SPLASH_BSIG_PATH`, and the server
+requires `SPLASH_BSIG_PATH` outright. Before the first launch, download and
+verify the signed Engine release described under [Install](#install) (the
+bootstrap URL, SHA-256, then Minisign), then point Splash at it:
+
+```bash
+export SPLASH_BSIG_PATH=/absolute/path/to/bsig
+export SPLASH_CHECKOUT_ROOT="$PWD"
+bun --no-env-file apps/goose/studio/open.mjs
+```
+
+Skills load and preflight reports without Engine; nothing launches without it.
 
 Browser-based rendering and verification require Chrome or Chromium separately
 from skill discovery and preflight readiness (static SVG/PNG charts use Resvg).
