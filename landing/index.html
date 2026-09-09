@@ -1599,9 +1599,22 @@
      Sur ENCRE, à rebours de la section d'avant : l'alternance papier/encre
      est une règle de la page, et c'est elle qui dit qu'on a changé de sujet.
      L'accent y passe donc en ambre — le bleu est réservé au papier. */
+  /* ELLE TIENT LE CADRE ENTIER. Son contenu — quatre lignes et un titre — ne
+     fait pas toujours une hauteur d'écran : sur un cadre de 1100 px elle en
+     mesurait 1016, et les deux sections de papier qui l'encadrent se voyaient
+     en haut et en bas comme deux bandeaux blancs. Elle prend donc au moins le
+     cadre, et ce qu'elle a se pose au milieu.
+
+     CE N'EST PAS QU'UNE AFFAIRE DE FOND. Sa porte de sortie est le bas de la
+     section moins une hauteur de cadre : plus courte que le cadre, cette porte
+     tombait AVANT son propre début — mesuré, 18 px trop haut sur un écran de
+     950, 84 px sur un de 1100. Le lecteur arrivait donc dans une section déjà
+     franchie, et le garde ramenait la page en arrière avant de jouer le
+     départ. C'était ça, le saut. */
   .ways{background:var(--ink);color:var(--paper);padding:var(--vs) var(--gut);
-        overflow:hidden}
-  .wstage{max-width:var(--max);margin:0 auto}
+        overflow:hidden;min-height:100vh;min-height:100dvh;box-sizing:border-box;
+        display:flex;align-items:center}
+  .wstage{max-width:var(--max);margin:0 auto;width:100%}
   .weye{display:flex;align-items:center;gap:9px;font-family:var(--C);
         font-size:11.5px;font-weight:500;letter-spacing:.2em;
         text-transform:uppercase;opacity:.6}
@@ -3024,6 +3037,7 @@
 
   <div class="fmeta">
     <span>Splash &middot; v0.1</span>
+    <span>Built by Rémy Dumas</span>
     <span>&copy; 2026 Buried Signals — MIT licensed</span>
   </div>
 </footer>
@@ -3825,7 +3839,12 @@
      * où la dernière ligne touche le bas du cadre, c'est-à-dire quand il n'y
      * a plus rien à lire là où on est. */
     corY = corEl ? Math.round(corEl.getBoundingClientRect().top + scrollY) : 1e9;
-    corGate = Math.max(0, corY - innerHeight);
+    /* ET JAMAIS AVANT LE HAUT DE LA SECTION QU'ELLE FERME. Une section plus
+       courte que le cadre mettait sa propre porte de sortie derrière son
+       entrée : on y arrivait déjà sorti. La feuille de style lui donne
+       maintenant la hauteur du cadre, mais la borne ne doit pas dépendre de
+       ça pour être juste. */
+    corGate = Math.max(0, wysY, corY - innerHeight);
     insY = insEl ? Math.round(insEl.getBoundingClientRect().top + scrollY) : 1e9;
     insGate = Math.max(0, insY - innerHeight);
     maxY = Math.max(0, document.documentElement.scrollHeight - innerHeight);
@@ -6542,7 +6561,18 @@
   if (!field) return;
   const reduced = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  const COUNT = 28;
+  /* HOW MANY DRAWINGS STAND IN THE ROOM. Twenty-eight is what a reader gets:
+     enough for the depth to read as populated, few enough that the redrawing
+     stays inside its budget on a laptop that is also running a raymarched
+     hero one section up.
+
+     `?plates=N` asks for another number, and nothing else does — not a
+     setting, not a breakpoint, not a device. It is there for a CAPTURE: the
+     launch film films this room and wants it fuller than a reader needs,
+     and it is filmed on a machine doing nothing else. Clamped either way, so
+     a number typed in a URL cannot take the page down. */
+  const PLATES = /[?&]plates=(\d{1,3})\b/.exec(location.search);
+  const COUNT = PLATES ? Math.max(8, Math.min(96, +PLATES[1])) : 28;
   const DEPTH = 2400;   // how far back the set stands, in pixels of z
   /* A NOMINAL SPAN, and it is only used to space the STARTS out. How far a
      tile actually walks is its own — it is turned round the moment its near
