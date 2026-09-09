@@ -5082,63 +5082,6 @@
    * l'autre est papier — et rien ne peut traverser cette frontière sans
    * changer de couleur en chemin. Ce qui la passe, c'est le vide : le
    * contenu part, et l'autre arrive. */
-  const toCore = async () => {
-    if (running || corIn || !corEl || !wysEl) return;
-    running = true; freeBack = false;
-    corEl.classList.add('armed');
-    /* LES LIGNES S'EN VONT PENDANT LE TRAJET, PAS AVANT. Menés l'un après
-     * l'autre, ils laissaient une section VIDE à l'écran le temps que les
-     * lignes finissent de sortir : mesuré sur un enregistrement, quatre
-     * cinquièmes de seconde d'encre nue, sans rien dessus, avant que la page
-     * ne bouge. C'est ça qu'on lit comme un saut — pas un déplacement trop
-     * vif, un écran qui ne montre plus rien.
-     *
-     * Le catalogue avait déjà tranché la même question dans l'autre sens :
-     * « le trajet et la cascade courent ENSEMBLE ; menés l'un après l'autre,
-     * on regarde d'abord une page qui bouge, puis une grille qui change. »
-     *
-     * ET LE TRAJET EST À DÉCOUVERT : c'est le seul passage de la page que
-     * rien ne couvre — ni rideau, ni tuile de relais, ni papier — donc il lui
-     * faut aussi la courbe qu'on peut suivre, celle qui freine aux deux
-     * bouts. */
-    wysEl.classList.remove('in');
-    const trajet = glide(corY, 1150, true);
-    /* ET CE QU'IL Y A DEDANS SE POSE PENDANT LA FIN DU TRAJET, pas après lui.
-     * Attendu, il restait un quart de seconde où la section de départ s'était
-     * vidée et où celle d'arrivée n'avait pas commencé : deux sections en
-     * scène et rien à regarder dans ni l'une ni l'autre. Le titre part à
-     * mi-course, donc il est déjà là quand la page se pose. */
-    await wait(560);
-    wysIn = false; corIn = true;
-    corEl.classList.add('in');
-    await trajet;
-    await wait(620);
-    running = false;
-    lock(false);
-  };
-
-  /* Le retour, en miroir exact : les tuiles s'éteignent, la page recule
-   * jusqu'à la porte, les quatre lignes reviennent. La section des sorties
-   * n'est désarmée qu'à la toute fin — désarmée plus tôt, son contenu
-   * réapparaissait d'un coup au milieu du trajet. */
-  const backToWys = async () => {
-    if (running || !corIn || !corEl || !wysEl) return;
-    running = true; freeBack = false;
-    // le retour est le même trajet lu à l'envers : les tuiles s'éteignent
-    // pendant qu'il court, et il est à découvert lui aussi
-    corEl.classList.remove('in');
-    const retour = glide(corGate, 1150, true);
-    await wait(560);
-    corIn = false; wysIn = true;
-    wysEl.classList.add('in');
-    await retour;
-    warmer();
-    await wait(1080);
-    corEl.classList.remove('armed');
-    running = false;
-    lock(false);
-  };
-
   /* ---- DES OUTILS À L'HOMMAGE : LE RIDEAU -------------------------------
    * Le même geste qu'entre le parcours et l'orchestration, et pour la même
    * raison : ces deux sections-là ne peuvent pas se succéder par un simple
@@ -5237,13 +5180,19 @@
     if (wysIn && scrollY < wysY - 4 && typeof catRetour === 'function') {
       scrollTo(0, wysY); lock(true); hold(wysY); catRetour(); return;
     }
-    // le plafond des sorties : la porte des outils
-    if (wysIn && scrollY > corGate) {
-      scrollTo(0, corGate); lock(true); hold(corGate); toCore(); return;
-    }
-    // et le plancher des outils, qui la rejoue à l'envers
-    if (corIn && scrollY < corY - 4) {
-      scrollTo(0, corY); lock(true); hold(corY); backToWys(); return;
+    /* LA FRONTIÈRE ENTRE LES SORTIES ET LES OUTILS N'EN EST PLUS UNE. Elle
+       tenait la page, retirait les quatre lignes, portait le lecteur d'un
+       écran et posait le contenu de l'arrivée — une séquence d'une seconde et
+       demie qu'un seul cran de molette déclenchait, et qu'un cran en sens
+       inverse rejouait à l'envers. Deux sections qui se suivent n'ont pas
+       besoin de ça : on passe de l'une à l'autre en défilant.
+       Il reste à savoir de quel côté on est, parce que les bornes d'APRÈS —
+       le rideau de l'hommage — et celle d'AVANT — le relais du catalogue —
+       le demandent. C'est tout ce que fait ce qui suit. */
+    if (!insIn) {
+      const auxOutils = scrollY >= corY;
+      if (auxOutils && wysIn) { wysIn = false; corIn = true; }
+      else if (!auxOutils && corIn) { corIn = false; wysIn = true; }
     }
     // le plafond des outils : le rideau de l'hommage
     if (corIn && scrollY > insGate) {
