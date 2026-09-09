@@ -42,6 +42,7 @@ function publicCredential(value, brokerAvailable) {
     purpose: text(metadata.purpose),
     acquisitionUrl: text(metadata.acquisitionUrl, 4096) || null,
     state,
+    reason: value?.ok === false ? text(value.reason, 512) || null : null,
     stored: value?.stored === true,
     generation: Number.isSafeInteger(value?.generation) ? value.generation : null,
     validation: validationStatus

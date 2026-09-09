@@ -14,13 +14,30 @@ function isCapabilityHash(hash) {
   return Boolean(value) && value !== "choose" && value !== "readiness";
 }
 
+export const API_TIMEOUT_MS = 60_000;
+
 export async function defaultApi(path, body = {}) {
-  const response = await fetch(path, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // The studio must never sit on "Connecting to Splash…" without a verdict:
+  // the server bounds its own credential reads, and this bounds the request.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("Splash did not answer within 60 seconds. Make sure Indicator Labs is installed and approve any macOS keychain prompt for it, then refresh.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(payload.message || "Request refused");
@@ -274,7 +291,7 @@ export async function startSplashApp({
     const credentials = documentRef.querySelector("#credentials");
     credentials.replaceChildren();
     for (const row of next.credentials ?? []) {
-      const detail = [row.id, statusText(row.state), row.purpose].filter(Boolean).join(" — ");
+      const detail = [row.id, statusText(row.state), row.reason || row.purpose].filter(Boolean).join(" — ");
       const node = card(row.name || row.id, detail, row.state);
       if (row.acquisitionUrl) {
         const link = documentRef.createElement("a");

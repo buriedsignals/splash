@@ -113,7 +113,11 @@ async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
       readBounded(child.stderr, child, "Engine stderr"),
       child.exited,
     ]);
-    if (timedOut) throw new Error("Engine credential operation timed out");
+    if (timedOut) {
+      const error = new Error("Engine credential operation timed out");
+      error.code = "ENGINE_TIMEOUT";
+      throw error;
+    }
     return { events: parseEvents(stdout), stderr, exitCode };
   } finally {
     clearTimeout(timer);
@@ -428,6 +432,13 @@ function normalizedListContract(data) {
   });
 }
 
+export const ENGINE_TIMEOUT_REASON =
+  "The Engine did not answer in time. Approve any macOS keychain prompt for Indicator Labs, or re-enter this key from Indicator Labs, then refresh.";
+
+export function engineTimeout(id) {
+  return Object.freeze({ ok: false, id, status: "engine-timeout", outcome: "engine-timeout", reason: ENGINE_TIMEOUT_REASON, written: false });
+}
+
 function normalizedFailure(event, id) {
   const data = event?.data;
   const allowed = new Set(["rejected", "conflict", "lock-timeout", "lock-failed"]);
@@ -466,11 +477,12 @@ export function createEngineBridge({ executable, invoke = invokeEngine } = {}) {
   let validatedContract = null;
   const launcher = invoke === invokeEngine ? createSessionLauncher(executable) : null;
 
-  async function call(args, input = "", candidate = "") {
+  async function call(args, input = "", candidate = "", timeoutMs = undefined) {
     const result = launcher
-      ? await launcher.run(args, input)
+      ? await launcher.run(args, input, timeoutMs)
       : await invoke(executable, args, input, {
           expectedExecutableIdentity: boundExecutableIdentity,
+          ...(timeoutMs === undefined ? {} : { timeoutMs }),
         });
     const event = terminal(result, candidate);
     return { result, event };
@@ -509,13 +521,17 @@ export function createEngineBridge({ executable, invoke = invokeEngine } = {}) {
       return contract;
     },
 
-    async status(id) {
+    async status(id, { timeoutMs } = {}) {
       requireCredentialId(id);
       let result;
       let event;
       try {
-        ({ result, event } = await call(["keys", "status", id]));
-      } catch {
+        ({ result, event } = await call(["keys", "status", id], "", "", timeoutMs));
+      } catch (error) {
+        // A status read that outlives its deadline is almost always the
+        // operating system waiting for the journalist to approve keychain
+        // access for this Engine build; say so instead of a generic error.
+        if (error?.code === "ENGINE_TIMEOUT") return engineTimeout(id);
         return normalizedFailure(null, id);
       }
       if (result.exitCode !== 0 || event.event !== "result") return normalizedFailure(event, id);

@@ -24,6 +24,7 @@ import {
 import { createSetupSessionManager } from "./setup-session.mjs";
 import { createStoryBinding } from "./story-binding.mjs";
 import { createStudioSessionManager } from "./studio/session.mjs";
+import { readCredentialStatuses } from "./studio/credential-status.mjs";
 
 export { renderAppHtml };
 
@@ -182,12 +183,7 @@ export async function productionDependencies({
       try {
         keyList = await bridge.list();
         if (keyList.ok && keyList.broker?.status !== "unavailable") {
-          credentials = await Promise.all(
-            keyList.keys.map(async (row) => {
-              const status = await bridge.status(row.id);
-              return { ...row, ...status, metadata: status.metadata ?? row.metadata };
-            }),
-          );
+          credentials = await readCredentialStatuses(bridge, keyList.keys);
         }
       } catch {
         keyList = {
