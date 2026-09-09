@@ -3535,13 +3535,26 @@
     window.__locked = on;
   };
 
-  const glide = (to, ms) => {
+  /* LA COURBE D'UN TRAJET QU'ON REGARDE N'EST PAS CELLE D'UN TRAJET CACHÉ.
+   * Presque tous les trajets de cette page se font derrière quelque chose —
+   * un rideau, la tuile du relais, le papier du journal — et une courbe qui
+   * part fort y est juste : personne ne la voit partir, et elle rend la main
+   * plus tôt. Un trajet À DÉCOUVERT, lui, se lit ; et celle-là met 70 % de la
+   * distance dans le premier tiers du temps. Sur un écran de mille cent
+   * pixels, ça fait une pleine hauteur de fenêtre en trois cents
+   * millisecondes : l'œil ne suit pas, il constate. C'est ce qu'on lit comme
+   * un saut.
+   *
+   * `douce` demande la courbe qui freine AUX DEUX BOUTS. Même distance, même
+   * durée, mais elle part de zéro : on la suit. */
+  const glide = (to, ms, douce) => {
     const from = scrollY, d = to - from, t0 = performance.now();
     return new Promise((done) => {
       const step = () => {
         const u = Math.min(1, (performance.now() - t0) / ms);
-        // sort vite, freine longtemps — la même courbe que les arrivées
-        const k = 1 - Math.pow(1 - u, 3);
+        const k = douce
+          ? u * u * u * (u * (u * 6 - 15) + 10)
+          : 1 - Math.pow(1 - u, 3);
         hold(from + d * k);        // l'ancre suit le trajet : rien ne s'y oppose
         if (u < 1) requestAnimationFrame(step); else done();
       };
@@ -5073,15 +5086,33 @@
     if (running || corIn || !corEl || !wysEl) return;
     running = true; freeBack = false;
     corEl.classList.add('armed');
-    // 1. les quatre lignes s'en vont — d'un bloc, par où elles sont venues
+    /* LES LIGNES S'EN VONT PENDANT LE TRAJET, PAS AVANT. Menés l'un après
+     * l'autre, ils laissaient une section VIDE à l'écran le temps que les
+     * lignes finissent de sortir : mesuré sur un enregistrement, quatre
+     * cinquièmes de seconde d'encre nue, sans rien dessus, avant que la page
+     * ne bouge. C'est ça qu'on lit comme un saut — pas un déplacement trop
+     * vif, un écran qui ne montre plus rien.
+     *
+     * Le catalogue avait déjà tranché la même question dans l'autre sens :
+     * « le trajet et la cascade courent ENSEMBLE ; menés l'un après l'autre,
+     * on regarde d'abord une page qui bouge, puis une grille qui change. »
+     *
+     * ET LE TRAJET EST À DÉCOUVERT : c'est le seul passage de la page que
+     * rien ne couvre — ni rideau, ni tuile de relais, ni papier — donc il lui
+     * faut aussi la courbe qu'on peut suivre, celle qui freine aux deux
+     * bouts. */
     wysEl.classList.remove('in');
-    await wait(430);
-    // 2. la page est portée, sur une section qui n'a encore rien à montrer
-    await glide(corY, 820);
+    const trajet = glide(corY, 1150, true);
+    /* ET CE QU'IL Y A DEDANS SE POSE PENDANT LA FIN DU TRAJET, pas après lui.
+     * Attendu, il restait un quart de seconde où la section de départ s'était
+     * vidée et où celle d'arrivée n'avait pas commencé : deux sections en
+     * scène et rien à regarder dans ni l'une ni l'autre. Le titre part à
+     * mi-course, donc il est déjà là quand la page se pose. */
+    await wait(560);
     wysIn = false; corIn = true;
-    // 3. et ce qu'il y a dedans se pose : le titre, puis les tuiles
     corEl.classList.add('in');
-    await wait(900);
+    await trajet;
+    await wait(620);
     running = false;
     lock(false);
   };
@@ -5093,11 +5124,14 @@
   const backToWys = async () => {
     if (running || !corIn || !corEl || !wysEl) return;
     running = true; freeBack = false;
+    // le retour est le même trajet lu à l'envers : les tuiles s'éteignent
+    // pendant qu'il court, et il est à découvert lui aussi
     corEl.classList.remove('in');
-    await wait(430);
-    await glide(corGate, 820);
+    const retour = glide(corGate, 1150, true);
+    await wait(560);
     corIn = false; wysIn = true;
     wysEl.classList.add('in');
+    await retour;
     warmer();
     await wait(1080);
     corEl.classList.remove('armed');
