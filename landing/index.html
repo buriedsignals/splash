@@ -5882,16 +5882,25 @@
     if (!catEl || !catFree || catBusy || running || wysIn) return false;
     const cran = catCran();
     const base = catY0 + cran * catStep;
+    /* ON ÉPINGLE LA PAGE OÙ ELLE EST, PAS OÙ ELLE ÉTAIT. Le seuil est à 82 %
+       du cran, et la borne rappelait la page au cran COURANT : le lecteur
+       avait donc parcouru ces 82 % — jusqu'à 190 px, mesuré — et les
+       reperdait d'un coup avant que le pas suivant ne commence. C'était un
+       retour en arrière instantané suivi d'une glissée en avant, trois fois
+       de suite, juste avant la section d'export.
+       `lock(true)` pose déjà l'ancre à la position courante ; `catGo` glisse
+       depuis là, et le relais lit la tuile où elle se trouve. Il n'y avait
+       rien à rappeler. */
     if (scrollY > base + cran * 0.82) {
       // le dernier temps ne fait pas défiler : il passe le relais
       if (catStep >= CATPLAN.length - 1) {
-        catFree = false; lock(true); hold(base); catSortie(); return true;
+        catFree = false; lock(true); catSortie(); return true;
       }
-      catFree = false; lock(true); hold(base); catGo(1); return true;
+      catFree = false; lock(true); catGo(1); return true;
     }
     if (scrollY < base - cran * 0.82) {
       if (catStep <= 0) return false;                    // l'ouverture laisse remonter
-      catFree = false; lock(true); hold(base); catGo(-1); return true;
+      catFree = false; lock(true); catGo(-1); return true;
     }
     return false;
   };
