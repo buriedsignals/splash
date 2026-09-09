@@ -822,6 +822,13 @@
          font-family:var(--C);font-size:10.5px;font-weight:500;
          letter-spacing:.14em;text-transform:uppercase;
          color:rgba(20,20,28,.55)}
+  /* Le crédit est à droite, avec la mention de propriété : la barre n'a que
+     deux côtés, et un troisième élément tombait au centre d'un
+     `space-between`, où rien ne le rattachait à quoi que ce soit. */
+  .fmeta a{color:inherit;text-decoration:none;
+           border-bottom:1px solid transparent;padding-bottom:1px;
+           transition:border-color .2s ease}
+  .fmeta a:hover{border-bottom-color:currentColor}
 
   @media (max-width:900px){
     .fstage{grid-template-columns:1fr;gap:clamp(26px,4vh,42px)}
@@ -1286,8 +1293,7 @@
 
   <div class="fmeta">
     <span>Splash &middot; v0.1</span>
-    <span>Built by Rémy Dumas</span>
-    <span>&copy; 2026 Buried Signals — MIT licensed</span>
+    <span>&copy; 2026 Buried Signals — MIT licensed &middot; <a href="https://remydumas.fr" target="_blank" rel="noopener">Built by R&eacute;my Dumas</a></span>
   </div>
 </footer>
 
