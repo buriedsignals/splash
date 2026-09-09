@@ -4516,6 +4516,107 @@ Stage.register(
           head: "LA GRÈVE DES FEMMES",
           deck: "Trente pages, la veille du 14 juin",
         },
+        /* ---- LA SUISSE ALÉMANIQUE ------------------------------------
+         * Le canton n'a pas une langue, il en a trois, et l'étagère suisse
+         * n'en portait qu'une : seize unes romandes. Ces onze-là ouvrent les
+         * deux autres.
+         *
+         * MÊME EXIGENCE QUE POUR LES SOIXANTE-QUATRE AUTRES : le titre et le
+         * chapô décrivent une page qui a existé, à une date vérifiée, et le
+         * jour de la semaine est RECALCULÉ depuis la date — jamais rappelé de
+         * mémoire. Une seule ligne ci-dessous est un titre imprimé cité tel
+         * quel, et c'est dit là où elle est. */
+        {
+          style: "tracked",
+          paper: "Zürcher Zeitung",
+          when: "MITTWOCH 12. JANUAR 1780",
+          edition: "N° 1",
+          head: "DIE ZÜRCHER ZEITUNG ERSCHEINT ZUM ERSTEN MAL",
+          deck: "Gegründet von Salomon Gessner; ab 1821 «Neue Zürcher Zeitung»",
+        },
+        {
+          /* Le seul titre de cette série qui soit cité : c'est celui que le
+           * «Blick» a réellement mis en une le jour de son premier numéro. */
+          style: "band",
+          paper: "BLICK",
+          when: "MITTWOCH 14. OKTOBER 1959",
+          edition: "ERSTE AUSGABE",
+          head: "DER DIENER IST NICHT DER MÖRDER",
+          deck: "Die erste Schweizer Boulevardzeitung, für zwanzig Rappen",
+        },
+        {
+          style: "centre",
+          paper: "Neue Zürcher Zeitung",
+          when: "MONTAG 8. FEBRUAR 1971",
+          edition: "ZÜRICH",
+          head: "DIE SCHWEIZ FÜHRT DAS FRAUENSTIMMRECHT EIN",
+          deck: "Am Vortag stimmen allein die Männer über das Stimmrecht der Frauen ab",
+        },
+        {
+          style: "left",
+          paper: "Basler Zeitung",
+          when: "MONTAG 3. NOVEMBER 1986",
+          edition: "BASEL",
+          head: "GIFTWELLE IM RHEIN NACH DEM BRAND VON SCHWEIZERHALLE",
+          deck: "Der Grossbrand im Lagerhaus bei Basel färbt den Fluss und tötet, was darin lebt",
+        },
+        {
+          style: "shoulder",
+          paper: "Tages-Anzeiger",
+          when: "MITTWOCH 3. OKTOBER 2001",
+          edition: "ZÜRICH",
+          head: "DIE SWISSAIR BLEIBT AM BODEN",
+          deck: "Der Flotte fehlt das Geld für den Treibstoff — das Grounding vom Vortag",
+        },
+        {
+          style: "boxed",
+          paper: "Neue Zürcher Zeitung",
+          when: "DONNERSTAG 2. JUNI 2016",
+          edition: "ZÜRICH",
+          head: "DER LÄNGSTE EISENBAHNTUNNEL DER WELT IST OFFEN",
+          deck: "Der Gotthard-Basistunnel, siebenundfünfzig Kilometer unter dem Massiv",
+        },
+        /* ---- LA SUISSE ITALIENNE ------------------------------------- */
+        {
+          style: "centre",
+          paper: "Corriere del Ticino",
+          when: "LUNEDÌ 8 FEBBRAIO 1971",
+          edition: "LUGANO",
+          head: "LA SVIZZERA DICE SÌ AL VOTO ALLE DONNE",
+          deck: "Il primo quotidiano della Svizzera italiana, fondato nel 1891 da Agostino Soldati",
+        },
+        {
+          style: "tracked",
+          paper: "GIORNALE DEL POPOLO",
+          when: "LUNEDÌ 3 NOVEMBRE 1986",
+          edition: "LUGANO",
+          head: "L'ONDA VELENOSA SCENDE IL RENO",
+          deck: "L'incendio di Schweizerhalle, presso Basilea, avvelena il fiume",
+        },
+        {
+          style: "band",
+          paper: "GIORNALE DEL POPOLO",
+          when: "SABATO 6 SETTEMBRE 1980",
+          edition: "LUGANO",
+          head: "IL GOTTARDO STRADALE È APERTO",
+          deck: "Una festa popolare ad Airolo e ad Andermatt segna l'apertura del tunnel",
+        },
+        {
+          style: "left",
+          paper: "laRegione",
+          when: "MERCOLEDÌ 3 OTTOBRE 2001",
+          edition: "BELLINZONA",
+          head: "SWISSAIR A TERRA",
+          deck: "La flotta resta ferma: mancano i soldi per il carburante",
+        },
+        {
+          style: "shoulder",
+          paper: "Corriere del Ticino",
+          when: "VENERDÌ 2 AGOSTO 1991",
+          edition: "LUGANO",
+          head: "SETTECENTO ANNI",
+          deck: "Il giubileo della Confederazione, celebrato sul Rütli",
+        },
       ],
     };
 
@@ -4524,57 +4625,6 @@ Stage.register(
      * would have been the fallback, so the answer can be checked rather than
      * trusted. `?archives=FR` forces one, which is how this is looked at
      * without changing where you are standing. */
-    const HOME = (() => {
-      const q = /[?&]archives=([A-Za-z]{2})\b/.exec(location.search);
-      /* The clock first: it says where the machine IS, where the language
-       * says only what it reads in — and a French speaker in Zurich should
-       * meet the shelf of the country they are standing in. */
-      const CLOCK = {
-        "Europe/Zurich": "CH",
-        "Europe/Busingen": "CH",
-        "Europe/Paris": "FR",
-        "Europe/London": "GB",
-        "Europe/Belfast": "GB",
-      };
-      const US_CLOCK =
-        /^(America\/(New_York|Detroit|Chicago|Denver|Phoenix|Los_Angeles|Boise|Juneau|Sitka|Nome|Adak|Anchorage|Menominee|Indiana\/|Kentucky\/|North_Dakota\/)|Pacific\/Honolulu)/;
-      let tz = "";
-      try {
-        tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      } catch {
-        /* a browser too old to have Intl simply reads the language instead */
-      }
-      const langs = navigator.languages || [navigator.language || ""];
-      let by = "";
-      let home = null;
-      if (q) {
-        home = q[1].toUpperCase();
-        by = "?archives";
-      } else if (CLOCK[tz]) {
-        home = CLOCK[tz];
-        by = "clock";
-      } else if (US_CLOCK.test(tz)) {
-        home = "US";
-        by = "clock";
-      } else {
-        for (const l of langs) {
-          const m = /-([A-Za-z]{2})$/.exec(l);
-          if (m) {
-            home = m[1].toUpperCase();
-            by = "language";
-            break;
-          }
-        }
-      }
-      const known = home && SHELF[home] ? "own shelf" : "no shelf — English";
-      console.info(
-        "[splash] archives · country " + (home || "unknown") +
-          " (" + (by || "nothing to read") + ") · " + known +
-          " · clock " + (tz || "unknown") +
-          " · languages " + langs.join(", "),
-      );
-      return home;
-    })();
 
     /* THE READER'S OWN COUNTRY, AND ONLY IT. A shelf is nine front pages and
      * the reel is three columns of six, so the nine are dealt round the three
@@ -4588,11 +4638,30 @@ Stage.register(
      * means. The English shelf is now the fallback and nothing else: it is
      * what a country we hold no pages for gets, and it is the only case where
      * two shelves are put end to end. */
-    const shelfFor = (c) => (c && SHELF[c]) || SHELF.US.concat(SHELF.GB);
-    let ARCHIVE = shelfFor(HOME);
-    window.__archiveHome = HOME; // so the shelf on the reel can be asked for
+    /* And one shelf that is nobody's country: `?archives=WORLD` puts the three
+     * English-and-Swiss shelves end to end. It is not what a reader gets — a
+     * reader gets their own country, and that is the whole argument above — it
+     * is what a PICTURE OF THE PRESS gets: the launch film stands on this wall
+     * and it is not addressed to one country, so its front pages should not
+     * all carry one. Nothing reaches it by clock or by language; it has to be
+     * asked for by name. */
+    /* TOUTES LES ORIGINES, SANS DISTINCTION. Le mur portait l'étagère du pays
+     * du lecteur, devinée à l'horloge puis affinée par la connexion : un
+     * lecteur français rencontrait seize unes françaises et rien d'autre.
+     * Ce n'est pas ce que ce mur dit. Il dit LA PRESSE — et la presse n'a pas
+     * de pays, surtout sous une ligne qui reproche au métier d'être trop
+     * textuel partout à la fois.
+     *
+     * Une seule étagère, donc, où tout est mêlé et où rien n'est rangé par
+     * origine : c'est le tirage qui décide, et il ne sait pas d'où vient ce
+     * qu'il tire. Avec cette décision tombent la détection du pays, ses
+     * quatre services d'adresse et la requête réseau qu'ils faisaient partir
+     * d'une page de journalisme — plus rien ne dépend de savoir où est le
+     * lecteur, donc plus rien n'a à le demander. */
+    let ARCHIVE = SHELF.US.concat(SHELF.GB, SHELF.FR, SHELF.CH);
+    window.__archiveHome = null;
     window.__archiveCount = ARCHIVE.length;
-    window.__archiveBy = "clock";
+    window.__archiveBy = "all";
     /* THE TEMPLATES, DEALT RATHER THAN DRAWN — the same argument as the
      * drawings, and the same fix.
      *
@@ -4660,110 +4729,6 @@ Stage.register(
     };
     let TEMPLATE_DECK = dealDeck();
 
-    /* THE CLOCK ANSWERS FIRST, THE CONNECTION ANSWERS BETTER.
-     *
-     * A timezone is read in nought milliseconds and needs nobody's
-     * permission, but it says where the MACHINE thinks it is: a laptop
-     * carried across a border keeps the clock it was set to, and this one is
-     * a nomad's. So the clock composes the reel — the boot never waits on a
-     * network — and the connection is asked in parallel. If it names a
-     * different country, and that country has a shelf, the reel is composed
-     * again on the same path the photographs already use, which is a rebuild
-     * the page is built to do.
-     *
-     * Cloudflare's trace is the one asked: it is the edge the request already
-     * passes through on its way anywhere, it needs no key, and it answers in
-     * one line. api.country.is is the second try. Either way it is ONE call
-     * that carries nothing but the request itself — no cookie, no identifier,
-     * no analytics — and it is skipped entirely when the shelf was named in
-     * the URL. Nothing is stored.
-     *
-     * It cannot be exact and does not claim to be: a VPN answers for the VPN.
-     * That is why the answer, and which signal gave it, are printed. */
-    let regalley = null; // set by the GL side once the reel is on the card
-    /* FOUR PLACES TO ASK, AND IT SAYS WHY EACH ONE FAILED.
-     *
-     * Every one of these answers a plain GET with `access-control-allow-origin: *`
-     * — checked against all four — so a browser can read them from any origin,
-     * a local file included. What stops them is on the reader's side: a
-     * content blocker with a "privacy" list, a network that swallows them, a
-     * browser that refuses cross-origin reads from file:// at all (Safari
-     * does). None of that is worth a broken hero, so a failure costs the page
-     * nothing and the clock's answer stands.
-     *
-     * But a silent failure is not diagnosable, so each attempt prints what it
-     * hit: blocked, timed out, or a status. Three lines in a console beat one
-     * shrug. */
-    const GEO_MS = 2500;
-    const GEO_SOURCES = [
-      ["cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", (t) => {
-        const m = /(?:^|\n)loc=([A-Z]{2})/.exec(t);
-        return m ? m[1] : null;
-      }],
-      ["geojs", "https://get.geojs.io/v1/ip/country.json", (t) => {
-        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
-      }],
-      ["country.is", "https://api.country.is/", (t) => {
-        try { return (JSON.parse(t).country || "").toUpperCase() || null; } catch { return null; }
-      }],
-      ["ipwho.is", "https://ipwho.is/", (t) => {
-        try { return (JSON.parse(t).country_code || "").toUpperCase() || null; } catch { return null; }
-      }],
-    ];
-    const askTheConnection = async () => {
-      if (/[?&]archives=/.test(location.search)) return;
-      let loc = null;
-      const tried = [];
-      for (const [name, url, read] of GEO_SOURCES) {
-        const ctl = new AbortController();
-        const t = setTimeout(() => ctl.abort(), GEO_MS);
-        const t0 = performance.now();
-        try {
-          const r = await fetch(url, { signal: ctl.signal, cache: "no-store" });
-          const ms = Math.round(performance.now() - t0);
-          if (!r.ok) {
-            tried.push(name + " " + r.status + " (" + ms + "ms)");
-            continue;
-          }
-          loc = read(await r.text());
-          tried.push(name + (loc ? " → " + loc : " → unreadable") + " (" + ms + "ms)");
-          if (loc) break;
-        } catch (e) {
-          const ms = Math.round(performance.now() - t0);
-          /* An abort is our own timeout; anything else is the request never
-           * leaving — a blocker, or a browser that will not read across
-           * origins from here. */
-          tried.push(
-            name + " " + (e && e.name === "AbortError" ? "timed out" : "blocked or offline") +
-              " (" + ms + "ms)",
-          );
-        } finally {
-          clearTimeout(t);
-        }
-      }
-      if (!loc) {
-        console.info(
-          "[splash] archives · connection did not answer · keeping " +
-            (HOME || "English") + " · tried " + tried.join(" · "),
-        );
-        return;
-      }
-      const same = loc === HOME;
-      const has = !!SHELF[loc];
-      console.info(
-        "[splash] archives · connection says " + loc +
-          (same ? " · agrees with the clock" : " · the clock said " + (HOME || "nothing")) +
-          " · " + (has ? "own shelf" : "no shelf — English") +
-          " · " + tried.join(" · "),
-      );
-      if (same) return;
-      ARCHIVE = shelfFor(has ? loc : null);
-      TEMPLATE_DECK = dealDeck();
-      window.__archiveHome = has ? loc : null;
-      window.__archiveCount = ARCHIVE.length;
-      window.__archiveBy = "connection";
-      if (regalley) regalley();
-    };
 
     /* A COLUMN OF THE REEL. Each web reads one of these and only that one,
      * so the three can never hold the same page — and therefore never the
@@ -10083,7 +10048,6 @@ void main(){
          * on the card, so an answer that arrives early cannot rebuild a sheet
          * that does not exist yet. */
         regalley = uploadGalley;
-        askTheConnection();
         /* THE ONE SIGNAL THE PAGE CAN WAIT ON. Not "the script ran" and not
          * "a frame was drawn" — the reel exists and is on the card, which is
          * the moment there is something to show. The boot screen holds until
