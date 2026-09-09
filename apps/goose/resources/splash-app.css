@@ -1,22 +1,31 @@
+/* The studio wears the landing page's clothes: the same closed palette (ink,
+   paper, table, blue, amber), the same two typefaces with the same fallbacks,
+   the same three-step radius scale, and the same button anatomy. No external
+   font request: the studio's CSP allows no font-src, so the stacks fall back to
+   Helvetica exactly as the landing page does offline. */
 :root {
   color-scheme: light;
-  --paper: #f5f0e6;
-  --paper-deep: #ede6d6;
-  --plate: #fcfaf3;
+  --ink: #14141c;
+  --paper: #edeae3;
+  --table: #e6e2d9;
+  --plate: #fbfaf7;
   --white: #ffffff;
-  --ink: #1c2126;
-  --ink-soft: #57616b;
-  --ink-faint: #8a929a;
-  --rule: rgba(28, 33, 38, 0.16);
-  --rule-soft: rgba(28, 33, 38, 0.09);
-  --electric: #49c6ff;
-  --cyan-ink: #1e7fb8;
-  --amber: #d4a853;
+  --blue: #1a2ffb;
+  --amber: #f2b13c;
+  --amber-hi: #f7c260;
   --red: #c74a2e;
   --success: #2d7b5b;
-  --serif: Georgia, "Times New Roman", serif;
-  --grot: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --ink-soft: #4d4d58;
+  --ink-faint: #7d7d88;
+  --rule: rgba(20, 20, 28, 0.18);
+  --rule-soft: rgba(20, 20, 28, 0.09);
+  --display: "Bricolage Grotesque", Helvetica, sans-serif;
+  --grot: "Space Grotesk", Helvetica, sans-serif;
+  --body: "Space Grotesk", Helvetica, sans-serif;
+  /* The radius scale: what floats, what sits, what you touch. */
+  --rad-l: clamp(12px, 1.4vw, 28px);
+  --rad: clamp(9px, 0.8vw, 14px);
+  --rad-s: 7px;
   font-family: var(--body);
   background: var(--paper);
   color: var(--ink);
@@ -29,11 +38,8 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    linear-gradient(90deg, var(--amber), var(--electric)) top / 100% 3px no-repeat,
-    radial-gradient(circle at 92% 0%, rgba(73, 198, 255, 0.09), transparent 28rem),
-    var(--paper);
-  font-size: 16px;
+  background: var(--paper);
+  font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -55,27 +61,41 @@ p {
 
 h1,
 h2 {
-  font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-family: var(--display);
+  letter-spacing: -0.035em;
+  line-height: 0.94;
 }
 
 h1 {
-  font-size: clamp(1.8rem, 5vw, 2.65rem);
+  font-size: 22px;
+  font-weight: 800;
 }
 
 h2 {
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
-  line-height: 1.05;
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Small caps labels: the landing page's kicker, verbatim. */
+h3,
+.eyebrow {
+  font-family: var(--grot);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 h3 {
   margin-top: 1.3rem;
-  font-family: var(--grot);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
+  letter-spacing: 0.19em;
+  color: var(--ink-soft);
+}
+
+.eyebrow {
+  color: var(--ink-faint);
 }
 
 .masthead {
@@ -87,25 +107,21 @@ h3 {
   border-bottom: 1px solid var(--rule);
 }
 
+/* The wordmark, as on the landing page: rosette beside the name, sized off
+   the name's own line. */
 .brand-lockup {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.42em;
+  font-size: 22px;
+  color: var(--ink);
 }
 
 .brand-mark {
-  width: 1.55rem;
-  height: 1.55rem;
+  width: 0.92em;
+  height: 0.92em;
   flex: 0 0 auto;
-}
-
-.eyebrow {
-  color: var(--ink-faint);
-  font-family: var(--grot);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  display: block;
 }
 
 nav,
@@ -113,42 +129,68 @@ nav,
 .choice-modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 9px;
 }
 
 nav {
   padding-bottom: 0.25rem;
 }
 
+/* One button anatomy, from the landing page: uppercase 11px, tracked, 7px
+   radius, a 40% rule that fills on hover. The primary action wears amber; the
+   current destination wears ink. */
 button,
 a.action {
   min-width: 44px;
   min-height: 44px;
-  border: 1px solid var(--ink);
-  border-radius: 0.65rem;
-  padding: 0.68rem 0.9rem;
+  padding: 13px 20px;
+  border: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  border-radius: var(--rad-s);
   background: transparent;
   color: var(--ink);
   font-family: var(--grot);
-  font-size: 0.84rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 button:hover:not(:disabled),
 a.action:hover {
   transform: translateY(-1px);
-  background: rgba(28, 33, 38, 0.055);
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+button.primary {
+  border-color: transparent;
+  background: var(--amber);
+}
+
+button.primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--amber-hi);
 }
 
 button[aria-current="page"],
-button.primary,
 .choice-modes button[aria-pressed="true"] {
+  border-color: var(--ink);
   background: var(--ink);
-  color: var(--plate);
-  box-shadow: inset 0 -3px 0 var(--electric);
+  color: var(--paper);
+}
+
+button[aria-current="page"]:hover:not(:disabled),
+.choice-modes button[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 button:disabled {
@@ -161,17 +203,30 @@ select:focus-visible,
 input:focus-visible,
 a:focus-visible,
 [tabindex="-1"]:focus {
-  outline: 3px solid var(--amber);
+  outline: 2px solid var(--amber);
   outline-offset: 3px;
+}
+
+/* Buttons that follow prose get the same breath everywhere: a bare button
+   under a paragraph read as glued to it. */
+.actions,
+.choice-modes,
+#pending-story:not(:empty) {
+  margin-top: 1rem;
+}
+
+#pending-story > * + *,
+.empty > button,
+.configure-choice {
+  margin-top: 0.75rem;
 }
 
 .notice {
   border: 1px solid var(--rule);
-  border-left: 4px solid var(--cyan-ink);
-  border-radius: 0.7rem;
+  border-left: 4px solid var(--blue);
+  border-radius: var(--rad);
   padding: 0.8rem 0.95rem;
   background: var(--plate);
-  box-shadow: 0 8px 22px rgba(28, 33, 38, 0.06);
 }
 
 .notice[data-kind="error"] {
@@ -183,9 +238,9 @@ a:focus-visible,
   position: relative;
   padding: clamp(1.1rem, 3vw, 2rem);
   border: 1px solid var(--rule);
-  border-radius: 0.9rem;
+  border-radius: var(--rad);
   background: var(--plate);
-  box-shadow: 0 18px 48px rgba(28, 33, 38, 0.09);
+  box-shadow: 0 26px 60px -34px rgba(20, 20, 28, 0.55);
 }
 
 [data-panel]::before {
@@ -193,8 +248,8 @@ a:focus-visible,
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  border-radius: 0.9rem 0 0 0.9rem;
-  background: linear-gradient(var(--electric), var(--amber));
+  border-radius: var(--rad) 0 0 var(--rad);
+  background: var(--amber);
 }
 
 .section-heading {
@@ -206,16 +261,26 @@ a:focus-visible,
   border-bottom: 1px solid var(--rule-soft);
 }
 
+.section-heading h2 {
+  margin-top: clamp(10px, 1.5vh, 18px);
+}
+
+/* The state pill: the landing page's amber-on-ink chip. */
 .pill {
-  border: 1px solid var(--rule);
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  padding: 6px 12px;
+  border: 1px solid var(--amber);
   border-radius: 999px;
-  padding: 0.28rem 0.65rem;
-  color: var(--ink-soft);
+  background: var(--ink);
+  color: var(--amber);
   font-family: var(--grot);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .stack {
@@ -230,10 +295,9 @@ a:focus-visible,
 .card {
   position: relative;
   border: 1px solid var(--rule);
-  border-radius: 0.75rem;
+  border-radius: var(--rad);
   padding: 0.9rem 1rem;
   background: var(--white);
-  box-shadow: 0 8px 18px rgba(28, 33, 38, 0.045);
 }
 
 .card > * + * {
@@ -275,13 +339,9 @@ small {
 }
 
 a {
-  color: var(--cyan-ink);
-  font-weight: 650;
+  color: var(--blue);
+  font-weight: 500;
   text-underline-offset: 0.18em;
-}
-
-.actions {
-  margin-top: 1rem;
 }
 
 #pending-story {
@@ -294,7 +354,7 @@ a {
   margin-top: 0.35rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--rule);
-  border-radius: 0.6rem;
+  border-radius: var(--rad-s);
   background: var(--white);
   color: var(--ink);
   font: inherit;
@@ -308,7 +368,7 @@ label[for="story-path"] {
 label[for="story-path"] span {
   font-family: var(--grot);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .compact,
@@ -329,9 +389,9 @@ label[for="story-path"] span {
 .choice-summary dt {
   color: var(--ink-soft);
   font-family: var(--grot);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -352,14 +412,14 @@ label[for="story-path"] span {
   gap: 0.35rem;
   font-family: var(--grot);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 select {
   min-height: 46px;
   width: 100%;
   border: 1px solid var(--rule);
-  border-radius: 0.6rem;
+  border-radius: var(--rad-s);
   padding: 0.6rem;
   background: var(--white);
   color: var(--ink);
@@ -373,7 +433,7 @@ select {
   min-height: 44px;
   margin-top: 0.7rem;
   font-family: var(--grot);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -383,7 +443,7 @@ select {
   height: 44px;
   flex: 0 0 44px;
   margin: 0;
-  accent-color: var(--cyan-ink);
+  accent-color: var(--blue);
 }
 
 .choice-group {
@@ -391,18 +451,18 @@ select {
   gap: 0.65rem;
   min-width: 0;
   border: 1px solid var(--rule);
-  border-radius: 0.8rem;
+  border-radius: var(--rad);
   padding: 0.85rem;
   background: rgba(255, 255, 255, 0.42);
 }
 
 .choice-group legend {
   padding-inline: 0.4rem;
-  color: var(--red);
+  color: var(--ink-soft);
   font-family: var(--grot);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
@@ -411,22 +471,24 @@ select {
   align-items: flex-start;
   gap: 0.7rem;
   border: 1px solid var(--rule);
-  border-radius: 0.75rem;
+  border-radius: var(--rad);
   padding: 0.75rem;
   background: var(--white);
   cursor: pointer;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .choice-card:hover:not([data-state="unavailable"]) {
   transform: translateY(-1px);
-  border-color: var(--cyan-ink);
-  box-shadow: 0 8px 20px rgba(30, 127, 184, 0.1);
+  border-color: var(--ink);
 }
 
 .choice-card:has(input:checked) {
-  border-color: var(--cyan-ink);
-  box-shadow: inset 4px 0 0 var(--electric);
+  border-color: var(--blue);
+  box-shadow: inset 4px 0 0 var(--blue);
 }
 
 .choice-card[data-state="unavailable"] {
@@ -444,19 +506,20 @@ select {
 .recommendation-badge,
 .alternative-badge {
   justify-self: start;
+  padding: 6px 12px;
   border-radius: 999px;
-  padding: 0.2rem 0.55rem;
   font-family: var(--grot);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  line-height: 1;
 }
 
 .recommendation-badge {
+  border: 1px solid var(--amber);
   background: var(--ink);
-  color: var(--plate);
-  box-shadow: inset 0 -2px 0 var(--electric);
+  color: var(--amber);
 }
 
 .alternative-badge {
@@ -531,5 +594,11 @@ select {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  button:hover:not(:disabled),
+  a.action:hover,
+  .choice-card:hover:not([data-state="unavailable"]) {
+    transform: none;
   }
 }
