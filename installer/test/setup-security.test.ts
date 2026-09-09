@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { chmod, mkdir, mkdtemp, open, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { readNewsroom, updateNewsroom } from "../setup/newsroom-store.mjs";
 import { acquireTargetLock } from "../setup/target-lock.mjs";
-import { createEngineBridge } from "../setup/engine-bridge.mjs";
+import { createEngineBridge, engineEnvironment } from "../setup/engine-bridge.mjs";
 import { startSetupController } from "../setup/controller.mjs";
 import { createOutboundFetchPolicy, isPublicAddress } from "../setup/outbound-fetch.mjs";
 
@@ -1571,5 +1571,23 @@ fi
     expect(await child.exited).toBe(0);
     expect(captured).not.toContain(candidate);
     for (const line of captured.trim().split("\n")) expect(() => JSON.parse(line)).not.toThrow();
+  });
+});
+
+describe("Engine child environment", () => {
+  test("restores the journalist home handed over by Engine and drops the handoff variable", () => {
+    const env = engineEnvironment({
+      PATH: "/usr/bin",
+      HOME: "/scratch/splash/operations/mcp-1/home",
+      SPLASH_ENGINE_HOME: "/Users/reporter",
+      MAPTILER_KEY: "leak-canary",
+      NODE_OPTIONS: "--require evil",
+    });
+    expect(env).toEqual({ PATH: "/usr/bin", HOME: "/Users/reporter" });
+  });
+
+  test("keeps the inherited home when no handoff is present or it is not absolute", () => {
+    expect(engineEnvironment({ HOME: "/Users/reporter" })).toEqual({ HOME: "/Users/reporter" });
+    expect(engineEnvironment({ HOME: "/scratch/home", SPLASH_ENGINE_HOME: "relative/home" })).toEqual({ HOME: "/scratch/home" });
   });
 });

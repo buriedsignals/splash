@@ -32,10 +32,18 @@ const FAILURE_MESSAGES = new Map([
 ]);
 export const CREDENTIAL_CONTRACT_MESSAGE = "Update or repair Engine before changing Splash credentials.";
 
-function safeEnvironment(source = process.env) {
+/**
+ * The environment an Engine child receives. Loader hooks and anything that
+ * looks like a credential are dropped. When Engine launched this process with
+ * SPLASH_ENGINE_HOME (the Splash MCP runs under a scratch HOME that sandboxes
+ * Bun and the browser), HOME is restored to the journalist's real home for the
+ * Engine child only: on macOS the keychain search list follows HOME, so under
+ * the scratch home every stored key read as "not stored".
+ */
+export function engineEnvironment(source = process.env) {
   const exact = new Set([
     "BASH_ENV", "ENV", "NODE_OPTIONS", "NODE_PATH", "BUN_OPTIONS", "BUN_INSTALL_CACHE_DIR",
-    "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH",
+    "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "SPLASH_ENGINE_HOME",
   ]);
   const env = {};
   for (const [name, value] of Object.entries(source)) {
@@ -44,6 +52,8 @@ function safeEnvironment(source = process.env) {
     if (CREDENTIAL_ID_SET.has(upper) || /(?:_API_KEY|_ACCESS_KEY|_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIALS?)$/i.test(upper)) continue;
     env[name] = value;
   }
+  const journalistHome = source.SPLASH_ENGINE_HOME;
+  if (typeof journalistHome === "string" && isAbsolute(journalistHome)) env.HOME = journalistHome;
   return env;
 }
 
@@ -95,7 +105,7 @@ function isSameExecutableIdentity(actual, expected) {
 
 async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
   const child = Bun.spawn([programPath, "--json", ...args], {
-    env: safeEnvironment(),
+    env: engineEnvironment(),
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",
