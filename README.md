@@ -124,6 +124,19 @@ before hydrating `MAPTILER_KEY`.
 
 ## Install
 
+Two routes, one decision:
+
+- **Engine (supported).** Buried Signals Engine (`bsig`), directly or through
+  Indicator Labs, installs a catalog-pinned signed release with its dependency
+  and browser payload, projects the skills for every runtime it detects, keeps
+  provider keys in the OS keychain, and updates in place. Choose this for any
+  real story, and for every journalist install.
+- **Source (lighter).** A sparse clone plus per-skill links, described under
+  [Install from source](#install-from-source-agents). Skills load and preflight
+  runs, nothing else: no keys, no updates, no repair, and Chrome is your
+  problem. Choose this only when an agent or developer is working from a clone
+  and will re-link after every pull.
+
 Managed journalist install is Indicator Labs on Mac or Windows. Join at
 [buriedsignals.com/join](https://buriedsignals.com/join). Indicator Labs adds
 guided setup, credential management, repair, and automatic updates.
@@ -215,13 +228,16 @@ into your agent's skills directory (Windows: use
 
 | Agent | Link |
 |---|---|
-| Goose, Cursor, Codex, Gemini (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
+| Goose, Cursor (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
+| Codex CLI, ChatGPT Desktop | `mkdir -p ~/.codex/skills && for s in skills/*/; do ln -s "$PWD/$s" ~/.codex/skills/$(basename "$s"); done` — Codex lists them as `splash:<skill>`, the namespace taken from the link target |
 | Claude standalone fallback (unprefixed names) | `mkdir -p ~/.claude/skills && for s in skills/*/; do ln -s "$PWD/$s" ~/.claude/skills/$(basename "$s"); done` |
+| Gemini CLI | no links: `ln -s AGENTS.md GEMINI.md` and run from the checkout root |
 
-In the tested Claude Cowork host, the skill listing rebuilds at turn boundaries,
-not on filesystem change: freshly linked skills become visible on the agent's
-next turn. An immediate `Unknown skill: splash` in the installing turn is not
-evidence of a failed install; wait for the next turn before troubleshooting.
+In the tested Claude Cowork and ChatGPT Desktop hosts, the skill listing
+rebuilds at turn boundaries, not on filesystem change: freshly linked skills
+become visible on the agent's next turn. An immediate `Unknown skill: splash` in
+the installing turn is not evidence of a failed install; wait for the next turn
+before troubleshooting.
 
 A later Engine install adopts or replaces unmanaged skill links. Provider keys
 are never read from this checkout — see
