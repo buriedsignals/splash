@@ -129,6 +129,29 @@ not a missing default.
 `;
 
 describe("runPreflight — dependencies and the newsroom's identity are the only hard stops", () => {
+  it("uses process.env when env is omitted and respects an explicit empty env", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const previous = process.env.MAPTILER_KEY;
+    process.env.MAPTILER_KEY = "preflight-test-key";
+    try {
+      const urls: string[] = [];
+      const report = await runPreflight({ root, fetchFn: async (url) => {
+        urls.push(url);
+        return okFetch();
+      } });
+      expect(report.ready).toBe(true);
+      expect(report.capabilities.map.available).toBe(true);
+      expect(urls).toContain("https://api.maptiler.com/maps/dataviz/style.json?key=preflight-test-key");
+      const isolated = await runPreflight({ root, env: {}, fetchFn: okFetch });
+      expect(isolated.ready).toBe(true);
+      expect(Object.values(isolated.capabilities).every((c) => !c.available)).toBe(true);
+    } finally {
+      if (previous === undefined) delete process.env.MAPTILER_KEY;
+      else process.env.MAPTILER_KEY = previous;
+    }
+  });
+
   it("should report not ready when node_modules is absent", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });

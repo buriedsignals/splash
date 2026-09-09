@@ -174,7 +174,7 @@ async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn,
   return { id, opens, available: result.ok, reason: result.detail, fill };
 }
 
-export async function runPreflight({ root, env, fetchFn, templateRoot = ROOT_TEMPLATE_DIR, newsroomPath = join(root, "NEWSROOM.md") }) {
+export async function runPreflight({ root, env = process.env, fetchFn, templateRoot = ROOT_TEMPLATE_DIR, newsroomPath = join(root, "NEWSROOM.md") }) {
 	const dependencies = await checkDependencies(root, templateRoot);
 	const newsroom = await checkNewsroom(newsroomPath);
   const checks = [dependencies, newsroom];

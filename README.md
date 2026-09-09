@@ -177,19 +177,54 @@ git sparse-checkout set $(grep -v '^#' install-set.txt)
 bun install --frozen-lockfile --production --ignore-scripts
 ```
 
-Rendering drives Chrome: an installed Google Chrome is found automatically, or
-set `CHROME_PATH`, or run `bunx @puppeteer/browsers install chrome@stable`.
+Browser-based rendering and verification require Chrome or Chromium separately
+from skill discovery and preflight readiness (static SVG/PNG charts use Resvg).
+In cloud/Linux sessions with Chromium already installed, set its executable path
+in the environment used to run Splash, for example:
 
-Then link the skills into your agent's skills directory (Windows: use
+```bash
+export CHROME_PATH="$(command -v chromium || command -v chromium-browser)"
+test -n "$CHROME_PATH" && test -x "$CHROME_PATH"
+```
+
+If that check fails, install Chrome with `bunx @puppeteer/browsers install chrome@stable`
+and set `CHROME_PATH` to the executable path it prints. Do not assume Chromium
+on `PATH` will be detected automatically; successful preflight is not a render test.
+
+For Claude Code, prefer the [plugin install](https://code.claude.com/docs/en/plugin-marketplaces)
+to avoid collisions with other packs' skill names. From the checkout above:
+
+```bash
+claude plugin marketplace add "$PWD"
+claude plugin install splash@splash-dev --scope user
+claude plugin list --json
+```
+
+In the listed `installPath` for `splash@splash-dev`, run
+`bun install --frozen-lockfile --production --ignore-scripts` as well: the plugin
+runs from Claude's cache, not the source checkout. Repeat this after plugin updates.
+Start a new Claude Code session and invoke `/splash:splash` (agent tool:
+`Skill(splash:splash)`). All 16 skills use the `splash:` namespace, including
+`splash:analyst`, `splash:deliver`, and `splash:palette`; `splash-dev` is the
+marketplace name, not the skill prefix. For a session using the installed source
+checkout directly, `claude --plugin-dir "$PWD"` provides the same namespace.
+
+For other agents, or as a Claude fallback without plugin support, link each skill
+into your agent's skills directory (Windows: use
 `New-Item -ItemType Junction` in place of `ln -s`):
 
 | Agent | Link |
 |---|---|
 | Goose, Cursor, Codex, Gemini (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
-| Claude Code | `ln -s "$PWD" ~/.claude/skills/splash` |
+| Claude standalone fallback (unprefixed names) | `mkdir -p ~/.claude/skills && for s in skills/*/; do ln -s "$PWD/$s" ~/.claude/skills/$(basename "$s"); done` |
 
-These are the same links Engine creates; a later Engine install adopts or
-replaces them. Provider keys are never read from this checkout — see
+In the tested Claude Cowork host, the skill listing rebuilds at turn boundaries,
+not on filesystem change: freshly linked skills become visible on the agent's
+next turn. An immediate `Unknown skill: splash` in the installing turn is not
+evidence of a failed install; wait for the next turn before troubleshooting.
+
+A later Engine install adopts or replaces unmanaged skill links. Provider keys
+are never read from this checkout — see
 [Credentials](#credentials).
 
 ## Skills
