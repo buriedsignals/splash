@@ -22,10 +22,11 @@
         <p class="eyebrow">Visual journalism workspace</p>
       </header>
       <nav aria-label="Splash destinations">
-        <button type="button" data-route="readiness" aria-current="page">
-          Readiness
+        <button type="button" data-route="credentials" aria-current="page">
+          Credentials
         </button>
-        <button type="button" data-route="choose">Choose visual</button>
+        <button type="button" data-route="design">Design</button>
+        <button type="button" data-route="choose" data-story-only>Graphics</button>
       </nav>
       <p
         id="announcement"
@@ -37,84 +38,111 @@
         Connecting to Splash…
       </p>
 
-      <section id="readiness" data-panel aria-labelledby="readiness-title">
+      <section id="credentials-panel" data-panel data-destination="credentials" aria-labelledby="readiness-title">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">Pre-flight</p>
-            <h2 id="readiness-title">Readiness</h2>
-          </div>
-          <span id="runtime-state" class="pill">Checking</span>
+          <h2 id="readiness-title">Credentials</h2>
         </div>
-        <section aria-labelledby="blockers-title">
-          <h3 id="blockers-title">Must be resolved</h3>
-          <ul id="blockers" class="stack">
-            <li>Waiting for current status.</li>
-          </ul>
+        <p id="credentials-announcement" class="notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
+        <section id="readiness-summary" class="readiness-summary" aria-labelledby="runtime-state">
+          <span id="summary-symbol" class="summary-symbol" aria-hidden="true">…</span>
+          <div>
+            <strong id="runtime-state" role="status">Checking workspace and services</strong>
+            <p id="readiness-detail">Reading the current setup.</p>
+          </div>
         </section>
-        <section aria-labelledby="capabilities-title">
-          <h3 id="capabilities-title">Optional capabilities</h3>
+        <button id="design-required" type="button" hidden>Open Design</button>
+        <ul id="blockers" class="stack" aria-label="Issues to resolve">
+          <li>Waiting for current status.</li>
+        </ul>
+        <aside id="credential-guidance" class="setup-notice" aria-labelledby="credential-guidance-title" hidden>
+          <strong id="credential-guidance-title">Credential setup</strong>
+          <p>Splash reads keys from its process environment. Supply them through
+            your agent configuration, a secret manager, or a private <code>.env</code>
+            file stored wherever you choose.</p>
+          <p>We recommend keeping the file outside the checkout. Ask your agent to
+            load it when starting Splash, then restart Splash whenever you change
+            its values. To open the studio directly from the checkout:</p>
+          <code class="setup-command">bun --env-file=/path/to/.env apps/goose/studio/open.mjs</code>
+        </aside>
+        <section class="connected-services" aria-labelledby="capabilities-title">
+          <div class="service-heading"><h3 id="capabilities-title">Connected services</h3><button id="refresh" type="button" disabled>Refresh status</button></div>
           <div id="credentials" class="stack"></div>
         </section>
-        <div class="actions">
-          <button id="refresh" type="button" disabled>Refresh status</button>
-          <button id="setup" class="primary" type="button" disabled>
-            Set up newsroom
-          </button>
-        </div>
-        <p class="quiet">
-          Indicator Labs users save keys in the desktop app. Open-source users
-          configure the exact IDs shown through Engine’s protected bsig
-          stdin/keychain flow, entering values only in a private prompt outside
-          chat and Splash. This page reports status only.
-        </p>
+        <form id="cloudflare-form" class="account-settings">
+          <label for="cloudflare-account-id">Cloudflare account ID</label>
+          <p id="cloudflare-account-help" class="quiet-copy">The account used to publish hosted visuals. This ID is not a secret.</p>
+          <div class="account-input">
+            <input id="cloudflare-account-id" name="cloudflareAccountId" autocomplete="off" spellcheck="false" pattern="[0-9a-fA-F]{32}" maxlength="32" aria-describedby="cloudflare-account-help" placeholder="32-character account ID" disabled />
+            <button id="save-account" type="submit" disabled>Save account</button>
+          </div>
+          <p id="account-source" class="quiet-copy" hidden></p>
+        </form>
+        <button id="reload-credentials-settings" class="reload-settings" type="button" hidden>Reload settings</button>
       </section>
 
-      <section id="choose" data-panel aria-labelledby="choose-title" hidden>
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Story workspace</p>
-            <h2 id="choose-title">Choose visual</h2>
+      <section id="design" data-panel data-destination="design" aria-labelledby="design-title" hidden>
+        <div class="section-heading"><h2 id="design-title">Design</h2></div>
+        <p class="choice-intro">Your newsroom’s identity, colours and typefaces for Splash visuals.</p>
+        <p id="design-announcement" class="notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
+        <form id="design-form">
+          <div id="design-fields" class="design-fields"></div>
+          <div id="design-proposal" class="setup-notice" hidden></div>
+          <div class="actions">
+            <button id="save-design" class="primary" type="submit" disabled>Save design</button>
+            <button id="reload-design-settings" type="button" hidden>Reload settings</button>
           </div>
-          <span id="story-state" class="pill">Unbound</span>
+        </form>
+      </section>
+
+      <section id="choose" data-panel data-destination="choose" aria-labelledby="choose-title" hidden>
+        <div class="section-heading">
+          <h2 id="choose-title">Graphics</h2>
         </div>
-        <p id="story-detail">
-          Inspect a story directory on this computer, then confirm the exact
-          location here. Engine does not change the story until you confirm.
-        </p>
-        <label for="story-path">
-          <span>Story directory</span>
-          <input
-            id="story-path"
-            name="story-path"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-          />
-        </label>
-        <div class="choice-modes" role="group" aria-label="Choice mode">
-          <button id="mode-a-la-carte" type="button" aria-pressed="true">
-            À la carte
-          </button>
-          <button id="mode-storyboard" type="button" aria-pressed="false">
-            Storyboard recommendation
-          </button>
-        </div>
-        <div id="pending-story"></div>
-        <div class="actions">
-          <button id="nominate-story" type="button" disabled>
-            Inspect this story
-          </button>
-          <button id="load-selection" type="button" disabled>
-            Refresh choices
-          </button>
-        </div>
-        <section aria-labelledby="choice-title">
-          <h3 id="choice-title">Visual options</h3>
-          <p id="choice-detail" class="empty">
-            Options remain unavailable until a story is confirmed in this
-            session.
-          </p>
+        <p id="choose-announcement" class="notice" role="status" aria-live="polite" tabindex="-1" hidden></p>
+        <section id="story-open" class="story-open">
+          <h3>Open a Splash story</h3>
+          <p>Choose the story folder your agent prepared. Splash reads its article,
+            data and saved decisions to show the next visual choice.</p>
+          <div class="actions">
+            <button id="browse-story" class="primary" type="button" disabled>Choose folder…</button>
+          </div>
+          <label for="story-path">
+            <span>Or paste the story folder’s full path</span>
+            <input id="story-path" name="story-path" type="text" autocomplete="off"
+              spellcheck="false" placeholder="/path/to/your/story" />
+          </label>
+          <div class="actions">
+            <button id="nominate-story" type="button" disabled>Open folder</button>
+            <button id="cancel-story-change" type="button" hidden>Keep current story</button>
+          </div>
+          <div id="pending-story"></div>
+          <details class="new-story-help">
+            <summary>Starting a new story?</summary>
+            <p>Give your article and data to your agent and ask it to start a Splash
+              story. The agent creates the story folder and prepares the material
+              for your visual decisions. Open that folder here when it is ready.</p>
+            <p>An empty folder or a folder of raw files is not yet a Splash story.</p>
+          </details>
+        </section>
+        <section id="active-story" class="active-story" hidden aria-label="Current story">
+          <div><strong id="story-name"></strong><p id="story-detail"></p></div>
+          <button id="change-story" type="button">Change story</button>
+        </section>
+        <section id="visual-workspace" hidden aria-label="Visual decisions">
+          <p id="choice-detail" class="choice-intro"></p>
+          <button id="choice-setup-link" type="button" hidden>Review workspace setup</button>
+          <div id="choice-modes" hidden>
+            <p class="choice-explanation">Suggestions use your story’s saved data profile.
+              Unavailable options show what needs to be connected or completed.</p>
+            <div class="choice-modes" role="group" aria-label="How to choose">
+              <button id="mode-a-la-carte" type="button" aria-pressed="true">Choose myself</button>
+              <button id="mode-storyboard" type="button" aria-pressed="false">Suggest for this story</button>
+            </div>
+          </div>
           <div id="choice-root"></div>
+          <div class="actions">
+            <button id="load-selection" type="button" disabled>Refresh from story</button>
+          </div>
         </section>
       </section>
     </main>

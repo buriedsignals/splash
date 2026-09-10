@@ -203,8 +203,8 @@ describe("à-la-carte chooser state", () => {
       capabilityGeneration: "sha256:capabilities",
     });
     expect(upstreamSelectionSummary(current)).toEqual([
-      { label: "Slot", value: "1" },
-      { label: "Proves", value: "Adoption rose." },
+      { label: "Visual", value: "1" },
+      { label: "Takeaway", value: "Adoption rose." },
       { label: "Medium", value: "Chart" },
     ]);
   });
@@ -244,10 +244,10 @@ describe("à-la-carte chooser state", () => {
       },
     });
     chooser.render(current);
-    expect(find(root, (node) => node.tagName === "select")).toBeTruthy();
+    expect(findOptional(root, (node) => node.tagName === "select")).toBeNull();
     expect(find(root, (node) => node.type === "radio")).toBeTruthy();
     await find(root, (node) =>
-      node.textContent.startsWith("Open Readiness for optional"),
+      node.textContent.startsWith("Open Credentials for optional"),
     ).click();
     expect(configurations).toBe(1);
     expect(confirms).toBe(0);

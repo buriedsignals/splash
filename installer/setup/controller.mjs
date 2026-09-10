@@ -7,9 +7,11 @@ import {
   readLegacyIntegrations,
   removeLegacyAssignments,
 } from "./legacy-env.mjs";
-import { readNewsroom, updateNewsroom, NEWSROOM_MANAGED_FIELDS } from "./newsroom-store.mjs";
-import { createOutboundFetchPolicy } from "./outbound-fetch.mjs";
-import { deriveCharter } from "../../skills/newsroom-charter/scripts/derive-charter.mjs";
+import { readNewsroom, updateNewsroom } from "./newsroom-store.mjs";
+import { deriveNewsroomProposal } from "./derive-proposal.mjs";
+import { createSettingsService } from "./settings-service.mjs";
+import { renderAppHtml } from "../../apps/goose/resources/render.mjs";
+import { buildPublicStatus } from "../../apps/goose/contract.mjs";
 import { validateNewsroom } from "../../skills/splash/scripts/newsroom.mjs";
 
 const BODY_LIMIT = 32 << 10;
@@ -167,287 +169,17 @@ function hasCompatibleCredentialContract(contract) {
 function sendCredentialInputRefusal(response) {
   return sendJson(response, 410, {
     code: "credential-input-disabled",
-    message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
+    message: "This Splash page reports credential status only. Supply credentials through your installation's configured credential source.",
   });
 }
 
-async function deriveNewsroomProposal(url) {
-  const policy = createOutboundFetchPolicy();
-  let pageRequest = true;
-  const fetchFn = async (target, options = {}) => {
-    const kind = pageRequest ? "page" : "stylesheet";
-    pageRequest = false;
-    return policy.fetch(target, { kind, signal: options.signal });
-  };
-  try {
-    const result = await deriveCharter({ url, fetchFn, timeoutMs: 12_000, maxStylesheets: 4 });
-    if (!result.ok) {
-      const privateAddress = /private|local|reserved|disallowed port/i.test(result.error ?? "");
-      return {
-        ok: false,
-        code: privateAddress ? "manual-entry-required" : "derivation-failed",
-        message: privateAddress
-          ? "Private and intranet newsroom sites use manual branding entry in this release."
-          : "The public newsroom site could not be read safely.",
-        askInstead: result.askInstead?.slice(0, 6).map((value) => boundedText(value)) ?? [],
-      };
-    }
-    const fields = {};
-    for (const field of ["name", "languages", "brandColor", "accents", "ground", "typefaces"]) {
-      const value = result.fields?.[field];
-      fields[field] = value ? {
-        value: boundedText(value.value, 4096),
-        source: boundedText(value.source),
-        evidence: boundedText(value.evidence, 4096),
-      } : null;
-    }
-    return {
-      ok: true,
-      url: boundedText(result.url, 4096),
-      fields,
-      unresolved: result.unresolved?.filter((field) => Object.hasOwn(fields, field)) ?? [],
-      nothingFurther: result.nothingFurther?.filter((field) => Object.hasOwn(fields, field)) ?? [],
-      legibility: result.legibility ?? null,
-      stylesheetsRead: result.stylesheetsRead?.slice(0, 4).map((value) => boundedText(value, 4096)) ?? [],
-      bytesRead: policy.bytesRead,
-    };
-  } catch (error) {
-    const privateAddress = /private|local|reserved|disallowed port/i.test(error?.message ?? "");
-    return {
-      ok: false,
-      code: privateAddress ? "manual-entry-required" : "derivation-failed",
-      message: privateAddress
-        ? "Private and intranet newsroom sites use manual branding entry in this release."
-        : "The public newsroom site could not be read safely.",
-      askInstead: ["Enter the newsroom name, colours, languages, and typefaces manually."],
-    };
-  }
-}
 
-function page(nonce) {
-  const fieldCopy = {
-    name: ["Newsroom name", "The publication name shown on visuals."],
-    url: ["Public newsroom URL", "Used only when you ask Splash to measure public brand declarations."],
-    brandColor: ["Primary brand colour", "Six-digit hex colour, for example #0057b8."],
-    ground: ["Background colour", "Six-digit hex colour used behind newsroom visuals."],
-    typefaces: ["Typefaces", "Comma-separated newsroom typefaces, in preferred order."],
-    languages: ["Publishing languages", "Comma-separated language codes, most-used first."],
-    language: ["Primary language", "Optional primary language code when several are listed."],
-    accents: ["Additional accent colours", "Comma-separated six-digit hex colours."],
-    credit: ["House credit convention", "Optional standing credit wording."],
-    cloudflareAccountId: ["Cloudflare account ID", "Non-secret 32-character account identifier used to validate Pages access."],
-    cmsKind: ["CMS kind", "Use livingdocs or we-publish; configure it together with its endpoint."],
-    cmsEndpoint: ["CMS endpoint", "Full HTTP or HTTPS API URL without an embedded credential."],
-  };
-  const fields = NEWSROOM_MANAGED_FIELDS.map((field) => {
-    const [label, help] = fieldCopy[field] ?? [field, ""];
-    return `<label for="newsroom-${field}"><span>${label}</span><input id="newsroom-${field}" name="${field}" aria-describedby="newsroom-${field}-help" autocomplete="off"><small id="newsroom-${field}-help">${help}</small></label>`;
-  }).join("");
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4 C 12.5 10.5, 9 14.5, 9 19.5 a7 7 0 0 0 14 0 C 23 14.5 19.5 10.5 16 4 Z' fill='%2349C6FF'/%3E%3Ccircle cx='5.5' cy='8' r='2' fill='%23D4A853'/%3E%3Ccircle cx='26.5' cy='8' r='2' fill='%23D4A853'/%3E%3C/svg%3E">
-<title>Splash setup</title>
-<style nonce="${nonce}">
-:root {
-  color-scheme: light;
-  --paper: #f5f0e6;
-  --plate: #fcfaf3;
-  --white: #fff;
-  --ink: #1c2126;
-  --ink-soft: #57616b;
-  --ink-faint: #8a929a;
-  --rule: rgba(28, 33, 38, .16);
-  --rule-soft: rgba(28, 33, 38, .09);
-  --electric: #49c6ff;
-  --cyan-ink: #1e7fb8;
-  --amber: #d4a853;
-  --red: #c74a2e;
-  --serif: Georgia, "Times New Roman", serif;
-  --grot: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
-  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  font-family: var(--body);
-  color: var(--ink);
-  background: var(--paper);
-}
-* { box-sizing: border-box; }
-body {
-  min-height: 100vh;
-  margin: 0;
-  background:
-    linear-gradient(90deg, var(--amber), var(--electric)) top / 100% 3px no-repeat,
-    radial-gradient(circle at 92% 0%, rgba(73, 198, 255, .09), transparent 28rem),
-    var(--paper);
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-}
-main {
-  display: grid;
-  gap: 1rem;
-  width: min(62rem, 100%);
-  margin: auto;
-  padding: clamp(1.25rem, 4vw, 3rem);
-}
-.masthead {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--rule);
-}
-.brand-lockup { display: flex; align-items: center; gap: .65rem; }
-.brand-mark { width: 1.45rem; height: 1.45rem; }
-.brand-name { font: 600 1.25rem/1 var(--serif); }
-.eyebrow {
-  margin: 0;
-  color: var(--ink-faint);
-  font: 750 .68rem/1.2 var(--grot);
-  letter-spacing: .22em;
-  text-transform: uppercase;
-}
-.intro { padding: .75rem 0 .2rem; }
-h1 {
-  margin: .45rem 0 .55rem;
-  font: 600 clamp(2rem, 6vw, 3.25rem)/1 var(--serif);
-  letter-spacing: -.025em;
-}
-h2 {
-  margin: 1.4rem 0 .55rem;
-  font: 600 1.35rem/1.15 var(--serif);
-}
-.lede { max-width: 66ch; margin: 0; color: var(--ink-soft); }
-.tabs, .actions { display: flex; flex-wrap: wrap; gap: .55rem; }
-.tabs { margin: .25rem 0; }
-.tabs button, button, a.action {
-  min-width: 44px;
-  min-height: 44px;
-  border: 1px solid var(--ink);
-  border-radius: .65rem;
-  padding: .68rem .9rem;
-  background: transparent;
-  color: var(--ink);
-  font: 700 .84rem/1.2 var(--grot);
-  letter-spacing: .02em;
-  cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
-}
-.tabs button:hover, button:hover { transform: translateY(-1px); background: rgba(28, 33, 38, .055); }
-.tabs button[aria-selected=true] {
-  background: var(--ink);
-  color: var(--plate);
-  box-shadow: inset 0 -3px 0 var(--electric);
-}
-[hidden] { display: none !important; }
-.status {
-  margin: 0;
-  border: 1px solid var(--rule);
-  border-left: 4px solid var(--cyan-ink);
-  border-radius: .7rem;
-  padding: .8rem .95rem;
-  background: var(--plate);
-  box-shadow: 0 8px 22px rgba(28, 33, 38, .06);
-}
-.status.error { border-left-color: var(--red); color: #7c2c1f; }
-.surface {
-  position: relative;
-  padding: clamp(1rem, 3vw, 1.75rem);
-  border: 1px solid var(--rule);
-  border-radius: .9rem;
-  background: var(--plate);
-  box-shadow: 0 18px 48px rgba(28, 33, 38, .09);
-}
-.surface::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  border-radius: .9rem 0 0 .9rem;
-  background: linear-gradient(var(--electric), var(--amber));
-}
-.surface > p:first-child { margin-top: 0; color: var(--ink-soft); }
-#newsroom-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 1rem;
-}
-label { display: block; margin: 1rem 0; }
-label span { display: block; margin-bottom: .35rem; font: 700 .8rem/1.2 var(--grot); }
-label small { display: block; margin-top: .32rem; color: var(--ink-soft); font-size: .82rem; }
-input {
-  width: 100%;
-  min-height: 46px;
-  padding: .62rem .7rem;
-  border: 1px solid var(--rule);
-  border-radius: .6rem;
-  background: var(--white);
-  color: var(--ink);
-  font: inherit;
-}
-.credential {
-  margin-top: .7rem;
-  padding: 1rem;
-  border: 1px solid var(--rule);
-  border-top: 3px solid var(--amber);
-  border-radius: .75rem;
-  background: var(--white);
-}
-.credential p { margin: .32rem 0; }
-.credential h2 { margin-top: 0; }
-a { color: var(--cyan-ink); font-weight: 650; text-underline-offset: .18em; }
-.actions { margin-top: 1rem; }
-#newsroom-form > .actions { grid-column: 1 / -1; }
-button:focus-visible, input:focus-visible, a:focus-visible, [tabindex="-1"]:focus {
-  outline: 3px solid var(--amber);
-  outline-offset: 3px;
-}
-@media (max-width: 42rem) {
-  .masthead { align-items: flex-start; flex-direction: column; }
-  #newsroom-form { grid-template-columns: 1fr; }
-}
-@media (max-width: 320px) {
-  main { padding: .8rem; }
-  .tabs, .actions { align-items: stretch; flex-direction: column; }
-  .tabs button, .actions button { width: 100%; }
-  body { overflow-x: hidden; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: .01ms !important; }
-}
-</style></head><body><main>
-<header class="masthead">
-  <div class="brand-lockup">
-    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4C12.5 10.5 9 14.5 9 19.5a7 7 0 0 0 14 0C23 14.5 19.5 10.5 16 4Z" fill="#49c6ff"/><circle cx="5.5" cy="8" r="2" fill="#d4a853"/><circle cx="26.5" cy="8" r="2" fill="#d4a853"/></svg>
-    <span class="brand-name">Splash</span>
-  </div>
-  <p class="eyebrow">Local setup</p>
-</header>
-<div class="intro"><p class="eyebrow">Readiness &amp; identity</p><h1>Splash pre-flight</h1><p class="lede">Record the newsroom details Splash may show in its work. Indicator Labs users save provider keys in the desktop app. Open-source users configure the exact IDs shown through Engine’s protected bsig stdin/keychain flow, entering values only in a private prompt outside chat and Splash. This page reports key status only.</p></div>
-<nav class="tabs" role="tablist" aria-label="Setup sections"><button id="tab-newsroom" role="tab" aria-selected="true" aria-controls="panel-newsroom">Newsroom</button><button id="tab-credentials" role="tab" aria-selected="false" aria-controls="panel-credentials">Key status</button></nav>
-<p id="summary" class="status" role="status" aria-live="polite" tabindex="-1">Opening the protected local session…</p>
-<section id="panel-newsroom" class="surface" role="tabpanel" aria-labelledby="tab-newsroom"><p>Enter details manually, or measure declarations on the public newsroom website and confirm the proposal before saving.</p><button type="button" id="derive">Measure the public site</button><div id="proposal" aria-live="polite"></div><form id="newsroom-form">${fields}<div class="actions"><button type="submit">Save newsroom</button><button type="button" id="decline">Record that no house profile will be used</button></div></form></section>
-<section id="panel-credentials" class="surface" role="tabpanel" aria-labelledby="tab-credentials" hidden><div id="credentials"></div><div id="legacy"></div></section>
-<div class="actions"><button id="done" type="button">Done</button><button id="close" type="button">Close setup</button></div>
-</main><script nonce="${nonce}">
-const summary=document.querySelector('#summary');let state=null;
-function announce(message,error=false){summary.textContent=message;summary.classList.toggle('error',error);summary.focus()}
-async function api(path,options={}){const response=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});const body=await response.json();if(!response.ok)throw Object.assign(new Error(body.message||'Request refused'),{body});return body}
-function activate(name){for(const tab of document.querySelectorAll('[role=tab]')){const selected=tab.id==='tab-'+name;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;document.querySelector('#'+tab.getAttribute('aria-controls')).hidden=!selected}document.querySelector('#tab-'+name).focus()}
-const tabs=[...document.querySelectorAll('[role=tab]')];for(const tab of tabs){tab.tabIndex=tab.getAttribute('aria-selected')==='true'?0:-1;tab.addEventListener('click',()=>activate(tab.id.slice(4)));tab.addEventListener('keydown',event=>{let next=-1;if(event.key==='ArrowRight')next=(tabs.indexOf(tab)+1)%tabs.length;if(event.key==='ArrowLeft')next=(tabs.indexOf(tab)-1+tabs.length)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;if(next<0)return;event.preventDefault();activate(tabs[next].id.slice(4))})}
-function safeLink(raw){try{const url=new URL(raw);return url.protocol==='https:'?url.href:null}catch{return null}}
-function renderCredentials(){const root=document.querySelector('#credentials');root.replaceChildren();const intro=document.createElement('p');intro.textContent='Indicator Labs users save keys in the desktop app. Open-source users have a trusted local agent prepare Engine’s protected bsig stdin/keychain flow, then enter each value only in a private prompt outside chat and Splash. This page reports status only.';root.append(intro);for(const row of state.credentials){const box=document.createElement('section');box.className='credential';const slug=row.id.toLowerCase().replaceAll('_','-');const title=document.createElement('h2');title.textContent=row.metadata?.name||row.id;box.append(title);const credentialId=document.createElement('p');credentialId.textContent='Credential ID: '+row.id;box.append(credentialId);const status=document.createElement('p');status.id=slug+'-status';status.textContent=row.stored?'Saved, generation '+row.generation:'Not saved';box.append(status);const purpose=document.createElement('p');purpose.id=slug+'-purpose';purpose.textContent=row.metadata?.purpose||'';box.append(purpose);const href=safeLink(row.metadata?.acquisitionUrl);if(href){const link=document.createElement('a');link.href=href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Get this credential from the provider';box.append(link)}const hint=document.createElement('p');hint.textContent='Configure this exact ID outside Splash through the path above, then refresh status.';box.append(hint);root.append(box)}}
-function renderLegacy(){const root=document.querySelector('#legacy');root.replaceChildren();if(!state.legacy?.exists)return;const title=document.createElement('h2');title.textContent='Existing .env migration';root.append(title);if(!state.legacy.safe){const warning=document.createElement('p');warning.className='status error';warning.textContent='The existing .env needs a manual syntax, ownership, or permissions repair before non-secret settings can be imported.';root.append(warning);return}if(state.legacy.credentials?.length){const note=document.createElement('p');note.textContent='Provider keys still in .env must be moved to Engine’s credential broker outside Splash, then removed from .env by hand. Indicator Labs users use the desktop app; open-source users use the protected bsig stdin/keychain flow. This page does not collect secrets.';root.append(note)}if(state.legacy.integrations.length){const integrations=document.createElement('button');integrations.type='button';integrations.textContent='Import non-secret service settings into NEWSROOM.md';integrations.addEventListener('click',async()=>{if(!confirm('Import the listed account and CMS settings into the newsroom profile?'))return;const confirmRemoval=confirm('After the newsroom write succeeds, remove only those exact settings from .env?');try{const result=await api('/api/legacy/import-integrations',{method:'POST',body:JSON.stringify({expectedEnvRevision:state.legacy.revision,assignments:state.legacy.integrations.map(({field,assignmentId})=>({field,assignmentId})),expectedNewsroomRevision:state.newsroom.revision,confirmImport:true,confirmReplaceDecline:state.newsroom.declined,confirmRemoval})});state.newsroom=result.newsroom;announce('Service settings imported. Legacy assignments: '+result.legacyRemoval.status);await refresh()}catch(error){announce(error.body?.message||'Service settings were not imported.',true)}});root.append(integrations)}}
-function renderNewsroom(){const profile=state.newsroom.profile||{};for(const input of document.querySelectorAll('#newsroom-form input'))input.value=profile[input.name]||''}
-async function refresh(){state=await api('/api/status',{method:'POST',body:'{}'});renderCredentials();renderLegacy();renderNewsroom()}
-document.querySelector('#derive').addEventListener('click',async()=>{const url=document.querySelector('#newsroom-url').value;announce('Measuring the public newsroom site…');try{const result=await api('/api/derive',{method:'POST',body:JSON.stringify({url})});const proposal=document.querySelector('#proposal');proposal.replaceChildren();const heading=document.createElement('h2');heading.textContent='Measured proposal';proposal.append(heading);for(const [field,row] of Object.entries(result.fields)){if(!row)continue;const item=document.createElement('p');item.textContent=field+': '+row.value+' — '+row.source+' ('+row.evidence+')';proposal.append(item)}const apply=document.createElement('button');apply.type='button';apply.textContent='Apply this proposal to empty fields';apply.addEventListener('click',()=>{if(!confirm('Apply these measured values to the empty newsroom fields?'))return;for(const [field,row] of Object.entries(result.fields)){const input=document.querySelector('#newsroom-'+field);if(row&&input&&!input.value)input.value=row.value}announce('Proposal applied to the form. Review it, then save newsroom.')});proposal.append(apply);announce('Proposal ready for review. Nothing has been written.')}catch(error){announce(error.body?.message||'The site could not be measured safely; enter branding manually.',true)}});
-document.querySelector('#newsroom-form').addEventListener('submit',async event=>{event.preventDefault();const changes=Object.fromEntries([...new FormData(event.currentTarget)].map(([key,value])=>[key,String(value)]));try{state.newsroom=await api('/api/newsroom',{method:'POST',body:JSON.stringify({expectedRevision:state.newsroom.revision,changes,decline:false,confirmDecline:false,confirmReplaceDecline:state.newsroom.declined})});announce('Newsroom details saved.')}catch(error){announce(error.body?.message||'Newsroom details were not saved.',true)}});
-document.querySelector('#decline').addEventListener('click',async()=>{if(!confirm('Record that this newsroom will not use a house profile?'))return;try{state.newsroom=await api('/api/newsroom',{method:'POST',body:JSON.stringify({expectedRevision:state.newsroom.revision,changes:{},decline:true,confirmDecline:true,confirmReplaceDecline:false})});announce('The newsroom decision was recorded.')}catch(error){announce(error.body?.message||'The decision was not saved.',true)}});
-document.querySelector('#done').addEventListener('click',async()=>{await api('/api/done',{method:'POST',body:'{}'});announce('Setup is complete. You can close this page.')});document.querySelector('#close').addEventListener('click',async()=>{await api('/api/close',{method:'POST',body:'{}'});announce('Setup closed. Completed saves remain stored.')});
-(async()=>{const capability=location.hash.slice(1);history.replaceState(null,'',location.pathname);if(!capability)throw new Error('This setup link has expired.');await api('/session',{method:'POST',body:JSON.stringify({capability})});await refresh();announce('Protected local setup is ready.')})().catch(error=>announce(error.message,true));
-</script></body></html>`;
-}
 
 export async function startSetupController({
   engineBridge,
+  installation = "engine",
+  credentialStatusProvider,
+  accountIdFromEnvironment = "",
   newsroomPath,
   legacyEnvPath,
   host = "127.0.0.1",
@@ -456,11 +188,15 @@ export async function startSetupController({
   onLifecycle = () => {},
   deriveProposal = deriveNewsroomProposal,
 } = {}) {
-  if (!engineBridge || ["list", "status", "replace", "remove"].some((method) => typeof engineBridge[method] !== "function")) throw new Error("setup controller requires the complete Engine credential bridge");
+  if (installation === "self-managed" && typeof credentialStatusProvider?.read !== "function") throw new Error("self-managed setup requires a credential status provider");
+  if (installation !== "self-managed" && (!engineBridge || ["list", "status", "replace", "remove"].some((method) => typeof engineBridge[method] !== "function"))) throw new Error("setup controller requires the complete Engine credential bridge");
   if (host !== "127.0.0.1") throw new Error("setup controller binds only 127.0.0.1");
   if (!Number.isFinite(idleMs) || idleMs < 1000 || idleMs > 60 * 60_000) throw new Error("setup idle timeout is invalid");
   if (!Number.isFinite(overallMs) || overallMs < idleMs || overallMs > 4 * 60 * 60_000) throw new Error("setup overall timeout is invalid");
 
+  const settings = createSettingsService({ newsroomPath, deriveProposal, accountIdFromEnvironment });
+  const page = await renderAppHtml({ settingsOnly: true });
+  let cookieName = "";
   let capability = randomCapability();
   let session = "";
   let sessionCredentialContract = null;
@@ -488,7 +224,7 @@ export async function startSetupController({
   }
 
   function authorized(request) {
-    return active && session && cookie(request, "splash_setup") === session;
+    return active && session && cookie(request, cookieName) === session;
   }
 
   async function runMutation(operation) {
@@ -504,6 +240,10 @@ export async function startSetupController({
   }
 
   async function publicStatus() {
+    if (installation === "self-managed") {
+      const status = await credentialStatusProvider.read();
+      return { installation, credentials: status.credentials.map(row => ({ ...row, metadata: row })), broker: status.broker, newsroom: await readNewsroom(newsroomPath), legacy: null };
+    }
     const listed = sessionCredentialContract;
     const rows = hasCompatibleCredentialContract(listed)
       ? await Promise.all(listed.keys.map(async (row) => {
@@ -540,18 +280,20 @@ export async function startSetupController({
       const url = new URL(request.url, origin);
       if (request.method === "GET" && url.pathname === "/") {
         const nonce = randomCapability();
-        return sendText(response, 200, page(nonce), nonce);
+        const html = page.replaceAll('<script type="module">', `<script type="module" nonce="${nonce}">`).replaceAll("<style>", `<style nonce="${nonce}">`);
+        return sendText(response, 200, html, nonce);
       }
       if (request.method !== "POST") return sendJson(response, 405, { code: "method-not-allowed", message: "This setup route does not support that method." }, { allow: "GET, POST" });
       if (request.headers.origin !== origin) return sendJson(response, 403, { code: "wrong-origin", message: "The request did not come from this setup page." });
 
       if (url.pathname === "/session") {
         const body = exactObject(await readJson(request), ["capability"], "session request");
+        if (authorized(request)) return sendJson(response, 200, { ok: true });
         if (!active || !capability || body.capability !== capability) return sendJson(response, 403, { code: "expired-capability", message: "This setup link has expired." });
         capability = "";
         let listed;
         try {
-          listed = await engineBridge.list();
+          listed = installation === "self-managed" ? null : await engineBridge.list();
         } catch {
           listed = null;
         }
@@ -559,11 +301,29 @@ export async function startSetupController({
         session = randomCapability();
         resetIdle();
         lifecycle("session-opened");
-        return sendJson(response, 200, { ok: true }, { "set-cookie": `splash_setup=${session}; HttpOnly; SameSite=Strict; Path=/` });
+        return sendJson(response, 200, { ok: true }, { "set-cookie": `${cookieName}=${session}; HttpOnly; SameSite=Strict; Path=/` });
       }
       if (!authorized(request)) return sendJson(response, 403, { code: "unauthorized", message: "This protected setup session is not active." });
       resetIdle();
 
+      if (url.pathname.startsWith("/api/settings/")) {
+        try {
+          const result = await runMutation(() => settings.request(url.pathname, readJson(request)));
+          return sendJson(response, 200, result);
+        } catch (error) {
+          const conflict = error?.code === "REVISION_CONFLICT";
+          return sendJson(response, conflict ? 409 : 422, { code: conflict ? "settings-conflict" : "settings-error", message: conflict ? "Settings changed in another session. Reload settings, then apply your changes again." : String(error?.message ?? "Settings could not be saved.").slice(0, 2048) });
+        }
+      }
+      if (url.pathname === "/api/studio-status") {
+        exactObject(await readJson(request), [], "status request");
+        if (installation === "self-managed") return sendJson(response, 200, await credentialStatusProvider.read());
+        const current = await publicStatus();
+        const answered = current.newsroom.declined || (current.newsroom.profile && !validateNewsroom(current.newsroom.profile).length);
+        const check = { id: "newsroom-profile", status: answered ? "pass" : "missing", detail: "Complete your newsroom’s design profile in Design.", profile: current.newsroom.profile };
+        const status = buildPublicStatus({ preflight: { ready: Boolean(answered), checks: [{ id: "dependencies", status: "pass", detail: "Setup is running." }, check], blockers: answered ? [] : [check] }, keyList: { ok: current.broker.status === "available", broker: current.broker, keys: current.credentials }, credentials: current.credentials });
+        return sendJson(response, 200, { ...status, installation });
+      }
       if (url.pathname === "/api/status") {
         exactObject(await readJson(request), [], "status request");
         return sendJson(response, 200, await publicStatus());
@@ -695,6 +455,7 @@ export async function startSetupController({
     shutdown("error");
     throw new Error("setup controller did not receive a loopback port");
   }
+  cookieName = `splash_setup_${address.port}`;
   expectedHost = `${host}:${address.port}`;
   origin = `http://${expectedHost}`;
   resetIdle();

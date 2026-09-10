@@ -164,8 +164,7 @@ async function checkNewsroom(newsroomPath) {
 // it is never a verdict on the environment as a whole.
 // `fill` is what turns a report into an OFFER. Every row names the exact credential ID, provider,
 // and both supported setup paths. Managed users save through Indicator Labs. Open-source users use
-// Engine's protected bsig stdin/keychain flow outside Splash, with the value entered only through a
-// private prompt rather than chat, command arguments, shell history, or repository files. Splash
+// their chosen credential storage and inject values into the process environment. Splash
 // Readiness reports status only. `fill` is carried on OPEN rows too: a row describes a capability,
 // not only a failure.
 async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn, fill }) {
@@ -187,7 +186,7 @@ export async function runPreflight({ root, env = process.env, fetchFn, templateR
       env,
       probeFn: probeMapTiler,
       fetchFn,
-      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys). Indicator Labs: save it in the desktop app. Open source: configure this ID through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
+      fill: "MAPTILER_KEY — get a key from maptiler.com/cloud (Account → Keys). Indicator Labs: save it in the desktop app. Self-install: supply this variable in the process environment from your agent configuration, secret manager, or private .env file. Splash Credentials reports key status",
     }),
     datawrapper: await checkCapability({
       id: "datawrapper",
@@ -196,7 +195,7 @@ export async function runPreflight({ root, env = process.env, fetchFn, templateR
       env,
       probeFn: probeDatawrapper,
       fetchFn,
-      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens. Indicator Labs: save it in the desktop app. Open source: configure this ID through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
+      fill: "DATAWRAPPER_TOKEN — get a token from app.datawrapper.de/account/api-tokens. Indicator Labs: save it in the desktop app. Self-install: supply this variable in the process environment from your agent configuration, secret manager, or private .env file. Splash Credentials reports key status",
     }),
     // Cloudflare Pages producer exists in deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
@@ -214,7 +213,7 @@ export async function runPreflight({ root, env = process.env, fetchFn, templateR
           ? `https://splash-scroller-${createHash("sha256").update(accountId.toLowerCase()).digest("hex").slice(0, 20)}.pages.dev`
           : null,
         whitelistOptional: true,
-        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Newsroom in Splash studio, then obtain a Pages-scoped token. Indicator Labs: save the token in the desktop app. Open source: configure CLOUDFLARE_API_TOKEN through Engine's protected bsig stdin/keychain flow, entering the value only in a private prompt outside chat and Splash. Splash Readiness reports status only",
+        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — record the non-secret account ID under Credentials in Splash studio, then obtain a Pages-scoped token. Indicator Labs: save the token in the desktop app. Self-install: supply CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the process environment from your chosen credential storage. Splash Credentials reports key status",
       };
     })(),
   };

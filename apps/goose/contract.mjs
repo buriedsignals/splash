@@ -7,6 +7,15 @@ export const CREDENTIAL_IDS = Object.freeze([
 
 const CHECK_STATUSES = new Set(["pass", "declined", "missing", "fail"]);
 
+// The browser summary and hosted-delivery gate must agree on the active account.
+export function cloudflareAccountStatus(status) {
+  const normalize = value => typeof value === "string" && /^[0-9a-f]{32}$/i.test(value) ? value.toLowerCase() : null;
+  const accountId = normalize(status?.newsroom?.cloudflareAccountId);
+  const credential = status?.credentials?.find(row => row.id === "CLOUDFLARE_API_TOKEN");
+  const validatedAccountId = normalize(credential?.validation?.evidence?.cloudflareAccountId);
+  return { accountId, validatedAccountId, matches: Boolean(accountId && accountId === validatedAccountId) };
+}
+
 function text(value, limit = 2048) {
   return typeof value === "string" ? value.slice(0, limit) : "";
 }
@@ -135,7 +144,7 @@ export function textSummary(status) {
     }
     return `Splash has ${status?.readiness?.blockers?.length ?? 0} pre-flight blocker(s).`;
   }
-  const availableStates = new Set(["ready", "partially-verified", "saved-unverified"]);
+  const availableStates = new Set(["ready", "partially-verified", "saved-unverified", "provided-unverified"]);
   const unavailable = status.credentials?.filter((row) => !availableStates.has(row.state)).length ?? 0;
   return unavailable > 0
     ? `Splash is ready for credential-independent work; ${unavailable} optional credential capability row(s) are closed.`

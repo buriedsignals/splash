@@ -35,6 +35,7 @@ function statusFixture(ready = true) {
 
 async function start(ready = true) {
   const setupCalls: string[] = [];
+  const settingsCalls: string[] = [];
   const storyBinding = createStoryBinding({
     inspect: async (path: string) => ({
       storyId: "story-one",
@@ -49,6 +50,8 @@ async function start(ready = true) {
     choices: [{ id: "format.web", enabled: true }],
   };
   const controller = await startStudioController({
+    settings: { async request(path, body) { await body; settingsCalls.push(path); return { revision: "fixture", profile: {} }; } },
+    folderPicker: async () => ({ status: "selected", path: "/stories/story-one" }),
     htmlProvider: async () =>
       `<!doctype html><html><head><style></style></head><body><script type="module"></script></body></html>`,
     statusProvider: { read: async () => structuredClone(statusFixture(ready)) },
@@ -84,7 +87,7 @@ async function start(ready = true) {
   });
   controllers.push(controller);
   const parsed = new URL(controller.url);
-  return { controller, origin: parsed.origin, capability: parsed.hash.slice(1), setupCalls };
+  return { controller, origin: parsed.origin, capability: parsed.hash.slice(1), setupCalls, settingsCalls };
 }
 
 async function sessionHeaders(origin: string, capability: string) {
@@ -95,11 +98,35 @@ async function sessionHeaders(origin: string, capability: string) {
   });
   expect(response.status).toBe(200);
   const cookie = response.headers.get("set-cookie") ?? "";
-  expect(cookie).toContain("splash_studio=");
+  expect(cookie).toContain("splash_studio_");
   return { origin, cookie: cookie.split(";")[0] };
 }
 
 describe("Splash localhost studio", () => {
+  it("keeps settings inside the authenticated studio session", async () => {
+    const { origin, capability, settingsCalls, setupCalls } = await start();
+    const request = (headers) => fetch(`${origin}/api/settings/read`, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: "{}" });
+    expect((await request({ origin })).status).toBe(403);
+    expect(settingsCalls).toHaveLength(0);
+    const auth = await sessionHeaders(origin, capability);
+    expect((await request({ ...auth, origin: "http://example.test" })).status).toBe(403);
+    expect((await request(auth)).status).toBe(200);
+    expect(settingsCalls).toEqual(["/api/settings/read"]);
+    expect(setupCalls).toHaveLength(0);
+  });
+
+  it("resumes an authorized page without reusing its capability and isolates cookies between studios", async () => {
+    const first = await start();
+    const auth = await sessionHeaders(first.origin, first.capability);
+    const second = await start();
+    const secondAuth = await sessionHeaders(second.origin, second.capability);
+    expect(auth.cookie.split("=")[0]).not.toBe(secondAuth.cookie.split("=")[0]);
+    const resumed = await fetch(`${first.origin}/session`, { method: "POST", headers: { ...auth, "content-type": "application/json" }, body: JSON.stringify({ capability: first.capability }) });
+    expect(resumed.status).toBe(200);
+    const replayed = await fetch(`${first.origin}/session`, { method: "POST", headers: { origin: first.origin, "content-type": "application/json" }, body: JSON.stringify({ capability: first.capability }) });
+    expect(replayed.status).toBe(403);
+  });
+
   it("binds only to loopback and serves the studio page", async () => {
     const { controller, origin } = await start();
     expect(new URL(controller.url).hostname).toBe("127.0.0.1");
@@ -122,6 +149,18 @@ describe("Splash localhost studio", () => {
       body: JSON.stringify({ capability: "not-the-capability" }),
     });
     expect(expired.status).toBe(403);
+  });
+
+  it("opens a folder picker only in an authorized session and never binds its result automatically", async () => {
+    const { origin, capability } = await start();
+    const denied = await fetch(`${origin}/api/story/browse`, { method: "POST", headers: { origin, "content-type": "application/json" }, body: "{}" });
+    expect(denied.status).toBe(403);
+    const auth = await sessionHeaders(origin, capability);
+    const headers = { origin, cookie: auth.cookie, "content-type": "application/json" };
+    const picked = await fetch(`${origin}/api/story/browse`, { method: "POST", headers, body: "{}" });
+    expect(await picked.json()).toEqual({ status: "selected", path: "/stories/story-one" });
+    const status = await fetch(`${origin}/api/status`, { method: "POST", headers, body: "{}" });
+    expect((await status.json()).story.status).toBe("unbound");
   });
 
   it("confirms a story in the browser session without putting the challenge on the status payload", async () => {

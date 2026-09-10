@@ -79,8 +79,15 @@ README's "Install from source (agents)" section documents the unmanaged sparse-c
 uses it; a later managed install adopts or replaces those links. There is no other placement code
 in this repository: Engine owns projection and runtime adapters (`docs/engine/skill-placement.md`).
 
-Stories and `NEWSROOM.md` are external, data-bearing state. Provider credentials and validation
-receipts belong only to Engine's operating-system credential broker. The adopted checkout,
+Splash supports both Engine-managed and independent, agent-led source installs.
+Engine-managed provider credentials and validation receipts belong to Engine's OS broker.
+Self-installs read credentials from the process environment; users choose their storage
+(agent configuration, secret manager, or a private `.env` anywhere). Recommend a private
+file outside the checkout without requiring that location or requiring Engine.
+`SPLASH_BSIG_PATH` explicitly selects the Engine path; do not infer it from `bsig` on PATH.
+Browser setup guidance is only for self-installs. No browser/MCP input collects secrets.
+
+Stories and `NEWSROOM.md` are external, data-bearing state. The adopted checkout,
 dependency tree, managed browser, skill links, and `extensions.splash` registration are removable
 Engine-owned state.
 

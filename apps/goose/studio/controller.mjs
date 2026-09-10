@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
+import { pickStoryFolder } from "./folder-picker.mjs";
 import { renderAppHtml } from "../resources/render.mjs";
 
 const BODY_LIMIT = 32 << 10;
@@ -123,7 +124,9 @@ export async function startStudioController({
   selection,
   recommendation,
   setupManager,
+  settings,
   htmlProvider = renderAppHtml,
+  folderPicker = pickStoryFolder,
   host = "127.0.0.1",
   idleMs = 15 * 60_000,
   overallMs = 60 * 60_000,
@@ -155,8 +158,12 @@ export async function startStudioController({
   if (host !== "127.0.0.1") throw new Error("studio binds only 127.0.0.1");
 
   const page = await htmlProvider();
+  let pickingFolder = false;
   let capability = randomCapability();
   let session = "";
+  let cookieName = "";
+  let inFlightSettings = 0;
+  let pendingShutdown = "";
   let active = true;
   let origin = "";
   let expectedHost = "";
@@ -181,7 +188,7 @@ export async function startStudioController({
   }
 
   function authorized(request) {
-    return active && session && cookie(request, "splash_studio") === session;
+    return active && session && cookie(request, cookieName) === session;
   }
 
   async function publicStatus() {
@@ -226,21 +233,45 @@ export async function startStudioController({
 
       if (url.pathname === "/session") {
         const body = exactObject(await readJson(request), ["capability"], "session request");
+        if (authorized(request)) return sendJson(response, 200, { ok: true });
         if (!active || !capability || body.capability !== capability)
           return sendJson(response, 403, { code: "expired-capability", message: "This studio link has expired." });
         capability = "";
         session = randomCapability();
         resetIdle();
         lifecycle("session-opened");
-        return sendJson(response, 200, { ok: true }, { "set-cookie": `splash_studio=${session}; HttpOnly; SameSite=Strict; Path=/` });
+        return sendJson(response, 200, { ok: true }, { "set-cookie": `${cookieName}=${session}; HttpOnly; SameSite=Strict; Path=/` });
       }
       if (!authorized(request))
         return sendJson(response, 403, { code: "unauthorized", message: "This protected studio session is not active." });
       resetIdle();
 
+      if (url.pathname.startsWith("/api/settings/")) {
+        if (!settings) return sendJson(response, 503, { code: "settings-unavailable", message: "Settings are unavailable in this session. Reopen Splash to try again." });
+        inFlightSettings += 1;
+        clearTimeout(idleTimer);
+        try {
+          const result = await settings.request(url.pathname, readJson(request));
+          return sendJson(response, 200, result);
+        } catch (error) {
+          const conflict = error?.code === "REVISION_CONFLICT";
+          return sendJson(response, conflict ? 409 : 422, { code: conflict ? "settings-conflict" : "settings-error", message: conflict ? "Settings changed in another session. Reload settings, then apply your changes again." : String(error?.message ?? "Settings could not be saved.").slice(0, 2048) });
+        } finally {
+          inFlightSettings -= 1;
+          if (pendingShutdown && !inFlightSettings) shutdown(pendingShutdown);
+          else if (active) resetIdle();
+        }
+      }
       if (url.pathname === "/api/status") {
         exactObject(await readJson(request), [], "status request");
         return sendJson(response, 200, await publicStatus());
+      }
+      if (url.pathname === "/api/story/browse") {
+        exactObject(await readJson(request), [], "story folder picker");
+        if (pickingFolder) return sendJson(response, 409, { code: "picker-open", message: "A folder picker is already open." });
+        pickingFolder = true;
+        try { return sendJson(response, 200, await folderPicker()); }
+        finally { pickingFolder = false; }
       }
       if (url.pathname === "/api/story/nominate") {
         const body = exactObject(await readJson(request), ["path"], "story nomination");
@@ -328,6 +359,13 @@ export async function startStudioController({
   let stopped = false;
   function shutdown(reason = "closed") {
     if (stopped) return;
+    if (inFlightSettings) {
+      active = false;
+      pendingShutdown = reason;
+      clearTimeout(idleTimer);
+      clearTimeout(overallTimer);
+      return;
+    }
     stopped = true;
     active = false;
     capability = "";
@@ -356,6 +394,7 @@ export async function startStudioController({
     throw new Error("studio did not receive a loopback port");
   }
   expectedHost = `${host}:${address.port}`;
+  cookieName = `splash_studio_${address.port}`;
   origin = `http://${expectedHost}`;
   resetIdle();
   overallTimer = setTimeout(() => shutdown("expired"), overallMs);

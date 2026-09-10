@@ -4,7 +4,7 @@ import { join } from "node:path";
 const APP_MARKER = "/*__SPLASH_APP__*/";
 const CSS_MARKER = "/*__SPLASH_CSS__*/";
 
-export async function renderAppHtml() {
+export async function renderAppHtml({ settingsOnly = false } = {}) {
   const root = join(import.meta.dirname);
   const [template, css, build] = await Promise.all([
     readFile(join(root, "splash-app.html"), "utf8"),
@@ -22,6 +22,7 @@ export async function renderAppHtml() {
     throw new Error("Splash app template markers are missing");
   const bundled = await build.outputs[0].text();
   return template
+    .replace('<body>', `<body data-settings-only="${settingsOnly}">`)
     .replace(CSS_MARKER, () => css)
     .replace(APP_MARKER, () => bundled);
 }

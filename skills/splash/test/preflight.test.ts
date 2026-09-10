@@ -555,11 +555,10 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       expect(row.fill).toBeTruthy();
       expect(row.fill).toContain(variable);
       expect(row.fill).toContain("Indicator Labs");
-      expect(row.fill).toContain("Open source");
-      expect(row.fill).toContain("bsig stdin/keychain flow");
-      expect(row.fill).toContain("private prompt");
-      expect(row.fill).toContain("Splash Readiness");
-      expect(row.fill).not.toContain(".env");
+      expect(row.fill).toContain("Self-install");
+      expect(row.fill).toContain("process environment");
+      expect(row.fill).toContain("Splash Credentials");
+      expect(row.fill).not.toContain("bsig stdin/keychain flow");
     }
   });
 
