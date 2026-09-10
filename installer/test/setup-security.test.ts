@@ -679,7 +679,7 @@ describe("protected setup Engine credential contract", () => {
     expect([replacement.status, removal.status, migration.status]).toEqual([410, 410, 410]);
     expect(refusal).toEqual({
       code: "credential-input-disabled",
-      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
+      message: "This Splash page reports credential status only. Supply credentials through your installation's configured credential source.",
     });
     expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
     expect(calls.some(({ input }) => input.includes(candidate))).toBe(false);
@@ -1121,7 +1121,7 @@ describe("protected setup Engine credential contract", () => {
     expect(oversized.status).toBe(410);
     expect(await oversized.json()).toEqual({
       code: "credential-input-disabled",
-      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
+      message: "This Splash page reports credential status only. Supply credentials through your installation's configured credential source.",
     });
     expect(calls.some(({ input }) => input.includes("oversized-canary"))).toBe(false);
   });
@@ -1136,10 +1136,14 @@ describe("token-bound loopback setup controller", () => {
     expect(page.headers.get("referrer-policy")).toBe("no-referrer");
     const html = await page.text();
     expect(html).not.toContain(controller.capability);
-    expect(html).toContain("Indicator Labs");
-    expect(html).toContain("Open-source users");
-    expect(html).toContain("Credential ID:");
-    expect(html).toContain("bsig stdin/keychain flow");
+    expect(html).not.toContain("Splash reads credentials from its process environment");
+    expect(html).toContain('data-route="credentials"');
+    expect(html).toContain('data-route="design"');
+    expect(html).not.toContain("Splash pre-flight");
+    expect(html).not.toContain("cmsEndpoint");
+    expect(html).not.toContain("Record that no house profile");
+    expect(html).not.toContain("bsig keys replace");
+    expect(html).not.toContain("Configure this exact ID");
     expect(html).not.toContain("Paste a new value");
     expect(html).not.toContain('type="password"');
     expect(html).not.toContain("type='password'");
@@ -1153,7 +1157,7 @@ describe("token-bound loopback setup controller", () => {
 
     const { response, cookie } = await openSession(controller);
     expect(response.status).toBe(200);
-    expect(cookie).toStartWith("splash_setup=");
+    expect(cookie).toStartWith("splash_setup_");
     const reused = await fetch(`${controller.origin}/session`, {
       method: "POST",
       headers: { origin: controller.origin, "content-type": "application/json" },

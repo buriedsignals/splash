@@ -178,8 +178,8 @@ export function upstreamSelectionSummary(model) {
   const slot = model?.slot;
   if (!slot) return [];
   return [
-    ["Slot", slot.id],
-    ["Proves", slot.proves],
+    ["Visual", slot.id],
+    ["Takeaway", slot.proves],
     ["Medium", VALUE_LABELS[slot.medium] ?? slot.medium],
     ["Publication format", VALUE_LABELS[slot.format] ?? slot.format],
     ["Size", slot.size],
@@ -280,7 +280,7 @@ export function createAlaCarteChooser({
   }
   let model = null;
   let filters = {};
-  let showUnavailable = false;
+  let showUnavailable = true;
   let selectedOptionId = null;
   let gateKey = "";
   let busy = false;
@@ -315,7 +315,7 @@ export function createAlaCarteChooser({
     const nextGateKey = `${model.story?.storyId ?? ""}:${model.gate.id}:${model.gate.awaiting ?? ""}`;
     if (gateKey && nextGateKey !== gateKey) {
       filters = {};
-      showUnavailable = false;
+      showUnavailable = true;
       selectedOptionId = null;
     }
     gateKey = nextGateKey;
@@ -401,7 +401,7 @@ export function createAlaCarteChooser({
     if (rewind.childNodes.length) summary.append(rewind);
     root.append(summary);
 
-    if (view.facets.length) {
+    if (view.facets.length && model.choices.length > 6) {
       const controls = documentRef.createElement("section");
       controls.className = "choice-filters";
       controls.setAttribute("aria-label", "Filter visual options");
@@ -444,7 +444,7 @@ export function createAlaCarteChooser({
     });
     unavailableLabel.append(unavailable);
     appendText(documentRef, unavailableLabel, "span", "Show unavailable");
-    root.append(unavailableLabel);
+    if (model.choices.some(choice => !choice.enabled)) root.append(unavailableLabel);
 
     const count = appendText(
       documentRef,
@@ -453,6 +453,7 @@ export function createAlaCarteChooser({
       `${view.resultCount} option${view.resultCount === 1 ? "" : "s"}`,
       "quiet",
     );
+    count.hidden = model.choices.length <= 6;
     count.setAttribute("role", "status");
     count.setAttribute("aria-live", "polite");
 
@@ -481,7 +482,7 @@ export function createAlaCarteChooser({
       if (view.repairAction === "open-readiness" && onConfigure) {
         const configure = documentRef.createElement("button");
         configure.type = "button";
-        configure.textContent = "Open Readiness";
+        configure.textContent = "Open Credentials";
         configure.addEventListener("click", () => onConfigure());
         empty.append(configure);
       }
@@ -555,7 +556,7 @@ export function createAlaCarteChooser({
           const configure = documentRef.createElement("button");
           configure.type = "button";
           configure.className = "configure-choice";
-          configure.textContent = `Open Readiness for ${choice.label}`;
+          configure.textContent = `Open Credentials for ${choice.label}`;
           configure.addEventListener("click", () => onConfigure());
           fieldset.append(configure);
         }
@@ -564,7 +565,7 @@ export function createAlaCarteChooser({
             const configure = documentRef.createElement("button");
             configure.type = "button";
             configure.className = "configure-choice";
-            configure.textContent = `Open Readiness for optional ${implication.label}`;
+            configure.textContent = `Open Credentials for optional ${implication.label}`;
             configure.addEventListener("click", () => onConfigure());
             fieldset.append(configure);
           }
@@ -633,7 +634,7 @@ export function createAlaCarteChooser({
     clear() {
       model = null;
       filters = {};
-      showUnavailable = false;
+      showUnavailable = true;
       selectedOptionId = null;
       gateKey = "";
       root.replaceChildren();

@@ -109,12 +109,16 @@ describe("production Splash MCP studio opener", () => {
 
   it("bundles the localhost studio without credential inputs or MCP tool names", async () => {
     const html = await renderAppHtml();
-    expect(html).toContain("Readiness");
-    expect(html).toContain("Choose visual");
-    expect(html).toContain("Inspect this story");
+    expect(html).toContain('data-route="credentials"');
+    expect(html).toContain('data-route="design"');
+    expect(html).not.toContain("/api/setup/start");
+    expect(html).toContain('data-story-only>Graphics</button>');
+    expect(html).toContain('id="choose-title">Graphics</h2>');
+    expect(html).toContain("Choose folder…");
+    expect(html).toContain("Starting a new story?");
     expect(html).toContain("/api/status");
-    expect(html).toContain("Open-source users");
-    expect(html).toContain("bsig");
+    expect(html).toContain("process environment");
+    expect(html).toContain('id="credential-guidance" class="setup-notice"');
     expect(html).not.toContain("start_splash_setup");
     expect(html).not.toContain("open_splash_setup_locally");
     expect(html).not.toMatch(/type=["']password|API[_ -]?key input/i);

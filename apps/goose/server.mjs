@@ -2,6 +2,7 @@
 
 import { lstat, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4";
@@ -25,6 +26,8 @@ import { createSetupSessionManager } from "./setup-session.mjs";
 import { createStoryBinding } from "./story-binding.mjs";
 import { createStudioSessionManager } from "./studio/session.mjs";
 import { readCredentialStatuses } from "./studio/credential-status.mjs";
+import { createSettingsService } from "../../installer/setup/settings-service.mjs";
+import { readNewsroom } from "../../installer/setup/newsroom-store.mjs";
 
 export { renderAppHtml };
 
@@ -52,12 +55,6 @@ const NO_ARGUMENTS = exactObject({}).optional();
 
 function textResult(text, structuredContent) {
   return { content: [{ type: "text", text }], structuredContent };
-}
-
-function requiredEnvironment(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Splash MCP environment is missing ${name}`);
-  return value;
 }
 
 function terminalResult(result) {
@@ -140,11 +137,15 @@ export function createServer({ statusProvider, studio, onToolCall = () => {} } =
 }
 
 export async function productionDependencies({
-  checkoutRoot = requiredEnvironment("SPLASH_CHECKOUT_ROOT"),
-  newsroomPath = requiredEnvironment("SPLASH_NEWSROOM_PATH"),
-  bsigPath = requiredEnvironment("SPLASH_BSIG_PATH"),
+  checkoutRoot = process.env.SPLASH_CHECKOUT_ROOT ?? join(import.meta.dirname, "..", ".."),
+  newsroomPath = process.env.SPLASH_NEWSROOM_PATH ?? join(homedir(), ".config", "splash", "NEWSROOM.md"),
+  bsigPath = process.env.SPLASH_BSIG_PATH,
   legacyEnvPath = join(checkoutRoot, ".env"),
 } = {}) {
+  if (!bsigPath) {
+    const { selfManagedDependencies } = await import("./self-managed.mjs");
+    return selfManagedDependencies({ checkoutRoot, newsroomPath, profileProvider: readStableProfile });
+  }
   const bridge = createEngineBridge({ executable: bsigPath });
   const statusProvider = {
     async read() {
@@ -197,7 +198,11 @@ export async function productionDependencies({
           keys: [],
         };
       }
-      return buildPublicStatus({ preflight, keyList, credentials });
+      const status = buildPublicStatus({ preflight, keyList, credentials });
+      const saved = await readNewsroom(newsroomPath).catch(() => null);
+      const account = saved?.profile?.cloudflareAccountId;
+      if (/^[0-9a-f]{32}$/i.test(account ?? "")) status.newsroom.cloudflareAccountId = account.toLowerCase();
+      return { ...status, installation: "engine" };
     },
   };
   const setupManager = createSetupSessionManager({
@@ -237,6 +242,7 @@ export async function productionDependencies({
   });
   return {
     statusProvider,
+    settings: createSettingsService({ newsroomPath }),
     setupManager,
     storyBinding,
     selection,

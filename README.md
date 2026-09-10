@@ -8,7 +8,7 @@
 
 [Workflow](#workflow) | [Delivery](#delivery-and-delivery) | [Install](#install) | [Story Directory](#story-directory)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![16 Skills](https://img.shields.io/badge/skills-16-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-Engine_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
+[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![16 Skills](https://img.shields.io/badge/skills-16-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-your_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
 
 [![Stars](https://img.shields.io/github/stars/buriedsignals/splash?style=flat-square&logo=github&label=Stars)](https://github.com/buriedsignals/splash/stargazers)[![Issues](https://img.shields.io/github/issues/buriedsignals/splash?style=flat-square&logo=github&label=Issues)](https://github.com/buriedsignals/splash/issues)[![Last Commit](https://img.shields.io/github/last-commit/buriedsignals/splash?style=flat-square&logo=github&label=Last%20Commit)](https://github.com/buriedsignals/splash/commits)[![Contributors](https://img.shields.io/github/contributors/buriedsignals/splash?style=flat-square&logo=github&label=Contributors)](https://github.com/buriedsignals/splash/graphs/contributors)
 
@@ -27,8 +27,8 @@ directory.
 
 It is a skill pack used through an AI assistant rather than a hosted
 application. The implementation is local-first: stories and newsroom
-configuration live outside the replaceable Splash checkout, credentials stay
-in the operating system's protected store through Engine, and every delivery
+configuration live outside the replaceable Splash checkout, credential storage
+is managed by Engine or chosen by the self-installing user, and every delivery
 is a file or directory the newsroom controls.
 
 ## What Splash Does
@@ -107,35 +107,60 @@ delivery keeps the prior export intact until replacement completes.
 
 ## Credentials
 
-Credentials are stored through Engine's operating-system credential broker —
-never in MCP arguments, model context, committed files, or Splash's loopback
-pages. The Splash studio and setup page report the exact credential IDs, status,
-and provider links; neither accepts a secret.
+Splash has two credential paths:
 
-Indicator Labs users save credentials in the desktop app. For an open-source
-installation, a trusted local agent can prepare Engine's protected `bsig`
-stdin/keychain flow for the exact ID while the user enters the value only through
-a private operating-system or terminal prompt. Never place a value in chat,
-command arguments, shell history, a repository file, or a Splash page. Refresh
-Readiness after setup. Map craft's provider-bearing bake is a fixed Engine
-operation: each beat supplies a strict story-local `MAP-BAKE.json`, and Engine
-verifies camera, GeoJSON/data digests, managed browser, and installed runtime
-before hydrating `MAPTILER_KEY`.
+- **Indicator Labs / Engine:** the desktop app manages provider keys in the OS
+  credential store. Splash uses Engine for status and provider operations.
+- **Self-install from this repository:** Splash reads credentials from its
+  process environment. You choose where to store them: your agent configuration,
+  a password manager, a secret-store launcher, or a `.env` file. Engine is optional.
+
+For self-installs, we recommend a private `.env` file outside the checkout, such
+as `~/.config/splash/.env`, readable only by your account. That location is a
+recommendation, not a path Splash searches. Load any chosen file explicitly:
+
+```sh
+bun --env-file=/absolute/path/to/.env apps/goose/studio/open.mjs
+```
+
+Or inject environment variables with your preferred launcher and use
+`bun --no-env-file apps/goose/studio/open.mjs`. The MCP entry point is
+`apps/goose/server.mjs`; use the same environment-file argument or configure
+its environment through your agent. Bun's [environment-file documentation](https://github.com/oven-sh/bun/blob/main/docs/runtime/environment-variables.mdx)
+explains explicit file loading and default `.env` discovery.
+
+| Variable | Used for |
+| --- | --- |
+| `MAPTILER_KEY` | Map production, preview and the live tiles of published maps |
+| `DATAWRAPPER_TOKEN` | Datawrapper chart production |
+| `CLOUDFLARE_API_TOKEN` | Hosted embeds; grant Pages: Edit for the chosen account |
+| `CLOUDFLARE_ACCOUNT_ID` | Account used with the Cloudflare token |
+
+Only supply credentials for capabilities you use. Provider links appear in
+the studio’s **Credentials** tab, where you can also save the non-secret Cloudflare
+account ID. **Design** holds the newsroom’s identity, colours and typefaces;
+**Graphics** opens a story and shows its next visual decision. These tabs
+share one browser session. Existing CMS configuration is preserved but is not
+part of the settings form.
+
+Restart the self-managed MCP or studio after changing its environment;
+Refresh status rechecks the values already loaded by that process. Pass the same
+environment to the craft scripts your agent runs. Splash does not move or store
+self-managed credentials, and no browser or MCP input accepts key values.
+Keep values out of chat and version control.
+
+`SPLASH_BSIG_PATH` selects Engine-managed operation explicitly. Leave it unset
+for a self-install; having `bsig` somewhere on `PATH` does not select Engine.
 
 ## Install
 
 Two routes, one decision:
 
-- **Engine (supported).** Buried Signals Engine (`bsig`), directly or through
-  Indicator Labs, installs a catalog-pinned signed release with its dependency
-  and browser payload, projects the skills for every runtime it detects, keeps
-  provider keys in the OS keychain, and updates in place. Choose this for any
-  real story, and for every journalist install.
-- **Source (lighter).** A sparse clone plus per-skill links, described under
-  [Install from source](#install-from-source-agents). Skills load and preflight
-  runs, nothing else: no keys, no updates, no repair, Chrome is your problem,
-  and you still download Engine's `bsig` yourself to launch the studio. Choose this only when an agent or developer is working from a clone
-  and will re-link after every pull.
+- **Indicator Labs / Engine.** Managed installation, credentials, updates, and
+  repair through the desktop app or Engine CLI.
+- **Self-install.** Point your agent at this repository. Install the runtime and
+  skills, provide your chosen credential environment, and run Splash directly.
+  You manage dependencies, browser installation, and updates.
 
 Managed journalist install is Indicator Labs on Mac or Windows. Join at
 [buriedsignals.com/join](https://buriedsignals.com/join). Indicator Labs adds
@@ -178,7 +203,7 @@ check, run `bsig doctor --product splash`.
 
 ## Install from source (agents)
 
-Engine is the supported path above. An agent pointed at this repository can
+An agent pointed at this repository can
 install the runtime set without cloning the whole repository: `install-set.txt`
 names the directories a runtime needs; everything else is documentation, proofs,
 and development tooling.
@@ -190,20 +215,17 @@ git sparse-checkout set $(grep -v '^#' install-set.txt)
 bun install --frozen-lockfile --production --ignore-scripts
 ```
 
-**Engine is still a prerequisite.** A source checkout contains no `bsig`, and
-the studio and the MCP server refuse to start without one: `open.mjs` exits
-with `Splash studio needs bsig on PATH or SPLASH_BSIG_PATH`, and the server
-requires `SPLASH_BSIG_PATH` outright. Before the first launch, download and
-verify the signed Engine release described under [Install](#install) (the
-bootstrap URL, SHA-256, then Minisign), then point Splash at it:
+Launch the studio directly; Engine is not required:
 
-```bash
-export SPLASH_BSIG_PATH=/absolute/path/to/bsig
-export SPLASH_CHECKOUT_ROOT="$PWD"
-bun --no-env-file apps/goose/studio/open.mjs
+```sh
+bun --env-file=/absolute/path/to/.env apps/goose/studio/open.mjs
 ```
 
-Skills load and preflight reports without Engine; nothing launches without it.
+For MCP, register `bun` with arguments
+`["--env-file=/absolute/path/to/.env", "/absolute/path/to/splash/apps/goose/server.mjs"]`.
+If your agent or secret manager supplies the environment, replace the env-file
+argument with `--no-env-file`. Set `SPLASH_NEWSROOM_PATH` if you want a profile
+location other than `~/.config/splash/NEWSROOM.md`.
 
 Browser-based rendering and verification require Chrome or Chromium separately
 from skill discovery and preflight readiness (static SVG/PNG charts use Resvg).
@@ -254,8 +276,8 @@ become visible on the agent's next turn. An immediate `Unknown skill: splash` in
 the installing turn is not evidence of a failed install; wait for the next turn
 before troubleshooting.
 
-A later Engine install adopts or replaces unmanaged skill links. Provider keys
-are never read from this checkout — see
+A later Engine install adopts or replaces unmanaged skill links. For the two
+credential paths, see
 [Credentials](#credentials).
 
 ## Skills

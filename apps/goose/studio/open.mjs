@@ -4,34 +4,17 @@ import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createStudioSessionManager } from "./session.mjs";
+import { productionDependencies } from "../server.mjs";
 
 const checkoutRoot = await realpath(
   process.env.SPLASH_CHECKOUT_ROOT ??
     join(fileURLToPath(import.meta.url), "..", "..", "..", ".."),
 );
-const bsigPath = process.env.SPLASH_BSIG_PATH ?? Bun.which("bsig");
-if (!bsigPath) {
-  console.error("Splash studio needs bsig on PATH or SPLASH_BSIG_PATH.");
-  process.exit(1);
-}
 const newsroomPath =
   process.env.SPLASH_NEWSROOM_PATH ??
   join(homedir(), ".config", "splash", "NEWSROOM.md");
 
-const studio = createStudioSessionManager({
-  controllerPath: join(
-    checkoutRoot,
-    "apps",
-    "goose",
-    "studio",
-    "controller-child.mjs",
-  ),
-  bsigPath,
-  newsroomPath,
-  legacyEnvPath: join(checkoutRoot, ".env"),
-  checkoutRoot,
-});
+const { studio } = await productionDependencies({ checkoutRoot, newsroomPath });
 
 const stop = () => studio.close();
 process.on("SIGINT", stop);

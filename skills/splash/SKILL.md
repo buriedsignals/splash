@@ -42,6 +42,11 @@ owner's own skill or persona brief; this document duplicates no owner body.
   than collecting readiness or visual choices in chat. From the Splash checkout,
   with Engine environment (`SPLASH_CHECKOUT_ROOT`, `SPLASH_BSIG_PATH`,
   `SPLASH_NEWSROOM_PATH`), run `bun --no-env-file apps/goose/studio/open.mjs`.
+  Self-installs leave `SPLASH_BSIG_PATH` unset and supply credentials through the
+  process environment, using their agent configuration, secret manager, or any
+  private `.env` loaded with `bun --env-file=/path/to/.env apps/goose/studio/open.mjs`.
+  Recommend a private file outside the checkout; storage location is the user’s choice.
+  Pass that same environment to craft scripts. Never require Engine for a self-install.
   Goose may instead call `open_splash`. The studio is a loopback page: the
   journalist confirms the story and treatment there; this skill resumes from
   `whereIs` after that. Never put the studio URL or its capability token in

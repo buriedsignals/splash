@@ -20,6 +20,7 @@ import {
   visualCatalogRevision,
 } from "../selection.mjs";
 import { createStoryBinding } from "../story-binding.mjs";
+import { selectionView } from "../resources/readiness-view.mjs";
 
 const SCALARS = `takeaway: "Every sampled country increased adoption while the gap remained wide."
 subject: "Ten sampled countries"
@@ -135,6 +136,32 @@ function service() {
 }
 
 describe("shared revision-safe selection domain", () => {
+  it.each([
+    ["", "slot"],
+    ['  - proves: "Adoption rose."', "id"],
+    ["  - id: 1", "proves"],
+    ['  - id: 1\n    proves: "Adoption rose."', "medium"],
+  ])("shows graphical controls only once the real early storyboard has a visual and takeaway: %s", async (slot, awaiting) => {
+    const before = storyboard(slot);
+    await writeFile(join(storyPath, "STORYBOARD.md"), before);
+    const selection = createSelectionService({ storyBinding: binding, capabilityProvider: async () => capabilityState, stateProvider: async () => ({ phase: "storyboard" }) });
+    const model = await selection.read({ bindingContext });
+    expect(model.gate).toEqual({ id: "G2a", awaiting });
+    expect(selectionView(model).choosing).toBe(awaiting === "medium");
+    expect(model.choices.length > 0).toBe(awaiting === "medium");
+    expect(await readFile(join(storyPath, "STORYBOARD.md"), "utf8")).toBe(before);
+  });
+
+  it("reports intake before a storyboard exists and never offers a graphical mutation", async () => {
+    await rm(join(storyPath, "STORYBOARD.md"));
+    const service = createSelectionService({ storyBinding: binding, capabilityProvider: async () => capabilityState, stateProvider: async () => ({ phase: "intake", missing: ["source/profile.json"] }) });
+    const model = await service.read({ bindingContext });
+    expect(model.phase).toBe("intake");
+    expect(model.gate).toBeNull();
+    expect(model.choices).toEqual([]);
+    await expect(service.confirm({ bindingContext, expected: expected(model), optionId: "format.web" })).rejects.toThrow("does not belong");
+  });
+
   it("loads the bound active gate without writing on read, focus, details, or cancellation", async () => {
     const before = await readFile(join(storyPath, "STORYBOARD.md"), "utf8");
     const model = await service().read({ bindingContext });
