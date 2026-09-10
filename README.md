@@ -107,54 +107,35 @@ delivery keeps the prior export intact until replacement completes.
 
 ## Credentials
 
-Splash has two credential paths:
+Credentials are stored through Engine's operating-system credential broker —
+never in MCP arguments, model context, committed files, or Splash's loopback
+pages. The Splash studio and setup page report the exact credential IDs, status,
+and provider links; neither accepts a secret.
 
-- **Indicator Labs / Engine:** the desktop app manages provider keys in the OS
-  credential store. Splash uses Engine for status and provider operations.
-- **Self-install from this repository:** Splash reads credentials from its
-  process environment. You choose where to store them: your agent configuration,
-  a password manager, a secret-store launcher, or a `.env` file. Engine is optional.
-
-For self-installs, we recommend a private `.env` file outside the checkout, such
-as `~/.config/splash/.env`, readable only by your account. That location is a
-recommendation, not a path Splash searches. Load any chosen file explicitly:
-
-```sh
-bun --env-file=/absolute/path/to/.env apps/goose/studio/open.mjs
-```
-
-Or inject environment variables with your preferred launcher and use
-`bun --no-env-file apps/goose/studio/open.mjs`. The MCP entry point is
-`apps/goose/server.mjs`; use the same environment-file argument or configure
-its environment through your agent. Bun's [environment-file documentation](https://github.com/oven-sh/bun/blob/main/docs/runtime/environment-variables.mdx)
-explains explicit file loading and default `.env` discovery.
-
-| Variable | Used for |
-| --- | --- |
-| `MAPTILER_KEY` | Map production, preview and the live tiles of published maps |
-| `DATAWRAPPER_TOKEN` | Datawrapper chart production |
-| `CLOUDFLARE_API_TOKEN` | Hosted embeds; grant Pages: Edit for the chosen account |
-| `CLOUDFLARE_ACCOUNT_ID` | Account used with the Cloudflare token |
-
-Only supply credentials for capabilities you use. Provider links appear in
-Readiness. Restart the self-managed MCP or studio after changing its environment;
-Refresh status rechecks the values already loaded by that process. Pass the same
-environment to the craft scripts your agent runs. Splash does not move or store
-self-managed credentials, and no browser or MCP input accepts key values.
-Keep values out of chat and version control.
-
-`SPLASH_BSIG_PATH` selects Engine-managed operation explicitly. Leave it unset
-for a self-install; having `bsig` somewhere on `PATH` does not select Engine.
+Indicator Labs users save credentials in the desktop app. For an open-source
+installation, a trusted local agent can prepare Engine's protected `bsig`
+stdin/keychain flow for the exact ID while the user enters the value only through
+a private operating-system or terminal prompt. Never place a value in chat,
+command arguments, shell history, a repository file, or a Splash page. Refresh
+Readiness after setup. Map craft's provider-bearing bake is a fixed Engine
+operation: each beat supplies a strict story-local `MAP-BAKE.json`, and Engine
+verifies camera, GeoJSON/data digests, managed browser, and installed runtime
+before hydrating `MAPTILER_KEY`.
 
 ## Install
 
 Two routes, one decision:
 
-- **Indicator Labs / Engine.** Managed installation, credentials, updates, and
-  repair through the desktop app or Engine CLI.
-- **Self-install.** Point your agent at this repository. Install the runtime and
-  skills, provide your chosen credential environment, and run Splash directly.
-  You manage dependencies, browser installation, and updates.
+- **Engine (supported).** Buried Signals Engine (`bsig`), directly or through
+  Indicator Labs, installs a catalog-pinned signed release with its dependency
+  and browser payload, projects the skills for every runtime it detects, keeps
+  provider keys in the OS keychain, and updates in place. Choose this for any
+  real story, and for every journalist install.
+- **Source (lighter).** A sparse clone plus per-skill links, described under
+  [Install from source](#install-from-source-agents). Skills load and preflight
+  runs, nothing else: no keys, no updates, no repair, Chrome is your problem,
+  and you still download Engine's `bsig` yourself to launch the studio. Choose this only when an agent or developer is working from a clone
+  and will re-link after every pull.
 
 Managed journalist install is Indicator Labs on Mac or Windows. Join at
 [buriedsignals.com/join](https://buriedsignals.com/join). Indicator Labs adds
