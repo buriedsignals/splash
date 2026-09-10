@@ -21,7 +21,7 @@ await materialise({
   storiesRoot,
   storyId: "story",
   outputId: "1-map",
-  env: { MAPTILER_DELIVERY_KEY: process.env.SPLASH_TEST_MAP_KEY ?? "" },
+  env: { MAPTILER_KEY: process.env.SPLASH_TEST_MAP_KEY ?? "" },
   handover,
   planVersion: TEST_PLAN_VERSION,
   findingIds: TEST_FINDING_IDS,

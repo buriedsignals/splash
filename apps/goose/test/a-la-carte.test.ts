@@ -285,11 +285,6 @@ describe("public readiness to selection capability adapter", () => {
       },
       credentials: [
         { id: "MAPTILER_KEY", state: "ready", generation: 2 },
-        {
-          id: "MAPTILER_DELIVERY_KEY",
-          state: "saved-unverified",
-          generation: 3,
-        },
         { id: "DATAWRAPPER_TOKEN", state: "not-saved", generation: 0 },
         {
           id: "CLOUDFLARE_API_TOKEN",

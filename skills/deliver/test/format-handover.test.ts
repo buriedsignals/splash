@@ -56,7 +56,7 @@ describe("formatHandover — what the journalist reads", () => {
         language,
         format: "web",
         files: ["/tmp/story/export/map.html", "keyed/map.html"],
-        liveTiles: "restricted",
+        liveTiles: "live",
       });
       expect(doc).toContain(`\`map.html\`** — ${recordRole}`);
       expect(doc).toContain(`\`keyed/map.html\`** — ${liveRole}`);
@@ -201,8 +201,8 @@ describe("formatHandover — a maintainer-facing sentence cannot pass through it
     ).toThrow(/not a state this hand-over knows/);
   });
 
-  it("should state the cost of a development key, in the journalist's own terms", () => {
-    const doc = formatHandover({ ...VALID, liveTiles: "development" });
+  it("should state the cost of the delivered key, in the journalist's own terms", () => {
+    const doc = formatHandover({ ...VALID, liveTiles: "live" });
     expect(doc).toContain("100% of its spending limit");
     expect(doc).toMatch(/\bbilled\b/);
     expect(doc).not.toMatch(/\bskills\//);
@@ -304,10 +304,10 @@ describe("formatHandover — written in the story's own language (A25, ruling R4
     );
   });
 
-  it("should state the cost of a development key in French, since it is the paragraph that costs them money", () => {
-    const doc = formatHandover({ ...FR, liveTiles: "development" });
+  it("should state the cost of the delivered key in French, since it is the paragraph that costs them money", () => {
+    const doc = formatHandover({ ...FR, liveTiles: "live" });
     expect(doc).toContain("100 % de son plafond de dépenses");
-    expect(doc).toContain("MAPTILER_DELIVERY_KEY");
+    expect(doc).toContain("Allowed HTTP origins");
     expect(doc).not.toContain("spending limit");
   });
 
@@ -348,8 +348,8 @@ describe("formatHandover — written in the story's own language (A25, ruling R4
   });
 
   // A state translated in one language and forgotten in another is a paragraph that DISAPPEARS —
-  // and for `development` it is the paragraph that tells a newsroom their key is readable by any
-  // reader and billable to them. MUTATION: delete `development` from `LIVE_TILES.fr` → red here.
+  // and for `live` it is the paragraph that tells a newsroom their key is readable by any
+  // reader and billable to them. MUTATION: delete `live` from `LIVE_TILES.fr` → red here.
   it("should carry the same live-tile states in every language it is written in", () => {
     const states = Object.keys(LIVE_TILES.en).sort();
     for (const [language, table] of Object.entries(LIVE_TILES)) {

@@ -384,7 +384,6 @@ async function openSession(controller: Awaited<ReturnType<typeof startSetupContr
 
 const CREDENTIAL_POLICIES = {
   MAPTILER_KEY: ["provider-request-required", "validate-before-atomic-replacement"],
-  MAPTILER_DELIVERY_KEY: ["saved-unverified-origin-attestation", "attest-before-atomic-replacement"],
   DATAWRAPPER_TOKEN: ["authenticated-account-request", "validate-before-atomic-replacement"],
   CLOUDFLARE_API_TOKEN: ["token-and-account-verified-pages-scope-attested", "validate-before-atomic-replacement"],
 } as const;
@@ -569,18 +568,18 @@ describe("protected setup Engine credential contract", () => {
     { name: "missing record", change: (data) => { data.keys.pop(); } },
     { name: "duplicate record", change: (data) => { data.keys.push(structuredClone(data.keys[0])); } },
     { name: "lower envelope version", change: (data) => { data.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
-    { name: "lower record version", change: (data) => { data.keys[3].metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
+    { name: "lower record version", change: (data) => { data.keys[2].metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
     { name: "wrong row storage", change: (data) => { data.keys[1].storageKind = "raw"; } },
     { name: "wrong metadata storage", change: (data) => { data.keys[2].metadata.storageKind = "raw"; } },
     {
       name: "missing validator",
       change: (data) => {
-        data.keys[3].validatable = false;
-        data.keys[3].metadata.validatorAvailable = false;
+        data.keys[2].validatable = false;
+        data.keys[2].metadata.validatorAvailable = false;
       },
     },
     { name: "wrong validator policy", change: (data) => { data.keys[0].metadata.validatorPolicy = "weaker-policy"; } },
-    { name: "wrong replacement policy", change: (data) => { data.keys[3].metadata.replacementBehavior = "replace-without-validation"; } },
+    { name: "wrong replacement policy", change: (data) => { data.keys[2].metadata.replacementBehavior = "replace-without-validation"; } },
     { name: "mismatched metadata identity", change: (data) => { data.keys[2].metadata.id = "MAPTILER_KEY"; } },
     { name: "malformed candidate bound", change: (data) => { data.keys[1].metadata.candidateMaxBytes = 0; } },
   ];

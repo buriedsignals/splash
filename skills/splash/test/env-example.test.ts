@@ -19,7 +19,6 @@ describe("the environment example", () => {
     expect(text).toContain("accepts values");
     expect(names(text)).toEqual([
       "MAPTILER_KEY",
-      "MAPTILER_DELIVERY_KEY",
       "DATAWRAPPER_TOKEN",
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_TOKEN",

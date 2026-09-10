@@ -110,7 +110,7 @@ the installed local MapLibre files. Outputs are immutable and digest-addressed b
 Never dispatch the fixed Europe or Potomac proof cameras for an unrelated story.
 
 **Engine owns the production credential names and values.** `MAPTILER_KEY`,
-`MAPTILER_DELIVERY_KEY`, `DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
+`DATAWRAPPER_TOKEN`, and `CLOUDFLARE_API_TOKEN` are the canonical IDs shown
 by Indicator Labs and reported as status in the Splash studio. Indicator Labs collects them for
 managed installations. In an open-source installation, a trusted local agent may prepare Engine's
 protected `bsig` stdin/keychain flow, but the journalist enters each value only through a private

@@ -682,6 +682,12 @@ key ever reaches a tracked file. Every map × web beat commits its own HTML and 
 an MIT open-source release: a key pushed to a public repository is found by scanners within minutes
 and survives in the history after any later removal.
 
+> **2026-09-10: one MapTiler key.** The separate origin-restricted delivery key described below was
+> retired to keep setup simple for journalists. `substituteKeys` reads `MAPTILER_KEY` only, the
+> hand-over states `live` / `unkeyed` / `none`, and a newsroom that wants origin restrictions applies
+> them to that one key in MapTiler Cloud (with `?` allowed so previews from its own computer keep
+> working). The paragraphs below are kept as the record of the earlier rule.
+
 **The delivered key IS `MAPTILER_DELIVERY_KEY`, a SECOND, origin-restricted key — never the
 development one, and there is no fallback to it.** MapTiler's documented mitigation for a
 client-side key is Allowed HTTP origins, enforced server-side — copied elsewhere it does not work —

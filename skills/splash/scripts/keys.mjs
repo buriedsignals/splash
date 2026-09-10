@@ -10,25 +10,17 @@
 // for its own ATELIER_*→SPLASH_* rename (`process.env.SPLASH_X ?? process.env.ATELIER_X`, canonical
 // first): read the canonical name first, fall back to each alias in order, so the canonical name
 // always wins when both happen to be set.
-// `MAPTILER_DELIVERY_KEY` is a SECOND MapTiler key, and it is deliberately not an alias of the
-// first — ruling R1b (`FEEDBACK-2026-08-10.md`): a map web beat ships live tiles, so the delivered
-// HTML carries a key, and the one it carries must be a dedicated origin-restricted key rather than
-// the development one. `deliver`'s `substituteKeys` already reads it before `MAPTILER_KEY`.
-// Historical aliases remain readable for an explicitly operated copied root, but no Splash setup
-// surface writes them.
-//
-// It has no probe. That is a decision, not an omission: MapTiler enforces an origin restriction
-// server-side against the request's own Origin, so a restricted key probed from a shell has no
-// origin to present and would answer 403 — a working key reported broken. A capability row that
-// lies is worse than no row, so direct legacy runs may read this key but never probe it;
-// `substituteKeys` is where its absence shows honestly.
+// One MapTiler key does everything (production rendering and the live tiles of the delivered
+// page). The separate origin-restricted `MAPTILER_DELIVERY_KEY` of ruling R1b was retired on
+// 2026-09-10 to keep setup simple; a newsroom that wants origin restrictions applies them to this
+// key in MapTiler Cloud (allowing `?` for previews from its own computer). Historical aliases remain
+// readable for an explicitly operated copied root, but no Splash setup surface writes them.
 //
 // `CMS_KIND` / `CMS_ENDPOINT` / `CMS_TOKEN` remain read-only copied-root compatibility. Splash
 // builds CMS insertion packages but has no live CMS operation or truthful token probe, so managed
 // setup does not register or collect a CMS token.
 const KEY_ALIASES = {
   MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
-  MAPTILER_DELIVERY_KEY: [],
   DATAWRAPPER_TOKEN: ["DATAWRAPPER_API_TOKEN"],
   CLOUDFLARE_API_TOKEN: [],
   CLOUDFLARE_ACCOUNT_ID: [],

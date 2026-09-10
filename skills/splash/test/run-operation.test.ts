@@ -609,7 +609,7 @@ await runOperation("datawrapper-produce", request, {
     await mkdir(join(beat, "renders"), { recursive: true });
     await writeFile(input, '<script>const key="__MAPTILER_KEY__"</script>');
     await approveCurrentOutput(beat);
-    process.env.MAPTILER_DELIVERY_KEY = "restricted-delivery-canary-12345";
+    process.env.MAPTILER_KEY = "restricted-delivery-canary-12345";
     const result = await runOperation("maptiler-delivery", {
       ...fixture.request,
       outputId: "map",
@@ -645,7 +645,7 @@ await runOperation("datawrapper-produce", request, {
     expect(JSON.stringify(result)).not.toContain(
       "restricted-delivery-canary-12345",
     );
-    expect(result.keyState).toBe("restricted");
+    expect(result.keyState).toBe("live");
   });
 
   test("rejects undeclared parameters and story escapes", async () => {

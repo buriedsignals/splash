@@ -334,8 +334,7 @@ it. An artifact that does carry the slot receives one of four `mapKeyState` valu
 | state | private/live behavior | committable behavior | what the hand-over says |
 | --- | --- | --- | --- |
 | `none` | no substitution | copied unchanged | nothing — it is not a map delivery |
-| `restricted` | `MAPTILER_DELIVERY_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; its key is restricted to newsroom domains |
-| `development` | `MAPTILER_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; the development key is readable and billed by usage, plus how to record a restricted key |
+| `live` | `MAPTILER_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; the key is readable and billed by usage, plus how to restrict it by origin in MapTiler Cloud |
 | `unkeyed` | no live page is produced | placeholder travels through | the baked layer works, but the map does not pan or zoom |
 
 The key-state recommendation does not itself block delivery. Custody checks do: owned-file delivery
