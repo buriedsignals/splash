@@ -245,6 +245,38 @@ export async function productionDependencies({
   };
 }
 
+/**
+ * End the server when the agent is gone. The SDK's stdio transport only
+ * closes on malformed input, and an open studio keeps the event loop alive,
+ * so without this the MCP process (and the studio's loopback listener) would
+ * outlive the agent until something killed the tree. Both the protocol close
+ * and stdin EOF close the studio and exit; the studio child closes on its
+ * own parent-EOF as well, so nothing listens after this returns.
+ */
+export function wireShutdown(server, studio, { stdin = process.stdin, exit = (code) => process.exit(code), signals = process } = {}) {
+  let done = false;
+  const shutdown = () => {
+    if (done) return;
+    done = true;
+    try {
+      studio.close();
+    } catch {
+      // closing is best effort; the process ends either way
+    }
+    setTimeout(() => exit(0), 250).unref?.();
+  };
+  stdin.on("end", shutdown);
+  stdin.on("close", shutdown);
+  const previous = server.server.onclose;
+  server.server.onclose = () => {
+    previous?.();
+    shutdown();
+  };
+  signals.on("SIGTERM", shutdown);
+  signals.on("SIGINT", shutdown);
+  return shutdown;
+}
+
 export async function main() {
   const dependencies = await productionDependencies();
   const server = createServer({
@@ -252,6 +284,7 @@ export async function main() {
     studio: dependencies.studio,
   });
   await server.connect(new StdioServerTransport());
+  wireShutdown(server, dependencies.studio);
   console.error(`Splash MCP server running on stdio (contract ${ENGINE_SPLASH_CONTRACT_MIN})`);
 }
 
