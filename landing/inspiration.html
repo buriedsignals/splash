@@ -3,15 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- LA CARTE DE PARTAGE. Ce qu'un lien vers Splash montre ailleurs : dans un
-     fil, un Slack, un message. Sans elle, l'URL arrive nue, et une page qui
-     parle de forme visuelle n'a pas le droit d'arriver sans la sienne.
-
-     L'IMAGE est laissée VIDE en attendant le visuel de partage. Une valeur
-     fausse serait PIRE qu'une valeur absente : un scraper suit ce qu'on lui
-     donne, et un lien mort dans `og:image` fait une carte cassée la ou
-     l'absence fait une carte sobre. Les balises restent en place, il n'y a
-     que l'URL a poser. -->
+<!-- Shared social card: social-card.svg is the source for social-card.png. -->
 <meta name="theme-color" content="#14141c">
 <meta name="description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
 <link rel="canonical" href="https://splash.buriedsignals.com/inspiration.html">
@@ -21,14 +13,16 @@
 <meta property="og:url" content="https://splash.buriedsignals.com/inspiration.html">
 <meta property="og:title" content="Splash Catalog">
 <meta property="og:description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
-<meta property="og:image" content="">
+<meta property="og:image" content="https://splash.buriedsignals.com/social-card.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Splash Catalog">
+<meta property="og:image:alt" content="Splash rosette and wordmark. An agent system for charts, maps and video.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Splash Catalog">
 <meta name="twitter:description" content="Visual stories from newsrooms worldwide. Search the gallery, or query it from your agent.">
-<meta name="twitter:image" content="">
+<meta name="twitter:image" content="https://splash.buriedsignals.com/social-card.png">
+<meta name="twitter:image:alt" content="Splash rosette and wordmark. An agent system for charts, maps and video.">
 <title>Splash Catalog</title>
 <!-- LA MARQUE EN ONGLET. La rosette elle-même, en SVG dans l'attribut :
      aucun fichier à servir, aucune requête, et elle reste nette à toutes les
