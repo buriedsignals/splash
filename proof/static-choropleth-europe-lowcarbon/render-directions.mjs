@@ -13,7 +13,7 @@
 //
 // Usage:  bun proof/static-choropleth-europe-lowcarbon/render-directions.mjs
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -25,13 +25,14 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { readPalette, mix } from "#shared/chart-beat/colour.mjs";
+import { readPalette, mix, contrast } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { resolveRegister } from "#shared/chart-beat/registers.mjs";
 import { makePlan, validatePlan } from "#shared/map-beat/plan.mjs";
 import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.mjs";
 import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
@@ -189,9 +190,22 @@ const span = Math.max(spanX, spanY);
  *  in three different places and nothing would go red. */
 const PLATE_SIZE = "1000x760";
 const plateDir = (id) => join(HERE, "plate", id);
+/** THE CACHE IS KEYED ON WHAT THE PLATE IS, NOT ON WHETHER A FILE IS THERE. It used to be existence
+ *  alone, and that is a cache that cannot be invalidated: re-tinting the basemap, or baking at
+ *  another size, left the old plate in place and the whole change appeared to work while nothing
+ *  moved. Every input the bake takes is already recorded in the plate's own `geometry.json`, so the
+ *  recorded values are what the cache compares. */
+function plateIsCurrent(dir, water, land) {
+  if (!existsSync(join(dir, "geometry.json")) || !existsSync(join(dir, "plate.png"))) return false;
+  const was = JSON.parse(readFileSync(join(dir, "geometry.json"), "utf8"));
+  const [width, height] = PLATE_SIZE.split("x").map(Number);
+  return (
+    was.frame?.width === width && was.frame?.height === height && was.water === water && was.land === land
+  );
+}
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  if (plateIsCurrent(dir, water, land)) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -202,24 +216,25 @@ function ensurePlate(id, water, land) {
   if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
 }
 
-/** The two tints a basemap is allowed on a directed plate, both derived from the direction and
- *  neither invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the
- *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour.
+/** THE TWO TINTS A BASEMAP IS ALLOWED, AND THEY ARE THE TRUNK'S — `#shared/map-beat/tints.mjs`,
+ *  the one definition, called by the bake and by the drawing alike.
  *
- *  THESE ARE THE PLATES' OWN TINTS AND THEY DO NOT MOVE HERE. `#shared/map-beat/tints.mjs` answers
- *  the same question differently — it takes the filed WATER hue rather than the accent, and hunts
- *  the smallest dose that separates sea from land by a measured 1.22:1 — and adopting it would
- *  re-bake three committed plates and change every render. That is a picture change, and this pass
- *  is a contract change: the swap belongs to the pass that re-bakes. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
-
+ *  The beat used to answer the question itself: the sea took a sixteenth of the ACCENT and the land
+ *  a fourteenth of the ink, both fixed doses. Measured, that put sea against land at 1.089:1 on
+ *  creme, 1.158 on nocturne and 1.092 on rapport — every one of them under the 1.22:1 the trunk
+ *  measured as the contrast at which a coastline stops reading as a coastline, and a reader looking
+ *  at the nocturne plate said exactly that: the sea and the countries cannot be told apart. The
+ *  trunk takes the filed WATER hue instead of the accent, and hunts the smallest dose that reaches
+ *  the floor while staying under `BASEMAP_MAX` against the page. */
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const direction = readDirection(join(DIRECTIONS, file));
+  const t = plateTints(direction);
+  console.log(
+    `${id}: sea ${t.water} on land ${t.land} — ${t.seaLandContrast.toFixed(3)}:1, ` +
+      `${contrast(t.water, direction.ground).toFixed(3)}:1 against the page`,
+  );
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
@@ -661,11 +676,10 @@ function layersFor(direction, g) {
   const coast = mix(direction.ground, ink, 0.22);
   const missingFill = mix(direction.ground, ink, 0.13);
   const waterHue = matchConvention("water").accent;
-  const waterInk = adjustToContrast(
-    waterHue,
-    mix(direction.ground, waterHue, 0.16),
-    TEXT_CONTRAST_MIN,
-  );
+  /** The sea the plate is actually baked in — `plateTints`, the same call the bake makes — so the
+   *  halo behind a sea's name is struck in the water the name sits in. */
+  const seaTint = plateTints(direction).water;
+  const waterInk = adjustToContrast(waterHue, seaTint, TEXT_CONTRAST_MIN);
   const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
 
   const axis = resolveRegister(direction, "axis");
@@ -788,7 +802,7 @@ function layersFor(direction, g) {
         seaNames,
         waterReg,
         waterInk,
-        mix(direction.ground, waterHue, 0.16),
+        seaTint,
         WATER_HALO,
       ),
       role: "water",

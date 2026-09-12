@@ -36,6 +36,7 @@ import {
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
 import { matchConvention } from "../../skills/palette/scripts/palette.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -465,7 +466,13 @@ export function DirectedChoroplethMap({
    *  ground, so it recedes on a pale page and on a dark one alike, and its contrast against the
    *  ground is checked rather than assumed. */
   const waterHue = matchConvention("water")!.accent;
-  const water = mix(direction.ground, waterHue, 0.16);
+  /** THE SEA IS THE PLATE'S OWN SEA, NOT A SECOND ANSWER TO THE SAME QUESTION. This used to be a
+   *  fixed sixteenth of the hue mixed into the ground, computed here and again in the runner that
+   *  bakes the plate; the two agreed only because both were the same literal. `plateTints` is the
+   *  one definition — it hunts the smallest dose that separates sea from land by the measured
+   *  1.22:1 floor — and a sea label's halo has to be struck in the colour the sea actually is, or
+   *  the word sits in a patch of a colour that is nowhere else on the map. */
+  const water = plateTints(direction).water;
   const waterInk = adjustToContrast(waterHue, water, TEXT_CONTRAST_MIN);
   if (contrast(water, direction.ground) > 1.6)
     throw new Error(
