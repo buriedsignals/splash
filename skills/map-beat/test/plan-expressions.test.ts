@@ -36,4 +36,25 @@ describe("the expression guard", () => {
       'layer "labels": "text-offset" is an array of expressions — MapLibre rejects it and the layer draws nothing',
     ]);
   });
+
+  // THE GUARD MUST REACH `paint` TOO. Two of the four pair properties — `text-translate` and
+  // `icon-translate` — are paint properties, not layout ones. Every case above reads `text-offset`
+  // out of `layout`, so dropping the `paint` half of the lookup would have left them all green while
+  // the two paint properties went unchecked.
+  it("should report a pair built from expressions in paint, not only in layout", () => {
+    const bad = {
+      id: "labels",
+      type: "symbol",
+      data: { type: "FeatureCollection", features: [] },
+      paint: {
+        "text-translate": [
+          ["get", "dx"],
+          ["get", "dy"],
+        ],
+      },
+    };
+    expect(validateExpressions({ layers: [bad] })).toEqual([
+      'layer "labels": "text-translate" is an array of expressions — MapLibre rejects it and the layer draws nothing',
+    ]);
+  });
 });
