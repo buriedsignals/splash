@@ -52,7 +52,14 @@ const X_TICK_DROP = 38;
 const X_AXIS_TO_SOURCE_GAP = 10;
 const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
-export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+/** THE ONE FONT STACK, AND IT IS THE TRUNK'S `DEFAULT_FONT_FAMILY` SPELLED AGAIN. A composition
+ *  cannot import `render-still.mjs` — it carries a native rasteriser no browser bundle can load —
+ *  so the value is a literal here, and a literal is a thing that drifts. It must not: every render
+ *  in this twin draws with `loadSystemFonts: false` from files `typefaces.mjs` fetches, and
+ *  Helvetica is a licensed face there is no file for, so a stack that LEADS with it measures and
+ *  draws nothing. Open Sans leads because it is redistributable, fetchable and served as map
+ *  glyphs; Helvetica and Arial stay behind it for the browser, which does its own falling back. */
+export const FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 
 // ===== CONFIG — edit for your story =====
 // Everything between here and the closing marker is this beat's own words and its own editorial

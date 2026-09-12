@@ -586,7 +586,10 @@ export function ChartFrame({
       key={key}
       style={{
         position: "absolute",
-        fontFamily: "Helvetica, Arial, sans-serif",
+        // The trunk's own default stack, spelled again because this file cannot import the
+        // rasteriser. It must LEAD with a family the ladder can fetch — Helvetica has no font
+        // file and every render here draws with `loadSystemFonts: false`.
+        fontFamily: "Open Sans, Helvetica, Arial, sans-serif",
         whiteSpace: "nowrap",
         ...style,
       }}
