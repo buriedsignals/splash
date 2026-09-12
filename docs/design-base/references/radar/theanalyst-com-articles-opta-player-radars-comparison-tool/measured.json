@@ -1,0 +1,693 @@
+{
+  "url": "https://theanalyst.com/articles/opta-player-radars-comparison-tool",
+  "archive": "url-list",
+  "family": "radar",
+  "id": "theanalyst-com-articles-opta-player-radars-comparison-tool",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Player Radars: Opta's Player Comparison Tool | Opta Analyst",
+    "ground": "rgb(247, 247, 247)",
+    "type": [
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 16 | 400 | normal | 0 | none",
+        "count": 32,
+        "sample": "Premier League",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 16 | 800 | normal | 0 | none",
+        "count": 15,
+        "sample": "Premier League",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lora",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lora | 16 | 400 | normal | 0 | none",
+        "count": 13,
+        "sample": "Compare players in seconds with the Opta Player Radars.",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 12 | 500 | normal | 1 | uppercase",
+        "count": 10,
+        "sample": "Jul 22, 2024",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 14 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "Privacy Policy",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 13 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Premier League 2026-27 Predictions",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 12 | 700 | normal | 0 | uppercase",
+        "count": 5,
+        "sample": "Football",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 24 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Chelsea Asked Questions; Arsenal Answered Them All",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 12 | 600 | normal | 1 | uppercase",
+        "count": 3,
+        "sample": "Peter McKeever",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 12 | 300 | normal | 1 | uppercase",
+        "count": 3,
+        "sample": "/ Author",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 11,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 11 | 800 | normal | 1 | uppercase",
+        "count": 2,
+        "sample": "LIVE",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "I agree to receive emails from Opta Analyst. See our for mor",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 3,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 16 | 800 | normal | 3 | uppercase",
+        "count": 1,
+        "sample": "Search",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 60,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 60 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Player Radars: Opta’s Player Comparison Tool",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Lora",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lora | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "explainer",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Lora",
+        "size": 16,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lora | 16 | 700 | italic | 0 | none",
+        "count": 1,
+        "sample": "Enjoy this? Subscribe to our football newsletter to receive ",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 24,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 24 | 500 | normal | 1 | uppercase",
+        "count": 1,
+        "sample": "Related Articles",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 42,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 42 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Big Shoulders Text | 16 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up and be the first to receive exclusive stats, news, a",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(10, 10, 10)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgba(255, 255, 255, 0.88)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgba(255, 255, 255, 0.88)",
+        "count": 2
+      },
+      {
+        "colour": "fill url(\"#a\")",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 768,
+      "ch": 96
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 1829,
+      "nearTheTop": false,
+      "x": 70,
+      "y": 1829,
+      "w": 1300,
+      "h": 1066,
+      "ratio": 1.22
+    },
+    "graphicFrame": {
+      "url": "https://dataviz.theanalyst.com/player-comparison-radars/",
+      "title": "Data Hub Player Radars Interactives - Craig Dawson this season",
+      "ground": "rgb(247, 247, 247)",
+      "type": [
+        {
+          "family": "Big Shoulders Text",
+          "size": 16,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "none",
+          "key": "Big Shoulders Text | 16 | 400 | normal | 0.6 | none",
+          "count": 19,
+          "sample": "Defender template. Percentile rank vs defenders with at leas",
+          "colors": [
+            "rgb(29, 10, 48)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 1.2,
+          "transform": "uppercase",
+          "key": "Big Shoulders Text | 14 | 400 | normal | 1.2 | uppercase",
+          "count": 9,
+          "sample": "goals",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 16,
+          "weight": "800",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "uppercase",
+          "key": "Big Shoulders Text | 16 | 800 | normal | 0.6 | uppercase",
+          "count": 4,
+          "sample": "Dan Burn",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 12,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "none",
+          "key": "Big Shoulders Text | 12 | 600 | normal | 0.6 | none",
+          "count": 4,
+          "sample": "2023/2024",
+          "colors": [
+            "rgb(128, 128, 128)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 12,
+          "weight": "800",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "uppercase",
+          "key": "Big Shoulders Text | 12 | 800 | normal | 0.6 | uppercase",
+          "count": 4,
+          "sample": "86.09 %",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 16,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "uppercase",
+          "key": "Big Shoulders Text | 16 | 400 | normal | 0.6 | uppercase",
+          "count": 3,
+          "sample": "search by player or team",
+          "colors": [
+            "rgb(29, 10, 48)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "IBM Plex Mono",
+          "size": 12,
+          "weight": "800",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "uppercase",
+          "key": "IBM Plex Mono | 12 | 800 | normal | 0 | uppercase",
+          "count": 2,
+          "sample": "player",
+          "colors": [
+            "rgb(128, 128, 128)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 18,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "none",
+          "key": "Big Shoulders Text | 18 | 600 | normal | 0.6 | none",
+          "count": 1,
+          "sample": "this season",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 18,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "none",
+          "key": "Big Shoulders Text | 18 | 400 | normal | 0.6 | none",
+          "count": 1,
+          "sample": "since 2019",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        },
+        {
+          "family": "Big Shoulders Text",
+          "size": 24,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0.6,
+          "transform": "none",
+          "key": "Big Shoulders Text | 24 | 700 | normal | 0.6 | none",
+          "count": 1,
+          "sample": "CRAIG DAWSON",
+          "colors": [
+            "rgb(29, 10, 48)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(0, 0, 0)",
+          "count": 28
+        },
+        {
+          "colour": "fill rgb(229, 32, 47)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgb(250, 165, 26)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgb(158, 7, 174)",
+          "count": 3
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F7F7F7",
+      "share": 0.5622391398470198,
+      "h": 268.57404022065236,
+      "s": 0.00008510335078461281,
+      "l": 0.9676496596936922,
+      "chroma": 0.000005506244718178621
+    },
+    "chromatic": [
+      {
+        "hex": "#EB5863",
+        "share": 0.04255520277096262,
+        "h": 355.51020252789584,
+        "s": 0.7860969113174195,
+        "l": 0.6333337655683575,
+        "chroma": 0.576470388742206
+      },
+      {
+        "hex": "#FBBB53",
+        "share": 0.028513494010679753,
+        "h": 37.16075292433338,
+        "s": 0.9545460035648614,
+        "l": 0.6548977924925095,
+        "chroma": 0.6588318659953731
+      },
+      {
+        "hex": "#B645C2",
+        "share": 0.022210275653052388,
+        "h": 294.2399913917301,
+        "s": 0.5060739320948138,
+        "l": 0.5156762090781275,
+        "chroma": 0.49020729055779694
+      },
+      {
+        "hex": "#FE7AAE",
+        "share": 0.0023358348968105067,
+        "h": 336.36365338526065,
+        "s": 0.9850739386449885,
+        "l": 0.7372670167850891,
+        "chroma": 0.5176228291749199
+      },
+      {
+        "hex": "#F5ACB1",
+        "share": 0.0005137826526194256,
+        "h": 355.8765584115746,
+        "s": 0.7849936567389596,
+        "l": 0.8176580744657413,
+        "chroma": 0.28627450980392155
+      },
+      {
+        "hex": "#DBA2E1",
+        "share": 0.00032183576273632557,
+        "h": 294.2726981528277,
+        "s": 0.5123730328063167,
+        "l": 0.7589158533368504,
+        "chroma": 0.24705003077464172
+      },
+      {
+        "hex": "#FDDDA9",
+        "share": 0.000308846875451003,
+        "h": 37.20460614152201,
+        "s": 0.9545454545454547,
+        "l": 0.8274509803921568,
+        "chroma": 0.3294117647058824
+      },
+      {
+        "hex": "#F0828A",
+        "share": 0.000225140712945591,
+        "h": 355.6342337616925,
+        "s": 0.7858075152847427,
+        "l": 0.7255467571644042,
+        "chroma": 0.4313348416289593
+      },
+      {
+        "hex": "#FCCC7E",
+        "share": 0.00021143022081108385,
+        "h": 37.194996480207934,
+        "s": 0.9545642510079605,
+        "l": 0.7410693970420933,
+        "chroma": 0.4943317941511076
+      },
+      {
+        "hex": "#C874D1",
+        "share": 0.00018256602684370039,
+        "h": 294.1940419021716,
+        "s": 0.5027239515457089,
+        "l": 0.6372394016895295,
+        "chroma": 0.36473688289545064
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F7F7F7",
+        "share": 0.5622391398470198,
+        "h": 268.57404022065236,
+        "s": 0.00008510335078461281,
+        "l": 0.9676496596936922,
+        "chroma": 0.000005506244718178621
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.3168696781642373,
+        "h": 324.2942050524564,
+        "s": 0.16119760479193546,
+        "l": 0.9999627149216849,
+        "chroma": 0.000012020530637757432
+      },
+      {
+        "hex": "#1D0A30",
+        "share": 0.0072622312021936785,
+        "h": 270.000470684218,
+        "s": 0.6550699911611749,
+        "l": 0.11374029739081642,
+        "chroma": 0.14901571121294305
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.0015442343772550152,
+        "h": 273.50649350648985,
+        "s": 0.003271861986912624,
+        "l": 0.8274949606010629,
+        "chroma": 0.0011288253619204935
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.0008110838504834753,
+        "h": 270.6122448979715,
+        "s": 0.0008533909227074736,
+        "l": 0.7996720396343591,
+        "chroma": 0.000341916125881081
+      },
+      {
+        "hex": "#828282",
+        "share": 0.0005974888151248376,
+        "h": 0,
+        "s": 0,
+        "l": 0.5092545230652648,
+        "chroma": 0
+      },
+      {
+        "hex": "#29163B",
+        "share": 0.00038822340886130754,
+        "h": 270.5981175994333,
+        "s": 0.45475883652430044,
+        "l": 0.15837889058969312,
+        "chroma": 0.14404840002915664
+      },
+      {
+        "hex": "#3D2C4D",
+        "share": 0.00036801847308413915,
+        "h": 269.53263157894736,
+        "s": 0.2681581366840331,
+        "l": 0.2383583237216455,
+        "chroma": 0.12783544790465204
+      },
+      {
+        "hex": "#ECEBED",
+        "share": 0.0003535863761004474,
+        "h": 270.3880597014918,
+        "s": 0.05338078291814905,
+        "l": 0.9246618647458984,
+        "chroma": 0.008043217286914706
+      },
+      {
+        "hex": "#9C93A4",
+        "share": 0.0003362678597200173,
+        "h": 270.39243621292576,
+        "s": 0.08318160761034692,
+        "l": 0.6094378523941766,
+        "chroma": 0.06497517461920399
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 356,
+        "share": 0.045974888151248366,
+        "size": 13
+      },
+      {
+        "hue": 37,
+        "share": 0.029214172319237983,
+        "size": 6
+      },
+      {
+        "hue": 294,
+        "share": 0.0227947755808919,
+        "size": 5
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 1385800
+  }
+}

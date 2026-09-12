@@ -159,7 +159,7 @@ describe("a refusal travels whole", () => {
   }
 
   it("should carry flow-map's many-to-many refusal, which is its second sentence", () => {
-    const refusal = refusalCell("Flow map (route)");
+    const refusal = refusalCell("Flow map (route — and origin-destination)");
     expect(refusal).toContain("not a many-to-many flow");
     expect(refusal).toContain("OD flow diagram");
   });

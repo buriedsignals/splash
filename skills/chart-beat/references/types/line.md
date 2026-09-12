@@ -70,3 +70,11 @@ line is which, which means it is the one thing that must never be allowed to ove
 illegibility. If two lines are going to land within a label's height of each other, nudge the
 labels apart — up and down, not sideways off the line's actual endpoint — rather than letting them
 print on top of one another and silently removing the one cue a colourblind reader had left.
+
+## The worked example in this tree
+
+`proof/co2-suisse` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

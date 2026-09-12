@@ -44,3 +44,11 @@ happens to be. Category labels have their own version of the same problem when t
 enough to need rotating — truncate from the end (keep the readable start), and give the rotated
 label a bounded strip of vertical room rather than letting a long name push the whole plot area
 around or run into the source line underneath it.
+
+## The worked example in this tree
+
+`proof/static-germany-electricity-bridge` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

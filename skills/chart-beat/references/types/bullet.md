@@ -50,3 +50,11 @@ in an accent hue measured under the text-contrast floor. The target tick needs e
 both the bar's fill and the neutral backdrop behind it to register as a distinct mark at a glance —
 a white halo behind the tick is the reliable way to guarantee that regardless of which colour zone the
 tick happens to cross.
+
+## The worked example in this tree
+
+`proof/static-bullet-low-carbon-share` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

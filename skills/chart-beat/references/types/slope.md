@@ -65,3 +65,11 @@ specifically because there's already an accent colour doing visual work there �
 line's end-value label in that same accent hue is exactly the move that has previously failed WCAG
 contrast in this codebase. Keep every value label in the page's neutral ink; let the line itself, not
 its printed number, carry the accent.
+
+## The worked example in this tree
+
+`proof/static-slope-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

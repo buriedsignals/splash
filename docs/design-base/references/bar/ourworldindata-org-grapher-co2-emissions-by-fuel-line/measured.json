@@ -1,0 +1,485 @@
+{
+  "url": "https://ourworldindata.org/grapher/co2-emissions-by-fuel-line?tab=discrete-bar",
+  "archive": "url-list",
+  "family": "bar",
+  "id": "ourworldindata-org-grapher-co2-emissions-by-fuel-line",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "CO₂ emissions by fuel or industry, World, 2024",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0.13 | none",
+        "count": 253,
+        "sample": "Search for a country or region",
+        "colors": [
+          "rgb(161, 161, 161)",
+          "rgb(78, 78, 78)",
+          "rgb(118, 118, 118)",
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 400 | normal | 0 | none",
+        "count": 194,
+        "sample": "Adjusted net savings per capita",
+        "colors": [
+          "rgb(16, 89, 229)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 500 | normal | 0 | none",
+        "count": 32,
+        "sample": "Browse by topic",
+        "colors": [
+          "rgb(219, 229, 240)",
+          "rgb(255, 255, 255)",
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14.4 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "Stacked area chart",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "15.8 billion t",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Coal",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.2 | uppercase",
+        "count": 6,
+        "sample": "Choose a country or region",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "1750",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "capitalize",
+        "key": "Lato | 13 | 500 | normal | 0.13 | capitalize",
+        "count": 3,
+        "sample": "Table",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 17.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 17.6 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "CO₂ and Greenhouse Gas Emissions",
+        "colors": [
+          "rgb(16, 89, 229)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 25,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 25 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "CO₂ emissions by fuel or industry",
+        "colors": [
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "World, 2024",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Data source:",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Related research and data",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18.7 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Charts",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data is free and accessible for everyone.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Help us do this work by making a donation.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(219, 229, 240)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(76, 106, 156)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(161, 161, 161)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(91, 91, 91)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(118, 118, 118)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(87, 114, 145)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(0, 33, 71)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(206, 38, 30)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(152, 169, 189)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 519,
+      "ch": 74
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 212,
+      "nearTheTop": true,
+      "x": 234,
+      "y": 212,
+      "w": 729,
+      "h": 454,
+      "ratio": 1.61
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7873316292307971,
+      "h": 219.99999999999997,
+      "s": 0.00216138328766332,
+      "l": 0.9999791114542371,
+      "chroma": 9.029630743118133e-8
+    },
+    "chromatic": [
+      {
+        "hex": "#7088B0",
+        "share": 0.19233395575376322,
+        "h": 217.5,
+        "s": 0.2882882882882883,
+        "l": 0.5647058823529412,
+        "chroma": 0.25098039215686274
+      },
+      {
+        "hex": "#92A5C3",
+        "share": 0.002655861931437066,
+        "h": 216.75742229243133,
+        "s": 0.28982131074693984,
+        "l": 0.668683218452341,
+        "chroma": 0.1920453278012001
+      },
+      {
+        "hex": "#7E94B8",
+        "share": 0.00043811146764320203,
+        "h": 217.24137931034483,
+        "s": 0.29,
+        "l": 0.607843137254902,
+        "chroma": 0.22745098039215683
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7873316292307971,
+        "h": 219.99999999999997,
+        "s": 0.00216138328766332,
+        "l": 0.9999791114542371,
+        "chroma": 9.029630743118133e-8
+      },
+      {
+        "hex": "#F2F4F8",
+        "share": 0.002664926306629684,
+        "h": 219.99999999999983,
+        "s": 0.30000000000000054,
+        "l": 0.9607843137254901,
+        "chroma": 0.02352941176470591
+      },
+      {
+        "hex": "#C2CCDD",
+        "share": 0.002655861931437066,
+        "h": 217.77777777777774,
+        "s": 0.28421052631578964,
+        "l": 0.8137254901960784,
+        "chroma": 0.10588235294117654
+      },
+      {
+        "hex": "#EDEDED",
+        "share": 0.001891432956859617,
+        "h": 0,
+        "s": 0,
+        "l": 0.9277391467769217,
+        "chroma": 0
+      },
+      {
+        "hex": "#98A6BE",
+        "share": 0.0008822658520814827,
+        "h": 217.89473684210526,
+        "s": 0.22619047619047622,
+        "l": 0.6705882352941177,
+        "chroma": 0.14901960784313728
+      },
+      {
+        "hex": "#DDDDDD",
+        "share": 0.0008701800184913254,
+        "h": 0,
+        "s": 0,
+        "l": 0.8671432461873638,
+        "chroma": 0
+      },
+      {
+        "hex": "#5C5C5C",
+        "share": 0.0007644289745774491,
+        "h": 0,
+        "s": 0,
+        "l": 0.3615128264744633,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.0006163775130980222,
+        "h": 0,
+        "s": 0,
+        "l": 0.9537677816224529,
+        "chroma": 0
+      },
+      {
+        "hex": "#636363",
+        "share": 0.0005347981363644604,
+        "h": 0,
+        "s": 0,
+        "l": 0.38717181787969424,
+        "chroma": 0
+      },
+      {
+        "hex": "#6B6B6B",
+        "share": 0.0005106264691841458,
+        "h": 0,
+        "s": 0,
+        "l": 0.4188885021464207,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 218,
+        "share": 0.1954279291528435,
+        "size": 3
+      }
+    ],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 330966
+  }
+}

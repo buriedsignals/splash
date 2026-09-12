@@ -1,0 +1,750 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/top-500-passwords-visualized/",
+  "archive": "informationisbeautiful",
+  "family": "ranking",
+  "id": "informationisbeautiful-net-visualizations-top-500-passwords-visualized",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Top 500 Most Common Passwords Visualized — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 23,
+        "sample": "Interactive visualization by .",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 9,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "multiple data breaches, Xato.net, TroyHunt.com, Nordpass,",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "World’s Biggest Data Breaches & Hacks",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": ": added five more data breaches including : removed duplicat",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "CHANGE LOG",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Most common passwords, deep-mined from 20 separate . Is your",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "The world's most contagious falsehoods - debunked",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "analysis",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Learn to Create Impactful Infographics",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 28,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "Quicksand | 28 | 500 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "Our monthly newsletter. Never miss another beautiful graphic",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 28,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "Quicksand | 28 | 400 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "Sign up Now!",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 958,
+      "ratio": 1.44
+    },
+    "graphicFrame": {
+      "url": "https://vizsweet.com/api/embed/c20e8618cadc60f6",
+      "title": "VizSweet",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Rubik",
+          "size": 9,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 9 | 400 | normal | 0 | none",
+          "count": 248,
+          "sample": "surfer",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 19,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 19 | 400 | normal | 0 | none",
+          "count": 124,
+          "sample": "slayer",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 29,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 29 | 400 | normal | 0 | none",
+          "count": 67,
+          "sample": "1q2w3e",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 39,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 39 | 400 | normal | 0 | none",
+          "count": 30,
+          "sample": "asshole",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 49,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 49 | 400 | normal | 0 | none",
+          "count": 18,
+          "sample": "qwertyuiop",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 16,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 16 | 400 | normal | 0 | none",
+          "count": 12,
+          "sample": "alphanumeric",
+          "colors": [
+            "rgb(242, 242, 242)",
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 59,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 59 | 400 | normal | 0 | none",
+          "count": 10,
+          "sample": "letmein",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 70,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Rubik | 70 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "password",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 45.2,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 45.2 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "Most Common Passwords",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 25.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 25.8 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Is yours here?",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 14.8,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 14.8 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "select a category below to filter",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 15.9,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 15.9 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "David McCandless",
+          "colors": [
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 15.9,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 15.9 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "Information is Beautiful",
+          "colors": [
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 16,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 16 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "source:",
+          "colors": [
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 11,
+          "weight": "300",
+          "style": "normal",
+          "tracking": 0.5,
+          "transform": "uppercase",
+          "key": "Rubik | 11 | 300 | normal | 0.5 | uppercase",
+          "count": 1,
+          "sample": "Made with",
+          "colors": [
+            "rgb(242, 242, 242)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(242, 242, 242)",
+          "count": 2
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#000000",
+      "share": 0.539674291246861,
+      "h": 25.088557704150794,
+      "s": 0.13151031964831236,
+      "l": 0.0016966654126480977,
+      "chroma": 0.00044625802150717424
+    },
+    "chromatic": [
+      {
+        "hex": "#3B0E0C",
+        "share": 0.007123838915615261,
+        "h": 2.5477763946282126,
+        "s": 0.6653764080449087,
+        "l": 0.14000620422303559,
+        "chroma": 0.1863136505398507
+      },
+      {
+        "hex": "#531411",
+        "share": 0.006201022661946688,
+        "h": 2.5941382786613802,
+        "s": 0.6658962734818644,
+        "l": 0.196315935498376,
+        "chroma": 0.2614520997469493
+      },
+      {
+        "hex": "#5B1512",
+        "share": 0.005563371758797011,
+        "h": 2.5274502322031815,
+        "s": 0.6652389743894541,
+        "l": 0.21529891630343503,
+        "chroma": 0.2864504605377161
+      },
+      {
+        "hex": "#4A110F",
+        "share": 0.004859157060300747,
+        "h": 2.6327079289019397,
+        "s": 0.6676243055373854,
+        "l": 0.17498260200717897,
+        "chroma": 0.2336452762923351
+      },
+      {
+        "hex": "#45100E",
+        "share": 0.0047146833681280444,
+        "h": 2.7026094886244105,
+        "s": 0.6653106465726787,
+        "l": 0.1617733568640034,
+        "chroma": 0.21525907330684557
+      },
+      {
+        "hex": "#6B1915",
+        "share": 0.004484735711476204,
+        "h": 2.5875944087254696,
+        "s": 0.6663831301903532,
+        "l": 0.25271530099643164,
+        "chroma": 0.33681042664999883
+      },
+      {
+        "hex": "#7B1D19",
+        "share": 0.004263108529242686,
+        "h": 2.590679351197399,
+        "s": 0.6664457814722458,
+        "l": 0.2903328045199627,
+        "chroma": 0.3869821455906706
+      },
+      {
+        "hex": "#8C211C",
+        "share": 0.0036874829808477808,
+        "h": 2.5472499273926426,
+        "s": 0.6661140429283344,
+        "l": 0.32849069884364007,
+        "chroma": 0.43762453494218206
+      },
+      {
+        "hex": "#94231E",
+        "share": 0.0036632779643581133,
+        "h": 2.555139146957243,
+        "s": 0.6664202563289368,
+        "l": 0.34723575162049125,
+        "chroma": 0.4628098772029976
+      },
+      {
+        "hex": "#621714",
+        "share": 0.0031179086865752927,
+        "h": 2.5193296172518753,
+        "s": 0.6665220230272674,
+        "l": 0.23020806575905473,
+        "chroma": 0.3068774914138387
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#000000",
+        "share": 0.539674291246861,
+        "h": 25.088557704150794,
+        "s": 0.13151031964831236,
+        "l": 0.0016966654126480977,
+        "chroma": 0.00044625802150717424
+      },
+      {
+        "hex": "#0A0B0C",
+        "share": 0.019484281867417023,
+        "h": 187.3445061382507,
+        "s": 0.0708227357180222,
+        "l": 0.04219884312279203,
+        "chroma": 0.005977275028183557
+      },
+      {
+        "hex": "#0B0303",
+        "share": 0.015324044658255423,
+        "h": 5.5476204622422935,
+        "s": 0.6135356215916713,
+        "l": 0.026551065660481085,
+        "chroma": 0.03258004914784908
+      },
+      {
+        "hex": "#0C130B",
+        "share": 0.011116910229645094,
+        "h": 114.61142679682057,
+        "s": 0.2660139547864918,
+        "l": 0.059752757332095244,
+        "chroma": 0.0317901345746164
+      },
+      {
+        "hex": "#130504",
+        "share": 0.009946748963722732,
+        "h": 2.6741998098558057,
+        "s": 0.6591682061793755,
+        "l": 0.045683143219264886,
+        "chroma": 0.060225751136956676
+      },
+      {
+        "hex": "#152315",
+        "share": 0.00920773955402257,
+        "h": 118.56815190407696,
+        "s": 0.26477105797551104,
+        "l": 0.10954217224555146,
+        "chroma": 0.058007193676780644
+      },
+      {
+        "hex": "#121215",
+        "share": 0.007843938156182869,
+        "h": 231.2272781275989,
+        "s": 0.0630287025088174,
+        "l": 0.07575150793200597,
+        "chroma": 0.009549038516081451
+      },
+      {
+        "hex": "#2B0A09",
+        "share": 0.007815194699101389,
+        "h": 2.658659362933557,
+        "s": 0.6627077593719528,
+        "l": 0.10256902218882132,
+        "chroma": 0.13594657375145178
+      },
+      {
+        "hex": "#1B0606",
+        "share": 0.007795528123203534,
+        "h": 2.5774188538592973,
+        "s": 0.6648229272681683,
+        "l": 0.06449412677937466,
+        "chroma": 0.08575434831413645
+      },
+      {
+        "hex": "#060A06",
+        "share": 0.0076276058213064655,
+        "h": 115.07548526240113,
+        "s": 0.26833251884050524,
+        "l": 0.030239323019965625,
+        "chroma": 0.0162283874279581
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 3,
+        "share": 0.07067486611600254,
+        "size": 23
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1322040
+  }
+}

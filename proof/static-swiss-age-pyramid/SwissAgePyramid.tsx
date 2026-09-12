@@ -20,6 +20,8 @@ import {
   measureText,
   measureTextBand,
   FONT_FAMILY,
+  adjustToContrast,
+  TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
@@ -489,39 +491,42 @@ export function SwissAgePyramid({
         </text>
       ))}
 
-      {/* The two legend entries are placed against the pyramid's OWN centre channel, mirrored, not
-          parked at centreX − 220 and centreX + 40. Those were 900px-frame offsets: on a 1920px
-          frame they would have put "Men" a fifth of the way across the plot from a spine that had
-          moved. */}
+      {/* EACH HALF IS NAMED IN WORDS, ON ITS OWN HALF. NO SWATCH.
+          Measured across the population-pyramid harvest (2026-09-08), `name-each-half-in-words`,
+          four publications for and one against. PopulationPyramid.net sets `Male` / `Female` at the
+          head of each half; Our World in Data sets `Men` / `Women` at the foot of each half across
+          nine series **with no legend anywhere on the plate**; ONS writes `Male` / `Female` once per
+          panel, and on its other plate `Males` / `Females` small and grey beside the gutter. The one
+          publication that keys its halves with a swatch legend is also the only record in the family
+          whose halves carry no other identification at all.
+
+          The reasoning the corpus supplies: colour distinguishes the halves, it does not have to
+          IDENTIFY them, because the mirrored position already does. A swatch spends a mark saying
+          what the word beside it already says.
+
+          The word is painted in its own half's ink rather than in the page's, which is what makes
+          the swatch redundant instead of merely absent — and both hues were measured against the
+          text floor on this ground before this change was made. */}
       {[
         { label: "Men", fill: maleInk, side: -1 },
         { label: "Women", fill: femaleInk, side: 1 },
       ].map((entry) => {
-        const entryWidth =
-          T.LEGEND_SWATCH_TO_TEXT + measureText(entry.label, T.LEGEND);
-        const swatchX =
+        const entryWidth = measureText(entry.label, T.LEGEND);
+        const x =
           entry.side < 0
             ? centerX - bandGutter / 2 - T.LEGEND_ENTRY_GAP - entryWidth
             : centerX + bandGutter / 2 + T.LEGEND_ENTRY_GAP;
         return (
-          <g key={entry.label}>
-            <rect
-              x={swatchX}
-              y={legendBaseline - T.LEGEND_SWATCH_RISE}
-              width={T.LEGEND_SWATCH}
-              height={T.LEGEND_SWATCH}
-              fill={entry.fill}
-            />
-            <text
-              x={swatchX + T.LEGEND_SWATCH_TO_TEXT}
-              y={legendBaseline}
-              fill={ink}
-              fontSize={T.LEGEND.fontSize}
-              fontWeight={T.LEGEND.fontWeight}
-            >
-              {entry.label}
-            </text>
-          </g>
+          <text
+            key={entry.label}
+            x={x}
+            y={legendBaseline}
+            fill={adjustToContrast(entry.fill, ground, TEXT_CONTRAST_MIN)}
+            fontSize={T.LEGEND.fontSize}
+            fontWeight={T.LEGEND.fontWeight}
+          >
+            {entry.label}
+          </text>
         );
       })}
 

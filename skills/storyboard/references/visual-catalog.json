@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "splash.visual-catalog",
-  "catalogRevision": "sha256:a2fee6fd4f6f612d60b765b6a6425af92e3eeae3e09974912ac32bf842df7ebf",
+  "catalogRevision": "sha256:c7794547c9ee3c2b204dba820b65e41a0598644a27f4931751dcafb074da56b4",
   "mediums": [
     {
       "id": "chart",
@@ -784,7 +784,9 @@
       ],
       "state": "selectable",
       "purpose": "A beeswarm shows every raw observation on one shared value axis, with no aggregation and no overlap — the \"show your data\" distribution chart.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.boxplot",
@@ -830,7 +832,9 @@
       ],
       "state": "selectable",
       "purpose": "A bullet chart answers \"did this hit its target\" for one or more measures, each on its own row: a single bar grows from zero to the actual value, a tick mark shows the target it was measured against, and a neutral backdrop can carry qualitative zones (poor / ok / good) behind the bar.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.bump",
@@ -877,7 +881,9 @@
       ],
       "state": "selectable",
       "purpose": "A calendar heatmap answers \"when, across a real calendar, did this value run high or low\" by laying one cell per day into a fixed weekday-by-week grid and colouring each cell by its value — the same value-to-colour idea as a matrix heatmap, but with the grid's structure fixed to the calendar itself rather than free to be any two categorical axes.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.connected-scatter",
@@ -898,7 +904,9 @@
       ],
       "state": "selectable",
       "purpose": "A connected scatter answers \"what path did these two measures trace together, over time\" — unlike a plain scatter, whose points have no inherent order, here each point IS ordered (usually by time) and the points are joined into a single path, so loops, reversals, and doubling-back all become visible shapes instead of a static cloud.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.diverging-bar",
@@ -945,7 +953,9 @@
       ],
       "state": "selectable",
       "purpose": "A diverging stacked bar answers \"how did opinion split, for many items at once, when the response scale itself has a neutral middle\" — a survey's strongly-disagree-to-strongly-agree results, one row per question, segments stacked outward from a shared centre instead of from a shared zero.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.dot-strip",
@@ -967,7 +977,9 @@
       ],
       "state": "selectable",
       "purpose": "A dot strip lays one horizontal lane per category and marks every raw observation in that category as a dot positioned by its own value, with a small deterministic jitter and enough transparency that overlapping points still show through each other — plus one neutral tick per lane marking that category's mean.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.dumbbell",
@@ -1013,7 +1025,9 @@
       ],
       "state": "selectable",
       "purpose": "A Gantt chart draws each item as a bar spanning its own start to its own end on one shared, to-scale time axis, one row per item — answering \"when did this happen, how long did it take, and what overlapped with what.\" That's a job a plain event timeline can't do: a timeline of instants can show WHEN something happened but has no way to show DURATION or overlap between concurrent items; a Gantt bar's length is specifically standing in for elapsed time, which is the one thing this type exists to make visible.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.grouped-bar",
@@ -1161,7 +1175,9 @@
       ],
       "state": "selectable",
       "purpose": "A Marimekko shows two nested part-to-whole proportions at once: column WIDTH encodes each group's share of the grand total, and the segments stacked inside each column encode that group's own internal composition — so a single cell's AREA is the joint share, group-size × internal-split, in one glance.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.parallel-coordinates",
@@ -1183,7 +1199,9 @@
       ],
       "state": "selectable",
       "purpose": "Parallel coordinates lay several variables out as parallel vertical axes, each keeping its OWN independent scale, with one item drawn as a single polyline crossing every axis in turn — so the crossing pattern of many items' lines reveals trade-offs a table of the same numbers hides: an item that's high on one axis and low on the next shows up as a visibly steep diagonal, and a cluster of similarly-shaped items shows up as a bundle of near-parallel lines.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.pictogram",
@@ -1204,7 +1222,9 @@
       ],
       "state": "selectable",
       "purpose": "A pictogram states a magnitude as a countable row of equal-size icons, where ONE icon always stands for a stated number of units and count — never icon size — carries the value.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.pie-and-donut",
@@ -1225,7 +1245,9 @@
       ],
       "state": "selectable",
       "purpose": "A pie (or donut — same chart, a hole in the middle and a total in it) answers exactly one question: of a fixed whole, what share does each part hold, when there are few enough parts that the reader can hold all of them in view at once.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.population-pyramid",
@@ -1272,7 +1294,9 @@
       ],
       "state": "selectable",
       "purpose": "A radar chart plots several variables as axes radiating from a shared centre, each on the SAME radial scale, with one item's readings across all axes joined into a closed polygon — so the shape of that polygon is the read: a balanced item draws a regular shape, a lopsided one draws a spiky or lobsided one.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.sankey",
@@ -1294,7 +1318,9 @@
       ],
       "state": "selectable",
       "purpose": "A sankey diagram answers \"how does a quantity flow and split as it moves through a sequence of stages\" — energy from source to sector, users from signup to churn, a budget from allocation to spend — with each stage laid out as its own column of nodes and ribbons flowing between them whose THICKNESS is proportional to the amount flowing.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.scatter",
@@ -1418,7 +1444,9 @@
       ],
       "state": "selectable",
       "purpose": "A streamgraph shows many overlapping time series stacked with no fixed baseline — bands can wiggle up and down around a shifting centre rather than growing from a flat zero line — so the READ is the overall rhythm and relative flow of many series at once, not the exact value of any one band at any one point.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.treemap",
@@ -1440,7 +1468,9 @@
       ],
       "state": "selectable",
       "purpose": "A treemap answers \"how does a total break down, when the pieces ALSO belong to groups worth keeping together\" — area encodes each item's value, and items sharing a group are laid out as contiguous tiles, so the group itself reads as a visible region of the frame, not just a shared colour scattered across the page.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "chart.waterfall",
@@ -1471,7 +1501,7 @@
     {
       "id": "map.cartogram",
       "medium": "map",
-      "label": "Cartogram",
+      "label": "Cartogram (area distortion — and tile cartogram)",
       "reference": "map-beat/references/types/cartogram.md",
       "dataShape": {
         "summary": "Region geometry, adjacency that matters to the story, and a non-negative value used to distort area.",
@@ -1488,7 +1518,9 @@
       ],
       "state": "selectable",
       "purpose": "A cartogram answers \"how big is this region's VALUE,\" honestly, by distorting each region's own area to be proportional to a number — trading recognisable geography for magnitude a reader can compare at a glance.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "map.choropleth",
@@ -1536,10 +1568,11 @@
         "video",
         "scrolly"
       ],
-      "state": "proof-only",
-      "disabledReason": "The doctrine reference is retained, but Splash has no shipped contour/isoline implementation; choose a supported map treatment instead.",
+      "state": "selectable",
       "purpose": "A contour (isoline) map answers \"where does this continuous field cross a given value\" — elevation, temperature, air pressure, rainfall, travel-time-from-a-point — by drawing lines that connect every point sharing the same value, the way topographic elevation lines do.",
-      "proofFormats": []
+      "proofFormats": [
+        "static"
+      ]
     },
     {
       "id": "map.dot-density",
@@ -1572,7 +1605,7 @@
     {
       "id": "map.flow-map",
       "medium": "map",
-      "label": "Flow map (route)",
+      "label": "Flow map (route — and origin-destination)",
       "reference": "map-beat/references/types/flow-map.md",
       "dataShape": {
         "summary": "One ordered route geometry or waypoint sequence whose path and direction are part of the claim.",
@@ -1590,15 +1623,13 @@
       "state": "selectable",
       "purpose": "A flow/route map answers \"what path did this take, and what did it pass through, in order\" — a ship's voyage, a migration corridor, an evacuation route, a supply chain's journey — where the sequence of places crossed is itself part of the claim, not just the endpoints.",
       "proofFormats": [
-        "static",
-        "video",
-        "scrolly"
+        "static"
       ]
     },
     {
       "id": "map.hex-grid",
       "medium": "map",
-      "label": "Hex grid (spatial binning)",
+      "label": "Hex grid (spatial binning — and hex cartogram)",
       "reference": "map-beat/references/types/hex-grid.md",
       "dataShape": {
         "summary": "Enough raw georeferenced events to support spatial aggregation into a regular grid.",

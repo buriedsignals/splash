@@ -28,6 +28,15 @@ Denmark's at a glance while each row still tells its own before-and-after.
 House triad, white ground, thin grey guide rules that stop at the figure's own extent rather than
 running edge to edge.
 
+## What the pixel route actually measured here
+
+`largestGraphic` returned this site's own wordmark — `logo-100.svg`, 280 x 80 at (80, 0) — which is
+too small to photograph, so the pixel route fell back to the **whole page**. The ground and the
+chromatic colours in this record are therefore the SITE's, not this encoding's: `#3274DA` at
+8.6-10.5 % is Ferdio's fixed navigation bar, and it happens to be the same blue the charts are drawn
+in, which is exactly why it read as plausible. Nothing in this note rests on that reading, and no
+direction may be measured from this record.
+
 ## What is transferable
 
 - **Turn the time dimension into columns of a small multiple** when there are few observations:

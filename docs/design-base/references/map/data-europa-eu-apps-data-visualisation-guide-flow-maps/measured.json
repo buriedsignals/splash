@@ -1,0 +1,373 @@
+{
+  "url": "https://data.europa.eu/apps/data-visualisation-guide/flow-maps",
+  "archive": "search",
+  "family": "map",
+  "id": "data-europa-eu-apps-data-visualisation-guide-flow-maps",
+  "harvestedAt": "2026-09-09",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Flow maps",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 16 | 400 | normal | 0 | none",
+        "count": 34,
+        "sample": "A deep dive into bar charts",
+        "colors": [
+          "rgb(219, 0, 77)",
+          "rgb(255, 255, 255)",
+          "rgb(64, 64, 64)",
+          "rgb(0, 68, 148)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "Home",
+        "colors": [
+          "rgb(82, 82, 82)",
+          "rgb(219, 0, 77)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Helvetica | 16 | 400 | normal | 0 | uppercase",
+        "count": 7,
+        "sample": "Design principles",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 400 | italic | 0 | none",
+        "count": 7,
+        "sample": "3 minutes read",
+        "colors": [
+          "rgb(64, 64, 64)",
+          "rgb(0, 68, 148)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data Visualisation Guide",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Flow maps",
+        "colors": [
+          "rgb(219, 0, 77)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 38.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 38.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Flow maps",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 18.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 18.7 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Related pages",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(219, 0, 77)",
+        "count": 21
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(219, 0, 77)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 768,
+      "ch": 96
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 668,
+      "nearTheTop": true,
+      "x": 526,
+      "y": 668,
+      "w": 768,
+      "h": 652,
+      "ratio": 1.18
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "consentBeforeGraphic": null,
+  "pixel": {
+    "ground": {
+      "hex": "#EEE9D7",
+      "share": 0.2710190599437628,
+      "h": 47.41606709204875,
+      "s": 0.4126675855236644,
+      "l": 0.8877594489593434,
+      "chroma": 0.09263607439158672
+    },
+    "chromatic": [
+      {
+        "hex": "#E5BD84",
+        "share": 0.014145178297546012,
+        "h": 35.237846086766965,
+        "s": 0.6489225650195796,
+        "l": 0.7064786439777097,
+        "chroma": 0.3809452624760197
+      },
+      {
+        "hex": "#E4BB7D",
+        "share": 0.004537321063394683,
+        "h": 36.200580573894726,
+        "s": 0.6526630525903984,
+        "l": 0.6911592101629385,
+        "chroma": 0.4031379453189726
+      },
+      {
+        "hex": "#E4C28B",
+        "share": 0.0032931524795501025,
+        "h": 37.513298873789076,
+        "s": 0.6178330478184545,
+        "l": 0.7188848856704597,
+        "chroma": 0.3473644157481063
+      },
+      {
+        "hex": "#E3C186",
+        "share": 0.00302754345603272,
+        "h": 38.33465413789198,
+        "s": 0.6226835737511346,
+        "l": 0.7064436856536811,
+        "chroma": 0.36558538982875477
+      },
+      {
+        "hex": "#DCB3AD",
+        "share": 0.002332566462167689,
+        "h": 8.164376553135494,
+        "s": 0.39885724280675144,
+        "l": 0.7696548482406661,
+        "chroma": 0.1837496642492613
+      },
+      {
+        "hex": "#BBAA8D",
+        "share": 0.0020549750766871164,
+        "h": 37.58773596857978,
+        "s": 0.25320800718593617,
+        "l": 0.6436060138341051,
+        "chroma": 0.1804836220202367
+      },
+      {
+        "hex": "#E2B9B3",
+        "share": 0.0015896600204498978,
+        "h": 8.231726950735219,
+        "s": 0.4442378295904259,
+        "l": 0.7933490984333431,
+        "chroma": 0.1836042959897527
+      },
+      {
+        "hex": "#E3B67B",
+        "share": 0.001503786426380368,
+        "h": 34.135196229933214,
+        "s": 0.6482997872146646,
+        "l": 0.6854959247975418,
+        "chroma": 0.40778585006379703
+      },
+      {
+        "hex": "#EAC28A",
+        "share": 0.0013699833844580778,
+        "h": 35.10957079726374,
+        "s": 0.69464477197704,
+        "l": 0.7281141027839708,
+        "chroma": 0.37772823415080314
+      },
+      {
+        "hex": "#E5C492",
+        "share": 0.0011982361963190184,
+        "h": 36.37501504392827,
+        "s": 0.6130444406187748,
+        "l": 0.7342418300653595,
+        "chroma": 0.325843137254902
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#EEE9D7",
+        "share": 0.2710190599437628,
+        "h": 47.41606709204875,
+        "s": 0.4126675855236644,
+        "l": 0.8877594489593434,
+        "chroma": 0.09263607439158672
+      },
+      {
+        "hex": "#EAE5D3",
+        "share": 0.20974924910531698,
+        "h": 47.12180754965245,
+        "s": 0.35906006057529116,
+        "l": 0.8723642713805094,
+        "chroma": 0.09165778489937138
+      },
+      {
+        "hex": "#F1ECDA",
+        "share": 0.0964300549591002,
+        "h": 47.13046712090415,
+        "s": 0.4568848581303065,
+        "l": 0.8996225512530325,
+        "chroma": 0.09172187286048084
+      },
+      {
+        "hex": "#EFEAD8",
+        "share": 0.041073539749488755,
+        "h": 46.87313941548528,
+        "s": 0.4102924490059635,
+        "l": 0.8922852809135517,
+        "chroma": 0.08838907177593647
+      },
+      {
+        "hex": "#E2DDCB",
+        "share": 0.03546579435071574,
+        "h": 46.779881222035975,
+        "s": 0.28657356826166674,
+        "l": 0.8416430663712076,
+        "chroma": 0.09076182305795799
+      },
+      {
+        "hex": "#E6E1CE",
+        "share": 0.029903981339468304,
+        "h": 47.62591189277836,
+        "s": 0.3195210887893868,
+        "l": 0.8550632861666103,
+        "chroma": 0.09262067321920087
+      },
+      {
+        "hex": "#E7E2D0",
+        "share": 0.02131262781186094,
+        "h": 47.07951089473219,
+        "s": 0.31714171174997324,
+        "l": 0.8611313828379927,
+        "chroma": 0.08808206191022139
+      },
+      {
+        "hex": "#DAD5C3",
+        "share": 0.016635512525562373,
+        "h": 46.244995659836434,
+        "s": 0.2365103203032947,
+        "l": 0.810816797307158,
+        "chroma": 0.08948755972977429
+      },
+      {
+        "hex": "#DED9C6",
+        "share": 0.01629601226993865,
+        "h": 47.79870384512187,
+        "s": 0.2622417553868052,
+        "l": 0.8224173394848135,
+        "chroma": 0.09313917723952325
+      },
+      {
+        "hex": "#DBD3BA",
+        "share": 0.01060838445807771,
+        "h": 44.69575259412732,
+        "s": 0.3179811100330674,
+        "l": 0.7949396852114339,
+        "chroma": 0.13041061304039692
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 35,
+        "share": 0.044744136630879346,
+        "size": 22
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 500736
+  }
+}

@@ -1,4 +1,4 @@
-# Cartogram
+# Cartogram (area distortion — and tile cartogram)
 
 ## What it's for
 
@@ -60,3 +60,33 @@ ramp's CVD-safety doubly load-bearing on this type: it is simultaneously carryin
 in practice, the only cue letting a reader tell one region's shape from its neighbour's. The
 shape-preserving variant at least keeps the real basemap underneath as a positional anchor; the grid
 variant has no such fallback at all, which is the sharper version of this same trap.
+
+## The other reading of this type
+
+Everything above is about **distorting real geography** so each region's own area carries its value.
+There is a second family under the same name, and this tree's beat is one —
+`proof/static-cartogram-europe-lowcarbon`.
+
+- **A distortion cartogram** — the outlines stay recognisable and are stretched. The sheet's warning
+  above is its trap.
+- **A tile cartogram** — every unit becomes **one equal cell**, hand-placed so the assembly stays
+  roughly geographic. Nothing is proportional to anything: the point is precisely that a unit's
+  weight on the plate no longer depends on its size, which is what lets a reader see a per-country
+  reading a choropleth cannot give. `proof/static-cartogram-europe-lowcarbon` states both averages
+  on the plate — 65.1 % by country against 44.9 % by area — because the pair IS the argument.
+
+The tile variant's own rules: **the layout is designed, not derived, and the plate says so**, checked
+both ways against the data; **a tile has to hold its own name**, measured on the drawn tile rather
+than on the row pitch; **a tile is a mark on the ground, not a patch in a mosaic**, so the palest
+class clears the non-text floor against the ground; and **missing is drawn outside the ramp** — a
+hollow cell, because no class is hollow. The hex cartogram in `hex-grid.md` is the same family with
+six neighbours instead of four.
+
+
+## The worked example in this tree
+
+`proof/static-cartogram-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

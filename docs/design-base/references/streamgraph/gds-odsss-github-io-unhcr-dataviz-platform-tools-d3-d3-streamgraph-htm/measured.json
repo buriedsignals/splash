@@ -1,0 +1,438 @@
+{
+  "url": "https://gds-odsss.github.io/unhcr-dataviz-platform/tools/d3/d3_streamgraph.html",
+  "archive": "url-list",
+  "family": "streamgraph",
+  "id": "gds-odsss-github-io-unhcr-dataviz-platform-tools-d3-d3-streamgraph-htm",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "UNHCR Dataviz Platform - Streamgraph with D3",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "lato",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "lato | 10 | 400 | normal | 0 | none",
+        "count": 20,
+        "sample": "1990",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Source Code Pro",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Code Pro | 14.4 | 400 | normal | 0 | none",
+        "count": 13,
+        "sample": "meta",
+        "colors": [
+          "rgb(187, 102, 136)",
+          "rgb(64, 112, 160)",
+          "rgb(125, 144, 41)",
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "Home",
+        "colors": [
+          "rgb(0, 114, 188)",
+          "rgb(102, 102, 102)",
+          "rgb(34, 34, 34)",
+          "rgb(77, 77, 77)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Home",
+        "colors": [
+          "rgb(242, 242, 242)",
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 1.2 | none",
+        "count": 5,
+        "sample": "Home",
+        "colors": [
+          "rgb(102, 102, 102)",
+          "rgb(0, 114, 188)"
+        ]
+      },
+      {
+        "family": "Source Code Pro",
+        "size": 14.4,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Code Pro | 14.4 | 400 | italic | 0 | none",
+        "count": 5,
+        "sample": "<!",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(112, 128, 144)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 500 | normal | 0 | none",
+        "count": 4,
+        "sample": "Line chart",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 28 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Streamgraph",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "lato",
+        "size": 8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "lato | 8 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Source: UNHCR Refugee Data Finder",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Streamgraph with D3",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.8 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Copy",
+        "colors": [
+          "rgb(187, 187, 187)"
+        ]
+      },
+      {
+        "family": "lato",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "lato | 14 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Evolution of people of concern to UNHCR | 1991-2020",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 114, 188)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(24, 55, 95)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(0, 179, 152)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(225, 204, 13)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(153, 153, 153)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(239, 74, 96)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(51, 51, 51)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 736,
+      "ch": 92
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 478,
+      "nearTheTop": true,
+      "x": 732,
+      "y": 478,
+      "w": 546,
+      "h": 425,
+      "ratio": 1.29
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8226502908855851,
+      "h": 180,
+      "s": 0.00008954956592071476,
+      "l": 0.9998852983905825,
+      "chroma": 2.0542958667491007e-8
+    },
+    "chromatic": [
+      {
+        "hex": "#00B398",
+        "share": 0.054169360051712995,
+        "h": 170.94972067039106,
+        "s": 1,
+        "l": 0.3509803921568627,
+        "chroma": 0.7019607843137254
+      },
+      {
+        "hex": "#0072BC",
+        "share": 0.044343891402714934,
+        "h": 203.61702127659572,
+        "s": 1,
+        "l": 0.3686274509803922,
+        "chroma": 0.7372549019607844
+      },
+      {
+        "hex": "#E1CC0D",
+        "share": 0.007541478129713424,
+        "h": 54.05660377358491,
+        "s": 0.8907563025210083,
+        "l": 0.4666666666666667,
+        "chroma": 0.8313725490196078
+      },
+      {
+        "hex": "#18375F",
+        "share": 0.004443007972419737,
+        "h": 213.80281690140845,
+        "s": 0.5966386554621849,
+        "l": 0.23333333333333334,
+        "chroma": 0.2784313725490196
+      },
+      {
+        "hex": "#EF4A60",
+        "share": 0.0020642102995044173,
+        "h": 352,
+        "s": 0.8375634517766497,
+        "l": 0.6137254901960785,
+        "chroma": 0.6470588235294117
+      },
+      {
+        "hex": "#0C558E",
+        "share": 0.000693815987933635,
+        "h": 206.30769230769232,
+        "s": 0.844155844155844,
+        "l": 0.3019607843137255,
+        "chroma": 0.5098039215686274
+      },
+      {
+        "hex": "#80B9DE",
+        "share": 0.0006722689075630252,
+        "h": 203.61702127659578,
+        "s": 0.5875,
+        "l": 0.6862745098039216,
+        "chroma": 0.3686274509803922
+      },
+      {
+        "hex": "#0C757C",
+        "share": 0.0005516052574876104,
+        "h": 183.75,
+        "s": 0.8235294117647058,
+        "l": 0.26666666666666666,
+        "chroma": 0.4392156862745098
+      },
+      {
+        "hex": "#4095CD",
+        "share": 0.0004481792717086835,
+        "h": 203.82978723404256,
+        "s": 0.5850622406639004,
+        "l": 0.5274509803921569,
+        "chroma": 0.5529411764705883
+      },
+      {
+        "hex": "#BFDCEE",
+        "share": 0.00041370394311570784,
+        "h": 202.99202127659575,
+        "s": 0.579799537393986,
+        "l": 0.8410539215686275,
+        "chroma": 0.1843137254901961
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8226502908855851,
+        "h": 180,
+        "s": 0.00008954956592071476,
+        "l": 0.9998852983905825,
+        "chroma": 2.0542958667491007e-8
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.011665589312648135,
+        "h": 0,
+        "s": 0,
+        "l": 0.9560442425954497,
+        "chroma": 0
+      },
+      {
+        "hex": "#9A9A9A",
+        "share": 0.007571644042232277,
+        "h": 0,
+        "s": 0,
+        "l": 0.6040220072092582,
+        "chroma": 0
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.003460461107519931,
+        "h": 0,
+        "s": 0,
+        "l": 0.8910458330281054,
+        "chroma": 0
+      },
+      {
+        "hex": "#333333",
+        "share": 0.002861452273216979,
+        "h": 0,
+        "s": 0,
+        "l": 0.20041341837939994,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.002477914242620125,
+        "h": 0,
+        "s": 0,
+        "l": 0.9249991474850809,
+        "chroma": 0
+      },
+      {
+        "hex": "#CBCBCB",
+        "share": 0.0022021116138763197,
+        "h": 0,
+        "s": 0,
+        "l": 0.7980277042323778,
+        "chroma": 0
+      },
+      {
+        "hex": "#B4B4B4",
+        "share": 0.002184873949579832,
+        "h": 0,
+        "s": 0,
+        "l": 0.7044204664114166,
+        "chroma": 0
+      },
+      {
+        "hex": "#222222",
+        "share": 0.0018401206636500754,
+        "h": 0,
+        "s": 0,
+        "l": 0.13333333333333333,
+        "chroma": 0
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.00178409825468649,
+        "h": 0,
+        "s": 0,
+        "l": 0.8597044614947428,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 171,
+        "share": 0.10315449256625729,
+        "size": 14
+      },
+      {
+        "hue": 54,
+        "share": 0.008726567550096962,
+        "size": 5
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 232050
+  }
+}

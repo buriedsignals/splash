@@ -1,0 +1,728 @@
+{
+  "url": "https://ourworldindata.org/grapher/annual-change-forest-area?tab=discrete-bar&time=2015",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "ourworldindata-org-grapher-annual-change-forest-area",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept optional cookies\"",
+  "entry": null,
+  "style": {
+    "title": "Annual change in forest area, 2015",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0.13 | none",
+        "count": 269,
+        "sample": "Search for a country or region",
+        "colors": [
+          "rgb(161, 161, 161)",
+          "rgb(78, 78, 78)",
+          "rgb(118, 118, 118)",
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 200,
+        "sample": "1.94M",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(66, 101, 145)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 500 | normal | 0 | none",
+        "count": 73,
+        "sample": "Browse by topic",
+        "colors": [
+          "rgb(219, 229, 240)",
+          "rgb(255, 255, 255)",
+          "rgb(29, 61, 99)",
+          "rgb(87, 114, 145)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.6 | 400 | normal | 0 | none",
+        "count": 56,
+        "sample": "Albania",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "1.94 million ha",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "China",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.2 | uppercase",
+        "count": 7,
+        "sample": "Add/remove countries and regions",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(87, 114, 145)",
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Menlo",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Menlo | 12 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "“Data Page: Annual change in forest area”, part of the follo",
+        "colors": [
+          "rgb(66, 101, 145)",
+          "rgb(16, 89, 229)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "capitalize",
+        "key": "Lato | 13 | 500 | normal | 0.13 | capitalize",
+        "count": 6,
+        "sample": "Table",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "1991",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 24 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "About this data",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 18 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Deforestation and Forest Loss",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.2 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "North America",
+        "colors": [
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Menlo",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Menlo | 12 | 500 | normal | 0 | none",
+        "count": 6,
+        "sample": "Food and Agriculture Organization of the United Nations. 202",
+        "colors": [
+          "rgb(87, 114, 145)",
+          "rgb(66, 101, 145)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.6,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.6 | uppercase",
+        "count": 5,
+        "sample": "Notes on our processing step for this indicator",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.6 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Excel / Google Sheets",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "500",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 500 | italic | 0 | none",
+        "count": 2,
+        "sample": "Hannah Ritchie",
+        "colors": [
+          "rgb(87, 114, 145)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "OurWorldinData.org/forests-and-deforestation",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 16 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Food and Agriculture Organization of the United Nations – Gl",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Download full data",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13.3 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data URL (CSV format)",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 25,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 25 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Annual change in forest area",
+        "colors": [
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2015",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Net change in forest area measures forest expansion (the sum",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Data source:",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0.13,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | italic | 0.13 | none",
+        "count": 1,
+        "sample": "Selection  (4)",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "none",
+        "key": "Lato | 13 | 500 | normal | 0.13 | none",
+        "count": 1,
+        "sample": "Clear",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 17.5,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 17.5 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Change in domestic forest area vs. deforestation embedded in",
+        "colors": [
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14.5 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2013",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Help us do this work by making a donation.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(102, 102, 102)",
+        "count": 43
+      },
+      {
+        "colour": "fill rgb(76, 106, 156)",
+        "count": 34
+      },
+      {
+        "colour": "stroke rgb(51, 51, 51)",
+        "count": 28
+      },
+      {
+        "colour": "fill rgb(0, 132, 126)",
+        "count": 22
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 18
+      },
+      {
+        "colour": "fill rgb(87, 114, 145)",
+        "count": 16
+      },
+      {
+        "colour": "fill rgb(219, 229, 240)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(91, 91, 91)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(66, 101, 145)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(162, 85, 156)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(229, 110, 90)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(161, 161, 161)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(29, 61, 99)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(164, 182, 202)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(56, 170, 186)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(118, 118, 118)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(136, 48, 57)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(0, 33, 71)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(206, 38, 30)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgba(255, 255, 255, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(152, 169, 189)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 860,
+      "ch": 115
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 236,
+      "nearTheTop": true,
+      "x": 81,
+      "y": 236,
+      "w": 957,
+      "h": 411,
+      "ratio": 2.33
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8242759841048288,
+      "h": 194.9023861173524,
+      "s": 0.18603712671554423,
+      "l": 0.9999700266893099,
+      "chroma": 0.00001115229719783617
+    },
+    "chromatic": [
+      {
+        "hex": "#7088B0",
+        "share": 0.1646111250943871,
+        "h": 217.5,
+        "s": 0.2882882882882883,
+        "l": 0.5647058823529412,
+        "chroma": 0.25098039215686274
+      },
+      {
+        "hex": "#91A3C2",
+        "share": 0.0018025713973360588,
+        "h": 217.9591836734694,
+        "s": 0.2865497076023391,
+        "l": 0.6647058823529411,
+        "chroma": 0.19215686274509802
+      },
+      {
+        "hex": "#6C84AC",
+        "share": 0.00033559862404564144,
+        "h": 217.5,
+        "s": 0.2782608695652175,
+        "l": 0.5490196078431373,
+        "chroma": 0.2509803921568628
+      },
+      {
+        "hex": "#768BAF",
+        "share": 0.00033559862404564144,
+        "h": 217.89473684210526,
+        "s": 0.2626728110599078,
+        "l": 0.5745098039215686,
+        "chroma": 0.22352941176470587
+      },
+      {
+        "hex": "#899CBA",
+        "share": 0.0000025424138185275863,
+        "h": 216.73469387755102,
+        "s": 0.2620320855614973,
+        "l": 0.6333333333333333,
+        "chroma": 0.19215686274509802
+      },
+      {
+        "hex": "#8597B6",
+        "share": 0.0000025424138185275863,
+        "h": 217.9591836734694,
+        "s": 0.25128205128205133,
+        "l": 0.6176470588235294,
+        "chroma": 0.19215686274509802
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8242759841048288,
+        "h": 194.9023861173524,
+        "s": 0.18603712671554423,
+        "l": 0.9999700266893099,
+        "chroma": 0.00001115229719783617
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.0010067958721369243,
+        "h": 210.00000000016817,
+        "s": 0.00012797542871796833,
+        "l": 0.9226183402653991,
+        "chroma": 0.000019805902158887
+      },
+      {
+        "hex": "#E2E2E2",
+        "share": 0.0006940789724580311,
+        "h": 0,
+        "s": 0,
+        "l": 0.8861308626014508,
+        "chroma": 0
+      },
+      {
+        "hex": "#D8DFEA",
+        "share": 0.0006915365586395036,
+        "h": 216.66666666666663,
+        "s": 0.29999999999999966,
+        "l": 0.8823529411764706,
+        "chroma": 0.07058823529411762
+      },
+      {
+        "hex": "#B5C1D6",
+        "share": 0.0006915365586395036,
+        "h": 218.1818181818182,
+        "s": 0.2869565217391305,
+        "l": 0.7745098039215687,
+        "chroma": 0.12941176470588234
+      },
+      {
+        "hex": "#F3F4F5",
+        "share": 0.0004881434531572966,
+        "h": 214.2857142857138,
+        "s": 0.10864025943942442,
+        "l": 0.9559129901960783,
+        "chroma": 0.009579248366012982
+      },
+      {
+        "hex": "#5C5C5C",
+        "share": 0.0004372951767867449,
+        "h": 0,
+        "s": 0,
+        "l": 0.3600091199270406,
+        "chroma": 0
+      },
+      {
+        "hex": "#6B6B6B",
+        "share": 0.00042966793533116214,
+        "h": 0,
+        "s": 0,
+        "l": 0.41779788838612364,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D6DA",
+        "share": 0.0003406834516826966,
+        "h": 219.99999999999997,
+        "s": 0.07499999999999976,
+        "l": 0.8431372549019608,
+        "chroma": 0.0235294117647058
+      },
+      {
+        "hex": "#939393",
+        "share": 0.00030763207204183795,
+        "h": 0,
+        "s": 0,
+        "l": 0.5772160103710906,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 218,
+        "share": 0.1670899785674515,
+        "size": 6
+      }
+    ],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 393327
+  }
+}

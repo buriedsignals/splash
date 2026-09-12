@@ -1,0 +1,179 @@
+{
+  "url": "http://apps.npr.org/best-books-2013/",
+  "archive": "url-list",
+  "family": "ranking",
+  "id": "apps-npr-org-best-books-2013",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "not-applicable",
+      "why": "the page shows a grid of 91 images 240 px wide — a wall of covers, cards or thumbnails rather than one graphic, and any single one of them would be an arbitrary answer"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "Best Books of 2013 : NPR",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Gotham SSm",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 14 | 400 | normal | 0 | none",
+        "count": 217,
+        "sample": "Choose your own adventure! Use the categories below to searc",
+        "colors": [
+          "rgb(85, 85, 85)",
+          "rgb(205, 73, 50)",
+          "rgb(255, 255, 255)",
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 14 | 700 | normal | 0 | none",
+        "count": 205,
+        "sample": "Deb Amos'",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 15 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "NPR Staff Picks",
+        "colors": [
+          "rgb(205, 73, 50)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "lowercase",
+        "key": "Gotham SSm | 12 | 700 | normal | 0 | lowercase",
+        "count": 11,
+        "sample": "Share This Page On Twitter",
+        "colors": [
+          "rgb(109, 138, 196)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 12 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "by Jeremy Bowers, Nicole Cohen, Danny DeBelius, Camila Domon",
+        "colors": [
+          "rgb(136, 136, 136)",
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 11 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "NPR thanks our sponsors",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(109, 138, 196)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 44,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 44 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "NPR’s Book Concierge",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 32,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 32 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our Guide To 2013’s Great Reads",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 24,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 24 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Showing all books",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Gotham SSm",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Gotham SSm | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "What would you like to read?",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 778,
+      "ch": 130
+    },
+    "graphic": null
+  }
+}

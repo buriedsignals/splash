@@ -259,6 +259,13 @@ const BEAT_SCRIPTS = new Set([
   "render.mjs",
   "render-web.mjs",
   "render-map.mjs",
+  // `render-directions.mjs` draws a beat once per filed art direction, through the design base. It
+  // is a beat script by every test this file applies: it reads the frozen data, computes the
+  // claims, and writes the artifacts under `renders/`. It was added when the first beat that has
+  // ONLY a directed render — `static-radar-electricity-mix` — landed three PNGs this guard could
+  // not trace to any script. The effect is not merely to admit them: every directed beat's claim
+  // strings are now scanned and grounded like every other beat's.
+  "render-directions.mjs",
 ]);
 
 /** The strings a reader receives. `source` is excluded — see the header. */

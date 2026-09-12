@@ -1,0 +1,462 @@
+{
+  "url": "https://www.statista.com/chart/15723/the-neat-seat-loss-gain-by-the-presidents-party-in-the-midterm-elections/",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "statista-com-chart-15723-the-neat-seat-loss-gain-by-the-presidents-par",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "Chart: President’s Party up Against Poor Odds in the Midterms | Statista",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.5 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "by",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(77, 77, 77)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 14,
+        "sample": "Topics",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "The Statista \"Chart of the Day\", made available\n            ",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 600 | normal | 0 | none",
+        "count": 10,
+        "sample": "Products",
+        "colors": [
+          "rgb(15, 39, 65)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.3 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "katharina.buchholz@statista.com",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.34,
+        "transform": "uppercase",
+        "key": "Open Sans | 13.5 | 700 | normal | 0.34 | uppercase",
+        "count": 8,
+        "sample": "Midterms",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16.5 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "How Voluntary Redistricting Could Change the Midterm Outcome",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 12 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Data Journalist",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Katharina Buchholz",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 37.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 37.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Related Infographics",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Get in touch with us quickly and easily. We are happy to hel",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "⌘+K",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "President’s Party up Against Poor Odds in the Midterms",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11.3 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Report",
+        "colors": [
+          "rgb(6, 102, 229)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Show more",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(15, 39, 65)",
+        "count": 9
+      },
+      {
+        "colour": "stroke rgb(15, 39, 65)",
+        "count": 6
+      }
+    ],
+    "column": {
+      "px": 744,
+      "ch": 99
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1135,
+      "nearTheTop": true,
+      "x": 179,
+      "y": 1135,
+      "w": 756,
+      "h": 1009,
+      "ratio": 0.75
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F5F9FC",
+      "share": 0.5658190046197975,
+      "h": 205.9145571917504,
+      "s": 0.5288033031562948,
+      "l": 0.9742008141991624,
+      "chroma": 0.027285389340451882
+    },
+    "chromatic": [
+      {
+        "hex": "#0F2741",
+        "share": 0.01309903985820735,
+        "h": 211.17016603707282,
+        "s": 0.6281867005812131,
+        "l": 0.15645810766260065,
+        "chroma": 0.19656980486349862
+      },
+      {
+        "hex": "#FF7D3B",
+        "share": 0.010180859041116722,
+        "h": 20.261765334473175,
+        "s": 0.9983377177231986,
+        "l": 0.6154158650325956,
+        "chroma": 0.7678896951518182
+      },
+      {
+        "hex": "#FE732C",
+        "share": 0.00944148169123392,
+        "h": 20.31980756625307,
+        "s": 0.9904933208059624,
+        "l": 0.5835985102177499,
+        "chroma": 0.8248857888059417
+      },
+      {
+        "hex": "#122A44",
+        "share": 0.006141813624469719,
+        "h": 211.07662891601706,
+        "s": 0.5716129670384016,
+        "l": 0.1692552367798774,
+        "chroma": 0.19349697616506584
+      },
+      {
+        "hex": "#FF8243",
+        "share": 0.005127136197502897,
+        "h": 20.305475300287835,
+        "s": 0.9965265623007182,
+        "l": 0.6304931791177222,
+        "chroma": 0.736446723920967
+      },
+      {
+        "hex": "#FE7935",
+        "share": 0.005044546174377691,
+        "h": 20.281447466287226,
+        "s": 0.9929511163515347,
+        "l": 0.6032759569524275,
+        "chroma": 0.7878551628551629
+      },
+      {
+        "hex": "#FE7732",
+        "share": 0.005027503788653442,
+        "h": 20.251280912300583,
+        "s": 0.989031881774593,
+        "l": 0.5950026842549275,
+        "chroma": 0.801110514610016
+      },
+      {
+        "hex": "#CF0203",
+        "share": 0.002177492514459809,
+        "h": 359.91953453825204,
+        "s": 0.9768566772430711,
+        "l": 0.4099987014673419,
+        "chroma": 0.801019938378723
+      },
+      {
+        "hex": "#FF803F",
+        "share": 0.0018418886109669063,
+        "h": 20.487842881203765,
+        "s": 0.9962155090214284,
+        "l": 0.6223878305770707,
+        "chroma": 0.7523661991486987
+      },
+      {
+        "hex": "#0C3D81",
+        "share": 0.0016373799822759188,
+        "h": 214.67446361652182,
+        "s": 0.8296113243215542,
+        "l": 0.27570605504011053,
+        "chroma": 0.4574577308905948
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F5F9FC",
+        "share": 0.5658190046197975,
+        "h": 205.9145571917504,
+        "s": 0.5288033031562948,
+        "l": 0.9742008141991624,
+        "chroma": 0.027285389340451882
+      },
+      {
+        "hex": "#ECF1F7",
+        "share": 0.21717374318960048,
+        "h": 211.90050765392604,
+        "s": 0.4079811292901619,
+        "l": 0.9466008246701775,
+        "chroma": 0.043571711708448646
+      },
+      {
+        "hex": "#F3F6FA",
+        "share": 0.0369046308094871,
+        "h": 214.00221627112393,
+        "s": 0.41713282972030435,
+        "l": 0.9674521366217619,
+        "chroma": 0.027153564704628708
+      },
+      {
+        "hex": "#9DB3BB",
+        "share": 0.017075159542949435,
+        "h": 195.7766935959789,
+        "s": 0.18156609578950003,
+        "l": 0.6740497534906477,
+        "chroma": 0.1183630273606564
+      },
+      {
+        "hex": "#EDF2F8",
+        "share": 0.006948049564501497,
+        "h": 213.49283395100207,
+        "s": 0.45831830206830226,
+        "l": 0.9507746947835738,
+        "chroma": 0.0451217166111727
+      },
+      {
+        "hex": "#E9EEF3",
+        "share": 0.006633420904976901,
+        "h": 212.6261965634104,
+        "s": 0.3008245443542848,
+        "l": 0.9350038750678137,
+        "chroma": 0.03910485933503827
+      },
+      {
+        "hex": "#E5ECF2",
+        "share": 0.0037781658197911915,
+        "h": 208.43112753569238,
+        "s": 0.33726675214978064,
+        "l": 0.9241247227551672,
+        "chroma": 0.05118041664965778
+      },
+      {
+        "hex": "#CBD5DC",
+        "share": 0.003266894248063723,
+        "h": 203.81315222792776,
+        "s": 0.19468720774344508,
+        "l": 0.8292095489881346,
+        "chroma": 0.06650143203348746
+      },
+      {
+        "hex": "#DCE4EB",
+        "share": 0.0031620180282221906,
+        "h": 206.3160956314351,
+        "s": 0.25816964017540767,
+        "l": 0.8917373914740025,
+        "chroma": 0.055900237375215545
+      },
+      {
+        "hex": "#A4B9C1",
+        "share": 0.0029575093995312034,
+        "h": 196.31207001450838,
+        "s": 0.1860000174100263,
+        "l": 0.7004684675288555,
+        "chroma": 0.11142574050896947
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 211,
+        "share": 0.03149432881841207,
+        "size": 14
+      },
+      {
+        "hue": 20,
+        "share": 0.04162668260785208,
+        "size": 10
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 762804
+  }
+}

@@ -52,3 +52,11 @@ per column and column widths varying on top of that, this type accumulates more 
 combinations on one chart than almost any other type in this set, which makes checking every
 combination's real contrast, rather than trusting one rule to generalise across all of them, especially
 worth doing deliberately rather than assuming it from a single spot-check.
+
+## The worked example in this tree
+
+`proof/static-marimekko-electricity-mix` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

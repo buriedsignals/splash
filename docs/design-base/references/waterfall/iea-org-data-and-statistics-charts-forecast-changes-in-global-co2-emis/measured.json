@@ -1,0 +1,459 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/charts/forecast-changes-in-global-co2-emissions-from-electricity-generation-2023-2027",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "iea-org-data-and-statistics-charts-forecast-changes-in-global-co2-emis",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Forecast changes in global CO2 emissions from electricity generation, 2023-2027 – Charts – Data & Statistics - IEA",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 92,
+        "sample": "Mt CO2",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0 | none",
+        "count": 14,
+        "sample": "Annual global CO2 emissions",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 8,
+        "sample": "Liquefied natural gas export capacity in selected countries,",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Open",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "United States",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "Forecast changes in global CO2 emissions from electricity ge",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.8 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Note: Left axis is truncated",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "68%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 111
+      },
+      {
+        "colour": "fill rgb(104, 243, 148)",
+        "count": 24
+      },
+      {
+        "colour": "fill rgb(255, 244, 90)",
+        "count": 23
+      },
+      {
+        "colour": "fill rgb(73, 211, 255)",
+        "count": 19
+      },
+      {
+        "colour": "fill rgb(0, 173, 161)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(255, 117, 75)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(62, 122, 211)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(175, 106, 177)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(255, 183, 67)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(62, 122, 211)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 251, 208)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(254, 248, 160)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(194, 239, 251)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(73, 211, 255)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(255, 183, 67)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(175, 106, 177)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 521,
+      "nearTheTop": true,
+      "x": 122,
+      "y": 521,
+      "w": 1162,
+      "h": 500,
+      "ratio": 2.32
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.9529242685025817,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999783468672496,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#FFF45A",
+        "share": 0.009418244406196213,
+        "h": 56.000000000000014,
+        "s": 1,
+        "l": 0.6764705882352942,
+        "chroma": 0.6470588235294117
+      },
+      {
+        "hex": "#68F394",
+        "share": 0.007146299483648881,
+        "h": 138.9928057553957,
+        "s": 0.8527607361963189,
+        "l": 0.6803921568627451,
+        "chroma": 0.5450980392156862
+      },
+      {
+        "hex": "#49D3FF",
+        "share": 0.0002753872633390706,
+        "h": 194.50549450549448,
+        "s": 1,
+        "l": 0.6431372549019607,
+        "chroma": 0.7137254901960784
+      },
+      {
+        "hex": "#123540",
+        "share": 0.00006884681583476765,
+        "h": 194.3478260869565,
+        "s": 0.5609756097560976,
+        "l": 0.16078431372549018,
+        "chroma": 0.1803921568627451
+      },
+      {
+        "hex": "#256A80",
+        "share": 0.00006884681583476765,
+        "h": 194.50549450549448,
+        "s": 0.5515151515151514,
+        "l": 0.3235294117647059,
+        "chroma": 0.35686274509803917
+      },
+      {
+        "hex": "#908D61",
+        "share": 0.000055077452667814116,
+        "h": 56.17021276595746,
+        "s": 0.19502074688796683,
+        "l": 0.4725490196078431,
+        "chroma": 0.1843137254901961
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.9529242685025817,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999783468672496,
+        "chroma": 0
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.009428571428571429,
+        "h": 0,
+        "s": 0,
+        "l": 0.901447501234886,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.002648881239242685,
+        "h": 0,
+        "s": 0,
+        "l": 0.0004688555084151919,
+        "chroma": 0
+      },
+      {
+        "hex": "#898989",
+        "share": 0.001955249569707401,
+        "h": 0,
+        "s": 0,
+        "l": 0.5369269538801436,
+        "chroma": 0
+      },
+      {
+        "hex": "#88855C",
+        "share": 0.0012874354561101548,
+        "h": 55.90909090909093,
+        "s": 0.1929824561403509,
+        "l": 0.44705882352941173,
+        "chroma": 0.17254901960784313
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.001010327022375215,
+        "h": 0,
+        "s": 0,
+        "l": 0.9546380732872366,
+        "chroma": 0
+      },
+      {
+        "hex": "#60856B",
+        "share": 0.0008950086058519794,
+        "h": 137.83783783783784,
+        "s": 0.16157205240174677,
+        "l": 0.44901960784313727,
+        "chroma": 0.14509803921568631
+      },
+      {
+        "hex": "#828282",
+        "share": 0.0007762478485370052,
+        "h": 0,
+        "s": 0,
+        "l": 0.5113342898134863,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0007314974182444062,
+        "h": 0,
+        "s": 0,
+        "l": 0.9262837370242214,
+        "chroma": 0
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.0006626506024096385,
+        "h": 0,
+        "s": 0,
+        "l": 0.8292742551566081,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 56,
+        "share": 0.009473321858864027,
+        "size": 2
+      },
+      {
+        "hue": 139,
+        "share": 0.007146299483648881,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 581000
+  }
+}

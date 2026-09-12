@@ -1,0 +1,457 @@
+{
+  "url": "https://www.statista.com/chart/35058/nato-2-timeline/",
+  "archive": "search",
+  "family": "bullet",
+  "id": "statista-com-chart-35058-nato-2-timeline",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "Chart: Zeitenwende Is Here: NATO To Reach 2% Goal | Statista",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.5 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "by",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(77, 77, 77)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 15,
+        "sample": "Topics",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "The Statista \"Chart of the Day\", made available\n            ",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 600 | normal | 0 | none",
+        "count": 10,
+        "sample": "Products",
+        "colors": [
+          "rgb(15, 39, 65)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.3 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "katharina.buchholz@statista.com",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.34,
+        "transform": "uppercase",
+        "key": "Open Sans | 13.5 | 700 | normal | 0.34 | uppercase",
+        "count": 8,
+        "sample": "NATO",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16.5 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "U.S. Munitions Inventories Are Running Low",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 12 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Data Journalist",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Katharina Buchholz",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 37.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 37.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Related Infographics",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Get in touch with us quickly and easily. We are happy to hel",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "⌘+K",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Zeitenwende Is Here: NATO To Reach 2% Goal",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11.3 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Report",
+        "colors": [
+          "rgb(6, 102, 229)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Show more",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(15, 39, 65)",
+        "count": 9
+      },
+      {
+        "colour": "stroke rgb(15, 39, 65)",
+        "count": 6
+      }
+    ],
+    "column": {
+      "px": 744,
+      "ch": 99
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1420,
+      "nearTheTop": true,
+      "x": 179,
+      "y": 1420,
+      "w": 756,
+      "h": 756,
+      "ratio": 1
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F4F8FB",
+      "share": 0.6360389451538725,
+      "h": 205.9053519644569,
+      "s": 0.4660441852797099,
+      "l": 0.9707400937297996,
+      "chroma": 0.02727281835811246
+    },
+    "chromatic": [
+      {
+        "hex": "#67AFF9",
+        "share": 0.07617265312113397,
+        "h": 210.4082981053449,
+        "s": 0.9241783740797705,
+        "l": 0.6901048153530676,
+        "chroma": 0.5727968557643046
+      },
+      {
+        "hex": "#0A3B7E",
+        "share": 0.0691203092127795,
+        "h": 214.63494457007982,
+        "s": 0.8536706038518633,
+        "l": 0.26669923322363803,
+        "chroma": 0.455346590945704
+      },
+      {
+        "hex": "#0766E6",
+        "share": 0.05276152733220105,
+        "h": 214.4167368058504,
+        "s": 0.9413726788272132,
+        "l": 0.4644558734240508,
+        "chroma": 0.8744521395244635
+      },
+      {
+        "hex": "#0F2741",
+        "share": 0.013790163063610883,
+        "h": 211.16459250878825,
+        "s": 0.6288095328836212,
+        "l": 0.15645925881756656,
+        "chroma": 0.19676614690478322
+      },
+      {
+        "hex": "#132A44",
+        "share": 0.005079574762533811,
+        "h": 211.06090743493647,
+        "s": 0.5709191175005678,
+        "l": 0.1692796967428182,
+        "chroma": 0.19329003015034701
+      },
+      {
+        "hex": "#66B0F9",
+        "share": 0.0032762995114382167,
+        "h": 209.85973890415127,
+        "s": 0.927323568754243,
+        "l": 0.6888491503267974,
+        "chroma": 0.5770750326797385
+      },
+      {
+        "hex": "#0A3C80",
+        "share": 0.002631523767587176,
+        "h": 214.82248951048953,
+        "s": 0.8585742144346138,
+        "l": 0.2710647605655808,
+        "chroma": 0.46545842772700047
+      },
+      {
+        "hex": "#6CB2F9",
+        "share": 0.002554639939052092,
+        "h": 210.31201843415923,
+        "s": 0.9241177652284547,
+        "l": 0.6995721681285374,
+        "chroma": 0.5552613932029721
+      },
+      {
+        "hex": "#1C334B",
+        "share": 0.001941316670510858,
+        "h": 211.0606404724052,
+        "s": 0.4599954728282635,
+        "l": 0.20271791885070858,
+        "chroma": 0.1864986498649865
+      },
+      {
+        "hex": "#4C6581",
+        "share": 0.0017473597394337156,
+        "h": 211.8817274998591,
+        "s": 0.259920412099314,
+        "l": 0.40157843137254906,
+        "chroma": 0.20875686274509808
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F4F8FB",
+        "share": 0.6360389451538725,
+        "h": 205.9053519644569,
+        "s": 0.4660441852797099,
+        "l": 0.9707400937297996,
+        "chroma": 0.02727281835811246
+      },
+      {
+        "hex": "#F4F6FA",
+        "share": 0.03052462728816758,
+        "h": 214.34767065716846,
+        "s": 0.4032169036862545,
+        "l": 0.9680739775445355,
+        "chroma": 0.0257462238430205
+      },
+      {
+        "hex": "#ADC5CF",
+        "share": 0.016014552011910006,
+        "h": 197.2816481046022,
+        "s": 0.25964293142431577,
+        "l": 0.744899928329215,
+        "chroma": 0.13246986083031131
+      },
+      {
+        "hex": "#EDF2F6",
+        "share": 0.007132722456368428,
+        "h": 209.01077548136368,
+        "s": 0.30770206366749425,
+        "l": 0.9469762035142327,
+        "chroma": 0.03263106320431164
+      },
+      {
+        "hex": "#EAEEF3",
+        "share": 0.0029215854843331725,
+        "h": 211.51695661003177,
+        "s": 0.261353383458647,
+        "l": 0.9337121212121212,
+        "chroma": 0.034649122807017596
+      },
+      {
+        "hex": "#EDF4FA",
+        "share": 0.0025860924143618993,
+        "h": 209.28215501504758,
+        "s": 0.5907090607058559,
+        "l": 0.9545402755696873,
+        "chroma": 0.05370694223635408
+      },
+      {
+        "hex": "#DDE4EA",
+        "share": 0.0022208942288202524,
+        "h": 209.28455095393207,
+        "s": 0.24652269924574818,
+        "l": 0.8924144953024483,
+        "chroma": 0.05304453803551312
+      },
+      {
+        "hex": "#CBD3DC",
+        "share": 0.0021667260768978075,
+        "h": 210.1476950619126,
+        "s": 0.18618582473033662,
+        "l": 0.8292141049968376,
+        "chroma": 0.06359582542694497
+      },
+      {
+        "hex": "#F1F4F7",
+        "share": 0.002131778882109133,
+        "h": 210.38602194229995,
+        "s": 0.26665944305992034,
+        "l": 0.9555014464802315,
+        "chroma": 0.023731918997107027
+      },
+      {
+        "hex": "#D4DBE2",
+        "share": 0.0019902427432150023,
+        "h": 210.04627059041266,
+        "s": 0.19901285498545104,
+        "l": 0.8597892888498683,
+        "chroma": 0.05580746785105628
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 210,
+        "share": 0.24430884932866442,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 572292
+  }
+}

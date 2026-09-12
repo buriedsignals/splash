@@ -1,0 +1,542 @@
+{
+  "url": "https://www.populationpyramids.org/",
+  "archive": "search",
+  "family": "population-pyramid",
+  "id": "populationpyramids-org",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Population Pyramids - Interactive Demographics for 195 Countries",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "__Inter_f367f3",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 14 | 400 | normal | 0 | none",
+        "count": 991,
+        "sample": "World Population 2024",
+        "colors": [
+          "oklch(0.551 0.027 264.364)",
+          "oklch(0.446 0.03 256.802)",
+          "oklch(0.373 0.034 259.733)",
+          "oklch(0.707 0.022 261.325)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 14 | 500 | normal | 0 | none",
+        "count": 782,
+        "sample": "Year: 2025",
+        "colors": [
+          "oklch(0.373 0.034 259.733)",
+          "oklch(0.21 0.034 264.665)",
+          "oklch(0.627 0.194 149.214)",
+          "oklch(0.577 0.245 27.325)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 12 | 400 | normal | 0 | none",
+        "count": 197,
+        "sample": "1950",
+        "colors": [
+          "oklch(0.551 0.027 264.364)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 24 | 400 | normal | 0 | none",
+        "count": 195,
+        "sample": "🇮🇳",
+        "colors": [
+          "rgb(23, 23, 23)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 16 | 400 | normal | 0 | none",
+        "count": 59,
+        "sample": "🔄 Reset",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "oklch(0.446 0.03 256.802)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 16 | 700 | normal | 0 | none",
+        "count": 34,
+        "sample": "Expansive (Triangle):",
+        "colors": [
+          "oklch(0.446 0.03 256.802)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 14 | 600 | normal | 0 | none",
+        "count": 14,
+        "sample": "Countries",
+        "colors": [
+          "oklch(0.373 0.034 259.733)",
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 18 | 600 | normal | 0 | none",
+        "count": 12,
+        "sample": "Types of Population Structures:",
+        "colors": [
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 24 | 700 | normal | 0 | none",
+        "count": 10,
+        "sample": "8.12 B",
+        "colors": [
+          "oklch(0.546 0.245 262.881)",
+          "oklch(0.627 0.194 149.214)",
+          "oklch(0.558 0.288 302.321)",
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 20,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 20 | 600 | normal | 0 | none",
+        "count": 5,
+        "sample": "Comprehensive Population Data Visualization 2025-2027",
+        "colors": [
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 30,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 30 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "World Population Pyramid",
+        "colors": [
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Browse",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Watch how the world's age structure has evolved over 75 year",
+        "colors": [
+          "oklch(0.446 0.03 256.802)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 16 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "▶️ Play",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "oklch(0.546 0.245 262.881)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.5,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 20 | 700 | normal | -0.5 | none",
+        "count": 1,
+        "sample": "PopulationPyramids",
+        "colors": [
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 12 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "UN World Population Prospects Data Visualised",
+        "colors": [
+          "oklch(0.546 0.245 262.881)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 12 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Verified Data",
+        "colors": [
+          "oklch(0.488 0.243 264.376)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 48,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 48 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Global Population Demographics",
+        "colors": [
+          "oklch(0.21 0.034 264.665)"
+        ]
+      },
+      {
+        "family": "__Inter_f367f3",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "__Inter_f367f3 | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Interactive visualization of world population data from 1950",
+        "colors": [
+          "oklch(0.446 0.03 256.802)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 2
+      },
+      {
+        "colour": "fill oklch(0.546 0.245 262.881)",
+        "count": 1
+      },
+      {
+        "colour": "stroke oklch(0.373 0.034 259.733)",
+        "count": 1
+      },
+      {
+        "colour": "stroke oklch(0.551 0.027 264.364)",
+        "count": 1
+      },
+      {
+        "colour": "stroke oklch(0.546 0.245 262.881)",
+        "count": 1
+      },
+      {
+        "colour": "stroke oklch(0.707 0.165 254.624)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 832,
+      "ch": 104
+    },
+    "graphic": {
+      "tag": "canvas",
+      "documentTop": 735,
+      "nearTheTop": true,
+      "x": 168,
+      "y": 735,
+      "w": 1104,
+      "h": 500,
+      "ratio": 2.21
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.49547644927536233,
+      "h": 161.07692307906729,
+      "s": 0.005373677248650074,
+      "l": 0.9998265638983205,
+      "chroma": 0.0000018639792673802447
+    },
+    "chromatic": [
+      {
+        "hex": "#4CAF50",
+        "share": 0.012556159420289856,
+        "h": 122.42424242424241,
+        "s": 0.3944223107569721,
+        "l": 0.49215686274509807,
+        "chroma": 0.38823529411764707
+      },
+      {
+        "hex": "#7A96C5",
+        "share": 0.005239130434782609,
+        "h": 217.4829191830713,
+        "s": 0.3914989621875282,
+        "l": 0.6243525072546308,
+        "chroma": 0.29413120711631824
+      },
+      {
+        "hex": "#C17F9F",
+        "share": 0.0051992753623188405,
+        "h": 330.76829249057573,
+        "s": 0.34768930413148513,
+        "l": 0.626260162601626,
+        "chroma": 0.25989068798251014
+      },
+      {
+        "hex": "#7793C2",
+        "share": 0.0016920289855072463,
+        "h": 217.55860702151753,
+        "s": 0.3833796457103161,
+        "l": 0.6131838602678759,
+        "chroma": 0.29659486921106776
+      },
+      {
+        "hex": "#BD7D9C",
+        "share": 0.0016304347826086956,
+        "h": 331.0576131687243,
+        "s": 0.3309123921924647,
+        "l": 0.6160348583877995,
+        "chroma": 0.2541176470588235
+      },
+      {
+        "hex": "#BF6D95",
+        "share": 0.0008442028985507247,
+        "h": 330.6540194948119,
+        "s": 0.38982635342185906,
+        "l": 0.5880669864512329,
+        "chroma": 0.3211646890515863
+      },
+      {
+        "hex": "#668AC4",
+        "share": 0.0007753623188405797,
+        "h": 217.0221968134026,
+        "s": 0.4433705462921124,
+        "l": 0.5842999816749129,
+        "chroma": 0.36861828843687006
+      },
+      {
+        "hex": "#A9708C",
+        "share": 0.0007644927536231885,
+        "h": 330.4970723807151,
+        "s": 0.24929345631851932,
+        "l": 0.5511708948982437,
+        "chroma": 0.2237803178143296
+      },
+      {
+        "hex": "#99657F",
+        "share": 0.0007608695652173913,
+        "h": 330.0700453234446,
+        "s": 0.2046853769385746,
+        "l": 0.498202614379085,
+        "chroma": 0.20394957983193268
+      },
+      {
+        "hex": "#536787",
+        "share": 0.0007608695652173913,
+        "h": 216.92857142857142,
+        "s": 0.23855816493719276,
+        "l": 0.4274042950513539,
+        "chroma": 0.20392156862745098
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.49547644927536233,
+        "h": 161.07692307906729,
+        "s": 0.005373677248650074,
+        "l": 0.9998265638983205,
+        "chroma": 0.0000018639792673802447
+      },
+      {
+        "hex": "#C8C8C8",
+        "share": 0.35840217391304346,
+        "h": 0,
+        "s": 0,
+        "l": 0.784785848750483,
+        "chroma": 0
+      },
+      {
+        "hex": "#BCBCBC",
+        "share": 0.012818840579710144,
+        "h": 0,
+        "s": 0,
+        "l": 0.7360434054910828,
+        "chroma": 0
+      },
+      {
+        "hex": "#5F5F5F",
+        "share": 0.012333333333333333,
+        "h": 0,
+        "s": 0,
+        "l": 0.3725311628764314,
+        "chroma": 0
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.01106340579710145,
+        "h": 269.9999999982711,
+        "s": 0.000008381175878855411,
+        "l": 0.7701480461187259,
+        "chroma": 0.000003852859303155043
+      },
+      {
+        "hex": "#B2B2B2",
+        "share": 0.008992753623188406,
+        "h": 0,
+        "s": 0.0000026204420686535207,
+        "l": 0.6985234867516709,
+        "chroma": 0.000001580003476053804
+      },
+      {
+        "hex": "#8A8A8A",
+        "share": 0.006382246376811594,
+        "h": 0,
+        "s": 0,
+        "l": 0.5416439865756124,
+        "chroma": 0
+      },
+      {
+        "hex": "#7C7C7C",
+        "share": 0.0062626811594202894,
+        "h": 0,
+        "s": 0,
+        "l": 0.4868337615636361,
+        "chroma": 0
+      },
+      {
+        "hex": "#9D9D9D",
+        "share": 0.005713768115942029,
+        "h": 0,
+        "s": 0,
+        "l": 0.6149924776505402,
+        "chroma": 0
+      },
+      {
+        "hex": "#636363",
+        "share": 0.0050543478260869565,
+        "h": 0,
+        "s": 0,
+        "l": 0.38912080961416823,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 122,
+        "share": 0.012643115942028986,
+        "size": 3
+      },
+      {
+        "hue": 217,
+        "share": 0.010969202898550724,
+        "size": 10
+      },
+      {
+        "hue": 331,
+        "share": 0.01044927536231884,
+        "size": 11
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 552000
+  }
+}

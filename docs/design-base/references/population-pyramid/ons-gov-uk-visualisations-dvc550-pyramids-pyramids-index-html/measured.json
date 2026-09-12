@@ -1,0 +1,323 @@
+{
+  "url": "https://www.ons.gov.uk/visualisations/dvc550/pyramids/pyramids/index.html",
+  "archive": "search",
+  "family": "population-pyramid",
+  "id": "ons-gov-uk-visualisations-dvc550-pyramids-pyramids-index-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": "\"play\"",
+  "style": {
+    "title": "Overview of the UK population - population pyramids dvc550",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "0.5",
+        "colors": [
+          "rgb(34, 34, 34)",
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 400 | normal | 0 | none",
+        "count": 25,
+        "sample": "Choose an area",
+        "colors": [
+          "rgb(34, 34, 34)",
+          "rgb(32, 96, 149)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 600 | normal | 0 | none",
+        "count": 4,
+        "sample": "Male",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "228,800",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Office for National Statistics, Northern Ireland Statistics ",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(95, 118, 130)",
+        "count": 184
+      },
+      {
+        "colour": "fill rgb(0, 128, 128)",
+        "count": 184
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 91
+      },
+      {
+        "colour": "stroke rgb(95, 118, 130)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(0, 128, 128)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(177, 177, 177)",
+        "count": 4
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 204,
+      "nearTheTop": true,
+      "x": 255,
+      "y": 204,
+      "w": 930,
+      "h": 465,
+      "ratio": 2
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7589501676494392,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999804404284991,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#80BFBF",
+        "share": 0.07478089952595676,
+        "h": 180,
+        "s": 0.3298429319371728,
+        "l": 0.6254901960784314,
+        "chroma": 0.24705882352941178
+      },
+      {
+        "hex": "#8CC6C6",
+        "share": 0.01657301422129726,
+        "h": 180,
+        "s": 0.33479657883133623,
+        "l": 0.6630775039191064,
+        "chroma": 0.22560099803839495
+      },
+      {
+        "hex": "#83C1C1",
+        "share": 0.007573129841600185,
+        "h": 180,
+        "s": 0.33595729145548914,
+        "l": 0.6367507858105075,
+        "chroma": 0.2440724442448735
+      },
+      {
+        "hex": "#008080",
+        "share": 0.0050040467106023815,
+        "h": 180,
+        "s": 1,
+        "l": 0.25098039215686274,
+        "chroma": 0.5019607843137255
+      },
+      {
+        "hex": "#40A0A0",
+        "share": 0.0013018846109376806,
+        "h": 180,
+        "s": 0.4273002905296824,
+        "l": 0.439943579563264,
+        "chroma": 0.3759760387281023
+      },
+      {
+        "hex": "#8FC8C8",
+        "share": 0.0009712105445716267,
+        "h": 180,
+        "s": 0.341317365269461,
+        "l": 0.6725490196078432,
+        "chroma": 0.22352941176470587
+      },
+      {
+        "hex": "#209090",
+        "share": 0.0006960342236096658,
+        "h": 180,
+        "s": 0.6335748564976005,
+        "l": 0.34613380235815255,
+        "chroma": 0.4386033483160706
+      },
+      {
+        "hex": "#90C7C7",
+        "share": 0.0006451612903225806,
+        "h": 180,
+        "s": 0.3293413173652694,
+        "l": 0.6725490196078432,
+        "chroma": 0.21568627450980393
+      },
+      {
+        "hex": "#60AFAF",
+        "share": 0.0005781015146259683,
+        "h": 180,
+        "s": 0.33054393305439334,
+        "l": 0.5313725490196078,
+        "chroma": 0.30980392156862746
+      },
+      {
+        "hex": "#90C8C8",
+        "share": 0.00035842293906810036,
+        "h": 180,
+        "s": 0.3370251930426643,
+        "l": 0.6756230234029095,
+        "chroma": 0.21864642631246045
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7589501676494392,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999804404284991,
+        "chroma": 0
+      },
+      {
+        "hex": "#AFBAC1",
+        "share": 0.07569429991906579,
+        "h": 203.29290645811693,
+        "s": 0.12676056338028163,
+        "l": 0.7215686274509804,
+        "chroma": 0.07058823529411762
+      },
+      {
+        "hex": "#B2BDC3",
+        "share": 0.009161752803792346,
+        "h": 200.77100167020276,
+        "s": 0.12285767631709822,
+        "l": 0.7322886044877315,
+        "chroma": 0.06578079995248987
+      },
+      {
+        "hex": "#B9C3C8",
+        "share": 0.00838247196207654,
+        "h": 200.94325508495706,
+        "s": 0.12363964678161667,
+        "l": 0.754369168356998,
+        "chroma": 0.06073941852603104
+      },
+      {
+        "hex": "#B6C1C6",
+        "share": 0.006215747485258411,
+        "h": 200.91604829142346,
+        "s": 0.12355184613571782,
+        "l": 0.7461900385154061,
+        "chroma": 0.062717378618114
+      },
+      {
+        "hex": "#5F7682",
+        "share": 0.005078043704474506,
+        "h": 200.57142857142853,
+        "s": 0.1555555555555555,
+        "l": 0.4411764705882353,
+        "chroma": 0.13725490196078427
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0036004162330905308,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#D9D9D9",
+        "share": 0.001736616949936409,
+        "h": 0,
+        "s": 0,
+        "l": 0.8500456907130363,
+        "chroma": 0
+      },
+      {
+        "hex": "#B8C2C7",
+        "share": 0.0013943808532778355,
+        "h": 199.07131011608624,
+        "s": 0.11811023622047244,
+        "l": 0.7509803921568627,
+        "chroma": 0.05882352941176472
+      },
+      {
+        "hex": "#8798A1",
+        "share": 0.0013758816048098047,
+        "h": 201.34887275506307,
+        "s": 0.12354246329603932,
+        "l": 0.5811566979733069,
+        "chroma": 0.10348986653484926
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 180,
+        "share": 0.10862527459821947,
+        "size": 20
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 432450
+  }
+}

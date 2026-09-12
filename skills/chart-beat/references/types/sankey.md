@@ -54,3 +54,11 @@ carry it on a small decorative swatch exempt from the text-contrast rule rather 
 itself. Because sankey ribbons carry both category (via hue) and quantity (via thickness) at once, a
 reader relying on colour alone to track one flow across the diagram needs the swatch-and-neutral-name
 pattern just as much as any bar-family label does.
+
+## The worked example in this tree
+
+`proof/static-sankey-electricity-sources` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

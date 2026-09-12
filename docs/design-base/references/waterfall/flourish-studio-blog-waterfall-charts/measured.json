@@ -1,0 +1,535 @@
+{
+  "url": "https://flourish.studio/blog/waterfall-charts/",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "flourish-studio-blog-waterfall-charts",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "How to make interactive waterfall charts | Flourish",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Canva Sans Variable",
+        "size": 14.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 14.3 | 400 | normal | 0 | none",
+        "count": 43,
+        "sample": "About us",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 17.1,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 17.1 | 400 | normal | 0 | none",
+        "count": 34,
+        "sample": "At Flourish, we’re always excited about chart types that del",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 17.1,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 17.1 | 700 | normal | 0 | none",
+        "count": 21,
+        "sample": "versatile waterfall mode",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 14.3,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 14.3 | 600 | normal | 0 | none",
+        "count": 7,
+        "sample": "Company",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 28.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 28.5 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Waterfall charts: when and why?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Data visualization and storytelling",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 12 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "By clicking \"Subscribe\", you agree to receive news and updat",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 15.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 15.2 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Last updated on",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 13.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 13.3 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Subscribe to our newsletter",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 38,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 38 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How to make interactive waterfall charts",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 19,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 19 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Easily create online waterfall charts that excel in visualiz",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 17.1,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 17.1 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "how",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 19,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 19 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Enjoyed this blog post?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 19,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 19 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Get the newsletter!",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Canva Sans Variable",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Canva Sans Variable | 15 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "≪ Blog home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 82
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 743,
+      "nearTheTop": true,
+      "x": 220,
+      "y": 743,
+      "w": 1000,
+      "h": 650,
+      "ratio": 1.54
+    },
+    "graphicFrame": {
+      "url": "https://flo.uri.sh/visualisation/17486666/embed?auto=1",
+      "title": "Trends and patters: Tesla stock performance",
+      "ground": "rgb(18, 18, 18)",
+      "type": [
+        {
+          "family": "Lato",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lato | 14 | 400 | normal | 0 | none",
+          "count": 12,
+          "sample": "04/01/2024",
+          "colors": [
+            "rgb(240, 240, 240)"
+          ]
+        },
+        {
+          "family": "Lato",
+          "size": 12.6,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lato | 12.6 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "Source:  Google Finance • Created with the Flourish",
+          "colors": [
+            "rgb(240, 240, 240)"
+          ]
+        },
+        {
+          "family": "Lato",
+          "size": 32.2,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lato | 32.2 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Magnificent Seven no more",
+          "colors": [
+            "rgb(240, 240, 240)"
+          ]
+        },
+        {
+          "family": "Source Sans Pro",
+          "size": 17.5,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Sans Pro | 17.5 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Tesla's stock price in the past six months",
+          "colors": [
+            "rgb(240, 240, 240)"
+          ]
+        },
+        {
+          "family": "Lato",
+          "size": 12.6,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lato | 12.6 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Line, Bar, Pie",
+          "colors": [
+            "rgb(240, 240, 240)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(112, 186, 138)",
+          "count": 55
+        },
+        {
+          "colour": "fill rgb(250, 93, 87)",
+          "count": 53
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#121212",
+      "share": 0.9407107692307692,
+      "h": 7.136563876770403,
+      "s": 0.000010307221025627505,
+      "l": 0.0706227491667191,
+      "chroma": 0.0000014558485701976487
+    },
+    "chromatic": [
+      {
+        "hex": "#70BA8A",
+        "share": 0.005626153846153846,
+        "h": 141.07791689455868,
+        "s": 0.3490183230879163,
+        "l": 0.5843019296862852,
+        "chroma": 0.2901724868235509
+      },
+      {
+        "hex": "#FA5D57",
+        "share": 0.005161538461538461,
+        "h": 2.208851499634238,
+        "s": 0.9417876051932662,
+        "l": 0.6606773618538324,
+        "chroma": 0.6391397095350808
+      },
+      {
+        "hex": "#E65751",
+        "share": 0.00033692307692307694,
+        "h": 2.2358873447300467,
+        "s": 0.7455870890834901,
+        "l": 0.6094368340943683,
+        "chroma": 0.5823977079416243
+      },
+      {
+        "hex": "#6DB486",
+        "share": 0.0002569230769230769,
+        "h": 141.15180601161907,
+        "s": 0.32200081333875563,
+        "l": 0.5669249735822472,
+        "chroma": 0.27890102148643886
+      },
+      {
+        "hex": "#4D7B5D",
+        "share": 0.0002476923076923077,
+        "h": 141.04032258064515,
+        "s": 0.23134328358208958,
+        "l": 0.39166971136280593,
+        "chroma": 0.18122031421264156
+      },
+      {
+        "hex": "#ED5954",
+        "share": 0.00024615384615384614,
+        "h": 2.1147741147741157,
+        "s": 0.812285109759323,
+        "l": 0.629313725490196,
+        "chroma": 0.6022058823529413
+      },
+      {
+        "hex": "#64A57B",
+        "share": 0.00019384615384615385,
+        "h": 141.0081340892285,
+        "s": 0.2629634430904848,
+        "l": 0.5198257080610021,
+        "chroma": 0.252536570183629
+      },
+      {
+        "hex": "#568B69",
+        "share": 0.00018307692307692307,
+        "h": 141.34278959810874,
+        "s": 0.23743591662612729,
+        "l": 0.4403196572746746,
+        "chroma": 0.20909540286702916
+      },
+      {
+        "hex": "#F65C56",
+        "share": 0.00016307692307692307,
+        "h": 2.2314049586776847,
+        "s": 0.8964860287891617,
+        "l": 0.6504624491305956,
+        "chroma": 0.6267110617832039
+      },
+      {
+        "hex": "#72312F",
+        "share": 0.00015076923076923077,
+        "h": 2.3262153566560655,
+        "s": 0.419691095150321,
+        "l": 0.31478591436574627,
+        "chroma": 0.2642256902761104
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#121212",
+        "share": 0.9407107692307692,
+        "h": 7.136563876770403,
+        "s": 0.000010307221025627505,
+        "l": 0.0706227491667191,
+        "chroma": 0.0000014558485701976487
+      },
+      {
+        "hex": "#222222",
+        "share": 0.006204615384615385,
+        "h": 95.99999999995434,
+        "s": 0.00005438940639397601,
+        "l": 0.13408448923829386,
+        "chroma": 0.000014585551552620535
+      },
+      {
+        "hex": "#636363",
+        "share": 0.004704615384615384,
+        "h": 140.00000000028857,
+        "s": 0.000009931505715593126,
+        "l": 0.3873722412444376,
+        "chroma": 0.000007694379255962502
+      },
+      {
+        "hex": "#F0F0F0",
+        "share": 0.0041907692307692306,
+        "h": 0,
+        "s": 0,
+        "l": 0.9411764705882353,
+        "chroma": 0
+      },
+      {
+        "hex": "#5D5D5D",
+        "share": 0.003843076923076923,
+        "h": 0,
+        "s": 0,
+        "l": 0.3659492299722131,
+        "chroma": 0
+      },
+      {
+        "hex": "#1C1D1D",
+        "share": 0.003289230769230769,
+        "h": 142.15827338129526,
+        "s": 0.0034145342886386897,
+        "l": 0.11200223775197637,
+        "chroma": 0.0007648709624167721
+      },
+      {
+        "hex": "#6D6D6D",
+        "share": 0.002553846153846154,
+        "h": 0,
+        "s": 0,
+        "l": 0.42870304748405386,
+        "chroma": 0
+      },
+      {
+        "hex": "#444444",
+        "share": 0.002533846153846154,
+        "h": 0,
+        "s": 0,
+        "l": 0.2651499458313987,
+        "chroma": 0
+      },
+      {
+        "hex": "#3E3E3E",
+        "share": 0.002526153846153846,
+        "h": 0,
+        "s": 0,
+        "l": 0.2424279334145351,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0009523076923076923,
+        "h": 0,
+        "s": 0,
+        "l": 0.9236402800215401,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 141,
+        "share": 0.006644615384615385,
+        "size": 6
+      },
+      {
+        "hue": 2,
+        "share": 0.007650769230769229,
+        "size": 18
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 650000
+  }
+}

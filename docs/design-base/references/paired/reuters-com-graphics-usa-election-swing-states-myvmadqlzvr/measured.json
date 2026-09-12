@@ -1,0 +1,343 @@
+{
+  "url": "https://www.reuters.com/graphics/USA-ELECTION/SWING-STATES/myvmadqlzvr/",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "reuters-com-graphics-usa-election-swing-states-myvmadqlzvr",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "not-applicable",
+      "why": "no graphic outside the site's own chrome — a palette read from the page would be the site's navigation and banners, not this piece's design"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "Harris and Trump fight to win in seven states",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Source Sans Pro",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 14 | 700 | normal | 0 | none",
+        "count": 122,
+        "sample": "10",
+        "colors": [
+          "rgb(249, 249, 249)",
+          "rgb(102, 102, 102)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 12 | 700 | normal | 0 | none",
+        "count": 104,
+        "sample": "ME",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 14 | 400 | normal | 0 | none",
+        "count": 77,
+        "sample": "WISCONSIN",
+        "colors": [
+          "rgb(102, 102, 102)",
+          "rgb(255, 255, 255)",
+          "rgb(249, 249, 249)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 16 | 500 | normal | 0 | none",
+        "count": 43,
+        "sample": "World",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "FreightText",
+        "size": 21,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FreightText | 21 | 400 | normal | 0 | none",
+        "count": 18,
+        "sample": "U.S. Presidential elections are sprawling affairs, with mail",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 24,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 24 | 300 | normal | 0 | none",
+        "count": 13,
+        "sample": "Battleground States, 2020",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 14,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 14 | 300 | normal | 0 | none",
+        "count": 13,
+        "sample": "60%",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 12 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "40",
+        "colors": [
+          "rgb(102, 102, 102)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 14 | 500 | normal | 0 | none",
+        "count": 11,
+        "sample": "Advertise With Us",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 16 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "U.S. VOTES, 2020 ELECTION",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Advertisement · Scroll to continue",
+        "colors": [
+          "rgb(102, 102, 102)",
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 14.2 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "By  and",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 16 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Latest",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 16 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "PERCENTAGE",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 14.2 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sarah Slobin",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 32.8,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 32.8 | 300 | normal | 0 | none",
+        "count": 2,
+        "sample": "What Voting Patterns Reveal",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14.2,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 14.2 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sources",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Information you can trust",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 14.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.71,
+        "transform": "uppercase",
+        "key": "Knowledge | 14.2 | 700 | normal | 0.71 | uppercase",
+        "count": 1,
+        "sample": "2024 U.S. Elections",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Knowledge",
+        "size": 21,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Knowledge | 21 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "What's Changed in the Seven States Likely to Determine Ameri",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 16 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "0.24%",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(214, 64, 0)",
+        "count": 26
+      },
+      {
+        "colour": "fill rgb(64, 64, 64)",
+        "count": 25
+      }
+    ],
+    "column": {
+      "px": 660,
+      "ch": 63
+    },
+    "graphic": null
+  }
+}

@@ -1,0 +1,708 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/major-llms-ranked-by-performance/",
+  "archive": "informationisbeautiful",
+  "family": "ranking",
+  "id": "informationisbeautiful-net-visualizations-major-llms-ranked-by-perform",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "The Rise of Generative AI Large Language Models (LLMs) like ChatGPT — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 78,
+        "sample": "» main source:  » see » chart rendered with",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 17,
+        "sample": "A visualisation of major large-language models (LLMs), ranke",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 15,
+        "sample": "notes",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "SOURCES: , , news reports",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 7,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "Various news reports. datasheet",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "World’s Biggest Data Breaches & Hacks",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Which leaks & hacks were the worst?",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to Create Graphics Like This",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "CHANGE LOG UPDATES",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "900",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 900 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "OpenAI",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 830,
+      "ratio": 1.66
+    },
+    "graphicFrame": {
+      "url": "https://vizsweet.com/api/embed/cb3fd8cca9c6c73d",
+      "title": "VizSweet",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Inter Tight",
+          "size": 16,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 16 | 700 | normal | 0 | none",
+          "count": 12,
+          "sample": "100",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 16,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 16 | 400 | normal | 0 | none",
+          "count": 11,
+          "sample": "Parameters (Bn)",
+          "colors": [
+            "rgb(26, 26, 26)",
+            "rgb(11, 11, 11)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.8 | 400 | normal | 0 | none",
+          "count": 7,
+          "sample": "David McCandless, Tom Evans, Paul Barton",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "▲ 70+ IDEAL ▲",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 45.2,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 45.2 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "Major Large Language Models (LLMs)",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 25.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 25.8 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "ranked by capabilities, sized by billion parameters used for",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 13.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 13.2 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "LICK LEGEND ITEMS TO FILTER",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 16,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 16 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "show only",
+          "colors": [
+            "rgb(11, 11, 11)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.8,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.8 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "Informationisbeautiful // Jan 2026",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 11,
+          "weight": "300",
+          "style": "normal",
+          "tracking": 0.5,
+          "transform": "uppercase",
+          "key": "Rubik | 11 | 300 | normal | 0.5 | uppercase",
+          "count": 1,
+          "sample": "Made with",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(0, 0, 0)",
+          "count": 165
+        },
+        {
+          "colour": "stroke rgb(128, 128, 128)",
+          "count": 165
+        },
+        {
+          "colour": "fill rgb(255, 255, 255)",
+          "count": 13
+        },
+        {
+          "colour": "stroke rgba(26, 26, 26, 0.3)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgb(11, 11, 11)",
+          "count": 2
+        },
+        {
+          "colour": "stroke rgb(129, 129, 129)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(26, 26, 26)",
+          "count": 2
+        },
+        {
+          "colour": "stroke rgba(26, 26, 26, 0.33)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(51, 51, 51)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.897173039986031,
+      "h": 8.300395260680332,
+      "s": 0.007760022083893825,
+      "l": 0.9999377908890814,
+      "chroma": 9.654881490961387e-7
+    },
+    "chromatic": [
+      {
+        "hex": "#595D9D",
+        "share": 0.0030146673651126246,
+        "h": 236.4705431407873,
+        "s": 0.276413049748251,
+        "l": 0.4823637303169168,
+        "chroma": 0.2666632595696837
+      },
+      {
+        "hex": "#F5854E",
+        "share": 0.0026593329841103543,
+        "h": 19.761448843418115,
+        "s": 0.8929644818336308,
+        "l": 0.6333191713980405,
+        "chroma": 0.6548659122217502
+      },
+      {
+        "hex": "#AC65AD",
+        "share": 0.0026593329841103543,
+        "h": 299.16666286688763,
+        "s": 0.3050854766843198,
+        "l": 0.5372581205824418,
+        "chroma": 0.28235165372780757
+      },
+      {
+        "hex": "#FFE433",
+        "share": 0.0021966125371049414,
+        "h": 52.058591443919035,
+        "s": 1,
+        "l": 0.6000116898905826,
+        "chroma": 0.7999766202188348
+      },
+      {
+        "hex": "#DD67A1",
+        "share": 0.0014728479133927013,
+        "h": 330.5084745762712,
+        "s": 0.6344086021505377,
+        "l": 0.6352941176470588,
+        "chroma": 0.4627450980392157
+      },
+      {
+        "hex": "#D15549",
+        "share": 0.0008451196088702636,
+        "h": 5.294117647058824,
+        "s": 0.5964912280701754,
+        "l": 0.5529411764705883,
+        "chroma": 0.5333333333333333
+      },
+      {
+        "hex": "#33A59D",
+        "share": 0.000499388859786974,
+        "h": 175.79007100900265,
+        "s": 0.5276903280108123,
+        "l": 0.4235671191553544,
+        "chroma": 0.44702454408336756
+      },
+      {
+        "hex": "#7EC46B",
+        "share": 0.0004609743321110529,
+        "h": 107.19101123595506,
+        "s": 0.42995169082125606,
+        "l": 0.5941176470588235,
+        "chroma": 0.3490196078431373
+      },
+      {
+        "hex": "#333682",
+        "share": 0.0003963680810197311,
+        "h": 238.20384410933607,
+        "s": 0.43477150259697617,
+        "l": 0.3550617603869742,
+        "chroma": 0.30874147015634457
+      },
+      {
+        "hex": "#F26D2B",
+        "share": 0.00038152610441767067,
+        "h": 19.89833588260324,
+        "s": 0.8844326908406651,
+        "l": 0.5588683986180284,
+        "chroma": 0.7803024184502175
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.897173039986031,
+        "h": 8.300395260680332,
+        "s": 0.007760022083893825,
+        "l": 0.9999377908890814,
+        "chroma": 9.654881490961387e-7
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.018311506897153832,
+        "h": 300,
+        "s": 0.000004427972387416398,
+        "l": 0.8944365292603167,
+        "chroma": 9.348642671103136e-7
+      },
+      {
+        "hex": "#1A1A1A",
+        "share": 0.01319975554391479,
+        "h": 0,
+        "s": 0,
+        "l": 0.10306237184999008,
+        "chroma": 0
+      },
+      {
+        "hex": "#010101",
+        "share": 0.004496245852977126,
+        "h": 0,
+        "s": 0,
+        "l": 0.0048117266324005335,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0025502008032128516,
+        "h": 281.3793103448571,
+        "s": 0.00043792754564211196,
+        "l": 0.9555477240536749,
+        "chroma": 0.0000389337522067601
+      },
+      {
+        "hex": "#545454",
+        "share": 0.00250130958617077,
+        "h": 0,
+        "s": 0.0000020873035587189077,
+        "l": 0.3278835164083085,
+        "chroma": 0.0000013687848612886633
+      },
+      {
+        "hex": "#333333",
+        "share": 0.0024436877946568884,
+        "h": 0,
+        "s": 0,
+        "l": 0.20106620711878895,
+        "chroma": 0
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.0021538327221931205,
+        "h": 0,
+        "s": 0,
+        "l": 0.7701105573968542,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0021224026540946394,
+        "h": 293.33333333348634,
+        "s": 0.00009521492123579724,
+        "l": 0.923760092272203,
+        "chroma": 0.000014518353618653279
+      },
+      {
+        "hex": "#D5D5D5",
+        "share": 0.002104941505151039,
+        "h": 0,
+        "s": 0,
+        "l": 0.8335260773741268,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 236,
+        "share": 0.003755893137768465,
+        "size": 3
+      },
+      {
+        "hue": 20,
+        "share": 0.007430591932949188,
+        "size": 11
+      },
+      {
+        "hue": 299,
+        "share": 0.005105639951108783,
+        "size": 6
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 1145400
+  }
+}

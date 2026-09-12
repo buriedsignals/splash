@@ -36,6 +36,31 @@ const GAP = 8;
  */
 const ANCHORS = Object.freeze(["above", "below", "right", "left"]);
 
+/**
+ * A request may name the anchors it will accept, and a label that has only one honest position
+ * SHOULD.
+ *
+ * MEASURED, on the 27-row diverging bar. Its values sit beyond their own bar's tip, which on a row
+ * chart is one position and not four. Czechia's label found room `above` — above its own row, which
+ * is to say ON the row above it — and the row above then had nowhere left to put its own number, so
+ * `−6,46` was dropped and Germany shipped without a value. Both halves of that are wrong, and
+ * neither is a collision: the arbiter placed two labels that do not overlap, in a chart where one of
+ * them names the wrong row.
+ *
+ * The four-anchor default stays. A point on a scatter or a line genuinely can take a label on any
+ * side; a row's value cannot.
+ */
+const anchorsFor = (request) => {
+  const wanted = request.anchors ?? ANCHORS;
+  const unknown = wanted.filter((a) => !ANCHORS.includes(a));
+  if (unknown.length)
+    throw new Error(
+      `${request.id}: unknown anchor ${unknown.join(", ")} — a misspelt anchor would silently fall ` +
+        `back to all four positions, which is the defect this list exists to prevent`,
+    );
+  return wanted;
+};
+
 /** Boxes closer than this on both axes are touching, and touching reads as overlapping. */
 const BREATH = 2;
 
@@ -69,7 +94,9 @@ function collides(box, taken) {
 /**
  * Place every treatment's label, or drop it and say why.
  *
- * @param {Array<{id: string, treatment: string, text: string, at: {x: number, y: number}, priority?: number}>} requests
+ * @param {Array<{id: string, treatment: string, text: string, at: {x: number, y: number}, priority?: number, anchors?: string[]}>} requests
+ *   `anchors` narrows the positions this label will accept, in the order to try them. Omit it and
+ *   all four are tried; give it when the label has fewer honest positions than four.
  * @param {{frame: {left, top, right, bottom}, measure: (text: string) => {width, height}, avoid?: Array<{x, y, width, height}>}} options
  *   `avoid` carries the MARKS — the boxes a label must not sit on, which the caller knows and this
  *   file cannot: a series path, a point, a bar.
@@ -92,7 +119,8 @@ export function placeLabels(requests, { frame, measure, avoid = [] }) {
     const size = measure(request.text);
     let chosen = null;
 
-    for (const anchor of ANCHORS) {
+    const anchors = anchorsFor(request);
+    for (const anchor of anchors) {
       const box = boxAt(anchor, request.at, size);
       if (!insideFrame(box, frame)) continue;
       if (collides(box, taken)) continue;
@@ -103,7 +131,7 @@ export function placeLabels(requests, { frame, measure, avoid = [] }) {
     if (!chosen) {
       // Which of the two rules refused it, so the report can say something true rather than
       // "could not place".
-      const anyFits = ANCHORS.some((anchor) => insideFrame(boxAt(anchor, request.at, size), frame));
+      const anyFits = anchors.some((anchor) => insideFrame(boxAt(anchor, request.at, size), frame));
       dropped.push({
         id: request.id,
         treatment: request.treatment,

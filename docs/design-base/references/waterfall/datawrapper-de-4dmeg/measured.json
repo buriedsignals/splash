@@ -1,0 +1,431 @@
+{
+  "url": "https://www.datawrapper.de/_/4dmeg/",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "datawrapper-de-4dmeg",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "How Alphabet’s $402.8B in revenue became $132.2B in net income | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 219,
+      "w": 640,
+      "h": 503,
+      "ratio": 1.27
+    },
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/4dmeg/1/",
+      "title": "How Alphabet’s $402.8B in revenue became $132.2B in net income",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 24,
+          "sample": "Cost of revenue",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 700 | normal | 0 | none",
+          "count": 4,
+          "sample": "Revenue",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "How Alphabet’s $402.8B in revenue became $132.2B in net inco",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Alphabet Inc. (GOOGL) income statement, full year 2025, in U",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(74, 96, 108)",
+          "count": 4
+        },
+        {
+          "colour": "fill rgb(229, 122, 98)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgba(255, 255, 255, 0)",
+          "count": 2
+        },
+        {
+          "colour": "stroke rgb(24, 24, 24)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(154, 201, 172)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.754572564612326,
+      "h": 140.0000000458467,
+      "s": 0.0002776492365311031,
+      "l": 0.9999127821000617,
+      "chroma": 4.84319666593791e-8
+    },
+    "chromatic": [
+      {
+        "hex": "#E57A62",
+        "share": 0.044442718687872765,
+        "h": 10.992366412213743,
+        "s": 0.7158469945355189,
+        "l": 0.6411764705882353,
+        "chroma": 0.5137254901960784
+      },
+      {
+        "hex": "#9AC9AC",
+        "share": 0.004038270377733599,
+        "h": 142.97872340425533,
+        "s": 0.30322580645161284,
+        "l": 0.696078431372549,
+        "chroma": 0.1843137254901961
+      },
+      {
+        "hex": "#C15B46",
+        "share": 0.00039761431411530816,
+        "h": 10.24390243902439,
+        "s": 0.4979757085020242,
+        "l": 0.5156862745098039,
+        "chroma": 0.48235294117647054
+      },
+      {
+        "hex": "#7B473C",
+        "share": 0.0002826789264413519,
+        "h": 10.748299319727895,
+        "s": 0.34534064212999216,
+        "l": 0.35770308123249295,
+        "chroma": 0.24705882352941172
+      },
+      {
+        "hex": "#7F493D",
+        "share": 0.00020501988071570576,
+        "h": 10.909090909090905,
+        "s": 0.351063829787234,
+        "l": 0.3686274509803922,
+        "chroma": 0.2588235294117647
+      },
+      {
+        "hex": "#874D40",
+        "share": 0.00020501988071570576,
+        "h": 10.985915492957744,
+        "s": 0.35678391959798994,
+        "l": 0.39019607843137255,
+        "chroma": 0.2784313725490196
+      },
+      {
+        "hex": "#B86552",
+        "share": 0.00020191351888667992,
+        "h": 11.17647058823529,
+        "s": 0.4180327868852459,
+        "l": 0.5215686274509804,
+        "chroma": 0.39999999999999997
+      },
+      {
+        "hex": "#0289CD",
+        "share": 0.0001584244532803181,
+        "h": 199.99999999999997,
+        "s": 0.9795046968403074,
+        "l": 0.4051903114186851,
+        "chroma": 0.7937716262975778
+      },
+      {
+        "hex": "#E5BBB2",
+        "share": 0.0001459990059642147,
+        "h": 10.284280936454822,
+        "s": 0.49833333333333324,
+        "l": 0.799749687108886,
+        "chroma": 0.19958281184814342
+      },
+      {
+        "hex": "#C56652",
+        "share": 0.0001304671968190855,
+        "h": 10.223048327137544,
+        "s": 0.5,
+        "l": 0.5478991596638656,
+        "chroma": 0.4521008403361345
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.754572564612326,
+        "h": 140.0000000458467,
+        "s": 0.0002776492365311031,
+        "l": 0.9999127821000617,
+        "chroma": 4.84319666593791e-8
+      },
+      {
+        "hex": "#4A606C",
+        "share": 0.12195576540755468,
+        "h": 201.1764705882353,
+        "s": 0.18681318681318676,
+        "l": 0.3568627450980392,
+        "chroma": 0.1333333333333333
+      },
+      {
+        "hex": "#000000",
+        "share": 0.010313121272365805,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.008542495029821073,
+        "h": 146.6666666666996,
+        "s": 0.0009744025984061398,
+        "l": 0.9539001782531195,
+        "chroma": 0.00008983957219244054
+      },
+      {
+        "hex": "#181818",
+        "share": 0.007035909542743538,
+        "h": 0,
+        "s": 0,
+        "l": 0.09460243258451283,
+        "chroma": 0
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.004529075546719682,
+        "h": 141.81818181809993,
+        "s": 0.00018474043968155833,
+        "l": 0.9199238817612092,
+        "chroma": 0.000029586594582853287
+      },
+      {
+        "hex": "#8B8B8B",
+        "share": 0.004364438369781312,
+        "h": 0,
+        "s": 0,
+        "l": 0.5452934198590468,
+        "chroma": 0
+      },
+      {
+        "hex": "#A3A3A3",
+        "share": 0.002264537773359841,
+        "h": 0,
+        "s": 0,
+        "l": 0.6394738965545066,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0019383697813121273,
+        "h": 0,
+        "s": 0,
+        "l": 0.8294683257918551,
+        "chroma": 0
+      },
+      {
+        "hex": "#242424",
+        "share": 0.001702286282306163,
+        "h": 0,
+        "s": 0,
+        "l": 0.14033204522684986,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 11,
+        "share": 0.04675695825049703,
+        "size": 18
+      },
+      {
+        "hue": 143,
+        "share": 0.004038270377733599,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 321920
+  }
+}

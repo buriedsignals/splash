@@ -56,3 +56,11 @@ is near-black and the beat takes no accent at all. Derive it — `marksUnder` th
 cannot see was not carrying the accent either. The same arithmetic moves the median's LABEL: it
 cannot be inked at all while it lies half on the page and half on a bar, so it is pushed clear of
 every bar it would sit on and then inked against what is left.
+
+## The worked example in this tree
+
+`proof/static-carbon-footprint-spread` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

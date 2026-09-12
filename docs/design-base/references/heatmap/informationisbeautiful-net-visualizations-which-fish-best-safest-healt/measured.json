@@ -1,0 +1,611 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/which-fish-best-safest-healthy-to-eat/",
+  "archive": "informationisbeautiful",
+  "family": "heatmap",
+  "id": "informationisbeautiful-net-visualizations-which-fish-best-safest-healt",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Which Fish Are Okay to Eat? — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Quicksand",
+        "size": 10,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 10 | 500 | normal | 0 | none",
+        "count": 106,
+        "sample": "(CANADA TRAWL)",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 14 | 500 | normal | 0 | none",
+        "count": 95,
+        "sample": "Pollock",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Updated with 2017 data.",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.4,
+        "transform": "none",
+        "key": "Quicksand | 15 | 700 | normal | -0.4 | none",
+        "count": 14,
+        "sample": "vulnerable or",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 13.5,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 13.5 | 500 | normal | 0 | none",
+        "count": 9,
+        "sample": "TOXINS",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 16 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "sources: MCS, GreenPeace, Good Fish Guide, Monterey Bay Aqua",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Concept & Design: Code & Additional Design Research: , Addit",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "» for even more detail. » when we release new graphics into ",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Caffeine vs. Calories",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 19,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 19 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Pacific",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.4,
+        "transform": "none",
+        "key": "Quicksand | 32 | 700 | normal | -0.4 | none",
+        "count": 3,
+        "sample": "NO",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Credits:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "All the scientific evidence for health supps",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.8,
+        "transform": "none",
+        "key": "Quicksand | 23 | 400 | normal | -0.8 | none",
+        "count": 1,
+        "sample": "I care about:",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(102, 102, 102)",
+        "count": 51
+      },
+      {
+        "colour": "fill rgb(242, 129, 102)",
+        "count": 39
+      },
+      {
+        "colour": "fill rgb(60, 60, 59)",
+        "count": 22
+      },
+      {
+        "colour": "fill rgb(157, 157, 156)",
+        "count": 20
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 8
+      },
+      {
+        "colour": "stroke rgb(77, 77, 77)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(225, 242, 252)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(212, 236, 251)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(188, 227, 249)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(77, 77, 77)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 1403,
+      "ratio": 0.98
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#BCE3F9",
+      "share": 0.32573212680901176,
+      "h": 201.63894120535792,
+      "s": 0.835595018741731,
+      "l": 0.8568609698110109,
+      "chroma": 0.2392125212268832
+    },
+    "chromatic": [
+      {
+        "hex": "#F28166",
+        "share": 0.019001725081863916,
+        "h": 11.573111532741427,
+        "s": 0.8433542824231202,
+        "l": 0.6745497231238241,
+        "chroma": 0.5489397694386262
+      },
+      {
+        "hex": "#E59A8B",
+        "share": 0.0016243660065904325,
+        "h": 9.955240859460565,
+        "s": 0.6308323776181567,
+        "l": 0.7211203591134387,
+        "chroma": 0.35185261385953426
+      },
+      {
+        "hex": "#F1846A",
+        "share": 0.0011011600400797463,
+        "h": 11.543732898501847,
+        "s": 0.8235696675896312,
+        "l": 0.6788093661479602,
+        "chroma": 0.5290457271088548
+      },
+      {
+        "hex": "#ED8A73",
+        "share": 0.0008129577406592499,
+        "h": 11.014308492345537,
+        "s": 0.7730674723061428,
+        "l": 0.6907466925779207,
+        "chroma": 0.478147345342203
+      },
+      {
+        "hex": "#CCEAFB",
+        "share": 0.0006017126860660902,
+        "h": 201.8016828906121,
+        "s": 0.8402107111501314,
+        "l": 0.8907296137339056,
+        "chroma": 0.18362029790456957
+      },
+      {
+        "hex": "#DEA59C",
+        "share": 0.00042455607549040877,
+        "h": 8.344045299783327,
+        "s": 0.5056854278111791,
+        "l": 0.7409212346739182,
+        "chroma": 0.26202471256142346
+      },
+      {
+        "hex": "#DBAAA3",
+        "share": 0.00038375324098463955,
+        "h": 7.183129003622763,
+        "s": 0.44043958366354946,
+        "l": 0.7502573034597418,
+        "chroma": 0.21999313857440694
+      },
+      {
+        "hex": "#E79685",
+        "share": 0.00036877498527999007,
+        "h": 10.423732451809544,
+        "s": 0.6677464667603128,
+        "l": 0.7126132806063602,
+        "chroma": 0.3838029329378809
+      },
+      {
+        "hex": "#EB8E7A",
+        "share": 0.00036051112006363177,
+        "h": 10.841998478316015,
+        "s": 0.7344422299625607,
+        "l": 0.6983706949828642,
+        "chroma": 0.4430585987976852
+      },
+      {
+        "hex": "#E29E92",
+        "share": 0.0003470823390870495,
+        "h": 9.171366754812588,
+        "s": 0.5812043893683568,
+        "l": 0.728515989729225,
+        "chroma": 0.3155753968253969
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#D4ECFB",
+        "share": 0.22395332982119062,
+        "h": 203.07559216833994,
+        "s": 0.8296311546069833,
+        "l": 0.9078333379684365,
+        "chroma": 0.15292866847503517
+      },
+      {
+        "hex": "#E1F2FC",
+        "share": 0.20993419897321475,
+        "h": 202.22314245375557,
+        "s": 0.8179678459075366,
+        "l": 0.9352996315117512,
+        "chroma": 0.10584564208351344
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.12501472000991665,
+        "h": 204.59417110625785,
+        "s": 0.2868830351525157,
+        "l": 0.9999098939708917,
+        "chroma": 0.0000516997822322951
+      },
+      {
+        "hex": "#666666",
+        "share": 0.01595752373278792,
+        "h": 207.3584905660433,
+        "s": 0.00015146232588973048,
+        "l": 0.39973421269077286,
+        "chroma": 0.00012108934718368936
+      },
+      {
+        "hex": "#9D9D9C",
+        "share": 0.011328726228475213,
+        "h": 62.12082639772692,
+        "s": 0.004731701893051314,
+        "l": 0.6140971935414086,
+        "chroma": 0.0036519540797078642
+      },
+      {
+        "hex": "#4D4D4D",
+        "share": 0.0045575216668216146,
+        "h": 0,
+        "s": 0,
+        "l": 0.3018199029385099,
+        "chroma": 0
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.002520478890989288,
+        "h": 0,
+        "s": 0,
+        "l": 0.8003093860495017,
+        "chroma": 0
+      },
+      {
+        "hex": "#6B6B6B",
+        "share": 0.0023211131426446436,
+        "h": 210.3386004514679,
+        "s": 0.002761805210647419,
+        "l": 0.41991238863146507,
+        "chroma": 0.002319432445875569
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.0021904407739109775,
+        "h": 0,
+        "s": 0,
+        "l": 0.9011193253533434,
+        "chroma": 0
+      },
+      {
+        "hex": "#D7B3B1",
+        "share": 0.0017503899511398969,
+        "h": 2.736923404288851,
+        "s": 0.3163104796994618,
+        "l": 0.7679071274423018,
+        "chroma": 0.1468268157071031
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 12,
+        "share": 0.025897920604914935,
+        "size": 16
+      }
+    ],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 1936140
+  }
+}

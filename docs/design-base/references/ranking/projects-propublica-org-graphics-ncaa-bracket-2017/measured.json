@@ -1,0 +1,268 @@
+{
+  "url": "https://projects.propublica.org/graphics/ncaa-bracket-2017",
+  "archive": "url-list",
+  "family": "ranking",
+  "id": "projects-propublica-org-graphics-ncaa-bracket-2017",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "not-applicable",
+      "why": "no graphic outside the site's own chrome — a palette read from the page would be the site's navigation and banners, not this piece's design"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Nothin’ but Debt: Which NCAA Tournament Schools Give Low-Income Students the Best Shot? | ProPublica",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 12 | 400 | normal | 0 | none",
+        "count": 132,
+        "sample": "Mt. St. Mary's",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 10 | 400 | normal | 0 | none",
+        "count": 63,
+        "sample": "16",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 15 | 400 | normal | 0 | none",
+        "count": 43,
+        "sample": "We used federal data to create an NCAA Tournament bracket ba",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(34, 98, 204)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 12 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "U.S. Department of Education ; NACUBO Endowment Study 2014; ",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(34, 98, 204)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Tiempos Text | 15 | 700 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "EAST",
+        "colors": [
+          "rgb(68, 68, 68)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "By and , ProPublica, March 16, 2017",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(91, 152, 195)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 15 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "Click any game in the bracket below to view more information",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(34, 98, 204)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 11.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 11.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Share on Facebook",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 12 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Source:",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-meta-serif-web-1",
+        "size": 38.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-meta-serif-web-1 | 38.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "jaf-bernina-sans-condensed",
+        "size": 12.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "jaf-bernina-sans-condensed | 12.5 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 34,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 34 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Nothin’ but Debt: Which NCAA Tournament Schools Give Low-Inc",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Princeton",
+        "colors": [
+          "rgb(197, 32, 0)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 10 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "12",
+        "colors": [
+          "rgb(197, 32, 0)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 13 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "UC Davis",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© Copyright 2017 Pro Publica Inc.",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(102, 102, 102)",
+        "count": 11
+      }
+    ],
+    "column": {
+      "px": 980,
+      "ch": 163
+    },
+    "graphic": null
+  }
+}

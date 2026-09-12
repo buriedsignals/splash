@@ -550,8 +550,27 @@ export function WindVsSolarBar({
         Solar
       </text>
 
+      {/* EVERY BAR CARRIES ITS VALUE, SO THE VALUE AXIS GOES — and the group boundary gets a mark.
+          Two treatments from the grouped-bar harvest (2026-09-08), applied together because each
+          answers what the other leaves.
+
+          `every-bar-labelled-lets-the-axis-go` — Ferdio and Pew, two publications. The axis exists
+          so a reader can estimate a length. Twelve bars here carry twelve printed numbers, so
+          nothing is estimated and the ticks, the gridlines and the scale spend ink on a question
+          nobody is asking. Ferdio's `viz25` keeps neither axis nor gridline nor baseline; Pew keeps
+          none and prints all sixteen of its values. The unit survives in the subtitle, which already
+          says these are shares. The corpus also shows the rule is a LICENCE and not an obligation:
+          ONS keeps its axis and prints nothing, having fifteen categories to label, and one desk
+          does both.
+
+          `the-group-boundary-is-drawn` — Ferdio, IEA and Pew, three publications, three different
+          marks. With two bars to a group, whitespace alone does not separate "two groups of two"
+          from "one group of four": the reader has to measure two gaps and compare them. A mark
+          removes the measurement. Ferdio draws a full-height hairline; IEA ticks its baseline; Pew
+          sets a rule where a series too small to draw would have been. The zero rule stays for the
+          same reason it always did — a bar has to grow from something. */}
       {ticks.map((tick, i) =>
-        orientation === "rows" ? (
+        tick.value !== 0 ? null : orientation === "rows" ? (
           <g key={tick.value}>
             <line
               x1={tick.at}
@@ -581,18 +600,29 @@ export function WindVsSolarBar({
               stroke={tick.value === 0 ? muted : grid}
               strokeWidth={1}
             />
-            <text
-              x={plot.left - T.TICK_INSET}
-              y={tick.at + T.TICK_BASELINE_NUDGE}
-              fill={muted}
-              fontSize={T.AXIS.fontSize}
-              textAnchor="end"
-            >
-              {tickLabels[i]}
-            </text>
+            {/* No label. What survives is the BASELINE, which a bar has to grow from — not an axis
+                tick, and a lone `0` beside a plot with no scale is the residue of the thing that
+                was removed rather than a reading anyone needs. */}
           </g>
         ),
       )}
+
+      {/* The boundary between one country's pair and the next, stated rather than left to a gap. */}
+      {bars.slice(1).map((b, i) => {
+        const previous = bars[i];
+        const x = (previous.solar.x + previous.solar.width + b.wind.x) / 2;
+        return (
+          <line
+            key={`boundary-${b.name}`}
+            x1={x}
+            x2={x}
+            y1={plot.top}
+            y2={plot.bottom}
+            stroke={grid}
+            strokeWidth={1}
+          />
+        );
+      })}
 
       {bars.map((b) => (
         <g key={b.name}>

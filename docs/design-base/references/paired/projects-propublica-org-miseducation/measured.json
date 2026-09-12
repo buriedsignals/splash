@@ -1,0 +1,642 @@
+{
+  "url": "https://projects.propublica.org/miseducation/",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "projects-propublica-org-miseducation",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Miseducation | ProPublica",
+    "ground": "rgb(240, 239, 238)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12.6 | 400 | normal | 0 | none",
+        "count": 493,
+        "sample": "51%",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Graphik | 12.6 | 400 | normal | 0 | capitalize",
+        "count": 104,
+        "sample": "National",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(98, 132, 171)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14.6 | 400 | normal | 0 | none",
+        "count": 34,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.8 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "(White students are this number of times as likely to be in ",
+        "colors": [
+          "rgba(255, 255, 255, 0.9)",
+          "rgba(0, 0, 0, 0.35)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 13.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 13.5 | 400 | normal | 0 | none",
+        "count": 14,
+        "sample": ": , , , , . Maps courtesy of Mapbox Community. Read our →",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(98, 132, 171)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12.6 | 700 | normal | 0 | none",
+        "count": 12,
+        "sample": "State",
+        "colors": [
+          "rgb(98, 132, 171)",
+          "rgba(255, 255, 255, 0.9)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 9.9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 9.9 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Not Available",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 12.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 12.2 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Black",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16.2 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "50.6M",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13.5,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13.5 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "By , and , October 16, 2018",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(98, 132, 171)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 10.8,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 10.8 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "For example:",
+        "colors": [
+          "rgb(68, 68, 68)",
+          "rgb(98, 132, 171)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 11.7,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 11.7 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Note: When unified school districts do not exist, we display",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.29,
+        "transform": "uppercase",
+        "key": "Graphik | 14.4 | 700 | normal | 0.29 | uppercase",
+        "count": 2,
+        "sample": "Miseducation",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 15.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 15.3 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Based on civil rights data released by the U.S. Department o",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 14.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "About Our Data",
+        "colors": [
+          "rgb(98, 132, 171)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 15 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "This database was last updated in October 2018, and its late",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0.22,
+        "transform": "uppercase",
+        "key": "Graphik | 10.8 | 300 | normal | 0.22 | uppercase",
+        "count": 2,
+        "sample": "Race",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "© Mapbox",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 16.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.32,
+        "transform": "uppercase",
+        "key": "Tiempos Text | 16.2 | 700 | normal | 0.32 | uppercase",
+        "count": 2,
+        "sample": "All States",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "graphik",
+        "size": 13.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "graphik | 13.5 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sources",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 14.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.29,
+        "transform": "none",
+        "key": "Tiempos Text | 14.6 | 700 | normal | 0.29 | none",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 48.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 48.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Miseducation",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 21.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 21.6 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Is There Racial Inequality at Your School?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 20.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 20.7 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "School districts where White students are more likely to be ",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 20.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Tiempos Text | 20.7 | 700 | normal | 0 | capitalize",
+        "count": 1,
+        "sample": "Black",
+        "colors": [
+          "rgb(63, 125, 156)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Improve this map",
+        "colors": [
+          "rgba(0, 0, 0, 0.75)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Nationally, White students are 1.8 times as likely as studen",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Tiempos Text",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Tiempos Text | 18 | 700 | normal | 0 | capitalize",
+        "count": 1,
+        "sample": "Black",
+        "colors": [
+          "rgb(63, 125, 156)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16.2 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Students  Teachers  Districts  Schools   Districts Under Des",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 899,
+      "ch": 111
+    },
+    "graphic": {
+      "tag": "canvas",
+      "documentTop": 857,
+      "nearTheTop": true,
+      "x": 240,
+      "y": 857,
+      "w": 960,
+      "h": 500,
+      "ratio": 1.92
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.5369145833333333,
+      "h": 190.14765100704267,
+      "s": 0.03994852270904546,
+      "l": 0.9997162283986306,
+      "chroma": 0.000022672512522969868
+    },
+    "chromatic": [
+      {
+        "hex": "#90BCD2",
+        "share": 0.015558333333333334,
+        "h": 199.99731151587733,
+        "s": 0.42246689629240197,
+        "l": 0.6948598989676213,
+        "chroma": 0.25782318283499794
+      },
+      {
+        "hex": "#5498BA",
+        "share": 0.00670625,
+        "h": 199.99926836406206,
+        "s": 0.4249339344007461,
+        "l": 0.5297772417447874,
+        "chroma": 0.3996272134203169
+      },
+      {
+        "hex": "#3A7390",
+        "share": 0.0037916666666666667,
+        "h": 200.22902765604908,
+        "s": 0.42405720905122724,
+        "l": 0.3971266968325792,
+        "chroma": 0.33680887739711274
+      },
+      {
+        "hex": "#274D60",
+        "share": 0.0029916666666666668,
+        "h": 199.99780115073114,
+        "s": 0.42224904445785555,
+        "l": 0.26471817139111914,
+        "chroma": 0.22355398984106178
+      },
+      {
+        "hex": "#9BC2D5",
+        "share": 0.0010229166666666668,
+        "h": 199.7515396050117,
+        "s": 0.4038939874774853,
+        "l": 0.7206421468791182,
+        "chroma": 0.22566191446028516
+      },
+      {
+        "hex": "#5B9CBC",
+        "share": 0.00068125,
+        "h": 200.01759733526066,
+        "s": 0.42178160081644545,
+        "l": 0.5475864963722492,
+        "chroma": 0.381639383582179
+      },
+      {
+        "hex": "#A3C4D5",
+        "share": 0.0006666666666666666,
+        "h": 199.99874835721886,
+        "s": 0.3724969112059119,
+        "l": 0.7371507352941176,
+        "chroma": 0.19582107843137264
+      },
+      {
+        "hex": "#ABCCDC",
+        "share": 0.0003916666666666667,
+        "h": 199.84425697598962,
+        "s": 0.4152146578049218,
+        "l": 0.7677513558614935,
+        "chroma": 0.1928660826032541
+      },
+      {
+        "hex": "#8DBAD1",
+        "share": 0.00037708333333333333,
+        "h": 200.05728314238957,
+        "s": 0.42184479425573046,
+        "l": 0.6861878453038674,
+        "chroma": 0.264760047665475
+      },
+      {
+        "hex": "#2C5164",
+        "share": 0.00030416666666666667,
+        "h": 199.96852300242128,
+        "s": 0.3931835491241431,
+        "l": 0.28213806070373354,
+        "chroma": 0.22186408810099378
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.5369145833333333,
+        "h": 190.14765100704267,
+        "s": 0.03994852270904546,
+        "l": 0.9997162283986306,
+        "chroma": 0.000022672512522969868
+      },
+      {
+        "hex": "#DFDFDF",
+        "share": 0.3308625,
+        "h": 165.57155715571466,
+        "s": 0.0006549260737207319,
+        "l": 0.8743350773885938,
+        "chroma": 0.00016460246874061557
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.015441666666666666,
+        "h": 188.69080779943548,
+        "s": 0.002073191155154709,
+        "l": 0.9541911367893083,
+        "chroma": 0.00018994106007219624
+      },
+      {
+        "hex": "#C1DAE6",
+        "share": 0.0124125,
+        "h": 199.4445158683515,
+        "s": 0.4213638140049608,
+        "l": 0.8298962015151814,
+        "chroma": 0.14335117061258884
+      },
+      {
+        "hex": "#BFE0CC",
+        "share": 0.012329166666666667,
+        "h": 143.64282459203582,
+        "s": 0.34737422516297145,
+        "l": 0.8137238335685744,
+        "chroma": 0.12941507796089036
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.009772916666666666,
+        "h": 183.0000000000057,
+        "s": 0.0005397652792128922,
+        "l": 0.891585472389766,
+        "chroma": 0.00011703679553254354
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.0070395833333333335,
+        "h": 187.6923076923134,
+        "s": 0.0011398009732143536,
+        "l": 0.9205786605852759,
+        "chroma": 0.00018104903991777999
+      },
+      {
+        "hex": "#C2E0CE",
+        "share": 0.002510416666666667,
+        "h": 143.43561990055218,
+        "s": 0.3278985344058801,
+        "l": 0.8193588804816532,
+        "chroma": 0.11846391668700673
+      },
+      {
+        "hex": "#D5DCDB",
+        "share": 0.0019854166666666666,
+        "h": 171.47858260993291,
+        "s": 0.09565359432639584,
+        "l": 0.848850893977738,
+        "chroma": 0.028915910540501688
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.0014354166666666667,
+        "h": 197.5000000000033,
+        "s": 0.003192338387869256,
+        "l": 0.8288397507043457,
+        "chroma": 0.0010928028686075786
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 200,
+        "share": 0.035295833333333325,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 480000
+  }
+}

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>La tranche la plus large de la Suisse est celle des 55-59 ans, pas celle des 0-4 ans</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #1F5C8B;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--title-size:27px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:14.5px;--label-weight:700;--note-size:10px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:700;font-style:normal;letter-spacing:1.6px;text-transform:uppercase;color:#1F5C8B;margin:0 0 6px">Démographie · Suisse</p><h2 class="chart-title" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:27px;font-weight:700;font-style:normal;letter-spacing:-0.3px;text-transform:none;color:#000000;margin:0 0 6px">La tranche la plus large de la Suisse est celle des 55-59 ans, pas celle des 0-4 ans</h2><p class="chart-caveat" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:0">Population suisse en 2023, par tranche de cinq ans, hommes à gauche et femmes à droite d&#x27;une ligne centrale. Une pyramide la plus large au MILIEU est une population qui vieillit, pas une population qui croît — et rien d&#x27;autre que la tranche nommée ne dit laquelle.</p></div><div style="display:flex;flex-wrap:wrap;gap:0 18px;margin:8px 0 4px;flex:0 0 auto"><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#949494;display:inline-block;border-radius:2px"></span>hommes</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;background:#5785a8;display:inline-block;border-radius:2px"></span>femmes</span></div><div class="chart-plot" style="--y-gutter:56px;--x-axis-h:28px;aspect-ratio:836 / 448"><div class="y-axis" style="pointer-events:none"><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:97.61904761904762%">0-4</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:92.85714285714286%">5-9</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:88.09523809523809%">10-14</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:83.33333333333334%">15-19</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:78.57142857142857%">20-24</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:73.80952380952381%">25-29</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:69.04761904761905%">30-34</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:64.28571428571429%">35-39</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:59.523809523809526%">40-44</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:54.761904761904766%">45-49</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:50%">50-54</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:700;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#1F5C8B;top:45.23809523809524%">55-59</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:40.476190476190474%">60-64</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:35.714285714285715%">65-69</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:30.952380952380953%">70-74</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:26.190476190476193%">75-79</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:21.428571428571427%">80-84</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:16.666666666666664%">85-89</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:11.904761904761903%">90-94</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:7.142857142857142%">95-99</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;top:2.380952380952381%">100+</span></div><svg role="group" aria-label="La tranche la plus large de la Suisse est celle des 55-59 ans, pas celle des 0-4 ans" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 780 420" preserveAspectRatio="none"><desc>Une pyramide des âges : 21 tranches de cinq ans empilées, les hommes vers la gauche et les femmes vers la droite. La silhouette ne s&#x27;élargit pas vers le bas : elle est la plus large à la tranche 55-59 ans (669 962 personnes) et se resserre vers les plus jeunes, où les 0-4 ans ne comptent que 434 030 personnes.</desc><rect x="0" y="0" width="780" height="420" fill="#FFFFFF"></rect><line x1="0" x2="0" y1="0" y2="420" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="195" x2="195" y1="0" y2="420" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="585" x2="585" y1="0" y2="420" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="780" x2="780" y1="0" y2="420" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><g><rect x="141.91542857142855" y="402.8" width="248.08457142857145" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="402.8" width="235.54885714285717" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="131.1157714285714" y="382.8" width="258.8842285714286" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="382.8" width="245.1885428571428" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="135.1728857142857" y="362.8" width="254.8271142857143" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="362.8" width="241.20274285714288" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="144.04705714285714" y="342.8" width="245.95294285714286" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="342.8" width="232.39097142857145" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="126.73328571428573" y="322.8" width="263.2667142857143" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="322.8" width="245.62534285714287" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="84.91525714285717" y="302.8" width="305.0847428571428" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="302.8" width="290.93219999999997" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="37.867885714285705" y="282.8" width="352.1321142857143" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="282.8" width="342.5381142857143" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="31.471885714285747" y="262.8" width="358.52811428571425" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="262.8" width="350.83397142857143" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="37.200428571428574" y="242.8" width="352.7995714285714" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="242.8" width="346.83591428571435" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="54.48745714285718" y="222.8" width="335.5125428571428" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="222.8" width="332.4371142857143" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="34.672114285714315" y="202.8" width="355.3278857142857" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="202.8" width="353.26980000000003" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="13.873971428571394" y="182.8" width="376.1260285714286" height="14.399999999999999" fill="#949494" opacity="1"></rect><rect x="390" y="182.8" width="370.40305714285716" height="14.399999999999999" fill="#5785a8" opacity="1"></rect></g><g><rect x="64.39345714285713" y="162.8" width="325.60654285714287" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="162.8" width="326.5436571428572" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="133.52262857142858" y="142.8" width="256.4773714285714" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="142.8" width="268.56179999999995" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="177.26057142857144" y="122.8" width="212.73942857142856" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="122.8" width="237.62365714285716" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="204.85585714285713" y="102.8" width="185.14414285714287" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="102.8" width="216.22379999999998" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="266.89148571428575" y="82.8" width="123.10851428571425" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="82.8" width="161.43771428571426" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="322.3194" y="62.8" width="67.68060000000003" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="62.8" width="107.07171428571428" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="364.182" y="42.8" width="25.817999999999984" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="42.8" width="54.183257142857144" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="384.85645714285715" y="22.8" width="5.143542857142847" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="22.8" width="15.045085714285733" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><g><rect x="389.571" y="2.8000000000000007" width="0.4289999999999736" height="14.399999999999999" fill="#949494" opacity="0.9"></rect><rect x="390" y="2.8000000000000007" width="1.7672571428571473" height="14.399999999999999" fill="#5785a8" opacity="0.9"></rect></g><line x1="390" x2="390" y1="0" y2="420" stroke="#000000" stroke-width="1.2" vector-effect="non-scaling-stroke"></line><circle class="pt" cx="390" cy="410" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="0-4 ans · 222 640 hommes, 211 390 femmes · 434 030 personnes, 4,9 % de la population · 11 250 hommes de plus" data-detail="0-4 ans · 222 640 hommes, 211 390 femmes · 434 030 personnes, 4,9 % de la population · 11 250 hommes de plus"></circle><circle class="pt" cx="390" cy="390" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="5-9 ans · 232 332 hommes, 220 041 femmes · 452 373 personnes, 5,1 % de la population · 12 291 hommes de plus" data-detail="5-9 ans · 232 332 hommes, 220 041 femmes · 452 373 personnes, 5,1 % de la population · 12 291 hommes de plus"></circle><circle class="pt" cx="390" cy="370" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="10-14 ans · 228 691 hommes, 216 464 femmes · 445 155 personnes, 5,0 % de la population · 12 227 hommes de plus" data-detail="10-14 ans · 228 691 hommes, 216 464 femmes · 445 155 personnes, 5,0 % de la population · 12 227 hommes de plus"></circle><circle class="pt" cx="390" cy="350" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="15-19 ans · 220 727 hommes, 208 556 femmes · 429 283 personnes, 4,8 % de la population · 12 171 hommes de plus" data-detail="15-19 ans · 220 727 hommes, 208 556 femmes · 429 283 personnes, 4,8 % de la population · 12 171 hommes de plus"></circle><circle class="pt" cx="390" cy="330" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="20-24 ans · 236 265 hommes, 220 433 femmes · 456 698 personnes, 5,1 % de la population · 15 832 hommes de plus" data-detail="20-24 ans · 236 265 hommes, 220 433 femmes · 456 698 personnes, 5,1 % de la population · 15 832 hommes de plus"></circle><circle class="pt" cx="390" cy="310" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="25-29 ans · 273 794 hommes, 261 093 femmes · 534 887 personnes, 6,0 % de la population · 12 701 hommes de plus" data-detail="25-29 ans · 273 794 hommes, 261 093 femmes · 534 887 personnes, 6,0 % de la population · 12 701 hommes de plus"></circle><circle class="pt" cx="390" cy="290" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="30-34 ans · 316 016 hommes, 307 406 femmes · 623 422 personnes, 7,0 % de la population · 8 610 hommes de plus" data-detail="30-34 ans · 316 016 hommes, 307 406 femmes · 623 422 personnes, 7,0 % de la population · 8 610 hommes de plus"></circle><circle class="pt" cx="390" cy="270" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="35-39 ans · 321 756 hommes, 314 851 femmes · 636 607 personnes, 7,2 % de la population · 6 905 hommes de plus" data-detail="35-39 ans · 321 756 hommes, 314 851 femmes · 636 607 personnes, 7,2 % de la population · 6 905 hommes de plus"></circle><circle class="pt" cx="390" cy="250" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="40-44 ans · 316 615 hommes, 311 263 femmes · 627 878 personnes, 7,1 % de la population · 5 352 hommes de plus" data-detail="40-44 ans · 316 615 hommes, 311 263 femmes · 627 878 personnes, 7,1 % de la population · 5 352 hommes de plus"></circle><circle class="pt" cx="390" cy="230" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="45-49 ans · 301 101 hommes, 298 341 femmes · 599 442 personnes, 6,8 % de la population · 2 760 hommes de plus" data-detail="45-49 ans · 301 101 hommes, 298 341 femmes · 599 442 personnes, 6,8 % de la population · 2 760 hommes de plus"></circle><circle class="pt" cx="390" cy="210" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="50-54 ans · 318 884 hommes, 317 037 femmes · 635 921 personnes, 7,2 % de la population · 1 847 hommes de plus" data-detail="50-54 ans · 318 884 hommes, 317 037 femmes · 635 921 personnes, 7,2 % de la population · 1 847 hommes de plus"></circle><circle class="pt" cx="390" cy="190" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="55-59 ans · 337 549 hommes, 332 413 femmes · 669 962 personnes, 7,6 % de la population · 5 136 hommes de plus" data-detail="55-59 ans · 337 549 hommes, 332 413 femmes · 669 962 personnes, 7,6 % de la population · 5 136 hommes de plus"></circle><circle class="pt" cx="390" cy="170" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="60-64 ans · 292 211 hommes, 293 052 femmes · 585 263 personnes, 6,6 % de la population · 841 femmes de plus" data-detail="60-64 ans · 292 211 hommes, 293 052 femmes · 585 263 personnes, 6,6 % de la population · 841 femmes de plus"></circle><circle class="pt" cx="390" cy="150" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="65-69 ans · 230 172 hommes, 241 017 femmes · 471 189 personnes, 5,3 % de la population · 10 845 femmes de plus" data-detail="65-69 ans · 230 172 hommes, 241 017 femmes · 471 189 personnes, 5,3 % de la population · 10 845 femmes de plus"></circle><circle class="pt" cx="390" cy="130" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="70-74 ans · 190 920 hommes, 213 252 femmes · 404 172 personnes, 4,6 % de la population · 22 332 femmes de plus" data-detail="70-74 ans · 190 920 hommes, 213 252 femmes · 404 172 personnes, 4,6 % de la population · 22 332 femmes de plus"></circle><circle class="pt" cx="390" cy="110" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="75-79 ans · 166 155 hommes, 194 047 femmes · 360 202 personnes, 4,1 % de la population · 27 892 femmes de plus" data-detail="75-79 ans · 166 155 hommes, 194 047 femmes · 360 202 personnes, 4,1 % de la population · 27 892 femmes de plus"></circle><circle class="pt" cx="390" cy="90" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="80-84 ans · 110 482 hommes, 144 880 femmes · 255 362 personnes, 2,9 % de la population · 34 398 femmes de plus" data-detail="80-84 ans · 110 482 hommes, 144 880 femmes · 255 362 personnes, 2,9 % de la population · 34 398 femmes de plus"></circle><circle class="pt" cx="390" cy="70" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="85-89 ans · 60 739 hommes, 96 090 femmes · 156 829 personnes, 1,8 % de la population · 35 351 femmes de plus" data-detail="85-89 ans · 60 739 hommes, 96 090 femmes · 156 829 personnes, 1,8 % de la population · 35 351 femmes de plus"></circle><circle class="pt" cx="390" cy="50" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="90-94 ans · 23 170 hommes, 48 626 femmes · 71 796 personnes, 0,8 % de la population · 25 456 femmes de plus" data-detail="90-94 ans · 23 170 hommes, 48 626 femmes · 71 796 personnes, 0,8 % de la population · 25 456 femmes de plus"></circle><circle class="pt" cx="390" cy="30" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="95-99 ans · 4 616 hommes, 13 502 femmes · 18 118 personnes, 0,2 % de la population · 8 886 femmes de plus" data-detail="95-99 ans · 4 616 hommes, 13 502 femmes · 18 118 personnes, 0,2 % de la population · 8 886 femmes de plus"></circle><circle class="pt" cx="390" cy="10" r="10" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="100+ ans · 385 hommes, 1 586 femmes · 1 971 personnes, 0,0 % de la population · 1 201 femmes de plus" data-detail="100+ ans · 385 hommes, 1 586 femmes · 1 971 personnes, 0,0 % de la population · 1 201 femmes de plus"></circle><rect class="hit-area" x="0" y="0" width="780" height="420" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="note" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:700;font-style:normal;letter-spacing:1.3px;text-transform:uppercase;color:#1F5C8B;right:0.9739670329670247%;transform:translateX(0) translateY(-50%);white-space:normal;max-width:min(46%, 24em);top:45.23809523809524%">55-59 ans : 669 962 personnes</span></div><div class="x-axis" style="pointer-events:none"><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;left:0%">350k</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;left:25%">175k</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;left:50%">0</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;left:75%">175k</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;left:100%">350k</span></div></div><p class="chart-reading" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:10px 0 0">Lecture : survolez, touchez ou tabulez une tranche pour lire les deux effectifs, leur total, l&#x27;écart entre les sexes et la part de cette tranche dans la population — la part est ce qui transforme une silhouette en affirmation sur le nombre de gens.</p><p class="chart-source" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:6px 0 0">Source : Office fédéral de la statistique · population résidente permanente, 2023</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

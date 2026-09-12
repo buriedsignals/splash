@@ -7,6 +7,11 @@
 - readAs: the published page as a reader meets it, fetched **through Firecrawl** because SCMP answers
   a headless browser with an "Access Verification" bot check. The record carries the pixel route
   only; there is no live DOM to read computed styles from, and it says so.
+- measuredFrom: **`screenshot.png`, the whole page** — not the graphic element. Firecrawl returns
+  rendered pixels, so there is no element to photograph on its own, and the palette below therefore
+  carries the longform piece's own furniture around the map as well as the map. That is why **no
+  direction is founded on this reference**; what it is cited for is the `place` register, which is a
+  reading of where the labels sit and how they are set, and survives the page around them.
 
 ## What it is
 

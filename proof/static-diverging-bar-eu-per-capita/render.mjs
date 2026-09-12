@@ -228,4 +228,7 @@ async function run() {
   console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`);
 }
 
-run();
+// Run when this file IS the script; stay quiet when another script imports `changesBetween`
+// from it. `render-directions.mjs` reads the frozen CSV through this one reader rather than a
+// second copy of it, and importing a module must not re-render a beat as a side effect.
+if (import.meta.main) await run();

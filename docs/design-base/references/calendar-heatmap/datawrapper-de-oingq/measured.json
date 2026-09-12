@@ -1,0 +1,408 @@
+{
+  "url": "https://www.datawrapper.de/_/oInGQ/",
+  "archive": "search",
+  "family": "calendar-heatmap",
+  "id": "datawrapper-de-oingq",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "My Year in Music 2022 | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 420,
+      "y": 219,
+      "w": 600,
+      "h": 584,
+      "ratio": 1.03
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/oInGQ/6/",
+      "title": "My Year in Music 2022",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 12,
+          "sample": "December",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 7,
+          "sample": "Chart:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "My Year in Music 2022",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "A calendar heatmap of my listening habits in 2022. The darke",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "Album covers sourced from Spotify",
+          "colors": [
+            "rgb(101, 101, 101)"
+          ]
+        }
+      ],
+      "marks": [],
+      "column": {
+        "px": 600,
+        "ch": 80
+      }
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.6800627853881278,
+      "h": 197.219730941411,
+      "s": 0.029912810193992577,
+      "l": 0.999938657091413,
+      "chroma": 0.0000036698775626176072
+    },
+    "chromatic": [
+      {
+        "hex": "#D9E289",
+        "share": 0.10575342465753425,
+        "h": 66.06741573033707,
+        "s": 0.6054421768707482,
+        "l": 0.7117647058823529,
+        "chroma": 0.34901960784313724
+      },
+      {
+        "hex": "#A8BD65",
+        "share": 0.039863013698630136,
+        "h": 74.33182357855857,
+        "s": 0.39977146875274683,
+        "l": 0.5687916919345057,
+        "chroma": 0.3447695573074591
+      },
+      {
+        "hex": "#789943",
+        "share": 0.03789954337899543,
+        "h": 82.99020209279091,
+        "s": 0.3904236609617397,
+        "l": 0.4315231514292464,
+        "chroma": 0.33695369714150714
+      },
+      {
+        "hex": "#487722",
+        "share": 0.013036529680365297,
+        "h": 93.1764705882353,
+        "s": 0.5555555555555557,
+        "l": 0.3,
+        "chroma": 0.33333333333333337
+      },
+      {
+        "hex": "#195501",
+        "share": 0.005616438356164383,
+        "h": 102.85714285714288,
+        "s": 0.9750159246938921,
+        "l": 0.16892635102821615,
+        "chroma": 0.32941176470588235
+      },
+      {
+        "hex": "#E6ECB1",
+        "share": 0.0045662100456621,
+        "h": 66.10169491525424,
+        "s": 0.6066838046272496,
+        "l": 0.8093137254901961,
+        "chroma": 0.2313725490196079
+      },
+      {
+        "hex": "#C5D399",
+        "share": 0.001780821917808219,
+        "h": 74.48275862068965,
+        "s": 0.3972602739726026,
+        "l": 0.7137254901960783,
+        "chroma": 0.22745098039215683
+      },
+      {
+        "hex": "#A5BB82",
+        "share": 0.0015525114155251142,
+        "h": 83.15789473684208,
+        "s": 0.29533678756476683,
+        "l": 0.6215686274509804,
+        "chroma": 0.22352941176470587
+      },
+      {
+        "hex": "#497823",
+        "share": 0.0010273972602739725,
+        "h": 93.1764705882353,
+        "s": 0.5483870967741935,
+        "l": 0.303921568627451,
+        "chroma": 0.3333333333333333
+      },
+      {
+        "hex": "#85A56C",
+        "share": 0.000547945205479452,
+        "h": 93.55263157894737,
+        "s": 0.24050632911392408,
+        "l": 0.5352941176470588,
+        "chroma": 0.22352941176470592
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.6800627853881278,
+        "h": 197.219730941411,
+        "s": 0.029912810193992577,
+        "l": 0.999938657091413,
+        "chroma": 0.0000036698775626176072
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.053981164383561646,
+        "h": 0,
+        "s": 0,
+        "l": 0.7685693997398061,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.006598173515981735,
+        "h": 0,
+        "s": 0,
+        "l": 0.09436868172874686,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F5D8",
+        "share": 0.0045662100456621,
+        "h": 64.13793103448279,
+        "s": 0.5918367346938781,
+        "l": 0.903921568627451,
+        "chroma": 0.11372549019607847
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.003824200913242009,
+        "h": 0,
+        "s": 0,
+        "l": 0.9232162715832603,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.003339041095890411,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#D9D9D9",
+        "share": 0.002913812785388128,
+        "h": 0,
+        "s": 0,
+        "l": 0.8519867104530353,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.0025856164383561645,
+        "h": 0,
+        "s": 0,
+        "l": 0.9545340431978532,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0020062785388127854,
+        "h": 0,
+        "s": 0,
+        "l": 0.8312330906758152,
+        "chroma": 0
+      },
+      {
+        "hex": "#E2E9CC",
+        "share": 0.001780821917808219,
+        "h": 74.48275862068968,
+        "s": 0.3972602739726024,
+        "l": 0.8568627450980393,
+        "chroma": 0.11372549019607836
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 66,
+        "share": 0.21187214611872146,
+        "size": 11
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 350400
+  }
+}

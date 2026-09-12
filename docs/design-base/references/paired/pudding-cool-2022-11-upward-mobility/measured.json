@@ -1,0 +1,581 @@
+{
+  "url": "https://pudding.cool/2022/11/upward-mobility/",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "pudding-cool-2022-11-upward-mobility",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "On Upward Mobility - The Pudding",
+    "ground": "rgb(255, 250, 242)",
+    "type": [
+      {
+        "family": "Tiempos Text Web",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Tiempos Text Web | 18 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "“I don’t think you’d be the same person had we stayed in L.A",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 18 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "My family migrated to Central California in the 1940s from t",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 10 | 700 | normal | 0 | uppercase",
+        "count": 22,
+        "sample": "Minneapolis",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 14 | 700 | normal | 0 | uppercase",
+        "count": 15,
+        "sample": "Jan Diehm",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 14 | 400 | normal | 0 | uppercase",
+        "count": 14,
+        "sample": "With and",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 16 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "is a digital publication that explains ideas debated in cult",
+        "colors": [
+          "rgb(255, 250, 242)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 18 | 700 | normal | 0 | uppercase",
+        "count": 8,
+        "sample": "evenly split between Black (48%) and Hispanic (43%)",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 18 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "$19,000",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "National 2 Web",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "National 2 Web | 16 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "We analyzed 132,003 attempts to mow a virtual lawn efficient",
+        "colors": [
+          "rgb(255, 250, 242)"
+        ]
+      },
+      {
+        "family": "DuBois Wide",
+        "size": 88,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Wide | 88 | 400 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "On",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Wide",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Wide | 24 | 400 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "Madera, Calif.",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Wide",
+        "size": 48,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Wide | 48 | 700 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "Migration",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 9.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 9.6 | 400 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "0%",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 20 | 400 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Research shows the neighborhood you grow up in has profound ",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Wide",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Wide | 24 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "The First Great Migration",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 24 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Gardena",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 16 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "By",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "DuBois Regular",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "DuBois Regular | 16 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Aaron Williams",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(38, 38, 38)",
+        "count": 1448
+      },
+      {
+        "colour": "fill rgb(222, 203, 186)",
+        "count": 53
+      },
+      {
+        "colour": "fill rgb(255, 250, 242)",
+        "count": 25
+      },
+      {
+        "colour": "fill rgb(17, 24, 39)",
+        "count": 22
+      },
+      {
+        "colour": "stroke rgb(255, 250, 242)",
+        "count": 22
+      },
+      {
+        "colour": "fill rgb(254, 249, 242)",
+        "count": 14
+      },
+      {
+        "colour": "fill rgb(253, 248, 241)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(250, 246, 240)",
+        "count": 7
+      },
+      {
+        "colour": "stroke rgb(216, 40, 79)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(255, 249, 240)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(252, 248, 241)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(248, 244, 239)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(38, 38, 38)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(251, 247, 240)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(252, 247, 241)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(254, 244, 228)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(254, 249, 241)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(254, 245, 229)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(255, 250, 241)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(216, 217, 224)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(233, 231, 232)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(242, 239, 236)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(236, 234, 233)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(223, 223, 227)",
+        "count": 3
+      }
+    ],
+    "column": {
+      "px": 576,
+      "ch": 64
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 26,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 26,
+      "w": 1280,
+      "h": 768,
+      "ratio": 1.67
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FEF9F1",
+      "share": 0.6920796712239583,
+      "h": 36.99903792704607,
+      "s": 0.8645480567680206,
+      "l": 0.9708002999183629,
+      "chroma": 0.05048908792757689
+    },
+    "chromatic": [
+      {
+        "hex": "#EB95A4",
+        "share": 0.0031565348307291668,
+        "h": 349.48733040664916,
+        "s": 0.6816319855261714,
+        "l": 0.752720643526505,
+        "chroma": 0.33710703746532455
+      },
+      {
+        "hex": "#DA3257",
+        "share": 0.0030659993489583334,
+        "h": 346.8592780436086,
+        "s": 0.6938543866945008,
+        "l": 0.5260021858776689,
+        "chroma": 0.6577709252247681
+      },
+      {
+        "hex": "#E3647E",
+        "share": 0.0022481282552083335,
+        "h": 347.96233744902986,
+        "s": 0.692327848752126,
+        "l": 0.6410895217815633,
+        "chroma": 0.4969674385591341
+      },
+      {
+        "hex": "#7B3A4C",
+        "share": 0.00018310546875,
+        "h": 343.394777265745,
+        "s": 0.3579982891360138,
+        "l": 0.35655773420479303,
+        "chroma": 0.2552941176470589
+      },
+      {
+        "hex": "#0A153B",
+        "share": 0.0001739501953125,
+        "h": 227.30048076923075,
+        "s": 0.6989247311827957,
+        "l": 0.13649810801513587,
+        "chroma": 0.19080380690287813
+      },
+      {
+        "hex": "#121C44",
+        "share": 0.00013427734375,
+        "h": 227.75434816068955,
+        "s": 0.5716673999120105,
+        "l": 0.16882055852644087,
+        "chroma": 0.19301841948900772
+      },
+      {
+        "hex": "#061234",
+        "share": 0.00011494954427083333,
+        "h": 223.53595397890697,
+        "s": 0.8061524192301746,
+        "l": 0.11225056394239112,
+        "chroma": 0.18098212736422
+      },
+      {
+        "hex": "#040C33",
+        "share": 0.0001129150390625,
+        "h": 229.3335901386749,
+        "s": 0.8531054880052581,
+        "l": 0.1075075075075075,
+        "chroma": 0.18343048931284225
+      },
+      {
+        "hex": "#0D1A3B",
+        "share": 0.00010579427083333334,
+        "h": 222.8287017834923,
+        "s": 0.6434480918067786,
+        "l": 0.141289592760181,
+        "chroma": 0.1818250377073906
+      },
+      {
+        "hex": "#FEE563",
+        "share": 0.00008443196614583333,
+        "h": 50.046576618537514,
+        "s": 0.9929088947125014,
+        "l": 0.6935034254665722,
+        "chroma": 0.6086463501063075
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FEF9F1",
+        "share": 0.6920796712239583,
+        "h": 36.99903792704607,
+        "s": 0.8645480567680206,
+        "l": 0.9708002999183629,
+        "chroma": 0.05048908792757689
+      },
+      {
+        "hex": "#FBF6EE",
+        "share": 0.19229634602864584,
+        "h": 36.953748844909335,
+        "s": 0.6090216973933064,
+        "l": 0.9595071044525938,
+        "chroma": 0.0493221039573023
+      },
+      {
+        "hex": "#313130",
+        "share": 0.0373382568359375,
+        "h": 45.345144392946224,
+        "s": 0.010239893149917825,
+        "l": 0.19022236111444987,
+        "chroma": 0.0038957133050741
+      },
+      {
+        "hex": "#FCF7F0",
+        "share": 0.031678263346354166,
+        "h": 34.999424624467096,
+        "s": 0.6666268239206314,
+        "l": 0.9647059453176601,
+        "chroma": 0.04705592715233864
+      },
+      {
+        "hex": "#FEFFFF",
+        "share": 0.004948933919270833,
+        "h": 166.1558784676343,
+        "s": 0.559773231451795,
+        "l": 0.9983648711283074,
+        "chroma": 0.0018306027446950424
+      },
+      {
+        "hex": "#F6F2EB",
+        "share": 0.004400634765625,
+        "h": 37.523698749636395,
+        "s": 0.4121623241209046,
+        "l": 0.9432718718555384,
+        "chroma": 0.046762394278099584
+      },
+      {
+        "hex": "#140B23",
+        "share": 0.0018595377604166666,
+        "h": 262.00351731601734,
+        "s": 0.5221691115872754,
+        "l": 0.09110782168447248,
+        "chroma": 0.0951473806152658
+      },
+      {
+        "hex": "#F4C6CA",
+        "share": 0.0016143798828125,
+        "h": 354.9166862238911,
+        "s": 0.6725874892060276,
+        "l": 0.8669347764310513,
+        "chroma": 0.17899600924175585
+      },
+      {
+        "hex": "#262626",
+        "share": 0.0014109293619791667,
+        "h": 290.00000000000546,
+        "s": 0.00017087526105930272,
+        "l": 0.14891782235605128,
+        "chroma": 0.00005089274354294626
+      },
+      {
+        "hex": "#14091D",
+        "share": 0.0009429931640625,
+        "h": 272.43803465672295,
+        "s": 0.5216844032497998,
+        "l": 0.07393870169426994,
+        "chroma": 0.07714533494088036
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 349,
+        "share": 0.009010823567708335,
+        "size": 9
+      },
+      {
+        "hue": 227,
+        "share": 0.0009785970052083332,
+        "size": 10
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 983040
+  }
+}

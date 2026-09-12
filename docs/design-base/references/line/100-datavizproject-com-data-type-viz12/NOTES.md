@@ -27,6 +27,15 @@ before and after as one nested object. A two-point series is not a line chart.
 
 The house triad again, on white. Country names set beneath their pair as plain direct labels.
 
+## What the pixel route actually measured here
+
+`largestGraphic` returned this site's own wordmark — `logo-100.svg`, 280 x 80 at (80, 0) — which is
+too small to photograph, so the pixel route fell back to the **whole page**. The ground and the
+chromatic colours in this record are therefore the SITE's, not this encoding's: `#3274DA` at
+8.6-10.5 % is Ferdio's fixed navigation bar, and it happens to be the same blue the charts are drawn
+in, which is exactly why it read as plausible. Nothing in this note rests on that reading, and no
+direction may be measured from this record.
+
 ## What is transferable
 
 - **Nest the earlier value inside the later one** when a series has exactly two observations and

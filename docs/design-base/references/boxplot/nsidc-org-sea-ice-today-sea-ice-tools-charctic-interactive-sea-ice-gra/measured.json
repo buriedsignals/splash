@@ -1,0 +1,677 @@
+{
+  "url": "https://nsidc.org/sea-ice-today/sea-ice-tools/charctic-interactive-sea-ice-graph",
+  "archive": "url-list",
+  "family": "boxplot",
+  "id": "nsidc-org-sea-ice-today-sea-ice-tools-charctic-interactive-sea-ice-gra",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept\"",
+  "entry": null,
+  "style": {
+    "title": "Charctic Interactive Sea Ice Graph | National Snow and Ice Data Center",
+    "ground": "rgb(41, 41, 41)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 37,
+        "sample": "How to use Charctic",
+        "colors": [
+          "rgb(195, 44, 2)",
+          "rgb(5, 23, 41)",
+          "rgb(51, 68, 221)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.42,
+        "transform": "none",
+        "key": "Helvetica Neue | 14 | 700 | normal | -0.42 | none",
+        "count": 25,
+        "sample": "FOR THE PUBLIC",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 12,
+        "sample": "National Snow and Ice Data Center",
+        "colors": [
+          "rgb(0, 51, 102)",
+          "rgb(5, 23, 41)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Roboto | 16 | 900 | normal | 0 | uppercase",
+        "count": 5,
+        "sample": "News & Analyses",
+        "colors": [
+          "rgb(0, 51, 102)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Home",
+        "colors": [
+          "rgb(51, 68, 221)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 30,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 30 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "How to use Charctic",
+        "colors": [
+          "rgb(0, 51, 102)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 15 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "This web application is optimized for desktop and laptop use",
+        "colors": [
+          "rgb(5, 23, 41)",
+          "rgb(51, 68, 221)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 20,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 20 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "Graph",
+        "colors": [
+          "rgb(5, 23, 41)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Hide",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 10 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "a part of CIRES at the University of Colorado Boulder",
+        "colors": [
+          "rgb(0, 51, 102)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Charctic Interactive Sea Ice Graph",
+        "colors": [
+          "rgb(0, 51, 102)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.2,
+        "transform": "none",
+        "key": "Roboto | 40 | 700 | normal | -1.2 | none",
+        "count": 1,
+        "sample": "Charctic Interactive Sea Ice Graph",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.16,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | -0.16 | none",
+        "count": 1,
+        "sample": "A Sea Ice Today Tool",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 15,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 15 | 900 | normal | 0 | none",
+        "count": 1,
+        "sample": "Note:",
+        "colors": [
+          "rgb(5, 23, 41)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.48,
+        "transform": "uppercase",
+        "key": "Helvetica Neue | 16 | 700 | normal | 0.48 | uppercase",
+        "count": 1,
+        "sample": "Subscribe to Our Newsletter",
+        "colors": [
+          "rgb(0, 51, 102)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Helvetica Neue | 16 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Follow Us",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Helvetica Neue | 14 | 400 | normal | -0.14 | none",
+        "count": 1,
+        "sample": "© 2026, National Snow and Ice Data Center - Advancing knowle",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 100 | normal | 0 | none",
+        "count": 1,
+        "sample": "You can now hide this message or find out more about cookies",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(5, 23, 41)",
+        "count": 4
+      }
+    ],
+    "column": {
+      "px": 1116,
+      "ch": 149
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 576,
+      "nearTheTop": true,
+      "x": 162,
+      "y": 576,
+      "w": 1100,
+      "h": 900,
+      "ratio": 1.22
+    },
+    "graphicFrame": {
+      "url": "https://nsidc.org/data/tools/arctic-sea-ice-chart/",
+      "title": "ChArctic",
+      "ground": "rgb(255, 255, 255)",
+      "type": [
+        {
+          "family": "Arial",
+          "size": 11,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Arial | 11 | 700 | normal | 0 | none",
+          "count": 59,
+          "sample": "Show all years",
+          "colors": [
+            "rgb(33, 37, 41)"
+          ]
+        },
+        {
+          "family": "Lucida Grande",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lucida Grande | 14 | 400 | normal | 0 | none",
+          "count": 18,
+          "sample": "10",
+          "colors": [
+            "rgb(34, 34, 34)"
+          ]
+        },
+        {
+          "family": "Arial",
+          "size": 16,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Arial | 16 | 400 | normal | 0 | none",
+          "count": 4,
+          "sample": "Start month:",
+          "colors": [
+            "rgb(33, 37, 41)",
+            "rgb(204, 204, 204)"
+          ]
+        },
+        {
+          "family": "Lucida Grande",
+          "size": 18,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lucida Grande | 18 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Extent (Millions of square kilometers)",
+          "colors": [
+            "rgb(34, 34, 34)",
+            "rgb(51, 51, 51)"
+          ]
+        },
+        {
+          "family": "Arial",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Arial | 14 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "Arctic",
+          "colors": [
+            "rgb(255, 255, 255)",
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Arial",
+          "size": 16,
+          "weight": "500",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Arial | 16 | 500 | normal | 0 | none",
+          "count": 1,
+          "sample": "View as data table.",
+          "colors": [
+            "rgb(0, 123, 255)"
+          ]
+        },
+        {
+          "family": "Lucida Grande",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lucida Grande | 12 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "(Area of ocean with at least 15% sea ice)",
+          "colors": [
+            "rgb(102, 102, 102)"
+          ]
+        },
+        {
+          "family": "Lucida Grande",
+          "size": 9,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Lucida Grande | 9 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "National Snow and Ice Data Center, Boulder, CO",
+          "colors": [
+            "rgb(153, 153, 153)"
+          ]
+        },
+        {
+          "family": "Arial",
+          "size": 9,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Arial | 9 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "ChArctic v 3.6.0",
+          "colors": [
+            "rgb(33, 37, 41)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "stroke rgba(192, 192, 192, 0)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgb(255, 255, 255)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgba(192, 192, 192, 0)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(33, 37, 41)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgba(210, 210, 210, 0.75)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgba(170, 170, 170, 0.75)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(130, 130, 130)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(255, 0, 0)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(0, 152, 244)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(102, 102, 102)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(102, 102, 102)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.9054838383838384,
+      "h": 221.45454545278366,
+      "s": 0.01775529968654657,
+      "l": 0.9999593463205063,
+      "chroma": 0.0000014436365255443562
+    },
+    "chromatic": [
+      {
+        "hex": "#C4E0F5",
+        "share": 0.001793939393939394,
+        "h": 205.71428571428575,
+        "s": 0.7101449275362323,
+        "l": 0.8647058823529412,
+        "chroma": 0.19215686274509802
+      },
+      {
+        "hex": "#003366",
+        "share": 0.0015656565656565658,
+        "h": 210,
+        "s": 1,
+        "l": 0.2,
+        "chroma": 0.4
+      },
+      {
+        "hex": "#0062CC",
+        "share": 0.0013717171717171717,
+        "h": 211.17717570260822,
+        "s": 0.999509209538657,
+        "l": 0.40010395910941693,
+        "chroma": 0.7998151838054809
+      },
+      {
+        "hex": "#0098F4",
+        "share": 0.0009565656565656566,
+        "h": 202.62295081967216,
+        "s": 1,
+        "l": 0.47843137254901963,
+        "chroma": 0.9568627450980393
+      },
+      {
+        "hex": "#FF0000",
+        "share": 0.0008555555555555556,
+        "h": 0,
+        "s": 1,
+        "l": 0.5,
+        "chroma": 1
+      },
+      {
+        "hex": "#FCDABE",
+        "share": 0.0006060606060606061,
+        "h": 27.096774193548367,
+        "s": 0.9117647058823533,
+        "l": 0.8666666666666667,
+        "chroma": 0.2431372549019608
+      },
+      {
+        "hex": "#FDBEBE",
+        "share": 0.000601010101010101,
+        "h": 0,
+        "s": 0.9284294234592444,
+        "l": 0.8673916625473719,
+        "chroma": 0.2462349645740649
+      },
+      {
+        "hex": "#F9BECC",
+        "share": 0.00048484848484848484,
+        "h": 345.76271186440675,
+        "s": 0.8309859154929579,
+        "l": 0.8607843137254902,
+        "chroma": 0.2313725490196078
+      },
+      {
+        "hex": "#F4EDBB",
+        "share": 0.00048484848484848484,
+        "h": 52.63157894736842,
+        "s": 0.7215189873417727,
+        "l": 0.8450980392156863,
+        "chroma": 0.22352941176470598
+      },
+      {
+        "hex": "#80CCFA",
+        "share": 0.00034343434343434346,
+        "h": 202.62295081967213,
+        "s": 0.9242424242424243,
+        "l": 0.7411764705882353,
+        "chroma": 0.4784313725490196
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.9054838383838384,
+        "h": 221.45454545278366,
+        "s": 0.01775529968654657,
+        "l": 0.9999593463205063,
+        "chroma": 0.0000014436365255443562
+      },
+      {
+        "hex": "#B7B7B7",
+        "share": 0.015592929292929292,
+        "h": 226.74638137194162,
+        "s": 0.0014226648688622646,
+        "l": 0.7162615412168625,
+        "chroma": 0.0008073294745117865
+      },
+      {
+        "hex": "#DDDDDD",
+        "share": 0.014137373737373737,
+        "h": 208.55421686747536,
+        "s": 0.0010418279268462494,
+        "l": 0.8660664951891016,
+        "chroma": 0.000279071331304781
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.013843434343434343,
+        "h": 207.46153846152305,
+        "s": 0.0011290602744482953,
+        "l": 0.9011610189497178,
+        "chroma": 0.00022319033414164302
+      },
+      {
+        "hex": "#9A9A9A",
+        "share": 0.0036585858585858584,
+        "h": 206.78111587981937,
+        "s": 0.0003182907921069935,
+        "l": 0.6037098991998788,
+        "chroma": 0.00025227098017566174
+      },
+      {
+        "hex": "#212529",
+        "share": 0.003205050505050505,
+        "h": 209.99527261266942,
+        "s": 0.10810258332126703,
+        "l": 0.1451054547252245,
+        "chroma": 0.03137254901960784
+      },
+      {
+        "hex": "#A6A8A9",
+        "share": 0.0029616161616161617,
+        "h": 200,
+        "s": 0.017143525376159607,
+        "l": 0.6568761201615708,
+        "chroma": 0.0117647058823529
+      },
+      {
+        "hex": "#828282",
+        "share": 0.0025909090909090908,
+        "h": 210.0000000000116,
+        "s": 0.00029337503003975895,
+        "l": 0.5101341589267285,
+        "chroma": 0.0002874288116806456
+      },
+      {
+        "hex": "#CBCBCC",
+        "share": 0.0023525252525252527,
+        "h": 210.94358462306369,
+        "s": 0.008296160074885062,
+        "l": 0.7967342712095573,
+        "chroma": 0.0033726500475673715
+      },
+      {
+        "hex": "#ECECED",
+        "share": 0.002119191919191919,
+        "h": 199.01694915254123,
+        "s": 0.00756390861772776,
+        "l": 0.927099571954616,
+        "chroma": 0.0011028243518570457
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 206,
+        "share": 0.007413131313131314,
+        "size": 14
+      },
+      {
+        "hue": 0,
+        "share": 0.003264646464646465,
+        "size": 8
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 990000
+  }
+}

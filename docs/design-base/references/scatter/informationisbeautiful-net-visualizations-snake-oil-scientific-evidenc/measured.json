@@ -1,0 +1,478 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/snake-oil-scientific-evidence-for-health-supplements/",
+  "archive": "informationisbeautiful",
+  "family": "scatter",
+  "id": "informationisbeautiful-net-visualizations-snake-oil-scientific-evidenc",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Snake oil? Scientific evidence for health supplements — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 25,
+        "sample": "– Lots of new research and studies – don’t miss the Top to b",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "play with the interactive version",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "The Plastics Crisis, The Myth of Plastic Recycling and Biopl",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "PubMed",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "One great big infographic",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "details",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 3331,
+      "ratio": 0.38
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.4624657572800961,
+      "h": 94.54950614308852,
+      "s": 0.18947848910148285,
+      "l": 0.9999128598201792,
+      "chroma": 0.000033022379224978415
+    },
+    "chromatic": [
+      {
+        "hex": "#FFF696",
+        "share": 0.08682429262984089,
+        "h": 54.99476275348073,
+        "s": 0.9924558458695042,
+        "l": 0.7931050113452298,
+        "chroma": 0.4106682819430627
+      },
+      {
+        "hex": "#004D91",
+        "share": 0.04854093177724407,
+        "h": 208.12764454090635,
+        "s": 0.9996670196600337,
+        "l": 0.28435303345402363,
+        "chroma": 0.5685166989685473
+      },
+      {
+        "hex": "#F47B20",
+        "share": 0.027101001951365958,
+        "h": 25.755860819219674,
+        "s": 0.9059245327360056,
+        "l": 0.5413439220777017,
+        "chroma": 0.8310155861565742
+      },
+      {
+        "hex": "#007374",
+        "share": 0.010698035499849896,
+        "h": 180.11975280655238,
+        "s": 0.9997976098250954,
+        "l": 0.22684176294769764,
+        "chroma": 0.453591704807238
+      },
+      {
+        "hex": "#01A54E",
+        "share": 0.010582876763734613,
+        "h": 148.10065516874067,
+        "s": 0.9888544029721591,
+        "l": 0.325913884014667,
+        "chroma": 0.6445627583953221
+      },
+      {
+        "hex": "#F4F293",
+        "share": 0.009391417742419694,
+        "h": 59.30493594752212,
+        "s": 0.8086931472449432,
+        "l": 0.7654151866030864,
+        "chroma": 0.3794142620836356
+      },
+      {
+        "hex": "#006B7A",
+        "share": 0.00927156822275593,
+        "h": 187.45204697180702,
+        "s": 0.9994433419199775,
+        "l": 0.23951502940606056,
+        "chroma": 0.47876340285930974
+      },
+      {
+        "hex": "#008A62",
+        "share": 0.008776925097568299,
+        "h": 162.5324984300182,
+        "s": 0.9989995350712537,
+        "l": 0.27160231844327704,
+        "chroma": 0.5426611796982167
+      },
+      {
+        "hex": "#007C6D",
+        "share": 0.00859703354848394,
+        "h": 172.5219438584848,
+        "s": 0.9998187584559274,
+        "l": 0.2437916877295182,
+        "chroma": 0.48749500509520405
+      },
+      {
+        "hex": "#005C85",
+        "share": 0.008267740543380366,
+        "h": 198.3318269389341,
+        "s": 0.9998755834687926,
+        "l": 0.2610917448594144,
+        "chroma": 0.5221185214603842
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.4624657572800961,
+        "h": 94.54950614308852,
+        "s": 0.18947848910148285,
+        "l": 0.9999128598201792,
+        "chroma": 0.000033022379224978415
+      },
+      {
+        "hex": "#020302",
+        "share": 0.0014515629690783549,
+        "h": 117.87175989085947,
+        "s": 0.27061950823303543,
+        "l": 0.00858132233342521,
+        "chroma": 0.004644546459721389
+      },
+      {
+        "hex": "#231F20",
+        "share": 0.001077942059441609,
+        "h": 345,
+        "s": 0.060606060606060656,
+        "l": 0.12941176470588237,
+        "chroma": 0.015686274509803935
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.0010429957220054037,
+        "h": 195.76374745418178,
+        "s": 0.004736319175822593,
+        "l": 0.9542908415896154,
+        "chroma": 0.00043298632697963413
+      },
+      {
+        "hex": "#E5E4E4",
+        "share": 0.0008124437105974182,
+        "h": 343.10850439882654,
+        "s": 0.005559994130211583,
+        "l": 0.8958514468142915,
+        "chroma": 0.0011581306887651355
+      },
+      {
+        "hex": "#FEFDF4",
+        "share": 0.0007777319123386371,
+        "h": 54.109097893591226,
+        "s": 0.7714610293391275,
+        "l": 0.9760566711606234,
+        "chroma": 0.036942690224461394
+      },
+      {
+        "hex": "#DDDCDD",
+        "share": 0.0007000994446112279,
+        "h": 342.96380090497706,
+        "s": 0.004304384239331916,
+        "l": 0.8650954116990179,
+        "chroma": 0.0011613623673926154
+      },
+      {
+        "hex": "#EBF3F5",
+        "share": 0.0006839162413689583,
+        "h": 189.87276441704603,
+        "s": 0.32138455336059435,
+        "l": 0.9416236316200006,
+        "chroma": 0.03752252615723928
+      },
+      {
+        "hex": "#BCBABB",
+        "share": 0.0006803981537075953,
+        "h": 333.974358974359,
+        "s": 0.00947982498784624,
+        "l": 0.7330575663564288,
+        "chroma": 0.005061135105541625
+      },
+      {
+        "hex": "#959494",
+        "share": 0.0006529570699489643,
+        "h": 336.0083935649328,
+        "s": 0.00723931951409296,
+        "l": 0.5827283355871085,
+        "chroma": 0.00604152580572459
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 55,
+        "share": 0.15925397778444914,
+        "size": 8
+      },
+      {
+        "hue": 208,
+        "share": 0.10422147065445814,
+        "size": 8
+      },
+      {
+        "hue": 148,
+        "share": 0.061555745271690186,
+        "size": 8
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 4263680
+  }
+}

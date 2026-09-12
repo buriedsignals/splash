@@ -1,0 +1,165 @@
+{
+  "url": "http://www.espn.com/espn/feature/story/_/id/23519390/espn-world-fame-100-2018",
+  "archive": "url-list",
+  "family": "ranking",
+  "id": "espn-com-espn-feature-story-id-23519390-espn-world-fame-100-2018",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "not-applicable",
+      "why": "the page shows a grid of 12 images 441 px wide — a wall of covers, cards or thumbnails rather than one graphic, and any single one of them would be an arbitrary answer"
+    }
+  },
+  "consent": ".fc-cta-consent",
+  "entry": null,
+  "style": {
+    "title": "ESPN World Fame 100 2018",
+    "ground": "rgb(28, 28, 28)",
+    "type": [
+      {
+        "family": "bentonsans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "bentonsans | 11 | 400 | normal | 0 | none",
+        "count": 30,
+        "sample": "Soccer •",
+        "colors": [
+          "rgb(177, 177, 177)",
+          "rgb(114, 114, 114)",
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Publico Text Web",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Publico Text Web | 14 | 700 | normal | 0 | none",
+        "count": 18,
+        "sample": "100",
+        "colors": [
+          "rgb(217, 217, 217)"
+        ]
+      },
+      {
+        "family": "Times",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Times | 14 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "Terms of Use",
+        "colors": [
+          "rgb(29, 30, 31)"
+        ]
+      },
+      {
+        "family": "Publico Text Web",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "Publico Text Web | 16 | 700 | normal | 0.5 | none",
+        "count": 6,
+        "sample": "Cristiano Ronaldo",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "bentonsansbold",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "bentonsansbold | 11 | 400 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "Endorsements",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "bentonsansbold",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "bentonsansbold | 10 | 400 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "About",
+        "colors": [
+          "rgb(228, 228, 228)"
+        ]
+      },
+      {
+        "family": "Times",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Times | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Copyright: © 2026 ESPN Enterprises, LLC. All rights reserved",
+        "colors": [
+          "rgb(108, 109, 111)"
+        ]
+      },
+      {
+        "family": "bentonsans",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "bentonsans | 13 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our Third Annual Ranking of the Biggest Names in Sports",
+        "colors": [
+          "rgb(177, 177, 177)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(28, 28, 28)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(240, 183, 75)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(114, 114, 114)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1264,
+      "ch": 211
+    },
+    "graphic": null
+  }
+}

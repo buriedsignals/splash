@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>La Chine a émis plus de CO₂ en 2024 que les 5 pays suivants réunis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFCEE;
+  --accent: #1757B6;
+  --ink: #000000;
+  --muted: #61605a;
+  --grid: #d1cfc3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--title-size:30px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:15px;--label-weight:600;--note-size:13px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:600;font-style:normal;letter-spacing:1.9px;text-transform:uppercase;color:#1757B6;margin:0 0 6px">Climat · Monde</p><h2 class="chart-title" style="font-family:&quot;Georgia&quot;, Georgia, serif;font-size:30px;font-weight:700;font-style:normal;letter-spacing:-0.2px;text-transform:none;color:#000000;margin:0 0 6px">La Chine a émis plus de CO₂ en 2024 que les 5 pays suivants réunis</h2><p class="chart-caveat" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:0">Émissions annuelles de CO₂ en 2024, en milliards de tonnes. Les 10 premiers pays du classement mondial — 68,9 % du total. Chaque colonne porte son chiffre : la page ne dessine pas d&#x27;axe des valeurs, seulement son zéro.</p></div><div class="chart-plot" style="--y-gutter:0px;--x-axis-h:34px;aspect-ratio:900 / 454"><div class="y-axis"></div><svg role="group" aria-label="La Chine a émis plus de CO₂ en 2024 que les 5 pays suivants réunis" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 900 420" preserveAspectRatio="none"><desc>Dix colonnes, une par pays, mesurant les émissions de CO₂ de 2024 en milliards de tonnes. Celle de la Chine, 12,29 Gt, dépasse à elle seule la somme des 5 suivantes (11,65 Gt), que réunit une accolade. Les États-Unis suivent à 4,90 Gt, l&#x27;Inde à 3,19 Gt.</desc><rect x="0" y="0" width="900" height="420" fill="#FFFCEE"></rect><rect x="17.1" y="75.73770491803276" width="55.8" height="344.26229508196724" fill="#1757B6"></rect><rect x="107.1" y="282.6170946871283" width="55.8" height="137.38290531287169" fill="#918f87"></rect><rect x="197.1" y="330.53862886082936" width="55.8" height="89.46137113917064" fill="#918f87"></rect><rect x="287.1" y="370.120793322256" width="55.8" height="49.87920667774398" fill="#918f87"></rect><rect x="377.1" y="393.05446763141043" width="55.8" height="26.945532368589568" fill="#918f87"></rect><rect x="467.1" y="397.24664754740877" width="55.8" height="22.75335245259123" fill="#918f87"></rect><rect x="557.1" y="397.7954093501734" width="55.8" height="22.204590649826628" fill="#918f87"></rect><rect x="647.1" y="400.61072912278524" width="55.8" height="19.389270877214756" fill="#918f87"></rect><rect x="737.1" y="403.6489441234706" width="55.8" height="16.351055876529415" fill="#918f87"></rect><rect x="827.1" y="403.96718058676146" width="55.8" height="16.032819413238542" fill="#918f87"></rect><path d="M 107.1 264.6170946871283 L 107.1 256.6170946871283 L 522.9 256.6170946871283 L 522.9 264.6170946871283" fill="none" stroke="#73716b" stroke-width="1" vector-effect="non-scaling-stroke"></path><line x1="0" x2="900" y1="420" y2="420" stroke="#403f3c" stroke-width="1" vector-effect="non-scaling-stroke"></line><circle class="pt" cx="45" cy="75.73770491803276" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Chine : 12,29 Gt CO₂. 31,8 % du total mondial · il faut additionner les 6 pays suivants du classement pour l&#x27;égaler" data-detail="Chine · 12,29 Gt CO₂ · 31,8 % du total mondial · il faut additionner les 6 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="135" cy="282.6170946871283" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="États-Unis : 4,90 Gt CO₂. 12,7 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="États-Unis · 4,90 Gt CO₂ · 12,7 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="225" cy="330.53862886082936" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde : 3,19 Gt CO₂. 8,3 % du total mondial · il faut additionner les 3 pays suivants du classement pour l&#x27;égaler" data-detail="Inde · 3,19 Gt CO₂ · 8,3 % du total mondial · il faut additionner les 3 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="315" cy="370.120793322256" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russie : 1,78 Gt CO₂. 4,6 % du total mondial · il faut additionner les 3 pays suivants du classement pour l&#x27;égaler" data-detail="Russie · 1,78 Gt CO₂ · 4,6 % du total mondial · il faut additionner les 3 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="405" cy="393.05446763141043" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japon : 0,96 Gt CO₂. 2,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Japon · 0,96 Gt CO₂ · 2,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="495" cy="397.24664754740877" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Indonésie : 0,81 Gt CO₂. 2,1 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Indonésie · 0,81 Gt CO₂ · 2,1 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="585" cy="397.7954093501734" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Iran : 0,79 Gt CO₂. 2,1 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Iran · 0,79 Gt CO₂ · 2,1 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="675" cy="400.61072912278524" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Arabie s. : 0,69 Gt CO₂. 1,8 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Arabie s. · 0,69 Gt CO₂ · 1,8 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="765" cy="403.6489441234706" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Corée du S. : 0,58 Gt CO₂. 1,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Corée du S. · 0,58 Gt CO₂ · 1,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><circle class="pt" cx="855" cy="403.96718058676146" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne : 0,57 Gt CO₂. 1,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler" data-detail="Allemagne · 0,57 Gt CO₂ · 1,5 % du total mondial · il faut additionner les 2 pays suivants du classement pour l&#x27;égaler"></circle><rect class="hit-area" x="0" y="0" width="900" height="420" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#1757B6;left:5%;top:18.032786885245898%;transform:translate(-50%, -100%) translateY(-4px)">12,29</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:15%;top:67.28978444931627%;transform:translate(-50%, -100%) translateY(-4px)">4,90</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:25%;top:78.6996735382927%;transform:translate(-50%, -100%) translateY(-4px)">3,19</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:35%;top:88.12399841006095%;transform:translate(-50%, -100%) translateY(-4px)">1,78</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:45%;top:93.58439705509772%;transform:translate(-50%, -100%) translateY(-4px)">0,96</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:55.00000000000001%;top:94.58253513033542%;transform:translate(-50%, -100%) translateY(-4px)">0,81</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:65%;top:94.71319270242223%;transform:translate(-50%, -100%) translateY(-4px)">0,79</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:75%;top:95.38350693399649%;transform:translate(-50%, -100%) translateY(-4px)">0,69</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:85%;top:96.10689145796918%;transform:translate(-50%, -100%) translateY(-4px)">0,58</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:95%;top:96.18266204446701%;transform:translate(-50%, -100%) translateY(-4px)">0,57</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#61605a;left:35%;transform:translateX(-50%) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:61.09930825884008%;text-align:center">les 5 suivants réunis : 11,65 Gt</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:700;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#1757B6;left:5%">Chine</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:15%">États-Unis</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:25%">Inde</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:35%">Russie</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:45%">Japon</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:55.00000000000001%">Indonésie</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:65%">Iran</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:75%">Arabie s.</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:85%">Corée du S.</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:95%">Allemagne</span></div></div><p class="chart-reading" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:10px 0 0">Lecture : survolez, touchez ou tabulez une colonne pour lire sa part du total mondial et le nombre de pays qu&#x27;il faut additionner, plus bas dans le classement, pour l&#x27;égaler — la question du titre, posée à chacun des dix.</p><p class="chart-source" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:6px 0 0">Source : Global Carbon Budget 2025, via Our World in Data · 2024 · 215 pays classés</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

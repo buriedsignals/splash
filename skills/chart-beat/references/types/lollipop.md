@@ -58,3 +58,11 @@ running text measured under WCAG's 4.5:1 floor even though the same hue was perf
 colour on a stem or a dot. The fix is structural, not cosmetic — keep every label in ink, keep every
 accent on the mark, and treat "which element is text and which is a mark" as the thing that decides
 its colour, not "which elements are near each other."
+
+## The worked example in this tree
+
+`proof/static-lollipop-co2-per-person` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

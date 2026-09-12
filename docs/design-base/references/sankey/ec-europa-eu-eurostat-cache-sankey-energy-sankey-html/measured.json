@@ -1,0 +1,439 @@
+{
+  "url": "https://ec.europa.eu/eurostat/cache/sankey/energy/sankey.html",
+  "archive": "url-list",
+  "family": "sankey",
+  "id": "ec-europa-eu-eurostat-cache-sankey-energy-sankey-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Energy flow diagrams",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "arial | 16 | 400 | normal | 0 | none",
+        "count": 45,
+        "sample": "English",
+        "colors": [
+          "rgb(14, 71, 203)",
+          "rgb(16, 16, 16)",
+          "rgb(23, 26, 34)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 10.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 10.6 | 400 | normal | 0 | none",
+        "count": 40,
+        "sample": "inflow",
+        "colors": [
+          "rgb(33, 37, 41)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Welcome to the tutorial of Eurostat's Sankey diagram. This g",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Inter",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "An official website of the European Union",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Inter",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "This site uses cookies. Visit our or click the link in any f",
+        "colors": [
+          "rgb(68, 68, 68)",
+          "rgb(0, 68, 148)"
+        ]
+      },
+      {
+        "family": "Inter",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Accept all cookies",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 100 | normal | 0 | none",
+        "count": 2,
+        "sample": "European Union (27 countries) - year 2024",
+        "colors": [
+          "rgb(14, 67, 203)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 28 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Energy balance flow diagram",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "arial",
+        "size": 12.8,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "arial | 12.8 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Legend (top-down)",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "arial",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "arial | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "All products",
+        "colors": [
+          "rgb(33, 37, 41)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2024",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "arial",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "arial | 10 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "100%",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Introduction",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 13
+      },
+      {
+        "colour": "stroke rgb(125, 128, 136)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(0, 70, 255)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(220, 220, 220)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 575,
+      "ch": 72
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 0,
+      "nearTheTop": true,
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "ratio": 1.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#999999",
+      "share": 0.6841975308641975,
+      "h": 231.50285601748465,
+      "s": 0.00002806438778710277,
+      "l": 0.5999678369633671,
+      "chroma": 0.000022453315501547166
+    },
+    "chromatic": [
+      {
+        "hex": "#14337C",
+        "share": 0.06822762345679012,
+        "h": 222.16951450321216,
+        "s": 0.7221424154026542,
+        "l": 0.28222762997738365,
+        "chroma": 0.40761708481046877
+      },
+      {
+        "hex": "#10244F",
+        "share": 0.03241898148148148,
+        "h": 220.952380952381,
+        "s": 0.6631578947368422,
+        "l": 0.18627450980392157,
+        "chroma": 0.24705882352941178
+      },
+      {
+        "hex": "#112554",
+        "share": 0.0030787037037037037,
+        "h": 221.59637731329877,
+        "s": 0.6684051880479781,
+        "l": 0.19645437122217307,
+        "chroma": 0.2626222418792078
+      },
+      {
+        "hex": "#122B64",
+        "share": 0.0030007716049382715,
+        "h": 221.8002804076939,
+        "s": 0.6936943631527528,
+        "l": 0.23068735851244584,
+        "chroma": 0.3200530405013638
+      },
+      {
+        "hex": "#132D6B",
+        "share": 0.002777777777777778,
+        "h": 221.87656270561916,
+        "s": 0.7032390269698572,
+        "l": 0.24718954248366012,
+        "chroma": 0.3476666666666666
+      },
+      {
+        "hex": "#12285D",
+        "share": 0.002298611111111111,
+        "h": 221.86949690461375,
+        "s": 0.6780681173188935,
+        "l": 0.21685195058217982,
+        "chroma": 0.2940807877363768
+      },
+      {
+        "hex": "#133175",
+        "share": 0.0020146604938271603,
+        "h": 221.87208504128503,
+        "s": 0.7190808086221439,
+        "l": 0.2662408663197182,
+        "chroma": 0.38289739488288616
+      },
+      {
+        "hex": "#132F71",
+        "share": 0.0009691358024691358,
+        "h": 222.06293884629116,
+        "s": 0.7113796064487259,
+        "l": 0.2581584863244661,
+        "chroma": 0.36729736480579495
+      },
+      {
+        "hex": "#112759",
+        "share": 0.000929783950617284,
+        "h": 221.6579372176478,
+        "s": 0.6756086652909745,
+        "l": 0.20738914652998128,
+        "chroma": 0.28022780896591
+      },
+      {
+        "hex": "#0C325E",
+        "share": 0.00033179012345679014,
+        "h": 212.1890900821513,
+        "s": 0.7715538984537778,
+        "l": 0.20791153670770635,
+        "chroma": 0.3208299133606931
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#999999",
+        "share": 0.6841975308641975,
+        "h": 231.50285601748465,
+        "s": 0.00002806438778710277,
+        "l": 0.5999678369633671,
+        "chroma": 0.000022453315501547166
+      },
+      {
+        "hex": "#515357",
+        "share": 0.08007253086419754,
+        "h": 220.00184806026618,
+        "s": 0.03538360010290488,
+        "l": 0.32940331875036133,
+        "chroma": 0.023310950606464986
+      },
+      {
+        "hex": "#929293",
+        "share": 0.054469907407407404,
+        "h": 220.91128168511102,
+        "s": 0.0014614806452951546,
+        "l": 0.5741288574132357,
+        "chroma": 0.001244804864560578
+      },
+      {
+        "hex": "#323232",
+        "share": 0.029603395061728394,
+        "h": 224.83516483514614,
+        "s": 0.000047410303353059755,
+        "l": 0.19619229853229933,
+        "chroma": 0.000018603072777900742
+      },
+      {
+        "hex": "#0C0C0C",
+        "share": 0.006992283950617284,
+        "h": 0,
+        "s": 0,
+        "l": 0.047058823529411764,
+        "chroma": 0
+      },
+      {
+        "hex": "#858585",
+        "share": 0.003410493827160494,
+        "h": 213.0434782608932,
+        "s": 0.00006406405662885867,
+        "l": 0.5222043296956791,
+        "chroma": 0.00006121905775879899
+      },
+      {
+        "hex": "#979798",
+        "share": 0.002746141975308642,
+        "h": 229.00076863950838,
+        "s": 0.0070480715316959324,
+        "l": 0.5932113559107262,
+        "chroma": 0.005734150923645598
+      },
+      {
+        "hex": "#8B8D92",
+        "share": 0.0016929012345679013,
+        "h": 223.1267310888164,
+        "s": 0.03296172690477883,
+        "l": 0.5594893381235813,
+        "chroma": 0.029039984270827768
+      },
+      {
+        "hex": "#8C8C8C",
+        "share": 0.00141820987654321,
+        "h": 225.65217391313348,
+        "s": 0.00010846140424504262,
+        "l": 0.5475538202223218,
+        "chroma": 0.00009814589600798396
+      },
+      {
+        "hex": "#878788",
+        "share": 0.0013973765432098765,
+        "h": 234.11901983663896,
+        "s": 0.005939221733254794,
+        "l": 0.5313119173677201,
+        "chroma": 0.005567284892974311
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 222,
+        "share": 0.11857098765432098,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1296000
+  }
+}

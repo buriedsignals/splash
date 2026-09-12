@@ -72,3 +72,11 @@ either side of a midpoint must stay distinguishable from each other under a
 colour-vision deficiency simulation, not just distinguishable from white or
 grey, or the two directions of the story (better than the reference vs. worse
 than it) collapse into the same colour for a meaningful fraction of readers.
+
+## The worked example in this tree
+
+`proof/static-choropleth-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

@@ -40,3 +40,11 @@ mark here: whatever color decorates the box is not automatically safe to reuse a
 value label sitting next to it. If outliers get numbers, render those numbers in ink, not in the
 box's fill or stroke color — check the actual contrast of the label against its real background,
 not against an assumption of white.
+
+## The worked example in this tree
+
+`proof/more-boxplot-france-co2-decades` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

@@ -55,3 +55,11 @@ happens in practice is two warm hues — an orange and a vermillion — placed n
 within the same group. Assign the palette so adjacent bars in a group don't pair two warm members
 or two cool ones; the safety a CVD-safe set promises is a property of which colours end up sitting
 next to each other, not just a property of the set they were both drawn from.
+
+## The worked example in this tree
+
+`proof/static-wind-vs-solar` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

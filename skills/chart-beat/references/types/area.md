@@ -61,3 +61,11 @@ part-to-whole device, and the story it tells cleanly is "how did the total move,
 bottom layer move" — not "which of these two middle bands grew faster," which the stack itself makes
 nearly unreadable no matter how well it's drawn. If that second question is the actual story, this
 is the wrong chart regardless of how carefully it's built.
+
+## The worked example in this tree
+
+`proof/static-area-swiss-co2` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

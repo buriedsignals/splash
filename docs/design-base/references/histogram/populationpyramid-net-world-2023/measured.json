@@ -1,0 +1,436 @@
+{
+  "url": "https://www.populationpyramid.net/world/2023/",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "populationpyramid-net-world-2023",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "World Population Pyramid 2023 | PopulationPyramid.net",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "sans-serif",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 10 | 400 | normal | 0 | none",
+        "count": 106,
+        "sample": "3.9%",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 16 | 400 | normal | 0 | none",
+        "count": 40,
+        "sample": "PopulationPyramid.net",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 10 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Population:",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 24,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 24 | 100 | normal | 0 | none",
+        "count": 6,
+        "sample": "Immigration statistics per countries",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 30,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 30 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "World",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 13 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Download image",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 11 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Under 15",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 11,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 11 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "24.4%",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 16,
+        "weight": "100",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 16 | 100 | normal | 0 | none",
+        "count": 2,
+        "sample": "Mailing List",
+        "colors": [
+          "rgb(18, 22, 45)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "sans-serif",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Female",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "-apple-system | 16 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Year",
+        "colors": [
+          "rgb(18, 22, 45)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data source: (medium variant) — last updated July 2024.",
+        "colors": [
+          "rgb(102, 102, 102)",
+          "rgb(18, 22, 45)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 21
+      },
+      {
+        "colour": "fill rgb(238, 121, 137)",
+        "count": 20
+      },
+      {
+        "colour": "fill rgb(70, 130, 180)",
+        "count": 19
+      },
+      {
+        "colour": "stroke rgb(18, 22, 45)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(70, 130, 180)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(238, 121, 137)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(46, 139, 87)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(46, 139, 87)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1190,
+      "ch": 149
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 158,
+      "nearTheTop": true,
+      "x": 20,
+      "y": 158,
+      "w": 595,
+      "h": 536,
+      "ratio": 1.11
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#C8C8C8",
+      "share": 0.5161858773360091,
+      "h": 0,
+      "s": 0,
+      "l": 0.7843588437063542,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#6C8AA3",
+        "share": 0.05211338266649944,
+        "h": 207.28312616144302,
+        "s": 0.22997768516705416,
+        "l": 0.531259054765107,
+        "chroma": 0.21559991505627518
+      },
+      {
+        "hex": "#C0858D",
+        "share": 0.007337263263514361,
+        "h": 351.86440677966107,
+        "s": 0.3189189189189189,
+        "l": 0.6372549019607843,
+        "chroma": 0.2313725490196078
+      },
+      {
+        "hex": "#69869F",
+        "share": 0.0010347422551109996,
+        "h": 207.76692489053553,
+        "s": 0.2194112575440325,
+        "l": 0.5175876411170529,
+        "chroma": 0.21169340463458108
+      },
+      {
+        "hex": "#66829A",
+        "share": 0.0010284710899285086,
+        "h": 207.66443897291595,
+        "s": 0.20478282791903765,
+        "l": 0.5020444763271162,
+        "chroma": 0.20394548063127688
+      },
+      {
+        "hex": "#5F798F",
+        "share": 0.0009751661858773361,
+        "h": 207.49196141479104,
+        "s": 0.20169157186478237,
+        "l": 0.46664144757581494,
+        "chroma": 0.1882352941176471
+      },
+      {
+        "hex": "#BD838B",
+        "share": 0.0007713533174463816,
+        "h": 351.6521739130435,
+        "s": 0.30183727034120744,
+        "l": 0.6264705882352941,
+        "chroma": 0.22549019607843146
+      },
+      {
+        "hex": "#B57E85",
+        "share": 0.0003856766587231908,
+        "h": 352.3636363636364,
+        "s": 0.27093596059113306,
+        "l": 0.6019607843137256,
+        "chroma": 0.21568627450980393
+      },
+      {
+        "hex": "#A9757C",
+        "share": 0.0003856766587231908,
+        "h": 351.9230769230769,
+        "s": 0.2321428571428571,
+        "l": 0.5607843137254902,
+        "chroma": 0.20392156862745098
+      },
+      {
+        "hex": "#C19399",
+        "share": 0.00033237175467201805,
+        "h": 352.1632150912446,
+        "s": 0.270628710948338,
+        "l": 0.6666481687014428,
+        "chroma": 0.18042915279319272
+      },
+      {
+        "hex": "#728DA5",
+        "share": 0.00021321961620469082,
+        "h": 207.4756725815684,
+        "s": 0.22184126984126984,
+        "l": 0.5458477508650519,
+        "chroma": 0.20149942329873127
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#C8C8C8",
+        "share": 0.5161858773360091,
+        "h": 0,
+        "s": 0,
+        "l": 0.7843588437063542,
+        "chroma": 0
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.30961369622475854,
+        "h": 0,
+        "s": 0,
+        "l": 0.9997461794869656,
+        "chroma": 0
+      },
+      {
+        "hex": "#5F5F5F",
+        "share": 0.011134453781512605,
+        "h": 240,
+        "s": 0.00003557442317556886,
+        "l": 0.3725225150606568,
+        "chroma": 0.00002650454718639006
+      },
+      {
+        "hex": "#C4C4C5",
+        "share": 0.010290982064467578,
+        "h": 228.06060606060765,
+        "s": 0.002572644730755828,
+        "l": 0.770095948190367,
+        "chroma": 0.0011829228949349346
+      },
+      {
+        "hex": "#B2B2B3",
+        "share": 0.005970149253731343,
+        "h": 228.2860385925092,
+        "s": 0.003023159252892002,
+        "l": 0.6998918685121107,
+        "chroma": 0.0018145493491514841
+      },
+      {
+        "hex": "#BCBCBC",
+        "share": 0.00556565909946068,
+        "h": 231.6946959896516,
+        "s": 0.0032494419619398976,
+        "l": 0.7372140292736813,
+        "chroma": 0.0017078155205744183
+      },
+      {
+        "hex": "#ABABAD",
+        "share": 0.0053430327354822525,
+        "h": 237.46744499326377,
+        "s": 0.007877135085615859,
+        "l": 0.674678956089478,
+        "chroma": 0.0051251956181535
+      },
+      {
+        "hex": "#636363",
+        "share": 0.004640662235043271,
+        "h": 231.42857142857784,
+        "s": 0.00009534316730002931,
+        "l": 0.38907790143084264,
+        "chroma": 0.00007419183889773029
+      },
+      {
+        "hex": "#9D9D9D",
+        "share": 0.004603035243948325,
+        "h": 228.49315068493993,
+        "s": 0.0012678409536941862,
+        "l": 0.6154685579954053,
+        "chroma": 0.0009750494203130122
+      },
+      {
+        "hex": "#8A8A8A",
+        "share": 0.004474476357707262,
+        "h": 231.8918918919013,
+        "s": 0.0003322129874326396,
+        "l": 0.5408947881885761,
+        "chroma": 0.00030504142792353584
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 207,
+        "share": 0.055446506960993354,
+        "size": 8
+      },
+      {
+        "hue": 352,
+        "share": 0.009384798695597642,
+        "size": 16
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 318920
+  }
+}

@@ -1,0 +1,420 @@
+{
+  "url": "https://www.datawrapper.de/_/d8VDj/",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "datawrapper-de-d8vdj",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Women are much more likely than men to identify as bisexual | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 219,
+      "w": 640,
+      "h": 335,
+      "ratio": 1.91
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/d8VDj/1/",
+      "title": "Women are much more likely than men to identify as bisexual",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 19,
+          "sample": "Women",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 5,
+          "sample": "Chart:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Women are much more likely than men to identify as bisexual",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Self-descriptions from 2023 Gallup telephone polls in the U.",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Bisexual",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "Respondents could choose and be counted for multiple identit",
+          "colors": [
+            "rgb(101, 101, 101)"
+          ]
+        }
+      ],
+      "marks": [],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8182276119402985,
+      "h": 239.44186046544505,
+      "s": 0.020076571108363552,
+      "l": 0.9998803039468289,
+      "chroma": 0.0000048061726457548914
+    },
+    "chromatic": [
+      {
+        "hex": "#8300F3",
+        "share": 0.029636194029850748,
+        "h": 272.34550757379,
+        "s": 0.9998976750873161,
+        "l": 0.4764949668882347,
+        "chroma": 0.952892419164707
+      },
+      {
+        "hex": "#0189CC",
+        "share": 0.0003171641791044776,
+        "h": 199.99999999999997,
+        "s": 0.9874123873551708,
+        "l": 0.40317185697808533,
+        "chroma": 0.7961937716262975
+      },
+      {
+        "hex": "#0A8DCE",
+        "share": 0.0001166044776119403,
+        "h": 199.90184049079755,
+        "s": 0.9032138899150349,
+        "l": 0.42462745098039223,
+        "chroma": 0.7670588235294118
+      },
+      {
+        "hex": "#1C95D2",
+        "share": 0.00010727611940298508,
+        "h": 199.9952153110048,
+        "s": 0.7647274057811928,
+        "l": 0.4659846547314578,
+        "chroma": 0.7127024722932651
+      },
+      {
+        "hex": "#C4E3F3",
+        "share": 0.0000792910447761194,
+        "h": 199.9752475247525,
+        "s": 0.6688741721854305,
+        "l": 0.8606689734717416,
+        "chroma": 0.18638985005767006
+      },
+      {
+        "hex": "#64B7E0",
+        "share": 0.0000792910447761194,
+        "h": 200.0380589914367,
+        "s": 0.6660329531051964,
+        "l": 0.6359861591695501,
+        "chroma": 0.48489042675893884
+      },
+      {
+        "hex": "#4BABDB",
+        "share": 0.00007462686567164179,
+        "h": 199.9739921976593,
+        "s": 0.6650331507639088,
+        "l": 0.5748774509803921,
+        "chroma": 0.5654411764705882
+      },
+      {
+        "hex": "#5CB3DE",
+        "share": 0.00007462686567164179,
+        "h": 200.0859598853868,
+        "s": 0.6677295918367346,
+        "l": 0.615686274509804,
+        "chroma": 0.513235294117647
+      },
+      {
+        "hex": "#CB95FA",
+        "share": 0.00006996268656716418,
+        "h": 272.35332893869486,
+        "s": 0.9100179964007199,
+        "l": 0.7820915032679738,
+        "chroma": 0.39660130718954245
+      },
+      {
+        "hex": "#D5A9FB",
+        "share": 0.00006529850746268656,
+        "h": 272.4675324675325,
+        "s": 0.9116022099447514,
+        "l": 0.8225490196078431,
+        "chroma": 0.32352941176470584
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8182276119402985,
+        "h": 239.44186046544505,
+        "s": 0.020076571108363552,
+        "l": 0.9998803039468289,
+        "chroma": 0.0000048061726457548914
+      },
+      {
+        "hex": "#B2B2B2",
+        "share": 0.05283582089552239,
+        "h": 0,
+        "s": 0,
+        "l": 0.6983192782762823,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.024878731343283583,
+        "h": 0,
+        "s": 0,
+        "l": 0.8312997640000882,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.013736007462686568,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.005191231343283582,
+        "h": 0,
+        "s": 0,
+        "l": 0.09472367563377553,
+        "chroma": 0
+      },
+      {
+        "hex": "#656565",
+        "share": 0.005074626865671642,
+        "h": 0,
+        "s": 0,
+        "l": 0.39607122260668975,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.004916044776119403,
+        "h": 0,
+        "s": 0,
+        "l": 0.954760575957138,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.003507462686567164,
+        "h": 0,
+        "s": 0,
+        "l": 0.9260012515644556,
+        "chroma": 0
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.0030363805970149253,
+        "h": 0,
+        "s": 0,
+        "l": 0.8919671094244149,
+        "chroma": 0
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.0027938432835820895,
+        "h": 0,
+        "s": 0,
+        "l": 0.8604733379161348,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 272,
+        "share": 0.029990671641791044,
+        "size": 8
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 214400
+  }
+}

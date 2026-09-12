@@ -34,6 +34,32 @@ export function nearestIndex(cxs, x) {
   return best;
 }
 
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+export function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
 /** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
  *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
  *  string and its own `aria-label`; this function never invents either. */
@@ -42,6 +68,12 @@ export function initChart(svg, tooltip) {
   if (points.length === 0) return;
   const hitArea = svg.querySelector(".hit-area");
   const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
@@ -70,7 +102,10 @@ export function initChart(svg, tooltip) {
     svgPoint.x = evt.clientX;
     svgPoint.y = evt.clientY;
     const local = svgPoint.matrixTransform(ctm.inverse());
-    show(points[nearestIndex(cxs, local.x)], evt.clientX, evt.clientY);
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
   }
 
   if (hitArea) {

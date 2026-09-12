@@ -1,0 +1,396 @@
+{
+  "url": "https://threestory.com/scotus/scotus_all.html",
+  "archive": "url-list",
+  "family": "gantt",
+  "id": "threestory-com-scotus-scotus-all-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Threestory Studio: The Design of Information | U.S. Supreme Court Justices by Age and Tenure",
+    "ground": "rgb(72, 73, 75)",
+    "type": [
+      {
+        "family": "ff-nuvo-sc-web-pro-1",
+        "size": 12.3,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-nuvo-sc-web-pro-1 | 12.3 | 300 | normal | 0 | none",
+        "count": 245,
+        "sample": "Shaded by date of oath. are active.",
+        "colors": [
+          "rgb(90, 91, 93)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 12,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 12 | 300 | normal | 0 | none",
+        "count": 6,
+        "sample": "Data from , the , and the ever-reliable ·  Visualization cre",
+        "colors": [
+          "rgb(128, 128, 128)",
+          "rgb(121, 157, 203)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 17.6,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 17.6 | 300 | normal | 0 | none",
+        "count": 4,
+        "sample": "U.S. Supreme Court justices are appointed after being nomina",
+        "colors": [
+          "rgb(128, 128, 128)",
+          "rgb(121, 157, 203)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 13.8,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.55,
+        "transform": "uppercase",
+        "key": "proxima-nova | 13.8 | 700 | normal | 0.55 | uppercase",
+        "count": 3,
+        "sample": "Home",
+        "colors": [
+          "rgb(87, 82, 78)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 14.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 14.7 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Email",
+        "colors": [
+          "rgb(213, 209, 200)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 12.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.5,
+        "transform": "uppercase",
+        "key": "proxima-nova | 12.5 | 700 | normal | 1.5 | uppercase",
+        "count": 1,
+        "sample": "Design for Impact",
+        "colors": [
+          "rgb(64, 106, 157)"
+        ]
+      },
+      {
+        "family": "Josefin Sans",
+        "size": 35.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Josefin Sans | 35.2 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "U.S. Supreme Court Justices by Age and Tenure",
+        "colors": [
+          "rgb(90, 91, 93)"
+        ]
+      },
+      {
+        "family": "ff-nuvo-sc-web-pro-1",
+        "size": 12.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-nuvo-sc-web-pro-1 | 12.3 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Blue",
+        "colors": [
+          "rgb(121, 157, 203)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 14.7,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 14.7 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026 Threestory Studio.",
+        "colors": [
+          "rgb(128, 128, 128)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 17
+      },
+      {
+        "colour": "fill rgb(121, 157, 203)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(224, 226, 227)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(168, 170, 171)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(155, 157, 158)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(190, 192, 193)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(202, 204, 205)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(154, 156, 157)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(146, 148, 149)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(198, 200, 201)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(181, 183, 184)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(162, 164, 165)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(176, 178, 179)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(221, 223, 224)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(219, 221, 222)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(214, 216, 217)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(205, 207, 208)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(144, 146, 147)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(133, 135, 136)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(171, 173, 174)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(141, 143, 144)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(165, 167, 168)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(187, 189, 190)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(178, 180, 181)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 760,
+      "ch": 127
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 565,
+      "nearTheTop": true,
+      "x": 53,
+      "y": 565,
+      "w": 640,
+      "h": 1775,
+      "ratio": 0.36
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.767875,
+      "h": 214.54545452368436,
+      "s": 0.0004791288564759876,
+      "l": 0.9998451815995673,
+      "chroma": 1.4835592632156391e-7
+    },
+    "chromatic": [
+      {
+        "hex": "#799DCB",
+        "share": 0.011801056338028169,
+        "h": 213.65878153416222,
+        "s": 0.440858421148037,
+        "l": 0.635295287740637,
+        "chroma": 0.32156628726382386
+      },
+      {
+        "hex": "#AAC1DE",
+        "share": 0.000007042253521126761,
+        "h": 213.46153846153845,
+        "s": 0.440677966101695,
+        "l": 0.7686274509803921,
+        "chroma": 0.20392156862745103
+      },
+      {
+        "hex": "#7DA0CC",
+        "share": 0.000007042253521126761,
+        "h": 213.41772151898738,
+        "s": 0.4364640883977902,
+        "l": 0.6450980392156863,
+        "chroma": 0.3098039215686275
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.767875,
+        "h": 214.54545452368436,
+        "s": 0.0004791288564759876,
+        "l": 0.9998451815995673,
+        "chroma": 1.4835592632156391e-7
+      },
+      {
+        "hex": "#DBDCDD",
+        "share": 0.013824823943661971,
+        "h": 200.02590841375755,
+        "s": 0.02792524087984693,
+        "l": 0.8619475501120537,
+        "chroma": 0.007710295834347791
+      },
+      {
+        "hex": "#9B9C9D",
+        "share": 0.013682218309859155,
+        "h": 199.99593392630203,
+        "s": 0.01276619213849128,
+        "l": 0.6111533721125328,
+        "chroma": 0.009928181528031654
+      },
+      {
+        "hex": "#333333",
+        "share": 0.013066901408450704,
+        "h": 240,
+        "s": 0.000005283513325061479,
+        "l": 0.20000739719223715,
+        "chroma": 0.0000021134834963520976
+      },
+      {
+        "hex": "#828383",
+        "share": 0.012789612676056338,
+        "h": 199.98718770019175,
+        "s": 0.00518476036952078,
+        "l": 0.5124158714349529,
+        "chroma": 0.005056013733182763
+      },
+      {
+        "hex": "#CACCCD",
+        "share": 0.010861795774647888,
+        "h": 200,
+        "s": 0.02312952565830967,
+        "l": 0.7979685009590188,
+        "chroma": 0.009345785481710278
+      },
+      {
+        "hex": "#929495",
+        "share": 0.010799295774647888,
+        "h": 199.99999999999977,
+        "s": 0.011492312722912854,
+        "l": 0.5776852899620886,
+        "chroma": 0.009706745430483887
+      },
+      {
+        "hex": "#B2B3B4",
+        "share": 0.009726232394366197,
+        "h": 199.9698369309079,
+        "s": 0.012633236044674206,
+        "l": 0.7019448126793482,
+        "chroma": 0.0075308030715227625
+      },
+      {
+        "hex": "#AAACAC",
+        "share": 0.0093318661971831,
+        "h": 199.99362702142855,
+        "s": 0.014115787011631811,
+        "l": 0.6710306648836311,
+        "chroma": 0.009287322135721587
+      },
+      {
+        "hex": "#8B8D8D",
+        "share": 0.009026408450704225,
+        "h": 199.9999999999995,
+        "s": 0.009263450388991934,
+        "l": 0.549661729329922,
+        "chroma": 0.008343372457233378
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 214,
+        "share": 0.011815140845070422,
+        "size": 3
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1136000
+  }
+}

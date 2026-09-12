@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>L'Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFCEE;
+  --accent: #1757B6;
+  --ink: #000000;
+  --muted: #61605a;
+  --grid: #d1cfc3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--title-size:30px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:15px;--label-weight:600;--note-size:13px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:600;font-style:normal;letter-spacing:1.9px;text-transform:uppercase;color:#1757B6;margin:0 0 6px">Climat · Monde</p><h2 class="chart-title" style="font-family:&quot;Georgia&quot;, Georgia, serif;font-size:30px;font-weight:700;font-style:normal;letter-spacing:-0.2px;text-transform:none;color:#000000;margin:0 0 6px">L&#x27;Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂</h2><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:0">La position verticale est un RANG, jamais une valeur : une ligne qui monte a dépassé quelqu&#x27;un, elle n&#x27;a pas forcément plus émis. 6 pays — ceux qui sont dans les cinq premiers en 1990 ou en 2024 — sur les 10 premiers rangs du classement mondial.</p></div><div class="chart-plot" style="--y-gutter:112px;--x-axis-h:28px;aspect-ratio:1112 / 358"><div class="y-axis"><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:5%;white-space:normal;line-height:1.15">1er États-Unis</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:15%;white-space:normal;line-height:1.15">2e Russie</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:25%;white-space:normal;line-height:1.15">3e Chine</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:35%;white-space:normal;line-height:1.15">4e Japon</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:45%;white-space:normal;line-height:1.15">5e Allemagne</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:700;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#1757B6;top:75%;white-space:normal;line-height:1.15">8e Inde</span></div><svg role="group" aria-label="L&#x27;Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 1000 330" preserveAspectRatio="none"><desc>Six lignes de rang, une par pays, de 1990 à 2024, rang 1 en haut. La ligne de l&#x27;Inde part du 8e rang et monte jusqu&#x27;au 3e, en dépassant Allemagne en 1999, Japon en 2006, Russie en 2009. Chaque extrémité porte le nom du pays et son rang écrit en toutes lettres.</desc><rect x="0" y="0" width="1000" height="330" fill="#FFFCEE"></rect><line x1="0" x2="750" y1="16.5" y2="16.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="49.5" y2="49.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="82.5" y2="82.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="115.49999999999999" y2="115.49999999999999" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="148.5" y2="148.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="181.50000000000003" y2="181.50000000000003" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="214.5" y2="214.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="247.5" y2="247.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="280.5" y2="280.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="750" y1="313.5" y2="313.5" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><path d="M 0 16.5 L 22.058823529411764 16.5 L 44.11764705882353 16.5 L 66.1764705882353 16.5 L 88.23529411764706 16.5 L 110.29411764705883 16.5 L 132.3529411764706 16.5 L 154.41176470588235 16.5 L 176.47058823529412 16.5 L 198.52941176470588 16.5 L 220.58823529411765 16.5 L 242.64705882352942 16.5 L 264.7058823529412 16.5 L 286.7647058823529 16.5 L 308.8235294117647 16.5 L 330.88235294117646 16.5 L 352.94117647058823 49.5 L 375 49.5 L 397.05882352941177 49.5 L 419.11764705882354 49.5 L 441.1764705882353 49.5 L 463.2352941176471 49.5 L 485.29411764705884 49.5 L 507.3529411764706 49.5 L 529.4117647058824 49.5 L 551.4705882352941 49.5 L 573.5294117647059 49.5 L 595.5882352941176 49.5 L 617.6470588235294 49.5 L 639.7058823529411 49.5 L 661.7647058823529 49.5 L 683.8235294117646 49.5 L 705.8823529411765 49.5 L 727.9411764705882 49.5 L 750 49.5" fill="none" stroke="#94928a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M 0 49.5 L 22.058823529411764 82.5 L 44.11764705882353 82.5 L 66.1764705882353 82.5 L 88.23529411764706 82.5 L 110.29411764705883 82.5 L 132.3529411764706 82.5 L 154.41176470588235 82.5 L 176.47058823529412 82.5 L 198.52941176470588 82.5 L 220.58823529411765 82.5 L 242.64705882352942 82.5 L 264.7058823529412 82.5 L 286.7647058823529 82.5 L 308.8235294117647 82.5 L 330.88235294117646 82.5 L 352.94117647058823 82.5 L 375 82.5 L 397.05882352941177 82.5 L 419.11764705882354 115.49999999999999 L 441.1764705882353 115.49999999999999 L 463.2352941176471 115.49999999999999 L 485.29411764705884 115.49999999999999 L 507.3529411764706 115.49999999999999 L 529.4117647058824 115.49999999999999 L 551.4705882352941 115.49999999999999 L 573.5294117647059 115.49999999999999 L 595.5882352941176 115.49999999999999 L 617.6470588235294 115.49999999999999 L 639.7058823529411 115.49999999999999 L 661.7647058823529 115.49999999999999 L 683.8235294117646 115.49999999999999 L 705.8823529411765 115.49999999999999 L 727.9411764705882 115.49999999999999 L 750 115.49999999999999" fill="none" stroke="#94928a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M 0 82.5 L 22.058823529411764 49.5 L 44.11764705882353 49.5 L 66.1764705882353 49.5 L 88.23529411764706 49.5 L 110.29411764705883 49.5 L 132.3529411764706 49.5 L 154.41176470588235 49.5 L 176.47058823529412 49.5 L 198.52941176470588 49.5 L 220.58823529411765 49.5 L 242.64705882352942 49.5 L 264.7058823529412 49.5 L 286.7647058823529 49.5 L 308.8235294117647 49.5 L 330.88235294117646 49.5 L 352.94117647058823 16.5 L 375 16.5 L 397.05882352941177 16.5 L 419.11764705882354 16.5 L 441.1764705882353 16.5 L 463.2352941176471 16.5 L 485.29411764705884 16.5 L 507.3529411764706 16.5 L 529.4117647058824 16.5 L 551.4705882352941 16.5 L 573.5294117647059 16.5 L 595.5882352941176 16.5 L 617.6470588235294 16.5 L 639.7058823529411 16.5 L 661.7647058823529 16.5 L 683.8235294117646 16.5 L 705.8823529411765 16.5 L 727.9411764705882 16.5 L 750 16.5" fill="none" stroke="#94928a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M 0 115.49999999999999 L 22.058823529411764 115.49999999999999 L 44.11764705882353 115.49999999999999 L 66.1764705882353 115.49999999999999 L 88.23529411764706 115.49999999999999 L 110.29411764705883 115.49999999999999 L 132.3529411764706 115.49999999999999 L 154.41176470588235 115.49999999999999 L 176.47058823529412 115.49999999999999 L 198.52941176470588 115.49999999999999 L 220.58823529411765 115.49999999999999 L 242.64705882352942 115.49999999999999 L 264.7058823529412 115.49999999999999 L 286.7647058823529 115.49999999999999 L 308.8235294117647 115.49999999999999 L 330.88235294117646 115.49999999999999 L 352.94117647058823 148.5 L 375 148.5 L 397.05882352941177 148.5 L 419.11764705882354 148.5 L 441.1764705882353 148.5 L 463.2352941176471 148.5 L 485.29411764705884 148.5 L 507.3529411764706 148.5 L 529.4117647058824 148.5 L 551.4705882352941 148.5 L 573.5294117647059 148.5 L 595.5882352941176 148.5 L 617.6470588235294 148.5 L 639.7058823529411 148.5 L 661.7647058823529 148.5 L 683.8235294117646 148.5 L 705.8823529411765 148.5 L 727.9411764705882 148.5 L 750 148.5" fill="none" stroke="#94928a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M 0 148.5 L 22.058823529411764 148.5 L 44.11764705882353 148.5 L 66.1764705882353 148.5 L 88.23529411764706 148.5 L 110.29411764705883 148.5 L 132.3529411764706 148.5 L 154.41176470588235 148.5 L 176.47058823529412 148.5 L 198.52941176470588 181.50000000000003 L 220.58823529411765 181.50000000000003 L 242.64705882352942 181.50000000000003 L 264.7058823529412 181.50000000000003 L 286.7647058823529 181.50000000000003 L 308.8235294117647 181.50000000000003 L 330.88235294117646 181.50000000000003 L 352.94117647058823 181.50000000000003 L 375 181.50000000000003 L 397.05882352941177 181.50000000000003 L 419.11764705882354 181.50000000000003 L 441.1764705882353 181.50000000000003 L 463.2352941176471 181.50000000000003 L 485.29411764705884 181.50000000000003 L 507.3529411764706 181.50000000000003 L 529.4117647058824 181.50000000000003 L 551.4705882352941 181.50000000000003 L 573.5294117647059 181.50000000000003 L 595.5882352941176 181.50000000000003 L 617.6470588235294 181.50000000000003 L 639.7058823529411 214.5 L 661.7647058823529 247.5 L 683.8235294117646 247.5 L 705.8823529411765 247.5 L 727.9411764705882 280.5 L 750 313.5" fill="none" stroke="#94928a" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><path d="M 0 247.5 L 22.058823529411764 214.5 L 44.11764705882353 181.50000000000003 L 66.1764705882353 181.50000000000003 L 88.23529411764706 181.50000000000003 L 110.29411764705883 181.50000000000003 L 132.3529411764706 181.50000000000003 L 154.41176470588235 181.50000000000003 L 176.47058823529412 181.50000000000003 L 198.52941176470588 148.5 L 220.58823529411765 148.5 L 242.64705882352942 148.5 L 264.7058823529412 148.5 L 286.7647058823529 148.5 L 308.8235294117647 148.5 L 330.88235294117646 148.5 L 352.94117647058823 115.49999999999999 L 375 115.49999999999999 L 397.05882352941177 115.49999999999999 L 419.11764705882354 82.5 L 441.1764705882353 82.5 L 463.2352941176471 82.5 L 485.29411764705884 82.5 L 507.3529411764706 82.5 L 529.4117647058824 82.5 L 551.4705882352941 82.5 L 573.5294117647059 82.5 L 595.5882352941176 82.5 L 617.6470588235294 82.5 L 639.7058823529411 82.5 L 661.7647058823529 82.5 L 683.8235294117646 82.5 L 705.8823529411765 82.5 L 727.9411764705882 82.5 L 750 82.5" fill="none" stroke="#1757B6" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><circle cx="198.52941176470588" cy="148.5" r="5" fill="#FFFCEE" stroke="#1757B6" stroke-width="2" vector-effect="non-scaling-stroke"></circle><circle cx="352.94117647058823" cy="115.49999999999999" r="5" fill="#FFFCEE" stroke="#1757B6" stroke-width="2" vector-effect="non-scaling-stroke"></circle><circle cx="419.11764705882354" cy="82.5" r="5" fill="#FFFCEE" stroke="#1757B6" stroke-width="2" vector-effect="non-scaling-stroke"></circle><circle class="pt" cx="0" cy="247.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1990 · 8e mondial · 0,58 Gt · derrière Royaume-Uni, devant Canada" data-detail="Inde · 1990 · 8e mondial · 0,58 Gt · derrière Royaume-Uni, devant Canada"></circle><circle class="pt" cx="22.058823529411764" cy="214.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1991 · 7e mondial · 0,62 Gt · derrière Ukraine, devant Royaume-Uni" data-detail="Inde · 1991 · 7e mondial · 0,62 Gt · derrière Ukraine, devant Royaume-Uni"></circle><circle class="pt" cx="44.11764705882353" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1992 · 6e mondial · 0,66 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1992 · 6e mondial · 0,66 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="66.1764705882353" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1993 · 6e mondial · 0,68 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1993 · 6e mondial · 0,68 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="88.23529411764706" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1994 · 6e mondial · 0,71 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1994 · 6e mondial · 0,71 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="110.29411764705883" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1995 · 6e mondial · 0,76 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1995 · 6e mondial · 0,76 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="132.3529411764706" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1996 · 6e mondial · 0,82 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1996 · 6e mondial · 0,82 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="154.41176470588235" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1997 · 6e mondial · 0,86 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1997 · 6e mondial · 0,86 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="176.47058823529412" cy="181.50000000000003" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1998 · 6e mondial · 0,88 Gt · derrière Allemagne, devant Royaume-Uni" data-detail="Inde · 1998 · 6e mondial · 0,88 Gt · derrière Allemagne, devant Royaume-Uni"></circle><circle class="pt" cx="198.52941176470588" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 1999 · 5e mondial · 0,96 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 1999 · 5e mondial · 0,96 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="220.58823529411765" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2000 · 5e mondial · 0,99 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2000 · 5e mondial · 0,99 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="242.64705882352942" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2001 · 5e mondial · 1,00 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2001 · 5e mondial · 1,00 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="264.7058823529412" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2002 · 5e mondial · 1,03 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2002 · 5e mondial · 1,03 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="286.7647058823529" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2003 · 5e mondial · 1,07 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2003 · 5e mondial · 1,07 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="308.8235294117647" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2004 · 5e mondial · 1,13 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2004 · 5e mondial · 1,13 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="330.88235294117646" cy="148.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2005 · 5e mondial · 1,20 Gt · derrière Japon, devant Allemagne" data-detail="Inde · 2005 · 5e mondial · 1,20 Gt · derrière Japon, devant Allemagne"></circle><circle class="pt" cx="352.94117647058823" cy="115.49999999999999" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2006 · 4e mondial · 1,29 Gt · derrière Russie, devant Japon" data-detail="Inde · 2006 · 4e mondial · 1,29 Gt · derrière Russie, devant Japon"></circle><circle class="pt" cx="375" cy="115.49999999999999" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2007 · 4e mondial · 1,39 Gt · derrière Russie, devant Japon" data-detail="Inde · 2007 · 4e mondial · 1,39 Gt · derrière Russie, devant Japon"></circle><circle class="pt" cx="397.05882352941177" cy="115.49999999999999" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2008 · 4e mondial · 1,49 Gt · derrière Russie, devant Japon" data-detail="Inde · 2008 · 4e mondial · 1,49 Gt · derrière Russie, devant Japon"></circle><circle class="pt" cx="419.11764705882354" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2009 · 3e mondial · 1,61 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2009 · 3e mondial · 1,61 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="441.1764705882353" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2010 · 3e mondial · 1,68 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2010 · 3e mondial · 1,68 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="463.2352941176471" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2011 · 3e mondial · 1,77 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2011 · 3e mondial · 1,77 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="485.29411764705884" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2012 · 3e mondial · 1,93 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2012 · 3e mondial · 1,93 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="507.3529411764706" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2013 · 3e mondial · 2,00 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2013 · 3e mondial · 2,00 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="529.4117647058824" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2014 · 3e mondial · 2,15 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2014 · 3e mondial · 2,15 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="551.4705882352941" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2015 · 3e mondial · 2,23 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2015 · 3e mondial · 2,23 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="573.5294117647059" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2016 · 3e mondial · 2,35 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2016 · 3e mondial · 2,35 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="595.5882352941176" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2017 · 3e mondial · 2,43 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2017 · 3e mondial · 2,43 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="617.6470588235294" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2018 · 3e mondial · 2,60 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2018 · 3e mondial · 2,60 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="639.7058823529411" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2019 · 3e mondial · 2,61 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2019 · 3e mondial · 2,61 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="661.7647058823529" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2020 · 3e mondial · 2,42 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2020 · 3e mondial · 2,42 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="683.8235294117646" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2021 · 3e mondial · 2,68 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2021 · 3e mondial · 2,68 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="705.8823529411765" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2022 · 3e mondial · 2,83 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2022 · 3e mondial · 2,83 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="727.9411764705882" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2023 · 3e mondial · 3,06 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2023 · 3e mondial · 3,06 Gt · derrière États-Unis, devant Russie"></circle><circle class="pt" cx="750" cy="82.5" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Inde · 2024 · 3e mondial · 3,19 Gt · derrière États-Unis, devant Russie" data-detail="Inde · 2024 · 3e mondial · 3,19 Gt · derrière États-Unis, devant Russie"></circle><rect class="hit-area" x="0" y="0" width="1000" height="330" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76%;top:15%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">2e États-Unis</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76%;top:35%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">4e Russie</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76%;top:5%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">1er Chine</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76%;top:45%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">5e Japon</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76%;top:95%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">10e Allemagne</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#1757B6;left:76%;top:25%;transform:translateY(-50%);white-space:normal;max-width:25%;overflow-wrap:anywhere;line-height:1.15">3e Inde</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#61605a;left:19.852941176470587%;transform:translateX(0) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:40%">dépasse Allemagne · 1999</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#61605a;left:35.294117647058826%;transform:translateX(-50%) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:29.999999999999993%">dépasse Japon · 2006</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#61605a;left:41.911764705882355%;transform:translateX(-50%) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:20%">dépasse Russie · 2009</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:0%">1990</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:37.5%">2007</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:75%">2024</span></div></div><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:10px 0 0">Lecture : survolez, touchez ou tabulez une année pour lire le rang de l&#x27;Inde cette année-là, ce qu&#x27;elle a réellement émis, et qui la précédait et la suivait — la valeur que le rang cache, année par année.</p><p class="chart-source" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:6px 0 0">Source : Global Carbon Budget 2025, via Our World in Data · 1990-2024, classement calculé sur les 215 pays du fichier</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

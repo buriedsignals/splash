@@ -1,0 +1,411 @@
+{
+  "url": "https://www.datawrapper.de/_/mX3uV/",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "datawrapper-de-mx3uv",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Nobel Prize winners by gender | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 490,
+      "y": 219,
+      "w": 460,
+      "h": 343,
+      "ratio": 1.34
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/mX3uV/1/",
+      "title": "Nobel Prize winners by gender",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 18,
+          "sample": "Men",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(51, 51, 51)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Nobel Prize winners by gender",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Claudia Goldin",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "The Nobel Peace Prize isn't just given to individuals; it ha",
+          "colors": [
+            "rgb(101, 101, 101)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "stroke rgb(24, 24, 24)",
+          "count": 2
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.757187222715173,
+      "h": 195.23809523778846,
+      "s": 0.021489482660909567,
+      "l": 0.9998556521102611,
+      "chroma": 0.000006203922947367602
+    },
+    "chromatic": [
+      {
+        "hex": "#242FA1",
+        "share": 0.009582963620230702,
+        "h": 234.72,
+        "s": 0.6345177664974619,
+        "l": 0.38627450980392153,
+        "chroma": 0.49019607843137253
+      },
+      {
+        "hex": "#0289CC",
+        "share": 0.000690835340347319,
+        "h": 199.99999999999997,
+        "s": 0.9839722185120875,
+        "l": 0.40404749055585537,
+        "chroma": 0.7951430113329735
+      },
+      {
+        "hex": "#0A8DCE",
+        "share": 0.0002725313727975662,
+        "h": 199.90967435227003,
+        "s": 0.9037593984962407,
+        "l": 0.4245326037391701,
+        "chroma": 0.7673506611947105
+      },
+      {
+        "hex": "#C3E3F3",
+        "share": 0.00019647610597033844,
+        "h": 199.9323410013532,
+        "s": 0.6681735985533456,
+        "l": 0.8600885515496521,
+        "chroma": 0.18697027197975968
+      },
+      {
+        "hex": "#1C95D2",
+        "share": 0.00019013816706806946,
+        "h": 199.99265246142545,
+        "s": 0.7624649859943977,
+        "l": 0.4666666666666667,
+        "chroma": 0.7116339869281045
+      },
+      {
+        "hex": "#84C6E6",
+        "share": 0.00013309671694764863,
+        "h": 199.86486486486487,
+        "s": 0.6662379421221863,
+        "l": 0.7096171802054155,
+        "chroma": 0.38692810457516336
+      },
+      {
+        "hex": "#93CDE9",
+        "share": 0.00013309671694764863,
+        "h": 199.93366500829188,
+        "s": 0.6662983425414363,
+        "l": 0.7464985994397759,
+        "chroma": 0.3378151260504202
+      },
+      {
+        "hex": "#4AAADB",
+        "share": 0.00012675877804537965,
+        "h": 199.99310820124052,
+        "s": 0.6668198529411765,
+        "l": 0.5733333333333333,
+        "chroma": 0.5690196078431372
+      },
+      {
+        "hex": "#7CC2E5",
+        "share": 0.00012675877804537965,
+        "h": 200.12351543942992,
+        "s": 0.6676181414525851,
+        "l": 0.6908823529411765,
+        "chroma": 0.4127450980392158
+      },
+      {
+        "hex": "#99CFEB",
+        "share": 0.00011408290024084168,
+        "h": 200.36585365853662,
+        "s": 0.6702997275204361,
+        "l": 0.7601307189542484,
+        "chroma": 0.32156862745098036
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.757187222715173,
+        "h": 195.23809523778846,
+        "s": 0.021489482660909567,
+        "l": 0.9998556521102611,
+        "chroma": 0.000006203922947367602
+      },
+      {
+        "hex": "#BFD1DB",
+        "share": 0.13127139054379516,
+        "h": 201.42857142857144,
+        "s": 0.2799940518837951,
+        "l": 0.8039174031914813,
+        "chroma": 0.1098039215686274
+      },
+      {
+        "hex": "#D9D9D9",
+        "share": 0.009659018887057929,
+        "h": 0,
+        "s": 0,
+        "l": 0.8509726725335803,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.009576625681328431,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.008518189884649512,
+        "h": 0,
+        "s": 0,
+        "l": 0.09450280112044818,
+        "chroma": 0
+      },
+      {
+        "hex": "#656565",
+        "share": 0.006940043097984535,
+        "h": 0,
+        "s": 0,
+        "l": 0.39611782612588414,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.0049879579160856885,
+        "h": 0,
+        "s": 0,
+        "l": 0.9545805615766001,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.004151349980986183,
+        "h": 0,
+        "s": 0,
+        "l": 0.9256039515042658,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0033020661680821396,
+        "h": 0,
+        "s": 0,
+        "l": 0.8302209175416808,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0030739003676004562,
+        "h": 0,
+        "s": 0,
+        "l": 0.8934222761269457,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 235,
+        "share": 0.012618836354417537,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 157780
+  }
+}

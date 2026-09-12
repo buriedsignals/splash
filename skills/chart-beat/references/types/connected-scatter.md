@@ -54,3 +54,11 @@ the sequence, not just a colour-vision-safe stroke. Missing axis titles are the 
 failure here — a chart with two unlabelled continuous axes and a path drawn through them communicates
 nothing accessibly, screen reader or not, because there is no other channel stating what is being
 traced against what.
+
+## The worked example in this tree
+
+`proof/static-connected-scatter-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

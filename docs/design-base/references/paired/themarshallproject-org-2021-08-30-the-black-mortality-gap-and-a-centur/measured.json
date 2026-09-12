@@ -1,0 +1,533 @@
+{
+  "url": "https://www.themarshallproject.org/2021/08/30/the-black-mortality-gap-and-a-century-old-document",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "themarshallproject-org-2021-08-30-the-black-mortality-gap-and-a-centur",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "The Black Mortality Gap, and a Century-Old Document | The Marshall Project",
+    "ground": "rgb(246, 246, 244)",
+    "type": [
+      {
+        "family": "Utopia-Std",
+        "size": 23,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Utopia-Std | 23 | 400 | normal | 0 | none",
+        "count": 104,
+        "sample": "lack Americans die at higher rates than White Americans at n",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "Pressura",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "uppercase",
+        "key": "Pressura | 14 | 400 | normal | -0.2 | uppercase",
+        "count": 6,
+        "sample": "Search",
+        "colors": [
+          "rgb(136, 136, 136)",
+          "rgb(11, 11, 11)",
+          "rgb(255, 11, 58)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 12,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "acumin-pro | 12 | 300 | normal | 0 | none",
+        "count": 6,
+        "sample": "Age: 1",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 21,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "acumin-pro | 21 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "If Black Americans died at the same rates as White Americans",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 21,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "acumin-pro | 21 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Each dot is 1 person's death",
+        "colors": [
+          "rgb(11, 11, 11)",
+          "rgb(255, 11, 58)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Pressura",
+        "size": 12.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.1,
+        "transform": "uppercase",
+        "key": "Pressura | 12.5 | 400 | normal | 0.1 | uppercase",
+        "count": 6,
+        "sample": "Race",
+        "colors": [
+          "rgb(53, 53, 53)"
+        ]
+      },
+      {
+        "family": "Pressura",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "Pressura | 14 | 400 | normal | -0.2 | none",
+        "count": 5,
+        "sample": "Dr. Alvin Poussaint, a leader in the health care civil right",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "uppercase",
+        "key": "PressuraLight | 12 | 400 | normal | -0.2 | uppercase",
+        "count": 5,
+        "sample": "Photo courtesy Dr. Poussaint.",
+        "colors": [
+          "rgb(11, 11, 11)",
+          "rgba(255, 255, 255, 0.6)"
+        ]
+      },
+      {
+        "family": "Pressura",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "uppercase",
+        "key": "Pressura | 12 | 400 | normal | -0.2 | uppercase",
+        "count": 5,
+        "sample": "About",
+        "colors": [
+          "rgb(206, 206, 204)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "acumin-pro | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "The Marshall Project’s 2020 reporting on prison meals during",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "PressuraLight | 14 | 400 | normal | -0.2 | none",
+        "count": 2,
+        "sample": "5:00 a.m. EDT",
+        "colors": [
+          "rgb(11, 11, 11)",
+          "rgb(136, 136, 136)"
+        ]
+      },
+      {
+        "family": "Utopia-Std",
+        "size": 23,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Utopia-Std | 23 | 400 | italic | 0 | none",
+        "count": 2,
+        "sample": "An American Health Dilemma",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 14,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0.2,
+        "transform": "none",
+        "key": "acumin-pro | 14 | 300 | normal | 0.2 | none",
+        "count": 2,
+        "sample": "View my past work",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PressuraLight | 13 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Nonprofit journalism about criminal justice",
+        "colors": [
+          "rgb(136, 136, 136)"
+        ]
+      },
+      {
+        "family": "PressuraBold",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "uppercase",
+        "key": "PressuraBold | 14 | 400 | normal | -0.2 | uppercase",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "MillerBold",
+        "size": 55,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "MillerBold | 55 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "The Black Mortality Gap, and a Century-Old Document",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 22,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "PressuraLight | 22 | 400 | normal | -0.2 | none",
+        "count": 1,
+        "sample": "1 in 5 African American deaths happens earlier than if they ",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "PressuraLight | 12 | 400 | normal | -0.2 | none",
+        "count": 1,
+        "sample": "By",
+        "colors": [
+          "rgb(17, 17, 17)"
+        ]
+      },
+      {
+        "family": "PressuraBold",
+        "size": 22,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PressuraBold | 22 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our reporting has real impact on the criminal justice system",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Miller",
+        "size": 22,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Miller | 22 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our journalism establishes facts, exposes failures and exami",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "PressuraBold",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "PressuraBold | 14 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Pressura",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "capitalize",
+        "key": "Pressura | 14 | 400 | normal | -0.2 | capitalize",
+        "count": 1,
+        "sample": "Anna Flagg",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "acumin-pro | 12 | 400 | normal | -0.2 | none",
+        "count": 1,
+        "sample": "Graphics Lead",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "acumin-pro",
+        "size": 16,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0.2,
+        "transform": "none",
+        "key": "acumin-pro | 16 | 300 | normal | 0.2 | none",
+        "count": 1,
+        "sample": "I work with data to report on detention, deaths in custody, ",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      },
+      {
+        "family": "PressuraBold",
+        "size": 23,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PressuraBold | 23 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Stay up to date on our reporting and analysis.",
+        "colors": [
+          "rgb(53, 53, 53)"
+        ]
+      },
+      {
+        "family": "PressuraBold",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "PressuraBold | 16 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Sign up",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "PressuraLight",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.2,
+        "transform": "none",
+        "key": "PressuraLight | 13 | 400 | normal | -0.2 | none",
+        "count": 1,
+        "sample": "Tags:",
+        "colors": [
+          "rgb(11, 11, 11)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 16
+      },
+      {
+        "colour": "fill rgb(17, 17, 17)",
+        "count": 7
+      }
+    ],
+    "column": {
+      "px": 1139,
+      "ch": 104
+    },
+    "graphic": {
+      "tag": "canvas",
+      "documentTop": 666,
+      "nearTheTop": true,
+      "x": 151,
+      "y": 666,
+      "w": 1139,
+      "h": 683,
+      "ratio": 1.67
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F6F6F4",
+      "share": 0.6973019666116922,
+      "h": 60,
+      "s": 0.0999837985759346,
+      "l": 0.9607779591963321,
+      "chroma": 0.007843137254902044
+    },
+    "chromatic": [],
+    "neutral": [
+      {
+        "hex": "#F6F6F4",
+        "share": 0.6973019666116922,
+        "h": 60,
+        "s": 0.0999837985759346,
+        "l": 0.9607779591963321,
+        "chroma": 0.007843137254902044
+      },
+      {
+        "hex": "#000000",
+        "share": 0.10604457687447698,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#3E3E3D",
+        "share": 0.07409083254813693,
+        "h": 60,
+        "s": 0.008098578386251517,
+        "l": 0.2411526913412924,
+        "chroma": 0.0039059879477659487
+      },
+      {
+        "hex": "#7B7B7A",
+        "share": 0.059746483327056045,
+        "h": 60,
+        "s": 0.00408133517325197,
+        "l": 0.4804271716216769,
+        "chroma": 0.003921568627451022
+      },
+      {
+        "hex": "#B8B8B7",
+        "share": 0.050189154134589305,
+        "h": 60,
+        "s": 0.00699300699300697,
+        "l": 0.7196078431372549,
+        "chroma": 0.0039215686274509665
+      },
+      {
+        "hex": "#0B0B0B",
+        "share": 0.005352618528235577,
+        "h": 0,
+        "s": 0,
+        "l": 0.043137254901960784,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEA",
+        "share": 0.0006427255677516302,
+        "h": 60,
+        "s": 0.04278288684526211,
+        "l": 0.9215372549019608,
+        "chroma": 0.00671372549019611
+      },
+      {
+        "hex": "#C3C3C2",
+        "share": 0.0003213627838758151,
+        "h": 60,
+        "s": 0.014302229562345272,
+        "l": 0.7625490196078432,
+        "chroma": 0.006792156862745147
+      },
+      {
+        "hex": "#838382",
+        "share": 0.0003123646259272923,
+        "h": 60,
+        "s": 0.004018189334435703,
+        "l": 0.5120229161623497,
+        "chroma": 0.0039215686274509665
+      },
+      {
+        "hex": "#DDDDDB",
+        "share": 0.00030979372365628577,
+        "h": 60,
+        "s": 0.02831296992481194,
+        "l": 0.8614921487267106,
+        "chroma": 0.007843137254901933
+      }
+    ],
+    "clusters": [],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 777937
+  }
+}

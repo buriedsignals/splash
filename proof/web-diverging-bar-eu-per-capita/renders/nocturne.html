@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>La Croatie est le seul pays de l'Union à émettre plus de CO₂ par personne qu'en 1990</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #111044;
+  --accent: #4FE0C0;
+  --ink: #FFFFFF;
+  --muted: #a5a4b8;
+  --grid: #3c3b66;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#111044;--accent:#4FE0C0;--ink:#FFFFFF;--muted:#a5a4b8;--title-size:32px;--title-weight:400;--subtitle-size:12.5px;--source-size:12.5px;--axis-size:10px;--label-size:14px;--label-weight:600;--note-size:10px;--filter-size:12.5px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:500;font-style:normal;letter-spacing:2.6px;text-transform:uppercase;color:#4FE0C0;margin:0 0 6px">Climat · Union européenne</p><h2 class="chart-title" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:32px;font-weight:400;font-style:normal;letter-spacing:3.4px;text-transform:uppercase;color:#FFFFFF;margin:0 0 6px">La Croatie est le seul pays de l&#x27;Union à émettre plus de CO₂ par personne qu&#x27;en 1990</h2><p class="chart-caveat" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:0">Écart entre 1990 et 2024, en tonnes de CO₂ par personne, pour les 27 États membres. Le CÔTÉ de la ligne zéro porte le signe ; la couleur ne fait que le répéter. Les 26 autres baissent de 4,93 t en moyenne.</p></div><div class="chart-plot" style="--y-gutter:132px;--x-axis-h:26px;aspect-ratio:852 / 593"><div class="y-axis"><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:700;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#4FE0C0;top:1.8518518518518516%;white-space:normal;line-height:1.1">Croatie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:5.555555555555555%;white-space:normal;line-height:1.1">Chypre</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:9.25925925925926%;white-space:normal;line-height:1.1">Portugal</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:12.962962962962962%;white-space:normal;line-height:1.1">Espagne</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:16.666666666666664%;white-space:normal;line-height:1.1">Slovénie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:20.37037037037037%;white-space:normal;line-height:1.1">Autriche</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:24.074074074074073%;white-space:normal;line-height:1.1">Italie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:27.77777777777778%;white-space:normal;line-height:1.1">Pologne</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:31.48148148148148%;white-space:normal;line-height:1.1">Grèce</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:35.18518518518518%;white-space:normal;line-height:1.1">Hongrie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:38.88888888888889%;white-space:normal;line-height:1.1">France</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:42.592592592592595%;white-space:normal;line-height:1.1">Irlande</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:46.2962962962963%;white-space:normal;line-height:1.1">Suède</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:50%;white-space:normal;line-height:1.1">Malte</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:53.70370370370371%;white-space:normal;line-height:1.1">Lettonie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:57.407407407407405%;white-space:normal;line-height:1.1">Bulgarie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:61.111111111111114%;white-space:normal;line-height:1.1">Roumanie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:64.81481481481481%;white-space:normal;line-height:1.1">Pays-Bas</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:68.51851851851852%;white-space:normal;line-height:1.1">Belgique</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:72.22222222222221%;white-space:normal;line-height:1.1">Lituanie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:75.92592592592592%;white-space:normal;line-height:1.1">Danemark</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:79.62962962962963%;white-space:normal;line-height:1.1">Finlande</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:83.33333333333334%;white-space:normal;line-height:1.1">Slovaquie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:87.03703703703704%;white-space:normal;line-height:1.1">Allemagne</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:90.74074074074075%;white-space:normal;line-height:1.1">Tchéquie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:94.44444444444444%;white-space:normal;line-height:1.1">Estonie</span><span class="axis-label y" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:98.14814814814815%;white-space:normal;line-height:1.1">Luxembourg</span></div><svg role="group" aria-label="La Croatie est le seul pays de l&#x27;Union à émettre plus de CO₂ par personne qu&#x27;en 1990" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 720 567" preserveAspectRatio="none"><desc>Vingt-sept barres horizontales partant d&#x27;une ligne zéro, une par État membre, classées de la plus forte hausse à la plus forte baisse. Une seule part vers la droite : la Croatie, +0,03 tonne par personne. Toutes les autres partent vers la gauche, jusqu&#x27;au Luxembourg à −20,48 tonnes.</desc><rect x="0" y="0" width="720" height="567" fill="#111044"></rect><line x1="0" x2="0" y1="0" y2="567" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="180" x2="180" y1="0" y2="567" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="540" x2="540" y1="0" y2="567" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="720" x2="720" y1="0" y2="567" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="360" y="3.99" width="1.2" height="13.02" fill="#4FE0C0"></rect><rect x="351.0584468571429" y="24.990000000000002" width="8.941553142857117" height="13.02" fill="#757493"></rect><rect x="340.6814245714286" y="45.99" width="19.31857542857142" height="13.02" fill="#757493"></rect><rect x="338.2319434285714" y="66.99" width="21.768056571428588" height="13.02" fill="#757493"></rect><rect x="333.63849257142857" y="87.99" width="26.36150742857143" height="13.02" fill="#757493"></rect><rect x="327.11784" y="108.99" width="32.88216" height="13.02" fill="#757493"></rect><rect x="315.50170285714285" y="129.99" width="44.498297142857155" height="13.02" fill="#757493"></rect><rect x="311.842536" y="150.99" width="48.157464000000004" height="13.02" fill="#757493"></rect><rect x="311.61012" y="171.99" width="48.389880000000005" height="13.02" fill="#757493"></rect><rect x="309.64487142857143" y="192.99" width="50.355128571428565" height="13.02" fill="#757493"></rect><rect x="309.257748" y="213.99" width="50.74225200000001" height="13.02" fill="#757493"></rect><rect x="307.9443908571428" y="234.99" width="52.05560914285718" height="13.02" fill="#757493"></rect><rect x="306.56568514285715" y="255.99" width="53.43431485714285" height="13.02" fill="#757493"></rect><rect x="301.81608" y="276.99" width="58.18392" height="13.02" fill="#757493"></rect><rect x="292.47222685714286" y="297.99" width="67.52777314285714" height="13.02" fill="#757493"></rect><rect x="291.3018445714286" y="318.99" width="68.6981554285714" height="13.02" fill="#757493"></rect><rect x="289.87597714285715" y="339.99" width="70.12402285714285" height="13.02" fill="#757493"></rect><rect x="282.0067371428571" y="360.99" width="77.9932628571429" height="13.02" fill="#757493"></rect><rect x="277.6994982857143" y="381.99" width="82.3005017142857" height="13.02" fill="#757493"></rect><rect x="269.3939142857143" y="402.99" width="90.60608571428571" height="13.02" fill="#757493"></rect><rect x="263.04084" y="423.99" width="96.95916" height="13.02" fill="#757493"></rect><rect x="255.18399428571428" y="444.99" width="104.81600571428572" height="13.02" fill="#757493"></rect><rect x="250.26565714285715" y="465.99" width="109.73434285714285" height="13.02" fill="#757493"></rect><rect x="249.18115885714286" y="486.99" width="110.81884114285714" height="13.02" fill="#757493"></rect><rect x="207.43230857142856" y="507.99" width="152.56769142857144" height="13.02" fill="#757493"></rect><rect x="61.765097142857144" y="528.99" width="298.23490285714286" height="13.02" fill="#757493"></rect><rect x="8.946325714285763" y="549.99" width="351.05367428571424" height="13.02" fill="#757493"></rect><line x1="360" x2="360" y1="0" y2="567" stroke="#ffffff" stroke-width="1.4" vector-effect="non-scaling-stroke"></line><circle class="pt" cx="360.5408177142857" cy="10.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Croatie · 4,73 t en 1990 → 4,76 t en 2024 · +0,03 t par personne · seule hausse de l&#x27;Union" data-detail="Croatie · 4,73 t en 1990 → 4,76 t en 2024 · +0,03 t par personne · seule hausse de l&#x27;Union"></circle><circle class="pt" cx="351.0584468571429" cy="31.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Chypre · 5,90 t en 1990 → 5,37 t en 2024 · −0,52 t par personne · 26ᵉ plus forte baisse des 27" data-detail="Chypre · 5,90 t en 1990 → 5,37 t en 2024 · −0,52 t par personne · 26ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="340.6814245714286" cy="52.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 4,54 t en 1990 → 3,41 t en 2024 · −1,13 t par personne · 25ᵉ plus forte baisse des 27" data-detail="Portugal · 4,54 t en 1990 → 3,41 t en 2024 · −1,13 t par personne · 25ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="338.2319434285714" cy="73.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 5,87 t en 1990 → 4,60 t en 2024 · −1,27 t par personne · 24ᵉ plus forte baisse des 27" data-detail="Espagne · 5,87 t en 1990 → 4,60 t en 2024 · −1,27 t par personne · 24ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="333.63849257142857" cy="94.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovénie · 7,56 t en 1990 → 6,02 t en 2024 · −1,54 t par personne · 23ᵉ plus forte baisse des 27" data-detail="Slovénie · 7,56 t en 1990 → 6,02 t en 2024 · −1,54 t par personne · 23ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="327.11784" cy="115.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 8,10 t en 1990 → 6,18 t en 2024 · −1,92 t par personne · 22ᵉ plus forte baisse des 27" data-detail="Autriche · 8,10 t en 1990 → 6,18 t en 2024 · −1,92 t par personne · 22ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="315.50170285714285" cy="136.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 7,68 t en 1990 → 5,09 t en 2024 · −2,60 t par personne · 21ᵉ plus forte baisse des 27" data-detail="Italie · 7,68 t en 1990 → 5,09 t en 2024 · −2,60 t par personne · 21ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="311.842536" cy="157.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 9,89 t en 1990 → 7,08 t en 2024 · −2,81 t par personne · 20ᵉ plus forte baisse des 27" data-detail="Pologne · 9,89 t en 1990 → 7,08 t en 2024 · −2,81 t par personne · 20ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="311.61012" cy="178.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 8,13 t en 1990 → 5,31 t en 2024 · −2,82 t par personne · 19ᵉ plus forte baisse des 27" data-detail="Grèce · 8,13 t en 1990 → 5,31 t en 2024 · −2,82 t par personne · 19ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="309.64487142857143" cy="199.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Hongrie · 7,07 t en 1990 → 4,14 t en 2024 · −2,94 t par personne · 18ᵉ plus forte baisse des 27" data-detail="Hongrie · 7,07 t en 1990 → 4,14 t en 2024 · −2,94 t par personne · 18ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="309.257748" cy="220.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 6,93 t en 1990 → 3,97 t en 2024 · −2,96 t par personne · 17ᵉ plus forte baisse des 27" data-detail="France · 6,93 t en 1990 → 3,97 t en 2024 · −2,96 t par personne · 17ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="307.9443908571428" cy="241.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 9,38 t en 1990 → 6,34 t en 2024 · −3,04 t par personne · 16ᵉ plus forte baisse des 27" data-detail="Irlande · 9,38 t en 1990 → 6,34 t en 2024 · −3,04 t par personne · 16ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="306.56568514285715" cy="262.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 6,71 t en 1990 → 3,59 t en 2024 · −3,12 t par personne · 15ᵉ plus forte baisse des 27" data-detail="Suède · 6,71 t en 1990 → 3,59 t en 2024 · −3,12 t par personne · 15ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="301.81608" cy="283.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Malte · 6,60 t en 1990 → 3,20 t en 2024 · −3,39 t par personne · 14ᵉ plus forte baisse des 27" data-detail="Malte · 6,60 t en 1990 → 3,20 t en 2024 · −3,39 t par personne · 14ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="292.47222685714286" cy="304.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lettonie · 7,39 t en 1990 → 3,45 t en 2024 · −3,94 t par personne · 13ᵉ plus forte baisse des 27" data-detail="Lettonie · 7,39 t en 1990 → 3,45 t en 2024 · −3,94 t par personne · 13ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="291.3018445714286" cy="325.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Bulgarie · 8,69 t en 1990 → 4,68 t en 2024 · −4,01 t par personne · 12ᵉ plus forte baisse des 27" data-detail="Bulgarie · 8,69 t en 1990 → 4,68 t en 2024 · −4,01 t par personne · 12ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="289.87597714285715" cy="346.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Roumanie · 7,70 t en 1990 → 3,61 t en 2024 · −4,09 t par personne · 11ᵉ plus forte baisse des 27" data-detail="Roumanie · 7,70 t en 1990 → 3,61 t en 2024 · −4,09 t par personne · 11ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="282.0067371428571" cy="367.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 10,85 t en 1990 → 6,30 t en 2024 · −4,55 t par personne · 10ᵉ plus forte baisse des 27" data-detail="Pays-Bas · 10,85 t en 1990 → 6,30 t en 2024 · −4,55 t par personne · 10ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="277.6994982857143" cy="388.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 12,08 t en 1990 → 7,28 t en 2024 · −4,80 t par personne · 9ᵉ plus forte baisse des 27" data-detail="Belgique · 12,08 t en 1990 → 7,28 t en 2024 · −4,80 t par personne · 9ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="269.3939142857143" cy="409.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lituanie · 9,67 t en 1990 → 4,39 t en 2024 · −5,29 t par personne · 8ᵉ plus forte baisse des 27" data-detail="Lituanie · 9,67 t en 1990 → 4,39 t en 2024 · −5,29 t par personne · 8ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="263.04084" cy="430.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 10,40 t en 1990 → 4,75 t en 2024 · −5,66 t par personne · 7ᵉ plus forte baisse des 27" data-detail="Danemark · 10,40 t en 1990 → 4,75 t en 2024 · −5,66 t par personne · 7ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="255.18399428571428" cy="451.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 11,41 t en 1990 → 5,30 t en 2024 · −6,11 t par personne · 6ᵉ plus forte baisse des 27" data-detail="Finlande · 11,41 t en 1990 → 5,30 t en 2024 · −6,11 t par personne · 6ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="250.26565714285715" cy="472.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovaquie · 11,68 t en 1990 → 5,28 t en 2024 · −6,40 t par personne · 5ᵉ plus forte baisse des 27" data-detail="Slovaquie · 11,68 t en 1990 → 5,28 t en 2024 · −6,40 t par personne · 5ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="249.18115885714286" cy="493.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 13,23 t en 1990 → 6,77 t en 2024 · −6,46 t par personne · 4ᵉ plus forte baisse des 27" data-detail="Allemagne · 13,23 t en 1990 → 6,77 t en 2024 · −6,46 t par personne · 4ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="207.43230857142856" cy="514.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 15,94 t en 1990 → 7,04 t en 2024 · −8,90 t par personne · 3ᵉ plus forte baisse des 27" data-detail="Tchéquie · 15,94 t en 1990 → 7,04 t en 2024 · −8,90 t par personne · 3ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="61.765097142857144" cy="535.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Estonie · 23,50 t en 1990 → 6,11 t en 2024 · −17,40 t par personne · 2ᵉ plus forte baisse des 27" data-detail="Estonie · 23,50 t en 1990 → 6,11 t en 2024 · −17,40 t par personne · 2ᵉ plus forte baisse des 27"></circle><circle class="pt" cx="8.946325714285763" cy="556.5" r="6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Luxembourg · 30,94 t en 1990 → 10,46 t en 2024 · −20,48 t par personne · 1ᵉ plus forte baisse des 27" data-detail="Luxembourg · 30,94 t en 1990 → 10,46 t en 2024 · −20,48 t par personne · 1ᵉ plus forte baisse des 27"></circle><rect class="hit-area" x="0" y="0" width="720" height="567" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#4FE0C0;left:50.075113571428574%;top:1.8518518518518516%;transform:translateY(-50%) translateX(6px)">+0,0</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:48.758117619047624%;top:5.555555555555555%;transform:translate(-100%, -50%) translateX(-6px)">−0,5</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:47.31686452380953%;top:9.25925925925926%;transform:translate(-100%, -50%) translateX(-6px)">−1,1</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:46.976658809523805%;top:12.962962962962962%;transform:translate(-100%, -50%) translateX(-6px)">−1,3</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:46.338679523809525%;top:16.666666666666664%;transform:translate(-100%, -50%) translateX(-6px)">−1,5</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:45.433033333333334%;top:20.37037037037037%;transform:translate(-100%, -50%) translateX(-6px)">−1,9</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:43.81968095238095%;top:24.074074074074073%;transform:translate(-100%, -50%) translateX(-6px)">−2,6</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:43.311463333333336%;top:27.77777777777778%;transform:translate(-100%, -50%) translateX(-6px)">−2,8</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:43.27918333333333%;top:31.48148148148148%;transform:translate(-100%, -50%) translateX(-6px)">−2,8</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:43.006232142857144%;top:35.18518518518518%;transform:translate(-100%, -50%) translateX(-6px)">−2,9</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:42.952465000000004%;top:38.88888888888889%;transform:translate(-100%, -50%) translateX(-6px)">−3,0</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:42.77005428571428%;top:42.592592592592595%;transform:translate(-100%, -50%) translateX(-6px)">−3,0</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:42.57856738095238%;top:46.2962962962963%;transform:translate(-100%, -50%) translateX(-6px)">−3,1</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:41.9189%;top:50%;transform:translate(-100%, -50%) translateX(-6px)">−3,4</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:40.62114261904762%;top:53.70370370370371%;transform:translate(-100%, -50%) translateX(-6px)">−3,9</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:40.45858952380953%;top:57.407407407407405%;transform:translate(-100%, -50%) translateX(-6px)">−4,0</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:40.26055238095238%;top:61.111111111111114%;transform:translate(-100%, -50%) translateX(-6px)">−4,1</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:39.167602380952374%;top:64.81481481481481%;transform:translate(-100%, -50%) translateX(-6px)">−4,5</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:38.56937476190476%;top:68.51851851851852%;transform:translate(-100%, -50%) translateX(-6px)">−4,8</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:37.41582142857143%;top:72.22222222222221%;transform:translate(-100%, -50%) translateX(-6px)">−5,3</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:36.53345%;top:75.92592592592592%;transform:translate(-100%, -50%) translateX(-6px)">−5,7</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:35.44222142857143%;top:79.62962962962963%;transform:translate(-100%, -50%) translateX(-6px)">−6,1</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:34.759119047619045%;top:83.33333333333334%;transform:translate(-100%, -50%) translateX(-6px)">−6,4</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:34.608494285714286%;top:87.03703703703704%;transform:translate(-100%, -50%) translateX(-6px)">−6,5</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:28.810042857142854%;top:90.74074074074075%;transform:translate(-100%, -50%) translateX(-6px)">−8,9</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:8.578485714285716%;top:94.44444444444444%;transform:translate(-100%, -50%) translateX(-6px)">−17,4</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#ffffff;left:1.2425452380952449%;top:98.14814814814815%;transform:translate(-100%, -50%) translateX(-6px)">−20,5</span><span class="note" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:500;font-style:normal;letter-spacing:1.8px;text-transform:uppercase;color:#FFFFFF;left:70%;transform:translateX(-50%);white-space:normal;max-width:min(46%, 24em);top:1%">Croatie : +0,03 t</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:0%">−21</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:25%">−10.5</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:50%">0</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:75%">+10.5</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:100%">+21</span></div></div><p class="chart-reading" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:10px 0 0">← baisse depuis 1990 · hausse depuis 1990 →</p><p class="chart-reading" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:4px 0 0">Lecture : survolez, touchez ou tabulez une barre pour lire les DEUX valeurs derrière l&#x27;écart — 1990 et 2024 — et le rang du pays dans les baisses. Une différence cache toujours les deux nombres dont elle vient.</p><p class="chart-source" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:6px 0 0">Source : Global Carbon Budget (2025) · population, avec traitement Our World in Data · 1990 et 2024</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

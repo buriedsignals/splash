@@ -1,0 +1,589 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/data-tools/energy-sankey",
+  "archive": "url-list",
+  "family": "sankey",
+  "id": "iea-org-data-and-statistics-data-tools-energy-sankey",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Energy Sankey – Data Tools - IEA",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 48,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.4 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Biofuels & waste",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 17,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 17 | 400 | normal | 0 | none",
+        "count": 14,
+        "sample": "Sankey diagrams are a visual representation of the informati",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Try turning this off if the diagram becomes hard to read",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.4,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.4 | 400 | italic | 0 | none",
+        "count": 6,
+        "sample": "Stocks",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 17,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 17 | 600 | normal | 0 | none",
+        "count": 6,
+        "sample": "Power and heat plants:",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 5,
+        "sample": "633 682 PJ",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Energy system of World, 2023",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.5)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 9 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Electricity imports",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "Overview",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.64,
+        "transform": "none",
+        "key": "Graphik | 32 | 700 | normal | -0.64 | none",
+        "count": 2,
+        "sample": "How to read the Sankey diagram",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.4,
+        "transform": "none",
+        "key": "Graphik | 20 | 700 | normal | -0.4 | none",
+        "count": 2,
+        "sample": "World",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "Energy Sankey",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | -0.14 | none",
+        "count": 1,
+        "sample": "Year",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12.8 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Enter fullscreen",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.56,
+        "transform": "none",
+        "key": "Graphik | 28 | 700 | normal | -0.56 | none",
+        "count": 1,
+        "sample": "Related content",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgba(177, 177, 177, 0.6)",
+        "count": 24
+      },
+      {
+        "colour": "fill rgba(73, 211, 255, 0.6)",
+        "count": 22
+      },
+      {
+        "colour": "fill rgba(255, 183, 67, 0.6)",
+        "count": 22
+      },
+      {
+        "colour": "fill rgba(0, 173, 161, 0.6)",
+        "count": 20
+      },
+      {
+        "colour": "fill rgba(99, 99, 99, 0.6)",
+        "count": 16
+      },
+      {
+        "colour": "fill rgba(255, 244, 90, 0.6)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgba(255, 117, 75, 0.6)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(228, 228, 228)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(153, 153, 153)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgba(62, 122, 211, 0.6)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgba(104, 243, 148, 0.6)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgba(177, 135, 239, 0.6)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgba(0, 173, 161, 0.25)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgba(73, 211, 255, 0.25)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgba(99, 99, 99, 0.25)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgba(177, 177, 177, 0.25)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgba(255, 183, 67, 0.25)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 656,
+      "ch": 77
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 1524,
+      "nearTheTop": true,
+      "x": 108,
+      "y": 1524,
+      "w": 1210,
+      "h": 680,
+      "ratio": 1.78
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7050722522259524,
+      "h": 191.78026449673698,
+      "s": 0.09283218434338733,
+      "l": 0.9999641807956159,
+      "chroma": 0.000006650349968828628
+    },
+    "chromatic": [
+      {
+        "hex": "#92E5FF",
+        "share": 0.042548533060867026,
+        "h": 194.31194782816235,
+        "s": 0.9999879354736674,
+        "l": 0.7862738932050808,
+        "chroma": 0.42744705658135174
+      },
+      {
+        "hex": "#FFD48E",
+        "share": 0.036500754147812974,
+        "h": 37.16818669092809,
+        "s": 0.9999138931868573,
+        "l": 0.7784161478507692,
+        "chroma": 0.4431295445397567
+      },
+      {
+        "hex": "#FFF89C",
+        "share": 0.012251252858463485,
+        "h": 55.75757575757575,
+        "s": 1,
+        "l": 0.8058823529411765,
+        "chroma": 0.388235294117647
+      },
+      {
+        "hex": "#66CEC7",
+        "share": 0.010018002238116091,
+        "h": 175.96250566221005,
+        "s": 0.5148011428859914,
+        "l": 0.6038772867087583,
+        "chroma": 0.40784885105086227
+      },
+      {
+        "hex": "#D0B7F5",
+        "share": 0.003747628083491461,
+        "h": 264.19354838709677,
+        "s": 0.7560975609756102,
+        "l": 0.8392156862745098,
+        "chroma": 0.2431372549019608
+      },
+      {
+        "hex": "#C9F2FF",
+        "share": 0.0032854084561864446,
+        "h": 194.41960411587254,
+        "s": 1,
+        "l": 0.8945967724372237,
+        "chroma": 0.21080645512555263
+      },
+      {
+        "hex": "#FFEAC6",
+        "share": 0.00317350265168102,
+        "h": 37.406673921418864,
+        "s": 0.9999459302364879,
+        "l": 0.8888034631253805,
+        "chroma": 0.22238104900833466
+      },
+      {
+        "hex": "#B3E7E3",
+        "share": 0.0025045005595290227,
+        "h": 175.3846153846154,
+        "s": 0.5199999999999999,
+        "l": 0.803921568627451,
+        "chroma": 0.20392156862745103
+      },
+      {
+        "hex": "#ADECFF",
+        "share": 0.002370700141098623,
+        "h": 193.83745892661554,
+        "s": 0.9950798741942514,
+        "l": 0.8384641696596544,
+        "chroma": 0.3214821074658699
+      },
+      {
+        "hex": "#A4F8BF",
+        "share": 0.0022235196808251837,
+        "h": 139.28571428571428,
+        "s": 0.8571428571428573,
+        "l": 0.807843137254902,
+        "chroma": 0.3294117647058823
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7050722522259524,
+        "h": 191.78026449673698,
+        "s": 0.09283218434338733,
+        "l": 0.9999641807956159,
+        "chroma": 0.000006650349968828628
+      },
+      {
+        "hex": "#A1A1A1",
+        "share": 0.0530920060331825,
+        "h": 51.42857142857142,
+        "s": 8.533780665980671e-7,
+        "l": 0.6315131120263354,
+        "chroma": 6.289172560514089e-7
+      },
+      {
+        "hex": "#D0D0D0",
+        "share": 0.03877414489368949,
+        "h": 0,
+        "s": 0,
+        "l": 0.8160009644915782,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.011737945798666861,
+        "h": 0,
+        "s": 0,
+        "l": 0.8938758508584781,
+        "chroma": 0
+      },
+      {
+        "hex": "#E9E9E9",
+        "share": 0.005598939327592079,
+        "h": 0,
+        "s": 0,
+        "l": 0.9142528529986838,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.004267016980489466,
+        "h": 0,
+        "s": 0,
+        "l": 0.9553133454065776,
+        "chroma": 0
+      },
+      {
+        "hex": "#DCDCDC",
+        "share": 0.0026334355081983167,
+        "h": 15,
+        "s": 0.00002633103375678996,
+        "l": 0.8624172440338722,
+        "chroma": 0.000007245392383392613
+      },
+      {
+        "hex": "#E4F9FF",
+        "share": 0.00246192769911935,
+        "h": 193.33345531728028,
+        "s": 1,
+        "l": 0.9470549484615981,
+        "chroma": 0.1058901030768038
+      },
+      {
+        "hex": "#D9F3F1",
+        "share": 0.002089719262394784,
+        "h": 175.38461538461542,
+        "s": 0.5199999999999997,
+        "l": 0.9019607843137254,
+        "chroma": 0.10196078431372546
+      },
+      {
+        "hex": "#FFF4E3",
+        "share": 0.0020434972996642826,
+        "h": 36.46110662186875,
+        "s": 0.998725735887525,
+        "l": 0.9450443510737628,
+        "chroma": 0.10977124183006537
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 194,
+        "share": 0.06407580401887802,
+        "size": 9
+      },
+      {
+        "hue": 37,
+        "share": 0.06175375857539045,
+        "size": 13
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 822120
+  }
+}

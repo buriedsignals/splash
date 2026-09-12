@@ -1,0 +1,457 @@
+{
+  "url": "https://www.statista.com/chart/14636/defense-expenditures-of-nato-countries/",
+  "archive": "search",
+  "family": "bullet",
+  "id": "statista-com-chart-14636-defense-expenditures-of-nato-countries",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "Chart: Where NATO Defense Expenditure Stands | Statista",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.5 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "by",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(77, 77, 77)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 13,
+        "sample": "Topics",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "The Statista \"Chart of the Day\", made available\n            ",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(6, 102, 229)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 600 | normal | 0 | none",
+        "count": 10,
+        "sample": "Products",
+        "colors": [
+          "rgb(15, 39, 65)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13.3 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "katharina.buchholz@statista.com",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.34,
+        "transform": "uppercase",
+        "key": "Open Sans | 13.5 | 700 | normal | 0.34 | uppercase",
+        "count": 8,
+        "sample": "NATO",
+        "colors": [
+          "rgb(6, 102, 229)",
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16.5 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "European Military Aid to Ukraine Shifts Focus to Drones",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 12 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Data Journalist",
+        "colors": [
+          "rgb(69, 95, 124)",
+          "rgb(0, 19, 39)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Katharina Buchholz",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 37.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 37.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Related Infographics",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Get in touch with us quickly and easily. We are happy to hel",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "⌘+K",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 25.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 25.5 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Where NATO Defense Expenditure Stands",
+        "colors": [
+          "rgb(69, 95, 124)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 11.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 11.3 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Report",
+        "colors": [
+          "rgb(6, 102, 229)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 13 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Show more",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(15, 39, 65)",
+        "count": 9
+      },
+      {
+        "colour": "stroke rgb(15, 39, 65)",
+        "count": 6
+      }
+    ],
+    "column": {
+      "px": 744,
+      "ch": 99
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1038,
+      "nearTheTop": true,
+      "x": 179,
+      "y": 1038,
+      "w": 756,
+      "h": 1607,
+      "ratio": 0.47
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F5F9FC",
+      "share": 0.47368078808651304,
+      "h": 205.94045470624582,
+      "s": 0.5278383467569686,
+      "l": 0.9741605009584476,
+      "chroma": 0.02727815691024249
+    },
+    "chromatic": [
+      {
+        "hex": "#0054AA",
+        "share": 0.04510195144918232,
+        "h": 210.33657265645584,
+        "s": 0.9991651911760492,
+        "l": 0.33349504418331194,
+        "chroma": 0.6664332791553677
+      },
+      {
+        "hex": "#67AFF9",
+        "share": 0.026412224296480675,
+        "h": 210.40733898914795,
+        "s": 0.9242389045573636,
+        "l": 0.6901262948460362,
+        "chroma": 0.572794667605262
+      },
+      {
+        "hex": "#004890",
+        "share": 0.012084201723280752,
+        "h": 209.97706687998334,
+        "s": 0.9974900624698712,
+        "l": 0.28287609301604977,
+        "chroma": 0.5643321833876251
+      },
+      {
+        "hex": "#0F2741",
+        "share": 0.007492847100812253,
+        "h": 211.16555841595004,
+        "s": 0.6284759466898729,
+        "l": 0.1564321609122612,
+        "chroma": 0.1966277008441518
+      },
+      {
+        "hex": "#132A44",
+        "share": 0.0034151183808931165,
+        "h": 211.0385585515124,
+        "s": 0.5693468035957809,
+        "l": 0.16980704067599564,
+        "chroma": 0.19335819167387375
+      },
+      {
+        "hex": "#5E9205",
+        "share": 0.001839669699034976,
+        "h": 82.34153960956422,
+        "s": 0.9374836965543409,
+        "l": 0.295961749352985,
+        "chroma": 0.5549186296442514
+      },
+      {
+        "hex": "#1C334C",
+        "share": 0.001726079355201944,
+        "h": 210.98835694675458,
+        "s": 0.4588639895539269,
+        "l": 0.20336989349864887,
+        "chroma": 0.18663824137189447
+      },
+      {
+        "hex": "#66B0F9",
+        "share": 0.0016075503007674757,
+        "h": 209.93132623170962,
+        "s": 0.9296201909394324,
+        "l": 0.6895595514191339,
+        "chroma": 0.5771834181701354
+      },
+      {
+        "hex": "#6AB1F9",
+        "share": 0.0011227335433931576,
+        "h": 210.26381212631753,
+        "s": 0.9227604512276045,
+        "l": 0.6967109424414928,
+        "chroma": 0.5597262952101661
+      },
+      {
+        "hex": "#243A52",
+        "share": 0.0010873394507495316,
+        "h": 211.13840495229965,
+        "s": 0.38914625652560086,
+        "l": 0.23229431060842204,
+        "chroma": 0.1807929227709252
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F5F9FC",
+        "share": 0.47368078808651304,
+        "h": 205.94045470624582,
+        "s": 0.5278383467569686,
+        "l": 0.9741605009584476,
+        "chroma": 0.02727815691024249
+      },
+      {
+        "hex": "#ECF1F7",
+        "share": 0.23050773237456498,
+        "h": 211.94327145400834,
+        "s": 0.40803584865699144,
+        "l": 0.9465432916155014,
+        "chroma": 0.04362450674415641
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.06814268264174922,
+        "h": 182.06402293364545,
+        "s": 0.06484895429900937,
+        "l": 0.9992355674422548,
+        "chroma": 0.00009914530400378929
+      },
+      {
+        "hex": "#F3F6FA",
+        "share": 0.03121594347481093,
+        "h": 212.94446107047207,
+        "s": 0.4191089031885195,
+        "l": 0.9674347146304993,
+        "chroma": 0.02729680206646512
+      },
+      {
+        "hex": "#EDF2F8",
+        "share": 0.00768710305113541,
+        "h": 211.6879029782009,
+        "s": 0.4545073960368401,
+        "l": 0.9518544413160916,
+        "chroma": 0.043765025016324066
+      },
+      {
+        "hex": "#E9EEF4",
+        "share": 0.004360058342634572,
+        "h": 211.6053382420615,
+        "s": 0.31084955053415075,
+        "l": 0.935308184062751,
+        "chroma": 0.040218843814663785
+      },
+      {
+        "hex": "#E5ECF3",
+        "share": 0.003373139340780909,
+        "h": 209.7798598276209,
+        "s": 0.35131243129263034,
+        "l": 0.9255729719901626,
+        "chroma": 0.0522942803280414
+      },
+      {
+        "hex": "#F2F4F6",
+        "share": 0.002636448342733346,
+        "h": 204.46337546260736,
+        "s": 0.20016213118649234,
+        "l": 0.9562009880442967,
+        "chroma": 0.01753380715383246
+      },
+      {
+        "hex": "#BBC4CD",
+        "share": 0.0018643632520421569,
+        "h": 210.39576269088934,
+        "s": 0.15039662302758705,
+        "l": 0.7674388607540146,
+        "chroma": 0.06995281998008929
+      },
+      {
+        "hex": "#B4BEC9",
+        "share": 0.0017622965662791425,
+        "h": 210.9800497077988,
+        "s": 0.16162840774611942,
+        "l": 0.7469397660979384,
+        "chroma": 0.08180344533890149
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 210,
+        "share": 0.10696424044277188,
+        "size": 21
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1214892
+  }
+}

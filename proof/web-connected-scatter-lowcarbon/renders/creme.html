@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Les seize ont tous nettoyé leur propre électricité depuis 2000 — et 5 pèsent moins qu'avant dans le total bas-carbone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFCEE;
+  --accent: #1757B6;
+  --ink: #000000;
+  --muted: #61605a;
+  --grid: #d1cfc3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--title-size:30px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:15px;--label-weight:600;--note-size:13px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:600;font-style:normal;letter-spacing:1.9px;text-transform:uppercase;color:#1757B6;margin:0 0 6px">Énergie · Europe</p><h2 class="chart-title" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:30px;font-weight:700;font-style:normal;letter-spacing:-0.2px;text-transform:none;color:#000000;margin:0 0 6px">Les seize ont tous nettoyé leur propre électricité depuis 2000 — et 5 pèsent moins qu&#x27;avant dans le total bas-carbone</h2><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:0">Deux parts INDÉPENDANTES : en abscisse, la part bas-carbone de l&#x27;électricité du pays lui-même ; en ordonnée, la part qu&#x27;il représente dans l&#x27;électricité bas-carbone des seize. Chaque flèche va de 2000 à 2024. Aller à droite et descendre, c&#x27;est produire plus propre pendant que les autres produisent plus vite.</p></div><div class="chart-plot" style="--y-gutter:48px;--x-axis-h:32px;aspect-ratio:868 / 492"><div class="y-axis"><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:100%">0 %</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:76.41509433962264%">10 %</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:52.830188679245296%">20 %</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:29.24528301886793%">30 %</span><span class="axis-label y" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;top:5.660377358490582%">40 %</span></div><svg role="group" aria-label="Les seize ont tous nettoyé leur propre électricité depuis 2000 — et 5 pèsent moins qu&#x27;avant dans le total bas-carbone" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 820 460" preserveAspectRatio="none"><desc>Seize flèches dans un plan. L&#x27;abscisse est la part bas-carbone de l&#x27;électricité de chaque pays, l&#x27;ordonnée sa part dans l&#x27;électricité bas-carbone des seize ; chaque flèche va de 2000 à 2024. Toutes vont vers la droite : tous les pays ont nettoyé leur propre production. 5 pointent vers le bas, dont la France, qui gagne 4,2 points chez elle et perd 11,8 points de poids européen.</desc><rect x="0" y="0" width="820" height="460" fill="#FFFCEE"></rect><line x1="0" x2="820" y1="460" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="820" y1="351.50943396226415" y2="351.50943396226415" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="820" y1="243.01886792452834" y2="243.01886792452834" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="820" y1="134.52830188679246" y2="134.52830188679246" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="820" y1="26.037735849056673" y2="26.037735849056673" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="0" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="164" x2="164" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="328" x2="328" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="492" x2="492" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="656" x2="656" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="820" x2="820" y1="0" y2="460" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><defs><marker id="cs-head-other" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#939189"></path></marker><marker id="cs-head-subject" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#1757B6"></path></marker></defs><g><circle cx="743.6754544088928" cy="43.596035485294465" r="3" fill="#FFFCEE" stroke="#1757B6" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="743.6754544088928" y1="43.596035485294465" x2="778.1665420627293" y2="171.98265792547534" stroke="#1757B6" stroke-width="2.5" marker-end="url(#cs-head-subject)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="295.4853677827577" cy="283.2444961493925" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="295.4853677827577" y1="283.2444961493925" x2="480.86695296276133" y2="302.86328759792127" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="358.9263081658519" cy="376.6312690354417" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="358.9263081658519" y1="376.6312690354417" x2="629.3165800526803" y2="343.51699593958534" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="206.53317774359513" cy="378.1227675314984" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="206.53317774359513" y1="378.1227675314984" x2="532.4401745495496" y2="360.31872789208705" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="793.067548027267" cy="338.9041163259373" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="793.067548027267" y1="338.9041163259373" x2="810.0923613128084" y2="368.1199179047599" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="154.52841372156772" cy="416.14304711306016" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="154.52841372156772" y1="416.14304711306016" x2="411.4097772462252" y2="387.4770258101662" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="537.4474774903531" cy="420.46235778661173" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="537.4474774903531" y1="420.46235778661173" x2="781.8558449424589" y2="417.4770314475431" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="597.2635814889337" cy="422.5487314053732" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="597.2635814889337" y1="422.5487314053732" x2="707.0370842360137" y2="423.44677865253163" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="64.25164660458779" cy="454.05124877295293" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="64.25164660458779" y1="454.05124877295293" x2="439.996730156135" y2="424.5380808565205" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="487.40427587872927" cy="417.57419595898745" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="487.40427587872927" y1="417.57419595898745" x2="626.0307854229707" y2="428.649372823033" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="13.34404246403129" cy="457.9912187885479" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="13.34404246403129" y1="457.9912187885479" x2="255.40436904485244" y2="431.0372717050284" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="178.5102880658436" cy="446.31787217779174" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="178.5102880658436" y1="446.31787217779174" x2="473.01194890811695" y2="437.30955813488515" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="244.23513075676934" cy="448.9042857547687" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="244.23513075676934" y1="448.9042857547687" x2="698.5699174952401" y2="438.2441882402816" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="127.40306834030685" cy="455.19789212541275" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="127.40306834030685" y1="455.19789212541275" x2="731.3576725613234" y2="443.1064257828061" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="64.12542500944464" cy="456.43074926377176" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="64.12542500944464" y1="456.43074926377176" x2="403.67904695164685" y2="444.8190138950065" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><g><circle cx="41.294964028776974" cy="458.9740559477991" r="3" fill="#FFFCEE" stroke="#939189" stroke-width="1.4" vector-effect="non-scaling-stroke"></circle><line x1="41.294964028776974" y1="458.9740559477991" x2="381.50579150579154" y2="452.18800501501045" stroke="#939189" stroke-width="1.5" marker-end="url(#cs-head-other)" vector-effect="non-scaling-stroke"></line></g><circle class="pt" cx="743.6754544088928" cy="43.596035485294465" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 2000 · 90,7 % de son électricité bas-carbone · 38,4 % du total bas-carbone des seize · 483 TWh" data-detail="France · 2000 · 90,7 % de son électricité bas-carbone · 38,4 % du total bas-carbone des seize · 483 TWh"></circle><circle class="pt" cx="778.1665420627293" cy="171.98265792547534" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 2024 · 94,9 % de son électricité bas-carbone · 26,5 % du total bas-carbone des seize · 533 TWh" data-detail="France · 2024 · 94,9 % de son électricité bas-carbone · 26,5 % du total bas-carbone des seize · 533 TWh"></circle><circle class="pt" cx="295.4853677827577" cy="283.2444961493925" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 2000 · 36,0 % de son électricité bas-carbone · 16,3 % du total bas-carbone des seize · 205 TWh" data-detail="Allemagne · 2000 · 36,0 % de son électricité bas-carbone · 16,3 % du total bas-carbone des seize · 205 TWh"></circle><circle class="pt" cx="480.86695296276133" cy="302.86328759792127" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 2024 · 58,6 % de son électricité bas-carbone · 14,5 % du total bas-carbone des seize · 291 TWh" data-detail="Allemagne · 2024 · 58,6 % de son électricité bas-carbone · 14,5 % du total bas-carbone des seize · 291 TWh"></circle><circle class="pt" cx="358.9263081658519" cy="376.6312690354417" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 2000 · 43,8 % de son électricité bas-carbone · 7,7 % du total bas-carbone des seize · 97 TWh" data-detail="Espagne · 2000 · 43,8 % de son électricité bas-carbone · 7,7 % du total bas-carbone des seize · 97 TWh"></circle><circle class="pt" cx="629.3165800526803" cy="343.51699593958534" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 2024 · 76,7 % de son électricité bas-carbone · 10,7 % du total bas-carbone des seize · 216 TWh" data-detail="Espagne · 2024 · 76,7 % de son électricité bas-carbone · 10,7 % du total bas-carbone des seize · 216 TWh"></circle><circle class="pt" cx="206.53317774359513" cy="378.1227675314984" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Royaume-Uni · 2000 · 25,2 % de son électricité bas-carbone · 7,5 % du total bas-carbone des seize · 95 TWh" data-detail="Royaume-Uni · 2000 · 25,2 % de son électricité bas-carbone · 7,5 % du total bas-carbone des seize · 95 TWh"></circle><circle class="pt" cx="532.4401745495496" cy="360.31872789208705" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Royaume-Uni · 2024 · 64,9 % de son électricité bas-carbone · 9,2 % du total bas-carbone des seize · 185 TWh" data-detail="Royaume-Uni · 2024 · 64,9 % de son électricité bas-carbone · 9,2 % du total bas-carbone des seize · 185 TWh"></circle><circle class="pt" cx="793.067548027267" cy="338.9041163259373" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 2000 · 96,7 % de son électricité bas-carbone · 11,2 % du total bas-carbone des seize · 140 TWh" data-detail="Suède · 2000 · 96,7 % de son électricité bas-carbone · 11,2 % du total bas-carbone des seize · 140 TWh"></circle><circle class="pt" cx="810.0923613128084" cy="368.1199179047599" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 2024 · 98,8 % de son électricité bas-carbone · 8,5 % du total bas-carbone des seize · 170 TWh" data-detail="Suède · 2024 · 98,8 % de son électricité bas-carbone · 8,5 % du total bas-carbone des seize · 170 TWh"></circle><circle class="pt" cx="154.52841372156772" cy="416.14304711306016" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 2000 · 18,8 % de son électricité bas-carbone · 4,0 % du total bas-carbone des seize · 51 TWh" data-detail="Italie · 2000 · 18,8 % de son électricité bas-carbone · 4,0 % du total bas-carbone des seize · 51 TWh"></circle><circle class="pt" cx="411.4097772462252" cy="387.4770258101662" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 2024 · 50,2 % de son électricité bas-carbone · 6,7 % du total bas-carbone des seize · 134 TWh" data-detail="Italie · 2024 · 50,2 % de son électricité bas-carbone · 6,7 % du total bas-carbone des seize · 134 TWh"></circle><circle class="pt" cx="537.4474774903531" cy="420.46235778661173" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 2000 · 65,5 % de son électricité bas-carbone · 3,6 % du total bas-carbone des seize · 46 TWh" data-detail="Finlande · 2000 · 65,5 % de son électricité bas-carbone · 3,6 % du total bas-carbone des seize · 46 TWh"></circle><circle class="pt" cx="781.8558449424589" cy="417.4770314475431" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 2024 · 95,3 % de son électricité bas-carbone · 3,9 % du total bas-carbone des seize · 79 TWh" data-detail="Finlande · 2024 · 95,3 % de son électricité bas-carbone · 3,9 % du total bas-carbone des seize · 79 TWh"></circle><circle class="pt" cx="597.2635814889337" cy="422.5487314053732" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 2000 · 72,8 % de son électricité bas-carbone · 3,5 % du total bas-carbone des seize · 43 TWh" data-detail="Autriche · 2000 · 72,8 % de son électricité bas-carbone · 3,5 % du total bas-carbone des seize · 43 TWh"></circle><circle class="pt" cx="707.0370842360137" cy="423.44677865253163" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 2024 · 86,2 % de son électricité bas-carbone · 3,4 % du total bas-carbone des seize · 68 TWh" data-detail="Autriche · 2024 · 86,2 % de son électricité bas-carbone · 3,4 % du total bas-carbone des seize · 68 TWh"></circle><circle class="pt" cx="64.25164660458779" cy="454.05124877295293" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 2000 · 7,8 % de son électricité bas-carbone · 0,5 % du total bas-carbone des seize · 7 TWh" data-detail="Pays-Bas · 2000 · 7,8 % de son électricité bas-carbone · 0,5 % du total bas-carbone des seize · 7 TWh"></circle><circle class="pt" cx="439.996730156135" cy="424.5380808565205" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 2024 · 53,7 % de son électricité bas-carbone · 3,3 % du total bas-carbone des seize · 66 TWh" data-detail="Pays-Bas · 2024 · 53,7 % de son électricité bas-carbone · 3,3 % du total bas-carbone des seize · 66 TWh"></circle><circle class="pt" cx="487.40427587872927" cy="417.57419595898745" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 2000 · 59,4 % de son électricité bas-carbone · 3,9 % du total bas-carbone des seize · 49 TWh" data-detail="Belgique · 2000 · 59,4 % de son électricité bas-carbone · 3,9 % du total bas-carbone des seize · 49 TWh"></circle><circle class="pt" cx="626.0307854229707" cy="428.649372823033" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 2024 · 76,3 % de son électricité bas-carbone · 2,9 % du total bas-carbone des seize · 58 TWh" data-detail="Belgique · 2024 · 76,3 % de son électricité bas-carbone · 2,9 % du total bas-carbone des seize · 58 TWh"></circle><circle class="pt" cx="13.34404246403129" cy="457.9912187885479" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 2000 · 1,6 % de son électricité bas-carbone · 0,2 % du total bas-carbone des seize · 2 TWh" data-detail="Pologne · 2000 · 1,6 % de son électricité bas-carbone · 0,2 % du total bas-carbone des seize · 2 TWh"></circle><circle class="pt" cx="255.40436904485244" cy="431.0372717050284" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 2024 · 31,1 % de son électricité bas-carbone · 2,7 % du total bas-carbone des seize · 54 TWh" data-detail="Pologne · 2024 · 31,1 % de son électricité bas-carbone · 2,7 % du total bas-carbone des seize · 54 TWh"></circle><circle class="pt" cx="178.5102880658436" cy="446.31787217779174" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 2000 · 21,8 % de son électricité bas-carbone · 1,3 % du total bas-carbone des seize · 16 TWh" data-detail="Tchéquie · 2000 · 21,8 % de son électricité bas-carbone · 1,3 % du total bas-carbone des seize · 16 TWh"></circle><circle class="pt" cx="473.01194890811695" cy="437.30955813488515" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 2024 · 57,7 % de son électricité bas-carbone · 2,1 % du total bas-carbone des seize · 42 TWh" data-detail="Tchéquie · 2024 · 57,7 % de son électricité bas-carbone · 2,1 % du total bas-carbone des seize · 42 TWh"></circle><circle class="pt" cx="244.23513075676934" cy="448.9042857547687" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 2000 · 29,8 % de son électricité bas-carbone · 1,0 % du total bas-carbone des seize · 13 TWh" data-detail="Portugal · 2000 · 29,8 % de son électricité bas-carbone · 1,0 % du total bas-carbone des seize · 13 TWh"></circle><circle class="pt" cx="698.5699174952401" cy="438.2441882402816" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 2024 · 85,2 % de son électricité bas-carbone · 2,0 % du total bas-carbone des seize · 40 TWh" data-detail="Portugal · 2024 · 85,2 % de son électricité bas-carbone · 2,0 % du total bas-carbone des seize · 40 TWh"></circle><circle class="pt" cx="127.40306834030685" cy="455.19789212541275" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 2000 · 15,5 % de son électricité bas-carbone · 0,4 % du total bas-carbone des seize · 6 TWh" data-detail="Danemark · 2000 · 15,5 % de son électricité bas-carbone · 0,4 % du total bas-carbone des seize · 6 TWh"></circle><circle class="pt" cx="731.3576725613234" cy="443.1064257828061" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 2024 · 89,2 % de son électricité bas-carbone · 1,6 % du total bas-carbone des seize · 31 TWh" data-detail="Danemark · 2024 · 89,2 % de son électricité bas-carbone · 1,6 % du total bas-carbone des seize · 31 TWh"></circle><circle class="pt" cx="64.12542500944464" cy="456.43074926377176" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 2000 · 7,8 % de son électricité bas-carbone · 0,3 % du total bas-carbone des seize · 4 TWh" data-detail="Grèce · 2000 · 7,8 % de son électricité bas-carbone · 0,3 % du total bas-carbone des seize · 4 TWh"></circle><circle class="pt" cx="403.67904695164685" cy="444.8190138950065" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 2024 · 49,2 % de son électricité bas-carbone · 1,4 % du total bas-carbone des seize · 28 TWh" data-detail="Grèce · 2024 · 49,2 % de son électricité bas-carbone · 1,4 % du total bas-carbone des seize · 28 TWh"></circle><circle class="pt" cx="41.294964028776974" cy="458.9740559477991" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 2000 · 5,0 % de son électricité bas-carbone · 0,1 % du total bas-carbone des seize · 1 TWh" data-detail="Irlande · 2000 · 5,0 % de son électricité bas-carbone · 0,1 % du total bas-carbone des seize · 1 TWh"></circle><circle class="pt" cx="381.50579150579154" cy="452.18800501501045" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 2024 · 46,5 % de son électricité bas-carbone · 0,7 % du total bas-carbone des seize · 14 TWh" data-detail="Irlande · 2024 · 46,5 % de son électricité bas-carbone · 0,7 % du total bas-carbone des seize · 14 TWh"></circle><rect class="hit-area" x="0" y="0" width="820" height="460" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#1757B6;right:5.101641211862287%;transform:translateX(0) translateY(-140%);white-space:normal;max-width:min(46%, 24em);top:37.38753433162507%">France</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:58.64231133692211%;transform:translateX(-50%) translateY(-140%);white-space:normal;max-width:min(46%, 24em);top:65.83984512998289%">Allemagne</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;right:23.254075603331685%;transform:translateX(0) translateY(-140%);white-space:normal;max-width:min(46%, 24em);top:74.67760781295334%">Espagne</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:64.93172860360362%;transform:translateX(-50%) translateY(-140%);white-space:normal;max-width:min(46%, 24em);top:78.33015823741023%">Royaume-Uni</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:15px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;right:1.208248620389213%;transform:translateX(0) translateY(-140%);white-space:normal;max-width:min(46%, 24em);top:80.02606910973041%">Suède</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#61605a;right:5.101641211862287%;transform:translateX(0) translateY(40%);white-space:normal;max-width:min(46%, 24em);top:37.38753433162507%">+4,2 pts chez elle, -11,8 pts de poids européen</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:0%">0 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:20%">20 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:40%">40 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:60%">60 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:80%">80 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:100%">100 %</span></div></div><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:10px 0 0">part du pays dans le bas-carbone des seize ↑ · part bas-carbone de l&#x27;électricité du pays →</p><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:4px 0 0">Lecture : survolez, touchez ou tabulez une extrémité de flèche pour lire le pays, ses deux parts à cette date et les TWh bas-carbone qui sont derrière — la quantité que deux parts ne disent jamais. Le pointeur résout dans les deux axes.</p><p class="chart-source" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:6px 0 0">Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2000 et 2024</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

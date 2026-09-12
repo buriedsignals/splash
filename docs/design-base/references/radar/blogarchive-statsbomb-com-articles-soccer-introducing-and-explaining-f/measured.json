@@ -1,0 +1,357 @@
+{
+  "url": "https://blogarchive.statsbomb.com/articles/soccer/introducing-and-explaining-fullback-radars-sagna-debuchy-lahm-alves-and-more/",
+  "archive": "url-list",
+  "family": "radar",
+  "id": "blogarchive-statsbomb-com-articles-soccer-introducing-and-explaining-f",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Introducing and Explaining Fullback Radars. Sagna, Debuchy, Lahm, Alves and More • Statsbomb Blog Archive",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 400 | normal | 0 | none",
+        "count": 51,
+        "sample": "In January, . Then in April, . Today. I get to introduce ful",
+        "colors": [
+          "rgb(35, 42, 49)",
+          "rgb(2, 115, 227)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 400 | italic | 0 | none",
+        "count": 10,
+        "sample": "other",
+        "colors": [
+          "rgb(35, 42, 49)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 16 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "Soccer",
+        "colors": [
+          "rgb(2, 115, 227)",
+          "rgb(35, 42, 49)",
+          "rgb(101, 109, 115)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "What the hell is a radar?",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 16 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "By",
+        "colors": [
+          "rgb(35, 42, 49)",
+          "rgb(2, 115, 227)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.4,
+        "transform": "uppercase",
+        "key": "Barlow | 16 | 400 | normal | 0.4 | uppercase",
+        "count": 1,
+        "sample": "Blog Archive",
+        "colors": [
+          "rgb(101, 109, 115)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 88,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 88 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Introducing and Explaining Fullback Radars. Sagna, Debuchy, ",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 700 | italic | 0 | none",
+        "count": 1,
+        "sample": "Radar boundaries represent the top 5% and bottom 5% of all s",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 99, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(35, 42, 49)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 800,
+      "ch": 67
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 2830,
+      "nearTheTop": false,
+      "x": 320,
+      "y": 2830,
+      "w": 800,
+      "h": 933,
+      "ratio": 0.86
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.5884632904608789,
+      "h": 200.69158878434422,
+      "s": 0.019498505721970844,
+      "l": 0.9997550252829389,
+      "chroma": 0.000009553281844709716
+    },
+    "chromatic": [
+      {
+        "hex": "#0B4295",
+        "share": 0.08488210075026795,
+        "h": 216.09413808314923,
+        "s": 0.8621205375398178,
+        "l": 0.3137105419855928,
+        "chroma": 0.5409126021770536
+      },
+      {
+        "hex": "#EC012C",
+        "share": 0.08437566988210075,
+        "h": 349.01796988987087,
+        "s": 0.9914805261223079,
+        "l": 0.4646260536670447,
+        "chroma": 0.9213353682798662
+      },
+      {
+        "hex": "#00ADEF",
+        "share": 0.0031363879957127545,
+        "h": 196.494294044745,
+        "s": 0.9982872120174067,
+        "l": 0.4684791985995595,
+        "chroma": 0.9353535861162064
+      },
+      {
+        "hex": "#E5022C",
+        "share": 0.001177652733118971,
+        "h": 348.77814036723464,
+        "s": 0.985223450857603,
+        "l": 0.45167860090566375,
+        "chroma": 0.8900086997256241
+      },
+      {
+        "hex": "#0A3E8C",
+        "share": 0.0007221329046087888,
+        "h": 216.15358126721765,
+        "s": 0.8610184567489436,
+        "l": 0.29446687766015495,
+        "chroma": 0.5070828331332532
+      },
+      {
+        "hex": "#E30431",
+        "share": 0.0006511254019292605,
+        "h": 347.96890472444585,
+        "s": 0.9637527983660219,
+        "l": 0.45234809973372064,
+        "chroma": 0.8719034939078513
+      },
+      {
+        "hex": "#DC0633",
+        "share": 0.000632368703108253,
+        "h": 347.1699757389711,
+        "s": 0.9492588101482379,
+        "l": 0.44193668993020935,
+        "chroma": 0.8390245928880026
+      },
+      {
+        "hex": "#1B3D8D",
+        "share": 0.0006270096463022509,
+        "h": 222.08358298382265,
+        "s": 0.6771821270984429,
+        "l": 0.33043405396346576,
+        "chroma": 0.4475280710574828
+      },
+      {
+        "hex": "#0A3A84",
+        "share": 0.0005760986066452304,
+        "h": 216.1826375892755,
+        "s": 0.8582620382207362,
+        "l": 0.2782216142270862,
+        "chroma": 0.47757409940720474
+      },
+      {
+        "hex": "#114192",
+        "share": 0.000560021436227224,
+        "h": 217.92792792792793,
+        "s": 0.7873949089210648,
+        "l": 0.32138099258842295,
+        "chroma": 0.5061075147762454
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.5884632904608789,
+        "h": 200.69158878434422,
+        "s": 0.019498505721970844,
+        "l": 0.9997550252829389,
+        "chroma": 0.000009553281844709716
+      },
+      {
+        "hex": "#CDCDCD",
+        "share": 0.1417309753483387,
+        "h": 236.30769230558698,
+        "s": 0.000012286684258815215,
+        "l": 0.8038889469653328,
+        "chroma": 0.000004819109176601444
+      },
+      {
+        "hex": "#F3F4F4",
+        "share": 0.006540728831725616,
+        "h": 187.3333333333477,
+        "s": 0.0008015675097972433,
+        "l": 0.9549043705970712,
+        "chroma": 0.00007229438272648991
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.005864147909967846,
+        "h": 187.0886075949383,
+        "s": 0.000616178187292276,
+        "l": 0.8276960224345621,
+        "chroma": 0.0002123399051190411
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.005081725616291533,
+        "h": 192.33333333330705,
+        "s": 0.0012231917149145694,
+        "l": 0.9239279787844481,
+        "chroma": 0.00018610133217533686
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.004713290460878886,
+        "h": 187.2832369942095,
+        "s": 0.0006901201128130522,
+        "l": 0.860281019741609,
+        "chroma": 0.00019284575683609084
+      },
+      {
+        "hex": "#E3E4E4",
+        "share": 0.004686495176848875,
+        "h": 184.47761194031372,
+        "s": 0.000696436738597227,
+        "l": 0.8921467729458851,
+        "chroma": 0.00015022589939350794
+      },
+      {
+        "hex": "#ACACAC",
+        "share": 0.002118167202572347,
+        "h": 201.30841121495015,
+        "s": 0.0012248308703167099,
+        "l": 0.6749674442832161,
+        "chroma": 0.0007962198161997058
+      },
+      {
+        "hex": "#C3C4C4",
+        "share": 0.002067256162915327,
+        "h": 207.29857819906397,
+        "s": 0.0011492938106988234,
+        "l": 0.7666997064541954,
+        "chroma": 0.0005362611668128237
+      },
+      {
+        "hex": "#020102",
+        "share": 0.001968113612004287,
+        "h": 290.2766798418972,
+        "s": 0.05838910685437347,
+        "l": 0.005783579599300578,
+        "chroma": 0.000675396094448672
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 216,
+        "share": 0.0943140407288317,
+        "size": 16
+      },
+      {
+        "hue": 349,
+        "share": 0.08842845659163985,
+        "size": 8
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 746400
+  }
+}

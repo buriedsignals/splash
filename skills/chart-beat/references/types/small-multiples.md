@@ -52,3 +52,11 @@ grid of a dozen is not reinforcement, it's redundant decoding work repeated a do
 put the shared axis label and unit once, at the level of the whole grid, and let each panel carry
 only its own category name. A reader who has already read "GDP growth, %" on panel one shouldn't
 have to re-verify it eleven more times to reach the panel that actually matters to them.
+
+## The worked example in this tree
+
+`proof/static-small-multiples-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

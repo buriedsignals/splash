@@ -1,0 +1,449 @@
+{
+  "url": "https://www.datawrapper.de/_/BPRSN/",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "datawrapper-de-bprsn",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Germany’s electricity generation grew by 8.2 TWh in 2025, but renewables accounted for barely any of it | Created with D",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 219,
+      "w": 640,
+      "h": 538,
+      "ratio": 1.19
+    },
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/BPRSN/1/",
+      "title": "Germany’s electricity generation grew by 8.2 TWh in 2025, but renewables accounted for barely any of it",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 30,
+          "sample": "Total 2024",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "+0.9 TWh",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "← \nRenewable \nenergy",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Germany’s electricity generation grew by 8.2 TWh in 2025, bu",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Change in public net electricity generation by source, Germa",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(247, 109, 76)",
+          "count": 4
+        },
+        {
+          "colour": "fill rgb(60, 165, 168)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgba(255, 255, 255, 0)",
+          "count": 2
+        },
+        {
+          "colour": "fill url(\"#pattern-H88Tm2hLe3-olyBxU0CCb\")",
+          "count": 1
+        },
+        {
+          "colour": "fill url(\"#pattern-H88Tm2hLe3-pc5Lbshdcv\")",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(24, 24, 24)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7557911245353159,
+      "h": 185.49918166983846,
+      "s": 0.015932618842732112,
+      "l": 0.999711051908486,
+      "chroma": 0.000009207399614852285
+    },
+    "chromatic": [
+      {
+        "hex": "#3CA5A8",
+        "share": 0.05982806691449814,
+        "h": 181.66666666666669,
+        "s": 0.4736842105263158,
+        "l": 0.44705882352941173,
+        "chroma": 0.4235294117647059
+      },
+      {
+        "hex": "#F76D4C",
+        "share": 0.037395446096654274,
+        "h": 11.57894736842105,
+        "s": 0.9144385026737971,
+        "l": 0.6333333333333333,
+        "chroma": 0.6705882352941177
+      },
+      {
+        "hex": "#2A5F60",
+        "share": 0.000412407063197026,
+        "h": 181.11111111111111,
+        "s": 0.391304347826087,
+        "l": 0.27058823529411763,
+        "chroma": 0.21176470588235294
+      },
+      {
+        "hex": "#0289CC",
+        "share": 0.00031656598513011154,
+        "h": 200,
+        "s": 0.981859410430839,
+        "l": 0.4045871559633028,
+        "chroma": 0.7944954128440368
+      },
+      {
+        "hex": "#854231",
+        "share": 0.00024105483271375465,
+        "h": 11.999999999999996,
+        "s": 0.45803040317250493,
+        "l": 0.35742971887550207,
+        "chroma": 0.3274273564847626
+      },
+      {
+        "hex": "#317A7C",
+        "share": 0.00023815055762081784,
+        "h": 181.60889470241986,
+        "s": 0.4321650650084794,
+        "l": 0.3384026781444285,
+        "chroma": 0.2924916307986609
+      },
+      {
+        "hex": "#058689",
+        "share": 0.00021491635687732343,
+        "h": 181.36363636363637,
+        "s": 0.9295774647887323,
+        "l": 0.2784313725490196,
+        "chroma": 0.5176470588235293
+      },
+      {
+        "hex": "#D35F44",
+        "share": 0.0001974907063197026,
+        "h": 11.220811142974192,
+        "s": 0.622386537480877,
+        "l": 0.5476355247981546,
+        "chroma": 0.5630911188004613
+      },
+      {
+        "hex": "#A54E39",
+        "share": 0.00016844795539033456,
+        "h": 11.666666666666666,
+        "s": 0.4864864864864865,
+        "l": 0.43529411764705883,
+        "chroma": 0.42352941176470593
+      },
+      {
+        "hex": "#6C392B",
+        "share": 0.00015683085501858737,
+        "h": 12.923076923076925,
+        "s": 0.4304635761589404,
+        "l": 0.296078431372549,
+        "chroma": 0.2549019607843137
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7557911245353159,
+        "h": 185.49918166983846,
+        "s": 0.015932618842732112,
+        "l": 0.999711051908486,
+        "chroma": 0.000009207399614852285
+      },
+      {
+        "hex": "#000000",
+        "share": 0.014745004646840148,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.012944354089219332,
+        "h": 180,
+        "s": 0.009391053336244485,
+        "l": 0.9536692666745854,
+        "chroma": 0.0008701887755325766
+      },
+      {
+        "hex": "#D2D3D3",
+        "share": 0.012328647769516728,
+        "h": 180,
+        "s": 0.01698110201936005,
+        "l": 0.8260218480796323,
+        "chroma": 0.005908681493798973
+      },
+      {
+        "hex": "#EBECEC",
+        "share": 0.010562848513011152,
+        "h": 180,
+        "s": 0.010327291323371152,
+        "l": 0.9240960282930879,
+        "chroma": 0.0015677648568364067
+      },
+      {
+        "hex": "#E3E4E4",
+        "share": 0.00816682156133829,
+        "h": 180,
+        "s": 0.013943496940502786,
+        "l": 0.8928820461328202,
+        "chroma": 0.0029871977240398806
+      },
+      {
+        "hex": "#DBDCDC",
+        "share": 0.007260687732342007,
+        "h": 180,
+        "s": 0.014101784950592808,
+        "l": 0.8606211764705882,
+        "chroma": 0.00393098039215678
+      },
+      {
+        "hex": "#181818",
+        "share": 0.006964451672862453,
+        "h": 180,
+        "s": 0.00020684662322892117,
+        "l": 0.09487317862924986,
+        "chroma": 0.000039248393268909165
+      },
+      {
+        "hex": "#8A8B8B",
+        "share": 0.00433317843866171,
+        "h": 180,
+        "s": 0.0029955957268199603,
+        "l": 0.5428639015928087,
+        "chroma": 0.0027387898859274618
+      },
+      {
+        "hex": "#C3C4C4",
+        "share": 0.004315752788104089,
+        "h": 180,
+        "s": 0.010392687880839541,
+        "l": 0.7661309476684348,
+        "chroma": 0.004861056131739372
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 182,
+        "share": 0.061788452602230495,
+        "size": 14
+      },
+      {
+        "hue": 12,
+        "share": 0.03861524163568773,
+        "size": 10
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 344320
+  }
+}

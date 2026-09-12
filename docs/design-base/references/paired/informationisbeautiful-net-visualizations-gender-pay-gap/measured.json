@@ -1,0 +1,581 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/gender-pay-gap/",
+  "archive": "informationisbeautiful",
+  "family": "paired",
+  "id": "informationisbeautiful-net-visualizations-gender-pay-gap",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Gender Pay Gap — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Cabin Condensed",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Cabin Condensed | 13 | 400 | normal | 0 | none",
+        "count": 72,
+        "sample": "HR managers",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Cabin Condensed",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Cabin Condensed | 14 | 400 | normal | 0 | none",
+        "count": 27,
+        "sample": "$0",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 21,
+        "sample": "The Gender Pay Gap",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "US Bureau of Labor Statistics, UK Office of National Statist",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Cabin Condensed",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Cabin Condensed | 13 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "admin & organisation",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Varela Round",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Varela Round | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Concept & Design: // v2.0 // Apr 2016 Research: , Stephanie ",
+        "colors": [
+          "rgb(128, 128, 128)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Star Wars ‘Last Jedi’: One of the Biggest Rotten Tomatoes Au",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "Varela Round",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "Varela Round | 14 | 400 | normal | -0.7 | none",
+        "count": 4,
+        "sample": "Plot By:",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "Cabin Condensed",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Cabin Condensed | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "category of job",
+        "colors": [
+          "rgb(36, 39, 49)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Movies Critics Loved, But Audiences Really Didn’t",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Varela Round",
+        "size": 48,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -2.4,
+        "transform": "none",
+        "key": "Varela Round | 48 | 400 | normal | -2.4 | none",
+        "count": 3,
+        "sample": "Gender Pay Gap |",
+        "colors": [
+          "rgb(36, 39, 49)",
+          "rgb(106, 42, 81)",
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Varela Round",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -1.2,
+        "transform": "none",
+        "key": "Varela Round | 24 | 400 | normal | -1.2 | none",
+        "count": 1,
+        "sample": "InformationIsBeautiful.net",
+        "colors": [
+          "rgb(128, 128, 128)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "never",
+        "colors": [
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(198, 204, 125)",
+        "count": 81
+      },
+      {
+        "colour": "fill rgb(106, 42, 81)",
+        "count": 81
+      }
+    ],
+    "column": {
+      "px": 1380,
+      "ch": 197
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 378,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 378,
+      "w": 1380,
+      "h": 1650,
+      "ratio": 0.84
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.9520623627580149,
+      "h": 48.27906976975206,
+      "s": 0.01242559093451938,
+      "l": 0.999984349695052,
+      "chroma": 3.8892857456840346e-7
+    },
+    "chromatic": [
+      {
+        "hex": "#6A2A51",
+        "share": 0.0022960035133948176,
+        "h": 323.43539794435776,
+        "s": 0.43204333685518476,
+        "l": 0.29037235399132877,
+        "chroma": 0.2509068814978172
+      },
+      {
+        "hex": "#C6CC7D",
+        "share": 0.0022551602986385596,
+        "h": 64.55710809151496,
+        "s": 0.43643084273562216,
+        "l": 0.6451514977948336,
+        "chroma": 0.3097336617217481
+      },
+      {
+        "hex": "#CCD28B",
+        "share": 0.00007114624505928854,
+        "h": 64.57644991212653,
+        "s": 0.4363162334176829,
+        "l": 0.6843137254901961,
+        "chroma": 0.27547809247155663
+      },
+      {
+        "hex": "#C9CE83",
+        "share": 0.00004830917874396135,
+        "h": 64.50417726116963,
+        "s": 0.43622246870543485,
+        "l": 0.6625133689839572,
+        "chroma": 0.2944385026737968
+      },
+      {
+        "hex": "#DADEAB",
+        "share": 0.00004259991216512956,
+        "h": 64.52807160292922,
+        "s": 0.434890304317056,
+        "l": 0.771497877501516,
+        "chroma": 0.1987467151809178
+      },
+      {
+        "hex": "#D6DBA2",
+        "share": 0.000040404040404040405,
+        "h": 64.63141644152837,
+        "s": 0.4359750967524821,
+        "l": 0.7466751918158567,
+        "chroma": 0.2208866155157716
+      },
+      {
+        "hex": "#D4D99D",
+        "share": 0.00003864734299516908,
+        "h": 64.5968666411922,
+        "s": 0.4369677742527966,
+        "l": 0.7331105169340464,
+        "chroma": 0.23324420677361846
+      },
+      {
+        "hex": "#7B4365",
+        "share": 0.00003557312252964427,
+        "h": 323.4759825327511,
+        "s": 0.29825475384214634,
+        "l": 0.3717259743403535,
+        "chroma": 0.22173807794722827
+      },
+      {
+        "hex": "#D1D595",
+        "share": 0.00003118137900746597,
+        "h": 64.61235216819972,
+        "s": 0.4363532110091742,
+        "l": 0.7110190555095277,
+        "chroma": 0.25219552609776297
+      },
+      {
+        "hex": "#71355A",
+        "share": 0.000030742204655248136,
+        "h": 323.441466854725,
+        "s": 0.36640826873385013,
+        "l": 0.32521008403361346,
+        "chroma": 0.23831932773109243
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.9520623627580149,
+        "h": 48.27906976975206,
+        "s": 0.01242559093451938,
+        "l": 0.999984349695052,
+        "chroma": 3.8892857456840346e-7
+      },
+      {
+        "hex": "#B2B2B2",
+        "share": 0.013665788317962231,
+        "h": 51.428571429650134,
+        "s": 0.0000029322171919422253,
+        "l": 0.6991403097858997,
+        "chroma": 0.0000017643719120163937
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.00767808519982433,
+        "h": 60,
+        "s": 0.0000016831758162669784,
+        "l": 0.8001032936196844,
+        "chroma": 6.729226038615366e-7
+      },
+      {
+        "hex": "#EEEEEE",
+        "share": 0.006483091787439613,
+        "h": 320.3389830508835,
+        "s": 0.00011550215049320933,
+        "l": 0.9321505136399499,
+        "chroma": 0.000015673523168890924
+      },
+      {
+        "hex": "#666666",
+        "share": 0.00269433465085639,
+        "h": 0,
+        "s": 0,
+        "l": 0.4,
+        "chroma": 0
+      },
+      {
+        "hex": "#6B6B6B",
+        "share": 0.0015511638120333773,
+        "h": 0,
+        "s": 0,
+        "l": 0.41841871516443496,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0009442248572683355,
+        "h": 321.13636363636033,
+        "s": 0.0018115942028985757,
+        "l": 0.9556990424076608,
+        "chroma": 0.0001605107159142749
+      },
+      {
+        "hex": "#747474",
+        "share": 0.0009275362318840579,
+        "h": 0,
+        "s": 0,
+        "l": 0.45334595959595964,
+        "chroma": 0
+      },
+      {
+        "hex": "#8C8C8C",
+        "share": 0.0008050065876152833,
+        "h": 0,
+        "s": 0,
+        "l": 0.5493319641004246,
+        "chroma": 0
+      },
+      {
+        "hex": "#848484",
+        "share": 0.0007457180500658762,
+        "h": 0,
+        "s": 0,
+        "l": 0.5176586064343288,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 323,
+        "share": 0.0025498462889767233,
+        "size": 12
+      },
+      {
+        "hue": 65,
+        "share": 0.002602986385595081,
+        "size": 12
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 2277000
+  }
+}

@@ -63,3 +63,11 @@ handed a sighted reader a rough guess and a low-vision or screen-reader
 reader nothing at all — it deserves the same legibility as the headline, not
 footer-line treatment, because without it the map cannot be read as data at
 all, only as texture.
+
+## The worked example in this tree
+
+`proof/static-dot-density-europe-stations` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

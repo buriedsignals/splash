@@ -3,7 +3,7 @@
   "archive": "informationisbeautiful",
   "family": "line",
   "id": "informationisbeautiful-net-visualizations-billions-2",
-  "harvestedAt": "2026-09-07",
+  "harvestedAt": "2026-09-08",
   "viewport": {
     "width": 1440,
     "height": 900
@@ -14,9 +14,11 @@
     },
     "pixel": {
       "state": "ok",
-      "measuredFrom": "screenshot.png"
+      "measuredFrom": "graphic.png"
     }
   },
+  "consent": null,
+  "entry": null,
   "style": {
     "title": "The Billion Dollar Gram — Information is Beautiful",
     "ground": "rgba(0, 0, 0, 0)",
@@ -137,20 +139,6 @@
         ]
       },
       {
-        "family": "IBM Plex Sans",
-        "size": 16,
-        "weight": "400",
-        "style": "normal",
-        "tracking": 0,
-        "transform": "none",
-        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
-        "count": 3,
-        "sample": "Updated for 2024",
-        "colors": [
-          "rgb(158, 158, 158)"
-        ]
-      },
-      {
         "family": "Quicksand",
         "size": 23,
         "weight": "600",
@@ -204,6 +192,20 @@
         "sample": "Share this:",
         "colors": [
           "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Updated for 2024",
+        "colors": [
+          "rgb(158, 158, 158)"
         ]
       },
       {
@@ -268,195 +270,875 @@
       "px": 700,
       "ch": 78
     },
-    "graphic": null
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 2481,
+      "ratio": 0.56
+    },
+    "graphicFrame": {
+      "url": "https://vizsweet.com/api/embed/4686469cb70adda4",
+      "title": "VizSweet",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Inter Tight",
+          "size": 18.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.2 | 400 | normal | 0 | none",
+          "count": 9,
+          "sample": "Meta's VR",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 19,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 19 | 400 | normal | 0 | none",
+          "count": 7,
+          "sample": "Extra revenue for",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 13.6,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 13.6 | 400 | normal | 0 | none",
+          "count": 5,
+          "sample": "BY END 2026",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 18.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.8 | 400 | normal | 0 | none",
+          "count": 5,
+          "sample": "To lift 1 billion",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 18.1,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.1 | 400 | normal | 0 | none",
+          "count": 5,
+          "sample": "Predicted",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 18.3,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.3 | 400 | normal | 0 | none",
+          "count": 4,
+          "sample": "India military",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 20.8,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 20.8 | 700 | normal | 0 | none",
+          "count": 4,
+          "sample": "$79",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 17.4,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 17.4 | 400 | normal | 0 | none",
+          "count": 4,
+          "sample": "Save the",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 23.4,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 23.4 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "$717",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 20.4,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 20.4 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Amazon revenue",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 22.6,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 22.6 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "$455",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 19.7,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 19.7 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "OPEC revenue",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 22.1,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 22.1 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "$317",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 19.3,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 19.3 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "China military budget",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 13.7,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 13.7 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "PERSONAL WEALTH (AS OF APR",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21.8,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21.8 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "$234",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 13.4,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 13.4 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "PER YEAR",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 18.6,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.6 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Russia military",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 13.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 13.2 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "PERSONAL",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 12.9,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 12.9 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "GLOBAL",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.3,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.3 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "All 2025 figures (or most recent data year)",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.3,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.3 | 600 | normal | 0 | none",
+          "count": 3,
+          "sample": "updated 6th Sep",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 24,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 24 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$1,000",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "The War on Drugs",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 14.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 14.2 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "TO FUND A NETWORK OF USA-WIDE",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 13.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 13.8 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "GLOBAL MARKET VALUE",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21.9,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21.9 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$260",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 19.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 19.2 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "Jeff Bezos",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21.4,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21.4 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$170",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21.3,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21.3 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$150",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21.1,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21.1 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$112",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 18.5,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 18.5 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "profit",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 21,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 21 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$84",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 19.8,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 19.8 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$70",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Questrial",
+          "size": 12.4,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Questrial | 12.4 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "COST PER",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 20.6,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 20.6 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$60",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 20.3,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 20.3 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "$26",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 17.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 17.8 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "The UN",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 53.8,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 53.8 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "$Billions",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 30.4,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 30.4 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "$5,800",
+          "colors": [
+            "rgb(26, 26, 26)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(248, 153, 16)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(26, 26, 26)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(102, 191, 108)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(235, 228, 156)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(198, 214, 184)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(195, 213, 186)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(176, 207, 195)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(167, 204, 199)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(166, 204, 199)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(163, 203, 201)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(157, 201, 203)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(152, 200, 205)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(140, 197, 210)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(134, 196, 212)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(132, 195, 213)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(128, 194, 214)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(124, 193, 215)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(155, 192, 187)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(112, 191, 219)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(108, 190, 220)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(107, 190, 220)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(101, 189, 222)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(99, 189, 222)",
+          "count": 1
+        },
+        {
+          "colour": "fill rgb(94, 188, 224)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
   },
   "pixel": {
     "ground": {
-      "hex": "#FDFDFD",
-      "share": 0.17718672839506172,
-      "h": 187.81353383463292,
-      "s": 0.004218274452989897,
-      "l": 0.9932694516269454,
-      "chroma": 0.00005678260051333872
+      "hex": "#FFFFFF",
+      "share": 0.5326963181045511,
+      "h": 157.92452829968101,
+      "s": 0.2731958763023791,
+      "l": 0.9999995828656025,
+      "chroma": 2.279187945042338e-7
     },
     "chromatic": [
       {
-        "hex": "#85C3D5",
-        "share": 0.11866203703703704,
-        "h": 192.88411110400426,
-        "s": 0.4846342801474048,
-        "l": 0.6771135621871289,
-        "chroma": 0.31296367271760117
+        "hex": "#EBE49C",
+        "share": 0.08158322088451946,
+        "h": 54.68353514849378,
+        "s": 0.6638612074628947,
+        "l": 0.7666655435028378,
+        "chroma": 0.30980338806580876
       },
       {
-        "hex": "#6CBEDC",
-        "share": 0.0725054012345679,
-        "h": 196.00119278478732,
-        "s": 0.6163776439100779,
-        "l": 0.6421576869810575,
-        "chroma": 0.4411320035798968
+        "hex": "#9BC9CC",
+        "share": 0.05805630034640076,
+        "h": 184.19344767116422,
+        "s": 0.32609231107540576,
+        "l": 0.70303541193911,
+        "chroma": 0.1936757376566629
       },
       {
-        "hex": "#64BDDE",
-        "share": 0.05299537037037037,
-        "h": 196.2542895271228,
-        "s": 0.6484828133207073,
-        "l": 0.6317082821597233,
-        "chroma": 0.4776616986155575
-      },
-      {
-        "hex": "#5EBCE0",
-        "share": 0.05291280864197531,
-        "h": 196.55211139679682,
-        "s": 0.6779181591323522,
-        "l": 0.622555210053398,
-        "chroma": 0.5117533543493956
-      },
-      {
-        "hex": "#F89910",
-        "share": 0.04129475308641975,
-        "h": 35.43103775296765,
-        "s": 0.9430893746987847,
-        "l": 0.5176475351155447,
-        "chroma": 0.9098029689845967
-      },
-      {
-        "hex": "#34B7E7",
-        "share": 0.040603395061728394,
-        "h": 196.0489610625819,
-        "s": 0.7862950293274359,
-        "l": 0.5547201610300918,
-        "chroma": 0.7002426480835198
-      },
-      {
-        "hex": "#4DBAE3",
-        "share": 0.03531558641975309,
-        "h": 196.3449323623887,
-        "s": 0.7287583027126496,
-        "l": 0.5951053435860131,
-        "chroma": 0.5901406851713571
-      },
-      {
-        "hex": "#51BAE2",
-        "share": 0.019125771604938273,
-        "h": 196.55187441385436,
-        "s": 0.7142791830789268,
-        "l": 0.6020374373980035,
-        "chroma": 0.5685127482227006
+        "hex": "#66BF6C",
+        "share": 0.04730327299067113,
+        "h": 124.04496870281851,
+        "s": 0.4101159030787719,
+        "l": 0.5744962441989812,
+        "chroma": 0.3490117141474881
       },
       {
         "hex": "#8CC5D2",
-        "share": 0.017963734567901235,
-        "h": 191.14345463894878,
-        "s": 0.43745332628250405,
-        "l": 0.6862433474742932,
-        "chroma": 0.2745077825812685
+        "share": 0.02151277243280818,
+        "h": 191.14294143055284,
+        "s": 0.4374839575557122,
+        "l": 0.6862653787331239,
+        "chroma": 0.274507727468151
       },
       {
-        "hex": "#3EB8E6",
-        "share": 0.011223765432098765,
-        "h": 196.42659751278427,
-        "s": 0.7707098361906781,
-        "l": 0.5725358093189152,
-        "chroma": 0.6589017127543992
+        "hex": "#7CC1D7",
+        "share": 0.01852601510611079,
+        "h": 194.50503333320626,
+        "s": 0.5321336822547919,
+        "l": 0.6647053568309664,
+        "chroma": 0.35684314621968855
+      },
+      {
+        "hex": "#70BFDB",
+        "share": 0.014871282617457897,
+        "h": 195.7009778089085,
+        "s": 0.5977628646638016,
+        "l": 0.6490191072108001,
+        "chroma": 0.41960668783186145
+      },
+      {
+        "hex": "#80C2D6",
+        "share": 0.014704215808258708,
+        "h": 193.95362695491278,
+        "s": 0.5119034908779885,
+        "l": 0.6705906890008506,
+        "chroma": 0.3372515524563551
+      },
+      {
+        "hex": "#8CCEE3",
+        "share": 0.0047920719205089115,
+        "h": 194.49855701877277,
+        "s": 0.6080694858669421,
+        "l": 0.7194217676099512,
+        "chroma": 0.34122212302974464
+      },
+      {
+        "hex": "#6CBEDC",
+        "share": 0.0031917938652600343,
+        "h": 196.06925267747326,
+        "s": 0.6152168808752763,
+        "l": 0.6431277452415812,
+        "chroma": 0.4391076708868027
+      },
+      {
+        "hex": "#F89910",
+        "share": 0.0026219558499669957,
+        "h": 35.431044913716114,
+        "s": 0.9430893278112319,
+        "l": 0.5176479325159941,
+        "chroma": 0.9098021741836982
       }
     ],
     "neutral": [
       {
-        "hex": "#FDFDFD",
-        "share": 0.17718672839506172,
-        "h": 187.81353383463292,
-        "s": 0.004218274452989897,
-        "l": 0.9932694516269454,
-        "chroma": 0.00005678260051333872
+        "hex": "#FFFFFF",
+        "share": 0.5326963181045511,
+        "h": 157.92452829968101,
+        "s": 0.2731958763023791,
+        "l": 0.9999995828656025,
+        "chroma": 2.279187945042338e-7
       },
       {
-        "hex": "#A6CCC7",
-        "share": 0.12201311728395062,
-        "h": 172.0338142282932,
-        "s": 0.26962200358897864,
-        "l": 0.7261294606947244,
-        "chroma": 0.1476830470629651
+        "hex": "#C5D6B9",
+        "share": 0.09496462973672373,
+        "h": 95.73965116037043,
+        "s": 0.2557581498057991,
+        "l": 0.7813597761626164,
+        "chroma": 0.11183803824354999
+      },
+      {
+        "hex": "#B0CFC3",
+        "share": 0.03802142661035464,
+        "h": 156.77419354838705,
+        "s": 0.2440944881889764,
+        "l": 0.7509803921568627,
+        "chroma": 0.1215686274509804
+      },
+      {
+        "hex": "#A3CBC9",
+        "share": 0.03189749341371233,
+        "h": 177.0002087718993,
+        "s": 0.2777775375569081,
+        "l": 0.7176465561043573,
+        "chroma": 0.15686288873208842
       },
       {
         "hex": "#9BC0BB",
-        "share": 0.03590509259259259,
-        "h": 171.9450711653624,
-        "s": 0.2281638835070075,
-        "l": 0.6799469741692907,
-        "chroma": 0.14604908260340643
+        "share": 0.011533743406410458,
+        "h": 171.89359884800072,
+        "s": 0.22699812169957448,
+        "l": 0.6803939940584098,
+        "chroma": 0.145099926065288
       },
       {
-        "hex": "#000101",
-        "share": 0.012036265432098766,
-        "h": 188.11683320522678,
-        "s": 0.25987083028164326,
-        "l": 0.001887878685033857,
-        "chroma": 0.0009812092027015307
+        "hex": "#A7CCC7",
+        "share": 0.004155640841409203,
+        "h": 171.91198031008582,
+        "s": 0.26594356318030843,
+        "l": 0.7271351160649809,
+        "chroma": 0.14513331900092052
       },
       {
-        "hex": "#EEEEEE",
-        "share": 0.004650462962962963,
-        "h": 240,
-        "s": 0.00027187369524860245,
-        "l": 0.9329884799448235,
-        "chroma": 0.00003643733916325331
+        "hex": "#000100",
+        "share": 0.0028626255191630304,
+        "h": 160.77716098334653,
+        "s": 0.1446598600435929,
+        "l": 0.001743919688067044,
+        "chroma": 0.0005045503560060895
       },
       {
-        "hex": "#1A1A1A",
-        "share": 0.002521604938271605,
-        "h": 173.11475409836103,
-        "s": 0.0010741264651848374,
-        "l": 0.10222178222574219,
-        "chroma": 0.0002195982432140614
+        "hex": "#97BFBD",
+        "share": 0.0006300054325920474,
+        "h": 177.27102067303235,
+        "s": 0.2373808227015903,
+        "l": 0.6695355750088631,
+        "chroma": 0.15689183415600816
       },
       {
-        "hex": "#333333",
-        "share": 0.001140432098765432,
-        "h": 240,
-        "s": 0.00019903402154871442,
-        "l": 0.19996285388309587,
-        "chroma": 0.00007959882193742107
+        "hex": "#CEEBD0",
+        "share": 0.00039488518537990173,
+        "h": 124.13793103448275,
+        "s": 0.42028985507246325,
+        "l": 0.8647058823529412,
+        "chroma": 0.11372549019607836
       },
       {
-        "hex": "#DDDDDD",
-        "share": 0.0011126543209876542,
-        "h": 240,
-        "s": 0.0002540676226387747,
-        "l": 0.8662002665143727,
-        "chroma": 0.00006798836039278999
-      },
-      {
-        "hex": "#050A0C",
-        "share": 0.0009945987654320987,
-        "h": 195.73639438351952,
-        "s": 0.45316055919372067,
-        "l": 0.03275224752430064,
-        "chroma": 0.029684053605926464
-      },
-      {
-        "hex": "#EBF7FB",
-        "share": 0.0006905864197530864,
-        "h": 195.65606998079795,
-        "s": 0.6550053570596739,
-        "l": 0.9529696571365978,
-        "chroma": 0.06161025303976342
+        "hex": "#EEF6F6",
+        "share": 0.00029908463744749954,
+        "h": 179.92650661440476,
+        "s": 0.3056990938365905,
+        "l": 0.9488625919117647,
+        "chroma": 0.031265318627450966
       }
     ],
     "clusters": [
       {
-        "hue": 193,
-        "share": 0.4499652777777778,
-        "size": 14
+        "hue": 55,
+        "share": 0.08438392653733594,
+        "size": 3
       },
       {
-        "hue": 35,
-        "share": 0.07959645061728393,
-        "size": 7
+        "hue": 184,
+        "share": 0.14159379399377295,
+        "size": 19
+      },
+      {
+        "hue": 124,
+        "share": 0.047341826869717094,
+        "size": 2
       }
     ],
-    "ramped": 1,
-    "shape": "diverging",
-    "pixels": 1296000
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 3423780
   }
 }

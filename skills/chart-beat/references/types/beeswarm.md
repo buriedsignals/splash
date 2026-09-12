@@ -60,3 +60,11 @@ under the WCAG text-contrast floor. With category-split swarms, the up-to-five h
 separating groups whose points otherwise share the same axis and the same shape logic, so every one of
 those hues has to stay distinguishable from its neighbours under a colour-vision-deficiency simulation,
 not merely distinct to full-colour vision.
+
+## The worked example in this tree
+
+`proof/static-beeswarm-co2-per-person` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

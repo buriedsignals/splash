@@ -1,0 +1,375 @@
+{
+  "url": "https://open-innovations.org/projects/hexmaps/constituencies/index.html",
+  "archive": "search",
+  "family": "map",
+  "id": "open-innovations-org-projects-hexmaps-constituencies-index-html",
+  "harvestedAt": "2026-09-09",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Hex map of UK constituencies",
+    "ground": "rgb(239, 239, 239)",
+    "type": [
+      {
+        "family": "Helvetica Neue",
+        "size": 6.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 6.4 | 400 | normal | 0 | none",
+        "count": 650,
+        "sample": "Ald",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 16 | 400 | normal | 0 | none",
+        "count": 37,
+        "sample": "⚠️ This shows a pre-2024 layout with 2019 General Election r",
+        "colors": [
+          "rgb(95, 82, 7)",
+          "rgb(0, 0, 238)",
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Save hexes as exJSON",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 32,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 32 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Hex map of UK constituencies (2019)",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 27.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 27.2 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Other versions",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 652
+      },
+      {
+        "colour": "fill rgb(103, 231, 103)",
+        "count": 84
+      },
+      {
+        "colour": "fill rgb(29, 211, 167)",
+        "count": 75
+      },
+      {
+        "colour": "fill rgb(215, 48, 88)",
+        "count": 73
+      },
+      {
+        "colour": "fill rgb(230, 0, 124)",
+        "count": 59
+      },
+      {
+        "colour": "fill rgb(34, 84, 244)",
+        "count": 59
+      },
+      {
+        "colour": "fill rgb(255, 103, 0)",
+        "count": 58
+      },
+      {
+        "colour": "fill rgb(23, 140, 255)",
+        "count": 55
+      },
+      {
+        "colour": "fill rgb(249, 188, 38)",
+        "count": 54
+      },
+      {
+        "colour": "fill rgb(0, 182, 255)",
+        "count": 46
+      },
+      {
+        "colour": "fill rgb(13, 188, 55)",
+        "count": 40
+      },
+      {
+        "colour": "fill rgb(214, 3, 3)",
+        "count": 29
+      },
+      {
+        "colour": "fill rgb(114, 46, 165)",
+        "count": 18
+      }
+    ],
+    "column": {
+      "px": 1048,
+      "ch": 131
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 432,
+      "nearTheTop": true,
+      "x": 263,
+      "y": 432,
+      "w": 915,
+      "h": 1120,
+      "ratio": 0.82
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "consentBeforeGraphic": null,
+  "pixel": {
+    "ground": {
+      "hex": "#EFEFEF",
+      "share": 0.5712665886026542,
+      "h": 0,
+      "s": 0,
+      "l": 0.9372549019607843,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#67E767",
+        "share": 0.04240144418423107,
+        "h": 120,
+        "s": 0.7272727272727272,
+        "l": 0.6549019607843137,
+        "chroma": 0.5019607843137255
+      },
+      {
+        "hex": "#1DD3A7",
+        "share": 0.038034738485558155,
+        "h": 165.4945054945055,
+        "s": 0.7583333333333332,
+        "l": 0.47058823529411764,
+        "chroma": 0.7137254901960783
+      },
+      {
+        "hex": "#D73058",
+        "share": 0.037142857142857144,
+        "h": 345.6288039538466,
+        "s": 0.6761083995343804,
+        "l": 0.5156936923571447,
+        "chroma": 0.6548871250896323
+      },
+      {
+        "hex": "#E6007C",
+        "share": 0.030081967213114753,
+        "h": 327.6517801494392,
+        "s": 0.9999060751204417,
+        "l": 0.45100157229104176,
+        "chroma": 0.9019184240453675
+      },
+      {
+        "hex": "#2254F4",
+        "share": 0.030062451209992194,
+        "h": 225.71462268635057,
+        "s": 0.9051684201615889,
+        "l": 0.5451171964501199,
+        "chroma": 0.8234910972958387
+      },
+      {
+        "hex": "#FF6700",
+        "share": 0.02929449648711944,
+        "h": 24.235294117647058,
+        "s": 1,
+        "l": 0.5,
+        "chroma": 1
+      },
+      {
+        "hex": "#178CFF",
+        "share": 0.02798497267759563,
+        "h": 209.7413793103448,
+        "s": 1,
+        "l": 0.5450980392156862,
+        "chroma": 0.9098039215686274
+      },
+      {
+        "hex": "#F9BC26",
+        "share": 0.027375097580015613,
+        "h": 42.65402843601896,
+        "s": 0.946188340807175,
+        "l": 0.5627450980392157,
+        "chroma": 0.8274509803921568
+      },
+      {
+        "hex": "#00B6FF",
+        "share": 0.023372365339578455,
+        "h": 197.17634391806496,
+        "s": 1,
+        "l": 0.500015472120712,
+        "chroma": 0.999969055758576
+      },
+      {
+        "hex": "#0DBC37",
+        "share": 0.020229313036690087,
+        "h": 134.4,
+        "s": 0.8706467661691542,
+        "l": 0.3941176470588236,
+        "chroma": 0.6862745098039216
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#EFEFEF",
+        "share": 0.5712665886026542,
+        "h": 0,
+        "s": 0,
+        "l": 0.9372549019607843,
+        "chroma": 0
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.028075722092115535,
+        "h": 110.51162790719242,
+        "s": 0.01707026597858223,
+        "l": 0.9991416627821712,
+        "chroma": 0.00002930408921530958
+      },
+      {
+        "hex": "#F6F6F6",
+        "share": 0.0031284153005464482,
+        "h": 0,
+        "s": 0,
+        "l": 0.9630496740180788,
+        "chroma": 0
+      },
+      {
+        "hex": "#D9F9D9",
+        "share": 0.001869633099141296,
+        "h": 120,
+        "s": 0.7275234418091556,
+        "l": 0.9146526669122763,
+        "chroma": 0.12418437103442626
+      },
+      {
+        "hex": "#C7F4E9",
+        "share": 0.001562256049960968,
+        "h": 165.37449686708993,
+        "s": 0.671636799420306,
+        "l": 0.8681669544769812,
+        "chroma": 0.17708784950582357
+      },
+      {
+        "hex": "#F5CBD5",
+        "share": 0.001489071038251366,
+        "h": 345.7137513442746,
+        "s": 0.6770537645755287,
+        "l": 0.8782347801505923,
+        "chroma": 0.16488320098681675
+      },
+      {
+        "hex": "#C3EECD",
+        "share": 0.0007894223263075722,
+        "h": 134.0125742830075,
+        "s": 0.5590184718589013,
+        "l": 0.8489759809980852,
+        "chroma": 0.16885043263288013
+      },
+      {
+        "hex": "#E4FBE4",
+        "share": 0.00046252927400468384,
+        "h": 120,
+        "s": 0.72255489021956,
+        "l": 0.9378257632166791,
+        "chroma": 0.08984859766691489
+      },
+      {
+        "hex": "#EBFCEB",
+        "share": 0.00044691647150663544,
+        "h": 120.64413518886676,
+        "s": 0.7122628150665536,
+        "l": 0.9546493706652968,
+        "chroma": 0.0646031338299512
+      },
+      {
+        "hex": "#DCCBE9",
+        "share": 0.0003708040593286495,
+        "h": 274.05790724280564,
+        "s": 0.40424774983101475,
+        "l": 0.8549587203302373,
+        "chroma": 0.11726522187822497
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 120,
+        "share": 0.06642369242779078,
+        "size": 4
+      },
+      {
+        "hue": 165,
+        "share": 0.06486338797814206,
+        "size": 4
+      },
+      {
+        "hue": 346,
+        "share": 0.11772248243559719,
+        "size": 8
+      },
+      {
+        "hue": 226,
+        "share": 0.06250195160031226,
+        "size": 5
+      },
+      {
+        "hue": 43,
+        "share": 0.028943208430913348,
+        "size": 2
+      }
+    ],
+    "ramped": 5,
+    "shape": "categorical",
+    "pixels": 1024800
+  }
+}

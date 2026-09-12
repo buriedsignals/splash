@@ -1,0 +1,478 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/charts/potential-reductions-in-average-household-electricity-prices-in-the-european-union-by-element-compared-with-the-counterfactual-case-2025-2030",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "iea-org-data-and-statistics-charts-potential-reductions-in-average-hou",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Potential reductions in average household electricity prices in the European Union by element compared with the counterf",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 81,
+        "sample": "EUR/MWh (2025, MER)",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0 | none",
+        "count": 16,
+        "sample": "Higher RES share",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 8,
+        "sample": "Liquefied natural gas export capacity in selected countries,",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Open",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "United States",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "Potential reductions in average household electricity prices",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "68%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 85
+      },
+      {
+        "colour": "fill rgb(255, 244, 90)",
+        "count": 16
+      },
+      {
+        "colour": "fill rgb(73, 211, 255)",
+        "count": 13
+      },
+      {
+        "colour": "fill rgb(62, 122, 211)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(0, 173, 161)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(255, 117, 75)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(255, 183, 67)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(104, 243, 148)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(175, 106, 177)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(255, 183, 67)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(62, 122, 211)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 251, 208)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(254, 248, 160)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(194, 239, 251)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(175, 106, 177)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 617,
+      "nearTheTop": true,
+      "x": 122,
+      "y": 617,
+      "w": 1162,
+      "h": 500,
+      "ratio": 2.32
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.856053356282272,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999905147565906,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#3E7AD3",
+        "share": 0.10301204819277109,
+        "h": 215.83892617449666,
+        "s": 0.6286919831223627,
+        "l": 0.5352941176470588,
+        "chroma": 0.584313725490196
+      },
+      {
+        "hex": "#68F394",
+        "share": 0.007487091222030981,
+        "h": 138.9928057553957,
+        "s": 0.8527607361963189,
+        "l": 0.6803921568627451,
+        "chroma": 0.5450980392156862
+      },
+      {
+        "hex": "#FFB743",
+        "share": 0.006325301204819277,
+        "h": 37.02127659574468,
+        "s": 1,
+        "l": 0.6313725490196078,
+        "chroma": 0.7372549019607844
+      },
+      {
+        "hex": "#FFF45A",
+        "share": 0.003227194492254733,
+        "h": 56.000000000000014,
+        "s": 1,
+        "l": 0.6764705882352942,
+        "chroma": 0.6470588235294117
+      },
+      {
+        "hex": "#00ADA1",
+        "share": 0.0024526678141135972,
+        "h": 175.83815028901734,
+        "s": 1,
+        "l": 0.3392156862745098,
+        "chroma": 0.6784313725490196
+      },
+      {
+        "hex": "#887556",
+        "share": 0.00020481927710843374,
+        "h": 37.199999999999996,
+        "s": 0.22522522522522517,
+        "l": 0.43529411764705883,
+        "chroma": 0.196078431372549
+      },
+      {
+        "hex": "#44726F",
+        "share": 0.00018416523235800344,
+        "h": 176.08695652173913,
+        "s": 0.2527472527472528,
+        "l": 0.3568627450980392,
+        "chroma": 0.18039215686274512
+      },
+      {
+        "hex": "#806E51",
+        "share": 0.00008089500860585198,
+        "h": 37.004524886877824,
+        "s": 0.2250050906129098,
+        "l": 0.4097622027534418,
+        "chroma": 0.18439716312056736
+      },
+      {
+        "hex": "#907C5B",
+        "share": 0.000013769363166953529,
+        "h": 37.35849056603773,
+        "s": 0.22553191489361699,
+        "l": 0.4607843137254902,
+        "chroma": 0.20784313725490194
+      },
+      {
+        "hex": "#487975",
+        "share": 0.0000034423407917383822,
+        "h": 175.10204081632654,
+        "s": 0.2538860103626943,
+        "l": 0.3784313725490196,
+        "chroma": 0.19215686274509802
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.856053356282272,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999905147565906,
+        "chroma": 0
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.00830120481927711,
+        "h": 0,
+        "s": 0,
+        "l": 0.9016997800571608,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0024457831325301205,
+        "h": 251.99999999999977,
+        "s": 0.01592356687898089,
+        "l": 0.0008665535179589077,
+        "chroma": 0.000027597245794869674
+      },
+      {
+        "hex": "#54647C",
+        "share": 0.0014819277108433736,
+        "h": 216.00034840170719,
+        "s": 0.1923341095270802,
+        "l": 0.4078226412516226,
+        "chroma": 0.15687640910022543
+      },
+      {
+        "hex": "#4F5E75",
+        "share": 0.0013184165232358004,
+        "h": 216.31237336446995,
+        "s": 0.19395210976787564,
+        "l": 0.38431116571955154,
+        "chroma": 0.1490759227973174
+      },
+      {
+        "hex": "#838383",
+        "share": 0.0005008605851979346,
+        "h": 0,
+        "s": 0,
+        "l": 0.5118118725153291,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.00044922547332185885,
+        "h": 0,
+        "s": 0,
+        "l": 0.9557508827285703,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.00031497418244406196,
+        "h": 0,
+        "s": 0,
+        "l": 0.9261759348548163,
+        "chroma": 0
+      },
+      {
+        "hex": "#242424",
+        "share": 0.00028571428571428574,
+        "h": 0,
+        "s": 0,
+        "l": 0.14162532482872667,
+        "chroma": 0
+      },
+      {
+        "hex": "#7C7C7C",
+        "share": 0.00025989672977624786,
+        "h": 0,
+        "s": 0,
+        "l": 0.48450850538891055,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 216,
+        "share": 0.1031962134251291,
+        "size": 2
+      },
+      {
+        "hue": 139,
+        "share": 0.009943201376936316,
+        "size": 3
+      },
+      {
+        "hue": 37,
+        "share": 0.009853700516351118,
+        "size": 6
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 581000
+  }
+}

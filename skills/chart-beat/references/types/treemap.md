@@ -53,3 +53,11 @@ floor, even though the same white cleared comfortably on a darker cell in the sa
 holds: pick each cell's label ink by the actual measured contrast against that exact fill, checking
 both white and dark options and using whichever wins — never a single luminance threshold applied
 uniformly across every hue in the palette.
+
+## The worked example in this tree
+
+`proof/static-treemap-europe-capacity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

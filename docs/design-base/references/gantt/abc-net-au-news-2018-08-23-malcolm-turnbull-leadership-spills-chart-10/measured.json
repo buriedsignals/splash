@@ -1,0 +1,694 @@
+{
+  "url": "https://www.abc.net.au/news/2018-08-23/malcolm-turnbull-leadership-spills-chart/10152464",
+  "archive": "url-list",
+  "family": "gantt",
+  "id": "abc-net-au-news-2018-08-23-malcolm-turnbull-leadership-spills-chart-10",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Malcolm Turnbull under siege: The recent history of our political leaders in one chart - ABC News",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 17,
+        "sample": "Sports injuries",
+        "colors": [
+          "rgb(96, 100, 108)",
+          "rgb(62, 57, 50)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 14,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(16, 49, 106)",
+          "rgb(255, 255, 255)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Malcolm Turnbull's , with Peter Dutton, Scott Morrison and n",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 10,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "Mr Turnbull and Tony Abbott",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 16 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 6,
+        "sample": "By",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "What should I read next?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "6m ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "This is part of a new daily . If you know of some data that ",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "See more ABC coverage in your search results",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 24 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Malcolm Turnbull under siege: The recent history of our poli",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0.5 | none",
+        "count": 1,
+        "sample": "Georgina Piper",
+        "colors": [
+          "rgb(16, 49, 106)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "abc.net.au/news/malcolm-turnbull-leadership-spills-chart/101",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 20 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Related topics",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "We acknowledge Aboriginal and Torres Strait Islander peoples",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 31
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(16, 49, 106)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(96, 100, 108)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 614,
+      "ch": 68
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 1427,
+      "nearTheTop": true,
+      "x": 413,
+      "y": 1427,
+      "w": 614,
+      "h": 960,
+      "ratio": 0.64
+    },
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/TLko4/3/?abcnewsembedheight=570&abcnewsembedheightmobile=580&dark=false",
+      "title": "The last eight party leaderships have varied drastically in length",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 400 | normal | 0 | none",
+          "count": 48,
+          "sample": "Bill Shorten | 2013 - '18",
+          "colors": [
+            "rgb(51, 51, 51)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "Labor Party",
+          "colors": [
+            "rgb(51, 51, 51)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "Source:\n                            ABC News",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(24, 161, 205)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "500",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 500 | normal | 0 | none",
+          "count": 1,
+          "sample": "The last eight party leaderships have varied drastically in ",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Number of days in power for each of the last eight leadershi",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.4597312703583062,
+      "h": 200.28169013977978,
+      "s": 0.015989790556172674,
+      "l": 0.9999036119924307,
+      "chroma": 0.0000030824481063174147
+    },
+    "chromatic": [
+      {
+        "hex": "#009966",
+        "share": 0.0544974891422367,
+        "h": 159.99993489057445,
+        "s": 0.9999869782844584,
+        "l": 0.30000292991461125,
+        "chroma": 0.5999980467235925
+      },
+      {
+        "hex": "#4776BE",
+        "share": 0.045846905537459286,
+        "h": 216.30252100840335,
+        "s": 0.4779116465863454,
+        "l": 0.5117647058823529,
+        "chroma": 0.4666666666666667
+      },
+      {
+        "hex": "#C04745",
+        "share": 0.034649837133550486,
+        "h": 0.9756097560975644,
+        "s": 0.4939759036144578,
+        "l": 0.5117647058823529,
+        "chroma": 0.4823529411764706
+      },
+      {
+        "hex": "#1AA2CE",
+        "share": 0.00012723941368078176,
+        "h": 194.6687486058443,
+        "s": 0.7732421088943827,
+        "l": 0.45471895424836606,
+        "chroma": 0.7032156862745098
+      },
+      {
+        "hex": "#648CC9",
+        "share": 0.00008482627578718784,
+        "h": 216.26491646778044,
+        "s": 0.4798625691925939,
+        "l": 0.5890980392156863,
+        "chroma": 0.3943529411764706
+      },
+      {
+        "hex": "#0B9D6C",
+        "share": 0.00008482627578718784,
+        "h": 159.96178517810836,
+        "s": 0.8709140615713777,
+        "l": 0.329921568627451,
+        "chroma": 0.5746666666666668
+      },
+      {
+        "hex": "#049A68",
+        "share": 0.0000746471226927253,
+        "h": 160.0694549297901,
+        "s": 0.9500788982929278,
+        "l": 0.31065062388591796,
+        "chroma": 0.5902852049910873
+      },
+      {
+        "hex": "#E3ACAB",
+        "share": 0.00007125407166123778,
+        "h": 0.947098976109212,
+        "s": 0.49472351203039233,
+        "l": 0.7788048552754435,
+        "chroma": 0.21886087768440698
+      },
+      {
+        "hex": "#C24C4A",
+        "share": 0.00006786102062975027,
+        "h": 1.00376411543287,
+        "s": 0.4937022506710715,
+        "l": 0.5251960784313725,
+        "chroma": 0.4688235294117646
+      },
+      {
+        "hex": "#29AA7F",
+        "share": 0.00006616449511400651,
+        "h": 159.8840463814474,
+        "s": 0.6071862102452052,
+        "l": 0.41417797888386126,
+        "chroma": 0.5029663147310207
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.4597312703583062,
+        "h": 200.28169013977978,
+        "s": 0.015989790556172674,
+        "l": 0.9999036119924307,
+        "chroma": 0.0000030824481063174147
+      },
+      {
+        "hex": "#F2F2F2",
+        "share": 0.3640387486427796,
+        "h": 0,
+        "s": 0,
+        "l": 0.9490624276684423,
+        "chroma": 0
+      },
+      {
+        "hex": "#333333",
+        "share": 0.005232084690553746,
+        "h": 0,
+        "s": 0,
+        "l": 0.200087739375906,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.002685599891422367,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0015896444082519,
+        "h": 0,
+        "s": 0,
+        "l": 0.9237114696465566,
+        "chroma": 0
+      },
+      {
+        "hex": "#BCBCBC",
+        "share": 0.0014454397394136809,
+        "h": 0,
+        "s": 0,
+        "l": 0.735984534658934,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0014199918566775245,
+        "h": 0,
+        "s": 0,
+        "l": 0.8299435425305128,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0014115092290988057,
+        "h": 0,
+        "s": 0,
+        "l": 0.8940563725490196,
+        "chroma": 0
+      },
+      {
+        "hex": "#C3C3C3",
+        "share": 0.001408116178067318,
+        "h": 0,
+        "s": 0,
+        "l": 0.7661563902669501,
+        "chroma": 0
+      },
+      {
+        "hex": "#8C8C8C",
+        "share": 0.0014013300760043431,
+        "h": 0,
+        "s": 0,
+        "l": 0.5471965057209325,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 160,
+        "share": 0.055048859934853415,
+        "size": 9
+      },
+      {
+        "hue": 216,
+        "share": 0.04623201682953312,
+        "size": 7
+      },
+      {
+        "hue": 1,
+        "share": 0.035036644951140054,
+        "size": 8
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 589440
+  }
+}

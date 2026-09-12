@@ -1,0 +1,602 @@
+{
+  "url": "https://www.abc.net.au/news/2017-12-13/australias-most-and-least-popular-birthdays-revealed/9241978",
+  "archive": "search",
+  "family": "calendar-heatmap",
+  "id": "abc-net-au-news-2017-12-13-australias-most-and-least-popular-birthdays",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Australia's most (and least) popular birthdays revealed - ABC News",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 400 | normal | 0 | none",
+        "count": 43,
+        "sample": "Things are about to get sexy, Australia — at least, accordin",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 17,
+        "sample": "Sports injuries",
+        "colors": [
+          "rgb(96, 100, 108)",
+          "rgb(62, 57, 50)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 16,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(16, 49, 106)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 12,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 16 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 7,
+        "sample": "By",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "4m ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "'Christmas babies' are conceived at Christmas and born in Se",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "( )",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | italic | 0.5 | none",
+        "count": 2,
+        "sample": "( )",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 20 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Credits",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 24 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Get the latest ABC News delivered to your email inbox",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Australia's most (and least) popular birthdays revealed",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0.5 | none",
+        "count": 1,
+        "sample": "Inga Ting",
+        "colors": [
+          "rgb(16, 49, 106)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "abc.net.au/news/australias-most-and-least-popular-birthdays-",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 32
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(16, 49, 106)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(96, 100, 108)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 574,
+      "ch": 72
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1298,
+      "nearTheTop": true,
+      "x": 257,
+      "y": 1298,
+      "w": 638,
+      "h": 908,
+      "ratio": 0.7
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.28473996381865135,
+      "h": 158.95623987030925,
+      "s": 0.2422584613773718,
+      "l": 0.9995458782114856,
+      "chroma": 0.00022002969152690177
+    },
+    "chromatic": [
+      {
+        "hex": "#396C9D",
+        "share": 0.05806795741096212,
+        "h": 209.41027100624027,
+        "s": 0.4668756321311756,
+        "l": 0.4197874898941414,
+        "chroma": 0.3919770994101735
+      },
+      {
+        "hex": "#00417F",
+        "share": 0.05683371770262246,
+        "h": 209.2955997861431,
+        "s": 0.9995299272104481,
+        "l": 0.24907815027359503,
+        "chroma": 0.49792213082535897
+      },
+      {
+        "hex": "#B1D6EC",
+        "share": 0.05329844088768591,
+        "h": 202.4160623619352,
+        "s": 0.6071460218345092,
+        "l": 0.8100823915522939,
+        "chroma": 0.2306154408906974
+      },
+      {
+        "hex": "#5B8FBC",
+        "share": 0.05305504536478257,
+        "h": 207.84496570269226,
+        "s": 0.4199170531294399,
+        "l": 0.5471087761605374,
+        "chroma": 0.38035349620570535
+      },
+      {
+        "hex": "#4B7DAC",
+        "share": 0.05231104912101418,
+        "h": 209.07893268518922,
+        "s": 0.39260531068867127,
+        "l": 0.4844090989088349,
+        "chroma": 0.38036316955504484
+      },
+      {
+        "hex": "#6BA1CA",
+        "share": 0.05167925648709486,
+        "h": 205.9062461548197,
+        "s": 0.4729863654775673,
+        "l": 0.6061237668960295,
+        "chroma": 0.3725961758876841
+      },
+      {
+        "hex": "#95C5E1",
+        "share": 0.05143413475480922,
+        "h": 202.12898444730948,
+        "s": 0.5594629024965597,
+        "l": 0.7335019965833024,
+        "chroma": 0.29819149300208747
+      },
+      {
+        "hex": "#7DB3D7",
+        "share": 0.05013084667117783,
+        "h": 204.00292993079685,
+        "s": 0.5293367163483694,
+        "l": 0.6667034638654883,
+        "chroma": 0.35285218801545615
+      },
+      {
+        "hex": "#00397F",
+        "share": 0.006226437241931697,
+        "h": 213.0738915610829,
+        "s": 0.999650783881057,
+        "l": 0.2490630962670624,
+        "chroma": 0.4979522388384242
+      },
+      {
+        "hex": "#BCDAED",
+        "share": 0.0037320646845179733,
+        "h": 203.09789390461134,
+        "s": 0.5691476961610819,
+        "l": 0.8327138996209029,
+        "chroma": 0.1904209972610691
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.28473996381865135,
+        "h": 158.95623987030925,
+        "s": 0.2422584613773718,
+        "l": 0.9995458782114856,
+        "chroma": 0.00022002969152690177
+      },
+      {
+        "hex": "#CCE7F8",
+        "share": 0.05267182688191347,
+        "h": 203.20620118530158,
+        "s": 0.758771659509264,
+        "l": 0.886350915681712,
+        "chroma": 0.17246740861979115
+      },
+      {
+        "hex": "#F4FBFD",
+        "share": 0.009511413696435723,
+        "h": 193.68179278664098,
+        "s": 0.6889585857865839,
+        "l": 0.9750382548663749,
+        "chroma": 0.034395217252054966
+      },
+      {
+        "hex": "#ECF5FB",
+        "share": 0.005777622802535456,
+        "h": 204.1950426655831,
+        "s": 0.6302499487809889,
+        "l": 0.9542487565686568,
+        "chroma": 0.05766943765854127
+      },
+      {
+        "hex": "#E5F3FB",
+        "share": 0.005207973706378689,
+        "h": 200.44060283687944,
+        "s": 0.7350609292525582,
+        "l": 0.9401600083188728,
+        "chroma": 0.08797207978318933
+      },
+      {
+        "hex": "#D3EBF9",
+        "share": 0.005113032190352561,
+        "h": 202.6633099244733,
+        "s": 0.7710724381023737,
+        "l": 0.9028114284201189,
+        "chroma": 0.14987885768757203
+      },
+      {
+        "hex": "#ECFCFD",
+        "share": 0.004075580351594327,
+        "h": 185.399838941897,
+        "s": 0.8354706517971814,
+        "l": 0.9592653495112573,
+        "chroma": 0.06806520998912047
+      },
+      {
+        "hex": "#E3ECF3",
+        "share": 0.0037803985472221837,
+        "h": 207.95205025502122,
+        "s": 0.4026851089012413,
+        "l": 0.9228408989166443,
+        "chroma": 0.06214164204494588
+      },
+      {
+        "hex": "#DCEBF5",
+        "share": 0.003574979630729289,
+        "h": 202.55850054619674,
+        "s": 0.5502430691033332,
+        "l": 0.9102176650476704,
+        "chroma": 0.09880421507086656
+      },
+      {
+        "hex": "#CDEAF9",
+        "share": 0.003502478836672973,
+        "h": 200.6449468085106,
+        "s": 0.7948979951375924,
+        "l": 0.8902927163965635,
+        "chroma": 0.1744121995767257
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 209,
+        "share": 0.4577216798088741,
+        "size": 23
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 579304
+  }
+}

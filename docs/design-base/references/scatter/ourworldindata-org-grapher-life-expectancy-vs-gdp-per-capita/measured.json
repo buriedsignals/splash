@@ -1,0 +1,826 @@
+{
+  "url": "https://ourworldindata.org/grapher/life-expectancy-vs-gdp-per-capita",
+  "archive": "url-list",
+  "family": "scatter",
+  "id": "ourworldindata-org-grapher-life-expectancy-vs-gdp-per-capita",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept optional cookies\"",
+  "entry": null,
+  "style": {
+    "title": "Life expectancy vs. GDP per capita, 2022",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0.13 | none",
+        "count": 173,
+        "sample": "Settings",
+        "colors": [
+          "rgb(91, 91, 91)",
+          "rgb(161, 161, 161)",
+          "rgb(78, 78, 78)",
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 400 | normal | 0 | none",
+        "count": 66,
+        "sample": "Annual death rate by age group",
+        "colors": [
+          "rgb(16, 89, 229)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 500 | normal | 0 | none",
+        "count": 32,
+        "sample": "Browse by topic",
+        "colors": [
+          "rgb(219, 229, 240)",
+          "rgb(255, 255, 255)",
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 400 | normal | 0 | none",
+        "count": 24,
+        "sample": "(international-$  in  2011  prices;  plotted  on  a  logarit",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14.4 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "WHO Mortality Database, age-standardized",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.2 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Central African Republic",
+        "colors": [
+          "rgb(91, 91, 91)",
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.4 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Mali",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.2 | uppercase",
+        "count": 6,
+        "sample": "Select countries and regions",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "1543",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 15 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "The",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14.3 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "India",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.6 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Kenya",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.5 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Angola",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "GDP  per  capita",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.13,
+        "transform": "capitalize",
+        "key": "Lato | 13 | 500 | normal | 0.13 | capitalize",
+        "count": 2,
+        "sample": "Table",
+        "colors": [
+          "rgb(118, 118, 118)",
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.6 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "United States",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.5 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Indonesia",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Pakistan",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.3 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Nigeria",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12.1,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 12.1 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Russia",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.9 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "DR Congo",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.7,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.7 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "South Africa",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11.1,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11.1 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Lesotho",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "1.4B",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 9.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 9.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "600M",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 25,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 25 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Life expectancy vs. GDP per capita",
+        "colors": [
+          "rgb(45, 46, 45)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2022",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 10 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Circles sized by",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 11,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 11 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Population",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Data source:",
+        "colors": [
+          "rgb(91, 91, 91)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Related research and data",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18.7 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Charts",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data is free and accessible for everyone.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Help us do this work by making a donation.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(102, 102, 102)",
+        "count": 145
+      },
+      {
+        "colour": "fill rgb(162, 85, 156)",
+        "count": 51
+      },
+      {
+        "colour": "fill rgb(0, 132, 126)",
+        "count": 46
+      },
+      {
+        "colour": "fill rgb(76, 106, 156)",
+        "count": 41
+      },
+      {
+        "colour": "stroke rgb(51, 51, 51)",
+        "count": 20
+      },
+      {
+        "colour": "fill rgb(229, 110, 90)",
+        "count": 19
+      },
+      {
+        "colour": "fill rgb(219, 229, 240)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(136, 48, 57)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(91, 91, 91)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(56, 170, 186)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(118, 118, 118)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(87, 114, 145)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(161, 161, 161)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(187, 187, 187)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(0, 33, 71)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(206, 38, 30)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgba(255, 255, 255, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(152, 169, 189)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 690,
+      "ch": 106
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 250,
+      "nearTheTop": true,
+      "x": 234,
+      "y": 250,
+      "w": 729,
+      "h": 383,
+      "ratio": 1.9
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.9174268553438847,
+      "h": 300,
+      "s": 0.026751439539256513,
+      "l": 0.9998723796961241,
+      "chroma": 0.000006828053686236402
+    },
+    "chromatic": [
+      {
+        "hex": "#339D98",
+        "share": 0.004577249137736518,
+        "h": 177.1687245229515,
+        "s": 0.5091745878955601,
+        "l": 0.40803952253827974,
+        "chroma": 0.41552671146705944
+      },
+      {
+        "hex": "#B577B0",
+        "share": 0.0017800413313419792,
+        "h": 304.8387096774194,
+        "s": 0.2952380952380953,
+        "l": 0.5882352941176471,
+        "chroma": 0.2431372549019608
+      },
+      {
+        "hex": "#EA8B7B",
+        "share": 0.0009777691820047492,
+        "h": 8.646971447433575,
+        "s": 0.7255766052738728,
+        "l": 0.7001149177619767,
+        "chroma": 0.4351791998850823
+      },
+      {
+        "hex": "#7088B0",
+        "share": 0.0007378038516226312,
+        "h": 217.5,
+        "s": 0.28824095963575874,
+        "l": 0.5651627641347802,
+        "chroma": 0.25067580430230346
+      },
+      {
+        "hex": "#AA63A4",
+        "share": 0.0006196119724792,
+        "h": 304.6498277841562,
+        "s": 0.2926606825709212,
+        "l": 0.5277569987532585,
+        "chroma": 0.2764139181684235
+      },
+      {
+        "hex": "#B274AE",
+        "share": 0.0005730515352408786,
+        "h": 304.71594866182465,
+        "s": 0.2909538283398465,
+        "l": 0.5766544117647059,
+        "chroma": 0.24634803921568627
+      },
+      {
+        "hex": "#349B96",
+        "share": 0.0005551436747646012,
+        "h": 177.3527755178672,
+        "s": 0.4996091673701654,
+        "l": 0.40459203036053126,
+        "chroma": 0.4042757748260594
+      },
+      {
+        "hex": "#3C928E",
+        "share": 0.00039397293047810405,
+        "h": 177.27531345485198,
+        "s": 0.41860362545759267,
+        "l": 0.4041532976827094,
+        "chroma": 0.3383600713012477
+      },
+      {
+        "hex": "#A05961",
+        "share": 0.0003760650700018266,
+        "h": 353.23943661971833,
+        "s": 0.285140562248996,
+        "l": 0.48823529411764705,
+        "chroma": 0.2784313725490196
+      },
+      {
+        "hex": "#C594C1",
+        "share": 0.00036173878162080466,
+        "h": 304.7316673494469,
+        "s": 0.29335416416296123,
+        "l": 0.6769171034750534,
+        "chroma": 0.18955542613084841
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.9174268553438847,
+        "h": 300,
+        "s": 0.026751439539256513,
+        "l": 0.9998723796961241,
+        "chroma": 0.000006828053686236402
+      },
+      {
+        "hex": "#DDDDDD",
+        "share": 0.006504134924983972,
+        "h": 172.17391304354825,
+        "s": 0.00018454477617950955,
+        "l": 0.8654325386542282,
+        "chroma": 0.00004966744407020052
+      },
+      {
+        "hex": "#E5E5E5",
+        "share": 0.006375198329554774,
+        "h": 85.71428571416232,
+        "s": 0.00007551810816370143,
+        "l": 0.8978927076448557,
+        "chroma": 0.000015421899096756952
+      },
+      {
+        "hex": "#F5F5F5",
+        "share": 0.006178211864315723,
+        "h": 299.37282229964524,
+        "s": 0.008578174970858415,
+        "l": 0.9619698778061949,
+        "chroma": 0.0006524580846831718
+      },
+      {
+        "hex": "#EDEDED",
+        "share": 0.005891686096695283,
+        "h": 270.0000000002329,
+        "s": 0.00010269400609337737,
+        "l": 0.9303581858275225,
+        "chroma": 0.00001430359377796453
+      },
+      {
+        "hex": "#6B6C6B",
+        "share": 0.0020200066617240974,
+        "h": 120,
+        "s": 0.00040398044404869166,
+        "l": 0.42168335419274094,
+        "chroma": 0.0003407036573494504
+      },
+      {
+        "hex": "#5C5C5C",
+        "share": 0.0016869204568653365,
+        "h": 130.28571428571232,
+        "s": 0.0004037327980990193,
+        "l": 0.3608967153740477,
+        "chroma": 0.0002914116814454193
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0015508207172456278,
+        "h": 281.4285714285698,
+        "s": 0.0011220945765430955,
+        "l": 0.8305031019336141,
+        "chroma": 0.000380383100122339
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.001339507963625554,
+        "h": 120,
+        "s": 0.00042853598574568393,
+        "l": 0.7675526895250079,
+        "chroma": 0.00019922407465666758
+      },
+      {
+        "hex": "#939393",
+        "share": 0.0013216001031492763,
+        "h": 120,
+        "s": 0.00021372625438454115,
+        "l": 0.5773367341516552,
+        "chroma": 0.00018066847335140857
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 177,
+        "share": 0.006916015715938352,
+        "size": 9
+      },
+      {
+        "hue": 305,
+        "share": 0.005365194998692726,
+        "size": 12
+      },
+      {
+        "hue": 9,
+        "share": 0.001353834252006576,
+        "size": 2
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 279207
+  }
+}

@@ -1,0 +1,286 @@
+{
+  "url": "https://www.bbc.co.uk/news/election/2024/uk/results",
+  "archive": "search",
+  "family": "bullet",
+  "id": "bbc-co-uk-news-election-2024-uk-results",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "not-applicable",
+      "why": "no graphic outside the site's own chrome — a palette read from the page would be the site's navigation and banners, not this piece's design"
+    }
+  },
+  "consent": "button \"Accept additional cookies\"",
+  "entry": null,
+  "style": {
+    "title": "UK election results 2024 | Constituency map - BBC News",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "ReithSans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 14 | 400 | normal | 0 | none",
+        "count": 337,
+        "sample": "326 seats for a majority",
+        "colors": [
+          "rgb(24, 24, 24)",
+          "rgb(96, 96, 96)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 13 | 400 | normal | 0 | none",
+        "count": 68,
+        "sample": "33.7%",
+        "colors": [
+          "rgb(24, 24, 24)",
+          "rgb(248, 248, 248)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 24 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "Labour",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 13 | 700 | normal | 0 | none",
+        "count": 36,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(56, 56, 56)",
+          "rgb(248, 248, 248)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 16 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Home",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 16 | 700 | normal | 0 | none",
+        "count": 10,
+        "sample": "LAB",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(24, 24, 24)",
+          "rgb(20, 20, 20)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 18 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "General election 2024",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 18 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Browse all",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSerif",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSerif | 18 | 500 | normal | 0 | none",
+        "count": 4,
+        "sample": "Who's in Keir Starmer's cabinet?",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 24 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Nation results",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 28 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Parliament results",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 14 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "48,208,743",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 20 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Results: parties by seats",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 14 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "0 seats to go",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSerif",
+        "size": 44,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSerif | 44 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "UK General election 2024 Results",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "ReithSans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ReithSans | 13.3 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Do not share or sell my info",
+        "colors": [
+          "rgb(248, 248, 248)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(24, 24, 24)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(0, 113, 241)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(96, 96, 96)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1248,
+      "ch": 192
+    },
+    "graphic": null
+  }
+}

@@ -615,15 +615,18 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "map",
       profile,
       candidates: [
-        { type: "Flow map (route)", format: "web", why: "where the people who left went" },
+        { type: "Flow map (route — and origin-destination)", format: "web", why: "where the people who left went" },
         { type: "Proportional symbol (symbol / bubble map)", format: "web", why: "how many left each district" },
       ],
     });
     expect(text).toContain("not a many-to-many flow");
     expect(text).toContain("OD flow diagram");
-    // And the refusal names a type this toolchain does not hold, so it says that too rather than
-    // sending the journalist after a producer that does not exist.
-    expect(text).toContain("NO SHEET AND NO PRODUCER FOR AN OD FLOW DIAGRAM");
+    // The refusal used to say this toolchain held no producer for an OD flow diagram. It holds one
+    // now (`proof/static-flow-map-ukraine-protection`), and the refusal says so — while still
+    // refusing to draw many-to-many pairs AS ROUTES, which is what this row offers. A refusal that
+    // goes stale in the journalist's direction sends them after a producer that does not exist; one
+    // that goes stale in the other direction hides a producer that does.
+    expect(text).toContain("NOW HOLDS A PRODUCER FOR AN OD FLOW DIAGRAM");
     expect(text).toContain("proportional-symbol map");
   });
 

@@ -1,0 +1,426 @@
+{
+  "url": "https://www.datawrapper.de/_/xFO0J/",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "datawrapper-de-xfo0j",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Democrats won the popular vote in seven of the last eight U.S. presidential elections | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 419,
+      "y": 219,
+      "w": 602,
+      "h": 487,
+      "ratio": 1.24
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/xFO0J/1/",
+      "title": "Democrats won the popular vote in seven of the last eight U.S. presidential elections",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 17,
+          "sample": "won against Donald Trump",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 700 | normal | 0 | none",
+          "count": 8,
+          "sample": "2020: Joe Biden",
+          "colors": [
+            "rgb(0, 104, 144)",
+            "rgb(225, 66, 43)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Democrats won the popular vote in seven of the last eight U.",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Margin between the votes received by the top two candid in a",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "More votes for the Democratic candidate",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.6136458212529078,
+      "h": 213.31168831148858,
+      "s": 0.01935159587818905,
+      "l": 0.9998265315408841,
+      "chroma": 0.000006713783036849108
+    },
+    "chromatic": [
+      {
+        "hex": "#2B668C",
+        "share": 0.10698083731845252,
+        "h": 203.50526280497544,
+        "s": 0.5300483269549,
+        "l": 0.3588261551272722,
+        "chroma": 0.38039040638574007
+      },
+      {
+        "hex": "#D04F37",
+        "share": 0.00780423912079516,
+        "h": 9.411764705882353,
+        "s": 0.6194331983805668,
+        "l": 0.5156862745098039,
+        "chroma": 0.6
+      },
+      {
+        "hex": "#006890",
+        "share": 0.004062433912966361,
+        "h": 196.66666666666666,
+        "s": 1,
+        "l": 0.2823529411764706,
+        "chroma": 0.5647058823529412
+      },
+      {
+        "hex": "#E1422B",
+        "share": 0.0030527945861502045,
+        "h": 7.591365597610292,
+        "s": 0.7518461353616946,
+        "l": 0.5259108336071858,
+        "chroma": 0.7128842151385694
+      },
+      {
+        "hex": "#23465C",
+        "share": 0.0006446683539468029,
+        "h": 203.28739247063174,
+        "s": 0.4496901127240963,
+        "l": 0.24941383960991806,
+        "chroma": 0.22431787529826747
+      },
+      {
+        "hex": "#4E96B2",
+        "share": 0.00039225852224276367,
+        "h": 196.5380604796663,
+        "s": 0.39271089271089266,
+        "l": 0.5003580562659846,
+        "chroma": 0.39242966751918157
+      },
+      {
+        "hex": "#E24A34",
+        "share": 0.00038884757857108747,
+        "h": 7.590033289619691,
+        "s": 0.7521815008726004,
+        "l": 0.5466460268317853,
+        "chroma": 0.6820089439284486
+      },
+      {
+        "hex": "#0289CC",
+        "share": 0.00032403964880923955,
+        "h": 200,
+        "s": 0.9844660194174758,
+        "l": 0.403921568627451,
+        "chroma": 0.7952941176470589
+      },
+      {
+        "hex": "#8ABACC",
+        "share": 0.00030698493045085856,
+        "h": 196.54125189809346,
+        "s": 0.39321966430040467,
+        "l": 0.6716122004357299,
+        "chroma": 0.2582570806100217
+      },
+      {
+        "hex": "#0D7096",
+        "share": 0.00028310832474912507,
+        "h": 196.64233576642334,
+        "s": 0.8404907975460122,
+        "l": 0.31960784313725493,
+        "chroma": 0.5372549019607843
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.6136458212529078,
+        "h": 213.31168831148858,
+        "s": 0.01935159587818905,
+        "l": 0.9998265315408841,
+        "chroma": 0.000006713783036849108
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.1662596273885133,
+        "h": 204.5901639340257,
+        "s": 0.000052291795074189115,
+        "l": 0.9530739657740699,
+        "chroma": 0.000004907693130773438
+      },
+      {
+        "hex": "#000000",
+        "share": 0.01366424034873488,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#D9D9D9",
+        "share": 0.00925047923758587,
+        "h": 0,
+        "s": 0,
+        "l": 0.8495734281913356,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.009192493195167375,
+        "h": 0,
+        "s": 0,
+        "l": 0.0945658263305322,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0033359029108993295,
+        "h": 0,
+        "s": 0,
+        "l": 0.9266410040498817,
+        "chroma": 0
+      },
+      {
+        "hex": "#242424",
+        "share": 0.002565029641100507,
+        "h": 0,
+        "s": 0,
+        "l": 0.14000312891113892,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0024456466125918398,
+        "h": 0,
+        "s": 0,
+        "l": 0.8305466677605492,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0023467292461132297,
+        "h": 0,
+        "s": 0,
+        "l": 0.8934450524395805,
+        "chroma": 0
+      },
+      {
+        "hex": "#7C7C7C",
+        "share": 0.00231944169673982,
+        "h": 0,
+        "s": 0,
+        "l": 0.4846078431372549,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 204,
+        "share": 0.11487717191838293,
+        "size": 15
+      },
+      {
+        "hue": 9,
+        "share": 0.012582971204813522,
+        "size": 9
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 293174
+  }
+}

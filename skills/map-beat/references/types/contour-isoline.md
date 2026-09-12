@@ -1,11 +1,15 @@
 # Contour / isoline
 
-> **Not backed by a shipped implementation.** The source engine (`map-native`) designed this type
-> and never built it — `skills/map-native/src/map-types.ts` explicitly omits it from the
-> discriminator with the comment "designed but never built, so it has no component." Everything
-> below is drawn from established cartographic practice, not from a rendered, QA'd component. Read
-> it as a starting doctrine, verify it against your own render, and expect to find things the source
-> material didn't anticipate.
+> **Built here on 2026-09-09, having never been built in the source engine.** `map-native` designed
+> this type and never made it — `skills/map-native/src/map-types.ts` omits it from the discriminator
+> with the comment "designed but never built, so it has no component" — so everything below the
+> fold was drawn from established cartographic practice rather than from a rendered component, and
+> it stayed unselectable in the catalogue for that reason. `proof/static-contour-europe-distance`
+> is now a directed beat of this type, rendered in all three filed directions, and the treatment is
+> selectable. Where this sheet and that render disagree, trust the render: the beat's `BRIEF.md`
+> records what the drawing taught, including the one thing no cartographic doctrine says out loud —
+> **an isoline map needs a field its source defines EVERYWHERE, and a field made of records is only
+> as continuous as the records are complete.**
 
 ## What it's for
 
@@ -67,3 +71,11 @@ lines alone has no way to know if adjacent bands are 1 unit or 100 units apart. 
 prominently, not just on the legend swatch but stated in the caption or title ("contour interval: 5°C")
 so it survives being screen-read or printed in monochrome, where the fill's sequential ramp — this
 type's only other channel — disappears entirely and the labelled lines are all that's left.
+
+## The worked example in this tree
+
+`proof/static-contour-europe-distance` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

@@ -3,7 +3,7 @@
   "archive": "url-list",
   "family": "map",
   "id": "projects-propublica-org-toxmap",
-  "harvestedAt": "2026-09-07",
+  "harvestedAt": "2026-09-08",
   "viewport": {
     "width": 1440,
     "height": 900
@@ -17,6 +17,8 @@
       "measuredFrom": "graphic.png"
     }
   },
+  "consent": null,
+  "entry": null,
   "style": {
     "title": "The Most Detailed Map of Cancer-Causing Industrial Air Pollution in the U.S. | ProPublica",
     "ground": "rgb(68, 68, 68)",
@@ -390,6 +392,8 @@
     },
     "graphic": {
       "tag": "canvas",
+      "documentTop": 3534,
+      "nearTheTop": false,
       "x": 0,
       "y": 3534,
       "w": 1440,

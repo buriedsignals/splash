@@ -1,4 +1,4 @@
-# Flow map (route)
+# Flow map (route — and origin-destination)
 
 ## What it's for
 
@@ -19,12 +19,15 @@ between many origin-destination pairs on this type produces a tangle of
 overlapping accent-coloured lines that stops reading as an ordered journey
 the moment there's more than one of them competing for the same visual
 channel; that's a different chart entirely (an OD flow diagram, not a route
-map), with its own legend logic for volume and direction. THIS TOOLCHAIN HOLDS NO SHEET AND NO
-PRODUCER FOR AN OD FLOW DIAGRAM, so naming one here is naming a type nobody can build: an
-origin-destination table is carried instead by a proportional-symbol map of the total leaving each
-origin (or arriving at each destination), by a matrix heatmap of origin against destination where
-the pairs themselves are the claim, or by a chart of the largest corridors — and the map's
-geography is then a locator, not a bundle of routes.
+map), with its own legend logic for volume and direction. THIS TOOLCHAIN NOW HOLDS A PRODUCER FOR AN
+OD FLOW DIAGRAM — see "The other reading of this type" below, and
+`proof/static-flow-map-ukraine-protection`, which draws one origin and thirty-one destinations as
+bands whose width is the quantity. It is a DIFFERENT beat with different rules, and it does not
+rescue a route map asked to carry many-to-many pairs: on a route map an origin-destination table is
+still carried better by a proportional-symbol map of the total leaving each origin (or arriving at
+each destination), by a matrix heatmap of origin against destination where the pairs themselves are
+the claim, or by a chart of the largest corridors — and the map's geography is then a locator, not a
+bundle of routes.
 AND THIS TYPE HAS NO PRODUCER FOR THE WEB. A route reads on a static frame and in a video, where
 the journey is revealed rather than interrogated, and both of those are built here. `map-web`
 draws proportional symbols, choropleths, dot density, hex grids and locators; it holds no flow
@@ -82,3 +85,36 @@ leg of the journey that's simply invisible or identical in weight to the
 reader what has and hasn't happened. The future and past portions of the path
 need a visibly distinct treatment — not just presence versus absence — so the
 map is honestly readable at any one instant, not only at the end.
+
+## The other reading of this type, and a correction to the sheet above
+
+**The paragraph above says this toolchain holds no producer for an origin-destination flow diagram.
+That was true when it was written and is not true now.** `proof/static-flow-map-ukraine-protection`
+draws one: a single origin, thirty-one destinations, each a band whose WIDTH is the quantity, and it
+renders in all three filed directions.
+
+The two readings are different forms and neither replaces the other:
+
+- **A route** — one path, and the sequence of places crossed is part of the claim. Everything the
+  sheet says above applies, and `proof/mapmore-flow-danube` is the artifact.
+- **An origin-destination fan** — many pairs, and the claim is the DISTRIBUTION of a quantity
+  between them, not the journey. Its own rules, harvested from Minard's 1862 plate: **width is the
+  quantity**; **the width scale is drawn in the key, in the data's own units**; **the route is
+  schematic and the basemap is furniture** — the reading line has to say the line is not an
+  itinerary, because a curve on a map reads as one; **a band too thin to see is not drawn, it is
+  counted**; and **a band whose destination is outside the frame is not drawn either**, because a
+  ribbon leaving the plate cannot be named.
+
+The tangle the paragraph above warns about is real, and the beat's own BRIEF records the two redraws
+it took to escape it: an origin node whose circumference the bands tiled spent the DIRECTIONS on
+widths and sent every ribbon looping across the map, and a camera inherited from the sibling map
+beats framed the whole continent for a story that sits in its middle.
+
+
+## The worked example in this tree
+
+`proof/static-flow-map-ukraine-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

@@ -1,0 +1,411 @@
+{
+  "url": "https://ourworldindata.org/global-population-pyramid",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "ourworldindata-org-global-population-pyramid",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept optional cookies\"",
+  "entry": null,
+  "style": {
+    "title": "The global population pyramid: How global demography has changed and what we can expect for the 21st century | Our World",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 500 | normal | 0 | none",
+        "count": 52,
+        "sample": "Browse by topic",
+        "colors": [
+          "rgb(219, 229, 240)",
+          "rgb(255, 255, 255)",
+          "rgb(66, 101, 145)",
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 18 | 400 | normal | 0 | none",
+        "count": 15,
+        "sample": "In 1950 there were 2.5 billion people on the planet. Now, th",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "Home",
+        "colors": [
+          "rgb(29, 61, 99)",
+          "rgb(66, 101, 145)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.2 | uppercase",
+        "count": 5,
+        "sample": "Explore",
+        "colors": [
+          "rgb(152, 169, 189)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 18 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Cite this work",
+        "colors": [
+          "rgb(87, 114, 145)"
+        ]
+      },
+      {
+        "family": "Menlo",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Menlo | 14 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "Max Roser (2019) - “The global population pyramid: How globa",
+        "colors": [
+          "rgb(66, 101, 145)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 40,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.16,
+        "transform": "none",
+        "key": "Playfair Display | 40 | 600 | normal | -0.16 | none",
+        "count": 1,
+        "sample": "The global population pyramid: How global demography has cha",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.6,
+        "transform": "uppercase",
+        "key": "Lato | 12 | 900 | normal | 1.6 | uppercase",
+        "count": 1,
+        "sample": "Endnotes",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      },
+      {
+        "family": "Playfair Display",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Playfair Display | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our World in Data is free and accessible for everyone.",
+        "colors": [
+          "rgb(29, 61, 99)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(219, 229, 240)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(66, 101, 145)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(164, 182, 202)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(87, 114, 145)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(29, 61, 99)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(152, 169, 189)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 845,
+      "ch": 121
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1637,
+      "nearTheTop": true,
+      "x": 297,
+      "y": 1637,
+      "w": 845,
+      "h": 586,
+      "ratio": 1.44
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FEFEFE",
+      "share": 0.360409152889728,
+      "h": 125.95101550173976,
+      "s": 0.4539419087136996,
+      "l": 0.9961386787819928,
+      "chroma": 0.0035056310477178387
+    },
+    "chromatic": [
+      {
+        "hex": "#3E5189",
+        "share": 0.11131080612236664,
+        "h": 224.5194325420954,
+        "s": 0.37650737653365474,
+        "l": 0.38942395942484415,
+        "chroma": 0.29324198664479295
+      },
+      {
+        "hex": "#56BC9D",
+        "share": 0.06348687660865426,
+        "h": 161.45674185694799,
+        "s": 0.4328235631731291,
+        "l": 0.538033384542735,
+        "chroma": 0.39990007313848835
+      },
+      {
+        "hex": "#E3EC7C",
+        "share": 0.038186123818975466,
+        "h": 64.84908180725567,
+        "s": 0.7433202498376391,
+        "l": 0.7044775609255904,
+        "chroma": 0.4393356264908372
+      },
+      {
+        "hex": "#52B3A2",
+        "share": 0.022989131750296515,
+        "h": 169.28529433445945,
+        "s": 0.3922627502479028,
+        "l": 0.5121199765332123,
+        "chroma": 0.3827543195921871
+      },
+      {
+        "hex": "#3C84B4",
+        "share": 0.021078917854751127,
+        "h": 203.64009159632468,
+        "s": 0.501160816965454,
+        "l": 0.4689186602870813,
+        "chroma": 0.4700073177596397
+      },
+      {
+        "hex": "#57C09F",
+        "share": 0.018097612535198766,
+        "h": 160.87898762318397,
+        "s": 0.45816481745305265,
+        "l": 0.5468485833923404,
+        "chroma": 0.4152360721372811
+      },
+      {
+        "hex": "#E9F37B",
+        "share": 0.0179382599504595,
+        "h": 65.02722237513338,
+        "s": 0.829716413007774,
+        "l": 0.7180818577290355,
+        "chroma": 0.46782421953375974
+      },
+      {
+        "hex": "#DDE57C",
+        "share": 0.014892406748481107,
+        "h": 64.74348490682422,
+        "s": 0.6687631280018393,
+        "l": 0.691617202210696,
+        "chroma": 0.4124700889430673
+      },
+      {
+        "hex": "#E2DC55",
+        "share": 0.014515205060553982,
+        "h": 57.410061372767586,
+        "s": 0.7125845212370949,
+        "l": 0.6095935650524802,
+        "chroma": 0.556395165069919
+      },
+      {
+        "hex": "#E7F17B",
+        "share": 0.014446622935476322,
+        "h": 65.24196156004221,
+        "s": 0.8048604998277775,
+        "l": 0.7138601880294145,
+        "chroma": 0.46060526416654346
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FEFEFE",
+        "share": 0.360409152889728,
+        "h": 125.95101550173976,
+        "s": 0.4539419087136996,
+        "l": 0.9961386787819928,
+        "chroma": 0.0035056310477178387
+      },
+      {
+        "hex": "#F4F5F4",
+        "share": 0.009772952823566432,
+        "h": 121.40023337222685,
+        "s": 0.0411113989388752,
+        "l": 0.957818248042251,
+        "chroma": 0.003468301665351392
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.005008512251994933,
+        "h": 136.43312101910644,
+        "s": 0.013171067275910102,
+        "l": 0.8588037873224199,
+        "chroma": 0.0037194096325602333
+      },
+      {
+        "hex": "#EBECEB",
+        "share": 0.0040826535634465345,
+        "h": 125.64625850340087,
+        "s": 0.022535643108998315,
+        "l": 0.9241687979539641,
+        "chroma": 0.0034178098116716127
+      },
+      {
+        "hex": "#E3E4E3",
+        "share": 0.0034452432244894667,
+        "h": 127.97665369650005,
+        "s": 0.016469784034349323,
+        "l": 0.8925173348027735,
+        "chroma": 0.003540432566469187
+      },
+      {
+        "hex": "#D3D4D4",
+        "share": 0.0032173085146725406,
+        "h": 124.45544554455438,
+        "s": 0.010283486785646851,
+        "l": 0.830964410842707,
+        "chroma": 0.0034765504948061077
+      },
+      {
+        "hex": "#C3C4C3",
+        "share": 0.0024588708961666627,
+        "h": 126.09022556390983,
+        "s": 0.007358127826724392,
+        "l": 0.7674049767569047,
+        "chroma": 0.003422927825765254
+      },
+      {
+        "hex": "#CBCCCB",
+        "share": 0.002440716804234341,
+        "h": 129.46778711484689,
+        "s": 0.008602478734769136,
+        "l": 0.7982514989466861,
+        "chroma": 0.003471074380165362
+      },
+      {
+        "hex": "#F7F8F7",
+        "share": 0.002291449826124142,
+        "h": 118.53333333333435,
+        "s": 0.10454175862469318,
+        "l": 0.9702809997238332,
+        "chroma": 0.006213753106876441
+      },
+      {
+        "hex": "#FBFBF6",
+        "share": 0.002067549358958843,
+        "h": 68.37493632195628,
+        "s": 0.44549512065965924,
+        "l": 0.9747125777140124,
+        "chroma": 0.02253084648493553
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 225,
+        "share": 0.17714762907559362,
+        "size": 7
+      },
+      {
+        "hue": 161,
+        "share": 0.13151025907906308,
+        "size": 6
+      },
+      {
+        "hue": 65,
+        "share": 0.13190763198024838,
+        "size": 11
+      }
+    ],
+    "ramped": 0,
+    "shape": "categorical",
+    "pixels": 495756
+  }
+}
