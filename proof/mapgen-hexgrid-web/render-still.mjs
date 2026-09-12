@@ -20,12 +20,24 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+// THE FILES THE RASTERISER DRAWS FROM. Reached through the `#shared/…` subpath alias rather than
+// copied, because a font CACHE is not a thing to carry thirteen times; `render.mjs` beside this
+// file already reads `readPalette` the same way.
+import { fontFilesFor, fontFilesForSvg } from "#shared/design-base/typefaces.mjs";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /** The one font stack. The seed draws with it and `measureText` measures with it — if the two
- *  ever disagree, every gutter in the chart is measured against a font nobody is looking at. */
-export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+ *  ever disagree, every gutter in the chart is measured against a font nobody is looking at.
+ *
+ *  IT LEADS WITH A FAMILY THE LADDER CAN FETCH, and it has to. With `loadSystemFonts: false`
+ *  below, resvg draws only from the files it is handed, and `fontFilesFor` has no file for
+ *  Helvetica — Apple licenses it, Google does not serve it, nothing here may vendor it. A stack
+ *  leading with Helvetica therefore measures 0 and draws blank. Open Sans is redistributable,
+ *  fetched on first use and cached, and is one of the seventeen MapTiler also serves as map
+ *  glyphs, so this beat's map labels and its panel labels are one design. Helvetica and Arial
+ *  stay behind it for the web genre, where the reader's own browser does the falling back. */
+export const FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 
 function channels(hex) {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
@@ -121,7 +133,15 @@ export function measureText(text, options) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
     `<text x="0" y="300" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
     `</svg>`;
-  const box = new Resvg(probe, { font: { loadSystemFonts: true } }).getBBox();
+  // `loadSystemFonts: false` IS THE LOAD-BEARING HALF. With it true, a face resvg cannot find is
+  // replaced in silence by one this machine happens to have: the measurement is taken in a font
+  // nobody will ever see, the gutters come out right here and wrong on a newsroom's Linux box, and
+  // no exit code says so. Off, a missing file draws nothing and the defect is loud. The files are
+  // resolved from the same family and weight the probe declares, so what is MEASURED and what is
+  // DRAWN are the same face.
+  const box = new Resvg(probe, {
+    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
+  }).getBBox();
   const width = box ? box.x + box.width : 0;
   measured.set(key, width);
   return width;
@@ -174,7 +194,9 @@ export async function renderStill({
 /** `scale` device pixels per frame pixel — see `renderStill`, where the default is argued. */
 function rasterise(svg, width, scale = 2) {
   const image = new Resvg(svg, {
-    font: { loadSystemFonts: true },
+    // The files this markup actually needs, read off the markup itself — see `measureText` above
+    // for why the machine's own font library is switched off.
+    font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
     fitTo: { mode: "width", value: width * scale },
   }).render();
   return image.asPng();
