@@ -50,3 +50,11 @@ the hue instead on a small decorative swatch exempt from the text-contrast rule.
 no mechanical guard behind it: this type has no built-in warning for the axis-order/area-distortion
 problem described above, so treat every radar's axis selection and ordering as something to check by
 eye against the actual numbers before publishing, not something the chart itself will catch for you.
+
+## The worked example in this tree
+
+`proof/static-radar-electricity-mix` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

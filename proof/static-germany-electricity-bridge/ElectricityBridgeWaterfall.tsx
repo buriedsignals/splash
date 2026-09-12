@@ -19,6 +19,8 @@ import {
   measureText,
   contrast,
   assertLegible,
+  adjustToContrast,
+  TEXT_CONTRAST_MIN,
   FONT_FAMILY,
 } from "#shared/chart-beat/render-still.mjs";
 import {
@@ -522,13 +524,24 @@ export function ElectricityBridgeWaterfall({
             height={Math.max(b.bottom - b.top, 0)}
             fill={b.fill}
           />
-          {/* Value label floats ABOVE the bar's growing edge in ink — never set inside the bar in
-              white, the exact defect the sheet names on narrow bars where a decrease colour under
-              a white label measured under 4:1. */}
+          {/* THE DELTA LABEL IS PAINTED IN ITS OWN STEP'S COLOUR; THE TOTALS STAY INK.
+              Measured across the waterfall harvest (2026-09-08): `signed-label-outside-the-bar`,
+              four references from two publications — `−$162.5B`, `+$29.8B`, `+10.9`, `−4.5`,
+              `+0.05`, `−0.06`, each outside the growing edge in the step's own colour, with the
+              absolute totals in black above. The counter-evidence is in the same corpus:
+              storytellingwithdata paints its values INSIDE the bars in white on a `#BFBFBF` step,
+              about 1.9:1, and those are the hardest marks on that plate to read.
+
+              AND THE FLOOR HOLDS OVER THE TREATMENT. This newsroom's decrease hue is `#D55E00`,
+              which reads 3.87:1 on white — under the 4.5 text floor — so painting the label in it
+              exactly as measured would ship an illegible number. `adjustToContrast` keeps the hue
+              and darkens it until it clears (`#c05500`, 4.62:1). The practice is imported; the
+              floor is not negotiable, and a treatment that cannot survive a different palette is
+              reported rather than obeyed. */}
           <text
             x={b.center}
             y={b.top - 8}
-            fill={ink}
+            fill={b.kind === "total" ? ink : adjustToContrast(b.fill, ground, TEXT_CONTRAST_MIN)}
             fontSize={T.VALUE_LABEL.fontSize}
             fontWeight={T.VALUE_LABEL.fontWeight}
             textAnchor="middle"

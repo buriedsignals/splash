@@ -1,0 +1,492 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/climate-change-deniers-vs-the-consensus/",
+  "archive": "informationisbeautiful",
+  "family": "paired",
+  "id": "informationisbeautiful-net-visualizations-climate-change-deniers-vs-th",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Climate Change Deniers vs The Consensus — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 31,
+        "sample": "There have been a few complaints about the legibility of the",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 16,
+        "sample": ", ,  , , , , , ,",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 9,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Snake oil Superfoods?",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Key concepts of this ancient religion / philosophy visualize",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "UPDATE 1 (12th Dec 09):",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 2,
+        "sample": "Some Notes",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "Quicksand | 28 | 700 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "Climate Change Deniers vs The Consensus",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 280,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 280,
+      "w": 1280,
+      "h": 5199,
+      "ratio": 0.25
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#231F20",
+      "share": 0.8172357364396999,
+      "h": 344.99873166246965,
+      "s": 0.06068594053504787,
+      "l": 0.12942275538783266,
+      "chroma": 0.015708283274696117
+    },
+    "chromatic": [
+      {
+        "hex": "#AEDEE4",
+        "share": 0.007119908876707059,
+        "h": 186.70437475210886,
+        "s": 0.4998509193825098,
+        "l": 0.7879209462219281,
+        "chroma": 0.21201582002548391
+      },
+      {
+        "hex": "#57B6DD",
+        "share": 0.006344970186574341,
+        "h": 197.46291024110423,
+        "s": 0.6631567743313421,
+        "l": 0.6038520049929786,
+        "chroma": 0.5254164530533698
+      },
+      {
+        "hex": "#CC3366",
+        "share": 0.004064483554529717,
+        "h": 340.1330527632764,
+        "s": 0.600834780147348,
+        "l": 0.5000763348817787,
+        "chroma": 0.6007430508435257
+      },
+      {
+        "hex": "#659941",
+        "share": 0.0032124567224466245,
+        "h": 95.46327215575367,
+        "s": 0.4032920432268551,
+        "l": 0.42716536516374726,
+        "chroma": 0.3445447858252666
+      },
+      {
+        "hex": "#C43262",
+        "share": 0.0012062115310636661,
+        "h": 340.1182531269513,
+        "s": 0.5938028297604164,
+        "l": 0.4815964257884542,
+        "chroma": 0.5719466408713729
+      },
+      {
+        "hex": "#639640",
+        "share": 0.00113047581265628,
+        "h": 95.36312536704045,
+        "s": 0.4002086654612651,
+        "l": 0.41918925751877245,
+        "chroma": 0.33552634665457304
+      },
+      {
+        "hex": "#AB712D",
+        "share": 0.0011244650413541066,
+        "h": 32.38219478825288,
+        "s": 0.5833400357600242,
+        "l": 0.4235299358284006,
+        "chroma": 0.49412393582315994
+      },
+      {
+        "hex": "#5E8C3D",
+        "share": 0.000893951961915753,
+        "h": 95.19056564928714,
+        "s": 0.38982614424109063,
+        "l": 0.39425443063424725,
+        "chroma": 0.30738136908823027
+      },
+      {
+        "hex": "#61923F",
+        "share": 0.0008649499903827659,
+        "h": 95.23955282632656,
+        "s": 0.3968974795041499,
+        "l": 0.4088218261592337,
+        "chroma": 0.3245207047377672
+      },
+      {
+        "hex": "#BB315E",
+        "share": 0.0004745503943065974,
+        "h": 340.1947451899869,
+        "s": 0.5848686757873,
+        "l": 0.4618261744216369,
+        "chroma": 0.5402153261557948
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#231F20",
+        "share": 0.8172357364396999,
+        "h": 344.99873166246965,
+        "s": 0.06068594053504787,
+        "l": 0.12942275538783266,
+        "chroma": 0.015708283274696117
+      },
+      {
+        "hex": "#252222",
+        "share": 0.016845787651471437,
+        "h": 352.1224140460703,
+        "s": 0.05159686063371748,
+        "l": 0.13862610768991818,
+        "chroma": 0.014305343917342839
+      },
+      {
+        "hex": "#2E2A2B",
+        "share": 0.012693096028082324,
+        "h": 345.0409929611786,
+        "s": 0.04394537577402066,
+        "l": 0.17125173430605356,
+        "chroma": 0.015051443632064537
+      },
+      {
+        "hex": "#2A2425",
+        "share": 0.00884214512406232,
+        "h": 350.849846782431,
+        "s": 0.0730318737197592,
+        "l": 0.151876844004316,
+        "chroma": 0.022183700984557547
+      },
+      {
+        "hex": "#353233",
+        "share": 0.004562926764762454,
+        "h": 345.37853045912954,
+        "s": 0.03532054964626962,
+        "l": 0.2017644798739519,
+        "chroma": 0.014252864656483372
+      },
+      {
+        "hex": "#E4E3E3",
+        "share": 0.003980182487016734,
+        "h": 345.10056019836554,
+        "s": 0.007456508266938466,
+        "l": 0.8918940627181517,
+        "chroma": 0.0016121856300944648
+      },
+      {
+        "hex": "#DCDBDB",
+        "share": 0.0037977555779957683,
+        "h": 341.21140472879074,
+        "s": 0.007979543956300138,
+        "l": 0.8601849761389936,
+        "chroma": 0.0022313202573001067
+      },
+      {
+        "hex": "#312D2E",
+        "share": 0.003732538709367186,
+        "h": 346.63456119678267,
+        "s": 0.04177519427958715,
+        "l": 0.1844186364106414,
+        "chroma": 0.015408248729662177
+      },
+      {
+        "hex": "#D4D3D4",
+        "share": 0.003716459896133872,
+        "h": 343.9331532748135,
+        "s": 0.00829396051081667,
+        "l": 0.8301189536141158,
+        "chroma": 0.002817973380521477
+      },
+      {
+        "hex": "#3D3A3B",
+        "share": 0.0035006732063858435,
+        "h": 345.1940424266454,
+        "s": 0.029090762284380386,
+        "l": 0.23350082821590173,
+        "chroma": 0.013585434173669475
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 187,
+        "share": 0.01373025461627236,
+        "size": 3
+      },
+      {
+        "hue": 340,
+        "share": 0.008572862569724948,
+        "size": 13
+      },
+      {
+        "hue": 95,
+        "share": 0.007294070975187536,
+        "size": 7
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 6654720
+  }
+}

@@ -1,0 +1,311 @@
+{
+  "url": "https://jbryer.github.io/likert/",
+  "archive": "search",
+  "family": "diverging-stacked-bar",
+  "id": "jbryer-github-io-likert",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Analysis and Visualization Likert Items • likert",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Helvetica Neue",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 14 | 400 | normal | 0 | none",
+        "count": 25,
+        "sample": "Get started",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(51, 51, 51)",
+          "rgb(51, 122, 183)",
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Menlo",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Menlo | 13 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "remotes",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(55, 95, 132)",
+          "rgb(3, 106, 7)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 21,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 21 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Links",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Author:",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(51, 122, 183)"
+        ]
+      },
+      {
+        "family": "Menlo",
+        "size": 12.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Menlo | 12.6 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "likert",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(55, 95, 132)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "likert",
+        "colors": [
+          "rgb(119, 119, 119)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 13.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 13.5 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2.0.1",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 24,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 24 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Analysis and Visualization of Likert Based Items",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 11.9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 11.9 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Author, maintainer",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 848,
+      "ch": 121
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 246,
+      "nearTheTop": true,
+      "x": 150,
+      "y": 246,
+      "w": 576,
+      "h": 720,
+      "ratio": 0.8
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.559813850308642,
+      "h": 0,
+      "s": 0,
+      "l": 0.9993913415232137,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#EBD9B2",
+        "share": 0.06354648919753086,
+        "h": 41.05263157894738,
+        "s": 0.5876288659793811,
+        "l": 0.8098039215686275,
+        "chroma": 0.22352941176470587
+      },
+      {
+        "hex": "#D8B365",
+        "share": 0.04307725694444445,
+        "h": 40.69565217391305,
+        "s": 0.5958549222797928,
+        "l": 0.6215686274509804,
+        "chroma": 0.45098039215686275
+      },
+      {
+        "hex": "#5AB4AC",
+        "share": 0.020220871913580248,
+        "h": 174.66666666666666,
+        "s": 0.3750000000000001,
+        "l": 0.5294117647058824,
+        "chroma": 0.35294117647058826
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.559813850308642,
+        "h": 0,
+        "s": 0,
+        "l": 0.9993913415232137,
+        "chroma": 0
+      },
+      {
+        "hex": "#F0F0F0",
+        "share": 0.17121913580246914,
+        "h": 0,
+        "s": 0,
+        "l": 0.9420609884332283,
+        "chroma": 0
+      },
+      {
+        "hex": "#ACD9D5",
+        "share": 0.05338300540123457,
+        "h": 174.66666666666669,
+        "s": 0.3719008264462809,
+        "l": 0.7627450980392156,
+        "chroma": 0.17647058823529405
+      },
+      {
+        "hex": "#EDEDED",
+        "share": 0.014998070987654322,
+        "h": 0,
+        "s": 0,
+        "l": 0.9284553306853288,
+        "chroma": 0
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.01045042438271605,
+        "h": 0,
+        "s": 0,
+        "l": 0.8899897753286824,
+        "chroma": 0
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.009739101080246913,
+        "h": 0,
+        "s": 0,
+        "l": 0.8258198253304788,
+        "chroma": 0
+      },
+      {
+        "hex": "#DADADA",
+        "share": 0.007535204475308642,
+        "h": 0,
+        "s": 0,
+        "l": 0.8565132549019607,
+        "chroma": 0
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.006290991512345679,
+        "h": 0,
+        "s": 0,
+        "l": 0.8014429689085293,
+        "chroma": 0
+      },
+      {
+        "hex": "#BBBBBB",
+        "share": 0.0060281635802469135,
+        "h": 0,
+        "s": 0,
+        "l": 0.7344847058823529,
+        "chroma": 0
+      },
+      {
+        "hex": "#B3B3B3",
+        "share": 0.004190779320987654,
+        "h": 0,
+        "s": 0,
+        "l": 0.7032378889415375,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 41,
+        "share": 0.10662374614197531,
+        "size": 2
+      },
+      {
+        "hue": 175,
+        "share": 0.020220871913580248,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 414720
+  }
+}

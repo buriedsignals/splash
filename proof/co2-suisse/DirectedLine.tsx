@@ -175,6 +175,30 @@ export function DirectedLine({
       Math.max(...tickLabels.map((l) => measureText(l, sizeOf(axis)))),
   };
 
+  /** RUNS ON ONE LINE SHARE A BASELINE, NOT AN INK-BOX EDGE — and the difference is visible.
+   *
+   *  MEASURED on this tree's own delivered SVGs: six country names under six groups came out on six
+   *  different baselines, 1.5px apart at 960px, 3px in the delivered file. The cause is that
+   *  `measureTextBand` answers per STRING — "Suède" carries an accent, "France" does not — so each
+   *  label got a box of its own height, the arbiter aligned the boxes, and the baselines fell where
+   *  they fell.
+   *
+   *  The COLLISION box stays the string's own ink, because inflating it to a common band costs real
+   *  labels: doing that dropped this corpus's end-value label in all three directions. What changes
+   *  is where the run is DRAWN inside the box the arbiter granted it — against the band of its
+   *  REGISTER, measured once on a probe carrying an ascender, a descender and a comma, from
+   *  whichever edge the chosen anchor holds fixed. Runs sharing an anchor and a y then share a
+   *  baseline, whatever glyphs they happen to carry. */
+  const BAND_PROBE = "Hxpg1,";
+  const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
+  const baselineOf = (p: any, r: any) => {
+    const band = bandOf(r);
+    // `above` holds the box's bottom edge, `below` its top, and the side anchors centre it.
+    if (p.anchor === "above") return p.box.y + p.box.height - band.descent;
+    if (p.anchor === "below") return p.box.y + band.ascent;
+    return p.box.y + p.box.height / 2 + (band.ascent - band.descent) / 2;
+  };
+
   const g = crossingGeometry(data, { width, height, padding, reference });
   const path = line<(typeof g.points)[number]>()
     .x((p) => p.x)
@@ -300,11 +324,12 @@ export function DirectedLine({
   ];
 
   const { placed, dropped } = placeLabels(
-    requests.map(({ id, treatment, text, at, priority }) => ({
+    requests.map(({ id, treatment, text, at, anchors, priority }) => ({
       id,
       treatment,
       text,
       at,
+      anchors,
       priority,
     })),
     {
@@ -340,7 +365,7 @@ export function DirectedLine({
     return (
       <text
         x={p.box.x}
-        y={p.box.y + r.fontSize}
+        y={baselineOf(p, r)}
         fill={r.fill}
         fontFamily={r.fontFamily}
         fontSize={r.fontSize}

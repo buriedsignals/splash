@@ -1,0 +1,451 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/tooth-law-whats-halal-whats-kosher/",
+  "archive": "informationisbeautiful",
+  "family": "heatmap",
+  "id": "informationisbeautiful-net-visualizations-tooth-law-whats-halal-whats-",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Tooth & Law – What’s halal? What’s kosher? — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 20,
+        "sample": "And does tastiness play any role? We were curious…",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Islamic Sects, Schools, Branches & Movements",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "The Quran, Leviticus, Classora.com",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "What’s Halal? What’s Kosher? What’s both?",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Articles of War",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": null,
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 2126,
+      "ratio": 0.6
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.6101404486124177,
+      "h": 26.206819451954427,
+      "s": 0.06114274386988242,
+      "l": 0.9998272324408909,
+      "chroma": 0.000021126965231266226
+    },
+    "chromatic": [
+      {
+        "hex": "#D8B28E",
+        "share": 0.11408087370649106,
+        "h": 29.18841850643459,
+        "s": 0.4868419265257586,
+        "l": 0.7019612327514128,
+        "chroma": 0.29019553525332875
+      },
+      {
+        "hex": "#613116",
+        "share": 0.10370965134054562,
+        "h": 21.60001632760354,
+        "s": 0.6302205741297282,
+        "l": 0.23334372700547676,
+        "chroma": 0.2941160352059243
+      },
+      {
+        "hex": "#B83E17",
+        "share": 0.03762236888523048,
+        "h": 14.534161490683232,
+        "s": 0.7777777777777778,
+        "l": 0.40588235294117647,
+        "chroma": 0.6313725490196078
+      },
+      {
+        "hex": "#87CBF1",
+        "share": 0.01066042450611477,
+        "h": 201.509447951876,
+        "s": 0.7910438546441245,
+        "l": 0.7372547667808937,
+        "chroma": 0.41568600415002266
+      },
+      {
+        "hex": "#D95929",
+        "share": 0.008782631702728128,
+        "h": 16.364320257670165,
+        "s": 0.6983775925164387,
+        "l": 0.5062330790056608,
+        "chroma": 0.6896715070965624
+      },
+      {
+        "hex": "#734727",
+        "share": 0.0033877440028222015,
+        "h": 25.23390256260213,
+        "s": 0.493976651106848,
+        "l": 0.3016781199951507,
+        "chroma": 0.2980438948548288
+      },
+      {
+        "hex": "#D9B592",
+        "share": 0.0012064175682031985,
+        "h": 29.189404449925483,
+        "s": 0.48608954478279864,
+        "l": 0.7130613439405613,
+        "chroma": 0.2789557614090412
+      },
+      {
+        "hex": "#DCBA9B",
+        "share": 0.0010818438381937912,
+        "h": 28.958973935654296,
+        "s": 0.48737729320888307,
+        "l": 0.7351236146632566,
+        "chroma": 0.2581894714407502
+      },
+      {
+        "hex": "#8ACCF1",
+        "share": 0.0009322818673565381,
+        "h": 201.55049819361665,
+        "s": 0.7889271471882171,
+        "l": 0.7445632095960182,
+        "chroma": 0.40304203668065575
+      },
+      {
+        "hex": "#64341A",
+        "share": 0.0005894285042333019,
+        "h": 21.753560496825276,
+        "s": 0.5904585036519973,
+        "l": 0.24552466872035597,
+        "chroma": 0.28994425700454746
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.6101404486124177,
+        "h": 26.206819451954427,
+        "s": 0.06114274386988242,
+        "l": 0.9998272324408909,
+        "chroma": 0.000021126965231266226
+      },
+      {
+        "hex": "#728E86",
+        "share": 0.06275906926152398,
+        "h": 162.85696181274793,
+        "s": 0.11023413572293507,
+        "l": 0.5019722997668781,
+        "chroma": 0.10979930620255834
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.003177181326434619,
+        "h": 37.33408961995967,
+        "s": 0.009048310691172389,
+        "l": 0.9558125031182957,
+        "chroma": 0.0007996444009017445
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.001971866180620884,
+        "h": 133.60000000001418,
+        "s": 0.001461888565107442,
+        "l": 0.9250129720169842,
+        "chroma": 0.000219245357479525
+      },
+      {
+        "hex": "#747474",
+        "share": 0.0018465575023518344,
+        "h": 306.12244897960727,
+        "s": 0.00012657105242534607,
+        "l": 0.45318622573407474,
+        "chroma": 0.00011472051507166459
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0016830315145813734,
+        "h": 182.3376623376584,
+        "s": 0.0006310234052320676,
+        "l": 0.8955184519222537,
+        "chroma": 0.00013186060450387505
+      },
+      {
+        "hex": "#7B7B7B",
+        "share": 0.0013034307384760112,
+        "h": 301.9047619047517,
+        "s": 0.00014441459366773944,
+        "l": 0.48231203391985494,
+        "chroma": 0.00013930579279919364
+      },
+      {
+        "hex": "#848383",
+        "share": 0.0012710930150517403,
+        "h": 329.4957983193383,
+        "s": 0.00027849807625692744,
+        "l": 0.5155666660998022,
+        "chroma": 0.00026982750313186976
+      },
+      {
+        "hex": "#6C6C6C",
+        "share": 0.0012556591015992474,
+        "h": 280.2898550724727,
+        "s": 0.0002811037191243705,
+        "l": 0.42256020933395305,
+        "chroma": 0.00023756649279549347
+      },
+      {
+        "hex": "#9A9A9A",
+        "share": 0.0010895607949200376,
+        "h": 322.5563909774339,
+        "s": 0.0002229183532199126,
+        "l": 0.6054419204444004,
+        "chroma": 0.00017590847468829107
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 29,
+        "share": 0.2738501734477893,
+        "size": 19
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 2721280
+  }
+}

@@ -1,0 +1,394 @@
+{
+  "url": "https://dataviz.theanalyst.com/player-comparison-radars/",
+  "archive": "url-list",
+  "family": "radar",
+  "id": "dataviz-theanalyst-com-player-comparison-radars",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Data Hub Player Radars Interactives - Saël Kumbedi this season",
+    "ground": "rgb(247, 247, 247)",
+    "type": [
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "Big Shoulders Text | 16 | 400 | normal | 0.6 | none",
+        "count": 15,
+        "sample": "Defender template. Percentile rank vs defenders with at leas",
+        "colors": [
+          "rgb(29, 10, 48)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 14 | 400 | normal | 1.2 | uppercase",
+        "count": 9,
+        "sample": "goals",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 16 | 800 | normal | 0.6 | uppercase",
+        "count": 4,
+        "sample": "Kostas Tsimikas",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "Big Shoulders Text | 12 | 600 | normal | 0.6 | none",
+        "count": 4,
+        "sample": "2023/2024",
+        "colors": [
+          "rgb(128, 128, 128)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 12,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 12 | 800 | normal | 0.6 | uppercase",
+        "count": 4,
+        "sample": "78.46 %",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "uppercase",
+        "key": "Big Shoulders Text | 16 | 400 | normal | 0.6 | uppercase",
+        "count": 3,
+        "sample": "search by player or team",
+        "colors": [
+          "rgb(29, 10, 48)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Mono",
+        "size": 12,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "IBM Plex Mono | 12 | 800 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "player",
+        "colors": [
+          "rgb(128, 128, 128)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "Big Shoulders Text | 18 | 600 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "this season",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "Big Shoulders Text | 18 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "since 2019",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      },
+      {
+        "family": "Big Shoulders Text",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "Big Shoulders Text | 24 | 700 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "SAËL KUMBEDI",
+        "colors": [
+          "rgb(29, 10, 48)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 19
+      },
+      {
+        "colour": "fill rgb(229, 32, 47)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(250, 165, 26)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(158, 7, 174)",
+        "count": 3
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 201,
+      "nearTheTop": true,
+      "x": 405,
+      "y": 201,
+      "w": 630,
+      "h": 630,
+      "ratio": 1
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.6368984630889393,
+      "h": 309.82097186710877,
+      "s": 0.1104831873383135,
+      "l": 0.9999725489420406,
+      "chroma": 0.0000060657607583447515
+    },
+    "chromatic": [
+      {
+        "hex": "#B645C2",
+        "share": 0.15694885361552027,
+        "h": 294.23986796046984,
+        "s": 0.506073952775671,
+        "l": 0.5156789718921617,
+        "chroma": 0.4902045142138212
+      },
+      {
+        "hex": "#EB5863",
+        "share": 0.10505668934240363,
+        "h": 355.51020408163265,
+        "s": 0.786096458316474,
+        "l": 0.6333334273825126,
+        "chroma": 0.5764705882352941
+      },
+      {
+        "hex": "#FBBB53",
+        "share": 0.0764373897707231,
+        "h": 37.14289694336578,
+        "s": 0.9545459993647408,
+        "l": 0.6548978243812522,
+        "chroma": 0.6588318022178876
+      },
+      {
+        "hex": "#DBA2E1",
+        "share": 0.0016654069035021415,
+        "h": 294.28043039677203,
+        "s": 0.512165719487293,
+        "l": 0.7588502269288957,
+        "chroma": 0.24701729405831918
+      },
+      {
+        "hex": "#F5ACB1",
+        "share": 0.0010481229528848577,
+        "h": 355.887893558161,
+        "s": 0.7850457624489375,
+        "l": 0.8176941930618402,
+        "chroma": 0.286236802413273
+      },
+      {
+        "hex": "#C874D1",
+        "share": 0.000927185689090451,
+        "h": 294.1945661700263,
+        "s": 0.5027612948710416,
+        "l": 0.637233589087809,
+        "chroma": 0.364769820971867
+      },
+      {
+        "hex": "#FDDDA9",
+        "share": 0.0008465608465608466,
+        "h": 37.14660521184187,
+        "s": 0.9545162272834954,
+        "l": 0.827561858076564,
+        "chroma": 0.3291900093370682
+      },
+      {
+        "hex": "#F0828A",
+        "share": 0.000655076845553036,
+        "h": 355.63170961989016,
+        "s": 0.7857829802434534,
+        "l": 0.7255429864253393,
+        "chroma": 0.43132730015082965
+      },
+      {
+        "hex": "#FCCC7E",
+        "share": 0.0005946082136558327,
+        "h": 37.14880752435337,
+        "s": 0.9545950105816714,
+        "l": 0.7408939847125291,
+        "chroma": 0.494682618810236
+      },
+      {
+        "hex": "#FAA61B",
+        "share": 0.0002469135802469136,
+        "h": 37.24346629986246,
+        "s": 0.9569986836331724,
+        "l": 0.5440176070428171,
+        "chroma": 0.8727490996398559
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.6368984630889393,
+        "h": 309.82097186710877,
+        "s": 0.1104831873383135,
+        "l": 0.9999725489420406,
+        "chroma": 0.0000060657607583447515
+      },
+      {
+        "hex": "#1D0A30",
+        "share": 0.0015747039556563366,
+        "h": 270,
+        "s": 0.6551724137931034,
+        "l": 0.11372549019607843,
+        "chroma": 0.14901960784313725
+      },
+      {
+        "hex": "#EDD1F0",
+        "share": 0.0010052910052910052,
+        "h": 294.18084589207587,
+        "s": 0.5083614795287916,
+        "l": 0.8806919258931643,
+        "chroma": 0.12130325814536347
+      },
+      {
+        "hex": "#FAD5D8",
+        "share": 0.0006676744771982867,
+        "h": 355.13513513513516,
+        "s": 0.7872340425531915,
+        "l": 0.907843137254902,
+        "chroma": 0.1450980392156862
+      },
+      {
+        "hex": "#F4F3F5",
+        "share": 0.0006198034769463341,
+        "h": 268.4615384615385,
+        "s": 0.08800300864986824,
+        "l": 0.9576119878845848,
+        "chroma": 0.007460545193687218
+      },
+      {
+        "hex": "#29163B",
+        "share": 0.0006046863189720333,
+        "h": 270.81081081081084,
+        "s": 0.4567901234567902,
+        "l": 0.1588235294117647,
+        "chroma": 0.1450980392156863
+      },
+      {
+        "hex": "#FEEED4",
+        "share": 0.0005870496346686823,
+        "h": 37.142273516494726,
+        "s": 0.9545676123622894,
+        "l": 0.9136834132794749,
+        "chroma": 0.1647900361861483
+      },
+      {
+        "hex": "#3D2D4D",
+        "share": 0.0004056437389770723,
+        "h": 269.4961832061069,
+        "s": 0.2663955261820031,
+        "l": 0.23955669224211423,
+        "chroma": 0.1276336621605164
+      },
+      {
+        "hex": "#301F42",
+        "share": 0.0003779289493575208,
+        "h": 269.14285714285717,
+        "s": 0.36082474226804123,
+        "l": 0.19019607843137257,
+        "chroma": 0.13725490196078433
+      },
+      {
+        "hex": "#A39CAB",
+        "share": 0.00037540942302847065,
+        "h": 269.8044328552803,
+        "s": 0.0843320505772403,
+        "l": 0.6409395973154363,
+        "chroma": 0.060560600078957805
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 294,
+        "share": 0.16021164021164017,
+        "size": 8
+      },
+      {
+        "hue": 356,
+        "share": 0.10733434114386495,
+        "size": 8
+      },
+      {
+        "hue": 37,
+        "share": 0.07848576467624085,
+        "size": 8
+      }
+    ],
+    "ramped": 3,
+    "shape": "categorical",
+    "pixels": 396900
+  }
+}

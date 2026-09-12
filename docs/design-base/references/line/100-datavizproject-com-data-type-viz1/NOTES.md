@@ -31,6 +31,15 @@ in the site's own navigation. The palette is deliberately constant so that the *
 only variable across the hundred — which is precisely what makes this archive useful for treatments
 and useless for directions.
 
+## What the pixel route actually measured here
+
+`largestGraphic` returned this site's own wordmark — `logo-100.svg`, 280 x 80 at (80, 0) — which is
+too small to photograph, so the pixel route fell back to the **whole page**. The ground and the
+chromatic colours in this record are therefore the SITE's, not this encoding's: `#3274DA` at
+8.6-10.5 % is Ferdio's fixed navigation bar, and it happens to be the same blue the charts are drawn
+in, which is exactly why it read as plausible. Nothing in this note rests on that reading, and no
+direction may be measured from this record.
+
 ## What is transferable
 
 - **Print the value on the mark** whenever the series is short enough that every mark can carry one.

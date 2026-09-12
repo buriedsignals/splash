@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>La moitié du CO₂ suisse depuis 1858 a été émise après 1986</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #111044;
+  --accent: #4FE0C0;
+  --ink: #FFFFFF;
+  --muted: #a5a4b8;
+  --grid: #3c3b66;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#111044;--accent:#4FE0C0;--ink:#FFFFFF;--muted:#a5a4b8;--title-size:32px;--title-weight:400;--subtitle-size:12.5px;--source-size:12.5px;--axis-size:10px;--label-size:14px;--label-weight:600;--note-size:10px;--filter-size:12.5px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:500;font-style:normal;letter-spacing:2.6px;text-transform:uppercase;color:#4FE0C0;margin:0 0 6px">Climat · Suisse</p><h2 class="chart-title" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:32px;font-weight:400;font-style:normal;letter-spacing:3.4px;text-transform:uppercase;color:#FFFFFF;margin:0 0 6px">La moitié du CO₂ suisse depuis 1858 a été émise après 1986</h2><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:0">167 années consécutives, sans trou : la surface est une quantité, et une aire qui enjambe une année manquante en invente une.</p></div><div class="chart-plot" style="--y-gutter:27px;--x-axis-h:30px;aspect-ratio:887 / 410"><div class="y-axis"><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:100%">0</span><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:81.1320754716981%">10</span><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:62.264150943396224%">20</span><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:43.39622641509434%">30</span><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:24.52830188679244%">40</span><span class="axis-label y" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;top:5.660377358490567%">50</span></div><svg role="group" aria-label="La moitié du CO₂ suisse depuis 1858 a été émise après 1986" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 860 380" preserveAspectRatio="none"><desc>Une aire remplie : les émissions annuelles de CO₂ de la Suisse de 1858 à 2024, en millions de tonnes. La surface monte jusqu&#x27;à un pic de 46,2 Mt en 1973 puis redescend à 32,1 Mt en 2024. Un trait vertical marque 1986, l&#x27;année où le cumul franchit la moitié du total de 3 158 Mt ; la moitié droite de la surface, plus courte de 39 ans, pèse autant que la gauche qui en compte 128.</desc><rect x="0" y="0" width="860" height="380" fill="#111044"></rect><line x1="0" x2="860" y1="308.3018867924528" y2="308.3018867924528" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="236.60377358490564" y2="236.60377358490564" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="164.9056603773585" y2="164.9056603773585" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="93.20754716981128" y2="93.20754716981128" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="21.509433962264154" y2="21.509433962264154" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><path d="M 0 380 L 0 379.2830188679245 L 5.1807228915662655 378.5660377358491 L 10.361445783132531 377.8490566037736 L 15.542168674698795 377.1320754716981 L 20.722891566265062 376.41509433962267 L 25.903614457831324 376.41509433962267 L 31.08433734939759 375.6981132075472 L 36.265060240963855 374.9811320754717 L 41.445783132530124 374.9811320754717 L 46.626506024096386 374.9811320754717 L 51.80722891566265 374.2641509433962 L 56.98795180722892 374.9811320754717 L 62.16867469879518 373.54716981132077 L 67.34939759036145 372.1132075471698 L 72.53012048192771 370.6792452830189 L 77.71084337349397 371.39622641509436 L 82.89156626506025 371.39622641509436 L 88.0722891566265 370.6792452830189 L 93.25301204819277 369.24528301886795 L 98.43373493975903 369.9622641509434 L 103.6144578313253 369.9622641509434 L 108.79518072289156 369.9622641509434 L 113.97590361445783 367.811320754717 L 119.1566265060241 368.52830188679246 L 124.33734939759036 367.811320754717 L 129.51807228915663 366.37735849056605 L 134.6987951807229 365.66037735849056 L 139.87951807228916 365.66037735849056 L 145.06024096385542 364.9433962264151 L 150.24096385542168 363.50943396226415 L 155.42168674698794 363.50943396226415 L 160.6024096385542 362.07547169811323 L 165.7831325301205 359.20754716981133 L 170.96385542168676 354.9056603773585 L 176.144578313253 354.9056603773585 L 181.32530120481928 359.20754716981133 L 186.50602409638554 354.188679245283 L 191.6867469879518 352.7547169811321 L 196.86746987951807 349.8867924528302 L 202.04819277108433 348.45283018867923 L 207.2289156626506 346.3018867924528 L 212.40963855421685 343.433962264151 L 217.59036144578312 339.1320754716981 L 222.7710843373494 342.7169811320755 L 227.95180722891567 342.7169811320755 L 233.1325301204819 339.1320754716981 L 238.3132530120482 336.9811320754717 L 243.49397590361448 335.54716981132077 L 248.67469879518072 330.52830188679246 L 253.855421686747 322.64150943396226 L 259.03614457831327 322.64150943396226 L 264.2168674698795 321.92452830188677 L 269.3975903614458 324.07547169811323 L 274.578313253012 318.33962264150944 L 279.7590361445783 316.90566037735846 L 284.9397590361446 313.3207547169811 L 290.12048192771084 319.77358490566036 L 295.30120481927713 316.188679245283 L 300.48192771084337 319.0566037735849 L 305.6626506024096 336.2641509433962 L 310.8433734939759 339.1320754716981 L 316.0240963855422 347.0188679245283 L 321.2048192771084 328.37735849056605 L 326.3855421686747 347.7358490566038 L 331.566265060241 335.54716981132077 L 336.7469879518072 324.79245283018867 L 341.9277108433735 328.37735849056605 L 347.10843373493975 326.22641509433964 L 352.289156626506 326.22641509433964 L 357.4698795180723 318.33962264150944 L 362.65060240963857 315.47169811320754 L 367.8313253012048 306.1509433962264 L 373.0120481927711 311.1698113207547 L 378.1927710843373 307.58490566037733 L 383.3734939759036 306.8679245283019 L 388.5542168674699 311.1698113207547 L 393.73493975903614 311.1698113207547 L 398.9156626506024 311.8867924528302 L 404.09638554216866 309.0188679245283 L 409.2771084337349 304.7169811320755 L 414.4578313253012 304.7169811320755 L 419.6385542168675 294.6792452830189 L 424.8192771084337 320.49056603773585 L 430 332.6792452830189 L 435.18072289156623 338.41509433962267 L 440.3614457831326 335.54716981132077 L 445.5421686746988 347.7358490566038 L 450.72289156626505 368.52830188679246 L 455.90361445783134 338.41509433962267 L 461.0843373493976 312.60377358490564 L 466.2650602409638 306.8679245283019 L 471.44578313253015 319.0566037735849 L 476.6265060240964 306.1509433962264 L 481.8072289156626 291.811320754717 L 486.98795180722897 299.6981132075472 L 492.1686746987952 305.4339622641509 L 497.34939759036143 289.66037735849056 L 502.5301204819278 282.49056603773585 L 507.710843373494 257.3962264150943 L 512.8915662650602 253.0943396226415 L 518.0722891566265 263.1320754716981 L 523.2530120481928 260.9811320754717 L 528.433734939759 240.18867924528303 L 533.6144578313254 233.7358490566038 L 538.7951807228916 207.2075471698113 L 543.9759036144578 171.35849056603774 L 549.156626506024 178.52830188679246 L 554.3373493975904 162.75471698113208 L 559.5180722891566 154.1509433962264 L 564.6987951807229 146.98113207547172 L 569.8795180722892 121.8867924528302 L 575.0602409638554 106.83018867924528 L 580.2409638554217 91.05660377358492 L 585.421686746988 79.58490566037739 L 590.6024096385543 72.41509433962267 L 595.7831325301205 48.75471698113205 L 600.9638554216867 83.16981132075472 L 606.144578313253 100.37735849056605 L 611.3253012048192 90.33962264150944 L 616.5060240963855 86.03773584905656 L 621.6867469879518 77.43396226415092 L 626.867469879518 93.92452830188682 L 632.0481927710844 89.62264150943395 L 637.2289156626506 101.81132075471697 L 642.4096385542168 117.58490566037733 L 647.5903614457832 93.20754716981128 L 652.7710843373494 99.66037735849056 L 657.9518072289156 94.64150943396231 L 663.132530120482 77.43396226415092 L 663.132530120482 380 Z" fill="#3a6c7e"></path><path d="M 663.132530120482 380 L 663.132530120482 77.43396226415092 L 668.3132530120482 91.77358490566036 L 673.4939759036145 88.90566037735846 L 678.6746987951808 97.50943396226415 L 683.855421686747 63.811320754716974 L 689.0361445783133 49.47169811320754 L 694.2168674698795 50.188679245283026 L 699.3975903614457 67.3962264150943 L 704.578313253012 73.84905660377359 L 709.7590361445783 68.83018867924528 L 714.9397590361446 63.811320754716974 L 720.1204819277108 71.69811320754718 L 725.3012048192771 60.226415094339586 L 730.4819277108434 61.66037735849062 L 735.6626506024096 67.3962264150943 L 740.843373493976 56.641509433962256 L 746.0240963855422 68.1132075471698 L 751.2048192771084 59.509433962264154 L 756.3855421686746 55.92452830188677 L 761.566265060241 51.622641509434004 L 766.7469879518072 54.4905660377359 L 771.9277108433735 68.83018867924528 L 777.1084337349398 59.509433962264154 L 782.289156626506 68.1132075471698 L 787.4698795180723 57.358490566037744 L 792.6506024096386 86.03773584905656 L 797.8313253012049 77.43396226415092 L 803.0120481927711 70.2641509433962 L 808.1927710843373 98.94339622641508 L 813.3734939759036 101.81132075471697 L 818.5542168674698 98.94339622641508 L 823.7349397590361 106.1132075471698 L 828.9156626506024 115.43396226415098 L 834.0963855421686 116.15094339622641 L 839.277108433735 134.07547169811323 L 844.4578313253012 122.6037735849057 L 849.6385542168674 143.39622641509436 L 854.8192771084338 150.56603773584908 L 860 149.8490566037736 L 860 380 Z" fill="#4FE0C0"></path><path d="M 0 379.2830188679245 L 5.1807228915662655 378.5660377358491 L 10.361445783132531 377.8490566037736 L 15.542168674698795 377.1320754716981 L 20.722891566265062 376.41509433962267 L 25.903614457831324 376.41509433962267 L 31.08433734939759 375.6981132075472 L 36.265060240963855 374.9811320754717 L 41.445783132530124 374.9811320754717 L 46.626506024096386 374.9811320754717 L 51.80722891566265 374.2641509433962 L 56.98795180722892 374.9811320754717 L 62.16867469879518 373.54716981132077 L 67.34939759036145 372.1132075471698 L 72.53012048192771 370.6792452830189 L 77.71084337349397 371.39622641509436 L 82.89156626506025 371.39622641509436 L 88.0722891566265 370.6792452830189 L 93.25301204819277 369.24528301886795 L 98.43373493975903 369.9622641509434 L 103.6144578313253 369.9622641509434 L 108.79518072289156 369.9622641509434 L 113.97590361445783 367.811320754717 L 119.1566265060241 368.52830188679246 L 124.33734939759036 367.811320754717 L 129.51807228915663 366.37735849056605 L 134.6987951807229 365.66037735849056 L 139.87951807228916 365.66037735849056 L 145.06024096385542 364.9433962264151 L 150.24096385542168 363.50943396226415 L 155.42168674698794 363.50943396226415 L 160.6024096385542 362.07547169811323 L 165.7831325301205 359.20754716981133 L 170.96385542168676 354.9056603773585 L 176.144578313253 354.9056603773585 L 181.32530120481928 359.20754716981133 L 186.50602409638554 354.188679245283 L 191.6867469879518 352.7547169811321 L 196.86746987951807 349.8867924528302 L 202.04819277108433 348.45283018867923 L 207.2289156626506 346.3018867924528 L 212.40963855421685 343.433962264151 L 217.59036144578312 339.1320754716981 L 222.7710843373494 342.7169811320755 L 227.95180722891567 342.7169811320755 L 233.1325301204819 339.1320754716981 L 238.3132530120482 336.9811320754717 L 243.49397590361448 335.54716981132077 L 248.67469879518072 330.52830188679246 L 253.855421686747 322.64150943396226 L 259.03614457831327 322.64150943396226 L 264.2168674698795 321.92452830188677 L 269.3975903614458 324.07547169811323 L 274.578313253012 318.33962264150944 L 279.7590361445783 316.90566037735846 L 284.9397590361446 313.3207547169811 L 290.12048192771084 319.77358490566036 L 295.30120481927713 316.188679245283 L 300.48192771084337 319.0566037735849 L 305.6626506024096 336.2641509433962 L 310.8433734939759 339.1320754716981 L 316.0240963855422 347.0188679245283 L 321.2048192771084 328.37735849056605 L 326.3855421686747 347.7358490566038 L 331.566265060241 335.54716981132077 L 336.7469879518072 324.79245283018867 L 341.9277108433735 328.37735849056605 L 347.10843373493975 326.22641509433964 L 352.289156626506 326.22641509433964 L 357.4698795180723 318.33962264150944 L 362.65060240963857 315.47169811320754 L 367.8313253012048 306.1509433962264 L 373.0120481927711 311.1698113207547 L 378.1927710843373 307.58490566037733 L 383.3734939759036 306.8679245283019 L 388.5542168674699 311.1698113207547 L 393.73493975903614 311.1698113207547 L 398.9156626506024 311.8867924528302 L 404.09638554216866 309.0188679245283 L 409.2771084337349 304.7169811320755 L 414.4578313253012 304.7169811320755 L 419.6385542168675 294.6792452830189 L 424.8192771084337 320.49056603773585 L 430 332.6792452830189 L 435.18072289156623 338.41509433962267 L 440.3614457831326 335.54716981132077 L 445.5421686746988 347.7358490566038 L 450.72289156626505 368.52830188679246 L 455.90361445783134 338.41509433962267 L 461.0843373493976 312.60377358490564 L 466.2650602409638 306.8679245283019 L 471.44578313253015 319.0566037735849 L 476.6265060240964 306.1509433962264 L 481.8072289156626 291.811320754717 L 486.98795180722897 299.6981132075472 L 492.1686746987952 305.4339622641509 L 497.34939759036143 289.66037735849056 L 502.5301204819278 282.49056603773585 L 507.710843373494 257.3962264150943 L 512.8915662650602 253.0943396226415 L 518.0722891566265 263.1320754716981 L 523.2530120481928 260.9811320754717 L 528.433734939759 240.18867924528303 L 533.6144578313254 233.7358490566038 L 538.7951807228916 207.2075471698113 L 543.9759036144578 171.35849056603774 L 549.156626506024 178.52830188679246 L 554.3373493975904 162.75471698113208 L 559.5180722891566 154.1509433962264 L 564.6987951807229 146.98113207547172 L 569.8795180722892 121.8867924528302 L 575.0602409638554 106.83018867924528 L 580.2409638554217 91.05660377358492 L 585.421686746988 79.58490566037739 L 590.6024096385543 72.41509433962267 L 595.7831325301205 48.75471698113205 L 600.9638554216867 83.16981132075472 L 606.144578313253 100.37735849056605 L 611.3253012048192 90.33962264150944 L 616.5060240963855 86.03773584905656 L 621.6867469879518 77.43396226415092 L 626.867469879518 93.92452830188682 L 632.0481927710844 89.62264150943395 L 637.2289156626506 101.81132075471697 L 642.4096385542168 117.58490566037733 L 647.5903614457832 93.20754716981128 L 652.7710843373494 99.66037735849056 L 657.9518072289156 94.64150943396231 L 663.132530120482 77.43396226415092 L 668.3132530120482 91.77358490566036 L 673.4939759036145 88.90566037735846 L 678.6746987951808 97.50943396226415 L 683.855421686747 63.811320754716974 L 689.0361445783133 49.47169811320754 L 694.2168674698795 50.188679245283026 L 699.3975903614457 67.3962264150943 L 704.578313253012 73.84905660377359 L 709.7590361445783 68.83018867924528 L 714.9397590361446 63.811320754716974 L 720.1204819277108 71.69811320754718 L 725.3012048192771 60.226415094339586 L 730.4819277108434 61.66037735849062 L 735.6626506024096 67.3962264150943 L 740.843373493976 56.641509433962256 L 746.0240963855422 68.1132075471698 L 751.2048192771084 59.509433962264154 L 756.3855421686746 55.92452830188677 L 761.566265060241 51.622641509434004 L 766.7469879518072 54.4905660377359 L 771.9277108433735 68.83018867924528 L 777.1084337349398 59.509433962264154 L 782.289156626506 68.1132075471698 L 787.4698795180723 57.358490566037744 L 792.6506024096386 86.03773584905656 L 797.8313253012049 77.43396226415092 L 803.0120481927711 70.2641509433962 L 808.1927710843373 98.94339622641508 L 813.3734939759036 101.81132075471697 L 818.5542168674698 98.94339622641508 L 823.7349397590361 106.1132075471698 L 828.9156626506024 115.43396226415098 L 834.0963855421686 116.15094339622641 L 839.277108433735 134.07547169811323 L 844.4578313253012 122.6037735849057 L 849.6385542168674 143.39622641509436 L 854.8192771084338 150.56603773584908 L 860 149.8490566037736" fill="none" stroke="#53e1c1" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path><line x1="663.132530120482" x2="663.132530120482" y1="0" y2="380" stroke="#8888a2" stroke-width="0.8" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="380" y2="380" stroke="#c4c3d0" stroke-width="1" vector-effect="non-scaling-stroke"></line><circle class="pt" cx="0" cy="379.2830188679245" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1858 : 0,1 Mt CO₂, 0,0 % du total cumulé" data-detail="1858 · 0,1 Mt CO₂ · 0,0 % du total émis à cette date"></circle><circle class="pt" cx="5.1807228915662655" cy="378.5660377358491" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1859 : 0,2 Mt CO₂, 0,0 % du total cumulé" data-detail="1859 · 0,2 Mt CO₂ · 0,0 % du total émis à cette date"></circle><circle class="pt" cx="10.361445783132531" cy="377.8490566037736" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1860 : 0,3 Mt CO₂, 0,0 % du total cumulé" data-detail="1860 · 0,3 Mt CO₂ · 0,0 % du total émis à cette date"></circle><circle class="pt" cx="15.542168674698795" cy="377.1320754716981" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1861 : 0,4 Mt CO₂, 0,0 % du total cumulé" data-detail="1861 · 0,4 Mt CO₂ · 0,0 % du total émis à cette date"></circle><circle class="pt" cx="20.722891566265062" cy="376.41509433962267" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1862 : 0,5 Mt CO₂, 0,0 % du total cumulé" data-detail="1862 · 0,5 Mt CO₂ · 0,0 % du total émis à cette date"></circle><circle class="pt" cx="25.903614457831324" cy="376.41509433962267" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1863 : 0,5 Mt CO₂, 0,1 % du total cumulé" data-detail="1863 · 0,5 Mt CO₂ · 0,1 % du total émis à cette date"></circle><circle class="pt" cx="31.08433734939759" cy="375.6981132075472" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1864 : 0,6 Mt CO₂, 0,1 % du total cumulé" data-detail="1864 · 0,6 Mt CO₂ · 0,1 % du total émis à cette date"></circle><circle class="pt" cx="36.265060240963855" cy="374.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1865 : 0,7 Mt CO₂, 0,1 % du total cumulé" data-detail="1865 · 0,7 Mt CO₂ · 0,1 % du total émis à cette date"></circle><circle class="pt" cx="41.445783132530124" cy="374.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1866 : 0,7 Mt CO₂, 0,1 % du total cumulé" data-detail="1866 · 0,7 Mt CO₂ · 0,1 % du total émis à cette date"></circle><circle class="pt" cx="46.626506024096386" cy="374.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1867 : 0,7 Mt CO₂, 0,1 % du total cumulé" data-detail="1867 · 0,7 Mt CO₂ · 0,1 % du total émis à cette date"></circle><circle class="pt" cx="51.80722891566265" cy="374.2641509433962" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1868 : 0,8 Mt CO₂, 0,2 % du total cumulé" data-detail="1868 · 0,8 Mt CO₂ · 0,2 % du total émis à cette date"></circle><circle class="pt" cx="56.98795180722892" cy="374.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1869 : 0,7 Mt CO₂, 0,2 % du total cumulé" data-detail="1869 · 0,7 Mt CO₂ · 0,2 % du total émis à cette date"></circle><circle class="pt" cx="62.16867469879518" cy="373.54716981132077" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1870 : 0,9 Mt CO₂, 0,2 % du total cumulé" data-detail="1870 · 0,9 Mt CO₂ · 0,2 % du total émis à cette date"></circle><circle class="pt" cx="67.34939759036145" cy="372.1132075471698" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1871 : 1,1 Mt CO₂, 0,3 % du total cumulé" data-detail="1871 · 1,1 Mt CO₂ · 0,3 % du total émis à cette date"></circle><circle class="pt" cx="72.53012048192771" cy="370.6792452830189" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1872 : 1,3 Mt CO₂, 0,3 % du total cumulé" data-detail="1872 · 1,3 Mt CO₂ · 0,3 % du total émis à cette date"></circle><circle class="pt" cx="77.71084337349397" cy="371.39622641509436" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1873 : 1,2 Mt CO₂, 0,3 % du total cumulé" data-detail="1873 · 1,2 Mt CO₂ · 0,3 % du total émis à cette date"></circle><circle class="pt" cx="82.89156626506025" cy="371.39622641509436" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1874 : 1,2 Mt CO₂, 0,4 % du total cumulé" data-detail="1874 · 1,2 Mt CO₂ · 0,4 % du total émis à cette date"></circle><circle class="pt" cx="88.0722891566265" cy="370.6792452830189" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1875 : 1,3 Mt CO₂, 0,4 % du total cumulé" data-detail="1875 · 1,3 Mt CO₂ · 0,4 % du total émis à cette date"></circle><circle class="pt" cx="93.25301204819277" cy="369.24528301886795" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1876 : 1,5 Mt CO₂, 0,5 % du total cumulé" data-detail="1876 · 1,5 Mt CO₂ · 0,5 % du total émis à cette date"></circle><circle class="pt" cx="98.43373493975903" cy="369.9622641509434" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1877 : 1,4 Mt CO₂, 0,5 % du total cumulé" data-detail="1877 · 1,4 Mt CO₂ · 0,5 % du total émis à cette date"></circle><circle class="pt" cx="103.6144578313253" cy="369.9622641509434" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1878 : 1,4 Mt CO₂, 0,6 % du total cumulé" data-detail="1878 · 1,4 Mt CO₂ · 0,6 % du total émis à cette date"></circle><circle class="pt" cx="108.79518072289156" cy="369.9622641509434" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1879 : 1,4 Mt CO₂, 0,6 % du total cumulé" data-detail="1879 · 1,4 Mt CO₂ · 0,6 % du total émis à cette date"></circle><circle class="pt" cx="113.97590361445783" cy="367.811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1880 : 1,7 Mt CO₂, 0,6 % du total cumulé" data-detail="1880 · 1,7 Mt CO₂ · 0,6 % du total émis à cette date"></circle><circle class="pt" cx="119.1566265060241" cy="368.52830188679246" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1881 : 1,6 Mt CO₂, 0,7 % du total cumulé" data-detail="1881 · 1,6 Mt CO₂ · 0,7 % du total émis à cette date"></circle><circle class="pt" cx="124.33734939759036" cy="367.811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1882 : 1,7 Mt CO₂, 0,8 % du total cumulé" data-detail="1882 · 1,7 Mt CO₂ · 0,8 % du total émis à cette date"></circle><circle class="pt" cx="129.51807228915663" cy="366.37735849056605" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1883 : 1,9 Mt CO₂, 0,8 % du total cumulé" data-detail="1883 · 1,9 Mt CO₂ · 0,8 % du total émis à cette date"></circle><circle class="pt" cx="134.6987951807229" cy="365.66037735849056" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1884 : 2,0 Mt CO₂, 0,9 % du total cumulé" data-detail="1884 · 2,0 Mt CO₂ · 0,9 % du total émis à cette date"></circle><circle class="pt" cx="139.87951807228916" cy="365.66037735849056" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1885 : 2,0 Mt CO₂, 0,9 % du total cumulé" data-detail="1885 · 2,0 Mt CO₂ · 0,9 % du total émis à cette date"></circle><circle class="pt" cx="145.06024096385542" cy="364.9433962264151" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1886 : 2,1 Mt CO₂, 1,0 % du total cumulé" data-detail="1886 · 2,1 Mt CO₂ · 1,0 % du total émis à cette date"></circle><circle class="pt" cx="150.24096385542168" cy="363.50943396226415" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1887 : 2,3 Mt CO₂, 1,1 % du total cumulé" data-detail="1887 · 2,3 Mt CO₂ · 1,1 % du total émis à cette date"></circle><circle class="pt" cx="155.42168674698794" cy="363.50943396226415" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1888 : 2,3 Mt CO₂, 1,2 % du total cumulé" data-detail="1888 · 2,3 Mt CO₂ · 1,2 % du total émis à cette date"></circle><circle class="pt" cx="160.6024096385542" cy="362.07547169811323" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1889 : 2,5 Mt CO₂, 1,2 % du total cumulé" data-detail="1889 · 2,5 Mt CO₂ · 1,2 % du total émis à cette date"></circle><circle class="pt" cx="165.7831325301205" cy="359.20754716981133" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1890 : 2,9 Mt CO₂, 1,3 % du total cumulé" data-detail="1890 · 2,9 Mt CO₂ · 1,3 % du total émis à cette date"></circle><circle class="pt" cx="170.96385542168676" cy="354.9056603773585" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1891 : 3,5 Mt CO₂, 1,4 % du total cumulé" data-detail="1891 · 3,5 Mt CO₂ · 1,4 % du total émis à cette date"></circle><circle class="pt" cx="176.144578313253" cy="354.9056603773585" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1892 : 3,5 Mt CO₂, 1,5 % du total cumulé" data-detail="1892 · 3,5 Mt CO₂ · 1,5 % du total émis à cette date"></circle><circle class="pt" cx="181.32530120481928" cy="359.20754716981133" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1893 : 2,9 Mt CO₂, 1,6 % du total cumulé" data-detail="1893 · 2,9 Mt CO₂ · 1,6 % du total émis à cette date"></circle><circle class="pt" cx="186.50602409638554" cy="354.188679245283" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1894 : 3,6 Mt CO₂, 1,7 % du total cumulé" data-detail="1894 · 3,6 Mt CO₂ · 1,7 % du total émis à cette date"></circle><circle class="pt" cx="191.6867469879518" cy="352.7547169811321" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1895 : 3,8 Mt CO₂, 1,9 % du total cumulé" data-detail="1895 · 3,8 Mt CO₂ · 1,9 % du total émis à cette date"></circle><circle class="pt" cx="196.86746987951807" cy="349.8867924528302" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1896 : 4,2 Mt CO₂, 2,0 % du total cumulé" data-detail="1896 · 4,2 Mt CO₂ · 2,0 % du total émis à cette date"></circle><circle class="pt" cx="202.04819277108433" cy="348.45283018867923" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1897 : 4,4 Mt CO₂, 2,1 % du total cumulé" data-detail="1897 · 4,4 Mt CO₂ · 2,1 % du total émis à cette date"></circle><circle class="pt" cx="207.2289156626506" cy="346.3018867924528" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1898 : 4,7 Mt CO₂, 2,3 % du total cumulé" data-detail="1898 · 4,7 Mt CO₂ · 2,3 % du total émis à cette date"></circle><circle class="pt" cx="212.40963855421685" cy="343.433962264151" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1899 : 5,1 Mt CO₂, 2,5 % du total cumulé" data-detail="1899 · 5,1 Mt CO₂ · 2,5 % du total émis à cette date"></circle><circle class="pt" cx="217.59036144578312" cy="339.1320754716981" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1900 : 5,7 Mt CO₂, 2,6 % du total cumulé" data-detail="1900 · 5,7 Mt CO₂ · 2,6 % du total émis à cette date"></circle><circle class="pt" cx="222.7710843373494" cy="342.7169811320755" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1901 : 5,2 Mt CO₂, 2,8 % du total cumulé" data-detail="1901 · 5,2 Mt CO₂ · 2,8 % du total émis à cette date"></circle><circle class="pt" cx="227.95180722891567" cy="342.7169811320755" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1902 : 5,2 Mt CO₂, 3,0 % du total cumulé" data-detail="1902 · 5,2 Mt CO₂ · 3,0 % du total émis à cette date"></circle><circle class="pt" cx="233.1325301204819" cy="339.1320754716981" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1903 : 5,7 Mt CO₂, 3,1 % du total cumulé" data-detail="1903 · 5,7 Mt CO₂ · 3,1 % du total émis à cette date"></circle><circle class="pt" cx="238.3132530120482" cy="336.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1904 : 6,0 Mt CO₂, 3,3 % du total cumulé" data-detail="1904 · 6,0 Mt CO₂ · 3,3 % du total émis à cette date"></circle><circle class="pt" cx="243.49397590361448" cy="335.54716981132077" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1905 : 6,2 Mt CO₂, 3,5 % du total cumulé" data-detail="1905 · 6,2 Mt CO₂ · 3,5 % du total émis à cette date"></circle><circle class="pt" cx="248.67469879518072" cy="330.52830188679246" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1906 : 6,9 Mt CO₂, 3,8 % du total cumulé" data-detail="1906 · 6,9 Mt CO₂ · 3,8 % du total émis à cette date"></circle><circle class="pt" cx="253.855421686747" cy="322.64150943396226" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1907 : 8,0 Mt CO₂, 4,0 % du total cumulé" data-detail="1907 · 8,0 Mt CO₂ · 4,0 % du total émis à cette date"></circle><circle class="pt" cx="259.03614457831327" cy="322.64150943396226" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1908 : 8,0 Mt CO₂, 4,3 % du total cumulé" data-detail="1908 · 8,0 Mt CO₂ · 4,3 % du total émis à cette date"></circle><circle class="pt" cx="264.2168674698795" cy="321.92452830188677" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1909 : 8,1 Mt CO₂, 4,5 % du total cumulé" data-detail="1909 · 8,1 Mt CO₂ · 4,5 % du total émis à cette date"></circle><circle class="pt" cx="269.3975903614458" cy="324.07547169811323" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1910 : 7,8 Mt CO₂, 4,8 % du total cumulé" data-detail="1910 · 7,8 Mt CO₂ · 4,8 % du total émis à cette date"></circle><circle class="pt" cx="274.578313253012" cy="318.33962264150944" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1911 : 8,6 Mt CO₂, 5,0 % du total cumulé" data-detail="1911 · 8,6 Mt CO₂ · 5,0 % du total émis à cette date"></circle><circle class="pt" cx="279.7590361445783" cy="316.90566037735846" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1912 : 8,8 Mt CO₂, 5,3 % du total cumulé" data-detail="1912 · 8,8 Mt CO₂ · 5,3 % du total émis à cette date"></circle><circle class="pt" cx="284.9397590361446" cy="313.3207547169811" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1913 : 9,3 Mt CO₂, 5,6 % du total cumulé" data-detail="1913 · 9,3 Mt CO₂ · 5,6 % du total émis à cette date"></circle><circle class="pt" cx="290.12048192771084" cy="319.77358490566036" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1914 : 8,4 Mt CO₂, 5,9 % du total cumulé" data-detail="1914 · 8,4 Mt CO₂ · 5,9 % du total émis à cette date"></circle><circle class="pt" cx="295.30120481927713" cy="316.188679245283" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1915 : 8,9 Mt CO₂, 6,2 % du total cumulé" data-detail="1915 · 8,9 Mt CO₂ · 6,2 % du total émis à cette date"></circle><circle class="pt" cx="300.48192771084337" cy="319.0566037735849" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1916 : 8,5 Mt CO₂, 6,4 % du total cumulé" data-detail="1916 · 8,5 Mt CO₂ · 6,4 % du total émis à cette date"></circle><circle class="pt" cx="305.6626506024096" cy="336.2641509433962" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1917 : 6,1 Mt CO₂, 6,6 % du total cumulé" data-detail="1917 · 6,1 Mt CO₂ · 6,6 % du total émis à cette date"></circle><circle class="pt" cx="310.8433734939759" cy="339.1320754716981" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1918 : 5,7 Mt CO₂, 6,8 % du total cumulé" data-detail="1918 · 5,7 Mt CO₂ · 6,8 % du total émis à cette date"></circle><circle class="pt" cx="316.0240963855422" cy="347.0188679245283" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1919 : 4,6 Mt CO₂, 6,9 % du total cumulé" data-detail="1919 · 4,6 Mt CO₂ · 6,9 % du total émis à cette date"></circle><circle class="pt" cx="321.2048192771084" cy="328.37735849056605" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1920 : 7,2 Mt CO₂, 7,2 % du total cumulé" data-detail="1920 · 7,2 Mt CO₂ · 7,2 % du total émis à cette date"></circle><circle class="pt" cx="326.3855421686747" cy="347.7358490566038" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1921 : 4,5 Mt CO₂, 7,3 % du total cumulé" data-detail="1921 · 4,5 Mt CO₂ · 7,3 % du total émis à cette date"></circle><circle class="pt" cx="331.566265060241" cy="335.54716981132077" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1922 : 6,2 Mt CO₂, 7,5 % du total cumulé" data-detail="1922 · 6,2 Mt CO₂ · 7,5 % du total émis à cette date"></circle><circle class="pt" cx="336.7469879518072" cy="324.79245283018867" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1923 : 7,7 Mt CO₂, 7,8 % du total cumulé" data-detail="1923 · 7,7 Mt CO₂ · 7,8 % du total émis à cette date"></circle><circle class="pt" cx="341.9277108433735" cy="328.37735849056605" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1924 : 7,2 Mt CO₂, 8,0 % du total cumulé" data-detail="1924 · 7,2 Mt CO₂ · 8,0 % du total émis à cette date"></circle><circle class="pt" cx="347.10843373493975" cy="326.22641509433964" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1925 : 7,5 Mt CO₂, 8,2 % du total cumulé" data-detail="1925 · 7,5 Mt CO₂ · 8,2 % du total émis à cette date"></circle><circle class="pt" cx="352.289156626506" cy="326.22641509433964" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1926 : 7,5 Mt CO₂, 8,5 % du total cumulé" data-detail="1926 · 7,5 Mt CO₂ · 8,5 % du total émis à cette date"></circle><circle class="pt" cx="357.4698795180723" cy="318.33962264150944" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1927 : 8,6 Mt CO₂, 8,7 % du total cumulé" data-detail="1927 · 8,6 Mt CO₂ · 8,7 % du total émis à cette date"></circle><circle class="pt" cx="362.65060240963857" cy="315.47169811320754" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1928 : 9,0 Mt CO₂, 9,0 % du total cumulé" data-detail="1928 · 9,0 Mt CO₂ · 9,0 % du total émis à cette date"></circle><circle class="pt" cx="367.8313253012048" cy="306.1509433962264" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1929 : 10,3 Mt CO₂, 9,3 % du total cumulé" data-detail="1929 · 10,3 Mt CO₂ · 9,3 % du total émis à cette date"></circle><circle class="pt" cx="373.0120481927711" cy="311.1698113207547" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1930 : 9,6 Mt CO₂, 9,6 % du total cumulé" data-detail="1930 · 9,6 Mt CO₂ · 9,6 % du total émis à cette date"></circle><circle class="pt" cx="378.1927710843373" cy="307.58490566037733" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1931 : 10,1 Mt CO₂, 10,0 % du total cumulé" data-detail="1931 · 10,1 Mt CO₂ · 10,0 % du total émis à cette date"></circle><circle class="pt" cx="383.3734939759036" cy="306.8679245283019" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1932 : 10,2 Mt CO₂, 10,3 % du total cumulé" data-detail="1932 · 10,2 Mt CO₂ · 10,3 % du total émis à cette date"></circle><circle class="pt" cx="388.5542168674699" cy="311.1698113207547" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1933 : 9,6 Mt CO₂, 10,6 % du total cumulé" data-detail="1933 · 9,6 Mt CO₂ · 10,6 % du total émis à cette date"></circle><circle class="pt" cx="393.73493975903614" cy="311.1698113207547" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1934 : 9,6 Mt CO₂, 10,9 % du total cumulé" data-detail="1934 · 9,6 Mt CO₂ · 10,9 % du total émis à cette date"></circle><circle class="pt" cx="398.9156626506024" cy="311.8867924528302" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1935 : 9,5 Mt CO₂, 11,2 % du total cumulé" data-detail="1935 · 9,5 Mt CO₂ · 11,2 % du total émis à cette date"></circle><circle class="pt" cx="404.09638554216866" cy="309.0188679245283" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1936 : 9,9 Mt CO₂, 11,5 % du total cumulé" data-detail="1936 · 9,9 Mt CO₂ · 11,5 % du total émis à cette date"></circle><circle class="pt" cx="409.2771084337349" cy="304.7169811320755" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1937 : 10,5 Mt CO₂, 11,8 % du total cumulé" data-detail="1937 · 10,5 Mt CO₂ · 11,8 % du total émis à cette date"></circle><circle class="pt" cx="414.4578313253012" cy="304.7169811320755" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1938 : 10,5 Mt CO₂, 12,2 % du total cumulé" data-detail="1938 · 10,5 Mt CO₂ · 12,2 % du total émis à cette date"></circle><circle class="pt" cx="419.6385542168675" cy="294.6792452830189" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1939 : 11,9 Mt CO₂, 12,5 % du total cumulé" data-detail="1939 · 11,9 Mt CO₂ · 12,5 % du total émis à cette date"></circle><circle class="pt" cx="424.8192771084337" cy="320.49056603773585" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1940 : 8,3 Mt CO₂, 12,8 % du total cumulé" data-detail="1940 · 8,3 Mt CO₂ · 12,8 % du total émis à cette date"></circle><circle class="pt" cx="430" cy="332.6792452830189" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1941 : 6,6 Mt CO₂, 13,0 % du total cumulé" data-detail="1941 · 6,6 Mt CO₂ · 13,0 % du total émis à cette date"></circle><circle class="pt" cx="435.18072289156623" cy="338.41509433962267" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1942 : 5,8 Mt CO₂, 13,2 % du total cumulé" data-detail="1942 · 5,8 Mt CO₂ · 13,2 % du total émis à cette date"></circle><circle class="pt" cx="440.3614457831326" cy="335.54716981132077" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1943 : 6,2 Mt CO₂, 13,4 % du total cumulé" data-detail="1943 · 6,2 Mt CO₂ · 13,4 % du total émis à cette date"></circle><circle class="pt" cx="445.5421686746988" cy="347.7358490566038" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1944 : 4,5 Mt CO₂, 13,5 % du total cumulé" data-detail="1944 · 4,5 Mt CO₂ · 13,5 % du total émis à cette date"></circle><circle class="pt" cx="450.72289156626505" cy="368.52830188679246" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1945 : 1,6 Mt CO₂, 13,6 % du total cumulé" data-detail="1945 · 1,6 Mt CO₂ · 13,6 % du total émis à cette date"></circle><circle class="pt" cx="455.90361445783134" cy="338.41509433962267" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1946 : 5,8 Mt CO₂, 13,8 % du total cumulé" data-detail="1946 · 5,8 Mt CO₂ · 13,8 % du total émis à cette date"></circle><circle class="pt" cx="461.0843373493976" cy="312.60377358490564" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1947 : 9,4 Mt CO₂, 14,1 % du total cumulé" data-detail="1947 · 9,4 Mt CO₂ · 14,1 % du total émis à cette date"></circle><circle class="pt" cx="466.2650602409638" cy="306.8679245283019" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1948 : 10,2 Mt CO₂, 14,4 % du total cumulé" data-detail="1948 · 10,2 Mt CO₂ · 14,4 % du total émis à cette date"></circle><circle class="pt" cx="471.44578313253015" cy="319.0566037735849" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1949 : 8,5 Mt CO₂, 14,7 % du total cumulé" data-detail="1949 · 8,5 Mt CO₂ · 14,7 % du total émis à cette date"></circle><circle class="pt" cx="476.6265060240964" cy="306.1509433962264" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1950 : 10,3 Mt CO₂, 15,0 % du total cumulé" data-detail="1950 · 10,3 Mt CO₂ · 15,0 % du total émis à cette date"></circle><circle class="pt" cx="481.8072289156626" cy="291.811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1951 : 12,3 Mt CO₂, 15,4 % du total cumulé" data-detail="1951 · 12,3 Mt CO₂ · 15,4 % du total émis à cette date"></circle><circle class="pt" cx="486.98795180722897" cy="299.6981132075472" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1952 : 11,2 Mt CO₂, 15,7 % du total cumulé" data-detail="1952 · 11,2 Mt CO₂ · 15,7 % du total émis à cette date"></circle><circle class="pt" cx="492.1686746987952" cy="305.4339622641509" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1953 : 10,4 Mt CO₂, 16,1 % du total cumulé" data-detail="1953 · 10,4 Mt CO₂ · 16,1 % du total émis à cette date"></circle><circle class="pt" cx="497.34939759036143" cy="289.66037735849056" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1954 : 12,6 Mt CO₂, 16,5 % du total cumulé" data-detail="1954 · 12,6 Mt CO₂ · 16,5 % du total émis à cette date"></circle><circle class="pt" cx="502.5301204819278" cy="282.49056603773585" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1955 : 13,6 Mt CO₂, 16,9 % du total cumulé" data-detail="1955 · 13,6 Mt CO₂ · 16,9 % du total émis à cette date"></circle><circle class="pt" cx="507.710843373494" cy="257.3962264150943" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1956 : 17,1 Mt CO₂, 17,4 % du total cumulé" data-detail="1956 · 17,1 Mt CO₂ · 17,4 % du total émis à cette date"></circle><circle class="pt" cx="512.8915662650602" cy="253.0943396226415" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1957 : 17,7 Mt CO₂, 18,0 % du total cumulé" data-detail="1957 · 17,7 Mt CO₂ · 18,0 % du total émis à cette date"></circle><circle class="pt" cx="518.0722891566265" cy="263.1320754716981" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1958 : 16,3 Mt CO₂, 18,5 % du total cumulé" data-detail="1958 · 16,3 Mt CO₂ · 18,5 % du total émis à cette date"></circle><circle class="pt" cx="523.2530120481928" cy="260.9811320754717" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1959 : 16,6 Mt CO₂, 19,0 % du total cumulé" data-detail="1959 · 16,6 Mt CO₂ · 19,0 % du total émis à cette date"></circle><circle class="pt" cx="528.433734939759" cy="240.18867924528303" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1960 : 19,5 Mt CO₂, 19,7 % du total cumulé" data-detail="1960 · 19,5 Mt CO₂ · 19,7 % du total émis à cette date"></circle><circle class="pt" cx="533.6144578313254" cy="233.7358490566038" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1961 : 20,4 Mt CO₂, 20,3 % du total cumulé" data-detail="1961 · 20,4 Mt CO₂ · 20,3 % du total émis à cette date"></circle><circle class="pt" cx="538.7951807228916" cy="207.2075471698113" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1962 : 24,1 Mt CO₂, 21,1 % du total cumulé" data-detail="1962 · 24,1 Mt CO₂ · 21,1 % du total émis à cette date"></circle><circle class="pt" cx="543.9759036144578" cy="171.35849056603774" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1963 : 29,1 Mt CO₂, 22,0 % du total cumulé" data-detail="1963 · 29,1 Mt CO₂ · 22,0 % du total émis à cette date"></circle><circle class="pt" cx="549.156626506024" cy="178.52830188679246" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1964 : 28,1 Mt CO₂, 22,9 % du total cumulé" data-detail="1964 · 28,1 Mt CO₂ · 22,9 % du total émis à cette date"></circle><circle class="pt" cx="554.3373493975904" cy="162.75471698113208" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1965 : 30,3 Mt CO₂, 23,8 % du total cumulé" data-detail="1965 · 30,3 Mt CO₂ · 23,8 % du total émis à cette date"></circle><circle class="pt" cx="559.5180722891566" cy="154.1509433962264" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1966 : 31,5 Mt CO₂, 24,8 % du total cumulé" data-detail="1966 · 31,5 Mt CO₂ · 24,8 % du total émis à cette date"></circle><circle class="pt" cx="564.6987951807229" cy="146.98113207547172" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1967 : 32,5 Mt CO₂, 25,9 % du total cumulé" data-detail="1967 · 32,5 Mt CO₂ · 25,9 % du total émis à cette date"></circle><circle class="pt" cx="569.8795180722892" cy="121.8867924528302" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1968 : 36,0 Mt CO₂, 27,0 % du total cumulé" data-detail="1968 · 36,0 Mt CO₂ · 27,0 % du total émis à cette date"></circle><circle class="pt" cx="575.0602409638554" cy="106.83018867924528" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1969 : 38,1 Mt CO₂, 28,2 % du total cumulé" data-detail="1969 · 38,1 Mt CO₂ · 28,2 % du total émis à cette date"></circle><circle class="pt" cx="580.2409638554217" cy="91.05660377358492" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1970 : 40,3 Mt CO₂, 29,5 % du total cumulé" data-detail="1970 · 40,3 Mt CO₂ · 29,5 % du total émis à cette date"></circle><circle class="pt" cx="585.421686746988" cy="79.58490566037739" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1971 : 41,9 Mt CO₂, 30,8 % du total cumulé" data-detail="1971 · 41,9 Mt CO₂ · 30,8 % du total émis à cette date"></circle><circle class="pt" cx="590.6024096385543" cy="72.41509433962267" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1972 : 42,9 Mt CO₂, 32,2 % du total cumulé" data-detail="1972 · 42,9 Mt CO₂ · 32,2 % du total émis à cette date"></circle><circle class="pt" cx="595.7831325301205" cy="48.75471698113205" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1973 : 46,2 Mt CO₂, 33,6 % du total cumulé" data-detail="1973 · 46,2 Mt CO₂ · 33,6 % du total émis à cette date"></circle><circle class="pt" cx="600.9638554216867" cy="83.16981132075472" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1974 : 41,4 Mt CO₂, 34,9 % du total cumulé" data-detail="1974 · 41,4 Mt CO₂ · 34,9 % du total émis à cette date"></circle><circle class="pt" cx="606.144578313253" cy="100.37735849056605" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1975 : 39,0 Mt CO₂, 36,2 % du total cumulé" data-detail="1975 · 39,0 Mt CO₂ · 36,2 % du total émis à cette date"></circle><circle class="pt" cx="611.3253012048192" cy="90.33962264150944" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1976 : 40,4 Mt CO₂, 37,5 % du total cumulé" data-detail="1976 · 40,4 Mt CO₂ · 37,5 % du total émis à cette date"></circle><circle class="pt" cx="616.5060240963855" cy="86.03773584905656" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1977 : 41,0 Mt CO₂, 38,8 % du total cumulé" data-detail="1977 · 41,0 Mt CO₂ · 38,8 % du total émis à cette date"></circle><circle class="pt" cx="621.6867469879518" cy="77.43396226415092" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1978 : 42,2 Mt CO₂, 40,1 % du total cumulé" data-detail="1978 · 42,2 Mt CO₂ · 40,1 % du total émis à cette date"></circle><circle class="pt" cx="626.867469879518" cy="93.92452830188682" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1979 : 39,9 Mt CO₂, 41,4 % du total cumulé" data-detail="1979 · 39,9 Mt CO₂ · 41,4 % du total émis à cette date"></circle><circle class="pt" cx="632.0481927710844" cy="89.62264150943395" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1980 : 40,5 Mt CO₂, 42,6 % du total cumulé" data-detail="1980 · 40,5 Mt CO₂ · 42,6 % du total émis à cette date"></circle><circle class="pt" cx="637.2289156626506" cy="101.81132075471697" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1981 : 38,8 Mt CO₂, 43,9 % du total cumulé" data-detail="1981 · 38,8 Mt CO₂ · 43,9 % du total émis à cette date"></circle><circle class="pt" cx="642.4096385542168" cy="117.58490566037733" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1982 : 36,6 Mt CO₂, 45,0 % du total cumulé" data-detail="1982 · 36,6 Mt CO₂ · 45,0 % du total émis à cette date"></circle><circle class="pt" cx="647.5903614457832" cy="93.20754716981128" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1983 : 40,0 Mt CO₂, 46,3 % du total cumulé" data-detail="1983 · 40,0 Mt CO₂ · 46,3 % du total émis à cette date"></circle><circle class="pt" cx="652.7710843373494" cy="99.66037735849056" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1984 : 39,1 Mt CO₂, 47,5 % du total cumulé" data-detail="1984 · 39,1 Mt CO₂ · 47,5 % du total émis à cette date"></circle><circle class="pt" cx="657.9518072289156" cy="94.64150943396231" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1985 : 39,8 Mt CO₂, 48,8 % du total cumulé" data-detail="1985 · 39,8 Mt CO₂ · 48,8 % du total émis à cette date"></circle><circle class="pt" cx="663.132530120482" cy="77.43396226415092" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1986 : 42,2 Mt CO₂, 50,1 % du total cumulé" data-detail="1986 · 42,2 Mt CO₂ · 50,1 % du total émis à cette date"></circle><circle class="pt" cx="668.3132530120482" cy="91.77358490566036" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1987 : 40,2 Mt CO₂, 51,4 % du total cumulé" data-detail="1987 · 40,2 Mt CO₂ · 51,4 % du total émis à cette date"></circle><circle class="pt" cx="673.4939759036145" cy="88.90566037735846" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1988 : 40,6 Mt CO₂, 52,7 % du total cumulé" data-detail="1988 · 40,6 Mt CO₂ · 52,7 % du total émis à cette date"></circle><circle class="pt" cx="678.6746987951808" cy="97.50943396226415" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1989 : 39,4 Mt CO₂, 53,9 % du total cumulé" data-detail="1989 · 39,4 Mt CO₂ · 53,9 % du total émis à cette date"></circle><circle class="pt" cx="683.855421686747" cy="63.811320754716974" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1990 : 44,1 Mt CO₂, 55,3 % du total cumulé" data-detail="1990 · 44,1 Mt CO₂ · 55,3 % du total émis à cette date"></circle><circle class="pt" cx="689.0361445783133" cy="49.47169811320754" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1991 : 46,1 Mt CO₂, 56,8 % du total cumulé" data-detail="1991 · 46,1 Mt CO₂ · 56,8 % du total émis à cette date"></circle><circle class="pt" cx="694.2168674698795" cy="50.188679245283026" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1992 : 46,0 Mt CO₂, 58,2 % du total cumulé" data-detail="1992 · 46,0 Mt CO₂ · 58,2 % du total émis à cette date"></circle><circle class="pt" cx="699.3975903614457" cy="67.3962264150943" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1993 : 43,6 Mt CO₂, 59,6 % du total cumulé" data-detail="1993 · 43,6 Mt CO₂ · 59,6 % du total émis à cette date"></circle><circle class="pt" cx="704.578313253012" cy="73.84905660377359" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1994 : 42,7 Mt CO₂, 61,0 % du total cumulé" data-detail="1994 · 42,7 Mt CO₂ · 61,0 % du total émis à cette date"></circle><circle class="pt" cx="709.7590361445783" cy="68.83018867924528" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1995 : 43,4 Mt CO₂, 62,4 % du total cumulé" data-detail="1995 · 43,4 Mt CO₂ · 62,4 % du total émis à cette date"></circle><circle class="pt" cx="714.9397590361446" cy="63.811320754716974" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1996 : 44,1 Mt CO₂, 63,7 % du total cumulé" data-detail="1996 · 44,1 Mt CO₂ · 63,7 % du total émis à cette date"></circle><circle class="pt" cx="720.1204819277108" cy="71.69811320754718" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1997 : 43,0 Mt CO₂, 65,1 % du total cumulé" data-detail="1997 · 43,0 Mt CO₂ · 65,1 % du total émis à cette date"></circle><circle class="pt" cx="725.3012048192771" cy="60.226415094339586" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1998 : 44,6 Mt CO₂, 66,5 % du total cumulé" data-detail="1998 · 44,6 Mt CO₂ · 66,5 % du total émis à cette date"></circle><circle class="pt" cx="730.4819277108434" cy="61.66037735849062" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="1999 : 44,4 Mt CO₂, 67,9 % du total cumulé" data-detail="1999 · 44,4 Mt CO₂ · 67,9 % du total émis à cette date"></circle><circle class="pt" cx="735.6626506024096" cy="67.3962264150943" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2000 : 43,6 Mt CO₂, 69,3 % du total cumulé" data-detail="2000 · 43,6 Mt CO₂ · 69,3 % du total émis à cette date"></circle><circle class="pt" cx="740.843373493976" cy="56.641509433962256" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2001 : 45,1 Mt CO₂, 70,7 % du total cumulé" data-detail="2001 · 45,1 Mt CO₂ · 70,7 % du total émis à cette date"></circle><circle class="pt" cx="746.0240963855422" cy="68.1132075471698" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2002 : 43,5 Mt CO₂, 72,1 % du total cumulé" data-detail="2002 · 43,5 Mt CO₂ · 72,1 % du total émis à cette date"></circle><circle class="pt" cx="751.2048192771084" cy="59.509433962264154" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2003 : 44,7 Mt CO₂, 73,5 % du total cumulé" data-detail="2003 · 44,7 Mt CO₂ · 73,5 % du total émis à cette date"></circle><circle class="pt" cx="756.3855421686746" cy="55.92452830188677" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2004 : 45,2 Mt CO₂, 75,0 % du total cumulé" data-detail="2004 · 45,2 Mt CO₂ · 75,0 % du total émis à cette date"></circle><circle class="pt" cx="761.566265060241" cy="51.622641509434004" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2005 : 45,8 Mt CO₂, 76,4 % du total cumulé" data-detail="2005 · 45,8 Mt CO₂ · 76,4 % du total émis à cette date"></circle><circle class="pt" cx="766.7469879518072" cy="54.4905660377359" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2006 : 45,4 Mt CO₂, 77,9 % du total cumulé" data-detail="2006 · 45,4 Mt CO₂ · 77,9 % du total émis à cette date"></circle><circle class="pt" cx="771.9277108433735" cy="68.83018867924528" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2007 : 43,4 Mt CO₂, 79,2 % du total cumulé" data-detail="2007 · 43,4 Mt CO₂ · 79,2 % du total émis à cette date"></circle><circle class="pt" cx="777.1084337349398" cy="59.509433962264154" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2008 : 44,7 Mt CO₂, 80,6 % du total cumulé" data-detail="2008 · 44,7 Mt CO₂ · 80,6 % du total émis à cette date"></circle><circle class="pt" cx="782.289156626506" cy="68.1132075471698" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2009 : 43,5 Mt CO₂, 82,0 % du total cumulé" data-detail="2009 · 43,5 Mt CO₂ · 82,0 % du total émis à cette date"></circle><circle class="pt" cx="787.4698795180723" cy="57.358490566037744" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2010 : 45,0 Mt CO₂, 83,4 % du total cumulé" data-detail="2010 · 45,0 Mt CO₂ · 83,4 % du total émis à cette date"></circle><circle class="pt" cx="792.6506024096386" cy="86.03773584905656" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2011 : 41,0 Mt CO₂, 84,7 % du total cumulé" data-detail="2011 · 41,0 Mt CO₂ · 84,7 % du total émis à cette date"></circle><circle class="pt" cx="797.8313253012049" cy="77.43396226415092" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2012 : 42,2 Mt CO₂, 86,1 % du total cumulé" data-detail="2012 · 42,2 Mt CO₂ · 86,1 % du total émis à cette date"></circle><circle class="pt" cx="803.0120481927711" cy="70.2641509433962" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2013 : 43,2 Mt CO₂, 87,4 % du total cumulé" data-detail="2013 · 43,2 Mt CO₂ · 87,4 % du total émis à cette date"></circle><circle class="pt" cx="808.1927710843373" cy="98.94339622641508" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2014 : 39,2 Mt CO₂, 88,7 % du total cumulé" data-detail="2014 · 39,2 Mt CO₂ · 88,7 % du total émis à cette date"></circle><circle class="pt" cx="813.3734939759036" cy="101.81132075471697" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2015 : 38,8 Mt CO₂, 89,9 % du total cumulé" data-detail="2015 · 38,8 Mt CO₂ · 89,9 % du total émis à cette date"></circle><circle class="pt" cx="818.5542168674698" cy="98.94339622641508" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2016 : 39,2 Mt CO₂, 91,2 % du total cumulé" data-detail="2016 · 39,2 Mt CO₂ · 91,2 % du total émis à cette date"></circle><circle class="pt" cx="823.7349397590361" cy="106.1132075471698" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2017 : 38,2 Mt CO₂, 92,4 % du total cumulé" data-detail="2017 · 38,2 Mt CO₂ · 92,4 % du total émis à cette date"></circle><circle class="pt" cx="828.9156626506024" cy="115.43396226415098" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2018 : 36,9 Mt CO₂, 93,5 % du total cumulé" data-detail="2018 · 36,9 Mt CO₂ · 93,5 % du total émis à cette date"></circle><circle class="pt" cx="834.0963855421686" cy="116.15094339622641" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2019 : 36,8 Mt CO₂, 94,7 % du total cumulé" data-detail="2019 · 36,8 Mt CO₂ · 94,7 % du total émis à cette date"></circle><circle class="pt" cx="839.277108433735" cy="134.07547169811323" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2020 : 34,3 Mt CO₂, 95,8 % du total cumulé" data-detail="2020 · 34,3 Mt CO₂ · 95,8 % du total émis à cette date"></circle><circle class="pt" cx="844.4578313253012" cy="122.6037735849057" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2021 : 35,9 Mt CO₂, 96,9 % du total cumulé" data-detail="2021 · 35,9 Mt CO₂ · 96,9 % du total émis à cette date"></circle><circle class="pt" cx="849.6385542168674" cy="143.39622641509436" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2022 : 33,0 Mt CO₂, 98,0 % du total cumulé" data-detail="2022 · 33,0 Mt CO₂ · 98,0 % du total émis à cette date"></circle><circle class="pt" cx="854.8192771084338" cy="150.56603773584908" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2023 : 32,0 Mt CO₂, 99,0 % du total cumulé" data-detail="2023 · 32,0 Mt CO₂ · 99,0 % du total émis à cette date"></circle><circle class="pt" cx="860" cy="149.8490566037736" r="4" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2024 : 32,1 Mt CO₂, 100,0 % du total cumulé" data-detail="2024 · 32,1 Mt CO₂ · 100,0 % du total émis à cette date"></circle><rect class="hit-area" x="0" y="0" width="860" height="380" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="note" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:500;font-style:normal;letter-spacing:1.8px;text-transform:uppercase;color:#ffffff;right:22.891566265060234%;transform:translateX(0);white-space:normal;max-width:min(46%, 24em);top:6%">1986 : la moitié du total est derrière</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:14px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#4FE0C0;left:100%;top:39.43396226415095%">2024 · 32,1</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:1.2048192771084338%">1860</span><span class="axis-label x" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:25.301204819277107%">1900</span><span class="axis-label x" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:49.39759036144578%">1940</span><span class="axis-label x" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:73.49397590361446%">1980</span><span class="axis-label x" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:97.59036144578313%">2020</span></div></div><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:10px 0 0">Lecture : la hauteur est le débit d&#x27;une année, la surface est le stock qu&#x27;il accumule. Survolez, touchez ou tabulez n&#x27;importe quelle année pour lire son chiffre et la part du total déjà émise à cette date — les 167 lectures que l&#x27;image fixe ne pouvait pas écrire.</p><p class="chart-source" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:6px 0 0">Source : Global Carbon Budget 2025, via Our World in Data · 1858-2024</p><p class="chart-total" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:4px 0 0">Total 1858–2024 : 3 158 Mt. 51,2 % de ce total a été émis à partir de 1986.</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

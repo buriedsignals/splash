@@ -47,7 +47,7 @@ const WORLD_CODE = "OWID_WRL";
 
 /** RFC4180-lite: this file's only quoted field would be an entity name containing a comma, and
  *  the frozen data has none — asserted below rather than assumed. */
-function parseCsv(text) {
+export function parseCsv(text) {
   const [header, ...rows] = text.trim().split(/\r?\n/);
   const cols = header.split(",");
   return rows
@@ -63,20 +63,23 @@ function parseCsv(text) {
     });
 }
 
-function main() {
-  return run();
-}
-
-async function run() {
-  const csv = await readFile(join(HERE, "data.csv"), "utf8");
-  const rows = parseCsv(csv);
+/**
+ * EVERY FIGURE THE PLATE ASSERTS, COMPUTED FROM THE FROZEN ROWS — the ranking, the search behind
+ * "the next five", the share of the world total, and the four reader-facing strings built out of
+ * them.
+ *
+ * Lifted out of `run()` unchanged so that a SECOND renderer can read the same claim through the
+ * same reader. `render-directions.mjs` draws this beat once per filed direction; two copies of a
+ * "more than the next five combined" search would be two chances for the two plates to disagree
+ * about what the data says, which is the one defect class this corpus counts.
+ *
+ * The strings live in one `words` object rather than a run of `const`s on purpose:
+ * `claims-grounded-in-data.test.ts` terminates an expression on a comma but not on a semicolon, so
+ * a claim `const` declared right after another is swallowed by its predecessor and never scanned —
+ * measured, and written up in `proof/static-diverging-bar-eu-per-capita/BRIEF.md`.
+ */
+export function claimFrom(rows) {
   const valueColumn = "Annual CO₂ emissions";
-  console.log(`read ${rows.length} rows from data.csv`);
-
-  const years = [...new Set(rows.map((r) => Number(r.Year)))];
-  if (years.length !== 1 || years[0] !== YEAR)
-    throw new Error(`frozen data should hold ${YEAR} only, holds: ${years.join(", ")}`);
-
   const countries = rows.filter((r) => ISO3.test(r.Code));
   const world = rows.find((r) => r.Code === WORLD_CODE);
   if (!world) throw new Error(`no ${WORLD_CODE} row in the frozen data — the world total is claimed in the subtitle`);
@@ -162,6 +165,46 @@ async function run() {
   console.log(`callout:  ${callout.text}`);
   console.log(`alt:      ${alt}`);
 
+  return {
+    top,
+    subject,
+    subjectValue,
+    beaten,
+    beatenCount,
+    combined,
+    topShare,
+    lastPlace,
+    ratioToSecond,
+    world,
+    words: { title, subtitle, callout, alt },
+  };
+}
+
+function main() {
+  return run();
+}
+
+async function run() {
+  const csv = await readFile(join(HERE, "data.csv"), "utf8");
+  const rows = parseCsv(csv);
+  console.log(`read ${rows.length} rows from data.csv`);
+
+  const years = [...new Set(rows.map((r) => Number(r.Year)))];
+  if (years.length !== 1 || years[0] !== YEAR)
+    throw new Error(`frozen data should hold ${YEAR} only, holds: ${years.join(", ")}`);
+
+  const {
+    top,
+    subject,
+    subjectValue,
+    beaten,
+    combined,
+    topShare,
+    lastPlace,
+    ratioToSecond,
+    words: { title, subtitle, callout, alt },
+  } = claimFrom(rows);
+
   const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
     stopAt: join(HERE, "..", ".."),
   });
@@ -227,4 +270,6 @@ async function run() {
   console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`);
 }
 
-main();
+// Runs when this file IS the script; stays quiet when `render-directions.mjs` imports
+// `claimFrom` from it, so importing the claim never re-renders the beat as a side effect.
+if (import.meta.main) main();

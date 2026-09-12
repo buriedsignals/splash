@@ -1,0 +1,661 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/which-is-the-best-performing-marvel-movie/",
+  "archive": "informationisbeautiful",
+  "family": "ranking",
+  "id": "informationisbeautiful-net-visualizations-which-is-the-best-performing",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Which is the Best Performing Marvel Movie? — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 29,
+        "sample": "With more MCU phase 5 slugfests coming down the Disney pipe ",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 7,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "What is the best performing Marvel Movie?",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "What is The Most Successful Hollywood Movie of All Time?",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "The-numbers.com",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Maybe not the film you expect",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": ": Mar 15th 2025 – added The Marvels, Deadpool & Wolverine an",
+        "colors": [
+          "rgb(153, 153, 153)",
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "UPDATES",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "Some interesting metrics & combos",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 806,
+      "ratio": 1.71
+    },
+    "graphicFrame": {
+      "url": "https://vizsweet.com/api/embed/0ada3c150e62c85d",
+      "title": "VizSweet",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Inter Tight",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14 | 400 | normal | 0 | none",
+          "count": 18,
+          "sample": "2008",
+          "colors": [
+            "rgb(233, 231, 236)",
+            "rgb(245, 244, 246)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "uppercase",
+          "key": "Inter Tight | 14 | 400 | normal | 0 | uppercase",
+          "count": 10,
+          "sample": "Ant-Man",
+          "colors": [
+            "rgb(206, 71, 46)",
+            "rgb(240, 83, 55)",
+            "rgb(250, 162, 36)",
+            "rgb(255, 215, 62)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.3,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.3 | 400 | normal | 0 | none",
+          "count": 6,
+          "sample": "David McCandless, Tom Evans, Paul Barton",
+          "colors": [
+            "rgb(233, 231, 236)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14 | 600 | normal | 0 | none",
+          "count": 3,
+          "sample": "size",
+          "colors": [
+            "rgb(245, 244, 246)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "year",
+          "colors": [
+            "rgb(233, 231, 236)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 45.2,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 45.2 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Which is The Best Performing Marvel Movie?",
+          "colors": [
+            "rgb(255, 255, 255)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 12 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "USE THE LEGEND TO FILTER",
+          "colors": [
+            "rgb(139, 139, 139)"
+          ]
+        },
+        {
+          "family": "Inter Tight",
+          "size": 14.3,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Inter Tight | 14.3 | 600 | normal | 0 | none",
+          "count": 1,
+          "sample": "InformationisBeautiful",
+          "colors": [
+            "rgb(233, 231, 236)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 11,
+          "weight": "300",
+          "style": "normal",
+          "tracking": 0.5,
+          "transform": "uppercase",
+          "key": "Rubik | 11 | 300 | normal | 0.5 | uppercase",
+          "count": 1,
+          "sample": "Made with",
+          "colors": [
+            "rgb(233, 231, 236)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(0, 0, 0)",
+          "count": 35
+        },
+        {
+          "colour": "stroke rgb(128, 128, 128)",
+          "count": 35
+        },
+        {
+          "colour": "fill rgb(38, 35, 44)",
+          "count": 15
+        },
+        {
+          "colour": "fill rgb(245, 244, 246)",
+          "count": 6
+        },
+        {
+          "colour": "fill rgb(233, 231, 236)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(102, 102, 102)",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(90, 90, 91)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#26232C",
+      "share": 0.9382691408638113,
+      "h": 260.00039608489254,
+      "s": 0.11391235728610986,
+      "l": 0.15490737182439115,
+      "chroma": 0.03529172777102463
+    },
+    "chromatic": [
+      {
+        "hex": "#FED63E",
+        "share": 0.0010977451720789728,
+        "h": 47.543580803937644,
+        "s": 0.9862043974009996,
+        "l": 0.6188884071237012,
+        "chroma": 0.7517078575902105
+      },
+      {
+        "hex": "#64BB52",
+        "share": 0.0007399216024741971,
+        "h": 109.80325714878461,
+        "s": 0.43762893617879817,
+        "l": 0.5276558740142472,
+        "chroma": 0.4134229147308984
+      },
+      {
+        "hex": "#CC472E",
+        "share": 0.0003740065451145395,
+        "h": 9.353214209871677,
+        "s": 0.6326992840553561,
+        "l": 0.4911293363499246,
+        "chroma": 0.621474358974359
+      },
+      {
+        "hex": "#D4B33B",
+        "share": 0.0003470349192649333,
+        "h": 47.10774023159748,
+        "s": 0.6393055826135896,
+        "l": 0.5306613837244742,
+        "chroma": 0.600101595042162
+      },
+      {
+        "hex": "#EEE2BE",
+        "share": 0.00033175099795015644,
+        "h": 45.268303521830916,
+        "s": 0.5951074380165287,
+        "l": 0.8392581965035336,
+        "chroma": 0.19131728572187678
+      },
+      {
+        "hex": "#F05337",
+        "share": 0.00031107275146545835,
+        "h": 9.081081081081082,
+        "s": 0.8604651162790697,
+        "l": 0.5784313725490196,
+        "chroma": 0.7254901960784313
+      },
+      {
+        "hex": "#0399DC",
+        "share": 0.0002580285539612328,
+        "h": 198.52722652857742,
+        "s": 0.9725663163163164,
+        "l": 0.43681082188973147,
+        "chroma": 0.8496549839447974
+      },
+      {
+        "hex": "#C94935",
+        "share": 0.00025263422879131153,
+        "h": 8.265762516231426,
+        "s": 0.5827307886329242,
+        "l": 0.49796943688507433,
+        "chroma": 0.580364245342265
+      },
+      {
+        "hex": "#0A81B9",
+        "share": 0.00024993706620635094,
+        "h": 199.15163195013943,
+        "s": 0.8984012377514182,
+        "l": 0.38293130201720976,
+        "chroma": 0.6880519114120468
+      },
+      {
+        "hex": "#A3D393",
+        "share": 0.00023285503650160032,
+        "h": 104.99909283338371,
+        "s": 0.418363990587759,
+        "l": 0.7007873419638125,
+        "chroma": 0.2503596033007798
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#26232C",
+        "share": 0.9382691408638113,
+        "h": 260.00039608489254,
+        "s": 0.11391235728610986,
+        "l": 0.15490737182439115,
+        "chroma": 0.03529172777102463
+      },
+      {
+        "hex": "#393640",
+        "share": 0.01081022764052217,
+        "h": 258.00434236467544,
+        "s": 0.08471881494720357,
+        "l": 0.23139032392730874,
+        "chroma": 0.039206228066742316
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.005500413564929694,
+        "h": 240,
+        "s": 0.010292301358563493,
+        "l": 0.9992215192713241,
+        "chroma": 0.000016024716522733407
+      },
+      {
+        "hex": "#565559",
+        "share": 0.0016965152659402308,
+        "h": 264.1665423071184,
+        "s": 0.02044951706669519,
+        "l": 0.34049793738375056,
+        "chroma": 0.013926036763407035
+      },
+      {
+        "hex": "#787879",
+        "share": 0.0016138022800014384,
+        "h": 257.7335375191441,
+        "s": 0.0015114306281116977,
+        "l": 0.47194385275001366,
+        "chroma": 0.0014266207875908155
+      },
+      {
+        "hex": "#29252D",
+        "share": 0.0014285971158341424,
+        "h": 270.64365450083125,
+        "s": 0.09630736620588176,
+        "l": 0.16183936129517887,
+        "chroma": 0.031172645269561594
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.0012460891142518072,
+        "h": 269.0181818181846,
+        "s": 0.01639441993561535,
+        "l": 0.9525393995982231,
+        "chroma": 0.0015561780267663305
+      },
+      {
+        "hex": "#2D2A33",
+        "share": 0.0012137231632322796,
+        "h": 259.83220568335594,
+        "s": 0.08837950966713173,
+        "l": 0.18217138707334785,
+        "chroma": 0.03220043572984749
+      },
+      {
+        "hex": "#656566",
+        "share": 0.0010357104326248786,
+        "h": 255.9417040358737,
+        "s": 0.0038237967043330975,
+        "l": 0.3970520152505447,
+        "chroma": 0.003036492374727695
+      },
+      {
+        "hex": "#E9E7EC",
+        "share": 0.0009125400079116769,
+        "h": 264.0598205383849,
+        "s": 0.11454217390311273,
+        "l": 0.9154196851154255,
+        "chroma": 0.01937602627257795
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 48,
+        "share": 0.0038173841119142665,
+        "size": 13
+      },
+      {
+        "hue": 110,
+        "share": 0.0018844175926924873,
+        "size": 8
+      },
+      {
+        "hue": 199,
+        "share": 0.0005079656201675837,
+        "size": 2
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 1112280
+  }
+}

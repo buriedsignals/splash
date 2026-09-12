@@ -1,0 +1,372 @@
+{
+  "url": "https://blogarchive.statsbomb.com/articles/soccer/understanding-statsbomb-radars/",
+  "archive": "url-list",
+  "family": "radar",
+  "id": "blogarchive-statsbomb-com-articles-soccer-understanding-statsbomb-rada",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Understanding StatsBomb Radars • Statsbomb Blog Archive",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 400 | normal | 0 | none",
+        "count": 79,
+        "sample": "New Hudl Statsbomb Radars: 2023 Update",
+        "colors": [
+          "rgb(2, 115, 227)",
+          "rgb(35, 42, 49)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 700 | normal | 0 | none",
+        "count": 56,
+        "sample": "Positional Templates",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 16 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "Soccer",
+        "colors": [
+          "rgb(2, 115, 227)",
+          "rgb(35, 42, 49)",
+          "rgb(101, 109, 115)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 16 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "By",
+        "colors": [
+          "rgb(35, 42, 49)",
+          "rgb(2, 115, 227)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 700 | italic | 0 | none",
+        "count": 2,
+        "sample": "EDIT: New versions of the radars were created in Summer 2023",
+        "colors": [
+          "rgb(19, 41, 63)",
+          "rgb(2, 115, 227)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.4,
+        "transform": "uppercase",
+        "key": "Barlow | 16 | 400 | normal | 0.4 | uppercase",
+        "count": 1,
+        "sample": "Blog Archive",
+        "colors": [
+          "rgb(101, 109, 115)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 88,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 88 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Understanding StatsBomb Radars",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 28.1,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 28.1 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "StatsBomb and radars will forever be inextricably linked. Wh",
+        "colors": [
+          "rgb(19, 41, 63)"
+        ]
+      },
+      {
+        "family": "Barlow",
+        "size": 24,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Barlow | 24 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "Introduction to Football Analytics",
+        "colors": [
+          "rgb(35, 42, 49)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 99, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(35, 42, 49)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 800,
+      "ch": 67
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1527,
+      "nearTheTop": true,
+      "x": 320,
+      "y": 1527,
+      "w": 800,
+      "h": 553,
+      "ratio": 1.45
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7842924954792043,
+      "h": 357.69056603799,
+      "s": 0.025387518921014988,
+      "l": 0.999705060958646,
+      "chroma": 0.000014975540985839864
+    },
+    "chromatic": [
+      {
+        "hex": "#0B539F",
+        "share": 0.024434900542495478,
+        "h": 210.8082193925314,
+        "s": 0.8689053171212906,
+        "l": 0.33336834086085865,
+        "chroma": 0.5793310478678058
+      },
+      {
+        "hex": "#DEB887",
+        "share": 0.021270343580470162,
+        "h": 33.801237181922914,
+        "s": 0.5684128431510764,
+        "l": 0.6999589506365778,
+        "chroma": 0.3410943718613907
+      },
+      {
+        "hex": "#DB2429",
+        "share": 0.0036844484629294755,
+        "h": 358.36455048311853,
+        "s": 0.7174131462978,
+        "l": 0.5007373992541801,
+        "chroma": 0.7163551064597619
+      },
+      {
+        "hex": "#171E64",
+        "share": 0.002059222423146474,
+        "h": 234.25027898238525,
+        "s": 0.6328997362657011,
+        "l": 0.2407503067088526,
+        "chroma": 0.3047416112438389
+      },
+      {
+        "hex": "#DCB686",
+        "share": 0.0015935804701627486,
+        "h": 33.75291993174402,
+        "s": 0.5467630460972671,
+        "l": 0.6929578639966625,
+        "chroma": 0.3357585871227924
+      },
+      {
+        "hex": "#18267C",
+        "share": 0.0008612115732368897,
+        "h": 232.10981512338333,
+        "s": 0.6698141619572343,
+        "l": 0.29049971694714627,
+        "chroma": 0.3891616489115331
+      },
+      {
+        "hex": "#182374",
+        "share": 0.0008612115732368897,
+        "h": 233.03384298230546,
+        "s": 0.655616458927767,
+        "l": 0.2741598476661006,
+        "chroma": 0.35948741701404974
+      },
+      {
+        "hex": "#DAB788",
+        "share": 0.0008137432188065099,
+        "h": 33.785697347471114,
+        "s": 0.5281530121128627,
+        "l": 0.695582788671024,
+        "chroma": 0.32155773420479306
+      },
+      {
+        "hex": "#2C64A3",
+        "share": 0.000732368896925859,
+        "h": 211.59841138848773,
+        "s": 0.5783146905294556,
+        "l": 0.40577342047930287,
+        "chroma": 0.4693294601791334
+      },
+      {
+        "hex": "#161B5C",
+        "share": 0.0006464737793851718,
+        "h": 235.35106803797467,
+        "s": 0.6201398258309825,
+        "l": 0.22358425887837655,
+        "chroma": 0.27730700671877145
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7842924954792043,
+        "h": 357.69056603799,
+        "s": 0.025387518921014988,
+        "l": 0.999705060958646,
+        "chroma": 0.000014975540985839864
+      },
+      {
+        "hex": "#DDDDDD",
+        "share": 0.05671112115732369,
+        "h": 215.1549295773907,
+        "s": 0.00020775505737302796,
+        "l": 0.8664563565471627,
+        "chroma": 0.000055488734614694835
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.014525316455696203,
+        "h": 8.82352941166084,
+        "s": 0.00005187560839405272,
+        "l": 0.8000115950519642,
+        "chroma": 0.000020749040356871085
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.005883815551537071,
+        "h": 233.00751879698765,
+        "s": 0.00915946420577867,
+        "l": 0.9562480697234714,
+        "chroma": 0.000801488478603174
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.00428119349005425,
+        "h": 240.62500000001742,
+        "s": 0.000912981455063765,
+        "l": 0.8911423069755885,
+        "chroma": 0.00019877010994462374
+      },
+      {
+        "hex": "#010101",
+        "share": 0.0042450271247739604,
+        "h": 202.50000000000136,
+        "s": 0.0033030553261766873,
+        "l": 0.0025287644344212656,
+        "chroma": 0.00001670529766752268
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.004111663652802893,
+        "h": 238.85714285710503,
+        "s": 0.0014945130022634158,
+        "l": 0.9242667270316592,
+        "chroma": 0.00022636872231029947
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0020456600361663654,
+        "h": 218.00000000000625,
+        "s": 0.001145183865631531,
+        "l": 0.8297259235185788,
+        "chroma": 0.00038999025024366585
+      },
+      {
+        "hex": "#9C9C9C",
+        "share": 0.0013404159132007233,
+        "h": 139.20000000000323,
+        "s": 0.0004252134571554342,
+        "l": 0.6111893661343121,
+        "chroma": 0.0003306550276096498
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.0011234177215189874,
+        "h": 208.23529411764707,
+        "s": 0.0005756857433121122,
+        "l": 0.7669941215922988,
+        "chroma": 0.00026827632461445816
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 211,
+        "share": 0.03427893309222423,
+        "size": 15
+      },
+      {
+        "hue": 34,
+        "share": 0.029911844484629295,
+        "size": 9
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 442400
+  }
+}

@@ -31,6 +31,50 @@ defect — a gap note that shouted louder than its subject.
   looking at the render, not by reasoning about the markup.
 - **Not** for a Datawrapper chart (that is a different producer), and **not** for a map.
 
+## The design base — read this before you write the component
+
+**A beat is DIRECTED when it goes through a filed art direction, and every type sheet in
+`references/types/` now names a directed beat you can read before writing yours.** The base is not
+a style guide and not a theme: it is a set of measured records, and it ships with the root.
+
+What arrives at `#shared/design-base/`:
+
+- **`filedDirections()`** — the three filed directions, parsed. A direction carries a ground, an
+  accent, six registers (`display`, `eyebrow`, `body`, `axis`, `annot`, `value`) and a stroke set,
+  and every one of them was measured on a published graphic, not chosen.
+- **`resolveDirectionFamilies(direction, textPerRegister)`** — fits each register's family ladder to
+  the glyphs THIS beat actually sets. Hand it every string the plate will draw, per register: a face
+  that cannot cover a character the copy contains is refused before it can ship a tofu box.
+- **`composeDirections({ newsroom, filed, beat, textPerRegister })` + `report(...)`** — which
+  pairings hold up for this beat, and which were refused and why. Print the report; it is the record
+  of what was available, and the journalist is entitled to it.
+
+And from the runtime already beside this skill:
+
+- **`beatFacts(data, options)` + `applicableTreatments(facts)`** (`#shared/chart-beat/treatments.mjs`)
+  — the arbiter. It reads the beat's own data and answers which filed treatments apply to it. A
+  treatment is not a preference: each is carried by two independent publications, and
+  `docs/design-base/treatments/<id>.md` in the twin is the record.
+- **`resolveRegister(direction, name)` + `applyCase`** (`#shared/chart-beat/registers.mjs`) — the
+  register a run is set in, resolved against the chosen direction.
+
+**Three rules that are not negotiable, because a guard fails on each of them:**
+
+1. **The beat renders in EVERY filed direction, into `renders/` (plural).** A component that only
+   holds together on one ground has hard-coded something it should have derived, and the second
+   direction is what proves it did not.
+2. **Every colour derives from the direction's own three.** No hue is imported from a reference, a
+   brand or a habit — the one admissible exception is a grounded convention such as water, and it is
+   argued in the beat's own `PALETTE.md`.
+3. **Every number the plate shows is reproducible from the beat's own frozen data**, or it carries a
+   written `grounded-by-hand` reason.
+
+**Where the records live in the twin**, when you need to argue with one:
+`docs/design-base/CATALOGUE.md` (which forms have a directed beat, measured off the tree),
+`docs/design-base/treatments/` (one sheet per filed treatment, both ways against the code),
+`docs/design-base/references/` (the harvested pieces every rule came from), and
+`docs/design-base/METHOD.md` (the runbook, and every correction the base has had to make).
+
 ## The one gotcha that will waste your day (read first)
 
 **A hex you can grep is not a colour anybody rendered, and a test that greps for one proves

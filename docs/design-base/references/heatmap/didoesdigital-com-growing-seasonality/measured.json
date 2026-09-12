@@ -1,0 +1,439 @@
+{
+  "url": "https://didoesdigital.com/growing/seasonality/",
+  "archive": "url-list",
+  "family": "heatmap",
+  "id": "didoesdigital-com-growing-seasonality",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Can I Eat It Yet? A visual guide to seasonal fruit and veg",
+    "ground": "rgb(250, 249, 251)",
+    "type": [
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 16 | 400 | normal | 0 | none",
+        "count": 276,
+        "sample": "by",
+        "colors": [
+          "rgb(60, 57, 65)",
+          "rgb(95, 66, 143)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 78,
+        "sample": "Artichokes",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 24 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Jan",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1.6,
+        "transform": "uppercase",
+        "key": "Quicksand | 16 | 400 | normal | 1.6 | uppercase",
+        "count": 7,
+        "sample": "green",
+        "colors": [
+          "rgb(103, 97, 112)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 24,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 24 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "About the data",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 24 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "A visual guide to seasonal fruit and veg",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 1.6,
+        "transform": "none",
+        "key": "Quicksand | 16 | 900 | normal | 1.6 | none",
+        "count": 4,
+        "sample": "fresh",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18.7,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 18.7 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "September",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 48,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 48 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Can I Eat It Yet?",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Australia grows lots of fruits and vegetables. \"Seasonality\"",
+        "colors": [
+          "rgb(60, 57, 65)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(36, 188, 140)",
+        "count": 372
+      },
+      {
+        "colour": "stroke rgb(36, 188, 140)",
+        "count": 372
+      },
+      {
+        "colour": "fill rgb(237, 151, 152)",
+        "count": 228
+      },
+      {
+        "colour": "stroke rgb(237, 151, 152)",
+        "count": 228
+      },
+      {
+        "colour": "fill rgb(249, 232, 157)",
+        "count": 132
+      },
+      {
+        "colour": "stroke rgb(249, 232, 157)",
+        "count": 132
+      },
+      {
+        "colour": "fill rgb(245, 214, 163)",
+        "count": 108
+      },
+      {
+        "colour": "stroke rgb(245, 214, 163)",
+        "count": 108
+      },
+      {
+        "colour": "fill rgb(177, 156, 211)",
+        "count": 96
+      },
+      {
+        "colour": "stroke rgb(177, 156, 211)",
+        "count": 96
+      },
+      {
+        "colour": "fill rgb(242, 196, 176)",
+        "count": 84
+      },
+      {
+        "colour": "stroke rgb(242, 196, 176)",
+        "count": 84
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 84
+      },
+      {
+        "colour": "stroke rgb(227, 227, 227)",
+        "count": 84
+      },
+      {
+        "colour": "fill rgb(242, 241, 244)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 512,
+      "ch": 57
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 906,
+      "nearTheTop": true,
+      "x": -236,
+      "y": 906,
+      "w": 1912,
+      "h": 1912,
+      "ratio": 1
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FAF9FB",
+      "share": 0.8243350737907249,
+      "h": 270.02803187593315,
+      "s": 0.19988428801116814,
+      "l": 0.9804947656882792,
+      "chroma": 0.00779757974577866
+    },
+    "chromatic": [
+      {
+        "hex": "#24BC8C",
+        "share": 0.021182555452460568,
+        "h": 161.0524220389808,
+        "s": 0.6785222118168059,
+        "l": 0.43923146107018446,
+        "chroma": 0.5960566049297377
+      },
+      {
+        "hex": "#8FDAC3",
+        "share": 0.0158263270075804,
+        "h": 161.2740397646029,
+        "s": 0.5095927494882064,
+        "l": 0.7080097075039982,
+        "chroma": 0.29759227195380633
+      },
+      {
+        "hex": "#84DCC0",
+        "share": 0.013669447313597451,
+        "h": 160.9089978726917,
+        "s": 0.5569195554984758,
+        "l": 0.6902027488334643,
+        "chroma": 0.34506429482863343
+      },
+      {
+        "hex": "#ED9798",
+        "share": 0.01197840986677404,
+        "h": 359.3011645398866,
+        "s": 0.7048940983124801,
+        "l": 0.7607809554513745,
+        "chroma": 0.33724818541255286
+      },
+      {
+        "hex": "#F5D6A3",
+        "share": 0.008991056266521944,
+        "h": 37.31042030320874,
+        "s": 0.8033517600408457,
+        "l": 0.7999722009951566,
+        "chroma": 0.3213853687752748
+      },
+      {
+        "hex": "#F9E89D",
+        "share": 0.008664446963463525,
+        "h": 48.912714024700776,
+        "s": 0.8846089393615575,
+        "l": 0.7960898215639847,
+        "chroma": 0.36076153334261873
+      },
+      {
+        "hex": "#F2C4B0",
+        "share": 0.004686597310971446,
+        "h": 18.177620317662505,
+        "s": 0.7173734667418867,
+        "l": 0.8196564822158362,
+        "chroma": 0.2587473091145054
+      },
+      {
+        "hex": "#B19CD3",
+        "share": 0.004247288650408782,
+        "h": 262.9094971700665,
+        "s": 0.384562935354415,
+        "l": 0.7195952149134273,
+        "chroma": 0.21566657448063264
+      },
+      {
+        "hex": "#F3C4C5",
+        "share": 0.0021267900596978343,
+        "h": 358.6760557255684,
+        "s": 0.6625908945209379,
+        "l": 0.8599548578273752,
+        "chroma": 0.18558527205094266
+      },
+      {
+        "hex": "#85D8BE",
+        "share": 0.0019922073318044153,
+        "h": 161.20677825206334,
+        "s": 0.5168386074924259,
+        "l": 0.684175073297203,
+        "chroma": 0.3264610306569421
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FAF9FB",
+        "share": 0.8243350737907249,
+        "h": 270.02803187593315,
+        "s": 0.19988428801116814,
+        "l": 0.9804947656882792,
+        "chroma": 0.00779757974577866
+      },
+      {
+        "hex": "#F4C8C9",
+        "share": 0.022682660492638434,
+        "h": 358.61779542546003,
+        "s": 0.6621539233510231,
+        "l": 0.8706908122019701,
+        "chroma": 0.1712451720515995
+      },
+      {
+        "hex": "#3C3941",
+        "share": 0.006642423539503861,
+        "h": 262.5,
+        "s": 0.06556606862121041,
+        "l": 0.23924378630091414,
+        "chroma": 0.03137254901960787
+      },
+      {
+        "hex": "#D6CAE7",
+        "share": 0.0042423648920712174,
+        "h": 263.91916222175774,
+        "s": 0.373170909694839,
+        "l": 0.8492727183077757,
+        "chroma": 0.11249407364983521
+      },
+      {
+        "hex": "#FAF0CC",
+        "share": 0.003663276203147704,
+        "h": 47.46710044256863,
+        "s": 0.8144298452675861,
+        "l": 0.8895922646238903,
+        "chroma": 0.17983870967741933
+      },
+      {
+        "hex": "#F7E6CE",
+        "share": 0.0023100632867071656,
+        "h": 35.83016812583212,
+        "s": 0.719428606970331,
+        "l": 0.8880112376507738,
+        "chroma": 0.16113583858647063
+      },
+      {
+        "hex": "#F9F3F4",
+        "share": 0.0018581716881707253,
+        "h": 354.2436169661816,
+        "s": 0.31833619097863497,
+        "l": 0.9649835615093969,
+        "chroma": 0.022293999301472467
+      },
+      {
+        "hex": "#F6DED4",
+        "share": 0.0016032304231368498,
+        "h": 17.47518364609893,
+        "s": 0.6506144357701433,
+        "l": 0.898781242577222,
+        "chroma": 0.13170876949995147
+      },
+      {
+        "hex": "#F5D3D4",
+        "share": 0.0015627461879168783,
+        "h": 357.1368902439024,
+        "s": 0.6339103377634048,
+        "l": 0.8934476923974561,
+        "chroma": 0.13508921860359757
+      },
+      {
+        "hex": "#F8EBED",
+        "share": 0.0014681006109837013,
+        "h": 353.19267956781624,
+        "s": 0.4963670831659577,
+        "l": 0.948159230153772,
+        "chroma": 0.051464103435299946
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 161,
+        "share": 0.05715307198753524,
+        "size": 14
+      },
+      {
+        "hue": 359,
+        "share": 0.028808362948827927,
+        "size": 8
+      },
+      {
+        "hue": 49,
+        "share": 0.008664446963463525,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "categorical",
+    "pixels": 3655744
+  }
+}

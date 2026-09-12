@@ -1,0 +1,434 @@
+{
+  "url": "https://interactive.carbonbrief.org/carbon-offsets-2023/companies.html",
+  "archive": "url-list",
+  "family": "sankey",
+  "id": "interactive-carbonbrief-org-carbon-offsets-2023-companies-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Analysis: How some of the world’s largest companies rely on carbon offsets to ‘reach net-zero’",
+    "ground": "rgb(249, 248, 237)",
+    "type": [
+      {
+        "family": "PT Sans Narrow",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans Narrow | 12 | 400 | normal | 0 | none",
+        "count": 394,
+        "sample": "No country (0,519m)",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Pt serif",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Pt serif | 20 | 400 | normal | 0 | none",
+        "count": 163,
+        "sample": "Two-thirds of the world’s biggest companies with net-zero ta",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(12, 38, 53)"
+        ]
+      },
+      {
+        "family": "PT Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans | 16 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "Millions of carbon-offset credits, each equivalent to 1t CO2",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(102, 102, 102)",
+          "rgb(12, 38, 53)",
+          "rgb(255, 250, 240)"
+        ]
+      },
+      {
+        "family": "Pt serif",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Pt serif | 16 | 400 | normal | 0 | none",
+        "count": 20,
+        "sample": "In-depth Q&A: Can ‘carbon offsets’ help to tackle climate ch",
+        "colors": [
+          "rgb(12, 38, 53)",
+          "rgb(255, 250, 240)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "PT Sans Narrow",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans Narrow | 20 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Science",
+        "colors": [
+          "rgb(255, 250, 240)"
+        ]
+      },
+      {
+        "family": "PT Sans Narrow",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans Narrow | 32 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "Offset surge",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Pt serif",
+        "size": 17.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Pt serif | 17.6 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "By",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "PT Sans Narrow",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans Narrow | 28 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Where companies buy offsets from",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "PT Sans Narrow",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 3.16,
+        "transform": "uppercase",
+        "key": "PT Sans Narrow | 16 | 700 | normal | 3.16 | uppercase",
+        "count": 3,
+        "sample": "Sections",
+        "colors": [
+          "rgb(255, 250, 240)"
+        ]
+      },
+      {
+        "family": "Pt serif",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Pt serif | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "This article is part of a week-long special series on carbon",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "PT Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Sign-up to Carbon Brief’s award-winning newsletters",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(83, 76, 220)"
+        ]
+      },
+      {
+        "family": "PT Sans Narrow",
+        "size": 33,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans Narrow | 33 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Analysis: How some of the world’s largest companies rely on ",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "PT Sans",
+        "size": 14.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans | 14.2 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "(Clicking links with a will display the full glossary term.)",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgba(0, 0, 0, 0.2)",
+        "count": 343
+      },
+      {
+        "colour": "fill rgb(84, 76, 220)",
+        "count": 167
+      },
+      {
+        "colour": "fill rgb(2, 245, 155)",
+        "count": 130
+      }
+    ],
+    "column": {
+      "px": 750,
+      "ch": 75
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 4773,
+      "nearTheTop": false,
+      "x": 61,
+      "y": 4773,
+      "w": 1318,
+      "h": 1650,
+      "ratio": 0.8
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F9F8ED",
+      "share": 0.7476879569595807,
+      "h": 55.00000563756735,
+      "s": 0.499999923124093,
+      "l": 0.952941174058795,
+      "chroma": 0.04705881870582518
+    },
+    "chromatic": [
+      {
+        "hex": "#544CDC",
+        "share": 0.0053478640732055,
+        "h": 243.3334726659302,
+        "s": 0.6728879959819187,
+        "l": 0.5804039586599903,
+        "chroma": 0.564682278758451
+      },
+      {
+        "hex": "#02F59B",
+        "share": 0.005297282383777073,
+        "h": 157.77778571632703,
+        "s": 0.9837498945711152,
+        "l": 0.4843273420479303,
+        "chroma": 0.9529139433551198
+      },
+      {
+        "hex": "#73F6C1",
+        "share": 0.00003678668322067412,
+        "h": 155.42583732057417,
+        "s": 0.8788898233809924,
+        "l": 0.7085784313725491,
+        "chroma": 0.5122549019607843
+      },
+      {
+        "hex": "#5C54DD",
+        "share": 0.00003678668322067412,
+        "h": 243.40347666971638,
+        "s": 0.666870042708969,
+        "l": 0.5982843137254902,
+        "chroma": 0.5357843137254903
+      },
+      {
+        "hex": "#12F5A1",
+        "share": 0.000027590012415505586,
+        "h": 157.68158473954512,
+        "s": 0.919082939986514,
+        "l": 0.5153594771241831,
+        "chroma": 0.8908496732026144
+      },
+      {
+        "hex": "#44F6B1",
+        "share": 0.000027590012415505586,
+        "h": 156.68539325842698,
+        "s": 0.9081632653061225,
+        "l": 0.615686274509804,
+        "chroma": 0.6980392156862745
+      },
+      {
+        "hex": "#8AF7C8",
+        "share": 0.000022991677012921324,
+        "h": 154.28571428571428,
+        "s": 0.8722044728434507,
+        "l": 0.7545098039215686,
+        "chroma": 0.42823529411764705
+      },
+      {
+        "hex": "#B5F7D7",
+        "share": 0.000022991677012921324,
+        "h": 150.54545454545453,
+        "s": 0.8048780487804881,
+        "l": 0.8392156862745098,
+        "chroma": 0.2588235294117647
+      },
+      {
+        "hex": "#6159DD",
+        "share": 0.000022991677012921324,
+        "h": 243.5454545454545,
+        "s": 0.6613226452905812,
+        "l": 0.6086274509803922,
+        "chroma": 0.5176470588235293
+      },
+      {
+        "hex": "#7DF7C4",
+        "share": 0.000022991677012921324,
+        "h": 154.9342105263158,
+        "s": 0.8786127167630058,
+        "l": 0.7286274509803922,
+        "chroma": 0.4768627450980392
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F9F8ED",
+        "share": 0.7476879569595807,
+        "h": 55.00000563756735,
+        "s": 0.499999923124093,
+        "l": 0.952941174058795,
+        "chroma": 0.04705881870582518
+      },
+      {
+        "hex": "#E0DFD5",
+        "share": 0.16027681979123556,
+        "h": 54.54545312281159,
+        "s": 0.15068489812764974,
+        "l": 0.8568627507235214,
+        "chroma": 0.04313724365099636
+      },
+      {
+        "hex": "#CAC9C0",
+        "share": 0.021202004874235528,
+        "h": 54.00253760315791,
+        "s": 0.08632635411695262,
+        "l": 0.772871153319487,
+        "chroma": 0.039214410497434016
+      },
+      {
+        "hex": "#EDECE1",
+        "share": 0.008360693428978709,
+        "h": 54.960948879794756,
+        "s": 0.24899511923280096,
+        "l": 0.9063379856397514,
+        "chroma": 0.04664276886642882
+      },
+      {
+        "hex": "#D5D4CB",
+        "share": 0.00768841679312089,
+        "h": 54.014975995414055,
+        "s": 0.10650457071410482,
+        "l": 0.8156016042780749,
+        "chroma": 0.03927854395346653
+      },
+      {
+        "hex": "#E6E5DB",
+        "share": 0.00520439600864487,
+        "h": 54.80754862500296,
+        "s": 0.1800249052314004,
+        "l": 0.8802149274624145,
+        "chroma": 0.0431285926634305
+      },
+      {
+        "hex": "#DBDAD0",
+        "share": 0.004448889502000276,
+        "h": 54.52102936175051,
+        "s": 0.13236033341419437,
+        "l": 0.8379234939453817,
+        "chroma": 0.04290500075999393
+      },
+      {
+        "hex": "#B6B5AD",
+        "share": 0.004161953372879018,
+        "h": 53.34569432335863,
+        "s": 0.057728800319270225,
+        "l": 0.6943860606887766,
+        "chroma": 0.035285452154566355
+      },
+      {
+        "hex": "#F3F2E7",
+        "share": 0.004115970018853175,
+        "h": 54.98954521693686,
+        "s": 0.331138683333642,
+        "l": 0.9291318091307577,
+        "chroma": 0.04693439882935635
+      },
+      {
+        "hex": "#D0CFC5",
+        "share": 0.0038704189083551754,
+        "h": 54.509697338667614,
+        "s": 0.10415067336064375,
+        "l": 0.7942581190727449,
+        "chroma": 0.04285631087411801
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 243,
+        "share": 0.005444429116659769,
+        "size": 6
+      },
+      {
+        "hue": 158,
+        "share": 0.005614567526555388,
+        "size": 18
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 2174700
+  }
+}

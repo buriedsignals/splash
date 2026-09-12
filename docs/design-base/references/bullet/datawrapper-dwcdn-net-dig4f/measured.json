@@ -1,0 +1,245 @@
+{
+  "url": "https://datawrapper.dwcdn.net/Dig4F/",
+  "archive": "search",
+  "family": "bullet",
+  "id": "datawrapper-dwcdn-net-dig4f",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "How projects overshot their budgets",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 12 | 400 | normal | 0 | none",
+        "count": 23,
+        "sample": "Planned",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 12 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Elbphilharmonie",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 11 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Chart:",
+        "colors": [
+          "rgb(136, 136, 136)",
+          "rgb(0, 136, 204)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 22 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How projects overshot their budgets",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Comparison of the original budget vs. actual costs, billions",
+        "colors": [
+          "rgb(24, 24, 24)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(24, 24, 24)",
+        "count": 2
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 110,
+      "nearTheTop": true,
+      "x": 514,
+      "y": 110,
+      "w": 925,
+      "h": 190,
+      "ratio": 4.88
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7435664235664236,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999379156866064,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#1D81A2",
+        "share": 0.14223938223938223,
+        "h": 194.88721804511277,
+        "s": 0.6963350785340313,
+        "l": 0.37450980392156863,
+        "chroma": 0.5215686274509803
+      },
+      {
+        "hex": "#A1C4D7",
+        "share": 0.07033891033891033,
+        "h": 201.1111111111111,
+        "s": 0.4029850746268658,
+        "l": 0.7372549019607844,
+        "chroma": 0.21176470588235297
+      },
+      {
+        "hex": "#1B4D5D",
+        "share": 0.00024596024596024597,
+        "h": 194.54545454545453,
+        "s": 0.5499999999999999,
+        "l": 0.23529411764705882,
+        "chroma": 0.2588235294117647
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7435664235664236,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999379156866064,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.020054340054340054,
+        "h": 0,
+        "s": 0,
+        "l": 0.9552666017918862,
+        "chroma": 0
+      },
+      {
+        "hex": "#D8D8D8",
+        "share": 0.006886886886886887,
+        "h": 0,
+        "s": 0,
+        "l": 0.8488958374047294,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.0024653224653224653,
+        "h": 0,
+        "s": 0,
+        "l": 0.09411764705882353,
+        "chroma": 0
+      },
+      {
+        "hex": "#EEEEEE",
+        "share": 0.0018704418704418705,
+        "h": 0,
+        "s": 0,
+        "l": 0.9323379504707081,
+        "chroma": 0
+      },
+      {
+        "hex": "#8B8B8B",
+        "share": 0.0010124410124410124,
+        "h": 0,
+        "s": 0,
+        "l": 0.5468040323474023,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0007664807664807665,
+        "h": 0,
+        "s": 0,
+        "l": 0.894263974246415,
+        "chroma": 0
+      },
+      {
+        "hex": "#CBCBCB",
+        "share": 0.000715000715000715,
+        "h": 0,
+        "s": 0,
+        "l": 0.7972392156862744,
+        "chroma": 0
+      },
+      {
+        "hex": "#BCBCBC",
+        "share": 0.0006292006292006292,
+        "h": 0,
+        "s": 0,
+        "l": 0.7357575757575758,
+        "chroma": 0
+      },
+      {
+        "hex": "#6D6D6D",
+        "share": 0.0006234806234806235,
+        "h": 0,
+        "s": 0,
+        "l": 0.42680338190322004,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 195,
+        "share": 0.21282425282425282,
+        "size": 3
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 174825
+  }
+}

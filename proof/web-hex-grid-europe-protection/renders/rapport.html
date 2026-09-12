@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Par habitant, ce n'est pas l'Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #1F5C8B;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--title-size:27px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:14.5px;--label-weight:700;--note-size:10px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:700;font-style:normal;letter-spacing:1.6px;text-transform:uppercase;color:#1F5C8B;margin:0 0 6px">Migrations · Europe</p><h2 class="chart-title" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:27px;font-weight:700;font-style:normal;letter-spacing:-0.3px;text-transform:none;color:#000000;margin:0 0 6px">Par habitant, ce n&#x27;est pas l&#x27;Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants</h2><p class="chart-caveat" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:0">Une case par pays d&#x27;accueil, toutes de la même taille : la carte abandonne la surface et achète ce qu&#x27;un choroplèthe des mêmes données ne peut pas donner — chaque pays également visible. Six voisins, tous par une arête : un quadrillage se touche en diagonale et il faut décider si un coin compte ; un hexagone n&#x27;a pas de coin à discuter.</p></div><div style="display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;margin:6px 0 2px;flex:0 0 auto"><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#e0e8ef;display:inline-block;border:1px solid #b3b3b3"></span>moins de 5</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#afc5d6;display:inline-block;border:1px solid #b3b3b3"></span>5–10</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#7fa2bd;display:inline-block;border:1px solid #b3b3b3"></span>10–20</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#4f7fa4;display:inline-block;border:1px solid #b3b3b3"></span>20–30</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#1f5c8b;display:inline-block;border:1px solid #b3b3b3"></span>30 et plus</span><span style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;letter-spacing:0.5px;text-transform:none;color:#616161;display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:#d6d6d6;display:inline-block;border:1px solid #b3b3b3"></span>Ukraine · origine</span></div><div class="chart-plot" style="--y-gutter:0px;--x-axis-h:0px;aspect-ratio:691.78700203076 / 426"><div class="y-axis"></div><svg role="group" aria-label="Par habitant, ce n&#x27;est pas l&#x27;Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 691.78700203076 426" preserveAspectRatio="xMidYMid meet"><desc>Une grille d&#x27;hexagones disposés à peu près comme l&#x27;Europe, un par pays d&#x27;accueil, tous de la même taille et teintés selon le nombre d&#x27;Ukrainiens sous protection pour 1 000 habitants. Les cases les plus foncées sont en Europe centrale — Tchéquie à 36,1 en tête — tandis que l&#x27;Allemagne, la plus grande en nombre absolu, n&#x27;est qu&#x27;à 14,8. La case de l&#x27;Ukraine est neutre : c&#x27;est le pays d&#x27;origine.</desc><rect x="0" y="0" width="691.78700203076" height="426" fill="#FFFFFF"></rect><polygon points="158.3 26.0 158.3 70.0 120.2 92.0 82.1 70.0 82.1 26.0 120.2 4.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="386.9 26.0 386.9 70.0 348.8 92.0 310.7 70.0 310.7 26.0 348.8 4.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="463.2 26.0 463.2 70.0 425.1 92.0 386.9 70.0 386.9 26.0 425.1 4.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="539.4 26.0 539.4 70.0 501.3 92.0 463.2 70.0 463.2 26.0 501.3 4.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="272.6 92.0 272.6 136.0 234.5 158.0 196.4 136.0 196.4 92.0 234.5 70.0" fill="#4f7fa4" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="348.8 92.0 348.8 136.0 310.7 158.0 272.6 136.0 272.6 92.0 310.7 70.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="501.3 92.0 501.3 136.0 463.2 158.0 425.1 136.0 425.1 92.0 463.2 70.0" fill="#4f7fa4" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="577.5 92.0 577.5 136.0 539.4 158.0 501.3 136.0 501.3 92.0 539.4 70.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="234.5 158.0 234.5 202.0 196.4 224.0 158.3 202.0 158.3 158.0 196.4 136.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="310.7 158.0 310.7 202.0 272.6 224.0 234.5 202.0 234.5 158.0 272.6 136.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="386.9 158.0 386.9 202.0 348.8 224.0 310.7 202.0 310.7 158.0 348.8 136.0" fill="#4f7fa4" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="463.2 158.0 463.2 202.0 425.1 224.0 386.9 202.0 386.9 158.0 425.1 136.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="539.4 158.0 539.4 202.0 501.3 224.0 463.2 202.0 463.2 158.0 501.3 136.0" fill="#d6d6d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="196.4 224.0 196.4 268.0 158.3 290.0 120.2 268.0 120.2 224.0 158.3 202.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="272.6 224.0 272.6 268.0 234.5 290.0 196.4 268.0 196.4 224.0 234.5 202.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="348.8 224.0 348.8 268.0 310.7 290.0 272.6 268.0 272.6 224.0 310.7 202.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="425.1 224.0 425.1 268.0 386.9 290.0 348.8 268.0 348.8 224.0 386.9 202.0" fill="#1f5c8b" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="501.3 224.0 501.3 268.0 463.2 290.0 425.1 268.0 425.1 224.0 463.2 202.0" fill="#4f7fa4" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="577.5 224.0 577.5 268.0 539.4 290.0 501.3 268.0 501.3 224.0 539.4 202.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="653.7 224.0 653.7 268.0 615.6 290.0 577.5 268.0 577.5 224.0 615.6 202.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="82.1 290.0 82.1 334.0 44.0 356.0 5.9 334.0 5.9 290.0 44.0 268.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="158.3 290.0 158.3 334.0 120.2 356.0 82.1 334.0 82.1 290.0 120.2 268.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="234.5 290.0 234.5 334.0 196.4 356.0 158.3 334.0 158.3 290.0 196.4 268.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="310.7 290.0 310.7 334.0 272.6 356.0 234.5 334.0 234.5 290.0 272.6 268.0" fill="#4f7fa4" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="386.9 290.0 386.9 334.0 348.8 356.0 310.7 334.0 310.7 290.0 348.8 268.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="463.2 290.0 463.2 334.0 425.1 356.0 386.9 334.0 386.9 290.0 425.1 268.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="539.4 290.0 539.4 334.0 501.3 356.0 463.2 334.0 463.2 290.0 501.3 268.0" fill="#afc5d6" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="615.6 290.0 615.6 334.0 577.5 356.0 539.4 334.0 539.4 290.0 577.5 268.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="272.6 356.0 272.6 400.0 234.5 422.0 196.4 400.0 196.4 356.0 234.5 334.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="348.8 356.0 348.8 400.0 310.7 422.0 272.6 400.0 272.6 356.0 310.7 334.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="501.3 356.0 501.3 400.0 463.2 422.0 425.1 400.0 425.1 356.0 463.2 334.0" fill="#e0e8ef" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><polygon points="577.5 356.0 577.5 400.0 539.4 422.0 501.3 400.0 501.3 356.0 539.4 334.0" fill="#7fa2bd" stroke="#FFFFFF" stroke-width="2" vector-effect="non-scaling-stroke"></polygon><circle class="pt" cx="120.2102355330306" cy="48" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Islande · 12,4 Ukrainiens sous protection pour 1 000 habitants · 4 800 personnes pour 0 millions d&#x27;habitants · 13ᵉ par habitant, 28ᵉ en nombre absolu" data-detail="Islande · 12,4 Ukrainiens sous protection pour 1 000 habitants · 4 800 personnes pour 0 millions d&#x27;habitants · 13ᵉ par habitant, 28ᵉ en nombre absolu"></circle><circle class="pt" cx="348.8409421321224" cy="48" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Norvège · 15,6 Ukrainiens sous protection pour 1 000 habitants · 86 040 personnes pour 6 millions d&#x27;habitants · 10ᵉ par habitant, 11ᵉ en nombre absolu" data-detail="Norvège · 15,6 Ukrainiens sous protection pour 1 000 habitants · 86 040 personnes pour 6 millions d&#x27;habitants · 10ᵉ par habitant, 11ᵉ en nombre absolu"></circle><circle class="pt" cx="425.051177665153" cy="48" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 4,6 Ukrainiens sous protection pour 1 000 habitants · 48 330 personnes pour 11 millions d&#x27;habitants · 28ᵉ par habitant, 19ᵉ en nombre absolu" data-detail="Suède · 4,6 Ukrainiens sous protection pour 1 000 habitants · 48 330 personnes pour 11 millions d&#x27;habitants · 28ᵉ par habitant, 19ᵉ en nombre absolu"></circle><circle class="pt" cx="501.2614131981836" cy="48" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 12,8 Ukrainiens sous protection pour 1 000 habitants · 71 620 personnes pour 6 millions d&#x27;habitants · 12ᵉ par habitant, 14ᵉ en nombre absolu" data-detail="Finlande · 12,8 Ukrainiens sous protection pour 1 000 habitants · 71 620 personnes pour 6 millions d&#x27;habitants · 12ᵉ par habitant, 14ᵉ en nombre absolu"></circle><circle class="pt" cx="234.5255888325765" cy="114" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 22,9 Ukrainiens sous protection pour 1 000 habitants · 118 840 personnes pour 5 millions d&#x27;habitants · 5ᵉ par habitant, 8ᵉ en nombre absolu" data-detail="Irlande · 22,9 Ukrainiens sous protection pour 1 000 habitants · 118 840 personnes pour 5 millions d&#x27;habitants · 5ᵉ par habitant, 8ᵉ en nombre absolu"></circle><circle class="pt" cx="310.73582436560713" cy="114" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 8,6 Ukrainiens sous protection pour 1 000 habitants · 50 895 personnes pour 6 millions d&#x27;habitants · 17ᵉ par habitant, 16ᵉ en nombre absolu" data-detail="Danemark · 8,6 Ukrainiens sous protection pour 1 000 habitants · 50 895 personnes pour 6 millions d&#x27;habitants · 17ᵉ par habitant, 16ᵉ en nombre absolu"></circle><circle class="pt" cx="463.1562954316683" cy="114" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Estonie · 22,2 Ukrainiens sous protection pour 1 000 habitants · 30 330 personnes pour 1 millions d&#x27;habitants · 6ᵉ par habitant, 24ᵉ en nombre absolu" data-detail="Estonie · 22,2 Ukrainiens sous protection pour 1 000 habitants · 30 330 personnes pour 1 millions d&#x27;habitants · 6ᵉ par habitant, 24ᵉ en nombre absolu"></circle><circle class="pt" cx="539.3665309646989" cy="114" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lettonie · 16,7 Ukrainiens sous protection pour 1 000 habitants · 31 430 personnes pour 2 millions d&#x27;habitants · 9ᵉ par habitant, 23ᵉ en nombre absolu" data-detail="Lettonie · 16,7 Ukrainiens sous protection pour 1 000 habitants · 31 430 personnes pour 2 millions d&#x27;habitants · 9ᵉ par habitant, 23ᵉ en nombre absolu"></circle><circle class="pt" cx="196.4204710660612" cy="180" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 7,7 Ukrainiens sous protection pour 1 000 habitants · 139 895 personnes pour 18 millions d&#x27;habitants · 20ᵉ par habitant, 7ᵉ en nombre absolu" data-detail="Pays-Bas · 7,7 Ukrainiens sous protection pour 1 000 habitants · 139 895 personnes pour 18 millions d&#x27;habitants · 20ᵉ par habitant, 7ᵉ en nombre absolu"></circle><circle class="pt" cx="272.6307065990918" cy="180" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 14,8 Ukrainiens sous protection pour 1 000 habitants · 1 250 825 personnes pour 85 millions d&#x27;habitants · 11ᵉ par habitant, 1ᵉ en nombre absolu" data-detail="Allemagne · 14,8 Ukrainiens sous protection pour 1 000 habitants · 1 250 825 personnes pour 85 millions d&#x27;habitants · 11ᵉ par habitant, 1ᵉ en nombre absolu"></circle><circle class="pt" cx="348.8409421321224" cy="180" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 24,7 Ukrainiens sous protection pour 1 000 habitants · 958 885 personnes pour 39 millions d&#x27;habitants · 3ᵉ par habitant, 2ᵉ en nombre absolu" data-detail="Pologne · 24,7 Ukrainiens sous protection pour 1 000 habitants · 958 885 personnes pour 39 millions d&#x27;habitants · 3ᵉ par habitant, 2ᵉ en nombre absolu"></circle><circle class="pt" cx="425.051177665153" cy="180" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lituanie · 17,5 Ukrainiens sous protection pour 1 000 habitants · 50 070 personnes pour 3 millions d&#x27;habitants · 8ᵉ par habitant, 18ᵉ en nombre absolu" data-detail="Lituanie · 17,5 Ukrainiens sous protection pour 1 000 habitants · 50 070 personnes pour 3 millions d&#x27;habitants · 8ᵉ par habitant, 18ᵉ en nombre absolu"></circle><circle class="pt" cx="501.2614131981836" cy="180" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Ukraine · pays d&#x27;origine — la carte compte les personnes qui en sont parties, pas celles qui y sont" data-detail="Ukraine · pays d&#x27;origine — la carte compte les personnes qui en sont parties, pas celles qui y sont"></circle><circle class="pt" cx="158.3153532995459" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 8,1 Ukrainiens sous protection pour 1 000 habitants · 94 430 personnes pour 12 millions d&#x27;habitants · 19ᵉ par habitant, 9ᵉ en nombre absolu" data-detail="Belgique · 8,1 Ukrainiens sous protection pour 1 000 habitants · 94 430 personnes pour 12 millions d&#x27;habitants · 19ᵉ par habitant, 9ᵉ en nombre absolu"></circle><circle class="pt" cx="234.5255888325765" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Luxembourg · 5,6 Ukrainiens sous protection pour 1 000 habitants · 3 710 personnes pour 1 millions d&#x27;habitants · 23ᵉ par habitant, 29ᵉ en nombre absolu" data-detail="Luxembourg · 5,6 Ukrainiens sous protection pour 1 000 habitants · 3 710 personnes pour 1 millions d&#x27;habitants · 23ᵉ par habitant, 29ᵉ en nombre absolu"></circle><circle class="pt" cx="310.73582436560713" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suisse · 8,1 Ukrainiens sous protection pour 1 000 habitants · 71 840 personnes pour 9 millions d&#x27;habitants · 18ᵉ par habitant, 13ᵉ en nombre absolu" data-detail="Suisse · 8,1 Ukrainiens sous protection pour 1 000 habitants · 71 840 personnes pour 9 millions d&#x27;habitants · 18ᵉ par habitant, 13ᵉ en nombre absolu"></circle><circle class="pt" cx="386.9460598986377" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 36,1 Ukrainiens sous protection pour 1 000 habitants · 390 095 personnes pour 11 millions d&#x27;habitants · 1ᵉ par habitant, 3ᵉ en nombre absolu" data-detail="Tchéquie · 36,1 Ukrainiens sous protection pour 1 000 habitants · 390 095 personnes pour 11 millions d&#x27;habitants · 1ᵉ par habitant, 3ᵉ en nombre absolu"></circle><circle class="pt" cx="463.1562954316683" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovaquie · 26,5 Ukrainiens sous protection pour 1 000 habitants · 146 430 personnes pour 6 millions d&#x27;habitants · 2ᵉ par habitant, 6ᵉ en nombre absolu" data-detail="Slovaquie · 26,5 Ukrainiens sous protection pour 1 000 habitants · 146 430 personnes pour 6 millions d&#x27;habitants · 2ᵉ par habitant, 6ᵉ en nombre absolu"></circle><circle class="pt" cx="539.3665309646989" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Hongrie · 4,6 Ukrainiens sous protection pour 1 000 habitants · 44 375 personnes pour 10 millions d&#x27;habitants · 27ᵉ par habitant, 21ᵉ en nombre absolu" data-detail="Hongrie · 4,6 Ukrainiens sous protection pour 1 000 habitants · 44 375 personnes pour 10 millions d&#x27;habitants · 27ᵉ par habitant, 21ᵉ en nombre absolu"></circle><circle class="pt" cx="615.5767664977294" cy="246" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Roumanie · 11,1 Ukrainiens sous protection pour 1 000 habitants · 212 575 personnes pour 19 millions d&#x27;habitants · 14ᵉ par habitant, 5ᵉ en nombre absolu" data-detail="Roumanie · 11,1 Ukrainiens sous protection pour 1 000 habitants · 212 575 personnes pour 19 millions d&#x27;habitants · 14ᵉ par habitant, 5ᵉ en nombre absolu"></circle><circle class="pt" cx="44" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 5,8 Ukrainiens sous protection pour 1 000 habitants · 60 575 personnes pour 10 millions d&#x27;habitants · 22ᵉ par habitant, 15ᵉ en nombre absolu" data-detail="Portugal · 5,8 Ukrainiens sous protection pour 1 000 habitants · 60 575 personnes pour 10 millions d&#x27;habitants · 22ᵉ par habitant, 15ᵉ en nombre absolu"></circle><circle class="pt" cx="120.2102355330306" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 5,5 Ukrainiens sous protection pour 1 000 habitants · 264 535 personnes pour 48 millions d&#x27;habitants · 24ᵉ par habitant, 4ᵉ en nombre absolu" data-detail="Espagne · 5,5 Ukrainiens sous protection pour 1 000 habitants · 264 535 personnes pour 48 millions d&#x27;habitants · 24ᵉ par habitant, 4ᵉ en nombre absolu"></circle><circle class="pt" cx="196.4204710660612" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 0,7 Ukrainiens sous protection pour 1 000 habitants · 47 635 personnes pour 66 millions d&#x27;habitants · 31ᵉ par habitant, 20ᵉ en nombre absolu" data-detail="France · 0,7 Ukrainiens sous protection pour 1 000 habitants · 47 635 personnes pour 66 millions d&#x27;habitants · 31ᵉ par habitant, 20ᵉ en nombre absolu"></circle><circle class="pt" cx="272.6307065990918" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Liechtenstein · 23,9 Ukrainiens sous protection pour 1 000 habitants · 945 personnes pour 0 millions d&#x27;habitants · 4ᵉ par habitant, 31ᵉ en nombre absolu" data-detail="Liechtenstein · 23,9 Ukrainiens sous protection pour 1 000 habitants · 945 personnes pour 0 millions d&#x27;habitants · 4ᵉ par habitant, 31ᵉ en nombre absolu"></circle><circle class="pt" cx="348.8409421321224" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 9,8 Ukrainiens sous protection pour 1 000 habitants · 89 630 personnes pour 9 millions d&#x27;habitants · 16ᵉ par habitant, 10ᵉ en nombre absolu" data-detail="Autriche · 9,8 Ukrainiens sous protection pour 1 000 habitants · 89 630 personnes pour 9 millions d&#x27;habitants · 16ᵉ par habitant, 10ᵉ en nombre absolu"></circle><circle class="pt" cx="425.051177665153" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovénie · 5,4 Ukrainiens sous protection pour 1 000 habitants · 11 425 personnes pour 2 millions d&#x27;habitants · 25ᵉ par habitant, 27ᵉ en nombre absolu" data-detail="Slovénie · 5,4 Ukrainiens sous protection pour 1 000 habitants · 11 425 personnes pour 2 millions d&#x27;habitants · 25ᵉ par habitant, 27ᵉ en nombre absolu"></circle><circle class="pt" cx="501.2614131981836" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Croatie · 7,6 Ukrainiens sous protection pour 1 000 habitants · 29 795 personnes pour 4 millions d&#x27;habitants · 21ᵉ par habitant, 25ᵉ en nombre absolu" data-detail="Croatie · 7,6 Ukrainiens sous protection pour 1 000 habitants · 29 795 personnes pour 4 millions d&#x27;habitants · 21ᵉ par habitant, 25ᵉ en nombre absolu"></circle><circle class="pt" cx="577.4716487312141" cy="312" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Bulgarie · 10,8 Ukrainiens sous protection pour 1 000 habitants · 73 635 personnes pour 7 millions d&#x27;habitants · 15ᵉ par habitant, 12ᵉ en nombre absolu" data-detail="Bulgarie · 10,8 Ukrainiens sous protection pour 1 000 habitants · 73 635 personnes pour 7 millions d&#x27;habitants · 15ᵉ par habitant, 12ᵉ en nombre absolu"></circle><circle class="pt" cx="234.5255888325765" cy="378" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Malte · 4,9 Ukrainiens sous protection pour 1 000 habitants · 2 635 personnes pour 1 millions d&#x27;habitants · 26ᵉ par habitant, 30ᵉ en nombre absolu" data-detail="Malte · 4,9 Ukrainiens sous protection pour 1 000 habitants · 2 635 personnes pour 1 millions d&#x27;habitants · 26ᵉ par habitant, 30ᵉ en nombre absolu"></circle><circle class="pt" cx="310.73582436560713" cy="378" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 0,9 Ukrainiens sous protection pour 1 000 habitants · 50 810 personnes pour 59 millions d&#x27;habitants · 30ᵉ par habitant, 17ᵉ en nombre absolu" data-detail="Italie · 0,9 Ukrainiens sous protection pour 1 000 habitants · 50 810 personnes pour 59 millions d&#x27;habitants · 30ᵉ par habitant, 17ᵉ en nombre absolu"></circle><circle class="pt" cx="463.1562954316683" cy="378" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 4,0 Ukrainiens sous protection pour 1 000 habitants · 40 685 personnes pour 10 millions d&#x27;habitants · 29ᵉ par habitant, 22ᵉ en nombre absolu" data-detail="Grèce · 4,0 Ukrainiens sous protection pour 1 000 habitants · 40 685 personnes pour 10 millions d&#x27;habitants · 29ᵉ par habitant, 22ᵉ en nombre absolu"></circle><circle class="pt" cx="539.3665309646989" cy="378" r="39.6" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Chypre · 19,6 Ukrainiens sous protection pour 1 000 habitants · 26 360 personnes pour 1 millions d&#x27;habitants · 7ᵉ par habitant, 26ᵉ en nombre absolu" data-detail="Chypre · 19,6 Ukrainiens sous protection pour 1 000 habitants · 26 360 personnes pour 1 millions d&#x27;habitants · 7ᵉ par habitant, 26ᵉ en nombre absolu"></circle><rect class="hit-area" x="0" y="0" width="691.78700203076" height="426" fill="transparent" pointer-events="all"></rect><g><text pointer-events="none" x="120.2102355330306" y="40.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Islande</text><text pointer-events="none" x="120.2102355330306" y="62.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">12,4</text></g><g><text pointer-events="none" x="348.8409421321224" y="40.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Norvège</text><text pointer-events="none" x="348.8409421321224" y="62.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">15,6</text></g><g><text pointer-events="none" x="425.051177665153" y="40.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Suède</text><text pointer-events="none" x="425.051177665153" y="62.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">4,6</text></g><g><text pointer-events="none" x="501.2614131981836" y="40.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Finlande</text><text pointer-events="none" x="501.2614131981836" y="62.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">12,8</text></g><g><text pointer-events="none" x="234.5255888325765" y="106.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Irlande</text><text pointer-events="none" x="234.5255888325765" y="128.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">22,9</text></g><g><text pointer-events="none" x="310.73582436560713" y="106.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Danemark</text><text pointer-events="none" x="310.73582436560713" y="128.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">8,6</text></g><g><text pointer-events="none" x="463.1562954316683" y="106.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Estonie</text><text pointer-events="none" x="463.1562954316683" y="128.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">22,2</text></g><g><text pointer-events="none" x="539.3665309646989" y="106.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Lettonie</text><text pointer-events="none" x="539.3665309646989" y="128.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">16,7</text></g><g><text pointer-events="none" x="196.4204710660612" y="172.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Pays-Bas</text><text pointer-events="none" x="196.4204710660612" y="194.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">7,7</text></g><g><text pointer-events="none" x="272.6307065990918" y="172.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Allemagne</text><text pointer-events="none" x="272.6307065990918" y="194.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">14,8</text></g><g><text pointer-events="none" x="348.8409421321224" y="172.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Pologne</text><text pointer-events="none" x="348.8409421321224" y="194.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">24,7</text></g><g><text pointer-events="none" x="425.051177665153" y="172.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Lituanie</text><text pointer-events="none" x="425.051177665153" y="194.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">17,5</text></g><g><text pointer-events="none" x="501.2614131981836" y="172.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Ukraine</text><text pointer-events="none" x="501.2614131981836" y="194.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">origine</text></g><g><text pointer-events="none" x="158.3153532995459" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Belgique</text><text pointer-events="none" x="158.3153532995459" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">8,1</text></g><g><text pointer-events="none" x="234.5255888325765" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Luxembourg</text><text pointer-events="none" x="234.5255888325765" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">5,6</text></g><g><text pointer-events="none" x="310.73582436560713" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Suisse</text><text pointer-events="none" x="310.73582436560713" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">8,1</text></g><g><text pointer-events="none" x="386.9460598986377" y="238.96" fill="#FFFFFF" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Tchéquie</text><text pointer-events="none" x="386.9460598986377" y="260.96" fill="#FFFFFF" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">36,1</text></g><g><text pointer-events="none" x="463.1562954316683" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Slovaquie</text><text pointer-events="none" x="463.1562954316683" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">26,5</text></g><g><text pointer-events="none" x="539.3665309646989" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Hongrie</text><text pointer-events="none" x="539.3665309646989" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">4,6</text></g><g><text pointer-events="none" x="615.5767664977294" y="238.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Roumanie</text><text pointer-events="none" x="615.5767664977294" y="260.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">11,1</text></g><g><text pointer-events="none" x="44" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Portugal</text><text pointer-events="none" x="44" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">5,8</text></g><g><text pointer-events="none" x="120.2102355330306" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Espagne</text><text pointer-events="none" x="120.2102355330306" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">5,5</text></g><g><text pointer-events="none" x="196.4204710660612" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">France</text><text pointer-events="none" x="196.4204710660612" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">0,7</text></g><g><text pointer-events="none" x="272.6307065990918" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Liechtenstein</text><text pointer-events="none" x="272.6307065990918" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">23,9</text></g><g><text pointer-events="none" x="348.8409421321224" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Autriche</text><text pointer-events="none" x="348.8409421321224" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">9,8</text></g><g><text pointer-events="none" x="425.051177665153" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Slovénie</text><text pointer-events="none" x="425.051177665153" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">5,4</text></g><g><text pointer-events="none" x="501.2614131981836" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Croatie</text><text pointer-events="none" x="501.2614131981836" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">7,6</text></g><g><text pointer-events="none" x="577.4716487312141" y="304.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Bulgarie</text><text pointer-events="none" x="577.4716487312141" y="326.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">10,8</text></g><g><text pointer-events="none" x="234.5255888325765" y="370.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Malte</text><text pointer-events="none" x="234.5255888325765" y="392.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">4,9</text></g><g><text pointer-events="none" x="310.73582436560713" y="370.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Italie</text><text pointer-events="none" x="310.73582436560713" y="392.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">0,9</text></g><g><text pointer-events="none" x="463.1562954316683" y="370.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Grèce</text><text pointer-events="none" x="463.1562954316683" y="392.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">4,0</text></g><g><text pointer-events="none" x="539.3665309646989" y="370.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" text-anchor="middle" dominant-baseline="middle">Chypre</text><text pointer-events="none" x="539.3665309646989" y="392.96" fill="#000000" font-family="&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle">19,6</text></g></svg><div class="overlay" aria-hidden="true"></div><div class="x-axis"></div></div><p class="chart-reading" style="font-family:&quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:700;font-style:normal;letter-spacing:1.3px;text-transform:uppercase;color:#000000;margin:6px 0 0">En nombre absolu l&#x27;ordre s&#x27;inverse : Allemagne 1 250 825 personnes (11ᵉ par habitant), Tchéquie 390 095 (1ʳᵉ par habitant). Aucun des deux chiffres n&#x27;est le plus vrai — ils répondent à deux questions.</p><p class="chart-reading" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:6px 0 0">Lecture : survolez, touchez ou tabulez une case pour lire le taux, le nombre de personnes, la population qui le divise et son rang dans LES DEUX classements.</p><p class="chart-source" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:4px 0 0">Source : Eurostat, migr_asytpsm — bénéficiaires de la protection temporaire, 2026-06 · population 2023, via Our World in Data</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

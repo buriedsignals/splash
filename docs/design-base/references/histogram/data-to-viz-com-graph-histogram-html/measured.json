@@ -1,0 +1,413 @@
+{
+  "url": "https://www.data-to-viz.com/graph/histogram.html",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "data-to-viz-com-graph-histogram-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Histogram – from Data to Viz",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Montserrat",
+        "size": 18.2,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Montserrat | 18.2 | 400 | normal | 0 | none",
+        "count": 18,
+        "sample": "A histogram is an accurate graphical representation of the\nd",
+        "colors": [
+          "rgb(85, 85, 85)",
+          "rgb(105, 179, 162)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Montserrat | 12 | 500 | normal | 0 | uppercase",
+        "count": 9,
+        "sample": "Show Code",
+        "colors": [
+          "rgb(105, 179, 162)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 14 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "- - -",
+        "colors": [
+          "rgb(208, 208, 208)",
+          "rgb(105, 179, 162)",
+          "rgb(85, 85, 85)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 34,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Montserrat | 34 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Definition",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Montserrat | 14 | 500 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "Density",
+        "colors": [
+          "rgb(105, 179, 162)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Montserrat | 12 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Very close from an histogram. Show a density of distribution",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "is a\n                  comprehensive organized\n             ",
+        "colors": [
+          "rgb(85, 85, 85)",
+          "rgb(105, 179, 162)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 28,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 4,
+        "transform": "uppercase",
+        "key": "Montserrat | 28 | 500 | normal | 4 | uppercase",
+        "count": 1,
+        "sample": "Histogram",
+        "colors": [
+          "rgb(85, 85, 85)"
+        ]
+      },
+      {
+        "family": "monospace",
+        "size": 16.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "monospace | 16.4 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "comb",
+        "colors": [
+          "rgb(85, 85, 85)"
+        ]
+      },
+      {
+        "family": "Montserrat",
+        "size": 18.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Montserrat | 18.2 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "a few",
+        "colors": [
+          "rgb(85, 85, 85)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 44,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 44 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Dataviz decision tree",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "classification of chart types",
+        "colors": [
+          "rgb(85, 85, 85)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 870,
+      "ch": 96
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 745,
+      "nearTheTop": true,
+      "x": 384,
+      "y": 745,
+      "w": 672,
+      "h": 480,
+      "ratio": 1.4
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.800204613095238,
+      "h": 206.80851063887346,
+      "s": 0.027055031084692666,
+      "l": 0.999868032167577,
+      "chroma": 0.0000071407876167661755
+    },
+    "chromatic": [
+      {
+        "hex": "#7ABAAC",
+        "share": 0.1320157490079365,
+        "h": 166.86198881553557,
+        "s": 0.31685487084375014,
+        "l": 0.6038616165062648,
+        "chroma": 0.25103675267631886
+      },
+      {
+        "hex": "#83BEB1",
+        "share": 0.0029730902777777776,
+        "h": 167.060644885757,
+        "s": 0.31101124590454265,
+        "l": 0.6305628820871414,
+        "chroma": 0.22979819665092316
+      },
+      {
+        "hex": "#8AC1B5",
+        "share": 0.001336185515873016,
+        "h": 167.22725930923963,
+        "s": 0.3074300234659614,
+        "l": 0.6490923979800738,
+        "chroma": 0.21575906464674033
+      },
+      {
+        "hex": "#76B7A9",
+        "share": 0.0008401537698412699,
+        "h": 167.07692307692307,
+        "s": 0.31100478468899523,
+        "l": 0.5901960784313726,
+        "chroma": 0.2549019607843137
+      },
+      {
+        "hex": "#77B8A9",
+        "share": 0.0004402281746031746,
+        "h": 166.15384615384613,
+        "s": 0.3140096618357488,
+        "l": 0.5941176470588235,
+        "chroma": 0.2549019607843137
+      },
+      {
+        "hex": "#87C0B3",
+        "share": 0.00035342261904761904,
+        "h": 166.3157894736842,
+        "s": 0.31147540983606553,
+        "l": 0.6411764705882352,
+        "chroma": 0.22352941176470587
+      },
+      {
+        "hex": "#95C5BC",
+        "share": 0.00030691964285714285,
+        "h": 167.6529756915339,
+        "s": 0.29518743040950157,
+        "l": 0.6798177857001386,
+        "chroma": 0.18902753020400087
+      },
+      {
+        "hex": "#98C7BE",
+        "share": 0.00017361111111111112,
+        "h": 168.30547112462006,
+        "s": 0.29559748427672955,
+        "l": 0.6882352941176471,
+        "chroma": 0.1843137254901961
+      },
+      {
+        "hex": "#8FC3B8",
+        "share": 0.00009300595238095238,
+        "h": 167.30769230769232,
+        "s": 0.3023255813953487,
+        "l": 0.6627450980392157,
+        "chroma": 0.20392156862745092
+      },
+      {
+        "hex": "#88BFB3",
+        "share": 0.000015500992063492063,
+        "h": 167.08029197080288,
+        "s": 0.29912663755458524,
+        "l": 0.6407843137254903,
+        "chroma": 0.21490196078431378
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.800204613095238,
+        "h": 206.80851063887346,
+        "s": 0.027055031084692666,
+        "l": 0.999868032167577,
+        "chroma": 0.0000071407876167661755
+      },
+      {
+        "hex": "#EBECED",
+        "share": 0.01607142857142857,
+        "h": 209.92162140764788,
+        "s": 0.06323182666940318,
+        "l": 0.9244443687969015,
+        "chroma": 0.009555041152263355
+      },
+      {
+        "hex": "#000000",
+        "share": 0.006039186507936508,
+        "h": 0,
+        "s": 0,
+        "l": 0.0005737407899504771,
+        "chroma": 0
+      },
+      {
+        "hex": "#F2F3F3",
+        "share": 0.005174231150793651,
+        "h": 208.38998211091365,
+        "s": 0.027314927925727338,
+        "l": 0.9519143786933587,
+        "chroma": 0.0026269105605094545
+      },
+      {
+        "hex": "#E2E2E2",
+        "share": 0.005022321428571429,
+        "h": 212.72727272720448,
+        "s": 0.00011864571311456994,
+        "l": 0.8877838295812152,
+        "chroma": 0.000026627935124645674
+      },
+      {
+        "hex": "#EDEFF1",
+        "share": 0.002576264880952381,
+        "h": 212.16775290450587,
+        "s": 0.13076666543150395,
+        "l": 0.9363228805360893,
+        "chroma": 0.016653689153158235
+      },
+      {
+        "hex": "#C1D9D6",
+        "share": 0.0024367559523809524,
+        "h": 172.80655702576732,
+        "s": 0.23799324281252,
+        "l": 0.8043331836551415,
+        "chroma": 0.09313476026542933
+      },
+      {
+        "hex": "#DAE4E6",
+        "share": 0.002306547619047619,
+        "h": 186.9608189198728,
+        "s": 0.18400484963952404,
+        "l": 0.8782706093189964,
+        "chroma": 0.044797596457937905
+      },
+      {
+        "hex": "#BFD8D5",
+        "share": 0.0019965277777777776,
+        "h": 172.8,
+        "s": 0.24271844660194178,
+        "l": 0.7980392156862746,
+        "chroma": 0.0980392156862745
+      },
+      {
+        "hex": "#E2E9EA",
+        "share": 0.001977926587301587,
+        "h": 192.53045186640492,
+        "s": 0.16125966290710986,
+        "l": 0.902993423074559,
+        "chroma": 0.03128649578953846
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 167,
+        "share": 0.13856336805555555,
+        "size": 11
+      }
+    ],
+    "ramped": 0,
+    "shape": "monochrome",
+    "pixels": 322560
+  }
+}

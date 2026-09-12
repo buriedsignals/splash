@@ -1,0 +1,647 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/hollywood-2023-hits-flops/",
+  "archive": "informationisbeautiful",
+  "family": "scatter",
+  "id": "informationisbeautiful-net-visualizations-hollywood-2023-hits-flops",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Hollywood 2023 – Hits & Flops — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "Just how well did Hollywood sensations & doing? And just how",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 7,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "What is The Most Successful Hollywood Movie of All Time?",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Maybe not the film you expect",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Barbie",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 164,
+      "nearTheTop": true,
+      "x": 30,
+      "y": 164,
+      "w": 1380,
+      "h": 855,
+      "ratio": 1.61
+    },
+    "graphicFrame": {
+      "url": "https://vizsweet.com/api/embed/9797f6571c87afad",
+      "title": "VizSweet",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Source Serif Pro",
+          "size": 16.8,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 16.8 | 700 | normal | 0 | none",
+          "count": 5,
+          "sample": "2,000%",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 13,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 13 | 600 | normal | 0 | none",
+          "count": 4,
+          "sample": "colour",
+          "colors": [
+            "rgb(15, 8, 8)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 13 | 400 | normal | 0 | none",
+          "count": 4,
+          "sample": "worldwide gross ($m)",
+          "colors": [
+            "rgb(15, 8, 8)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "lowercase",
+          "key": "Source Serif Pro | 13 | 400 | normal | 0 | lowercase",
+          "count": 3,
+          "sample": "Budget ($m)",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 16.8,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 16.8 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "↓FLOP↓",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 44.7,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 44.7 | 600 | normal | 0 | none",
+          "count": 2,
+          "sample": "Hollywood Hits & Flops 2023",
+          "colors": [
+            "rgb(50, 0, 0)",
+            "rgb(139, 139, 139)"
+          ]
+        },
+        {
+          "family": "Fjalla One",
+          "size": 21.6,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Fjalla One | 21.6 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "BUDGET RECOVERED",
+          "colors": [
+            "rgb(96, 95, 95)",
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 13.7,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 13.7 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "David McCandless",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Source Serif Pro",
+          "size": 13.7,
+          "weight": "600",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif Pro | 13.7 | 600 | normal | 0 | none",
+          "count": 2,
+          "sample": "Information is Beautiful",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        },
+        {
+          "family": "Rubik",
+          "size": 11,
+          "weight": "300",
+          "style": "normal",
+          "tracking": 0.5,
+          "transform": "uppercase",
+          "key": "Rubik | 11 | 300 | normal | 0.5 | uppercase",
+          "count": 1,
+          "sample": "Made with",
+          "colors": [
+            "rgb(50, 0, 0)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(0, 0, 0)",
+          "count": 64
+        },
+        {
+          "colour": "stroke rgb(128, 128, 128)",
+          "count": 64
+        },
+        {
+          "colour": "fill rgb(255, 240, 240)",
+          "count": 13
+        },
+        {
+          "colour": "fill rgb(15, 8, 8)",
+          "count": 8
+        },
+        {
+          "colour": "stroke rgba(50, 0, 0, 0.3)",
+          "count": 3
+        },
+        {
+          "colour": "stroke rgb(135, 120, 120)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(50, 0, 0)",
+          "count": 2
+        },
+        {
+          "colour": "fill url(\"https://vizsweet.com/api/embed/9797f6571c87afad#legend-gradient\")",
+          "count": 1
+        },
+        {
+          "colour": "stroke rgb(157, 151, 151)",
+          "count": 1
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFF0F0",
+      "share": 0.8568276972624799,
+      "h": 359.9999960430978,
+      "s": 0.9999675544546051,
+      "l": 0.970589585190289,
+      "chroma": 0.05881892114552423
+    },
+    "chromatic": [
+      {
+        "hex": "#320000",
+        "share": 0.005564878379523688,
+        "h": 0,
+        "s": 0.9947916824563371,
+        "l": 0.09850417779051919,
+        "chroma": 0.19598227350641748
+      },
+      {
+        "hex": "#ED69B0",
+        "share": 0.0017603186710738199,
+        "h": 327.51169491339743,
+        "s": 0.7809077039339543,
+        "l": 0.6689559791176942,
+        "chroma": 0.5170296524965307
+      },
+      {
+        "hex": "#F36FAB",
+        "share": 0.0010373760488176964,
+        "h": 332.5143160389001,
+        "s": 0.8463691819169384,
+        "l": 0.6932718185313341,
+        "chroma": 0.51921056004101
+      },
+      {
+        "hex": "#A3759B",
+        "share": 0.0010051699296550556,
+        "h": 310.6365076763372,
+        "s": 0.2008883002659778,
+        "l": 0.5481086532420725,
+        "chroma": 0.18155936911020726
+      },
+      {
+        "hex": "#F1B136",
+        "share": 0.0009390626324264768,
+        "h": 39.46543111561573,
+        "s": 0.8697230838975617,
+        "l": 0.5784119062787569,
+        "chroma": 0.7333297940114674
+      },
+      {
+        "hex": "#BD73A1",
+        "share": 0.0008509195694550386,
+        "h": 322.6765619328036,
+        "s": 0.3597968315394848,
+        "l": 0.596271775642528,
+        "chroma": 0.29052027185376145
+      },
+      {
+        "hex": "#5B7289",
+        "share": 0.0007704042715484363,
+        "h": 209.5259304887583,
+        "s": 0.20404128296231838,
+        "l": 0.4462240341681227,
+        "chroma": 0.1820962488405703
+      },
+      {
+        "hex": "#D370A8",
+        "share": 0.0006966692092550216,
+        "h": 325.87844019682996,
+        "s": 0.5257608653258624,
+        "l": 0.6330375459186108,
+        "chroma": 0.38586899479986647
+      },
+      {
+        "hex": "#355572",
+        "share": 0.0005542842613780829,
+        "h": 208.25073761064158,
+        "s": 0.3679030062184936,
+        "l": 0.32592192840438927,
+        "chroma": 0.2398153145050069
+      },
+      {
+        "hex": "#F577A6",
+        "share": 0.0005398762607000593,
+        "h": 337.6394967177243,
+        "s": 0.8632636414373419,
+        "l": 0.7132022039585065,
+        "chroma": 0.49516421953396744
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFF0F0",
+        "share": 0.8568276972624799,
+        "h": 359.9999960430978,
+        "s": 0.9999675544546051,
+        "l": 0.970589585190289,
+        "chroma": 0.05881892114552423
+      },
+      {
+        "hex": "#F2E4E4",
+        "share": 0.0713035002966353,
+        "h": 359.93497736880323,
+        "s": 0.3372015749985338,
+        "l": 0.9209152812805239,
+        "chroma": 0.0533349834210467
+      },
+      {
+        "hex": "#FCEDED",
+        "share": 0.006353928299008391,
+        "h": 358.57553100664904,
+        "s": 0.7432078192597344,
+        "l": 0.9591928274577806,
+        "chroma": 0.06065641943051725
+      },
+      {
+        "hex": "#ABA3A3",
+        "share": 0.0055241969658445635,
+        "h": 359.956948098541,
+        "s": 0.040090028443339594,
+        "l": 0.6548944401326042,
+        "chroma": 0.027670583422077066
+      },
+      {
+        "hex": "#605F5F",
+        "share": 0.001880667853207899,
+        "h": 0,
+        "s": 0.007511488992271523,
+        "l": 0.37455840380316163,
+        "chroma": 0.005626982654260482
+      },
+      {
+        "hex": "#F6E9E9",
+        "share": 0.0008627849817781168,
+        "h": 357.48657357679895,
+        "s": 0.44113466216002806,
+        "l": 0.9390250009630571,
+        "chroma": 0.05379637120073966
+      },
+      {
+        "hex": "#6A738C",
+        "share": 0.0008076955674209678,
+        "h": 223.27752502274797,
+        "s": 0.1408480788783418,
+        "l": 0.4816204761022982,
+        "chroma": 0.13567063761496206
+      },
+      {
+        "hex": "#8B8B8B",
+        "share": 0.0007517586236121705,
+        "h": 0,
+        "s": 0.0011721960923554012,
+        "l": 0.5455114176448482,
+        "chroma": 0.0010654994805137097
+      },
+      {
+        "hex": "#B4ACAC",
+        "share": 0.0006331045003813882,
+        "h": 359.8628450852821,
+        "s": 0.04807391565297527,
+        "l": 0.6894847363309446,
+        "chroma": 0.029855369189175085
+      },
+      {
+        "hex": "#7E7490",
+        "share": 0.0006195440291550131,
+        "h": 260.48380002932123,
+        "s": 0.1119965409854907,
+        "l": 0.5099085324964459,
+        "chroma": 0.10977709825380216
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 0,
+        "share": 0.014662259513518093,
+        "size": 17
+      },
+      {
+        "hue": 210,
+        "share": 0.0025671667090431394,
+        "size": 6
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 1179900
+  }
+}

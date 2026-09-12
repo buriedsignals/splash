@@ -1,0 +1,501 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/colours-in-cultures/",
+  "archive": "informationisbeautiful",
+  "family": "heatmap",
+  "id": "informationisbeautiful-net-visualizations-colours-in-cultures",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Colours in Cultures — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 20,
+        "sample": "» Check out » Learn to be a dataviz ninja: » Be the first to",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": ", , , , .",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Left vs. Right (US)",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 2,
+        "sample": "» Order a from our store",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Every key argument debunked",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Learn to Create Impactful Infographics",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "never",
+        "colors": [
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 889,
+      "ratio": 1.44
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#CBCAC3",
+      "share": 0.8153473003374578,
+      "h": 52.49232275615695,
+      "s": 0.07149621581734543,
+      "l": 0.7807099527027883,
+      "chroma": 0.03135681709631466
+    },
+    "chromatic": [
+      {
+        "hex": "#E20613",
+        "share": 0.016428219910011248,
+        "h": 356.45487373399635,
+        "s": 0.948129816329316,
+        "l": 0.4549355250819703,
+        "chroma": 0.8626758716752989
+      },
+      {
+        "hex": "#FFE500",
+        "share": 0.012272391732283465,
+        "h": 53.87780743845581,
+        "s": 0.9996987680117482,
+        "l": 0.5003307989862612,
+        "chroma": 0.9990373693336985
+      },
+      {
+        "hex": "#33AA52",
+        "share": 0.01029422103487064,
+        "h": 135.62454229811578,
+        "s": 0.5376572542510277,
+        "l": 0.43362726685347186,
+        "chroma": 0.46628569132963077
+      },
+      {
+        "hex": "#4980C0",
+        "share": 0.009925126546681665,
+        "h": 212.2689883392287,
+        "s": 0.4854155175001855,
+        "l": 0.5200149654336678,
+        "chroma": 0.4659843678927212
+      },
+      {
+        "hex": "#A777B1",
+        "share": 0.007860833802024746,
+        "h": 289.6546300543941,
+        "s": 0.27102538143194616,
+        "l": 0.5803912800447177,
+        "chroma": 0.22744922675610213
+      },
+      {
+        "hex": "#F29101",
+        "share": 0.0045539229471316086,
+        "h": 35.854104658475904,
+        "s": 0.9906770452599053,
+        "l": 0.47672599723023135,
+        "chroma": 0.9445630046692548
+      },
+      {
+        "hex": "#ED7BA2",
+        "share": 0.0023235376827896513,
+        "h": 339.48398541047976,
+        "s": 0.7593992169841782,
+        "l": 0.7060188069176234,
+        "chroma": 0.44649817566966277
+      },
+      {
+        "hex": "#FFD400",
+        "share": 0.0018041690101237345,
+        "h": 49.88670992310957,
+        "s": 0.9995719521656544,
+        "l": 0.5001996122365167,
+        "chroma": 0.9991728985797924
+      },
+      {
+        "hex": "#A9713D",
+        "share": 0.0016161065804274465,
+        "h": 28.883919802982458,
+        "s": 0.4693702914875058,
+        "l": 0.4510518291057587,
+        "chroma": 0.42342065700668524
+      },
+      {
+        "hex": "#A97BB2",
+        "share": 0.0005843996062992126,
+        "h": 290.5171373731834,
+        "s": 0.2621590925428066,
+        "l": 0.5898157157599883,
+        "chroma": 0.21506707946336429
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#CBCAC3",
+        "share": 0.8153473003374578,
+        "h": 52.49232275615695,
+        "s": 0.07149621581734543,
+        "l": 0.7807099527027883,
+        "chroma": 0.03135681709631466
+      },
+      {
+        "hex": "#D3D2CC",
+        "share": 0.015356967097862767,
+        "h": 52.19616107013616,
+        "s": 0.07888916462076302,
+        "l": 0.8137139330696512,
+        "chroma": 0.029391904401245506
+      },
+      {
+        "hex": "#FEFEFE",
+        "share": 0.011477080989876265,
+        "h": 50.10582010581788,
+        "s": 0.11290322580644746,
+        "l": 0.9969840554904963,
+        "chroma": 0.0006810197279524255
+      },
+      {
+        "hex": "#DBDBD4",
+        "share": 0.00953318335208099,
+        "h": 52.29687336609859,
+        "s": 0.09032648068649243,
+        "l": 0.8469091618948463,
+        "chroma": 0.027656313262768184
+      },
+      {
+        "hex": "#1D1D1B",
+        "share": 0.008938238188976377,
+        "h": 60.08543231698336,
+        "s": 0.03570007519680002,
+        "l": 0.10998263035427522,
+        "chroma": 0.00785277634797897
+      },
+      {
+        "hex": "#E3E2DC",
+        "share": 0.00875544853768279,
+        "h": 51.86519833948342,
+        "s": 0.11181886169636639,
+        "l": 0.8778948777142093,
+        "chroma": 0.02730731156258548
+      },
+      {
+        "hex": "#F5F4F2",
+        "share": 0.005374718785151856,
+        "h": 50.8052605668466,
+        "s": 0.10249035931812622,
+        "l": 0.9555216789135537,
+        "chroma": 0.009117198220033762
+      },
+      {
+        "hex": "#D0CFC8",
+        "share": 0.004326314679415073,
+        "h": 51.59534908081486,
+        "s": 0.07632772991664827,
+        "l": 0.8007392272367001,
+        "chroma": 0.030418244892919555
+      },
+      {
+        "hex": "#F2F1ED",
+        "share": 0.003916795556805399,
+        "h": 51.5098171970211,
+        "s": 0.1682016825862288,
+        "l": 0.9381902009177017,
+        "chroma": 0.02079302441191866
+      },
+      {
+        "hex": "#EBEAE5",
+        "share": 0.0038772497187851518,
+        "h": 51.76518852795262,
+        "s": 0.13011661142627046,
+        "l": 0.9084186621157984,
+        "chroma": 0.02383250671075332
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 356,
+        "share": 0.026586227502812143,
+        "size": 9
+      },
+      {
+        "hue": 54,
+        "share": 0.014911417322834646,
+        "size": 5
+      },
+      {
+        "hue": 136,
+        "share": 0.0109357424071991,
+        "size": 4
+      },
+      {
+        "hue": 212,
+        "share": 0.010445374015748032,
+        "size": 3
+      },
+      {
+        "hue": 290,
+        "share": 0.008677235658042745,
+        "size": 3
+      }
+    ],
+    "ramped": 1,
+    "shape": "categorical",
+    "pixels": 1137920
+  }
+}

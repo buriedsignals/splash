@@ -1,0 +1,455 @@
+{
+  "url": "https://www.datawrapper.de/_/XHkUZ/",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "datawrapper-de-xhkuz",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Nintendo built up a large cash reserve through 2021, but has spent it down in the years since | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 219,
+      "w": 640,
+      "h": 550,
+      "ratio": 1.16
+    },
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/XHkUZ/1/",
+      "title": "Nintendo built up a large cash reserve through 2021, but has spent it down in the years since",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 29,
+          "sample": "2016",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(162, 162, 162)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "were driven by COVID-19 lockdowns, ’s success, and peak Nint",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "2021 sales",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Nintendo built up a large cash reserve through 2021, but has",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Nintendo annual cash on hand between 2016 and 2025",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "Animal Crossing",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(48, 184, 226)",
+          "count": 6
+        },
+        {
+          "colour": "fill rgb(230, 115, 93)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgba(255, 255, 255, 0)",
+          "count": 2
+        },
+        {
+          "colour": "fill rgb(196, 196, 196)",
+          "count": 2
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.5224488636363637,
+      "h": 202.8598306679548,
+      "s": 0.15052393089806165,
+      "l": 0.9998494082845915,
+      "chroma": 0.000045335313927918897
+    },
+    "chromatic": [
+      {
+        "hex": "#30B8E2",
+        "share": 0.034107954545454545,
+        "h": 194.1573033707865,
+        "s": 0.7542372881355931,
+        "l": 0.5372549019607843,
+        "chroma": 0.6980392156862745
+      },
+      {
+        "hex": "#E6735D",
+        "share": 0.014477272727272728,
+        "h": 9.635036496350367,
+        "s": 0.732620320855615,
+        "l": 0.6333333333333333,
+        "chroma": 0.5372549019607844
+      },
+      {
+        "hex": "#007EA6",
+        "share": 0.0006903409090909091,
+        "h": 194.45783132530119,
+        "s": 1,
+        "l": 0.3254901960784314,
+        "chroma": 0.6509803921568628
+      },
+      {
+        "hex": "#0289CC",
+        "share": 0.00027840909090909093,
+        "h": 200,
+        "s": 0.9829761963675953,
+        "l": 0.40430172068827536,
+        "chroma": 0.7948379351740696
+      },
+      {
+        "hex": "#C35542",
+        "share": 0.00022727272727272727,
+        "h": 8.837209302325578,
+        "s": 0.5180722891566264,
+        "l": 0.5117647058823529,
+        "chroma": 0.5058823529411764
+      },
+      {
+        "hex": "#0D85AB",
+        "share": 0.00016761363636363637,
+        "h": 194.43037974683543,
+        "s": 0.858695652173913,
+        "l": 0.3607843137254902,
+        "chroma": 0.6196078431372548
+      },
+      {
+        "hex": "#A3D0DF",
+        "share": 0.00014204545454545454,
+        "h": 194.88992661774515,
+        "s": 0.48354838709677406,
+        "l": 0.7568627450980392,
+        "chroma": 0.2351372549019607
+      },
+      {
+        "hex": "#C65E4C",
+        "share": 0.00013636363636363637,
+        "h": 8.790910632525009,
+        "s": 0.5202470224966917,
+        "l": 0.536968954248366,
+        "chroma": 0.481781045751634
+      },
+      {
+        "hex": "#0B8DCE",
+        "share": 0.00013636363636363637,
+        "h": 199.89769820971867,
+        "s": 0.9023076923076924,
+        "l": 0.42483660130718953,
+        "chroma": 0.7666666666666667
+      },
+      {
+        "hex": "#C4E3F3",
+        "share": 0.0001221590909090909,
+        "h": 199.96091841719587,
+        "s": 0.6700490998363342,
+        "l": 0.8606931144550843,
+        "chroma": 0.18668490652074787
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.5224488636363637,
+        "h": 202.8598306679548,
+        "s": 0.15052393089806165,
+        "l": 0.9998494082845915,
+        "chroma": 0.000045335313927918897
+      },
+      {
+        "hex": "#F4F9FC",
+        "share": 0.2905511363636364,
+        "h": 202.4959006120039,
+        "s": 0.5713813608407015,
+        "l": 0.9725597366858041,
+        "chroma": 0.031357709988585
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.06799431818181818,
+        "h": 199.8113207546048,
+        "s": 0.00007506029607726712,
+        "l": 0.7686123768467862,
+        "chroma": 0.00003473604700499067
+      },
+      {
+        "hex": "#000000",
+        "share": 0.01240909090909091,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.006610795454545454,
+        "h": 0,
+        "s": 0,
+        "l": 0.0946501849558044,
+        "chroma": 0
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.004920454545454546,
+        "h": 198.7946074544006,
+        "s": 0.018095197095584183,
+        "l": 0.9211078657791061,
+        "chroma": 0.0028551374360367143
+      },
+      {
+        "hex": "#8B8B8B",
+        "share": 0.003321022727272727,
+        "h": 195.45454545454305,
+        "s": 0.0017046209247751365,
+        "l": 0.5453999563897416,
+        "chroma": 0.0015498414934834726
+      },
+      {
+        "hex": "#F3F4F5",
+        "share": 0.0025,
+        "h": 200.0238805970143,
+        "s": 0.08341218066829438,
+        "l": 0.95525623885918,
+        "chroma": 0.007464349376114177
+      },
+      {
+        "hex": "#F2F6F9",
+        "share": 0.001877840909090909,
+        "h": 204.44627080336966,
+        "s": 0.39565888952117534,
+        "l": 0.963510426863635,
+        "chroma": 0.02887484797247175
+      },
+      {
+        "hex": "#242424",
+        "share": 0.0016704545454545455,
+        "h": 0,
+        "s": 0,
+        "l": 0.1398159263705482,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 194,
+        "share": 0.03664488636363638,
+        "size": 19
+      },
+      {
+        "hue": 10,
+        "share": 0.014985795454545455,
+        "size": 5
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 352000
+  }
+}

@@ -1,0 +1,481 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/charts/opportunities-to-reduce-methane-emissions-from-energy-2025",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "iea-org-data-and-statistics-charts-opportunities-to-reduce-methane-emi",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Opportunities to reduce methane emissions from energy, 2025 – Charts – Data & Statistics - IEA",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 79,
+        "sample": "emissions (Mt)",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0 | none",
+        "count": 20,
+        "sample": "Other measures",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 8,
+        "sample": "Liquefied natural gas export capacity in selected countries,",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Open",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "United States",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "Opportunities to reduce methane emissions from energy, 2025",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "68%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 98
+      },
+      {
+        "colour": "fill rgb(255, 244, 90)",
+        "count": 16
+      },
+      {
+        "colour": "fill rgb(73, 211, 255)",
+        "count": 15
+      },
+      {
+        "colour": "fill rgb(0, 173, 161)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(255, 117, 75)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(62, 122, 211)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(230, 230, 230)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(255, 183, 67)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(104, 243, 148)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(177, 135, 239)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(175, 106, 177)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(255, 183, 67)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(62, 122, 211)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 251, 208)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(254, 248, 160)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(194, 239, 251)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(175, 106, 177)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 521,
+      "nearTheTop": true,
+      "x": 122,
+      "y": 521,
+      "w": 1162,
+      "h": 500,
+      "ratio": 2.32
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8369277108433735,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999930077839817,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#49D3FF",
+        "share": 0.09596385542168674,
+        "h": 194.50549450549448,
+        "s": 1,
+        "l": 0.6431372549019607,
+        "chroma": 0.7137254901960784
+      },
+      {
+        "hex": "#FFF45A",
+        "share": 0.008313253012048192,
+        "h": 56.000000000000014,
+        "s": 1,
+        "l": 0.6764705882352942,
+        "chroma": 0.6470588235294117
+      },
+      {
+        "hex": "#FFB743",
+        "share": 0.007771084337349398,
+        "h": 37.02127659574468,
+        "s": 1,
+        "l": 0.6313725490196078,
+        "chroma": 0.7372549019607844
+      },
+      {
+        "hex": "#3E7AD3",
+        "share": 0.007771084337349398,
+        "h": 215.83892617449666,
+        "s": 0.6286919831223627,
+        "l": 0.5352941176470588,
+        "chroma": 0.584313725490196
+      },
+      {
+        "hex": "#FF754B",
+        "share": 0.006867469879518072,
+        "h": 13.999999999999998,
+        "s": 1,
+        "l": 0.6470588235294118,
+        "chroma": 0.7058823529411764
+      },
+      {
+        "hex": "#68F394",
+        "share": 0.004156626506024096,
+        "h": 138.9928057553957,
+        "s": 0.8527607361963189,
+        "l": 0.6803921568627451,
+        "chroma": 0.5450980392156862
+      },
+      {
+        "hex": "#00ADA1",
+        "share": 0.003253012048192771,
+        "h": 175.83815028901734,
+        "s": 1,
+        "l": 0.3392156862745098,
+        "chroma": 0.6784313725490196
+      },
+      {
+        "hex": "#577C88",
+        "share": 0.0015783132530120482,
+        "h": 194.69387755102042,
+        "s": 0.21973094170403584,
+        "l": 0.4372549019607843,
+        "chroma": 0.19215686274509802
+      },
+      {
+        "hex": "#B187EF",
+        "share": 0.0012650602409638553,
+        "h": 264.2307692307692,
+        "s": 0.7647058823529411,
+        "l": 0.7333333333333334,
+        "chroma": 0.40784313725490196
+      },
+      {
+        "hex": "#44726F",
+        "share": 0.0002134251290877797,
+        "h": 176.08695652173913,
+        "s": 0.2527472527472528,
+        "l": 0.3568627450980392,
+        "chroma": 0.18039215686274512
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8369277108433735,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999930077839817,
+        "chroma": 0
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.016142857142857143,
+        "h": 0,
+        "s": 0,
+        "l": 0.9018901216526701,
+        "chroma": 0
+      },
+      {
+        "hex": "#000101",
+        "share": 0.002972461273666093,
+        "h": 194.7196261682243,
+        "s": 0.28120893561103805,
+        "l": 0.0017280334252983184,
+        "chroma": 0.0009718768804568728
+      },
+      {
+        "hex": "#828282",
+        "share": 0.0009724612736660929,
+        "h": 0,
+        "s": 0,
+        "l": 0.5097414541037654,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0002512908777969019,
+        "h": 0,
+        "s": 0,
+        "l": 0.955170561375235,
+        "chroma": 0
+      },
+      {
+        "hex": "#60856B",
+        "share": 0.00022203098106712564,
+        "h": 137.83783783783784,
+        "s": 0.16157205240174677,
+        "l": 0.44901960784313727,
+        "chroma": 0.14509803921568631
+      },
+      {
+        "hex": "#597E65",
+        "share": 0.0002117039586919105,
+        "h": 139.37541528239203,
+        "s": 0.17073170731707327,
+        "l": 0.4215686274509804,
+        "chroma": 0.14395026303204217
+      },
+      {
+        "hex": "#7A7A7A",
+        "share": 0.00018932874354561101,
+        "h": 0,
+        "s": 0,
+        "l": 0.47992869875222816,
+        "chroma": 0
+      },
+      {
+        "hex": "#1F1929",
+        "share": 0.00018072289156626507,
+        "h": 262.5,
+        "s": 0.24242424242424246,
+        "l": 0.12941176470588237,
+        "chroma": 0.0627450980392157
+      },
+      {
+        "hex": "#623B37",
+        "share": 0.00018072289156626507,
+        "h": 5.5813953488372094,
+        "s": 0.28104575163398693,
+        "l": 0.30000000000000004,
+        "chroma": 0.16862745098039217
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 195,
+        "share": 0.10920654044750429,
+        "size": 8
+      },
+      {
+        "hue": 56,
+        "share": 0.016602409638554222,
+        "size": 11
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 581000
+  }
+}

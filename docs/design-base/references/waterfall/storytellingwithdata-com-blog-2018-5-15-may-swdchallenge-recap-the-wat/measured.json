@@ -1,0 +1,396 @@
+{
+  "url": "https://www.storytellingwithdata.com/blog/2018/5/15/may-swdchallenge-recap-the-waterfall-chart",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "storytellingwithdata-com-blog-2018-5-15-may-swdchallenge-recap-the-wat",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Waterfall Chart Examples - SWD Challenge Recap",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "proxima-nova",
+        "size": 17.6,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 17.6 | 400 | normal | 0 | none",
+        "count": 92,
+        "sample": "At the beginning of this month, to create and share a waterf",
+        "colors": [
+          "rgba(23, 38, 54, 0.73)",
+          "rgb(51, 102, 153)",
+          "rgb(128, 128, 128)",
+          "rgb(211, 211, 211)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 22.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 22.4 | 700 | normal | 0 | none",
+        "count": 48,
+        "sample": "Adam B",
+        "colors": [
+          "rgba(0, 0, 0, 0.9)",
+          "rgba(0, 0, 0, 0.4)",
+          "rgb(61, 153, 145)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 17.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 17.6 | 700 | normal | 0 | none",
+        "count": 20,
+        "sample": "Alistair",
+        "colors": [
+          "rgba(23, 38, 54, 0.73)",
+          "rgb(51, 102, 153)",
+          "rgb(41, 127, 213)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 14.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 14.3 | 400 | normal | 0 | none",
+        "count": 16,
+        "sample": "Books",
+        "colors": [
+          "rgb(23, 38, 54)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 13,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "proxima-nova | 13 | 600 | normal | 2 | uppercase",
+        "count": 7,
+        "sample": "Skip to Content",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(41, 127, 213)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 14.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 14.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Resources",
+        "colors": [
+          "rgb(23, 38, 54)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 17.6,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 17.6 | 400 | italic | 0 | none",
+        "count": 4,
+        "sample": "with the right data",
+        "colors": [
+          "rgba(23, 38, 54, 0.73)",
+          "rgb(51, 102, 153)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "May 15",
+        "colors": [
+          "rgba(0, 0, 0, 0.67)"
+        ]
+      },
+      {
+        "family": "sans-serif",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Audio by",
+        "colors": [
+          "rgba(23, 38, 54, 0.73)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "proxima-nova | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "May #SWDchallenge recap: the waterfall chart",
+        "colors": [
+          "rgba(0, 0, 0, 0.9)"
+        ]
+      },
+      {
+        "family": "proxima-nova",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "proxima-nova | 16 | 600 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "CONTACT US",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(41, 127, 213)",
+        "count": 4
+      }
+    ],
+    "column": {
+      "px": 1075,
+      "ch": 151
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 17632,
+      "nearTheTop": false,
+      "x": 245,
+      "y": 17632,
+      "w": 950,
+      "h": 1188,
+      "ratio": 0.8
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8115053429698932,
+      "h": 152.84388866399527,
+      "s": 0.020235578375202484,
+      "l": 0.9997375025910764,
+      "chroma": 0.000010623573783119511
+    },
+    "chromatic": [
+      {
+        "hex": "#009BFF",
+        "share": 0.05812619163747617,
+        "h": 203.52916348999514,
+        "s": 1,
+        "l": 0.5000372137992597,
+        "chroma": 0.9999255724014806
+      },
+      {
+        "hex": "#81CEFF",
+        "share": 0.0004513811909723762,
+        "h": 203.56748150229467,
+        "s": 0.9999063495036528,
+        "l": 0.7531954235525251,
+        "chroma": 0.4935629261527795
+      },
+      {
+        "hex": "#CEECFF",
+        "share": 0.00040704119185917614,
+        "h": 203.09991992170126,
+        "s": 0.9968955117970562,
+        "l": 0.9036780725362041,
+        "chroma": 0.19204579435259939
+      },
+      {
+        "hex": "#2AABFF",
+        "share": 0.0002562851948742961,
+        "h": 203.56040818313082,
+        "s": 1,
+        "l": 0.581796594070154,
+        "chroma": 0.8364068118596919
+      },
+      {
+        "hex": "#ACDFFF",
+        "share": 0.0002385491952290161,
+        "h": 203.23456900802367,
+        "s": 0.9993728441517717,
+        "l": 0.8372840586048547,
+        "chroma": 0.32522778628179905
+      },
+      {
+        "hex": "#56BDFF",
+        "share": 0.00011794439764111205,
+        "h": 203.43312130243316,
+        "s": 1,
+        "l": 0.6685684800235884,
+        "chroma": 0.6628630399528233
+      },
+      {
+        "hex": "#C4FCFE",
+        "share": 0.00010464239790715204,
+        "h": 181.4619200466881,
+        "s": 0.958333333333334,
+        "l": 0.8811565304087736,
+        "chroma": 0.2277833167165172
+      },
+      {
+        "hex": "#FFEBC4",
+        "share": 0.00008247239835055203,
+        "h": 40.541430400585334,
+        "s": 0.984158415841584,
+        "l": 0.8828800337339238,
+        "chroma": 0.2305292009276828
+      },
+      {
+        "hex": "#1DA7FF",
+        "share": 0.00008247239835055203,
+        "h": 203.49838126071222,
+        "s": 1,
+        "l": 0.557157916930213,
+        "chroma": 0.8856841661395741
+      },
+      {
+        "hex": "#FEE3AB",
+        "share": 0.00007271759854564802,
+        "h": 40.59806508355322,
+        "s": 0.984699769053118,
+        "l": 0.8343376374940219,
+        "chroma": 0.32625538020086087
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8115053429698932,
+        "h": 152.84388866399527,
+        "s": 0.020235578375202484,
+        "l": 0.9997375025910764,
+        "chroma": 0.000010623573783119511
+      },
+      {
+        "hex": "#7F7F7F",
+        "share": 0.04390635392187292,
+        "h": 332.3076923086876,
+        "s": 0.000002067822017194241,
+        "l": 0.49795296034432435,
+        "chroma": 0.000002059356189854089
+      },
+      {
+        "hex": "#BFBFBF",
+        "share": 0.03747084645058307,
+        "h": 162.85714285655692,
+        "s": 0.000019370631576596332,
+        "l": 0.7484597351033944,
+        "chroma": 0.00000974498759598319
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.009528665809426684,
+        "h": 288,
+        "s": 0.000018998043201791103,
+        "l": 0.9519731019443608,
+        "chroma": 0.0000018248341682181035
+      },
+      {
+        "hex": "#EEEEEE",
+        "share": 0.004238017115239657,
+        "h": 358.18181818187037,
+        "s": 0.0001987580632529082,
+        "l": 0.9318788490495591,
+        "chroma": 0.00002707925605893724
+      },
+      {
+        "hex": "#404040",
+        "share": 0.0030922715381545693,
+        "h": 20.869565217346516,
+        "s": 0.000051267762607856566,
+        "l": 0.2522675258804411,
+        "chroma": 0.000025866383261019532
+      },
+      {
+        "hex": "#DADADA",
+        "share": 0.002822684343546313,
+        "h": 225.7142857144083,
+        "s": 0.0000897654556880003,
+        "l": 0.8558869730738667,
+        "chroma": 0.00002587274306520282
+      },
+      {
+        "hex": "#ACACAC",
+        "share": 0.0015359375692812487,
+        "h": 292.4999999997701,
+        "s": 0.00002768530118138666,
+        "l": 0.6728682697097315,
+        "chroma": 0.000018113480958148465
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.0013647851727042965,
+        "h": 265.49999999997226,
+        "s": 0.0002525826576748482,
+        "l": 0.7982341474601538,
+        "chroma": 0.00010192511052509179
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0010863299782734005,
+        "h": 200.76923076923694,
+        "s": 0.0002488324018070835,
+        "l": 0.8327523009203681,
+        "chroma": 0.00008323329331738627
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 204,
+        "share": 0.06021549239569017,
+        "size": 16
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 1127650
+  }
+}

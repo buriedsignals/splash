@@ -1,0 +1,374 @@
+{
+  "url": "https://100.datavizproject.com/data-type/viz74/",
+  "archive": "datavizproject",
+  "family": "diverging-bar",
+  "id": "100-datavizproject-com-data-type-viz74",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "#74 | 1 dataset. 100 visualizations.",
+    "ground": "rgb(244, 247, 247)",
+    "type": [
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 16 | 400 | normal | 0 | uppercase",
+        "count": 6,
+        "sample": "All",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Borgia Pro",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Borgia Pro | 18 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "This is mirrored to compare 2004 and 2022 numbers. The radia",
+        "colors": [
+          "rgb(104, 116, 126)",
+          "rgb(50, 116, 218)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 14.4,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 14.4 | 500 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "Stories",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "by Ferdio",
+        "colors": [
+          "rgb(51, 122, 183)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 20 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Previous",
+        "colors": [
+          "rgb(50, 116, 218)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 28 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "#74",
+        "colors": [
+          "rgb(50, 116, 218)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 16 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sweden stayed the country with the most sites",
+        "colors": [
+          "rgb(50, 116, 218)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 18 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Hire us",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 22,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 22 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "We can visualize your own story",
+        "colors": [
+          "rgb(50, 116, 218)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 31
+      },
+      {
+        "colour": "fill rgb(37, 97, 201)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(37, 97, 201)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 823,
+      "ch": 91
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 172,
+      "nearTheTop": true,
+      "x": 308,
+      "y": 172,
+      "w": 823,
+      "h": 823,
+      "ratio": 1
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.943126319763121,
+      "h": 246.67697063353566,
+      "s": 0.1311043566389191,
+      "l": 0.9999848706569934,
+      "chroma": 0.000003967045562491833
+    },
+    "chromatic": [
+      {
+        "hex": "#3274D8",
+        "share": 0.025289315669643382,
+        "h": 216.1441958027216,
+        "s": 0.6803070851009514,
+        "l": 0.5216834162236323,
+        "chroma": 0.6508043217286914
+      },
+      {
+        "hex": "#EE5440",
+        "share": 0.010881041418443062,
+        "h": 6.89693207949298,
+        "s": 0.8365160932138338,
+        "l": 0.5922126649819706,
+        "chroma": 0.6822413367027256
+      },
+      {
+        "hex": "#3B7ADA",
+        "share": 0.0003598013424718942,
+        "h": 216.10427226647357,
+        "s": 0.6793155546186008,
+        "l": 0.5425747348119576,
+        "chroma": 0.6214721954355512
+      },
+      {
+        "hex": "#4B85DD",
+        "share": 0.0001799006712359471,
+        "h": 216.14588023412878,
+        "s": 0.6795165978277499,
+        "l": 0.5797492767598843,
+        "chroma": 0.5711346833815494
+      },
+      {
+        "hex": "#538BDE",
+        "share": 0.00016662931024313132,
+        "h": 216.1720841300191,
+        "s": 0.6793972460379317,
+        "l": 0.5992712129099427,
+        "chroma": 0.5445080687142113
+      },
+      {
+        "hex": "#4581DC",
+        "share": 0.000154832544916184,
+        "h": 216.10847714773374,
+        "s": 0.6800068778747367,
+        "l": 0.5655835667600374,
+        "chroma": 0.5908123249299719
+      },
+      {
+        "hex": "#6395E1",
+        "share": 0.00015040875791857871,
+        "h": 216.19284217063893,
+        "s": 0.6797720196316427,
+        "l": 0.6357362552864283,
+        "chroma": 0.4952326028450596
+      },
+      {
+        "hex": "#6B9BE3",
+        "share": 0.00014598497092097347,
+        "h": 216.17766497461932,
+        "s": 0.6794665440331109,
+        "l": 0.6554565260447613,
+        "chroma": 0.4682115270350564
+      },
+      {
+        "hex": "#B3CCF1",
+        "share": 0.00014156118392336822,
+        "h": 216.18966689326993,
+        "s": 0.6808609118259659,
+        "l": 0.8234885620915033,
+        "chroma": 0.24035947712418293
+      },
+      {
+        "hex": "#9BBBEC",
+        "share": 0.00012681522726468403,
+        "h": 216.14197085557637,
+        "s": 0.6795764290616728,
+        "l": 0.7674646602827178,
+        "chroma": 0.3160510715914273
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.943126319763121,
+        "h": 246.67697063353566,
+        "s": 0.1311043566389191,
+        "l": 0.9999848706569934,
+        "chroma": 0.000003967045562491833
+      },
+      {
+        "hex": "#283250",
+        "share": 0.008368330403803277,
+        "h": 224.99887635003242,
+        "s": 0.3329723940107548,
+        "l": 0.23548587717025135,
+        "chroma": 0.15682059255420228
+      },
+      {
+        "hex": "#0B1629",
+        "share": 0.0013934929042456559,
+        "h": 218.0016934801016,
+        "s": 0.5758868706570766,
+        "l": 0.10212262682850919,
+        "chroma": 0.11762215997510114
+      },
+      {
+        "hex": "#F3F4F5",
+        "share": 0.00042763274310184146,
+        "h": 211.62420382165584,
+        "s": 0.10028744809964868,
+        "l": 0.9576605814739689,
+        "chroma": 0.00849222447599729
+      },
+      {
+        "hex": "#F3F6FB",
+        "share": 0.00019759581922636812,
+        "h": 217.44485294117655,
+        "s": 0.5245901639344275,
+        "l": 0.9696517412935324,
+        "chroma": 0.03184079601990053
+      },
+      {
+        "hex": "#EAEBED",
+        "share": 0.0001872736495652892,
+        "h": 222.70676691729355,
+        "s": 0.08062234794908055,
+        "l": 0.923591168750965,
+        "chroma": 0.012320518758684562
+      },
+      {
+        "hex": "#F6F9FD",
+        "share": 0.0001799006712359471,
+        "h": 214.8410757946209,
+        "s": 0.5760563380281714,
+        "l": 0.977177756348441,
+        "chroma": 0.026293796207007447
+      },
+      {
+        "hex": "#E5E9EB",
+        "share": 0.00017842607557007868,
+        "h": 201.93164933135225,
+        "s": 0.12163383336345626,
+        "l": 0.9103386809269163,
+        "chroma": 0.021811699886566283
+      },
+      {
+        "hex": "#ECF2FB",
+        "share": 0.00017400228857247343,
+        "h": 216.27137341423054,
+        "s": 0.6833773087071237,
+        "l": 0.9559155865736124,
+        "chroma": 0.06025257560651387
+      },
+      {
+        "hex": "#E4EDFA",
+        "share": 0.00017252769290660501,
+        "h": 216.06621994481665,
+        "s": 0.6767137903440918,
+        "l": 0.937171107759343,
+        "chroma": 0.08503435562259087
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 216,
+        "share": 0.027597057886727457,
+        "size": 19
+      },
+      {
+        "hue": 7,
+        "share": 0.011254114121907771,
+        "size": 5
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 678152
+  }
+}

@@ -51,3 +51,11 @@ text-contrast rule rather than painting the name itself in colour. Separately, t
 context lines being exempt from the categorical-palette CVD check is a deliberate, documented carve-out
 in this codebase, not an oversight — but it only stays a safe carve-out as long as those lines are
 genuinely unaccented background, never quietly pressed into carrying meaning of their own.
+
+## The worked example in this tree
+
+`proof/static-parallel-coordinates-electricity-mix` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

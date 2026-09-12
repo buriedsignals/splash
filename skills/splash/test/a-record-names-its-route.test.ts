@@ -19,12 +19,10 @@ const REFS = join(ROOT, "docs", "design-base", "references");
 
 const ROUTES = ["pixel", "style"] as const;
 const ROUTE_STATES = ["ok", "failed", "not-applicable"];
-const ARCHIVES = [
-  "url-list",
-  "informationisbeautiful",
-  "datavizproject",
-  "buried-signals",
-];
+// Imported rather than restated: the harvester decides what a pool may be called, and a copy here
+// would be the one nobody updates. `search` was added when two harvests filed real published work
+// under `url-list` because the enum had nowhere else to put it.
+import { ARCHIVES } from "../../../scripts/design-base/harvest.mjs";
 
 /** Every `<family>/<id>` directory under the corpus, or none if the corpus does not exist yet. */
 function records(): Array<{ family: string; id: string; dir: string }> {

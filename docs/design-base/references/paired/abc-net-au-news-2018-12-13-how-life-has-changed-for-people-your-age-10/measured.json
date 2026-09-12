@@ -1,0 +1,743 @@
+{
+  "url": "https://www.abc.net.au/news/2018-12-13/how-life-has-changed-for-people-your-age/10303912",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "abc-net-au-news-2018-12-13-how-life-has-changed-for-people-your-age-10",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "How life has changed for people your age - ABC News",
+    "ground": "rgb(23, 84, 130)",
+    "type": [
+      {
+        "family": "ABCSans-bold",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans-bold | 12 | 700 | normal | 0 | none",
+        "count": 280,
+        "sample": "1981",
+        "colors": [
+          "rgb(247, 255, 247)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | normal | 0 | none",
+        "count": 102,
+        "sample": "Big hair, fluoro colours, Rubik’s cubes and Walkmans — the ’",
+        "colors": [
+          "rgb(235, 235, 235)",
+          "rgb(178, 211, 255)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 15,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans-bold | 15 | 900 | normal | 0 | none",
+        "count": 86,
+        "sample": "69%",
+        "colors": [
+          "rgb(247, 255, 247)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 12,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "ABCSans-bold | 12 | 900 | normal | 0 | uppercase",
+        "count": 61,
+        "sample": "Female",
+        "colors": [
+          "rgb(247, 255, 247)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans-bold | 18 | 700 | normal | 0 | none",
+        "count": 56,
+        "sample": "The rate of babies dying in their first year has fallen 69 p",
+        "colors": [
+          "rgb(247, 255, 247)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans-bold | 15 | 700 | normal | 0 | none",
+        "count": 41,
+        "sample": "Deaths per 1,000 live births",
+        "colors": [
+          "rgb(176, 230, 255)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 18,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 18 | 900 | normal | 0 | none",
+        "count": 33,
+        "sample": "surviving their first years",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 11,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 10,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(209, 224, 245)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 10,
+        "sample": "Children",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Sports injuries",
+        "colors": [
+          "rgb(96, 100, 108)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans-bold | 16 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "0 - 10",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "By , and",
+        "colors": [
+          "rgb(235, 235, 235)",
+          "rgb(178, 211, 255)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 5,
+        "sample": "Your information is being handled in accordance with the  .",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "1h ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14.4 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "abc.net.au/news/how-life-has-changed-for-people-your-age/103",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How life has changed for people your age",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "What’s different about your life, compared to someone who wa",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "ABCSans-bold",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.14,
+        "transform": "uppercase",
+        "key": "ABCSans-bold | 16 | 700 | normal | 1.14 | uppercase",
+        "count": 1,
+        "sample": "Jump to an age group, or just keep scrolling…",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 16 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Odyssey format by",
+        "colors": [
+          "rgb(235, 235, 235)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "We acknowledge Aboriginal and Torres Strait Islander peoples",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(14, 51, 79)",
+        "count": 117
+      },
+      {
+        "colour": "fill rgb(255, 215, 13)",
+        "count": 81
+      },
+      {
+        "colour": "fill rgb(247, 255, 247)",
+        "count": 74
+      },
+      {
+        "colour": "fill rgb(52, 231, 216)",
+        "count": 66
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 53
+      },
+      {
+        "colour": "fill rgb(14, 51, 79)",
+        "count": 53
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 33
+      },
+      {
+        "colour": "fill rgb(167, 218, 242)",
+        "count": 29
+      },
+      {
+        "colour": "fill rgb(78, 205, 196)",
+        "count": 24
+      },
+      {
+        "colour": "stroke rgb(247, 255, 247)",
+        "count": 23
+      },
+      {
+        "colour": "fill rgb(235, 64, 52)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "stroke rgb(255, 215, 13)",
+        "count": 6
+      },
+      {
+        "colour": "stroke rgb(52, 231, 216)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(23, 84, 130)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(197, 212, 224)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(255, 223, 66)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "stroke rgb(249, 241, 168)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(239, 128, 118)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(209, 224, 245)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(167, 218, 242)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 653,
+      "ch": 73
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 17713,
+      "nearTheTop": false,
+      "x": 285,
+      "y": 17713,
+      "w": 390,
+      "h": 479,
+      "ratio": 0.81
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#175482",
+      "share": 0.870397793263647,
+      "h": 205.79405692954714,
+      "s": 0.6993427616251402,
+      "l": 0.29998563144615786,
+      "chroma": 0.41958555988683505
+    },
+    "chromatic": [
+      {
+        "hex": "#FFD70D",
+        "share": 0.009964188927603562,
+        "h": 50.08489687078326,
+        "s": 0.9993137463429903,
+        "l": 0.5254140121322934,
+        "chroma": 0.9485206029959337
+      },
+      {
+        "hex": "#34E7D8",
+        "share": 0.00882210607820364,
+        "h": 174.97294017418804,
+        "s": 0.7885256676686934,
+        "l": 0.554894431716735,
+        "chroma": 0.7019543308272295
+      },
+      {
+        "hex": "#003C66",
+        "share": 0.007104142469996129,
+        "h": 204.70588235294122,
+        "s": 1,
+        "l": 0.2,
+        "chroma": 0.4
+      },
+      {
+        "hex": "#0B4874",
+        "share": 0.007065427797135114,
+        "h": 205.14285714285717,
+        "s": 0.8267716535433071,
+        "l": 0.24901960784313726,
+        "chroma": 0.4117647058823529
+      },
+      {
+        "hex": "#276491",
+        "share": 0.003765001935733643,
+        "h": 205.4734136701986,
+        "s": 0.5770592268192694,
+        "l": 0.36025505317808354,
+        "chroma": 0.4157770048893593
+      },
+      {
+        "hex": "#0E334F",
+        "share": 0.0015195509097948123,
+        "h": 205.84615384615384,
+        "s": 0.6989247311827956,
+        "l": 0.1823529411764706,
+        "chroma": 0.2549019607843137
+      },
+      {
+        "hex": "#33E3D6",
+        "share": 0.0007936507936507937,
+        "h": 175.47920936533853,
+        "s": 0.7568953277416979,
+        "l": 0.5452773792443807,
+        "chroma": 0.6883548541367766
+      },
+      {
+        "hex": "#24618E",
+        "share": 0.0007791327913279133,
+        "h": 205.47978910369068,
+        "s": 0.594690635451505,
+        "l": 0.34957983193277314,
+        "chroma": 0.41578370478626236
+      },
+      {
+        "hex": "#B0E6FF",
+        "share": 0.00047909407665505226,
+        "h": 198.9873417721519,
+        "s": 1,
+        "l": 0.8450980392156863,
+        "chroma": 0.30980392156862746
+      },
+      {
+        "hex": "#F5D212",
+        "share": 0.0003968253968253968,
+        "h": 50.6820871436256,
+        "s": 0.9168475044387454,
+        "l": 0.5151602104256336,
+        "chroma": 0.8890483022477284
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#436D6C",
+        "share": 0.00016453735965931088,
+        "h": 178.01268498942918,
+        "s": 0.23653942323720617,
+        "l": 0.3459630911188005,
+        "chroma": 0.16366782006920416
+      },
+      {
+        "hex": "#698259",
+        "share": 0.0001500193573364305,
+        "h": 96.77115987460814,
+        "s": 0.1874816338524831,
+        "l": 0.4304870335230866,
+        "chroma": 0.16141682479443387
+      },
+      {
+        "hex": "#537663",
+        "share": 0.00011614401858304297,
+        "h": 147.8136200716846,
+        "s": 0.173327811141023,
+        "l": 0.3945261437908497,
+        "chroma": 0.13676470588235295
+      },
+      {
+        "hex": "#4E7366",
+        "share": 0.00010646535036778939,
+        "h": 159.27007299270076,
+        "s": 0.1938679245283019,
+        "l": 0.37789661319073087,
+        "chroma": 0.14652406417112301
+      },
+      {
+        "hex": "#617E5C",
+        "share": 0.00009678668215253581,
+        "h": 111.08469539375929,
+        "s": 0.15403982604715036,
+        "l": 0.42833333333333334,
+        "chroma": 0.1319607843137255
+      },
+      {
+        "hex": "#597A61",
+        "share": 0.00009678668215253581,
+        "h": 134.11764705882354,
+        "s": 0.1531531531531532,
+        "l": 0.41352941176470587,
+        "chroma": 0.1266666666666667
+      },
+      {
+        "hex": "#5E7C5E",
+        "share": 0.00009194734804490902,
+        "h": 120.73170731707314,
+        "s": 0.13844669561022668,
+        "l": 0.4278637770897833,
+        "chroma": 0.11847265221878223
+      },
+      {
+        "hex": "#4A7069",
+        "share": 0.00009194734804490902,
+        "h": 167.72357723577238,
+        "s": 0.20871040723981898,
+        "l": 0.3649122807017544,
+        "chroma": 0.1523219814241486
+      },
+      {
+        "hex": "#66815A",
+        "share": 0.00007742934572202865,
+        "h": 101.58319870759289,
+        "s": 0.17711015736766803,
+        "l": 0.4283088235294118,
+        "chroma": 0.15171568627450976
+      },
+      {
+        "hex": "#4D5D3E",
+        "share": 0.00007742934572202865,
+        "h": 91.6600790513834,
+        "s": 0.2040322580645161,
+        "l": 0.30392156862745096,
+        "chroma": 0.12401960784313723
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 50,
+        "share": 0.01081107239643825,
+        "size": 4
+      },
+      {
+        "hue": 175,
+        "share": 0.03400600077429344,
+        "size": 20
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 206640
+  }
+}

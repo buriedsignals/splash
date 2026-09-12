@@ -1,0 +1,478 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/best-in-show-whats-the-top-data-dog/",
+  "archive": "informationisbeautiful",
+  "family": "scatter",
+  "id": "informationisbeautiful-net-visualizations-best-in-show-whats-the-top-d",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Best in Show – What’s the Best Dog Breed, According to Data? — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 24,
+        "sample": "If you look at the numbers, which canine comes out as top da",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 10,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "American Kennel Club, Canine Inherited Disorders Database",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Non-Fiction Books Everyone Should Read – Interactive",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Knowledge is Beautiful",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The European Union visualized",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Learn to Create Impactful Infographics",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 843,
+      "ratio": 1.52
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F7F1E1",
+      "share": 0.8182310201660735,
+      "h": 43.634407009027726,
+      "s": 0.5788244936776962,
+      "l": 0.9254705305824114,
+      "chroma": 0.08627896479940611
+    },
+    "chromatic": [
+      {
+        "hex": "#A13330",
+        "share": 0.009468601720047449,
+        "h": 1.6097586341378876,
+        "s": 0.5398709568748918,
+        "l": 0.4101718205144444,
+        "chroma": 0.44287970644849894
+      },
+      {
+        "hex": "#50447A",
+        "share": 0.008746663701067615,
+        "h": 253.35630160987452,
+        "s": 0.283630367081344,
+        "l": 0.3729125894901296,
+        "chroma": 0.21153866929268
+      },
+      {
+        "hex": "#D7856A",
+        "share": 0.008534438018979833,
+        "h": 14.865581672103605,
+        "s": 0.5765061185933182,
+        "l": 0.6294437027715853,
+        "chroma": 0.42725594527093064
+      },
+      {
+        "hex": "#739458",
+        "share": 0.005852424377224199,
+        "h": 92.96808139719164,
+        "s": 0.2537487097682275,
+        "l": 0.46325431201776035,
+        "chroma": 0.23510036793814915
+      },
+      {
+        "hex": "#6E2037",
+        "share": 0.0038710335112692763,
+        "h": 342.31271258242367,
+        "s": 0.5492040691773641,
+        "l": 0.2784351279415285,
+        "chroma": 0.3058354105348149
+      },
+      {
+        "hex": "#B7881F",
+        "share": 0.00341692615658363,
+        "h": 41.44744237834636,
+        "s": 0.710280006641175,
+        "l": 0.41960731132702606,
+        "chroma": 0.5960773677520913
+      },
+      {
+        "hex": "#E3AC94",
+        "share": 0.0005912663107947806,
+        "h": 18.465189873417714,
+        "s": 0.5842790117179373,
+        "l": 0.7340524924703423,
+        "chroma": 0.3107750937365541
+      },
+      {
+        "hex": "#E5B39C",
+        "share": 0.0005226868327402136,
+        "h": 19.482850113367746,
+        "s": 0.5864761635309097,
+        "l": 0.7542414128772077,
+        "chroma": 0.2882631066611041
+      },
+      {
+        "hex": "#E3C3B4",
+        "share": 0.00046522835112692765,
+        "h": 19.549384556412086,
+        "s": 0.4522236560796629,
+        "l": 0.797207249433638,
+        "chroma": 0.18341535817514265
+      },
+      {
+        "hex": "#E1A58C",
+        "share": 0.00044298635824436536,
+        "h": 17.710950199497542,
+        "s": 0.5829432878679107,
+        "l": 0.714291574370334,
+        "chroma": 0.333103618016244
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F7F1E1",
+        "share": 0.8182310201660735,
+        "h": 43.634407009027726,
+        "s": 0.5788244936776962,
+        "l": 0.9254705305824114,
+        "chroma": 0.08627896479940611
+      },
+      {
+        "hex": "#F4EDDC",
+        "share": 0.017730575326215896,
+        "h": 41.885412544239514,
+        "s": 0.5024754753514925,
+        "l": 0.9098079185678034,
+        "chroma": 0.09063861798116701
+      },
+      {
+        "hex": "#364E4D",
+        "share": 0.013929048042704626,
+        "h": 177.5062638908543,
+        "s": 0.18170904791555853,
+        "l": 0.2587485160398158,
+        "chroma": 0.0940338929983171
+      },
+      {
+        "hex": "#EBE4D5",
+        "share": 0.003386343416370107,
+        "h": 41.28053684528,
+        "s": 0.34992304647992595,
+        "l": 0.8779688120458912,
+        "chroma": 0.08540305010893245
+      },
+      {
+        "hex": "#020202",
+        "share": 0.0029072138196915777,
+        "h": 255.10489510489495,
+        "s": 0.027940601797577222,
+        "l": 0.006398019839111929,
+        "chroma": 0.00035752904923525095
+      },
+      {
+        "hex": "#F2E4D4",
+        "share": 0.0026681123962040334,
+        "h": 32.75968920543892,
+        "s": 0.5354432103809914,
+        "l": 0.8899903969924198,
+        "chroma": 0.11780779001423425
+      },
+      {
+        "hex": "#E6E1D2",
+        "share": 0.002547634934756821,
+        "h": 45.682124662870855,
+        "s": 0.2759675818723123,
+        "l": 0.862001868772245,
+        "chroma": 0.07616602115564308
+      },
+      {
+        "hex": "#EEE9DA",
+        "share": 0.0025059311981020164,
+        "h": 44.618372080478984,
+        "s": 0.37958899528388795,
+        "l": 0.8937529005685114,
+        "chroma": 0.08066045945005218
+      },
+      {
+        "hex": "#BCB19A",
+        "share": 0.0020879670818505338,
+        "h": 40.58989571626456,
+        "s": 0.20248522150542186,
+        "l": 0.671101711878715,
+        "chroma": 0.13319408544598488
+      },
+      {
+        "hex": "#F8F2E4",
+        "share": 0.002079626334519573,
+        "h": 42.26123787402652,
+        "s": 0.5829549980087616,
+        "l": 0.9341774142812205,
+        "chroma": 0.07674321065324519
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 2,
+        "share": 0.03065409994068802,
+        "size": 17
+      },
+      {
+        "hue": 253,
+        "share": 0.009118290332147094,
+        "size": 2
+      },
+      {
+        "hue": 93,
+        "share": 0.005852424377224199,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "categorical",
+    "pixels": 1079040
+  }
+}

@@ -1,0 +1,372 @@
+{
+  "url": "https://data.europa.eu/apps/data-visualisation-guide/calendar-heatmap",
+  "archive": "search",
+  "family": "calendar-heatmap",
+  "id": "data-europa-eu-apps-data-visualisation-guide-calendar-heatmap",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Calendar heatmap",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 16 | 400 | normal | 0 | none",
+        "count": 29,
+        "sample": "A deep dive into bar charts",
+        "colors": [
+          "rgb(219, 0, 77)",
+          "rgb(255, 255, 255)",
+          "rgb(64, 64, 64)",
+          "rgb(0, 68, 148)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Home",
+        "colors": [
+          "rgb(82, 82, 82)",
+          "rgb(255, 255, 255)",
+          "rgb(219, 0, 77)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Helvetica | 16 | 400 | normal | 0 | uppercase",
+        "count": 7,
+        "sample": "Design principles",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 400 | italic | 0 | none",
+        "count": 7,
+        "sample": "2 minutes read",
+        "colors": [
+          "rgb(64, 64, 64)",
+          "rgb(0, 68, 148)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data Visualisation Guide",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 14.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Calendar heatmap",
+        "colors": [
+          "rgb(219, 0, 77)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 38.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 38.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Calendar heatmap",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 18.7,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 18.7 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Related pages",
+        "colors": [
+          "rgb(64, 64, 64)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(219, 0, 77)",
+        "count": 19
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(219, 0, 77)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 768,
+      "ch": 96
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1192,
+      "nearTheTop": true,
+      "x": 526,
+      "y": 1192,
+      "w": 768,
+      "h": 726,
+      "ratio": 1.06
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#16334E",
+      "share": 0.6733062155647382,
+      "h": 208.9422960279947,
+      "s": 0.5618176082365661,
+      "l": 0.19572774924457254,
+      "chroma": 0.2199265918922242
+    },
+    "chromatic": [
+      {
+        "hex": "#226492",
+        "share": 0.03911092458677686,
+        "h": 204.6950268680119,
+        "s": 0.6208629443560724,
+        "l": 0.35356833612520533,
+        "chroma": 0.4390349563955449
+      },
+      {
+        "hex": "#7A9DB1",
+        "share": 0.013499698691460055,
+        "h": 201.6385598583563,
+        "s": 0.2576211744911415,
+        "l": 0.585374742430518,
+        "chroma": 0.213632491657484
+      },
+      {
+        "hex": "#5D89A2",
+        "share": 0.008420497589531681,
+        "h": 201.95046820336563,
+        "s": 0.2720951981035328,
+        "l": 0.49927373718390444,
+        "chroma": 0.2716999728538913
+      },
+      {
+        "hex": "#799CAF",
+        "share": 0.003404069100091827,
+        "h": 201.166508200618,
+        "s": 0.24849746747589294,
+        "l": 0.5802454596169342,
+        "chroma": 0.20861588049339858
+      },
+      {
+        "hex": "#3F7493",
+        "share": 0.002961073806244261,
+        "h": 201.98856251624642,
+        "s": 0.40061324848134233,
+        "l": 0.4105651951877056,
+        "chroma": 0.32895571311504623
+      },
+      {
+        "hex": "#21618E",
+        "share": 0.0025951991505968777,
+        "h": 204.70962659924533,
+        "s": 0.6219056423384771,
+        "l": 0.3429976828326355,
+        "chroma": 0.42662438852527884
+      },
+      {
+        "hex": "#1D537B",
+        "share": 0.002430196854912764,
+        "h": 205.3854993160055,
+        "s": 0.6218857101188595,
+        "l": 0.2976702119962376,
+        "chroma": 0.37023370233702335
+      },
+      {
+        "hex": "#173C5B",
+        "share": 0.002387152777777778,
+        "h": 207.479458090098,
+        "s": 0.6021994640630388,
+        "l": 0.22210044047671662,
+        "chroma": 0.2674975324464872
+      },
+      {
+        "hex": "#407593",
+        "share": 0.002347695707070707,
+        "h": 201.9434110316178,
+        "s": 0.39101557564928624,
+        "l": 0.4149777558082056,
+        "chroma": 0.3245255321379889
+      },
+      {
+        "hex": "#25415B",
+        "share": 0.002171932392102847,
+        "h": 208.67224167189005,
+        "s": 0.4216827081144154,
+        "l": 0.25116011722608117,
+        "chroma": 0.21181975680445586
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#EBEBEB",
+        "share": 0.050001076101928374,
+        "h": 343.2601880877783,
+        "s": 0.00085552834909767,
+        "l": 0.9213261932342075,
+        "chroma": 0.0001346153440391351
+      },
+      {
+        "hex": "#CED6DC",
+        "share": 0.029806229912764003,
+        "h": 205.30563658376053,
+        "s": 0.17632428389884552,
+        "l": 0.8352981291198711,
+        "chroma": 0.05808187887947769
+      },
+      {
+        "hex": "#B3C4CE",
+        "share": 0.020517676767676768,
+        "h": 202.86735491273828,
+        "s": 0.21192551375426869,
+        "l": 0.7547163375839846,
+        "chroma": 0.10396373234608536
+      },
+      {
+        "hex": "#96B0C0",
+        "share": 0.012728492309458219,
+        "h": 202.99352136728965,
+        "s": 0.24817645921104617,
+        "l": 0.6714518976535239,
+        "chroma": 0.16307580944171374
+      },
+      {
+        "hex": "#95AEBD",
+        "share": 0.006643135904499541,
+        "h": 203.14426961513925,
+        "s": 0.2359485383344255,
+        "l": 0.6623501884555117,
+        "chroma": 0.15933595900563247
+      },
+      {
+        "hex": "#D0D7DD",
+        "share": 0.006625200872359963,
+        "h": 209.67053655475368,
+        "s": 0.1603478984211746,
+        "l": 0.841750268055246,
+        "chroma": 0.05075002388611105
+      },
+      {
+        "hex": "#CFD8DD",
+        "share": 0.005724862258953168,
+        "h": 202.14930688032558,
+        "s": 0.18066171402312917,
+        "l": 0.8395867118777336,
+        "chroma": 0.057961079168509455
+      },
+      {
+        "hex": "#E4E4E5",
+        "share": 0.00495544938016529,
+        "h": 212.0988119932118,
+        "s": 0.036169066342920886,
+        "l": 0.8959521122962395,
+        "chroma": 0.007526629906396187
+      },
+      {
+        "hex": "#96B0BF",
+        "share": 0.004460442493112947,
+        "h": 201.9711667611856,
+        "s": 0.23955867947058704,
+        "l": 0.6692140306062111,
+        "chroma": 0.15848530003074812
+      },
+      {
+        "hex": "#D3D9DE",
+        "share": 0.0036623335629017446,
+        "h": 205.71162790697676,
+        "s": 0.14229704942419324,
+        "l": 0.8476628065525916,
+        "chroma": 0.043354266290257515
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 205,
+        "share": 0.10082895718549124,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 557568
+  }
+}

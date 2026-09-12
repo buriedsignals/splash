@@ -47,3 +47,11 @@ hand-built legend: it has to reserve exactly the space it will use once wrapped,
 chart might render at, or the mean-tick and sample-dot key can overrun the frame at the narrow end of
 the responsive range, silently clipping the one piece of text that tells a reader what the neutral tick
 even means.
+
+## The worked example in this tree
+
+`proof/static-dot-strip-lowcarbon-spread` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

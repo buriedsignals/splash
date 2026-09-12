@@ -58,3 +58,11 @@ collapses to "two dots, unknown series." And exactly like every other type in th
 labels belong in the page's neutral ink, never in either dot's own colour — a value label painted in
 a dot's accent hue has previously failed WCAG contrast here and had to be moved off the mark's colour
 entirely.
+
+## The worked example in this tree
+
+`proof/more-dumbbell-life-expectancy-gains` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

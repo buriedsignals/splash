@@ -53,3 +53,11 @@ landed it on a mid-toned green band, measuring under the WCAG 4.5:1 text floor. 
 measure real contrast against the exact fill a label sits on and pick whichever of white or dark ink
 actually clears the floor — never a single brightness threshold applied the same way across every hue
 in the palette.
+
+## The worked example in this tree
+
+`proof/static-streamgraph-swiss-electricity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

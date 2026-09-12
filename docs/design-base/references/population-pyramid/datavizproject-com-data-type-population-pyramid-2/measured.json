@@ -1,0 +1,394 @@
+{
+  "url": "https://datavizproject.com/data-type/population-pyramid-2/",
+  "archive": "search",
+  "family": "population-pyramid",
+  "id": "datavizproject-com-data-type-population-pyramid-2",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Population Pyramid | Data Viz Project",
+    "ground": "rgb(244, 247, 247)",
+    "type": [
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 16 | 400 | normal | 0 | uppercase",
+        "count": 10,
+        "sample": "All",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 12 | 600 | normal | 0 | none",
+        "count": 10,
+        "sample": "30",
+        "colors": [
+          "rgb(40, 50, 80)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 16 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "by Ferdio",
+        "colors": [
+          "rgb(51, 122, 183)",
+          "rgb(40, 50, 80)",
+          "rgb(50, 116, 218)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 14.4,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 14.4 | 500 | normal | 0 | uppercase",
+        "count": 4,
+        "sample": "Family",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "Borgia Pro",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Borgia Pro | 18 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "A population pyramid, also called an age pyramid or age pict",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 16 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Chart",
+        "colors": [
+          "rgb(40, 50, 80)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 28,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 28 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Population Pyramid",
+        "colors": [
+          "rgb(40, 50, 80)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 16 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Examples",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 16 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "1 dataset. 100 visualizations.",
+        "colors": [
+          "rgb(50, 116, 218)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "stevie-sans | 18 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Hire us",
+        "colors": [
+          "rgb(104, 116, 126)"
+        ]
+      },
+      {
+        "family": "stevie-sans",
+        "size": 22,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "stevie-sans | 22 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Interested in your own custom designed Population Pyramid?",
+        "colors": [
+          "rgb(40, 50, 80)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(25, 36, 64)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 720,
+      "ch": 80
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 172,
+      "nearTheTop": true,
+      "x": 95,
+      "y": 172,
+      "w": 503,
+      "h": 503,
+      "ratio": 1
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8204332652198143,
+      "h": 348.95270270281935,
+      "s": 0.09752883031306714,
+      "l": 0.9999426624299209,
+      "chroma": 0.000011184132285624315
+    },
+    "chromatic": [
+      {
+        "hex": "#FF3F34",
+        "share": 0.07100933168385315,
+        "h": 3.2512315270935965,
+        "s": 1,
+        "l": 0.6019607843137255,
+        "chroma": 0.7960784313725491
+      },
+      {
+        "hex": "#FFA39E",
+        "share": 0.0013240635708611156,
+        "h": 3.3044918998527293,
+        "s": 1,
+        "l": 0.8092361720807726,
+        "chroma": 0.3815276558384548
+      },
+      {
+        "hex": "#FF6A61",
+        "share": 0.0011699188566414633,
+        "h": 3.428424349019775,
+        "s": 1,
+        "l": 0.691163222045575,
+        "chroma": 0.61767355590885
+      },
+      {
+        "hex": "#FF463B",
+        "share": 0.0011027275709559739,
+        "h": 3.3092392995040933,
+        "s": 1,
+        "l": 0.6159463068381474,
+        "chroma": 0.7681073863237051
+      },
+      {
+        "hex": "#FF8A83",
+        "share": 0.0009722974281547297,
+        "h": 3.2454241291084562,
+        "s": 1,
+        "l": 0.7570062171209947,
+        "chroma": 0.4859875657580106
+      },
+      {
+        "hex": "#FF534A",
+        "share": 0.0009446304281665869,
+        "h": 3.156364643178516,
+        "s": 1,
+        "l": 0.6444253015013537,
+        "chroma": 0.7111493969972926
+      },
+      {
+        "hex": "#FFB1AC",
+        "share": 0.0007311992854009146,
+        "h": 3.602024922118387,
+        "s": 1,
+        "l": 0.8366931637519872,
+        "chroma": 0.32661367249602546
+      },
+      {
+        "hex": "#FF645B",
+        "share": 0.0005849594283207317,
+        "h": 3.294826305800809,
+        "s": 1,
+        "l": 0.6788818229994701,
+        "chroma": 0.6422363540010598
+      },
+      {
+        "hex": "#FF5046",
+        "share": 0.0004703389997984261,
+        "h": 3.2432432432432408,
+        "s": 1,
+        "l": 0.6372549019607843,
+        "chroma": 0.7254901960784313
+      },
+      {
+        "hex": "#FF4035",
+        "share": 0.0004703389997984261,
+        "h": 3.2673267326732662,
+        "s": 1,
+        "l": 0.6039215686274509,
+        "chroma": 0.792156862745098
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8204332652198143,
+        "h": 348.95270270281935,
+        "s": 0.09752883031306714,
+        "l": 0.9999426624299209,
+        "chroma": 0.000011184132285624315
+      },
+      {
+        "hex": "#263252",
+        "share": 0.07073266168397171,
+        "h": 223.63636363636363,
+        "s": 0.3666260351492115,
+        "l": 0.23532019423773087,
+        "chroma": 0.1725490196078432
+      },
+      {
+        "hex": "#ECEFF0",
+        "share": 0.0018299744277871538,
+        "h": 199.93411764705922,
+        "s": 0.13468973822653207,
+        "l": 0.9331851098970907,
+        "chroma": 0.017998560115190743
+      },
+      {
+        "hex": "#D3D6DC",
+        "share": 0.001466350999371564,
+        "h": 219.65171192443913,
+        "s": 0.11441307578008895,
+        "l": 0.8434966439405951,
+        "chroma": 0.035812060673325874
+      },
+      {
+        "hex": "#E4EAEB",
+        "share": 0.0014070645708255437,
+        "h": 190.24516129032222,
+        "s": 0.13986645009925963,
+        "l": 0.9084434897554527,
+        "chroma": 0.02561136814276266
+      },
+      {
+        "hex": "#CDD7DB",
+        "share": 0.0011936334280598713,
+        "h": 197.1104279971625,
+        "s": 0.16261006652055168,
+        "l": 0.8311453058044409,
+        "chroma": 0.054914946110894536
+      },
+      {
+        "hex": "#636C83",
+        "share": 0.0011778237137809327,
+        "h": 223.3546734955186,
+        "s": 0.13661409288358942,
+        "l": 0.45138834057112787,
+        "chroma": 0.1233320173707067
+      },
+      {
+        "hex": "#394461",
+        "share": 0.0011224897138046473,
+        "h": 223.5,
+        "s": 0.2584402584402584,
+        "l": 0.30347970173985084,
+        "chroma": 0.15686274509803919
+      },
+      {
+        "hex": "#F3F4F5",
+        "share": 0.0009011537138995055,
+        "h": 204.3942505133468,
+        "s": 0.09483933787731072,
+        "l": 0.9558393532851737,
+        "chroma": 0.008376332989335933
+      },
+      {
+        "hex": "#7B8396",
+        "share": 0.0008734867139113628,
+        "h": 223.86192754613808,
+        "s": 0.1118715350793348,
+        "l": 0.5358885635702245,
+        "chroma": 0.10384171768254818
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 3,
+        "share": 0.08128959839373304,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 253009
+  }
+}

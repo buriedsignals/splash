@@ -24,6 +24,17 @@
 
 import { readFileSync } from "node:fs";
 import { PNG } from "pngjs";
+/** The pure colour facts live in `shared/design-base/colour-space.mjs` so `compose.mjs` can ship
+ *  into a root without this file's `pngjs`. Re-exported here so every existing importer of
+ *  `pixel-palette.mjs` keeps the surface it had. */
+import {
+  CHROMATIC_MIN_CHROMA,
+  SAME_POLE_DEGREES,
+  RAMP_MIN_LIGHTNESS_SPAN,
+  hsl,
+  hueGap,
+} from "#shared/design-base/colour-space.mjs";
+export { CHROMATIC_MIN_CHROMA, SAME_POLE_DEGREES, RAMP_MIN_LIGHTNESS_SPAN, hsl, hueGap };
 
 /** Bits per channel when bucketing. Fine enough to keep two near tints apart, coarse enough that
  *  anti-aliasing noise collapses into its parent instead of inventing hundreds of one-pixel
@@ -31,21 +42,6 @@ import { PNG } from "pngjs";
 const BITS = 5;
 const SHIFT = 8 - BITS;
 
-/**
- * Below this CHROMA a colour is furniture, not palette — chroma being `(max - min) / 255` on the
- * raw channels, which is colourfulness as the eye meets it.
- *
- * NOT HSL SATURATION, and this is measured rather than preferred. ABC's cream ground `#FFFCEE`
- * has an HSL saturation of **1.0**: saturation is `d / (2 - max - min)`, so it runs away toward
- * both poles, and a two-percent warmth on near-white reads as fully saturated. Counted as palette,
- * that ground outweighed the piece's real blue accent by coverage and the harvester reported a
- * blue-accented chart as *monochrome at 49 degrees* — its own paper's hue. The same failure waits
- * at the other pole for a warm near-black ink. Chroma puts cream at 0.067 and the accent at 0.62,
- * which is the separation the reader actually sees.
- *
- * 0.18 sits above every paper and ink tint met so far and below every mark.
- */
-const CHROMATIC_MIN_CHROMA = 0.18;
 
 /** A hue cluster carrying less than this share of the COLOURED ink is noise, not a pole.
  *
@@ -55,12 +51,7 @@ const CHROMATIC_MIN_CHROMA = 0.18;
  *  absolute floor; measured against the ink they are all substantial. */
 const CLUSTER_MIN_INK_SHARE = 0.06;
 
-/** Two colours within this many degrees of hue are the same pole. */
-const SAME_POLE_DEGREES = 40;
 
-/** A cluster whose members span at least this much lightness is a ramp — a pole with tints — and
- *  not a flat category colour. */
-const RAMP_MIN_LIGHTNESS_SPAN = 0.12;
 
 /** How many colours are clustered over, independent of how many are reported: a pole and its tints
  *  must both be in the set for the ramp test to see them, and `top` is a reporting choice. */
@@ -70,27 +61,6 @@ const CLUSTER_OVER = 24;
 const LIGHTNESS_FLOOR = 0.06;
 const LIGHTNESS_CEILING = 0.97;
 
-/** sRGB to HSL. Saturation is what separates a direction's palette from its furniture; hue is what
- *  the poles are counted on. */
-function hsl(r, g, b) {
-  const R = r / 255;
-  const G = g / 255;
-  const B = b / 255;
-  const max = Math.max(R, G, B);
-  const min = Math.min(R, G, B);
-  const l = (max + min) / 2;
-  const chroma = max - min;
-  if (max === min) return { h: 0, s: 0, l, chroma: 0 };
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  const h =
-    max === R
-      ? ((G - B) / d + (G < B ? 6 : 0)) / 6
-      : max === G
-        ? ((B - R) / d + 2) / 6
-        : ((R - G) / d + 4) / 6;
-  return { h: h * 360, s, l, chroma };
-}
 
 function hex(r, g, b) {
   return (
@@ -102,12 +72,6 @@ function hex(r, g, b) {
   );
 }
 
-/** Hue is circular: 358 and 2 are four degrees apart, not 356. Without this a single red pole
- *  splits in two and a monochrome artifact reports as diverging. */
-function hueGap(a, b) {
-  const d = Math.abs(a - b) % 360;
-  return d > 180 ? 360 - d : d;
-}
 
 /**
  * The hue poles, largest first.
@@ -171,8 +135,33 @@ export function readPixelPalette(file, { crop = null, top = 10 } = {}) {
     })
     .sort((a, b) => b.share - a.share);
 
+  /**
+   * THE GROUND IS NOT ALSO A MARK.
+   *
+   * A saturated ground has chroma like any other colour, so it entered the chromatic set and —
+   * covering most of the frame — dominated it. Measured on three real records: Pudding's navy
+   * `#111044` at 95.3% was reported as BOTH the ground and the palette, and the shape came back
+   * `sequential`, which is a description of the paper. ABC's `#175482` at 92.1% came back
+   * `monochrome` for the same reason. The saturation floor was written against a near-white paper
+   * (`#FFFCEE` at HSL saturation 1.0) and says nothing about a dark one.
+   *
+   * The modal colour has already been named the ground by the line above. It is excluded here
+   * whatever its chroma, and so is anything indistinguishable from it — a ground rarely occupies
+   * exactly one bucket.
+   */
+  const ground = entries[0];
+  const isTheGround = (e) =>
+    e.hex === ground.hex ||
+    (Math.abs(e.h - ground.h) < 6 &&
+      Math.abs(e.l - ground.l) < 0.04 &&
+      Math.abs(e.chroma - ground.chroma) < 0.04);
+
   const coloured = entries.filter(
-    (e) => e.chroma >= CHROMATIC_MIN_CHROMA && e.l > LIGHTNESS_FLOOR && e.l < LIGHTNESS_CEILING,
+    (e) =>
+      !isTheGround(e) &&
+      e.chroma >= CHROMATIC_MIN_CHROMA &&
+      e.l > LIGHTNESS_FLOOR &&
+      e.l < LIGHTNESS_CEILING,
   );
   const clusters = hueClusters(coloured.slice(0, CLUSTER_OVER));
   const ramped = clusters.filter((cl) => {
@@ -192,7 +181,7 @@ export function readPixelPalette(file, { crop = null, top = 10 } = {}) {
           : "categorical";
 
   return {
-    ground: entries[0],
+    ground,
     chromatic: coloured.slice(0, top),
     neutral: entries.filter((e) => e.chroma < CHROMATIC_MIN_CHROMA).slice(0, top),
     clusters: clusters.map((c) => ({

@@ -1,0 +1,824 @@
+{
+  "url": "https://www.abc.net.au/news/2019-08-13/rich-school-poor-school-australias-great-education-divide/11383384",
+  "archive": "url-list",
+  "family": "paired",
+  "id": "abc-net-au-news-2019-08-13-rich-school-poor-school-australias-great-ed",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Rich school, poor school: Australia's great education divide - ABC News",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 400 | normal | 0 | none",
+        "count": 135,
+        "sample": "From orchestra pits and on-site baristas to ripped carpets a",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 13 | 700 | normal | 0 | none",
+        "count": 72,
+        "sample": "Income",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.5 | none",
+        "count": 52,
+        "sample": "ABC News Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 13 | 400 | normal | 0 | none",
+        "count": 37,
+        "sample": "Extensive redevelopment includes a $21m music school, $16m b",
+        "colors": [
+          "rgb(85, 85, 85)",
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 14 | 700 | normal | 0 | none",
+        "count": 25,
+        "sample": "Wesley College,",
+        "colors": [
+          "rgb(6, 175, 147)",
+          "rgb(207, 113, 114)",
+          "rgb(88, 144, 253)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 14,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 14 | 900 | normal | 0 | none",
+        "count": 25,
+        "sample": "VIC",
+        "colors": [
+          "rgb(6, 175, 147)",
+          "rgb(207, 113, 114)",
+          "rgb(88, 144, 253)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2.5,
+        "transform": "none",
+        "key": "ABCSans | 12 | 700 | normal | 2.5 | none",
+        "count": 23,
+        "sample": "INCOME",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 16 | 700 | normal | 0 | none",
+        "count": 11,
+        "sample": "Just In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(43, 49, 54)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0 | none",
+        "count": 11,
+        "sample": "Cracked concrete at Springwood High School in Faulconbridge,",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 2 | uppercase",
+        "count": 11,
+        "sample": "Sections",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 18 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Degenerative brain disease found in 31 former rugby league p",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 700 | normal | 0 | none",
+        "count": 9,
+        "sample": "Sports injuries",
+        "colors": [
+          "rgb(96, 100, 108)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "Log In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(16, 49, 106)",
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | italic | 0 | none",
+        "count": 8,
+        "sample": "(Supplied)",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "By , and",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)",
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 32 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Capital funding: A two-tier system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.5 | none",
+        "count": 5,
+        "sample": "Your information is being handled in accordance with the  .",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)",
+          "rgb(0, 88, 204)"
+        ]
+      },
+      {
+        "family": "ABCSansRegular",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 2.3,
+        "transform": "none",
+        "key": "ABCSansRegular | 12 | 400 | normal | 2.3 | none",
+        "count": 4,
+        "sample": "$50m",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 19.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 19.8 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Total income includes federal and state/territory recurrent ",
+        "colors": [
+          "rgb(17, 17, 17)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 10.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.5,
+        "transform": "none",
+        "key": "abcsans | 10.4 | 400 | normal | 0.5 | none",
+        "count": 4,
+        "sample": "1h ago",
+        "colors": [
+          "rgb(72, 75, 81)"
+        ]
+      },
+      {
+        "family": "ABCSansRegular",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSansRegular | 14 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Catholic",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSerif",
+        "size": 17,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSerif | 17 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Australia's four richest schools spent more on new facilitie",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 20 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Enter your school to see its income and expenditure.",
+        "colors": [
+          "rgb(17, 17, 17)",
+          "rgb(128, 128, 128)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2,
+        "transform": "uppercase",
+        "key": "abcsans | 12 | 700 | normal | 2 | uppercase",
+        "count": 2,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 14.4 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "abc.net.au/news/rich-school-poor-school-australias-great-edu",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 20 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "'Astounding' data exposes the myth of the 'education revolut",
+        "colors": [
+          "rgb(0, 79, 184)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 15 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Thousands of public schools receive less public funding than",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 18,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 18 | 700 | italic | 0 | none",
+        "count": 2,
+        "sample": "This is the second part of an ABC News investigation into sc",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 79, 184)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 20 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Notes about this story",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 32 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Top Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcserif",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcserif | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Rich school, poor school: Australia’s great education divide",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ABCSans | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Bigger circle=Bigger capital expenditure",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ABCSans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 2.5,
+        "transform": "uppercase",
+        "key": "ABCSans | 12 | 700 | normal | 2.5 | uppercase",
+        "count": 1,
+        "sample": "The richest 1%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 36,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abcsans | 36 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How does your school compare?",
+        "colors": [
+          "rgb(17, 17, 17)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 14 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "Your home of Australian stories, conversations and events th",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "none",
+        "key": "abcsans | 12 | 400 | normal | 0.6 | none",
+        "count": 1,
+        "sample": "This service may include material from Agence France-Presse ",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      },
+      {
+        "family": "abcsans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 1.4,
+        "transform": "uppercase",
+        "key": "abcsans | 14 | 700 | normal | 1.4 | uppercase",
+        "count": 1,
+        "sample": "Follow ABC News",
+        "colors": [
+          "rgba(0, 0, 0, 0.6)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 30
+      },
+      {
+        "colour": "fill rgb(212, 17, 69)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 7
+      },
+      {
+        "colour": "stroke rgb(255, 255, 255)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(0, 88, 204)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(33, 125, 135)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(16, 49, 106)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(96, 100, 108)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(252, 160, 161)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(103, 225, 206)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(74, 110, 255)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(204, 204, 204)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 653,
+      "ch": 73
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 1082,
+      "nearTheTop": true,
+      "x": 370,
+      "y": 1082,
+      "w": 700,
+      "h": 10520,
+      "ratio": 0.07
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FEFEFE",
+      "share": 0.8390363932645302,
+      "h": 292.55365474615223,
+      "s": 0.00042086159202988906,
+      "l": 0.9975757526539845,
+      "chroma": 0.0000020405451950367137
+    },
+    "chromatic": [
+      {
+        "hex": "#68E1CF",
+        "share": 0.012028652906029332,
+        "h": 170.98523213131577,
+        "s": 0.6680720328756914,
+        "l": 0.6450343096856711,
+        "chroma": 0.4742853006588337
+      },
+      {
+        "hex": "#FCA0A1",
+        "share": 0.01000122216186855,
+        "h": 359.3488516841631,
+        "s": 0.9384153383385316,
+        "l": 0.8078299853118888,
+        "chroma": 0.3606705787041289
+      },
+      {
+        "hex": "#5890FD",
+        "share": 0.00666254752851711,
+        "h": 219.62089319302967,
+        "s": 0.9757037840018884,
+        "l": 0.6687880688014969,
+        "chroma": 0.646329469153905
+      },
+      {
+        "hex": "#578EFB",
+        "share": 0.003988321564367191,
+        "h": 219.83491742454785,
+        "s": 0.9533772108959697,
+        "l": 0.6618022258273415,
+        "chroma": 0.6448601013439084
+      },
+      {
+        "hex": "#67E0CD",
+        "share": 0.0029627919608908202,
+        "h": 170.79961211827364,
+        "s": 0.6612030179137283,
+        "l": 0.6411766503282952,
+        "chroma": 0.4745101634016884
+      },
+      {
+        "hex": "#66DECC",
+        "share": 0.002653585008147746,
+        "h": 170.88098508500457,
+        "s": 0.6446503344965688,
+        "l": 0.6346551393701128,
+        "chroma": 0.4710393732233183
+      },
+      {
+        "hex": "#588FFC",
+        "share": 0.0023249592612710483,
+        "h": 219.90587569980048,
+        "s": 0.9620170169534139,
+        "l": 0.6665524851375046,
+        "chroma": 0.641564367117094
+      },
+      {
+        "hex": "#F99D9E",
+        "share": 0.0010088267246061923,
+        "h": 359.3631620201926,
+        "s": 0.8895051771684268,
+        "l": 0.7970961705452136,
+        "chroma": 0.360968013534664
+      },
+      {
+        "hex": "#FB9FA0",
+        "share": 0.0009668658337859859,
+        "h": 359.34611595995693,
+        "s": 0.9193137385664044,
+        "l": 0.8038485899977968,
+        "chroma": 0.3606493721083939
+      },
+      {
+        "hex": "#345BD4",
+        "share": 0.0009072514937533949,
+        "h": 225.15242123551332,
+        "s": 0.652291967110655,
+        "l": 0.5172766786702707,
+        "chroma": 0.6297530896807159
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FEFEFE",
+        "share": 0.8390363932645302,
+        "h": 292.55365474615223,
+        "s": 0.00042086159202988906,
+        "l": 0.9975757526539845,
+        "chroma": 0.0000020405451950367137
+      },
+      {
+        "hex": "#E9E9E9",
+        "share": 0.004576045627376426,
+        "h": 239.79811574697354,
+        "s": 0.0009958503999487965,
+        "l": 0.9131738777771183,
+        "chroma": 0.00017293165708331948
+      },
+      {
+        "hex": "#AAAAAA",
+        "share": 0.002621401412275937,
+        "h": 260.7255520504777,
+        "s": 0.0005821302539398446,
+        "l": 0.6681262849109806,
+        "chroma": 0.00038638746008146097
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.002091254752851711,
+        "h": 207.9318357862157,
+        "s": 0.0039613256786566985,
+        "l": 0.9585050929462694,
+        "chroma": 0.00032874968169083196
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0019649646931015753,
+        "h": 277.9545454545324,
+        "s": 0.0006376452212839976,
+        "l": 0.8316909901486511,
+        "chroma": 0.00021464287166150786
+      },
+      {
+        "hex": "#555555",
+        "share": 0.0015677620858229222,
+        "h": 274.41265567148895,
+        "s": 0.0015191949851735766,
+        "l": 0.33214293599639944,
+        "chroma": 0.0010091797654531165
+      },
+      {
+        "hex": "#CCCCCD",
+        "share": 0.0014568169473112439,
+        "h": 227.41258741258426,
+        "s": 0.000791578636603036,
+        "l": 0.8018909651854776,
+        "chroma": 0.00031363775935444593
+      },
+      {
+        "hex": "#5B5A5B",
+        "share": 0.0013105649103747963,
+        "h": 276.91744611630446,
+        "s": 0.0014071232826544213,
+        "l": 0.3550453981198738,
+        "chroma": 0.0009991852921875655
+      },
+      {
+        "hex": "#333333",
+        "share": 0.0009922596414991853,
+        "h": 280.0464037123002,
+        "s": 0.0017281544833780253,
+        "l": 0.2007736336631272,
+        "chroma": 0.000693935710318061
+      },
+      {
+        "hex": "#E3E3E4",
+        "share": 0.0009815317762085823,
+        "h": 254.97744360902587,
+        "s": 0.0033460297972762454,
+        "l": 0.8921715116594507,
+        "chroma": 0.0007215946699654641
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 171,
+        "share": 0.019802145573058122,
+        "size": 7
+      },
+      {
+        "hue": 359,
+        "share": 0.01374443237370994,
+        "size": 6
+      },
+      {
+        "hue": 220,
+        "share": 0.017819255839217812,
+        "size": 11
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 7364000
+  }
+}

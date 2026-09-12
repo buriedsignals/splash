@@ -1,0 +1,417 @@
+{
+  "url": "https://vega.github.io/vega-lite/examples/bar_diverging_stack_transform.html",
+  "archive": "search",
+  "family": "diverging-stacked-bar",
+  "id": "vega-github-io-vega-lite-examples-bar-diverging-stack-transform-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Diverging Stacked Bar Chart (with Neutral Parts) | Vega-Lite",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "monospace",
+        "size": 12.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "monospace | 12.8 | 400 | normal | 0 | none",
+        "count": 362,
+        "sample": "\"$schema\"",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(221, 17, 68)",
+          "rgb(0, 128, 128)"
+        ]
+      },
+      {
+        "family": "sans-serif",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 10 | 400 | normal | 0 | none",
+        "count": 20,
+        "sample": "−40",
+        "colors": [
+          "rgb(55, 58, 60)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 16 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Tutorials",
+        "colors": [
+          "rgb(238, 238, 238)",
+          "rgb(55, 58, 60)",
+          "rgb(70, 130, 180)"
+        ]
+      },
+      {
+        "family": "sans-serif",
+        "size": 11,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 11 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Percentage",
+        "colors": [
+          "rgb(55, 58, 60)"
+        ]
+      },
+      {
+        "family": "monospace",
+        "size": 12.8,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "monospace | 12.8 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "false",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 14.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 14.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "and submit a pull request!",
+        "colors": [
+          "rgb(170, 170, 170)",
+          "rgb(70, 130, 180)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 22.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 22.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Vega-Lite",
+        "colors": [
+          "rgb(238, 238, 238)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Examples",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 40,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 40 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Diverging Stacked Bar Chart (with Neutral Parts)",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Vega-Lite JSON Specification",
+        "colors": [
+          "rgb(55, 58, 60)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Copy",
+        "colors": [
+          "rgb(36, 41, 47)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(148, 198, 218)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(23, 112, 171)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(243, 165, 131)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(195, 13, 36)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(221, 221, 221)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1000,
+      "ch": 125
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 236,
+      "nearTheTop": true,
+      "x": 220,
+      "y": 236,
+      "w": 543,
+      "h": 202,
+      "ratio": 2.69
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.6540761810987729,
+      "h": 205.71428571428575,
+      "s": 0.0027855153206089267,
+      "l": 0.9999313180243314,
+      "chroma": 3.8262939094924064e-7
+    },
+    "chromatic": [
+      {
+        "hex": "#94C6DA",
+        "share": 0.14417519099976295,
+        "h": 197.1428571428571,
+        "s": 0.48611111111111105,
+        "l": 0.7176470588235294,
+        "chroma": 0.27450980392156854
+      },
+      {
+        "hex": "#1770AB",
+        "share": 0.0722972849771165,
+        "h": 203.91891891891893,
+        "s": 0.7628865979381443,
+        "l": 0.3803921568627451,
+        "chroma": 0.580392156862745
+      },
+      {
+        "hex": "#F3A583",
+        "share": 0.017978593439454443,
+        "h": 18.210442407333613,
+        "s": 0.8233714703381613,
+        "l": 0.7333691285844967,
+        "chroma": 0.43907250526985653
+      },
+      {
+        "hex": "#C30D24",
+        "share": 0.01617344054847474,
+        "h": 352.4175824175824,
+        "s": 0.8749999999999999,
+        "l": 0.40784313725490196,
+        "chroma": 0.7137254901960783
+      },
+      {
+        "hex": "#F6BCA2",
+        "share": 0.0003282096165417647,
+        "h": 18.571428571428584,
+        "s": 0.8235294117647062,
+        "l": 0.8,
+        "chroma": 0.3294117647058824
+      },
+      {
+        "hex": "#5194C0",
+        "share": 0.0003282096165417647,
+        "h": 203.78378378378378,
+        "s": 0.46835443037974683,
+        "l": 0.5352941176470588,
+        "chroma": 0.43529411764705883
+      },
+      {
+        "hex": "#EDA396",
+        "share": 0.00016410480827088234,
+        "h": 8.965517241379297,
+        "s": 0.7073170731707318,
+        "l": 0.7588235294117647,
+        "chroma": 0.3411764705882353
+      },
+      {
+        "hex": "#DC6366",
+        "share": 0.00016410480827088234,
+        "h": 358.5123966942149,
+        "s": 0.6335078534031414,
+        "l": 0.6254901960784314,
+        "chroma": 0.47450980392156866
+      },
+      {
+        "hex": "#E18692",
+        "share": 0.00016410480827088234,
+        "h": 352.0879120879121,
+        "s": 0.6026490066225165,
+        "l": 0.7039215686274509,
+        "chroma": 0.35686274509803917
+      },
+      {
+        "hex": "#CA9CA2",
+        "share": 0.00016410480827088234,
+        "h": 352.17391304347825,
+        "s": 0.30263157894736825,
+        "l": 0.7019607843137254,
+        "chroma": 0.180392156862745
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.6540761810987729,
+        "h": 205.71428571428575,
+        "s": 0.0027855153206089267,
+        "l": 0.9999313180243314,
+        "chroma": 3.8262939094924064e-7
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.03317652207209671,
+        "h": 0,
+        "s": 0,
+        "l": 0.7998696043407746,
+        "chroma": 0
+      },
+      {
+        "hex": "#DDDDDD",
+        "share": 0.010055977973487956,
+        "h": 0,
+        "s": 0,
+        "l": 0.865144970046042,
+        "chroma": 0
+      },
+      {
+        "hex": "#8A8A8A",
+        "share": 0.004859325711576682,
+        "h": 0,
+        "s": 0,
+        "l": 0.5396681749622926,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.003400616304724395,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0026986124026767318,
+        "h": 0,
+        "s": 0,
+        "l": 0.9248277689454161,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0021333625075214704,
+        "h": 0,
+        "s": 0,
+        "l": 0.9571811630635161,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.002023959302007549,
+        "h": 0,
+        "s": 0,
+        "l": 0.894912559618442,
+        "chroma": 0
+      },
+      {
+        "hex": "#2C2C2C",
+        "share": 0.0018963222289079737,
+        "h": 0,
+        "s": 0,
+        "l": 0.1733785822021116,
+        "chroma": 0
+      },
+      {
+        "hex": "#0D0D0D",
+        "share": 0.0018689714275294932,
+        "h": 0,
+        "s": 0,
+        "l": 0.050980392156862744,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 197,
+        "share": 0.21794941925131747,
+        "size": 10
+      },
+      {
+        "hue": 18,
+        "share": 0.03546487245409622,
+        "size": 9
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 109686
+  }
+}

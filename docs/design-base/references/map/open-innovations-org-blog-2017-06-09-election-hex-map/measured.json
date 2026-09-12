@@ -1,0 +1,369 @@
+{
+  "url": "https://open-innovations.org/blog/2017-06-09-election-hex-map",
+  "archive": "search",
+  "family": "map",
+  "id": "open-innovations-org-blog-2017-06-09-election-hex-map",
+  "harvestedAt": "2026-09-09",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "2017 General Election hex map | Open Innovations",
+    "ground": "rgb(0, 0, 0)",
+    "type": [
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 300 | normal | 0 | none",
+        "count": 38,
+        "sample": "Open Innovations is winding down and will no longer be comme",
+        "colors": [
+          "rgb(95, 82, 7)",
+          "rgb(51, 51, 51)",
+          "rgb(34, 84, 244)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 24 | 400 | normal | 0 | none",
+        "count": 7,
+        "sample": "💖",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 17.6,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 17.6 | 300 | normal | 0 | none",
+        "count": 5,
+        "sample": "About",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "31.7% women",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 16 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 32,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 32 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "2017 General Election hex map",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 12.8,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 12.8 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Election results as of 6:30am. Credit: Stuart Lowe / ODI Lee",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 22.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 22.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Stuart Lowe",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Poppins",
+        "size": 27.2,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Poppins | 27.2 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "2017 General Election hex map",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      }
+    ],
+    "column": {
+      "px": 720,
+      "ch": 90
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 872,
+      "nearTheTop": true,
+      "x": 176,
+      "y": 872,
+      "w": 720,
+      "h": 450,
+      "ratio": 1.6
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "consentBeforeGraphic": null,
+  "pixel": {
+    "ground": {
+      "hex": "#EEEEEE",
+      "share": 0.7366543209876544,
+      "h": 70.93457943889379,
+      "s": 0.00010680500077042729,
+      "l": 0.934157964246551,
+      "chroma": 0.000014064517358747253
+    },
+    "chromatic": [
+      {
+        "hex": "#849CEB",
+        "share": 0.002990740740740741,
+        "h": 225.98784437602464,
+        "s": 0.7250141326878196,
+        "l": 0.72079969242599,
+        "chroma": 0.4048483376838867
+      },
+      {
+        "hex": "#8B9DEB",
+        "share": 0.0028117283950617284,
+        "h": 228.5923790281388,
+        "s": 0.7107337340163769,
+        "l": 0.7332063451066486,
+        "chroma": 0.3792385011084566
+      },
+      {
+        "hex": "#DB7A7C",
+        "share": 0.002780864197530864,
+        "h": 359.3556085918854,
+        "s": 0.5748205994090333,
+        "l": 0.6700485299558225,
+        "chroma": 0.37932580357337164
+      },
+      {
+        "hex": "#DC7474",
+        "share": 0.0023641975308641974,
+        "h": 0.049037482239628,
+        "s": 0.5970930276207421,
+        "l": 0.6590462294578405,
+        "chroma": 0.40716223826345155
+      },
+      {
+        "hex": "#8BA2EB",
+        "share": 0.0022962962962962963,
+        "h": 225.7872245342569,
+        "s": 0.7096307454462569,
+        "l": 0.7340659919881931,
+        "chroma": 0.3774298966898588
+      },
+      {
+        "hex": "#8B9DE4",
+        "share": 0.002123456790123457,
+        "h": 227.73996238449584,
+        "s": 0.6201884553356797,
+        "l": 0.7190178978568171,
+        "chroma": 0.3485237118103055
+      },
+      {
+        "hex": "#E3757B",
+        "share": 0.0021049382716049384,
+        "h": 356.6638302398554,
+        "s": 0.6619143168937235,
+        "l": 0.6733137829912024,
+        "chroma": 0.43247656833994597
+      },
+      {
+        "hex": "#DC757B",
+        "share": 0.0020401234567901235,
+        "h": 356.77645883528237,
+        "s": 0.5959794067173326,
+        "l": 0.6612025748272078,
+        "chroma": 0.4038325769036813
+      },
+      {
+        "hex": "#D47B7C",
+        "share": 0.0019228395061728395,
+        "h": 359.7700567627174,
+        "s": 0.508418808132054,
+        "l": 0.6575583042205646,
+        "chroma": 0.3482075976457999
+      },
+      {
+        "hex": "#849DF3",
+        "share": 0.0018981481481481482,
+        "h": 226.80044166359957,
+        "s": 0.8193112598757614,
+        "l": 0.7356767097082735,
+        "chroma": 0.43312609596684204
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#EEEEEE",
+        "share": 0.7366543209876544,
+        "h": 70.93457943889379,
+        "s": 0.00010680500077042729,
+        "l": 0.934157964246551,
+        "chroma": 0.000014064517358747253
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.039253086419753086,
+        "h": 101.14285714262789,
+        "s": 0.00005115440885253843,
+        "l": 0.8945137199399338,
+        "chroma": 0.000010792176597052006
+      },
+      {
+        "hex": "#EDEDF2",
+        "share": 0.0055246913580246915,
+        "h": 237.58617009924262,
+        "s": 0.16634419100026648,
+        "l": 0.9382900646292037,
+        "chroma": 0.020530178551867673
+      },
+      {
+        "hex": "#F1EDEC",
+        "share": 0.0038919753086419755,
+        "h": 5.035927228252533,
+        "s": 0.160322556925415,
+        "l": 0.9365598420176953,
+        "chroma": 0.020341776678950763
+      },
+      {
+        "hex": "#F1F1F1",
+        "share": 0.003774691358024691,
+        "h": 250.40963855421765,
+        "s": 0.012169731092929861,
+        "l": 0.9453273050839306,
+        "chroma": 0.0013307039905087192
+      },
+      {
+        "hex": "#EBECE5",
+        "share": 0.002916666666666667,
+        "h": 61.333333333333464,
+        "s": 0.13926662290162248,
+        "l": 0.9115011930698205,
+        "chroma": 0.024649859943977614
+      },
+      {
+        "hex": "#DEDEDE",
+        "share": 0.002117283950617284,
+        "h": 141.176470588199,
+        "s": 0.0003759481633829194,
+        "l": 0.8707511576058995,
+        "chroma": 0.00009718172983486095
+      },
+      {
+        "hex": "#FDFDFD",
+        "share": 0.002061728395061728,
+        "h": 96.35294117646451,
+        "s": 0.07185122569738082,
+        "l": 0.9930550663379123,
+        "chroma": 0.0009980039920159944
+      },
+      {
+        "hex": "#EDF1ED",
+        "share": 0.0018425925925925925,
+        "h": 116.91991786447677,
+        "s": 0.12444421730464449,
+        "l": 0.9357342266890005,
+        "chroma": 0.015995007718330068
+      },
+      {
+        "hex": "#F2EDF2",
+        "share": 0.0017283950617283952,
+        "h": 295.5287009063445,
+        "s": 0.17058924583404955,
+        "l": 0.9388550420168067,
+        "chroma": 0.020861344537815185
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 226,
+        "share": 0.025851851851851855,
+        "size": 15
+      },
+      {
+        "hue": 359,
+        "share": 0.016376543209876544,
+        "size": 9
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 324000
+  }
+}

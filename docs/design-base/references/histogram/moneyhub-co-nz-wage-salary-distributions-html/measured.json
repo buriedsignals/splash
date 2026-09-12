@@ -1,0 +1,369 @@
+{
+  "url": "https://www.moneyhub.co.nz/wage-salary-distributions.html",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "moneyhub-co-nz-wage-salary-distributions-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "NZ Wage and Salary Distributions for Individuals - MoneyHub NZ",
+    "ground": "rgb(33, 33, 33)",
+    "type": [
+      {
+        "family": "Arial",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 15 | 400 | normal | 0 | none",
+        "count": 182,
+        "sample": "1 to 10,000",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 14 | 400 | normal | 0 | none",
+        "count": 43,
+        "sample": "Our guide uses Figure.NZ sampling and data to share income b",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(14, 16, 26)",
+          "rgb(19, 19, 19)"
+        ]
+      },
+      {
+        "family": "PT Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans | 16 | 700 | normal | 0 | none",
+        "count": 30,
+        "sample": "EXPLORE",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 14 | 700 | normal | 0 | none",
+        "count": 29,
+        "sample": "Updated 13 October 2025",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(80, 64, 174)",
+          "rgb(14, 16, 26)",
+          "rgb(19, 19, 19)"
+        ]
+      },
+      {
+        "family": "PT Sans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "PT Sans | 11 | 400 | normal | 0 | none",
+        "count": 25,
+        "sample": "Search",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Arial",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Arial | 15 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Taxable Income Band ($)",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Karla",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Karla | 18 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Calculate PAYE Earnings",
+        "colors": [
+          "rgb(38, 38, 38)"
+        ]
+      },
+      {
+        "family": "GFS Didot",
+        "size": 30,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "GFS Didot | 30 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Figure.NZ Data - Wage and Salary Distributions for the Tax Y",
+        "colors": [
+          "rgb(63, 63, 63)"
+        ]
+      },
+      {
+        "family": "Karla",
+        "size": 17.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Karla | 17.6 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Important: Why a 2% Sample Size Can Be Accurate",
+        "colors": [
+          "rgb(63, 63, 63)"
+        ]
+      },
+      {
+        "family": "Karla",
+        "size": 30,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Karla | 30 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "New Zealand Wage and Salary Distributions for Individuals",
+        "colors": [
+          "rgb(63, 63, 63)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": null,
+    "graphic": {
+      "tag": "img",
+      "documentTop": 2882,
+      "nearTheTop": false,
+      "x": 427,
+      "y": 2882,
+      "w": 587,
+      "h": 881,
+      "ratio": 0.67
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8461868675637682,
+      "h": 200.97180261832798,
+      "s": 0.17966347023690948,
+      "l": 0.999702819544602,
+      "chroma": 0.00010678494380678138
+    },
+    "chromatic": [
+      {
+        "hex": "#4DB7C5",
+        "share": 0.04570073886148426,
+        "h": 187.00004439117504,
+        "s": 0.5084895699160127,
+        "l": 0.5368896919857898,
+        "chroma": 0.4709735226916358
+      },
+      {
+        "hex": "#51B9C6",
+        "share": 0.007291930534258151,
+        "h": 186.8922551912667,
+        "s": 0.5074248444066785,
+        "l": 0.5471841348578679,
+        "chroma": 0.4595400398292438
+      },
+      {
+        "hex": "#43B3C2",
+        "share": 0.004795541693174281,
+        "h": 186.9883696099086,
+        "s": 0.5083516287660911,
+        "l": 0.5120295698924731,
+        "chroma": 0.49612112586970264
+      },
+      {
+        "hex": "#5461C8",
+        "share": 0.003902178684203911,
+        "h": 233.27420989391135,
+        "s": 0.5131377716145142,
+        "l": 0.5571746438912533,
+        "chroma": 0.454460832896092
+      },
+      {
+        "hex": "#3DB1C0",
+        "share": 0.0035057730200503917,
+        "h": 187.1200185846128,
+        "s": 0.5152011037148099,
+        "l": 0.49699771800612136,
+        "chroma": 0.5121075457209912
+      },
+      {
+        "hex": "#4FB8C6",
+        "share": 0.0031886484887275763,
+        "h": 186.8857020547945,
+        "s": 0.5092177379172895,
+        "l": 0.5417971676238719,
+        "chroma": 0.46665001961973385
+      },
+      {
+        "hex": "#3BB0BF",
+        "share": 0.002475118293251242,
+        "h": 186.83488878473065,
+        "s": 0.5260304669286202,
+        "l": 0.49082873774509805,
+        "chroma": 0.5163817401960784
+      },
+      {
+        "hex": "#5ABDC9",
+        "share": 0.001237559146625621,
+        "h": 187.02133048176498,
+        "s": 0.5092795620333347,
+        "l": 0.5724448529411764,
+        "chroma": 0.43549019607843137
+      },
+      {
+        "hex": "#7CCAD4",
+        "share": 0.0011138032319630588,
+        "h": 186.81517892253243,
+        "s": 0.5074430298918465,
+        "l": 0.6588099128540306,
+        "chroma": 0.3462690631808279
+      },
+      {
+        "hex": "#9BD6DE",
+        "share": 0.0008585566579715245,
+        "h": 187.12178733411724,
+        "s": 0.5035101074177448,
+        "l": 0.7389374668786433,
+        "chroma": 0.2628952481893657
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8461868675637682,
+        "h": 200.97180261832798,
+        "s": 0.17966347023690948,
+        "l": 0.999702819544602,
+        "chroma": 0.00010678494380678138
+      },
+      {
+        "hex": "#F3F4F5",
+        "share": 0.006040835584466313,
+        "h": 214.39563437926248,
+        "s": 0.05337508191946267,
+        "l": 0.9569022871632648,
+        "chroma": 0.004600687906404444
+      },
+      {
+        "hex": "#EBEBEC",
+        "share": 0.005356310681489016,
+        "h": 217.39965095986125,
+        "s": 0.031945734993495796,
+        "l": 0.9238196361577122,
+        "chroma": 0.004867275430027629
+      },
+      {
+        "hex": "#A3ACBB",
+        "share": 0.0022411422670923354,
+        "h": 218.01805161867824,
+        "s": 0.14450636513565657,
+        "l": 0.6861019472499958,
+        "chroma": 0.09072053325212737
+      },
+      {
+        "hex": "#9BA4B4",
+        "share": 0.0021618611342616315,
+        "h": 218.0883966170069,
+        "s": 0.14479246191762005,
+        "l": 0.6577063383492932,
+        "chroma": 0.09912308393840541
+      },
+      {
+        "hex": "#828282",
+        "share": 0.00208451368759753,
+        "h": 0,
+        "s": 0,
+        "l": 0.5093855724107825,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4F4F6",
+        "share": 0.00208451368759753,
+        "h": 186.64787577512436,
+        "s": 0.5056884442947113,
+        "l": 0.9298137436792899,
+        "chroma": 0.0709847575393795
+      },
+      {
+        "hex": "#BCC3CD",
+        "share": 0.0019878293792674035,
+        "h": 218.01194687699348,
+        "s": 0.14397601930479384,
+        "l": 0.7715667200732432,
+        "chroma": 0.0657778286411842
+      },
+      {
+        "hex": "#929CAE",
+        "share": 0.0017113122574432414,
+        "h": 218.07109102116297,
+        "s": 0.14452858203414987,
+        "l": 0.6269524759056164,
+        "chroma": 0.10783205937742324
+      },
+      {
+        "hex": "#DEDEDE",
+        "share": 0.0017055111989434338,
+        "h": 0,
+        "s": 0,
+        "l": 0.8686496820950602,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 187,
+        "share": 0.07520105501917247,
+        "size": 20
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 517147
+  }
+}

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>En vingt-quatre ans, le plancher de l'électricité bas-carbone européenne a monté de 30 points et le plafond de 2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFCEE;
+  --accent: #1757B6;
+  --ink: #000000;
+  --muted: #61605a;
+  --grid: #d1cfc3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--title-size:30px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:15px;--label-weight:600;--note-size:13px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:600;font-style:normal;letter-spacing:1.9px;text-transform:uppercase;color:#1757B6;margin:0 0 6px">Énergie · Europe</p><h2 class="chart-title" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:30px;font-weight:700;font-style:normal;letter-spacing:-0.2px;text-transform:none;color:#000000;margin:0 0 6px">En vingt-quatre ans, le plancher de l&#x27;électricité bas-carbone européenne a monté de 30 points et le plafond de 2</h2><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:0">Deux rails, deux dates : chaque pastille est un pays, sa position la part bas-carbone de son électricité. Un rail se lit comme une FORME — où est le plancher, où est le plafond, où le milieu se serre — jamais comme la trajectoire d&#x27;un pays : aucune ligne ne relie les deux rails.</p></div><div class="chart-plot" style="--y-gutter:0px;--x-axis-h:28px;aspect-ratio:880 / 288"><div class="y-axis"></div><svg role="group" aria-label="En vingt-quatre ans, le plancher de l&#x27;électricité bas-carbone européenne a monté de 30 points et le plafond de 2" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 880 260" preserveAspectRatio="none"><desc>Deux rails horizontaux gradués de 0 à 100 %. Sur celui de 2000, 16 pastilles s&#x27;étalent de 1,6 % à 96,7 % ; sur celui de 2024, elles se resserrent entre 31,1 % et 98,8 %. Le plancher monte de 29,5 points, le plafond de 2,1, et l&#x27;écart entre les deux se referme de 27,4 points. La pastille de la Pologne, plancher aux deux dates, est colorée.</desc><rect x="0" y="0" width="880" height="260" fill="#FFFCEE"></rect><line x1="0" x2="0" y1="0" y2="260" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="220" x2="220" y1="0" y2="260" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="440" x2="440" y1="0" y2="260" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="660" x2="660" y1="0" y2="260" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="880" x2="880" y1="0" y2="260" stroke="#d1cfc3" stroke-width="1" vector-effect="non-scaling-stroke"></line><g><line x1="0" x2="880" y1="80.6" y2="80.6" stroke="#73716b" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="14.32043581505797" x2="14.32043581505797" y1="58.599999999999994" y2="90.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="241.87567773190293" x2="241.87567773190293" y1="58.599999999999994" y2="90.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="851.0968808097499" x2="851.0968808097499" y1="58.599999999999994" y2="90.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><circle cx="14.32043581505797" cy="80.6" r="6.5" fill="#1757B6" fill-opacity="1" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="44.31654676258992" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="68.8175292784284" cy="69.55" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="68.95298660004543" cy="58.5" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="136.72524407252442" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="165.83537082314584" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="191.57201646090536" cy="69.55" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="221.64536148093137" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="262.1059939828744" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="317.10624835222774" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="385.18920876335324" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="523.068003382051" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="576.772902672574" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="640.9657947686118" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="798.0907315607631" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="851.0968808097499" cy="80.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle></g><g><line x1="0" x2="880" y1="210.6" y2="210.6" stroke="#73716b" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="274.0924936091099" x2="274.0924936091099" y1="188.6" y2="220.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="621.6185638876938" x2="621.6185638876938" y1="188.6" y2="220.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="869.3674121405749" x2="869.3674121405749" y1="188.6" y2="220.6" stroke="#73716b" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><circle cx="274.0924936091099" cy="210.6" r="6.5" fill="#1757B6" fill-opacity="1" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="409.4208494208495" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="433.2165381920113" cy="199.54999999999998" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="441.5129316788758" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="472.19161285048637" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="507.62257931602795" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="516.0523397649146" cy="199.54999999999998" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="571.3992117117118" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="671.8379160636758" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="675.3641346906812" cy="199.54999999999998" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="749.684789507087" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="758.7715050337708" cy="199.54999999999998" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="784.8716486023958" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="835.1055573356119" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="839.0648092065413" cy="199.54999999999998" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle><circle cx="869.3674121405749" cy="210.6" r="6.5" fill="#94928a" fill-opacity="0.85" stroke="#FFFCEE" stroke-width="1" vector-effect="non-scaling-stroke"></circle></g><circle class="pt" cx="14.32043581505797" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 2000 : 1,6 % · 2024 : 31,1 % · 1ᵉ sur 16 en 2000, 1ᵉ en 2024" data-detail="Pologne · 2000 : 1,6 % · 2024 : 31,1 % · 1ᵉ sur 16 en 2000, 1ᵉ en 2024"></circle><circle class="pt" cx="44.31654676258992" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 2000 : 5,0 % · 2024 : 46,5 % · 2ᵉ sur 16 en 2000, 2ᵉ en 2024" data-detail="Irlande · 2000 : 5,0 % · 2024 : 46,5 % · 2ᵉ sur 16 en 2000, 2ᵉ en 2024"></circle><circle class="pt" cx="68.8175292784284" cy="69.55" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 2000 : 7,8 % · 2024 : 49,2 % · 3ᵉ sur 16 en 2000, 3ᵉ en 2024" data-detail="Grèce · 2000 : 7,8 % · 2024 : 49,2 % · 3ᵉ sur 16 en 2000, 3ᵉ en 2024"></circle><circle class="pt" cx="68.95298660004543" cy="58.5" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 2000 : 7,8 % · 2024 : 53,7 % · 4ᵉ sur 16 en 2000, 5ᵉ en 2024" data-detail="Pays-Bas · 2000 : 7,8 % · 2024 : 53,7 % · 4ᵉ sur 16 en 2000, 5ᵉ en 2024"></circle><circle class="pt" cx="136.72524407252442" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 2000 : 15,5 % · 2024 : 89,2 % · 5ᵉ sur 16 en 2000, 13ᵉ en 2024" data-detail="Danemark · 2000 : 15,5 % · 2024 : 89,2 % · 5ᵉ sur 16 en 2000, 13ᵉ en 2024"></circle><circle class="pt" cx="165.83537082314584" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 2000 : 18,8 % · 2024 : 50,2 % · 6ᵉ sur 16 en 2000, 4ᵉ en 2024" data-detail="Italie · 2000 : 18,8 % · 2024 : 50,2 % · 6ᵉ sur 16 en 2000, 4ᵉ en 2024"></circle><circle class="pt" cx="191.57201646090536" cy="69.55" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 2000 : 21,8 % · 2024 : 57,7 % · 7ᵉ sur 16 en 2000, 6ᵉ en 2024" data-detail="Tchéquie · 2000 : 21,8 % · 2024 : 57,7 % · 7ᵉ sur 16 en 2000, 6ᵉ en 2024"></circle><circle class="pt" cx="221.64536148093137" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Royaume-Uni · 2000 : 25,2 % · 2024 : 64,9 % · 8ᵉ sur 16 en 2000, 8ᵉ en 2024" data-detail="Royaume-Uni · 2000 : 25,2 % · 2024 : 64,9 % · 8ᵉ sur 16 en 2000, 8ᵉ en 2024"></circle><circle class="pt" cx="262.1059939828744" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 2000 : 29,8 % · 2024 : 85,2 % · 9ᵉ sur 16 en 2000, 11ᵉ en 2024" data-detail="Portugal · 2000 : 29,8 % · 2024 : 85,2 % · 9ᵉ sur 16 en 2000, 11ᵉ en 2024"></circle><circle class="pt" cx="317.10624835222774" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 2000 : 36,0 % · 2024 : 58,6 % · 10ᵉ sur 16 en 2000, 7ᵉ en 2024" data-detail="Allemagne · 2000 : 36,0 % · 2024 : 58,6 % · 10ᵉ sur 16 en 2000, 7ᵉ en 2024"></circle><circle class="pt" cx="385.18920876335324" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 2000 : 43,8 % · 2024 : 76,7 % · 11ᵉ sur 16 en 2000, 10ᵉ en 2024" data-detail="Espagne · 2000 : 43,8 % · 2024 : 76,7 % · 11ᵉ sur 16 en 2000, 10ᵉ en 2024"></circle><circle class="pt" cx="523.068003382051" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 2000 : 59,4 % · 2024 : 76,3 % · 12ᵉ sur 16 en 2000, 9ᵉ en 2024" data-detail="Belgique · 2000 : 59,4 % · 2024 : 76,3 % · 12ᵉ sur 16 en 2000, 9ᵉ en 2024"></circle><circle class="pt" cx="576.772902672574" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 2000 : 65,5 % · 2024 : 95,3 % · 13ᵉ sur 16 en 2000, 15ᵉ en 2024" data-detail="Finlande · 2000 : 65,5 % · 2024 : 95,3 % · 13ᵉ sur 16 en 2000, 15ᵉ en 2024"></circle><circle class="pt" cx="640.9657947686118" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 2000 : 72,8 % · 2024 : 86,2 % · 14ᵉ sur 16 en 2000, 12ᵉ en 2024" data-detail="Autriche · 2000 : 72,8 % · 2024 : 86,2 % · 14ᵉ sur 16 en 2000, 12ᵉ en 2024"></circle><circle class="pt" cx="798.0907315607631" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 2000 : 90,7 % · 2024 : 94,9 % · 15ᵉ sur 16 en 2000, 14ᵉ en 2024" data-detail="France · 2000 : 90,7 % · 2024 : 94,9 % · 15ᵉ sur 16 en 2000, 14ᵉ en 2024"></circle><circle class="pt" cx="851.0968808097499" cy="80.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 2000 : 96,7 % · 2024 : 98,8 % · 16ᵉ sur 16 en 2000, 16ᵉ en 2024" data-detail="Suède · 2000 : 96,7 % · 2024 : 98,8 % · 16ᵉ sur 16 en 2000, 16ᵉ en 2024"></circle><circle class="pt" cx="274.0924936091099" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 2024 : 31,1 % · 2000 : 1,6 % · 1ᵉ sur 16 en 2024, 1ᵉ en 2000" data-detail="Pologne · 2024 : 31,1 % · 2000 : 1,6 % · 1ᵉ sur 16 en 2024, 1ᵉ en 2000"></circle><circle class="pt" cx="409.4208494208495" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 2024 : 46,5 % · 2000 : 5,0 % · 2ᵉ sur 16 en 2024, 2ᵉ en 2000" data-detail="Irlande · 2024 : 46,5 % · 2000 : 5,0 % · 2ᵉ sur 16 en 2024, 2ᵉ en 2000"></circle><circle class="pt" cx="433.2165381920113" cy="199.54999999999998" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 2024 : 49,2 % · 2000 : 7,8 % · 3ᵉ sur 16 en 2024, 3ᵉ en 2000" data-detail="Grèce · 2024 : 49,2 % · 2000 : 7,8 % · 3ᵉ sur 16 en 2024, 3ᵉ en 2000"></circle><circle class="pt" cx="441.5129316788758" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 2024 : 50,2 % · 2000 : 18,8 % · 4ᵉ sur 16 en 2024, 6ᵉ en 2000" data-detail="Italie · 2024 : 50,2 % · 2000 : 18,8 % · 4ᵉ sur 16 en 2024, 6ᵉ en 2000"></circle><circle class="pt" cx="472.19161285048637" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 2024 : 53,7 % · 2000 : 7,8 % · 5ᵉ sur 16 en 2024, 4ᵉ en 2000" data-detail="Pays-Bas · 2024 : 53,7 % · 2000 : 7,8 % · 5ᵉ sur 16 en 2024, 4ᵉ en 2000"></circle><circle class="pt" cx="507.62257931602795" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 2024 : 57,7 % · 2000 : 21,8 % · 6ᵉ sur 16 en 2024, 7ᵉ en 2000" data-detail="Tchéquie · 2024 : 57,7 % · 2000 : 21,8 % · 6ᵉ sur 16 en 2024, 7ᵉ en 2000"></circle><circle class="pt" cx="516.0523397649146" cy="199.54999999999998" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 2024 : 58,6 % · 2000 : 36,0 % · 7ᵉ sur 16 en 2024, 10ᵉ en 2000" data-detail="Allemagne · 2024 : 58,6 % · 2000 : 36,0 % · 7ᵉ sur 16 en 2024, 10ᵉ en 2000"></circle><circle class="pt" cx="571.3992117117118" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Royaume-Uni · 2024 : 64,9 % · 2000 : 25,2 % · 8ᵉ sur 16 en 2024, 8ᵉ en 2000" data-detail="Royaume-Uni · 2024 : 64,9 % · 2000 : 25,2 % · 8ᵉ sur 16 en 2024, 8ᵉ en 2000"></circle><circle class="pt" cx="671.8379160636758" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 2024 : 76,3 % · 2000 : 59,4 % · 9ᵉ sur 16 en 2024, 12ᵉ en 2000" data-detail="Belgique · 2024 : 76,3 % · 2000 : 59,4 % · 9ᵉ sur 16 en 2024, 12ᵉ en 2000"></circle><circle class="pt" cx="675.3641346906812" cy="199.54999999999998" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 2024 : 76,7 % · 2000 : 43,8 % · 10ᵉ sur 16 en 2024, 11ᵉ en 2000" data-detail="Espagne · 2024 : 76,7 % · 2000 : 43,8 % · 10ᵉ sur 16 en 2024, 11ᵉ en 2000"></circle><circle class="pt" cx="749.684789507087" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 2024 : 85,2 % · 2000 : 29,8 % · 11ᵉ sur 16 en 2024, 9ᵉ en 2000" data-detail="Portugal · 2024 : 85,2 % · 2000 : 29,8 % · 11ᵉ sur 16 en 2024, 9ᵉ en 2000"></circle><circle class="pt" cx="758.7715050337708" cy="199.54999999999998" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 2024 : 86,2 % · 2000 : 72,8 % · 12ᵉ sur 16 en 2024, 14ᵉ en 2000" data-detail="Autriche · 2024 : 86,2 % · 2000 : 72,8 % · 12ᵉ sur 16 en 2024, 14ᵉ en 2000"></circle><circle class="pt" cx="784.8716486023958" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 2024 : 89,2 % · 2000 : 15,5 % · 13ᵉ sur 16 en 2024, 5ᵉ en 2000" data-detail="Danemark · 2024 : 89,2 % · 2000 : 15,5 % · 13ᵉ sur 16 en 2024, 5ᵉ en 2000"></circle><circle class="pt" cx="835.1055573356119" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 2024 : 94,9 % · 2000 : 90,7 % · 14ᵉ sur 16 en 2024, 15ᵉ en 2000" data-detail="France · 2024 : 94,9 % · 2000 : 90,7 % · 14ᵉ sur 16 en 2024, 15ᵉ en 2000"></circle><circle class="pt" cx="839.0648092065413" cy="199.54999999999998" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 2024 : 95,3 % · 2000 : 65,5 % · 15ᵉ sur 16 en 2024, 13ᵉ en 2000" data-detail="Finlande · 2024 : 95,3 % · 2000 : 65,5 % · 15ᵉ sur 16 en 2024, 13ᵉ en 2000"></circle><circle class="pt" cx="869.3674121405749" cy="210.6" r="6.5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 2024 : 98,8 % · 2000 : 96,7 % · 16ᵉ sur 16 en 2024, 16ᵉ en 2000" data-detail="Suède · 2024 : 98,8 % · 2000 : 96,7 % · 16ᵉ sur 16 en 2024, 16ᵉ en 2000"></circle><rect class="hit-area" x="0" y="0" width="880" height="260" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:700;font-style:italic;letter-spacing:0px;text-transform:none;color:#000000;left:0%;top:15.615384615384615%;background:transparent;padding:0">2000</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:1.627322251711133%;transform:translateX(0);white-space:normal;max-width:min(46%, 24em);top:35.61538461538461%">plancher 1,6 %</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:27.48587246953442%;transform:translateX(-50%);white-space:normal;max-width:min(46%, 24em);top:35.61538461538461%">médiane 27,5 %</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;right:3.284445362528416%;transform:translateX(0);white-space:normal;max-width:min(46%, 24em);top:35.61538461538461%">plafond 96,7 %</span></span><span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:700;font-style:italic;letter-spacing:0px;text-transform:none;color:#000000;left:0%;top:65.61538461538461%;background:transparent;padding:0">2024</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:31.14687427376249%;transform:translateX(-50%);white-space:normal;max-width:min(46%, 24em);top:85.61538461538461%">plancher 31,1 %</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:70.63847316905611%;transform:translateX(-50%);white-space:normal;max-width:min(46%, 24em);top:85.61538461538461%">médiane 70,6 %</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;right:1.208248620389213%;transform:translateX(0);white-space:normal;max-width:min(46%, 24em);top:85.61538461538461%">plafond 98,8 %</span></span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#1757B6;left:1.627322251711133%;transform:translateX(0) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:25.999999999999996%">Pologne 1,6 %</span><span class="note" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#1757B6;left:31.14687427376249%;transform:translateX(-50%) translateY(-100%);white-space:normal;max-width:min(46%, 24em);top:76%">Pologne 31,1 %</span></div><div class="x-axis"><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:0%">0 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:25%">25 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:50%">50 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:75%">75 %</span><span class="axis-label x" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:500;font-style:normal;letter-spacing:0.4px;text-transform:none;color:#61605a;left:100%">100 %</span></div></div><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:10px 0 0">Lecture : survolez, touchez ou tabulez une pastille pour lire le pays, sa part sur ce rail, sa part sur l&#x27;autre et son rang aux deux dates — les quatre lectures qui redonnent des pays à une forme.</p><p class="chart-source" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:13px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#61605a;margin:6px 0 0">Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2000 et 2024</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

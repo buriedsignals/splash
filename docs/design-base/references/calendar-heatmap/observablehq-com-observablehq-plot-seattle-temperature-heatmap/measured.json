@@ -1,0 +1,513 @@
+{
+  "url": "https://observablehq.com/@observablehq/plot-seattle-temperature-heatmap",
+  "archive": "search",
+  "family": "calendar-heatmap",
+  "id": "observablehq-com-observablehq-plot-seattle-temperature-heatmap",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Plot: Seattle temperature temporal heatmap | Observable | Observable",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Spline Sans Mono Variable",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Spline Sans Mono Variable | 14 | 400 | normal | 0 | none",
+        "count": 41,
+        "sample": ". ({",
+        "colors": [
+          "rgb(27, 30, 35)",
+          "color(srgb 0.195294 0.205882 0.223529)",
+          "rgb(0, 92, 197)",
+          "rgb(34, 134, 58)"
+        ]
+      },
+      {
+        "family": "Inter Variable",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter Variable | 14 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Read the announcement →",
+        "colors": [
+          "rgb(27, 30, 35)",
+          "lab(47.7841 -0.393182 -10.0268)",
+          "lab(35.6337 -1.58697 -10.8425)"
+        ]
+      },
+      {
+        "family": "Inter Variable",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter Variable | 14 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Observable",
+        "colors": [
+          "rgb(27, 30, 35)"
+        ]
+      },
+      {
+        "family": "Spline Sans Mono Variable",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Spline Sans Mono Variable | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "• ojs",
+        "colors": [
+          "lab(65.9269 -0.832707 -8.17473)"
+        ]
+      },
+      {
+        "family": "Inter Variable",
+        "size": 14,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Inter Variable | 14 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "A new Observable!",
+        "colors": [
+          "rgb(27, 30, 35)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(27, 30, 35)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(27, 30, 35)",
+        "count": 4
+      },
+      {
+        "colour": "fill lab(35.6337 -1.58697 -10.8425)",
+        "count": 3
+      },
+      {
+        "colour": "stroke lab(65.9269 -0.832707 -8.17473)",
+        "count": 2
+      },
+      {
+        "colour": "fill lab(60.3514 40.5624 87.1228)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 106,
+      "nearTheTop": true,
+      "x": 0,
+      "y": 106,
+      "w": 1384,
+      "h": 926,
+      "ratio": 1.49
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://observablehq.static.observableusercontent.com/chat-worker/index-IZ17FNNp.html",
+      "title": "",
+      "ground": "rgb(255, 255, 255)",
+      "type": [
+        {
+          "family": "system-ui",
+          "size": 10,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "system-ui | 10 | 400 | normal | 0 | none",
+          "count": 34,
+          "sample": "Jan",
+          "colors": [
+            "rgb(27, 30, 35)"
+          ]
+        },
+        {
+          "family": "Spline Sans Mono Variable",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Spline Sans Mono Variable | 14 | 400 | normal | 0 | none",
+          "count": 23,
+          "sample": ", , , , , , , , , , , , , , , , , , , , … ]",
+          "colors": [
+            "rgb(27, 30, 35)"
+          ]
+        },
+        {
+          "family": "Source Serif 4 Variable",
+          "size": 17,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif 4 Variable | 17 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "A calendar with a for each day ( ) of each month ( ), by max",
+          "colors": [
+            "rgb(27, 30, 35)",
+            "rgb(59, 95, 192)"
+          ]
+        },
+        {
+          "family": "Inter Variable",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "uppercase",
+          "key": "Inter Variable | 13 | 400 | normal | 0 | uppercase",
+          "count": 2,
+          "sample": "Observable Plot",
+          "colors": [
+            "rgb(59, 95, 192)"
+          ]
+        },
+        {
+          "family": "Source Serif 4 Variable",
+          "size": 34,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Source Serif 4 Variable | 34 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Seattle temperature temporal heatmap",
+          "colors": [
+            "color(srgb 0.195294 0.205882 0.223529)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(38, 191, 223)",
+          "count": 17
+        },
+        {
+          "colour": "fill rgb(40, 218, 191)",
+          "count": 14
+        },
+        {
+          "colour": "fill rgb(255, 133, 30)",
+          "count": 14
+        },
+        {
+          "colour": "fill rgb(47, 157, 245)",
+          "count": 13
+        },
+        {
+          "colour": "fill rgb(57, 239, 155)",
+          "count": 12
+        },
+        {
+          "colour": "fill rgb(40, 180, 232)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(37, 200, 213)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(51, 234, 166)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(45, 226, 178)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(227, 70, 19)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(255, 181, 38)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(217, 60, 16)",
+          "count": 11
+        },
+        {
+          "colour": "fill rgb(38, 210, 202)",
+          "count": 10
+        },
+        {
+          "colour": "fill rgb(58, 132, 249)",
+          "count": 9
+        },
+        {
+          "colour": "fill rgb(67, 244, 142)",
+          "count": 9
+        },
+        {
+          "colour": "fill rgb(169, 246, 71)",
+          "count": 9
+        },
+        {
+          "colour": "fill rgb(255, 158, 34)",
+          "count": 9
+        },
+        {
+          "colour": "fill rgb(43, 169, 239)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(184, 241, 64)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(249, 193, 41)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(232, 213, 47)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(255, 171, 36)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(241, 204, 44)",
+          "count": 8
+        },
+        {
+          "colour": "fill rgb(88, 251, 121)",
+          "count": 7
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FDFEFE",
+      "share": 0.8727496597960025,
+      "h": 210.01364055299348,
+      "s": 0.19949567912585503,
+      "l": 0.9949944868488494,
+      "chroma": 0.0019971564909243567
+    },
+    "chromatic": [
+      {
+        "hex": "#26BFDF",
+        "share": 0.0038202724128890498,
+        "h": 190.3783783783784,
+        "s": 0.7429718875502008,
+        "l": 0.5117647058823529,
+        "chroma": 0.7254901960784313
+      },
+      {
+        "hex": "#28DABF",
+        "share": 0.0031461066929674526,
+        "h": 170.8988764044944,
+        "s": 0.7063492063492064,
+        "l": 0.5058823529411764,
+        "chroma": 0.6980392156862745
+      },
+      {
+        "hex": "#FF851E",
+        "share": 0.0031461066929674526,
+        "h": 27.466666666666665,
+        "s": 1,
+        "l": 0.5588235294117647,
+        "chroma": 0.8823529411764706
+      },
+      {
+        "hex": "#2F9DF5",
+        "share": 0.0029213847863269206,
+        "h": 206.66666666666666,
+        "s": 0.9082568807339452,
+        "l": 0.5725490196078431,
+        "chroma": 0.7764705882352941
+      },
+      {
+        "hex": "#39EF9B",
+        "share": 0.0026966628796863882,
+        "h": 152.3076923076923,
+        "s": 0.8504672897196262,
+        "l": 0.5803921568627451,
+        "chroma": 0.7137254901960784
+      },
+      {
+        "hex": "#28B4E8",
+        "share": 0.002471940973045856,
+        "h": 196.24999999999997,
+        "s": 0.8067226890756302,
+        "l": 0.5333333333333333,
+        "chroma": 0.7529411764705882
+      },
+      {
+        "hex": "#25C8D5",
+        "share": 0.002471940973045856,
+        "h": 184.4318181818182,
+        "s": 0.704,
+        "l": 0.4901960784313726,
+        "chroma": 0.6901960784313725
+      },
+      {
+        "hex": "#33EAA6",
+        "share": 0.002471940973045856,
+        "h": 157.70491803278688,
+        "s": 0.813333333333333,
+        "l": 0.5588235294117647,
+        "chroma": 0.7176470588235293
+      },
+      {
+        "hex": "#2DE2B2",
+        "share": 0.002471940973045856,
+        "h": 164.08839779005524,
+        "s": 0.7573221757322175,
+        "l": 0.5313725490196078,
+        "chroma": 0.7098039215686274
+      },
+      {
+        "hex": "#E34613",
+        "share": 0.002471940973045856,
+        "h": 14.711538461538462,
+        "s": 0.8455284552845529,
+        "l": 0.48235294117647054,
+        "chroma": 0.8156862745098039
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FDFEFE",
+        "share": 0.8727496597960025,
+        "h": 210.01364055299348,
+        "s": 0.19949567912585503,
+        "l": 0.9949944868488494,
+        "chroma": 0.0019971564909243567
+      },
+      {
+        "hex": "#323539",
+        "share": 0.004138628447296471,
+        "h": 214.49903350515467,
+        "s": 0.06556315170631764,
+        "l": 0.21002425102771122,
+        "chroma": 0.027539703664271137
+      },
+      {
+        "hex": "#1B1E23",
+        "share": 0.0011509194871346707,
+        "h": 217.5,
+        "s": 0.12879846315054128,
+        "l": 0.12178929877035559,
+        "chroma": 0.031372549019607815
+      },
+      {
+        "hex": "#F3F4F4",
+        "share": 0.0007451716001448208,
+        "h": 202.53456221198115,
+        "s": 0.039970528642475134,
+        "l": 0.9554132019299866,
+        "chroma": 0.0035643157786674484
+      },
+      {
+        "hex": "#EBECEC",
+        "share": 0.000629689509232325,
+        "h": 213.6121673003815,
+        "s": 0.025505091320510237,
+        "l": 0.9248366013071896,
+        "chroma": 0.0038340986952400957
+      },
+      {
+        "hex": "#E3E3E4",
+        "share": 0.00044632267568883504,
+        "h": 214.8194271481937,
+        "s": 0.025496110493729067,
+        "l": 0.8920368846839435,
+        "chroma": 0.00550527903469078
+      },
+      {
+        "hex": "#DBDBDC",
+        "share": 0.00042369442814517037,
+        "h": 217.33333333333428,
+        "s": 0.02213592233009711,
+        "l": 0.8605243202253278,
+        "chroma": 0.006174845628859282
+      },
+      {
+        "hex": "#D3D3D4",
+        "share": 0.0003737562266694965,
+        "h": 214.03508771929862,
+        "s": 0.020554366901459314,
+        "l": 0.8297228703589996,
+        "chroma": 0.00699987719513695
+      },
+      {
+        "hex": "#C2C3C5",
+        "share": 0.0003558096855141762,
+        "h": 215.7075913776946,
+        "s": 0.01968453094732969,
+        "l": 0.7669203646370829,
+        "chroma": 0.009176126590987321
+      },
+      {
+        "hex": "#BBBCBD",
+        "share": 0.00032537859398993745,
+        "h": 217.08703374777986,
+        "s": 0.020127270127269878,
+        "l": 0.7369445619974608,
+        "chroma": 0.0105891757182488
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 190,
+        "share": 0.028539682143347605,
+        "size": 11
+      },
+      {
+        "hue": 27,
+        "share": 0.019775527784366847,
+        "size": 9
+      },
+      {
+        "hue": 145,
+        "share": 0.0035955505062485174,
+        "size": 2
+      },
+      {
+        "hue": 86,
+        "share": 0.0038202724128890498,
+        "size": 2
+      }
+    ],
+    "ramped": 0,
+    "shape": "categorical",
+    "pixels": 1281584
+  }
+}

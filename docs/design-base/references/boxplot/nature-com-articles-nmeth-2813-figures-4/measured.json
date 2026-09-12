@@ -1,0 +1,433 @@
+{
+  "url": "https://www.nature.com/articles/nmeth.2813/figures/4",
+  "archive": "url-list",
+  "family": "boxplot",
+  "id": "nature-com-articles-nmeth-2813-figures-4",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept all cookies\"",
+  "entry": null,
+  "style": {
+    "title": "Figure 4: Box plots are a more communicative way to show sample data. | Nature Methods | Nature Methods",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "-apple-system",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 18 | 400 | normal | 0 | none",
+        "count": 41,
+        "sample": "About us",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 16 | 400 | normal | 0 | none",
+        "count": 10,
+        "sample": "View all journals",
+        "colors": [
+          "rgb(34, 34, 34)",
+          "rgb(102, 102, 102)",
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 14 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)",
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.19,
+        "transform": "none",
+        "key": "-apple-system | 20 | 700 | normal | -0.19 | none",
+        "count": 8,
+        "sample": "About Nature Portfolio",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 16 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "Explore content",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "Harding",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Harding | 18 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "From:",
+        "colors": [
+          "rgb(34, 34, 34)",
+          "rgb(2, 94, 141)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Back to article page",
+        "colors": [
+          "rgb(2, 94, 141)",
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 13 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "I agree my information will be processed in accordance with ",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Harding",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.62,
+        "transform": "none",
+        "key": "Harding | 32 | 700 | normal | -0.62 | none",
+        "count": 1,
+        "sample": "Figure 4: Box plots are a more communicative way to show sam",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 14,
+        "weight": "700",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 14 | 700 | italic | 0 | none",
+        "count": 1,
+        "sample": "Nat Methods",
+        "colors": [
+          "rgb(34, 34, 34)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 18 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "Nature Briefing",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "-apple-system",
+        "size": 13,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "-apple-system | 13 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "Nature",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(102, 102, 102)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(34, 34, 34)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1248,
+      "ch": 139
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 454,
+      "nearTheTop": true,
+      "x": 247,
+      "y": 454,
+      "w": 946,
+      "h": 330,
+      "ratio": 2.87
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8631590748926902,
+      "h": 164.57267283609374,
+      "s": 0.05422237964519488,
+      "l": 0.9992604190020296,
+      "chroma": 0.0000802036833006392
+    },
+    "chromatic": [
+      {
+        "hex": "#FFCBCC",
+        "share": 0.00017618040873854828,
+        "h": 359.045261669024,
+        "s": 0.9846796657381619,
+        "l": 0.8976114081996435,
+        "chroma": 0.20163992869875225
+      },
+      {
+        "hex": "#FFC3C5",
+        "share": 0.00010250496508424626,
+        "h": 358.4251968503937,
+        "s": 0.9896103896103896,
+        "l": 0.882046568627451,
+        "chroma": 0.23345588235294124
+      },
+      {
+        "hex": "#FFCDD2",
+        "share": 0.00008328528413095009,
+        "h": 354.2967542503864,
+        "s": 0.9892966360856269,
+        "l": 0.9013574660633483,
+        "chroma": 0.1951734539969835
+      },
+      {
+        "hex": "#FEBBBD",
+        "share": 0.00007047216349541931,
+        "h": 357.93243243243245,
+        "s": 0.9724047306176078,
+        "l": 0.8643493761140819,
+        "chroma": 0.2638146167557932
+      },
+      {
+        "hex": "#FEBCC3",
+        "share": 0.00005765904285988853,
+        "h": 353.94957983193274,
+        "s": 0.9722222222222218,
+        "l": 0.8666666666666667,
+        "chroma": 0.2592592592592592
+      },
+      {
+        "hex": "#FEB4B5",
+        "share": 0.00005445576270100583,
+        "h": 358.81141045958793,
+        "s": 0.9677914110429443,
+        "l": 0.84959630911188,
+        "chroma": 0.29111880046136096
+      },
+      {
+        "hex": "#FEACB3",
+        "share": 0.000048049202383240436,
+        "h": 355.01628664495115,
+        "s": 0.9777070063694266,
+        "l": 0.8358169934640522,
+        "chroma": 0.32104575163398696
+      },
+      {
+        "hex": "#FEA3A5",
+        "share": 0.000048049202383240436,
+        "h": 358.8604821037253,
+        "s": 0.9856011519078475,
+        "l": 0.8184313725490195,
+        "chroma": 0.3579084967320262
+      },
+      {
+        "hex": "#FEB5BA",
+        "share": 0.00004484592222435774,
+        "h": 356.07038123167155,
+        "s": 0.9808245445829339,
+        "l": 0.853921568627451,
+        "chroma": 0.2865546218487395
+      },
+      {
+        "hex": "#FEA4AA",
+        "share": 0.00003843936190659235,
+        "h": 356,
+        "s": 0.9800362976406535,
+        "l": 0.8199346405228758,
+        "chroma": 0.3529411764705882
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8631590748926902,
+        "h": 164.57267283609374,
+        "s": 0.05422237964519488,
+        "l": 0.9992604190020296,
+        "chroma": 0.0000802036833006392
+      },
+      {
+        "hex": "#A9AAAD",
+        "share": 0.01497213146261772,
+        "h": 217.59108730993586,
+        "s": 0.026624401670231317,
+        "l": 0.6704674167484709,
+        "chroma": 0.017547215719835307
+      },
+      {
+        "hex": "#D4D4D5",
+        "share": 0.009901338971106413,
+        "h": 238.17845828933517,
+        "s": 0.014311946016608875,
+        "l": 0.8321033233739954,
+        "chroma": 0.004805856344478832
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.006541098084438465,
+        "h": 187.01298701297705,
+        "s": 0.0033780819513891574,
+        "l": 0.9562251541164948,
+        "chroma": 0.00029575003360782226
+      },
+      {
+        "hex": "#2B2B2B",
+        "share": 0.005138061374847844,
+        "h": 208.97893030794177,
+        "s": 0.004492533075091564,
+        "l": 0.16788787834335728,
+        "chroma": 0.0015084836927289624
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.005099622012941252,
+        "h": 172.34421364985664,
+        "s": 0.003876816179092758,
+        "l": 0.8929364962065227,
+        "chroma": 0.0008301310473938228
+      },
+      {
+        "hex": "#EBECEC",
+        "share": 0.005080402331987956,
+        "h": 182.91497975708717,
+        "s": 0.003991016174118202,
+        "l": 0.9234861409885518,
+        "chroma": 0.0006107360977177789
+      },
+      {
+        "hex": "#131314",
+        "share": 0.00495547440579153,
+        "h": 199.71929824561437,
+        "s": 0.01436660897619018,
+        "l": 0.07543125847624119,
+        "chroma": 0.0021673827902201764
+      },
+      {
+        "hex": "#0B0C0C",
+        "share": 0.00482413991927734,
+        "h": 173.31606217616593,
+        "s": 0.01112135530713381,
+        "l": 0.045189177928807646,
+        "chroma": 0.0010051298075671178
+      },
+      {
+        "hex": "#1B1B1B",
+        "share": 0.004744057915305273,
+        "h": 327.63157894736906,
+        "s": 0.0037499383233828725,
+        "l": 0.10733076485151792,
+        "chroma": 0.0008049674967894049
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 359,
+        "share": 0.0011243513357678265,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 312180
+  }
+}

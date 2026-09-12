@@ -1,0 +1,418 @@
+{
+  "url": "https://www.datawrapper.de/academy/histogram-min-max-median-mean",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "datawrapper-de-academy-histogram-min-max-median-mean",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept all\"",
+  "entry": null,
+  "style": {
+    "title": "How to read a histogram, min, max, median & mean | Datawrapper Academy",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 55,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(30, 131, 164)",
+          "rgb(26, 26, 26)",
+          "rgb(114, 114, 114)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 400 | normal | 0 | none",
+        "count": 47,
+        "sample": "Welcome",
+        "colors": [
+          "rgb(0, 125, 160)",
+          "rgb(26, 26, 26)",
+          "rgb(114, 114, 114)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 16,
+        "sample": "click on the header of any column with numbers to display a ",
+        "colors": [
+          "rgb(26, 26, 26)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 600 | normal | 0 | none",
+        "count": 4,
+        "sample": "Features",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Uploading & Changing Data",
+        "colors": [
+          "rgb(1, 95, 122)",
+          "rgb(26, 26, 26)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 24 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Value distribution (histogram)",
+        "colors": [
+          "rgb(26, 26, 26)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 20,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 20 | 600 | normal | 0 | none",
+        "count": 4,
+        "sample": "Product",
+        "colors": [
+          "rgb(60, 60, 60)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.6,
+        "transform": "uppercase",
+        "key": "Roboto | 12 | 700 | normal | 0.6 | uppercase",
+        "count": 3,
+        "sample": "Visualization Types",
+        "colors": [
+          "rgb(142, 142, 142)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "But the value 90 counts as part of the last range;",
+        "colors": [
+          "rgb(26, 26, 26)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 20 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Academy",
+        "colors": [
+          "rgb(142, 142, 142)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(46, 46, 46)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 32 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How to read a histogram, min, max, median & mean",
+        "colors": [
+          "rgb(26, 26, 26)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(114, 114, 114)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(46, 46, 46)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(0, 125, 160)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(195, 200, 202)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 640,
+      "ch": 80
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 1213,
+      "nearTheTop": true,
+      "x": 414,
+      "y": 1213,
+      "w": 640,
+      "h": 350,
+      "ratio": 1.83
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F9FAF9",
+      "share": 0.7440401785714286,
+      "h": 119.02961456540737,
+      "s": 0.08314722985980025,
+      "l": 0.9764834354225895,
+      "chroma": 0.003910674400861569
+    },
+    "chromatic": [
+      {
+        "hex": "#2C81AA",
+        "share": 0.0008616071428571429,
+        "h": 199.19812291606635,
+        "s": 0.5901659257099823,
+        "l": 0.4181956720512039,
+        "chroma": 0.49360967184801385
+      },
+      {
+        "hex": "#3385AC",
+        "share": 0.00032589285714285717,
+        "h": 199.27580372250424,
+        "s": 0.5451023796347536,
+        "l": 0.4368251410153102,
+        "chroma": 0.47622884770346485
+      },
+      {
+        "hex": "#2A7FA9",
+        "share": 0.00029464285714285714,
+        "h": 199.8065209602293,
+        "s": 0.6034594594594594,
+        "l": 0.4122103386809269,
+        "chroma": 0.4975044563279857
+      },
+      {
+        "hex": "#4B94B6",
+        "share": 0.00020982142857142857,
+        "h": 199.00680816980378,
+        "s": 0.4198755675130317,
+        "l": 0.503796412181894,
+        "chroma": 0.41668752607425946
+      },
+      {
+        "hex": "#5B9DBC",
+        "share": 0.00013392857142857144,
+        "h": 198.87547430148328,
+        "s": 0.41838649155722335,
+        "l": 0.547124183006536,
+        "chroma": 0.3789542483660131
+      },
+      {
+        "hex": "#9BC3D5",
+        "share": 0.0001294642857142857,
+        "h": 198.6369119420989,
+        "s": 0.4024271844660195,
+        "l": 0.7214334009465855,
+        "chroma": 0.22420554428668027
+      },
+      {
+        "hex": "#549ABA",
+        "share": 0.00011160714285714285,
+        "h": 198.89633425305476,
+        "s": 0.42205955747795704,
+        "l": 0.5285490196078432,
+        "chroma": 0.39796078431372545
+      },
+      {
+        "hex": "#83B4CB",
+        "share": 0.00011160714285714285,
+        "h": 198.97034135422496,
+        "s": 0.4067835192351468,
+        "l": 0.6554509803921569,
+        "chroma": 0.28031372549019606
+      },
+      {
+        "hex": "#4491B4",
+        "share": 0.00010267857142857143,
+        "h": 198.55912294440094,
+        "s": 0.44775596072931273,
+        "l": 0.4862745098039216,
+        "chroma": 0.43546462063086105
+      },
+      {
+        "hex": "#ACCCDB",
+        "share": 0.00009821428571428572,
+        "h": 198.95652173913038,
+        "s": 0.39338654503990844,
+        "l": 0.7655080213903743,
+        "chroma": 0.18449197860962552
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F9FAF9",
+        "share": 0.7440401785714286,
+        "h": 119.02961456540737,
+        "s": 0.08314722985980025,
+        "l": 0.9764834354225895,
+        "chroma": 0.003910674400861569
+      },
+      {
+        "hex": "#CDCECD",
+        "share": 0.17379910714285715,
+        "h": 105.78405143153641,
+        "s": 0.013043480525406026,
+        "l": 0.8065997105990941,
+        "chroma": 0.0050452258168172115
+      },
+      {
+        "hex": "#F4F5F4",
+        "share": 0.011665178571428571,
+        "h": 116.9975980784633,
+        "s": 0.04619424513647529,
+        "l": 0.9594215948913052,
+        "chroma": 0.003748977585676494
+      },
+      {
+        "hex": "#F7F8F7",
+        "share": 0.011419642857142857,
+        "h": 120.98808689558425,
+        "s": 0.0742301290054083,
+        "l": 0.9705284459366232,
+        "chroma": 0.004375354520228636
+      },
+      {
+        "hex": "#020302",
+        "share": 0.008058035714285714,
+        "h": 113.64324324324326,
+        "s": 0.19461392804544494,
+        "l": 0.010326435283254576,
+        "chroma": 0.0040193362663625
+      },
+      {
+        "hex": "#DADBDA",
+        "share": 0.005450892857142857,
+        "h": 114.04800000000057,
+        "s": 0.013976162257653474,
+        "l": 0.8563729504905976,
+        "chroma": 0.004014709897062874
+      },
+      {
+        "hex": "#D3D4D3",
+        "share": 0.004107142857142857,
+        "h": 108.89839572192503,
+        "s": 0.011700223993593018,
+        "l": 0.8296824381926684,
+        "chroma": 0.003985507246376807
+      },
+      {
+        "hex": "#EBECEB",
+        "share": 0.0033035714285714287,
+        "h": 113.41176470588313,
+        "s": 0.026620732853115916,
+        "l": 0.9238553259141495,
+        "chroma": 0.004054054054054013
+      },
+      {
+        "hex": "#E3E4E3",
+        "share": 0.0029776785714285712,
+        "h": 115.18248175182484,
+        "s": 0.018397657991566833,
+        "l": 0.8905459035188288,
+        "chroma": 0.0040273980656730934
+      },
+      {
+        "hex": "#F8F9F7",
+        "share": 0.0028482142857142855,
+        "h": 76.9753086419744,
+        "s": 0.10508108108108107,
+        "l": 0.9715717007806257,
+        "chroma": 0.005974552830536606
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 199,
+        "share": 0.0032812500000000007,
+        "size": 24
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 224000
+  }
+}

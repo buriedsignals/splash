@@ -1077,7 +1077,7 @@
     {
       "id": "map.cartogram",
       "medium": "map",
-      "label": "Cartogram",
+      "label": "Cartogram (area distortion — and tile cartogram)",
       "reference": "map-beat/references/types/cartogram.md",
       "dataShape": {
         "summary": "Region geometry, adjacency that matters to the story, and a non-negative value used to distort area.",
@@ -1133,8 +1133,7 @@
         "video",
         "scrolly"
       ],
-      "state": "proof-only",
-      "disabledReason": "The doctrine reference is retained, but Splash has no shipped contour/isoline implementation; choose a supported map treatment instead."
+      "state": "selectable"
     },
     {
       "id": "map.dot-density",
@@ -1160,7 +1159,7 @@
     {
       "id": "map.flow-map",
       "medium": "map",
-      "label": "Flow map (route)",
+      "label": "Flow map (route — and origin-destination)",
       "reference": "map-beat/references/types/flow-map.md",
       "dataShape": {
         "summary": "One ordered route geometry or waypoint sequence whose path and direction are part of the claim.",
@@ -1180,7 +1179,7 @@
     {
       "id": "map.hex-grid",
       "medium": "map",
-      "label": "Hex grid (spatial binning)",
+      "label": "Hex grid (spatial binning — and hex cartogram)",
       "reference": "map-beat/references/types/hex-grid.md",
       "dataShape": {
         "summary": "Enough raw georeferenced events to support spatial aggregation into a regular grid.",

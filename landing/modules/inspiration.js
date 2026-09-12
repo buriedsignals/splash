@@ -18,8 +18,21 @@ Stage.register(
     const TEX_W = 460;
     const TEX_H = 434; // ratio 1.06, the design system's framed stage
 
+    /* COMBIEN DE TRAVAUX TIENNENT DANS L'ENTONNOIR. Trente-six est ce qu'un
+     * lecteur reçoit : de quoi que le flux ne se tarisse jamais, assez peu
+     * pour que trente-six textures et trente-six passes de dessin tiennent la
+     * cadence sur un portable qui fait aussi tourner un hero raymarché.
+     *
+     * `?works=N` en demande un autre nombre, et rien d'autre n'y accède — ni
+     * réglage, ni format, ni appareil. C'est pour une IMAGE FIXE : une carte
+     * est un instant, elle ne profite pas du flux, et il lui faut donc dans ce
+     * seul instant ce que le lecteur voit passer sur plusieurs secondes.
+     * Borné des deux côtés, pour qu'un nombre tapé dans une URL ne mette pas
+     * la page à genoux. */
+    const WORKS = /[?&]works=(\d{1,3})\b/.exec(location.search);
+
     const P = {
-      count: 36,
+      count: WORKS ? Math.max(8, Math.min(96, +WORKS[1])) : 36,
       /* LA BOUCHE EST HORS CADRE, et c'est une contrainte, pas un réglage
        * d'allure. À 3,6 une grande vignette avait déjà son bord intérieur
        * dans le cadre au moment où elle apparaissait : on la voyait se
@@ -204,6 +217,31 @@ Stage.register(
       return x - Math.floor(x);
     }
 
+    /* LES PLACES SUR L'ANNEAU, RÉGULIÈRES PLUTÔT QUE TIRÉES — sur demande.
+     *
+     * Par défaut chaque vignette prend son angle dans le hash, ce qui les
+     * groupe : à un instant donné le champ penche d'un côté, et l'autre est
+     * nu. Sur la page ça se corrige tout seul, parce qu'on la traverse et que
+     * le déséquilibre tourne avec l'orbite. Pour une IMAGE FIXE il ne se
+     * corrige pas : la carte est un instant, et un instant penché reste
+     * penché.
+     *
+     * `?orbit=even` les répartit — mais PAS à pas constant, et c'est tout le
+     * point. L'indice est déjà l'ordre de PROFONDEUR : `u` vaut `i/n`, donc
+     * les vignettes qui traversent le cadre à un instant donné sont une plage
+     * d'indices contiguë. Un angle en `i/n` leur donne alors des angles
+     * contigus eux aussi — la profondeur et l'angle avancent ensemble, et ce
+     * qu'on voit est un paquet. Réparti à pas constant, le champ penchait donc
+     * PLUS qu'en tirant au hasard.
+     *
+     * L'angle avance donc du nombre d'or : 137,5° d'un indice au suivant, ce
+     * qui fait que n'importe quelle plage contiguë d'indices se retrouve
+     * étalée tout autour de l'anneau. C'est ce que fait une pomme de pin, et
+     * pour la même raison.
+     *
+     * Rien d'autre n'y accède — ni réglage, ni format, ni appareil. */
+    const EVEN = /[?&]orbit=even\b/.test(location.search);
+
     function seed(n) {
       const out = [];
       for (let i = 0; i < n; i++) {
@@ -211,7 +249,9 @@ Stage.register(
           // u is where the tile sits along the intake: 0 at the mouth, 1 at the
           // throat. Spreading the seeds evenly keeps the stream continuous.
           u: (i + hash(i * 5 + 1) * 0.6) / n,
-          angle: hash(i * 5 + 2) * 6.283,
+          angle: EVEN
+            ? ((i * 0.6180339887 + (hash(i * 5 + 2) - 0.5) * 0.02) % 1) * 6.283
+            : hash(i * 5 + 2) * 6.283,
           scale: 0.5 + hash(i * 5 + 3) * 0.86,
           lean: (hash(i * 5 + 4) * 2 - 1) * 0.5,
           /* SON PROPRE RAYON. Les places sont réparties régulièrement le long

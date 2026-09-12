@@ -1,4 +1,4 @@
-# Hex grid (spatial binning)
+# Hex grid (spatial binning — and hex cartogram)
 
 ## What it's for
 
@@ -69,3 +69,33 @@ several adjacent classes toward a similar hue under a colour-vision-deficiency
 simulation even when it's built correctly, so the printed number — not the
 colour alone — is what actually lets a reader tell two adjacent classes
 apart.
+
+## The other reading of this type
+
+Everything above is about **binning**: scattered events aggregated into cells so a density reads.
+The same geometry carries a second, unrelated form, and this tree now holds a beat of it —
+`proof/static-hex-grid-europe-protection`.
+
+- **A binning hex grid** — the cells are arbitrary, the aggregation is the point, and the sheet's
+  warning about count-versus-sum above is the trap.
+- **A hex cartogram** — **one hexagon per named unit**, all equal, arranged so the assembly still
+  reads as the territory. The cells are not arbitrary at all: each one IS a country, a
+  constituency, a state. It gives up area and buys the thing a choropleth cannot give — every unit
+  equally visible — which is the honest geometry when the subject is the units rather than their
+  extent.
+
+What the hexagon buys over the square tile, read off Open Innovations' own drawing: **six neighbours,
+every one edge-sharing**. A square grid touches diagonally, so a reader has to decide whether corner
+contact counts as adjacency; a hex grid has no corners to argue about. Its own rules: **the cells are
+separated by a stroke in the ground's colour**, so the grid reads as a surface rather than a scatter;
+**the unit's code sits inside its own cell**, and a cell too narrow to hold it is a refusal, not a
+smaller type size; **a unit that is not in the measure keeps its cell and loses its fill**.
+
+
+## The worked example in this tree
+
+`proof/static-hex-grid-europe-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

@@ -1,0 +1,492 @@
+{
+  "url": "https://www.icaew.com/insights/viewpoints-on-the-news/2025/jun-2025/chart-of-the-week-nato-defence-spending",
+  "archive": "search",
+  "family": "bullet",
+  "id": "icaew-com-insights-viewpoints-on-the-news-2025-jun-2025-chart-of-the-w",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Allow all cookies\"",
+  "entry": null,
+  "style": {
+    "title": "Chart of the week: NATO defence spending | ICAEW",
+    "ground": "rgb(254, 254, 254)",
+    "type": [
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Demi | 12 | 400 | normal | 0 | none",
+        "count": 52,
+        "sample": "Author: ICAEW Insights",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(77, 77, 77)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Regular",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Regular | 16 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Discover the latest MyICAEW app for ACA students and members",
+        "colors": [
+          "rgb(77, 77, 77)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.44,
+        "transform": "uppercase",
+        "key": "AvenirNextLTW02-Demi | 14 | 400 | normal | 0.44 | uppercase",
+        "count": 8,
+        "sample": "Membership",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Bold | 16 | 400 | normal | 0 | none",
+        "count": 8,
+        "sample": "SHARE THIS ARTICLE",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Demi | 18 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Chancellor hints at Budget measures to encourage growth",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Demi | 16 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Find out more",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Regular",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Regular | 12 | 400 | normal | 0 | none",
+        "count": 5,
+        "sample": "Home",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 12.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.64,
+        "transform": "uppercase",
+        "key": "AvenirNextLTW02-Bold | 12.8 | 400 | normal | 0.64 | uppercase",
+        "count": 5,
+        "sample": "About us",
+        "colors": [
+          "rgb(128, 128, 128)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 0,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Demi | 0 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Twitter",
+        "colors": [
+          "rgba(0, 0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Regular",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Regular | 14 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Our chart this week highlights how long-term borrowing costs",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.38,
+        "transform": "uppercase",
+        "key": "AvenirNextLTW02-Demi | 12 | 400 | normal | 0.38 | uppercase",
+        "count": 3,
+        "sample": "ICAEW Community",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 32,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Bold | 32 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Latest charts",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 48,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Bold | 48 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Chart of the week: NATO defence spending",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Demi",
+        "size": 22,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Demi | 22 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Our chart this week looks at how much NATO members would nee",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "AvenirNextLTW02-Bold | 14 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Latest viewpoints",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Regular",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "AvenirNextLTW02-Regular | 14 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Latest tax news",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Bold | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Introducing AddCPD, a new way to record your CPD activities!",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "AvenirNextLTW02-Bold",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "AvenirNextLTW02-Bold | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© ICAEW 2026",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 1168,
+      "ch": 195
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 655,
+      "nearTheTop": true,
+      "x": 435,
+      "y": 655,
+      "w": 570,
+      "h": 760,
+      "ratio": 0.75
+    },
+    "typeSource": "the page only — the graphic is a raster and carries no type this route can read"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.684145891043398,
+      "h": 99.38806174016152,
+      "s": 0.10872826103099495,
+      "l": 0.9995545277887382,
+      "chroma": 0.00009687083773624039
+    },
+    "chromatic": [
+      {
+        "hex": "#6CCABA",
+        "share": 0.13346029547553093,
+        "h": 169.6757907092984,
+        "s": 0.47255942729710654,
+        "l": 0.6077249102529536,
+        "chroma": 0.3707465835075706
+      },
+      {
+        "hex": "#E6A65E",
+        "share": 0.07343951985226223,
+        "h": 31.813200069885653,
+        "s": 0.7307545382234178,
+        "l": 0.6350496821599074,
+        "chroma": 0.5333782019754529
+      },
+      {
+        "hex": "#B288B8",
+        "share": 0.025244690674053556,
+        "h": 292.2634500938611,
+        "s": 0.2532543255736886,
+        "l": 0.6277660039875497,
+        "chroma": 0.1885397392314644
+      },
+      {
+        "hex": "#6CCBB6",
+        "share": 0.0031740535549399816,
+        "h": 166.78533681080958,
+        "s": 0.48027418571444225,
+        "l": 0.6095130124777184,
+        "chroma": 0.37508163992869875
+      },
+      {
+        "hex": "#8BD4E6",
+        "share": 0.0018882733148661126,
+        "h": 191.80735829049272,
+        "s": 0.6433314623720909,
+        "l": 0.722409990891222,
+        "chroma": 0.3571647729996643
+      },
+      {
+        "hex": "#E5A661",
+        "share": 0.0017036011080332409,
+        "h": 31.25303649949264,
+        "s": 0.7195813634452695,
+        "l": 0.639770976141134,
+        "chroma": 0.5184281842818428
+      },
+      {
+        "hex": "#8BD4E9",
+        "share": 0.0009602954755309326,
+        "h": 193.83911551658403,
+        "s": 0.6857038289269592,
+        "l": 0.7295484539969834,
+        "chroma": 0.37089932126696823
+      },
+      {
+        "hex": "#B387B9",
+        "share": 0.0009095106186518929,
+        "h": 291.92400240625625,
+        "s": 0.2665989522078477,
+        "l": 0.627630138349756,
+        "chroma": 0.19854682989947248
+      },
+      {
+        "hex": "#72C6BA",
+        "share": 0.0008818097876269621,
+        "h": 171.30948310695305,
+        "s": 0.42582224869300517,
+        "l": 0.6121804742839544,
+        "chroma": 0.3302843650549225
+      },
+      {
+        "hex": "#B386B6",
+        "share": 0.0008425669436749769,
+        "h": 296.1399509943587,
+        "s": 0.24845327254965802,
+        "l": 0.6205586892291163,
+        "chroma": 0.18854687080311572
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.684145891043398,
+        "h": 99.38806174016152,
+        "s": 0.10872826103099495,
+        "l": 0.9995545277887382,
+        "chroma": 0.00009687083773624039
+      },
+      {
+        "hex": "#B288B6",
+        "share": 0.012123730378578024,
+        "h": 294.6521197478198,
+        "s": 0.23643926343131058,
+        "l": 0.6235618923883339,
+        "chroma": 0.17800949778235753
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0037026777469990764,
+        "h": 120,
+        "s": 0.00014406315728840907,
+        "l": 0.9575729793164148,
+        "chroma": 0.00001222434110803583
+      },
+      {
+        "hex": "#030303",
+        "share": 0.0027746999076638966,
+        "h": 207.09677419354864,
+        "s": 0.0038135071964571325,
+        "l": 0.01326057877393886,
+        "chroma": 0.00010113862516720508
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.002239150507848569,
+        "h": 137.61194029850805,
+        "s": 0.005225801419544899,
+        "l": 0.9222498483929654,
+        "chroma": 0.0008126137052757443
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0016181902123730378,
+        "h": 210.00000000014884,
+        "s": 0.00010493179433387513,
+        "l": 0.8933736119269391,
+        "chroma": 0.000022376996447692754
+      },
+      {
+        "hex": "#DCDCDC",
+        "share": 0.0014704524469067405,
+        "h": 120,
+        "s": 0.000022123404349347246,
+        "l": 0.8608643457382954,
+        "chroma": 0.000006156308677285338
+      },
+      {
+        "hex": "#0B0B0B",
+        "share": 0.001239612188365651,
+        "h": 146.666666666673,
+        "s": 0.0007430033847932383,
+        "l": 0.04422901376565523,
+        "chroma": 0.00006572461386789713
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.0012096029547553093,
+        "h": 100,
+        "s": 0.00006593551506628738,
+        "l": 0.8297447986828319,
+        "chroma": 0.000022451728783123848
+      },
+      {
+        "hex": "#131313",
+        "share": 0.0011842105263157896,
+        "h": 150.0000000000136,
+        "s": 0.0002003405789842444,
+        "l": 0.07631387837786185,
+        "chroma": 0.00003057753315750811
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 170,
+        "share": 0.14395198522622346,
+        "size": 11
+      },
+      {
+        "hue": 32,
+        "share": 0.07813711911357339,
+        "size": 10
+      },
+      {
+        "hue": 292,
+        "share": 0.026996768236380426,
+        "size": 3
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 433200
+  }
+}

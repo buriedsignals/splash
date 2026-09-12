@@ -23,7 +23,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
-import { harvestStyles } from "./harvest-styles.mjs";
+import { harvestStyles, findGraphic, describeGraphic } from "./harvest-styles.mjs";
 import { readPixelPalette } from "./pixel-palette.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,19 @@ const ROOT = resolve(HERE, "..", "..");
 const CORPUS = join(ROOT, "docs", "design-base", "references");
 
 /** The four pools a reference may be drawn from. A record that cannot name one is not filed. */
-export const ARCHIVES = ["url-list", "informationisbeautiful", "datavizproject", "buried-signals"];
+/**
+ * `search` was added on 2026-09-08, when two harvests filed real published work under `url-list`
+ * because the enum had nowhere else to put it. The url list holds ZERO sankey and ZERO alluvial
+ * across 3 827 lines; stamping eight IEA and Carbon Brief pieces as having come from it is a record
+ * lying about its own provenance, which is the one thing these records may never do.
+ */
+export const ARCHIVES = [
+  "url-list",
+  "informationisbeautiful",
+  "datavizproject",
+  "buried-signals",
+  "search",
+];
 
 const CHROMES = [
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -45,6 +57,14 @@ const VIEWPORT = { width: 1440, height: 900 };
 const SETTLE_MS = 6000;
 const AFTER_SCROLL_MS = 3500;
 const BACK_AT_TOP_MS = 1500;
+/** How far down the page the harvester walks looking for a lazily created graphic, and how long it
+ *  waits on each step. Bounded rather than open-ended: a scrollytelling piece can be forty screens
+ *  long, and the graphic that identifies it is never in the fortieth. */
+const MAX_SCROLL_STEPS = 8;
+const SCROLL_STEP_MS = 900;
+/** After the graphic is brought into view, before it is photographed: a scroll-driven canvas draws
+ *  when the reader arrives at it, and a picture taken on arrival is a picture of nothing. */
+const GRAPHIC_SETTLE_MS = 2500;
 
 export function resolveChrome() {
   const found = CHROMES.find(existsSync);
@@ -87,9 +107,17 @@ const CONSENT_SELECTORS = [
   "[data-testid='GDPR-accept']",
 ];
 
-/** Only these words, only on a button, only when it is actually painted. */
-const CONSENT_WORDS =
-  /^(accept|accept all|i accept|agree|i agree|allow all|got it|ok|continue|j.?accepte|tout accepter|accepter|aceptar|acepto|zustimmen|akzeptieren)$/i;
+/**
+ * Only these openings, only on a button, only when it is actually painted.
+ *
+ * ANCHORED AT THE START, NOT AT BOTH ENDS. A whole-label match missed every consent button that
+ * says what it does — "Zustimmen und weiter", "Accept all cookies", "Accepter et fermer" — which is
+ * most of them outside the English-speaking web. The trailing allowance is capped at twenty
+ * characters so the opening still has to be the button's subject rather than a word inside a
+ * sentence.
+ */
+export const CONSENT_WORDS =
+  /^(accept|i accept|agree|i agree|allow all|tillad alle|godkend alle|got it|ok|continue|j.?accepte|tout accepter|accepter|aceptar|acepto|accetta|zustimmen|akzeptieren|alle akzeptieren|jag godkänner)\b.{0,20}$/i;
 
 /**
  * Dismiss a consent dialog if one is in the way. Returns what it clicked, or null — recorded in the
@@ -169,8 +197,8 @@ function firecrawlScreenshot(url, out) {
  * it — and only on a control whose whole label is one of a short list of openings. A page with an
  * article below the fold is already showing its content and is never touched.
  */
-const ENTRY_WORDS =
-  /^(start( watching| reading| here)?|explore( the map| the data)?|enter|begin|view the (map|graphic|data)|see the (map|graphic|data)|launch|open the map)$/i;
+export const ENTRY_WORDS =
+  /^(start( watching| reading| here)?|explore( the map| the data)?|enter|begin|play|watch( the film| the video)?|view the (map|graphic|data)|see the (map|graphic|data)|launch|open the map)$/i;
 
 /** A page taller than this much of the viewport already has content to scroll to. */
 const ENTRY_MAX_PAGE_RATIO = 1.6;
@@ -201,32 +229,101 @@ async function openEntry(page) {
   );
 }
 
-/** Below this the element is a logo, an icon or a spacer, not the piece's graphic. */
-const MIN_GRAPHIC_PX = { w: 200, h: 120 };
+/**
+ * A GRAPHIC IS NEVER THE SITE'S OWN CHROME, and this cost four families their colour readings.
+ *
+ * The first picker took the largest painted `svg | canvas | figure img` above no floor at all. On
+ * `100.datavizproject.com` that returned nothing — Ferdio's wordmark `logo-100.svg` is 280 x 80 —
+ * so the pixel route fell back to the WHOLE PAGE and reported the site's fixed navigation bar,
+ * `#3274DA` at 8.6-10.5 %, which happens to be the same blue its charts are drawn in. Four of five
+ * parallel harvests found this independently and not one of them found it by looking: the number
+ * was plausible, and three records agreeing with each other looked like corroboration.
+ *
+ * The picker itself now lives in `harvest-styles.mjs` and is called from here, so the graphic is
+ * decided ONCE and both halves of the record name the same object. What this file does with it is
+ * photograph it, and read the type inside it when it turns out to be another document.
+ */
 
 /**
- * A handle on the page's largest painted graphic, or null. Returned as a handle rather than a box
- * so the caller can photograph it: a box would have to be turned back into pixels, and that is the
- * arithmetic that put a crop below the fold on the first real harvest.
+ * A FIXED HEADER LANDS INSIDE AN ELEMENT SCREENSHOT, AND IT IS THE SAME COLOUR AS THE CHART.
+ *
+ * Photographing the element rather than cropping the page fixed the coordinate arithmetic
+ * (correction 13) and left a residue nobody expected: puppeteer scrolls the element into view, and a
+ * `position: fixed` masthead is then painted OVER its first rows. On `100.datavizproject.com` the
+ * panel starts 172 px down under a fixed nav, so every clip carries three or four rows of solid
+ * `rgb(50, 116, 218)` — 2 472 px, 0.365 % of every frame, identical across all five records.
+ *
+ * That would be a rounding error if the nav were any other colour. It is the same blue Ferdio draws
+ * its charts in. Measured by two agents independently: the strip is **96 %** of one record's entire
+ * reported blue, 84 % of another's, and 55.7 % of a third's — and it is why one record alone
+ * buckets at `#3274D9` where its siblings say `#3274D8`.
+ *
+ * So anything that floats is hidden for the length of the photograph and restored afterwards. The
+ * page is left as it was found; only the picture changes.
+ *
+ * EXCEPT THE GRAPHIC ITSELF, AND WHATEVER HOLDS IT. A scrollytelling chart is `position: sticky` —
+ * that is how it stays put while the prose moves past it — so a rule that hid everything floating
+ * hid the piece. Measured within the hour, on ABC's mullet count: its 1440 x 900 canvas came back
+ * 97.76 % cream, zero chromatic, `monochrome`. A true photograph of a graphic this function had
+ * just made invisible, filed as the piece's palette, and it went green. The masthead fix had become
+ * the defect it was written to remove.
  */
-async function largestGraphic(page) {
-  const handles = await page.$$("svg, canvas, figure img, picture img");
-  let best = null;
-  let bestArea = 0;
-  for (const handle of handles) {
-    const box = await handle.boundingBox();
-    if (!box || box.width < MIN_GRAPHIC_PX.w || box.height < MIN_GRAPHIC_PX.h) {
-      await handle.dispose();
-      continue;
+export async function withFloatingChromeHidden(page, take, target = null) {
+  // THE FRAME HAS ITS OWN CHROME, AND THIS PASS DID NOT REACH IT. Measured on NSIDC's Charctic:
+  // the graphic is an iframe, its masthead is sticky INSIDE that frame's own document, and hiding
+  // floating elements in the host page left it in the picture. `#C4E0F5` / `#003366` / `#0062CC`
+  // led the palette; `measuredFrom: "graphic.png"` was true and useless. It was caught only because
+  // the style route independently named a different set of marks.
+  const insideFrame = target ? await target.contentFrame() : null;
+  const hiddenInside = insideFrame
+    ? await hideFloating(insideFrame, null).catch(() => null)
+    : null;
+  const hidden = await page.evaluate((graphic) => {
+    const marks = [];
+    for (const el of document.querySelectorAll("body *")) {
+      const position = getComputedStyle(el).position;
+      if (position !== "fixed" && position !== "sticky") continue;
+      if (graphic && (el === graphic || el.contains(graphic))) continue;
+      marks.push(el.style.visibility);
+      el.setAttribute("data-harvest-hidden", String(marks.length - 1));
+      el.style.visibility = "hidden";
     }
-    const area = box.width * box.height;
-    if (area > bestArea) {
-      if (best) await best.dispose();
-      best = handle;
-      bestArea = area;
-    } else await handle.dispose();
+    return marks;
+  }, target);
+  try {
+    return await take();
+  } finally {
+    await restoreFloating(page, hidden);
+    if (insideFrame && hiddenInside)
+      await restoreFloating(insideFrame, hiddenInside).catch(() => {});
   }
-  return best;
+}
+
+/** Hide everything floating in one document, remembering what each element had. */
+function hideFloating(context, graphic) {
+  return context.evaluate((keep) => {
+    const marks = [];
+    for (const el of document.querySelectorAll("body *")) {
+      const position = getComputedStyle(el).position;
+      if (position !== "fixed" && position !== "sticky") continue;
+      if (keep && (el === keep || el.contains(keep))) continue;
+      marks.push(el.style.visibility);
+      el.setAttribute("data-harvest-hidden", String(marks.length - 1));
+      el.style.visibility = "hidden";
+    }
+    return marks;
+  }, graphic);
+}
+
+/** Put one document back exactly as it was found. */
+function restoreFloating(context, marks) {
+  return context.evaluate((was) => {
+    for (const el of document.querySelectorAll("[data-harvest-hidden]")) {
+      const at = Number(el.getAttribute("data-harvest-hidden"));
+      el.style.visibility = was[at] ?? "";
+      el.removeAttribute("data-harvest-hidden");
+    }
+  }, marks);
 }
 
 /**
@@ -287,8 +384,24 @@ export async function harvestReference({ url, family, archive, id, browser, corp
     // Then the piece's own door, if it has one and nothing else.
     record.entry = await openEntry(page);
     if (record.entry) await new Promise((r) => setTimeout(r, 4000));
-    // Scroll once and back, so lazy graphics and a scrollytelling first step actually paint.
-    await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
+    // ONE SCROLL DOWN AND BACK WAS NOT ENOUGH, MEASURED.
+    //
+    // The first version scrolled 1.2 viewports and came back. On informationisbeautiful.net the
+    // embed frame that holds the actual visualisation is not in the document at that point at all —
+    // it is created when the reader reaches it, five or six viewports down. The harvester saw a
+    // page with a logo and a promo banner on it and reported, correctly, that there was no graphic.
+    // So it now walks the page to the bottom, bounded, and comes back to the top to be measured.
+    // The bottom is detected AFTER the wait, never during the same evaluate: a page with
+    // `scroll-behavior: smooth` has not moved yet when `scrollBy` returns, so a synchronous check
+    // reads "did not move" on the very first step and the walk ends before it starts.
+    let previousY = -1;
+    for (let step = 0; step < MAX_SCROLL_STEPS; step += 1) {
+      await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+      await new Promise((r) => setTimeout(r, SCROLL_STEP_MS));
+      const y = await page.evaluate(() => window.scrollY);
+      if (y === previousY) break;
+      previousY = y;
+    }
     await new Promise((r) => setTimeout(r, AFTER_SCROLL_MS));
     await page.evaluate(() => window.scrollTo(0, 0));
     await new Promise((r) => setTimeout(r, BACK_AT_TOP_MS));
@@ -297,7 +410,17 @@ export async function harvestReference({ url, family, archive, id, browser, corp
 
     try {
       record.style = await harvestStyles(page);
-      record.routes.style = { state: "ok" };
+      // A ROUTE THAT READ NOTHING HAS NOT RETURNED OK. `harvestStyles` succeeding is not the same as
+      // its having found type, and `a-record-names-its-route` has always required that `ok` carry at
+      // least one tuple — so a page with no readable text produced a record its own guard refused.
+      // An agent met this on a 2008 NYT archive page and repaired the record BY HAND, which is a
+      // measurement written by a person (correction 6). The repair belongs here.
+      record.routes.style = record.style.type?.length
+        ? { state: "ok" }
+        : {
+            state: "not-applicable",
+            why: "the document painted no text this route could read — an archived page, a canvas-only piece, or a frame that renders none",
+          };
     } catch (err) {
       record.routes.style = { state: "failed", why: String(err).slice(0, 300) };
     }
@@ -310,14 +433,88 @@ export async function harvestReference({ url, family, archive, id, browser, corp
       // first real harvest returned `crop 0,1840,1440,900` against a 1440x900 image and read zero
       // pixels. Screenshotting the element scrolls it into view and captures exactly it — no
       // coordinate arithmetic, and the palette is the GRAPHIC's rather than the site's chrome.
-      const target = await largestGraphic(page);
-      const measuredFrom = target ? join(dir, "graphic.png") : shot;
-      if (target) {
-        await target.screenshot({ path: measuredFrom });
+      const { element: target, why } = await findGraphic(page);
+      if (record.style) record.style.graphic = target ? await describeGraphic(target) : null;
+      if (!target) {
+        // A page with no single graphic has none, and saying WHICH way it has none is worth more
+        // than a colour reading of the site. The picker supplies the reason; this file does not
+        // restate it, because a reason written in two places is a reason that drifts.
+        record.routes.pixel = { state: "not-applicable", why };
+      } else {
+        const measuredFrom = join(dir, "graphic.png");
+        // CONSENT IS ASKED ONCE, EARLY, AND A PANEL THAT ARRIVES LATER IS NEVER TOUCHED.
+        //
+        // Two independent publications in one family came back measured through the same French
+        // consent panel, both routes `ok`, both `consent: null`. `populationpyramids.org`'s leading
+        // chromatic entry is `#4CAF50` at 1.256 % — the green *Tout accepter* button — and the wash
+        // MULTIPLIES every colour beneath it, so `two-records-that-agree-exactly-are-both-wrong` is
+        // structurally blind to it. Its wording is in `CONSENT_WORDS` and the handler still returned
+        // null, which leaves two possibilities: the panel arrived after the handler ran at
+        // `SETTLE_MS`, or its button is not a control this handler recognises.
+        //
+        // THE MECHANISM IS INFERRED, NOT MEASURED, AND THAT IS WORTH SAYING. The panel could not be
+        // reproduced: probed at 3, 6, 10, 16 and 24 seconds on a clean profile it never appeared, so
+        // it is conditioned on something this machine does not have. Asking again immediately before
+        // the photograph covers both possibilities and costs one evaluate when there is nothing
+        // there. If a record still comes back veiled, this comment is where the next reader starts.
+        record.consentBeforeGraphic = await dismissConsent(page);
+        if (record.consentBeforeGraphic) await new Promise((r) => setTimeout(r, 1500));
+        // A SCROLL-DRIVEN CANVAS IS BLANK UNTIL IT HAS BEEN LOOKED AT.
+        //
+        // Measured on ABC's mullet-count piece: its chart is a 1440 x 900 canvas 1 840 px down,
+        // drawn as the reader arrives at it. The harvester scrolls the page, comes back to the top,
+        // and `element.screenshot()` then scrolls the canvas into view a second time and photographs
+        // it in the same instant — 97.76 % cream, zero chromatic, `monochrome`. A true picture of a
+        // canvas that had not drawn yet, filed as the piece's palette. It is `SETTLE_MS` again, at
+        // the graphic's own scale: bring it into view, then let it draw before taking the picture.
+        await target.evaluate((el) => el.scrollIntoView({ block: "center" }));
+        await new Promise((r) => setTimeout(r, GRAPHIC_SETTLE_MS));
+        await withFloatingChromeHidden(
+          page,
+          () => target.screenshot({ path: measuredFrom }),
+          target,
+        );
+        record.pixel = readPixelPalette(measuredFrom);
+        record.routes.pixel = { state: "ok", measuredFrom: "graphic.png" };
+
+        // THE GRAPHIC'S TYPE IS OFTEN IN ANOTHER DOCUMENT.
+        //
+        // Every informationisbeautiful.net piece embeds its visualisation from `vizsweet.com`; the
+        // host page carries the article, the byline and the promo banner, and NOT ONE LABEL of the
+        // graphic. Twenty records were filed with 17-23 type tuples that were the publisher's
+        // article furniture — measured, green, and about the wrong document. So when the graphic is
+        // a frame its own type is harvested too, and kept beside the host's rather than instead of
+        // it: the article's voice is a real reading, it is just not the graphic's.
+        const frame = await target.contentFrame();
+        // WHOSE TYPE IS THIS? The style route reads a DOCUMENT, and the graphic is one element in
+        // it. Three honest answers, and until now the record gave none of them: a raster carries no
+        // readable type at all, so `style.type` is purely the publisher's article furniture and the
+        // record still looked complete — measured on four of five boxplot references, all `img`,
+        // all describing zero labels on their own plates. The iframe case had a second reading to
+        // compare against; the raster case has nothing, which is why it needed saying out loud.
+        if (record.style)
+          record.style.typeSource = frame
+            ? "the graphic's own document, in style.graphicFrame"
+            : record.style.graphic?.tag === "img"
+              ? "the page only — the graphic is a raster and carries no type this route can read"
+              : "the page, which contains the graphic — the two are not separated";
+        if (frame && record.style)
+          try {
+            const inside = await harvestStyles(frame);
+            // A frame that renders no text has not been read, whatever the call returned. An empty
+            // `type` array is indistinguishable from a page with no typography, and only one of
+            // those is a thing that happens.
+            record.style.graphicFrame = inside.type?.length
+              ? { url: frame.url(), ...inside }
+              : {
+                  url: frame.url(),
+                  why: "the frame rendered no text — it is empty, cross-origin without content, or an unfilled slot",
+                };
+          } catch (err) {
+            record.style.graphicFrame = { url: frame.url(), why: String(err).slice(0, 200) };
+          }
         await target.dispose();
       }
-      record.pixel = readPixelPalette(measuredFrom);
-      record.routes.pixel = { state: "ok", measuredFrom: target ? "graphic.png" : "screenshot.png" };
     } catch (err) {
       record.routes.pixel = { state: "failed", why: String(err).slice(0, 300) };
     }

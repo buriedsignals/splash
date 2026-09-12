@@ -1,0 +1,539 @@
+{
+  "url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/dv-vd/pyramid/index-eng.cfm",
+  "archive": "search",
+  "family": "population-pyramid",
+  "id": "www12-statcan-gc-ca-census-recensement-2021-dp-pd-dv-vd-pyramid-index-",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Age Pyramids",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Noto Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 16 | 400 | normal | 0 | none",
+        "count": 29,
+        "sample": "Français",
+        "colors": [
+          "rgb(40, 65, 98)",
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 14 | 400 | normal | 0 | none",
+        "count": 29,
+        "sample": "Contact StatCan",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(40, 65, 98)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 20 | 400 | normal | 0 | none",
+        "count": 22,
+        "sample": "Canada",
+        "colors": [
+          "rgb(68, 68, 68)",
+          "rgb(41, 83, 118)",
+          "rgb(51, 51, 51)",
+          "rgb(40, 65, 98)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 16 | 700 | normal | 0 | none",
+        "count": 14,
+        "sample": "Skip to Invitation Manager Popup",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 12 | 700 | normal | 0 | none",
+        "count": 13,
+        "sample": "100",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "sans-serif",
+        "size": 10,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "sans-serif | 10 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "0%",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 20 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Change visualization",
+        "colors": [
+          "rgb(51, 51, 51)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 16 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Comparison",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 80, 117)"
+        ]
+      },
+      {
+        "family": "“Helvetica Neue”",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "“Helvetica Neue” | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "You are one of the few visitors who have been selected to sh",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 15,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 15 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "April 27, 2022",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "“Helvetica Neue”",
+        "size": 18.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "“Helvetica Neue” | 18.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Website Survey",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "“Helvetica Neue”",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "“Helvetica Neue” | 16 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Yes",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "“Helvetica Neue”",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "“Helvetica Neue” | 16 | 500 | normal | 0 | none",
+        "count": 2,
+        "sample": "No, thank you.",
+        "colors": [
+          "rgb(38, 55, 74)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "How to use",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 80, 117)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 24,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 24 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Canada vs Canada—2021",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 13 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Canada",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 11 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Men+ percent of total population",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Noto Sans",
+        "size": 17.6,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Noto Sans | 17.6 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Number (proportion)—Age Total",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 19.2,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 19.2 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Statistics Canada",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 38,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 38 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Age Pyramids",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 36,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 36 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Comparison Age and Gender Pyramid",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Lato",
+        "size": 22,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Lato | 22 | 600 | normal | 0 | none",
+        "count": 1,
+        "sample": "Notes:",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(175, 175, 175)",
+        "count": 202
+      },
+      {
+        "colour": "stroke rgb(110, 78, 163)",
+        "count": 2
+      }
+    ],
+    "column": {
+      "px": 1140,
+      "ch": 143
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 992,
+      "nearTheTop": true,
+      "x": 170,
+      "y": 992,
+      "w": 1080,
+      "h": 396,
+      "ratio": 2.73
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.39193789749345304,
+      "h": 0,
+      "s": 0,
+      "l": 0.9988809221010984,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#6E4EA3",
+        "share": 0.007171249532360644,
+        "h": 262.5882352941177,
+        "s": 0.35269709543568456,
+        "l": 0.4725490196078431,
+        "chroma": 0.33333333333333326
+      },
+      {
+        "hex": "#7E66A6",
+        "share": 0.0012743172465394688,
+        "h": 262.5006450873018,
+        "s": 0.2644692644237696,
+        "l": 0.5255153804641123,
+        "chroma": 0.2509731966180968
+      },
+      {
+        "hex": "#927ABA",
+        "share": 0.0009493078937523382,
+        "h": 262.500865950814,
+        "s": 0.3166380287354221,
+        "l": 0.6036945812807881,
+        "chroma": 0.25097073312083457
+      },
+      {
+        "hex": "#8A72B2",
+        "share": 0.0006055929667040779,
+        "h": 262.5680745491952,
+        "s": 0.29335747505946663,
+        "l": 0.573518055870997,
+        "chroma": 0.2502233325762737
+      },
+      {
+        "hex": "#856DAD",
+        "share": 0.00019640852974186308,
+        "h": 262.5503355704698,
+        "s": 0.28074950277399774,
+        "l": 0.554014939309057,
+        "chroma": 0.2504201680672269
+      },
+      {
+        "hex": "#8870AF",
+        "share": 0.00004676393565282454,
+        "h": 262.8571428571429,
+        "s": 0.2825112107623319,
+        "l": 0.5627450980392157,
+        "chroma": 0.24705882352941178
+      },
+      {
+        "hex": "#9078B7",
+        "share": 0.000009352787130564908,
+        "h": 262.8571428571429,
+        "s": 0.3043478260869566,
+        "l": 0.5941176470588235,
+        "chroma": 0.24705882352941178
+      },
+      {
+        "hex": "#8068A7",
+        "share": 0.000002338196782641227,
+        "h": 262.8571428571429,
+        "s": 0.2635983263598326,
+        "l": 0.5313725490196078,
+        "chroma": 0.24705882352941178
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.39193789749345304,
+        "h": 0,
+        "s": 0,
+        "l": 0.9988809221010984,
+        "chroma": 0
+      },
+      {
+        "hex": "#AFAFAF",
+        "share": 0.3250070145903479,
+        "h": 0,
+        "s": 0,
+        "l": 0.686269064709028,
+        "chroma": 0
+      },
+      {
+        "hex": "#EBEBEB",
+        "share": 0.03177843247287692,
+        "h": 0,
+        "s": 0,
+        "l": 0.9232277415417641,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0312102506546951,
+        "h": 0,
+        "s": 0,
+        "l": 0.9560877152779002,
+        "chroma": 0
+      },
+      {
+        "hex": "#DCDCDC",
+        "share": 0.031009165731387952,
+        "h": 0,
+        "s": 0,
+        "l": 0.8618405528400472,
+        "chroma": 0
+      },
+      {
+        "hex": "#B4B4B4",
+        "share": 0.030932005237560792,
+        "h": 0,
+        "s": 0,
+        "l": 0.7052278194519171,
+        "chroma": 0
+      },
+      {
+        "hex": "#C3C3C3",
+        "share": 0.030190796857463523,
+        "h": 0,
+        "s": 0,
+        "l": 0.7648364798211726,
+        "chroma": 0
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.02943789749345305,
+        "h": 0,
+        "s": 0,
+        "l": 0.8277780373467895,
+        "chroma": 0
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.028556397306397308,
+        "h": 0,
+        "s": 0,
+        "l": 0.7981931821283332,
+        "chroma": 0
+      },
+      {
+        "hex": "#E3E3E3",
+        "share": 0.027368593340815563,
+        "h": 0,
+        "s": 0,
+        "l": 0.8920813126617584,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 263,
+        "share": 0.010255331088664423,
+        "size": 8
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 427680
+  }
+}

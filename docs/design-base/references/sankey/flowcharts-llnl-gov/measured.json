@@ -1,0 +1,426 @@
+{
+  "url": "https://flowcharts.llnl.gov/",
+  "archive": "url-list",
+  "family": "sankey",
+  "id": "flowcharts-llnl-gov",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Energy Flow Charts | Lawrence Livermore National Laboratory",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 55,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(51, 102, 204)",
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 2.7,
+        "transform": "none",
+        "key": "Open Sans | 18 | 400 | normal | 2.7 | none",
+        "count": 5,
+        "sample": "SITE MAP",
+        "colors": [
+          "rgb(13, 39, 83)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 9,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 9 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Lawrence Livermore National Laboratory",
+        "colors": [
+          "rgb(192, 192, 192)",
+          "rgb(237, 190, 67)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Commodities",
+        "colors": [
+          "rgba(0, 0, 0, 0.65)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 12 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Home",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Source Sans Pro Web",
+        "size": 12.8,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Source Sans Pro Web | 12.8 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "An official website of the United States government",
+        "colors": [
+          "rgb(89, 89, 89)",
+          "rgb(0, 94, 162)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Open Sans | 14 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Flowcharts",
+        "colors": [
+          "rgb(87, 87, 87)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 80,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 80 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Energy Flow Charts:",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Charting the Complex Relationships among Energy, Water, and ",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 24 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Energy, Water, and Carbon Informatics",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "In the news",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "Science and Technology Review",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(114, 114, 114)",
+        "count": 4
+      },
+      {
+        "colour": "stroke rgb(114, 114, 114)",
+        "count": 4
+      }
+    ],
+    "column": {
+      "px": 1146,
+      "ch": 164
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 573,
+      "nearTheTop": true,
+      "x": 732,
+      "y": 573,
+      "w": 561,
+      "h": 319,
+      "ratio": 1.76
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.5221140037662257,
+      "h": 117.95252225513916,
+      "s": 0.11222111222123457,
+      "l": 0.9994958540797227,
+      "chroma": 0.00011315163179059784
+    },
+    "chromatic": [
+      {
+        "hex": "#006000",
+        "share": 0.08337105146988975,
+        "h": 120.01940902386863,
+        "s": 0.9965313049381213,
+        "l": 0.1887550596646165,
+        "chroma": 0.37620065184250645
+      },
+      {
+        "hex": "#46AAF5",
+        "share": 0.058393263261417416,
+        "h": 205.7108588455093,
+        "s": 0.8971166197437408,
+        "l": 0.6175825124308096,
+        "chroma": 0.6861461675579321
+      },
+      {
+        "hex": "#FFBBC6",
+        "share": 0.024793388429752067,
+        "h": 350.2741349265621,
+        "s": 0.9945596735804145,
+        "l": 0.8661332732326648,
+        "chroma": 0.2662768961539991
+      },
+      {
+        "hex": "#E69A38",
+        "share": 0.020775708402483252,
+        "h": 33.811737613787265,
+        "s": 0.7761705705705706,
+        "l": 0.5609594025883619,
+        "chroma": 0.6815407819932706
+      },
+      {
+        "hex": "#CC0001",
+        "share": 0.00825328706575249,
+        "h": 359.71907648137807,
+        "s": 0.9987057207144423,
+        "l": 0.40002389581424985,
+        "chroma": 0.7990123063443387
+      },
+      {
+        "hex": "#4AACF5",
+        "share": 0.00317391134282154,
+        "h": 205.68036944820392,
+        "s": 0.8940047474346301,
+        "l": 0.6262462027064346,
+        "chroma": 0.6682753383043357
+      },
+      {
+        "hex": "#086508",
+        "share": 0.0025815969020837174,
+        "h": 120,
+        "s": 0.8489162855438456,
+        "l": 0.21343688990747817,
+        "chroma": 0.36238010355657413
+      },
+      {
+        "hex": "#911391",
+        "share": 0.0024307243558580457,
+        "h": 299.97369766932127,
+        "s": 0.7660491408742375,
+        "l": 0.32214559386973174,
+        "chroma": 0.49355871084065805
+      },
+      {
+        "hex": "#42C143",
+        "share": 0.002419548611693181,
+        "h": 120.64912631598087,
+        "s": 0.5056404975773903,
+        "l": 0.5074627541547797,
+        "chroma": 0.49809355612914913
+      },
+      {
+        "hex": "#3FC041",
+        "share": 0.0023692577629512907,
+        "h": 120.72496618286843,
+        "s": 0.5060029228407051,
+        "l": 0.49997225305216425,
+        "chroma": 0.5059748427672955
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.5221140037662257,
+        "h": 117.95252225513916,
+        "s": 0.11222111222123457,
+        "l": 0.9994958540797227,
+        "chroma": 0.00011315163179059784
+      },
+      {
+        "hex": "#B9B9B9",
+        "share": 0.07976128610463849,
+        "h": 78.6206896556481,
+        "s": 0.00002906193097483883,
+        "l": 0.7258503737770855,
+        "chroma": 0.000015934635028136412
+      },
+      {
+        "hex": "#616161",
+        "share": 0.02441341312814667,
+        "h": 204.00000000029684,
+        "s": 0.000011778008103273816,
+        "l": 0.38104470444620975,
+        "chroma": 0.00000897589523335407
+      },
+      {
+        "hex": "#000000",
+        "share": 0.007308936683821434,
+        "h": 257.27272727272725,
+        "s": 0.07300884955752214,
+        "l": 0.0013551598009234275,
+        "chroma": 0.00019787731606404034
+      },
+      {
+        "hex": "#696969",
+        "share": 0.0058113869657295805,
+        "h": 10.909090909069008,
+        "s": 0.000050175385780322346,
+        "l": 0.41333144796380095,
+        "chroma": 0.00004147812971344589
+      },
+      {
+        "hex": "#E2E2E2",
+        "share": 0.0026374756229080405,
+        "h": 14.457831325305044,
+        "s": 0.003046877867919859,
+        "l": 0.8868353273512795,
+        "chroma": 0.0006895978730475649
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.002553657541671556,
+        "h": 114.60937499999802,
+        "s": 0.02499023818820813,
+        "l": 0.9560475393658557,
+        "chroma": 0.00219676492041021
+      },
+      {
+        "hex": "#D3D3D3",
+        "share": 0.0023301426583742643,
+        "h": 1.7241379310356058,
+        "s": 0.004766339779762183,
+        "l": 0.8283443833168759,
+        "chroma": 0.0016363379884327678
+      },
+      {
+        "hex": "#B4B4B4",
+        "share": 0.002162506495901296,
+        "h": 191.249999999994,
+        "s": 0.0008247139273565108,
+        "l": 0.7051122257688605,
+        "chroma": 0.00048639610883116635
+      },
+      {
+        "hex": "#BDD5BD",
+        "share": 0.0014472588693499628,
+        "h": 119.98125585754453,
+        "s": 0.22944591785535068,
+        "l": 0.7887652358240593,
+        "chroma": 0.09693390869861451
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 120,
+        "share": 0.09877122692907314,
+        "size": 11
+      },
+      {
+        "hue": 206,
+        "share": 0.0655904425035902,
+        "size": 5
+      },
+      {
+        "hue": 350,
+        "share": 0.034069256086589665,
+        "size": 3
+      },
+      {
+        "hue": 34,
+        "share": 0.025944490078733118,
+        "size": 4
+      }
+    ],
+    "ramped": 4,
+    "shape": "categorical",
+    "pixels": 178959
+  }
+}

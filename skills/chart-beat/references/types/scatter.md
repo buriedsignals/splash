@@ -61,3 +61,11 @@ own corner furniture: an axis label or title sitting in the plot's own corner ca
 a real point that happens to fall underneath it — a reader loses a data point and never knows it
 was there. If a point could land under a corner label, give the axis a little extra headroom on
 that side rather than trusting the two to never collide.
+
+## The worked example in this tree
+
+`proof/static-income-life-expectancy` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

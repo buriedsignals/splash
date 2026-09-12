@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>L'Europe compte 453 GW bas-carbone, et l'eau et l'atome en portent encore 79 %</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #1F5C8B;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--title-size:27px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:11px;--label-size:14.5px;--label-weight:700;--note-size:10px;--filter-size:13px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:700;font-style:normal;letter-spacing:1.6px;text-transform:uppercase;color:#1F5C8B;margin:0 0 6px">Énergie · Europe</p><h2 class="chart-title" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:27px;font-weight:700;font-style:normal;letter-spacing:-0.3px;text-transform:none;color:#000000;margin:0 0 6px">L&#x27;Europe compte 453 GW bas-carbone, et l&#x27;eau et l&#x27;atome en portent encore 79 %</h2><p class="chart-caveat" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:0">Une cellule par pays, sa SURFACE proportionnelle à sa capacité bas-carbone installée, sur 8 299 centrales. Tous les pays du fichier sont dessinés, y compris ceux trop petits pour porter un nom : un treemap qui laisse tomber sa queue est un camembert avec de meilleures manières.</p></div><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:700;font-style:normal;letter-spacing:1.3px;text-transform:uppercase;color:#000000;margin:8px 0 4px;flex:0 0 auto">8 pays ont basculé — le vent et le soleil y font plus de la moitié du parc bas-carbone : Royaume-Uni, Portugal, Pologne, Pays-Bas, Irlande, Danemark, Estonie, Biélorussie. Ils pèsent 15 % de la capacité européenne. La plus grosse cellule, France, n&#x27;en est pas : 14 % de vent et de soleil.</p><div class="chart-plot" style="--y-gutter:0px;--x-axis-h:0px;aspect-ratio:980 / 480"><div class="y-axis"></div><svg role="group" aria-label="L&#x27;Europe compte 453 GW bas-carbone, et l&#x27;eau et l&#x27;atome en portent encore 79 %" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 980 480" preserveAspectRatio="none"><desc>Un pavage de 41 rectangles, un par pays, chacun dimensionné par sa capacité bas-carbone. Le plus grand est France avec 96,2 GW ; les plus petits, en bas à droite, sont des bandes de quelques pixels. Les 8 pays où le vent et le soleil dépassent la moitié du parc sont colorés et représentent 15 % de la capacité totale.</desc><rect x="0" y="0" width="980" height="480" fill="#FFFFFF"></rect><rect x="0" y="0" width="310.10225250919086" height="322.12383662267246" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="0" y="322.12383662267246" width="310.10225250919086" height="157.87616337732757" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="310.10225250919086" y="0" width="224.21029619609035" height="179.5328041810981" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="310.10225250919086" y="179.5328041810981" width="224.21029619609035" height="152.73943218955947" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="310.10225250919086" y="332.27223637065754" width="224.21029619609035" height="147.7277636293424" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="534.3125487052812" y="0" width="185.63843341859058" height="173.9165191366911" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="719.9509821238718" y="0" width="138.98556152849554" height="173.9165191366911" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="858.9365436523673" y="0" width="121.06345634763267" height="173.9165191366911" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="534.3125487052812" y="173.9165191366911" width="103.00088001868109" height="155.65244331360776" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="534.3125487052812" y="329.56896245029884" width="103.00088001868109" height="150.43103754970107" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="637.3134287239623" y="173.9165191366911" width="103.75555654220362" height="131.26426104950147" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="637.3134287239623" y="305.1807801861926" width="103.75555654220362" height="91.65983821005783" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="637.3134287239623" y="396.8406183962504" width="103.75555654220362" height="83.1593816037496" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="741.0689852661659" y="173.9165191366911" width="93.68547189962402" height="90.61293725657022" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="834.75445716579" y="173.9165191366911" width="82.36645739175218" height="90.61293725657022" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="917.1209145575422" y="173.9165191366911" width="62.87908544245789" height="90.61293725657022" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="741.0689852661659" y="264.52945639326134" width="66.8461611039335" height="80.93347171301242" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="741.0689852661659" y="345.46292810627375" width="66.8461611039335" height="68.23304290405649" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="741.0689852661659" y="413.69597101033025" width="66.8461611039335" height="66.30402898966976" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="807.9151463700994" y="264.52945639326134" width="66.5150864999076" height="64.07202133481098" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="874.430232870007" y="264.52945639326134" width="63.740802368500155" height="64.07202133481098" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="938.1710352385071" y="264.52945639326134" width="41.828964761492834" height="64.07202133481098" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="807.9151463700994" y="328.6014777280723" width="48.78518482169373" height="53.59937872712523" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="807.9151463700994" y="382.20085645519754" width="48.78518482169373" height="50.86279035405894" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="807.9151463700994" y="433.06364680925645" width="48.78518482169373" height="46.93635319074351" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="856.7003311917931" y="328.6014777280723" width="43.592322000071555" height="46.95209606785161" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="900.2926531918647" y="328.6014777280723" width="42.292114769877685" height="46.95209606785161" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="942.5847679617424" y="328.6014777280723" width="37.41523203825763" height="46.95209606785161" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="856.7003311917931" y="375.55357379592397" width="47.8910581461823" height="35.969511687208744" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="856.7003311917931" y="411.5230854831327" width="47.8910581461823" height="35.178234459277746" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="856.7003311917931" y="446.70131994241046" width="47.8910581461823" height="33.29868005758958" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="904.5913893379754" y="375.55357379592397" width="39.57085509987428" height="37.54520105698709" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="944.1622444378497" y="375.55357379592397" width="35.83775556215029" height="37.54520105698709" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="904.5913893379754" y="413.09877485291105" width="32.88108418478303" height="35.30091075818647" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="904.5913893379754" y="448.39968561109754" width="32.88108418478303" height="31.600314388902515" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="937.4724735227585" y="413.09877485291105" width="42.527526477241544" height="22.85051333297157" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="937.4724735227585" y="435.9492881858826" width="23.069177098503673" height="30.01815298527973" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="960.5416506212622" y="435.9492881858826" width="19.458349378737875" height="30.01815298527973" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="937.4724735227585" y="465.96744117116236" width="20.560890062674716" height="14.032558828837677" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="958.0333635854332" y="465.96744117116236" width="17.23149080819338" height="14.032558828837676" fill="#1e5a88" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><rect x="975.2648543936266" y="465.96744117116236" width="4.735145606373447" height="14.032558828837674" fill="#939393" stroke="#FFFFFF" stroke-width="1.4" vector-effect="non-scaling-stroke"></rect><circle class="pt" cx="155.05112625459543" cy="161.06191831133623" r="155.05112625459543" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="France · 96,2 GW bas-carbone (21,2 % de l&#x27;Europe) · 1 924 centrales · eau + atome 85,9 %, vent + soleil 14,1 %" data-detail="France · 96,2 GW bas-carbone (21,2 % de l&#x27;Europe) · 1 924 centrales · eau + atome 85,9 %, vent + soleil 14,1 %"></circle><circle class="pt" cx="155.05112625459543" cy="401.0619183113362" r="78.93808168866379" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Royaume-Uni · 47,2 GW bas-carbone (10,4 % de l&#x27;Europe) · 2 076 centrales · eau + atome 32,4 %, vent + soleil 67,6 % — basculé" data-detail="Royaume-Uni · 47,2 GW bas-carbone (10,4 % de l&#x27;Europe) · 2 076 centrales · eau + atome 32,4 %, vent + soleil 67,6 % — basculé"></circle><circle class="pt" cx="422.207400607236" cy="89.76640209054905" r="89.76640209054905" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Espagne · 38,8 GW bas-carbone (8,6 % de l&#x27;Europe) · 703 centrales · eau + atome 58,6 %, vent + soleil 41,4 %" data-detail="Espagne · 38,8 GW bas-carbone (8,6 % de l&#x27;Europe) · 703 centrales · eau + atome 58,6 %, vent + soleil 41,4 %"></circle><circle class="pt" cx="422.207400607236" cy="255.90252027587783" r="76.36971609477973" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Allemagne · 33,0 GW bas-carbone (7,3 % de l&#x27;Europe) · 879 centrales · eau + atome 64,1 %, vent + soleil 35,9 %" data-detail="Allemagne · 33,0 GW bas-carbone (7,3 % de l&#x27;Europe) · 879 centrales · eau + atome 64,1 %, vent + soleil 35,9 %"></circle><circle class="pt" cx="422.207400607236" cy="406.13611818532877" r="73.8638818146712" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russie · 31,9 GW bas-carbone (7,0 % de l&#x27;Europe) · 78 centrales · eau + atome 99,7 %, vent + soleil 0,3 %" data-detail="Russie · 31,9 GW bas-carbone (7,0 % de l&#x27;Europe) · 78 centrales · eau + atome 99,7 %, vent + soleil 0,3 %"></circle><circle class="pt" cx="627.1317654145764" cy="86.95825956834555" r="86.95825956834555" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Norvège · 31,1 GW bas-carbone (6,9 % de l&#x27;Europe) · 301 centrales · eau + atome 98,0 %, vent + soleil 2,0 %" data-detail="Norvège · 31,1 GW bas-carbone (6,9 % de l&#x27;Europe) · 301 centrales · eau + atome 98,0 %, vent + soleil 2,0 %"></circle><circle class="pt" cx="789.4437628881195" cy="86.95825956834555" r="69.49278076424777" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suède · 23,3 GW bas-carbone (5,1 % de l&#x27;Europe) · 155 centrales · eau + atome 97,0 %, vent + soleil 3,0 %" data-detail="Suède · 23,3 GW bas-carbone (5,1 % de l&#x27;Europe) · 155 centrales · eau + atome 97,0 %, vent + soleil 3,0 %"></circle><circle class="pt" cx="919.4682718261836" cy="86.95825956834555" r="60.53172817381633" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Ukraine · 20,3 GW bas-carbone (4,5 % de l&#x27;Europe) · 41 centrales · eau + atome 96,5 %, vent + soleil 3,5 %" data-detail="Ukraine · 20,3 GW bas-carbone (4,5 % de l&#x27;Europe) · 41 centrales · eau + atome 96,5 %, vent + soleil 3,5 %"></circle><circle class="pt" cx="585.8129887146217" cy="251.742740793495" r="51.500440009340544" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Italie · 15,4 GW bas-carbone (3,4 % de l&#x27;Europe) · 282 centrales · eau + atome 86,7 %, vent + soleil 13,3 %" data-detail="Italie · 15,4 GW bas-carbone (3,4 % de l&#x27;Europe) · 282 centrales · eau + atome 86,7 %, vent + soleil 13,3 %"></circle><circle class="pt" cx="585.8129887146217" cy="404.78448122514936" r="51.500440009340544" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Turquie · 14,9 GW bas-carbone (3,3 % de l&#x27;Europe) · 104 centrales · eau + atome 92,7 %, vent + soleil 7,3 %" data-detail="Turquie · 14,9 GW bas-carbone (3,3 % de l&#x27;Europe) · 104 centrales · eau + atome 92,7 %, vent + soleil 7,3 %"></circle><circle class="pt" cx="689.191206995064" cy="239.54864966144186" r="51.87777827110181" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Suisse · 13,1 GW bas-carbone (2,9 % de l&#x27;Europe) · 168 centrales · eau + atome 99,8 %, vent + soleil 0,2 %" data-detail="Suisse · 13,1 GW bas-carbone (2,9 % de l&#x27;Europe) · 168 centrales · eau + atome 99,8 %, vent + soleil 0,2 %"></circle><circle class="pt" cx="689.191206995064" cy="351.0106992912215" r="45.829919105028914" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Autriche · 9,2 GW bas-carbone (2,0 % de l&#x27;Europe) · 100 centrales · eau + atome 99,0 %, vent + soleil 1,0 %" data-detail="Autriche · 9,2 GW bas-carbone (2,0 % de l&#x27;Europe) · 100 centrales · eau + atome 99,0 %, vent + soleil 1,0 %"></circle><circle class="pt" cx="689.191206995064" cy="438.4203091981252" r="41.5796908018748" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Belgique · 8,3 GW bas-carbone (1,8 % de l&#x27;Europe) · 29 centrales · eau + atome 88,1 %, vent + soleil 11,9 %" data-detail="Belgique · 8,3 GW bas-carbone (1,8 % de l&#x27;Europe) · 29 centrales · eau + atome 88,1 %, vent + soleil 11,9 %"></circle><circle class="pt" cx="787.9117212159779" cy="219.2229877649762" r="45.30646862828511" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Portugal · 8,2 GW bas-carbone (1,8 % de l&#x27;Europe) · 388 centrales · eau + atome 33,1 %, vent + soleil 66,9 % — basculé" data-detail="Portugal · 8,2 GW bas-carbone (1,8 % de l&#x27;Europe) · 388 centrales · eau + atome 33,1 %, vent + soleil 66,9 % — basculé"></circle><circle class="pt" cx="875.9376858616661" cy="219.2229877649762" r="41.18322869587609" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Tchéquie · 7,2 GW bas-carbone (1,6 % de l&#x27;Europe) · 437 centrales · eau + atome 83,5 %, vent + soleil 16,5 %" data-detail="Tchéquie · 7,2 GW bas-carbone (1,6 % de l&#x27;Europe) · 437 centrales · eau + atome 83,5 %, vent + soleil 16,5 %"></circle><circle class="pt" cx="948.5604572787711" cy="219.2229877649762" r="31.439542721228946" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Roumanie · 5,5 GW bas-carbone (1,2 % de l&#x27;Europe) · 50 centrales · eau + atome 84,4 %, vent + soleil 15,6 %" data-detail="Roumanie · 5,5 GW bas-carbone (1,2 % de l&#x27;Europe) · 50 centrales · eau + atome 84,4 %, vent + soleil 15,6 %"></circle><circle class="pt" cx="774.4920658181327" cy="304.99619224976755" r="33.42308055196675" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Finlande · 5,2 GW bas-carbone (1,2 % de l&#x27;Europe) · 109 centrales · eau + atome 98,5 %, vent + soleil 1,5 %" data-detail="Finlande · 5,2 GW bas-carbone (1,2 % de l&#x27;Europe) · 109 centrales · eau + atome 98,5 %, vent + soleil 1,5 %"></circle><circle class="pt" cx="774.4920658181327" cy="379.579449558302" r="33.42308055196675" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Bulgarie · 4,4 GW bas-carbone (1,0 % de l&#x27;Europe) · 32 centrales · eau + atome 90,1 %, vent + soleil 9,9 %" data-detail="Bulgarie · 4,4 GW bas-carbone (1,0 % de l&#x27;Europe) · 32 centrales · eau + atome 90,1 %, vent + soleil 9,9 %"></circle><circle class="pt" cx="774.4920658181327" cy="446.8479855051651" r="33.15201449483488" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pologne · 4,3 GW bas-carbone (0,9 % de l&#x27;Europe) · 100 centrales · eau + atome 48,7 %, vent + soleil 51,3 % — basculé" data-detail="Pologne · 4,3 GW bas-carbone (0,9 % de l&#x27;Europe) · 100 centrales · eau + atome 48,7 %, vent + soleil 51,3 % — basculé"></circle><circle class="pt" cx="841.1726896200531" cy="296.56546706066683" r="32.03601066740549" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovaquie · 4,1 GW bas-carbone (0,9 % de l&#x27;Europe) · 25 centrales · eau + atome 99,4 %, vent + soleil 0,6 %" data-detail="Slovaquie · 4,1 GW bas-carbone (0,9 % de l&#x27;Europe) · 25 centrales · eau + atome 99,4 %, vent + soleil 0,6 %"></circle><circle class="pt" cx="906.3006340542571" cy="296.56546706066683" r="31.870401184250078" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Grèce · 3,9 GW bas-carbone (0,9 % de l&#x27;Europe) · 68 centrales · eau + atome 89,0 %, vent + soleil 11,0 %" data-detail="Grèce · 3,9 GW bas-carbone (0,9 % de l&#x27;Europe) · 68 centrales · eau + atome 89,0 %, vent + soleil 11,0 %"></circle><circle class="pt" cx="959.0855176192536" cy="296.56546706066683" r="20.914482380746417" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Géorgie · 2,6 GW bas-carbone (0,6 % de l&#x27;Europe) · 16 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Géorgie · 2,6 GW bas-carbone (0,6 % de l&#x27;Europe) · 16 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="832.3077387809462" cy="355.40116709163493" r="24.392592410846866" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Pays-Bas · 2,5 GW bas-carbone (0,6 % de l&#x27;Europe) · 52 centrales · eau + atome 19,3 %, vent + soleil 80,7 % — basculé" data-detail="Pays-Bas · 2,5 GW bas-carbone (0,6 % de l&#x27;Europe) · 52 centrales · eau + atome 19,3 %, vent + soleil 80,7 % — basculé"></circle><circle class="pt" cx="832.3077387809462" cy="407.632251632227" r="24.392592410846866" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Serbie · 2,4 GW bas-carbone (0,5 % de l&#x27;Europe) · 4 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Serbie · 2,4 GW bas-carbone (0,5 % de l&#x27;Europe) · 4 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="832.3077387809462" cy="456.5318234046282" r="23.468176595371755" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Bosnie-Herz. · 2,2 GW bas-carbone (0,5 % de l&#x27;Europe) · 16 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Bosnie-Herz. · 2,2 GW bas-carbone (0,5 % de l&#x27;Europe) · 16 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="878.4964921918289" cy="352.0775257619981" r="21.796161000035777" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Hongrie · 2,0 GW bas-carbone (0,4 % de l&#x27;Europe) · 6 centrales · eau + atome 95,7 %, vent + soleil 4,3 %" data-detail="Hongrie · 2,0 GW bas-carbone (0,4 % de l&#x27;Europe) · 6 centrales · eau + atome 95,7 %, vent + soleil 4,3 %"></circle><circle class="pt" cx="921.4387105768035" cy="352.0775257619981" r="21.146057384938842" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Islande · 1,9 GW bas-carbone (0,4 % de l&#x27;Europe) · 14 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Islande · 1,9 GW bas-carbone (0,4 % de l&#x27;Europe) · 14 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="961.2923839808713" cy="352.0775257619981" r="18.707616019128814" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Irlande · 1,7 GW bas-carbone (0,4 % de l&#x27;Europe) · 41 centrales · eau + atome 23,9 %, vent + soleil 76,1 % — basculé" data-detail="Irlande · 1,7 GW bas-carbone (0,4 % de l&#x27;Europe) · 41 centrales · eau + atome 23,9 %, vent + soleil 76,1 % — basculé"></circle><circle class="pt" cx="880.6458602648843" cy="393.53832963952834" r="17.984755843604372" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Danemark · 1,7 GW bas-carbone (0,4 % de l&#x27;Europe) · 31 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé" data-detail="Danemark · 1,7 GW bas-carbone (0,4 % de l&#x27;Europe) · 31 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé"></circle><circle class="pt" cx="880.6458602648843" cy="429.1122027127716" r="17.589117229638873" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Croatie · 1,6 GW bas-carbone (0,4 % de l&#x27;Europe) · 17 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Croatie · 1,6 GW bas-carbone (0,4 % de l&#x27;Europe) · 17 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="880.6458602648843" cy="463.35065997120523" r="16.64934002879479" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lettonie · 1,5 GW bas-carbone (0,3 % de l&#x27;Europe) · 3 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Lettonie · 1,5 GW bas-carbone (0,3 % de l&#x27;Europe) · 3 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="924.3768168879126" cy="394.32617432441754" r="18.772600528493545" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Albanie · 1,4 GW bas-carbone (0,3 % de l&#x27;Europe) · 7 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Albanie · 1,4 GW bas-carbone (0,3 % de l&#x27;Europe) · 7 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="962.0811222189249" cy="394.32617432441754" r="17.918877781075146" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Luxembourg · 1,3 GW bas-carbone (0,3 % de l&#x27;Europe) · 1 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Luxembourg · 1,3 GW bas-carbone (0,3 % de l&#x27;Europe) · 1 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="921.031931430367" cy="430.74923023200427" r="16.440542092391514" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Slovénie · 1,1 GW bas-carbone (0,2 % de l&#x27;Europe) · 4 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Slovénie · 1,1 GW bas-carbone (0,2 % de l&#x27;Europe) · 4 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="921.031931430367" cy="464.19984280554877" r="15.800157194451257" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Lituanie · 1,0 GW bas-carbone (0,2 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Lituanie · 1,0 GW bas-carbone (0,2 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="958.7362367613792" cy="424.52403151939683" r="11.425256666485785" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Arménie · 0,9 GW bas-carbone (0,2 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Arménie · 0,9 GW bas-carbone (0,2 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="949.0070620720103" cy="450.95836467852246" r="11.534588549251836" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Monténégro · 0,7 GW bas-carbone (0,1 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Monténégro · 0,7 GW bas-carbone (0,1 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="970.2708253106312" cy="450.95836467852246" r="9.729174689368937" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Macédoine du N. · 0,6 GW bas-carbone (0,1 % de l&#x27;Europe) · 10 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Macédoine du N. · 0,6 GW bas-carbone (0,1 % de l&#x27;Europe) · 10 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><circle class="pt" cx="947.7529185540958" cy="472.9837205855812" r="7.016279414418839" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Estonie · 0,3 GW bas-carbone (0,1 % de l&#x27;Europe) · 13 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé" data-detail="Estonie · 0,3 GW bas-carbone (0,1 % de l&#x27;Europe) · 13 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé"></circle><circle class="pt" cx="966.64910898953" cy="472.9837205855812" r="7.016279414418838" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Biélorussie · 0,2 GW bas-carbone (0,1 % de l&#x27;Europe) · 7 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé" data-detail="Biélorussie · 0,2 GW bas-carbone (0,1 % de l&#x27;Europe) · 7 centrales · eau + atome 0,0 %, vent + soleil 100,0 % — basculé"></circle><circle class="pt" cx="977.6324271968133" cy="472.9837205855812" r="3" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Moldavie · 0,1 GW bas-carbone (0,0 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %" data-detail="Moldavie · 0,1 GW bas-carbone (0,0 % de l&#x27;Europe) · 2 centrales · eau + atome 100,0 %, vent + soleil 0,0 %"></circle><rect class="hit-area" x="0" y="0" width="980" height="480" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:0.6122448979591837%;top:1.25%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:30.62267882746846%;overflow-wrap:anywhere">France<br/><span style="font-weight:400">96,2 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#FFFFFF;left:0.6122448979591837%;top:68.35913262972343%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:30.62267882746846%;overflow-wrap:anywhere">Royaume-Uni<br/><span style="font-weight:400">47,2 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:32.25533188869294%;top:1.25%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:21.858193489396974%;overflow-wrap:anywhere">Espagne<br/><span style="font-weight:400">38,8 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:32.25533188869294%;top:38.65266753772877%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:21.858193489396974%;overflow-wrap:anywhere">Allemagne<br/><span style="font-weight:400">33,0 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:32.25533188869294%;top:70.47338257722032%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:21.858193489396974%;overflow-wrap:anywhere">Russie<br/><span style="font-weight:400">31,9 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:55.13393354135522%;top:1.25%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:17.922289124345976%;overflow-wrap:anywhere">Norvège<br/><span style="font-weight:400">31,1 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:74.0766308289665%;top:1.25%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:13.161791992703625%;overflow-wrap:anywhere">Suède<br/><span style="font-weight:400">23,3 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:88.25883098493543%;top:1.25%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:11.333005749758435%;overflow-wrap:anywhere">Ukraine<br/><span style="font-weight:400">20,3 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:55.13393354135522%;top:37.482608153477315%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:9.489885716191948%;overflow-wrap:anywhere">Italie<br/><span style="font-weight:400">15,4 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:55.13393354135522%;top:69.91020051047893%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:9.489885716191948%;overflow-wrap:anywhere">Turquie<br/><span style="font-weight:400">14,9 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:65.64422742081247%;top:37.482608153477315%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:9.566893524714654%;overflow-wrap:anywhere">Suisse<br/><span style="font-weight:400">13,1 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:65.64422742081247%;top:64.82932920545679%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:9.566893524714654%;overflow-wrap:anywhere">Autriche<br/><span style="font-weight:400">9,2 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:65.64422742081247%;top:83.92512883255218%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:9.566893524714654%;overflow-wrap:anywhere">Belgique<br/><span style="font-weight:400">8,3 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#FFFFFF;left:76.23152910879244%;top:37.482608153477315%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:8.539333867308574%;overflow-wrap:anywhere">Portugal<br/><span style="font-weight:400">8,2 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:85.79127113936632%;top:37.482608153477315%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:7.384332386913488%;overflow-wrap:anywhere">Tchéquie<br/><span style="font-weight:400">7,2 GW</span></span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:94.19601168954512%;top:37.482608153477315%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.395825045148764%;overflow-wrap:anywhere">Roumanie</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76.23152910879244%;top:56.36030341526278%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.800628684074847%;overflow-wrap:anywhere">Finlande</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:76.23152910879244%;top:73.22144335547371%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.800628684074847%;overflow-wrap:anywhere">Bulgarie</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#FFFFFF;left:76.23152910879244%;top:87.43666062715214%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.800628684074847%;overflow-wrap:anywhere">Pologne</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:83.05256595613258%;top:56.36030341526278%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.766845561215061%;overflow-wrap:anywhere">Slovaquie</span><span class="end-label" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:11.5px;font-weight:700;font-style:normal;letter-spacing:0px;text-transform:none;color:#000000;left:89.83981968061295%;top:56.36030341526278%;transform:none;background:transparent;padding:0;white-space:normal;line-height:1.1;max-width:5.483755343724505%;overflow-wrap:anywhere">Grèce</span></div><div class="x-axis"></div></div><p class="chart-reading" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:10px 0 0">Lecture : survolez, touchez ou tabulez une cellule pour lire le pays, ses GW, sa part de l&#x27;Europe, son nombre de centrales et le partage entre eau-et-atome et vent-et-soleil. Une surface se classe et ne se mesure pas — et deux cellules de même taille peuvent avoir des parcs entièrement différents.</p><p class="chart-source" style="font-family:&quot;Superclarendon&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;letter-spacing:0px;text-transform:none;color:#616161;margin:6px 0 0">Source : Global Power Plant Database (WRI) · capacité installée par centrale, agrégée par pays</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

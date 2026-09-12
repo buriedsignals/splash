@@ -70,3 +70,11 @@ about a third more range without naming a second hue.
 And say what the floor still costs, rather than papering over it. On a white ground, "almost none"
 cannot be drawn as almost nothing — the palest cell is a mid-grey. If the alt text calls it "pale
 grey", a reader who cannot see the grid has been told something the grid does not show.
+
+## The worked example in this tree
+
+`proof/static-heatmap-europe-electricity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

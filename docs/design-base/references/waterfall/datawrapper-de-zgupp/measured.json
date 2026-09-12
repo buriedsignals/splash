@@ -1,0 +1,445 @@
+{
+  "url": "https://www.datawrapper.de/_/zgUpP/",
+  "archive": "url-list",
+  "family": "waterfall",
+  "id": "datawrapper-de-zgupp",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Germany’s population is growing thanks to immigration | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 219,
+      "w": 640,
+      "h": 552,
+      "ratio": 1.16
+    },
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/zgUpP/1/",
+      "title": "Germany’s population is growing thanks to immigration",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 400 | normal | 0 | none",
+          "count": 27,
+          "sample": "Births",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(46, 46, 46)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 14 | 700 | normal | 0 | none",
+          "count": 3,
+          "sample": "2022",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 3,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 13,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 13 | 700 | normal | 0 | none",
+          "count": 2,
+          "sample": "Net migration",
+          "colors": [
+            "rgb(46, 46, 46)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "Germany’s population is growing thanks to immigration",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 15,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 15 | 400 | normal | 0 | none",
+          "count": 1,
+          "sample": "Number of births, deaths, immigration, and emigration in Ger",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(31, 109, 156)",
+          "count": 4
+        },
+        {
+          "colour": "fill rgb(250, 140, 0)",
+          "count": 4
+        },
+        {
+          "colour": "fill rgb(24, 24, 24)",
+          "count": 3
+        },
+        {
+          "colour": "stroke rgb(255, 255, 255)",
+          "count": 3
+        },
+        {
+          "colour": "fill rgba(255, 255, 255, 0)",
+          "count": 2
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FDFDFD",
+      "share": 0.6424422554347826,
+      "h": 194.69387755238526,
+      "s": 0.00022364574513430744,
+      "l": 0.9924286712243962,
+      "chroma": 0.000003386590931353517
+    },
+    "chromatic": [
+      {
+        "hex": "#1F6D9C",
+        "share": 0.08828408061594203,
+        "h": 202.56000000000003,
+        "s": 0.6684491978609626,
+        "l": 0.3666666666666667,
+        "chroma": 0.4901960784313726
+      },
+      {
+        "hex": "#FA8C00",
+        "share": 0.08020833333333334,
+        "h": 33.6,
+        "s": 1,
+        "l": 0.49019607843137253,
+        "chroma": 0.9803921568627451
+      },
+      {
+        "hex": "#BC5A00",
+        "share": 0.00032269021739130433,
+        "h": 28.739307250035065,
+        "s": 0.9951621156440432,
+        "l": 0.3697454420364637,
+        "chroma": 0.7359133126934984
+      },
+      {
+        "hex": "#4E3412",
+        "share": 0.0002490942028985507,
+        "h": 33.781512605042025,
+        "s": 0.6230366492146596,
+        "l": 0.18725490196078431,
+        "chroma": 0.2333333333333333
+      },
+      {
+        "hex": "#0289CC",
+        "share": 0.00022078804347826087,
+        "h": 200,
+        "s": 0.983579025937675,
+        "l": 0.4041478129713424,
+        "chroma": 0.7950226244343892
+      },
+      {
+        "hex": "#89520C",
+        "share": 0.0001556838768115942,
+        "h": 33.60488798370673,
+        "s": 0.8389065169636318,
+        "l": 0.2921212121212121,
+        "chroma": 0.49012477718360065
+      },
+      {
+        "hex": "#1C435A",
+        "share": 0.00014719202898550725,
+        "h": 202.25806451612905,
+        "s": 0.5254237288135594,
+        "l": 0.23137254901960785,
+        "chroma": 0.2431372549019608
+      },
+      {
+        "hex": "#C0640F",
+        "share": 0.0001387001811594203,
+        "h": 28.8135593220339,
+        "s": 0.855072463768116,
+        "l": 0.40588235294117647,
+        "chroma": 0.6941176470588235
+      },
+      {
+        "hex": "#DFAF84",
+        "share": 0.00012737771739130434,
+        "h": 28.499634057087086,
+        "s": 0.585320576895616,
+        "l": 0.6948583877995642,
+        "chroma": 0.3572113289760348
+      },
+      {
+        "hex": "#1D5576",
+        "share": 0.00012454710144927536,
+        "h": 202.24719101123597,
+        "s": 0.6054421768707483,
+        "l": 0.2882352941176471,
+        "chroma": 0.3490196078431373
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FDFDFD",
+        "share": 0.6424422554347826,
+        "h": 194.69387755238526,
+        "s": 0.00022364574513430744,
+        "l": 0.9924286712243962,
+        "chroma": 0.000003386590931353517
+      },
+      {
+        "hex": "#EDEDED",
+        "share": 0.12611243206521738,
+        "h": 0,
+        "s": 0,
+        "l": 0.9293031476500999,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.00809273097826087,
+        "h": 0,
+        "s": 0,
+        "l": 0.09458675390407999,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.007685122282608696,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#2E2E2E",
+        "share": 0.004209125905797102,
+        "h": 0,
+        "s": 0,
+        "l": 0.17904980418529212,
+        "chroma": 0
+      },
+      {
+        "hex": "#E5E5E5",
+        "share": 0.0037703804347826086,
+        "h": 0,
+        "s": 0,
+        "l": 0.8996996996996998,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0035665760869565215,
+        "h": 0,
+        "s": 0,
+        "l": 0.9555337690631808,
+        "chroma": 0
+      },
+      {
+        "hex": "#D4D4D4",
+        "share": 0.001763473731884058,
+        "h": 0,
+        "s": 0,
+        "l": 0.8299184842476316,
+        "chroma": 0
+      },
+      {
+        "hex": "#C3C3C3",
+        "share": 0.001579483695652174,
+        "h": 0,
+        "s": 0,
+        "l": 0.7657881790709115,
+        "chroma": 0
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.001545516304347826,
+        "h": 0,
+        "s": 0,
+        "l": 0.8603749191984487,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 203,
+        "share": 0.08960597826086956,
+        "size": 13
+      },
+      {
+        "hue": 34,
+        "share": 0.08178781702898553,
+        "size": 11
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 353280
+  }
+}

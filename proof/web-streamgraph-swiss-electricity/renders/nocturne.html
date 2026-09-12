@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Le solaire suisse est passé de 0,01 à 7,89 TWh — troisième source du pays depuis 2016</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #111044;
+  --accent: #4FE0C0;
+  --ink: #FFFFFF;
+  --muted: #a5a4b8;
+  --grid: #3c3b66;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-source { flex: 0 0 auto; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* THE HOVERABLE LINE's own contract with the components that draw one. pointer-events:stroke is
+   the whole mechanism: it makes the STROKE the hit region rather than the bounding box, which for
+   a diagonal connector is mostly empty space -- a reader aiming at the line they can see would
+   otherwise be answered by a rectangle that also covers everything between the line and the frame.
+   The twin is transparent and generously wide (the component states the width as a knob); nothing
+   here paints it. .line-active is what a component may style to bring the visible line forward. */
+.line-hit { pointer-events: stroke; cursor: pointer; fill: none; }
+.line-hit:focus { outline: none; }
+.line-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#111044;--accent:#4FE0C0;--ink:#FFFFFF;--muted:#a5a4b8;--title-size:32px;--title-weight:400;--subtitle-size:12.5px;--source-size:12.5px;--axis-size:10px;--label-size:14px;--label-weight:600;--note-size:10px;--filter-size:12.5px"><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:500;font-style:normal;letter-spacing:2.6px;text-transform:uppercase;color:#4FE0C0;margin:0 0 6px">Énergie · Suisse</p><h2 class="chart-title" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:32px;font-weight:400;font-style:normal;letter-spacing:3.4px;text-transform:uppercase;color:#FFFFFF;margin:0 0 6px">Le solaire suisse est passé de 0,01 à 7,89 TWh — troisième source du pays depuis 2016</h2><p class="chart-caveat" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:0">Production d&#x27;électricité suisse par source, 2000 à 2025. La ligne de base d&#x27;un streamgraph FLOTTE : aucune bande ne se mesure depuis un zéro fixe, donc la page n&#x27;a pas d&#x27;axe des valeurs — elle écrit le total aux deux bouts et confie chaque chiffre au pointeur.</p></div><div style="display:flex;flex-wrap:wrap;align-items:center;gap:0 12px;margin:8px 0 4px;flex:0 0 auto"><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#4fe0c0;display:inline-block;border-radius:2px"></span>hydraulique</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#49cbb4;display:inline-block;border-radius:2px"></span>nucléaire</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#43b6a7;display:inline-block;border-radius:2px"></span>solaire</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#3ca29b;display:inline-block;border-radius:2px"></span>biomasse</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#368d8e;display:inline-block;border-radius:2px"></span>éolien</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#307882;display:inline-block;border-radius:2px"></span>gaz</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#376c7e;display:inline-block;border-radius:2px"></span>pétrole</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#476a81;display:inline-block;border-radius:2px"></span>charbon</span><span style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;display:inline-flex;align-items:center;gap:5px"><span style="width:13px;height:13px;background:#536984;display:inline-block;border-radius:2px"></span>autres renouv.</span></div><div class="chart-plot" style="--y-gutter:0px;--x-axis-h:28px;aspect-ratio:900 / 428"><div class="y-axis"></div><svg role="group" aria-label="Le solaire suisse est passé de 0,01 à 7,89 TWh — troisième source du pays depuis 2016" xmlns="http://www.w3.org/2000/svg" class="chart" data-hit="cell" viewBox="0 0 900 400" preserveAspectRatio="none"><desc>Un flux de neuf bandes empilées sur une ligne de base flottante, de 2000 à 2025. Les deux bandes les plus épaisses, l&#x27;hydraulique et le nucléaire, tiennent presque toute la hauteur. Une bande fine, le solaire, part d&#x27;un filet invisible et s&#x27;épaissit régulièrement jusqu&#x27;à 7,89 TWh ; elle passe troisième en 2016 et le reste.</desc><rect x="0" y="0" width="900" height="400" fill="#111044"></rect><line x1="0" x2="0" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="180" x2="180" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="360" x2="360" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="540" x2="540" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="720" x2="720" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="900" x2="900" y1="0" y2="400" stroke="#3c3b66" stroke-width="1" vector-effect="non-scaling-stroke"></line><path d="M 0 182.68214878142143 L 36 173.42605588873292 L 72 188.6767895878525 L 108 190.399387520735 L 144 191.6626260048488 L 180 189.29692484369016 L 216 200.48232742120706 L 252.00000000000003 190.65203521755774 L 288 188.42414189102968 L 324 189.04427714686742 L 360 186.05844072987114 L 396 195.63608523669768 L 432 179.16804899834122 L 468 181.09735868316957 L 504.00000000000006 186.21921653694014 L 540 175.99846880183745 L 576 181.30407043511548 L 612 181.5567181319382 L 648 191.5707541150951 L 684 187.34464718642343 L 720 183.3711879545745 L 756 175.125685849177 L 792 204.40985070817914 L 828 189.18208498149804 L 864 173.56386372336357 L 900 193.2014801582238 L 900 349.3377567946918 L 864 380 L 828 360.93658287610054 L 792 341.7583258900089 L 756 344.90493811407424 L 720 357.3306112032666 L 684 362.0849814980222 L 648 352.25468929437284 L 612 338.1523542171749 L 576 340.33431159882605 L 540 351.7493939007273 L 504.00000000000006 360.9595508485389 L 468 357.76700267959677 L 432 356.48079622304454 L 396 344.4226106928671 L 360 351.70345795585047 L 324 353.12747224703327 L 288 353.97728722725526 L 252.00000000000003 352.5762409085109 L 216 342.70001275998465 L 180 332.75488069414314 L 144 346.69643996427203 L 108 350.0727319127217 L 72 350.23350771979074 L 36 363.18744417506696 L 0 351.8642337629194 Z" fill="#4fe0c0" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 61.181574582110485 L 36 50.2717876738548 L 72 63.593211688146 L 108 64.12147505422998 L 144 67.81931861681767 L 180 82.08242950108459 L 216 72.68852877376546 L 252.00000000000003 62.398877121347454 L 288 61.18157458211047 L 324 61.84764578282507 L 360 65.06316192420572 L 396 72.94117647058822 L 432 62.30700523159375 L 468 61.709837948194476 L 504.00000000000006 59.619752456297064 L 540 69.93237208115353 L 576 84.1495470205436 L 612 87.939262472885 L 648 74.38815873420957 L 684 65.98188082174308 L 720 73.03304836034204 L 756 86.19369656756415 L 792 93.4745438305474 L 828 77.1902513716984 L 864 63.225724129131095 L 900 103.99387520734975 L 900 193.2014801582238 L 864 173.56386372336357 L 828 189.18208498149804 L 792 204.40985070817914 L 756 175.125685849177 L 720 183.3711879545745 L 684 187.34464718642343 L 648 191.5707541150951 L 612 181.5567181319382 L 576 181.30407043511548 L 540 175.99846880183745 L 504.00000000000006 186.21921653694014 L 468 181.09735868316957 L 432 179.16804899834122 L 396 195.63608523669768 L 360 186.05844072987114 L 324 189.04427714686742 L 288 188.42414189102968 L 252.00000000000003 190.65203521755774 L 216 200.48232742120706 L 180 189.29692484369016 L 144 191.6626260048488 L 108 190.399387520735 L 72 188.6767895878525 L 36 173.42605588873292 L 0 182.68214878142143 Z" fill="#49cbb4" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 61.13563863723362 L 36 50.225851728977936 L 72 63.54727574326913 L 108 64.02960316447624 L 144 67.72744672706393 L 180 81.99055761133086 L 216 72.59665688401172 L 252.00000000000003 62.261069286716854 L 288 60.997830802603005 L 324 61.617966058440736 L 360 64.64973842031392 L 396 72.16026540768149 L 432 60.928926885287765 L 468 59.41304070435117 L 504.00000000000006 55.76113308664031 L 540 64.78754625494452 L 576 78.0400663519204 L 612 80.22202373357149 L 648 65.43064948322068 L 684 55.96784483858626 L 720 61.08970269235684 L 756 73.14788822253416 L 792 75.74326910807707 L 828 55.96784483858624 L 864 37.22597932882486 L 900 67.75041469950236 L 900 103.99387520734975 L 864 63.225724129131095 L 828 77.1902513716984 L 792 93.4745438305474 L 756 86.19369656756415 L 720 73.03304836034204 L 684 65.98188082174308 L 648 74.38815873420957 L 612 87.939262472885 L 576 84.1495470205436 L 540 69.93237208115353 L 504.00000000000006 59.619752456297064 L 468 61.709837948194476 L 432 62.30700523159375 L 396 72.94117647058822 L 360 65.06316192420572 L 324 61.84764578282507 L 288 61.18157458211047 L 252.00000000000003 62.398877121347454 L 216 72.68852877376546 L 180 82.08242950108459 L 144 67.81931861681767 L 108 64.12147505422998 L 72 63.593211688146 L 36 50.2717876738548 L 0 61.181574582110485 Z" fill="#43b6a7" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 60.17098379481943 L 36 49.30713283144061 L 72 62.58262090085494 L 108 63.019012377185184 L 144 66.71685593977288 L 180 80.9799668240398 L 216 71.5401301518438 L 252.00000000000003 60.92892688528774 L 288 59.52788056654329 L 324 59.96427204287355 L 360 62.99604440474674 L 396 70.13908383309938 L 432 58.49432180681386 L 468 56.748755901492935 L 504.00000000000006 53.050912338905206 L 540 62.398877121347475 L 576 75.37578154906217 L 612 77.05244353706773 L 648 62.352941176470644 L 684 52.70639275232876 L 720 57.36889115733068 L 756 68.73803751435501 L 792 71.19561056526733 L 828 51.19050657139216 L 864 32.44864106163078 L 900 62.973076432308275 L 900 67.75041469950236 L 864 37.22597932882486 L 828 55.96784483858624 L 792 75.74326910807707 L 756 73.14788822253416 L 720 61.08970269235684 L 684 55.96784483858626 L 648 65.43064948322068 L 612 80.22202373357149 L 576 78.0400663519204 L 540 64.78754625494452 L 504.00000000000006 55.76113308664031 L 468 59.41304070435117 L 432 60.928926885287765 L 396 72.16026540768149 L 360 64.64973842031392 L 324 61.617966058440736 L 288 60.997830802603005 L 252.00000000000003 62.261069286716854 L 216 72.59665688401172 L 180 81.99055761133086 L 144 67.72744672706393 L 108 64.02960316447624 L 72 63.54727574326913 L 36 50.225851728977936 L 0 61.13563863723362 Z" fill="#3ca29b" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 60.17098379481943 L 36 49.30713283144061 L 72 62.58262090085494 L 108 63.019012377185184 L 144 66.67091999489602 L 180 80.93403087916295 L 216 71.49419420696694 L 252.00000000000003 60.837054995534004 L 288 59.436008676789555 L 324 59.87240015311982 L 360 62.812300625239274 L 396 69.81753221896132 L 432 58.080898302922066 L 468 56.33533239760114 L 504.00000000000006 52.59155289013655 L 540 61.89358172770195 L 576 74.87048615541664 L 612 76.45527625366847 L 648 61.80170983794825 L 684 52.01735357917577 L 720 56.67985198417769 L 756 68.09493428607888 L 792 70.50657139211434 L 828 50.40959550848544 L 864 31.62179405384719 L 900 62.32997320403215 L 900 62.973076432308275 L 864 32.44864106163078 L 828 51.19050657139216 L 792 71.19561056526733 L 756 68.73803751435501 L 720 57.36889115733068 L 684 52.70639275232876 L 648 62.352941176470644 L 612 77.05244353706773 L 576 75.37578154906217 L 540 62.398877121347475 L 504.00000000000006 53.050912338905206 L 468 56.748755901492935 L 432 58.49432180681386 L 396 70.13908383309938 L 360 62.99604440474674 L 324 59.96427204287355 L 288 59.52788056654329 L 252.00000000000003 60.92892688528774 L 216 71.5401301518438 L 180 80.9799668240398 L 144 66.71685593977288 L 108 63.019012377185184 L 72 62.58262090085494 L 36 49.30713283144061 L 0 60.17098379481943 Z" fill="#368d8e" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 56.22049253540894 L 36 45.40257751690699 L 72 58.49432180681386 L 108 58.746969503636635 L 144 62.35294117647061 L 180 76.93760367487559 L 216 67.86525456169451 L 252.00000000000003 57.43779507464591 L 288 56.08268470077833 L 324 56.61094806686232 L 360 58.08089830292206 L 396 65.40768151078217 L 432 53.90072731912725 L 468 52.890136531836184 L 504.00000000000006 50.29475564629324 L 540 58.99961720045938 L 576 70.91999489600616 L 612 73.1478882225341 L 648 58.95368125558255 L 684 49.215260941686935 L 720 53.83182340181199 L 756 65.79813704223558 L 792 68.8069414316703 L 828 49.169324996810055 L 864 30.381523542171802 L 900 61.08970269235677 L 900 62.32997320403215 L 864 31.62179405384719 L 828 50.40959550848544 L 792 70.50657139211434 L 756 68.09493428607888 L 720 56.67985198417769 L 684 52.01735357917577 L 648 61.80170983794825 L 612 76.45527625366847 L 576 74.87048615541664 L 540 61.89358172770195 L 504.00000000000006 52.59155289013655 L 468 56.33533239760114 L 432 58.080898302922066 L 396 69.81753221896132 L 360 62.812300625239274 L 324 59.87240015311982 L 288 59.436008676789555 L 252.00000000000003 60.837054995534004 L 216 71.49419420696694 L 180 80.93403087916295 L 144 66.67091999489602 L 108 63.019012377185184 L 72 62.58262090085494 L 36 49.30713283144061 L 0 60.17098379481943 Z" fill="#307882" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 51.02973076432306 L 36 39.93620007655991 L 72 53.027944366466784 L 108 53.2346561184127 L 144 56.79469184636981 L 180 70.96593084088299 L 216 61.48015822381012 L 252.00000000000003 51.51205818553018 L 288 50.202883756539464 L 324 50.91489090213092 L 360 52.52264897282126 L 396 59.941304070435095 L 432 48.15873420951898 L 468 47.01033558759732 L 504.00000000000006 44.09340308791631 L 540 53.34949598060485 L 576 65.0401939517673 L 612 67.22215133341837 L 648 53.073880311343686 L 684 43.2895240525712 L 720 48.08983029220372 L 756 60.193951767257914 L 792 63.248692101569496 L 828 43.84075539109358 L 864 24.777338267194132 L 900 55.43958147250223 L 900 61.08970269235677 L 864 30.381523542171802 L 828 49.169324996810055 L 792 68.8069414316703 L 756 65.79813704223558 L 720 53.83182340181199 L 684 49.215260941686935 L 648 58.95368125558255 L 612 73.1478882225341 L 576 70.91999489600616 L 540 58.99961720045938 L 504.00000000000006 50.29475564629324 L 468 52.890136531836184 L 432 53.90072731912725 L 396 65.40768151078217 L 360 58.08089830292206 L 324 56.61094806686232 L 288 56.08268470077833 L 252.00000000000003 57.43779507464591 L 216 67.86525456169451 L 180 76.93760367487559 L 144 62.35294117647061 L 108 58.746969503636635 L 72 58.49432180681386 L 36 45.40257751690699 L 0 56.22049253540894 Z" fill="#376c7e" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 51.02973076432306 L 36 39.93620007655991 L 72 53.027944366466784 L 108 53.2346561184127 L 144 56.79469184636981 L 180 70.96593084088299 L 216 61.48015822381012 L 252.00000000000003 51.51205818553018 L 288 50.202883756539464 L 324 50.91489090213092 L 360 52.52264897282126 L 396 59.941304070435095 L 432 48.15873420951898 L 468 47.01033558759732 L 504.00000000000006 44.09340308791631 L 540 53.34949598060485 L 576 65.0401939517673 L 612 67.22215133341837 L 648 53.073880311343686 L 684 43.2895240525712 L 720 48.08983029220372 L 756 60.193951767257914 L 792 63.248692101569496 L 828 43.84075539109358 L 864 24.777338267194132 L 900 55.43958147250223 L 900 55.43958147250223 L 864 24.777338267194132 L 828 43.84075539109358 L 792 63.248692101569496 L 756 60.193951767257914 L 720 48.08983029220372 L 684 43.2895240525712 L 648 53.073880311343686 L 612 67.22215133341837 L 576 65.0401939517673 L 540 53.34949598060485 L 504.00000000000006 44.09340308791631 L 468 47.01033558759732 L 432 48.15873420951898 L 396 59.941304070435095 L 360 52.52264897282126 L 324 50.91489090213092 L 288 50.202883756539464 L 252.00000000000003 51.51205818553018 L 216 61.48015822381012 L 180 70.96593084088299 L 144 56.79469184636981 L 108 53.2346561184127 L 72 53.027944366466784 L 36 39.93620007655991 L 0 51.02973076432306 Z" fill="#476a81" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><path d="M 0 48.135766237080496 L 36 36.812555824933014 L 72 49.766492280209285 L 108 49.927268087278335 L 144 53.30356003572798 L 180 67.24511930585683 L 216 57.299987240015305 L 252.00000000000003 47.42375909148909 L 288 46.02271277274465 L 324 46.872527752966704 L 360 48.296542044149575 L 396 55.57738930713281 L 432 43.5192037769555 L 468 42.23299732040324 L 504.00000000000006 39.04044915146103 L 540 48.25060609927271 L 576 59.66568840117395 L 612 61.847645782825026 L 648 47.74531070562721 L 684 37.91501850197786 L 720 42.669388796733514 L 756 55.09506188592577 L 792 58.24167410999109 L 828 39.0634171238995 L 864 20.000000000000053 L 900 50.66224320530816 L 900 55.43958147250223 L 864 24.777338267194132 L 828 43.84075539109358 L 792 63.248692101569496 L 756 60.193951767257914 L 720 48.08983029220372 L 684 43.2895240525712 L 648 53.073880311343686 L 612 67.22215133341837 L 576 65.0401939517673 L 540 53.34949598060485 L 504.00000000000006 44.09340308791631 L 468 47.01033558759732 L 432 48.15873420951898 L 396 59.941304070435095 L 360 52.52264897282126 L 324 50.91489090213092 L 288 50.202883756539464 L 252.00000000000003 51.51205818553018 L 216 61.48015822381012 L 180 70.96593084088299 L 144 56.79469184636981 L 108 53.2346561184127 L 72 53.027944366466784 L 36 39.93620007655991 L 0 51.02973076432306 Z" fill="#536984" stroke="#111044" stroke-width="0.7" vector-effect="non-scaling-stroke"></path><circle cx="576" cy="81.094806686232" r="6" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"></circle><circle class="pt" cx="0" cy="267.27319127217044" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2000 · 36,83 TWh · 55,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2000 · 36,83 TWh · 55,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="36" cy="268.3067500318999" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2001 · 41,31 TWh · 58,1 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2001 · 41,31 TWh · 58,1 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="72" cy="269.45514865382165" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2002 · 35,17 TWh · 53,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2002 · 35,17 TWh · 53,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="108" cy="270.23605971672833" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2003 · 34,76 TWh · 53,2 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2003 · 34,76 TWh · 53,2 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="144" cy="269.1795329845604" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2004 · 33,75 TWh · 52,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2004 · 33,75 TWh · 52,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="180" cy="261.02590276891664" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2005 · 31,23 TWh · 54,0 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2005 · 31,23 TWh · 54,0 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="216" cy="271.5911700905958" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2006 · 30,96 TWh · 49,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2006 · 30,96 TWh · 49,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="252.00000000000003" cy="271.6141380630343" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2007 · 35,25 TWh · 53,1 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2007 · 35,25 TWh · 53,1 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="288" cy="271.20071455914245" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2008 · 36,04 TWh · 53,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2008 · 36,04 TWh · 53,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="324" cy="271.0858746969503" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2009 · 35,72 TWh · 53,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2009 · 35,72 TWh · 53,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="360" cy="268.8809493428608" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2010 · 36,06 TWh · 54,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2010 · 36,06 TWh · 54,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="396" cy="270.0293479647824" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2011 · 32,39 TWh · 51,5 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2011 · 32,39 TWh · 51,5 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="432" cy="267.82442261069286" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2012 · 38,60 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2012 · 38,60 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="468" cy="269.43218068138316" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2013 · 38,46 TWh · 56,0 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2013 · 38,46 TWh · 56,0 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="504.00000000000006" cy="273.58938369273955" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2014 · 38,04 TWh · 54,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2014 · 38,04 TWh · 54,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="540" cy="263.87393135128235" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2015 · 38,26 TWh · 57,9 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2015 · 38,26 TWh · 57,9 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="260.81919101697076" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2016 · 34,62 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2016 · 34,62 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="259.85453617455653" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2017 · 34,09 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2017 · 34,09 TWh · 56,7 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="271.91272170473394" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2018 · 34,98 TWh · 52,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2018 · 34,98 TWh · 52,8 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="274.71481434222284" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2019 · 38,04 TWh · 53,9 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2019 · 38,04 TWh · 53,9 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="270.3508995789206" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2020 · 37,87 TWh · 55,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2020 · 37,87 TWh · 55,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="260.0153119816256" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2021 · 36,96 TWh · 58,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2021 · 36,96 TWh · 58,6 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="273.084088299094" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2022 · 29,90 TWh · 48,4 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2022 · 29,90 TWh · 48,4 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="275.0593339287993" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2023 · 37,39 TWh · 53,4 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2023 · 37,39 TWh · 53,4 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="276.78193186168176" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2024 · 44,94 TWh · 57,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2024 · 44,94 TWh · 57,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="271.2696184764578" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="hydraulique · 2025 · 33,99 TWh · 52,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9" data-detail="hydraulique · 2025 · 33,99 TWh · 52,3 % de l&#x27;électricité suisse cette année-là · 1ᵉ source sur 9"></circle><circle class="pt" cx="0" cy="121.93186168176595" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2000 · 26,45 TWh · 40,0 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2000 · 26,45 TWh · 40,0 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="36" cy="111.84892178129385" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2001 · 26,81 TWh · 37,7 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2001 · 26,81 TWh · 37,7 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="72" cy="126.13500063799925" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2002 · 27,23 TWh · 41,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2002 · 27,23 TWh · 41,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="108" cy="127.26043128748248" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2003 · 27,49 TWh · 42,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2003 · 27,49 TWh · 42,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="144" cy="129.74097231083323" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2004 · 26,96 TWh · 42,2 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2004 · 26,96 TWh · 42,2 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="180" cy="135.68967717238738" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2005 · 23,34 TWh · 40,4 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2005 · 23,34 TWh · 40,4 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="216" cy="136.58542809748627" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2006 · 27,82 TWh · 44,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2006 · 27,82 TWh · 44,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="252.00000000000003" cy="126.5254561694526" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2007 · 27,92 TWh · 42,0 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2007 · 27,92 TWh · 42,0 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="288" cy="124.80285823657007" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2008 · 27,70 TWh · 41,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2008 · 27,70 TWh · 41,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="324" cy="125.44596146484625" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2009 · 27,69 TWh · 41,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2009 · 27,69 TWh · 41,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="360" cy="125.56080132703843" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2010 · 26,34 TWh · 39,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2010 · 26,34 TWh · 39,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="396" cy="134.28863085364296" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2011 · 26,71 TWh · 42,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2011 · 26,71 TWh · 42,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="432" cy="120.73752711496749" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2012 · 25,44 TWh · 37,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2012 · 25,44 TWh · 37,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="468" cy="121.40359831568202" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2013 · 25,99 TWh · 37,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2013 · 25,99 TWh · 37,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="504.00000000000006" cy="122.9194844966186" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2014 · 27,56 TWh · 39,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2014 · 27,56 TWh · 39,3 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="540" cy="122.9654204414955" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2015 · 23,09 TWh · 34,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2015 · 23,09 TWh · 34,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="132.72680872782954" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2016 · 21,15 TWh · 34,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2016 · 21,15 TWh · 34,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="134.7479903024116" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2017 · 20,38 TWh · 33,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2017 · 20,38 TWh · 33,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="132.97945642465234" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2018 · 25,51 TWh · 38,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2018 · 25,51 TWh · 38,5 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="126.66326400408326" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2019 · 26,42 TWh · 37,4 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2019 · 26,42 TWh · 37,4 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="128.20211815745827" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2020 · 24,02 TWh · 35,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2020 · 24,02 TWh · 35,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="130.65969120837056" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2021 · 19,36 TWh · 30,7 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2021 · 19,36 TWh · 30,7 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="148.94219726936328" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2022 · 24,15 TWh · 39,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2022 · 24,15 TWh · 39,1 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="133.18616817659822" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2023 · 24,38 TWh · 34,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2023 · 24,38 TWh · 34,8 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="118.39479392624733" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2024 · 24,02 TWh · 30,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2024 · 24,02 TWh · 30,6 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="148.59767768278678" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · 2025 · 19,42 TWh · 29,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9" data-detail="nucléaire · 2025 · 19,42 TWh · 29,9 % de l&#x27;électricité suisse cette année-là · 2ᵉ source sur 9"></circle><circle class="pt" cx="504.00000000000006" cy="57.69044277146868" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2014 · 0,84 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="solaire · 2014 · 0,84 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="540" cy="67.35995916804902" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2015 · 1,12 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="solaire · 2015 · 1,12 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="81.094806686232" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2016 · 1,33 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2016 · 1,33 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="84.08064310322825" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2017 · 1,68 TWh · 2,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2017 · 1,68 TWh · 2,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="69.90940410871512" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2018 · 1,95 TWh · 2,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2018 · 1,95 TWh · 2,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="60.97486283016467" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2019 · 2,18 TWh · 3,1 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2019 · 2,18 TWh · 3,1 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="67.06137552634944" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2020 · 2,60 TWh · 3,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2020 · 2,60 TWh · 3,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="79.67079239504915" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2021 · 2,84 TWh · 4,5 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2021 · 2,84 TWh · 4,5 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="84.60890646931225" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2022 · 3,86 TWh · 6,3 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2022 · 3,86 TWh · 6,3 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="66.57904810514232" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2023 · 4,62 TWh · 6,6 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2023 · 4,62 TWh · 6,6 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="50.22585172897798" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2024 · 5,66 TWh · 7,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2024 · 5,66 TWh · 7,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="85.87214495342604" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="solaire · 2025 · 7,89 TWh · 12,1 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="solaire · 2025 · 7,89 TWh · 12,1 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="78.6372336353196" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2017 · 0,69 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 7ᵉ source sur 9" data-detail="biomasse · 2017 · 0,69 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 7ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="63.891795329845664" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2018 · 0,67 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="biomasse · 2018 · 0,67 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="54.33711879545751" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2019 · 0,71 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="biomasse · 2019 · 0,71 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="59.22929692484376" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2020 · 0,81 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="biomasse · 2020 · 0,81 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="70.9429628684446" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2021 · 0,96 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="biomasse · 2021 · 0,96 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="73.4694398366722" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2022 · 0,99 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="biomasse · 2022 · 0,99 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="53.5791757049892" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2023 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="biomasse · 2023 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="34.83731019522782" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2024 · 1,04 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="biomasse · 2024 · 1,04 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="65.36174556590532" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="biomasse · 2025 · 1,04 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="biomasse · 2025 · 1,04 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="0" cy="58.19573816511418" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2000 · 0,86 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2000 · 0,86 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="36" cy="47.3548551741738" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2001 · 0,85 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2001 · 0,85 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="72" cy="60.538471353834396" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2002 · 0,89 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2002 · 0,89 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="108" cy="60.882990940410906" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2003 · 0,93 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2003 · 0,93 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="144" cy="64.51193058568332" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2004 · 0,94 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2004 · 0,94 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="180" cy="78.93581727701927" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2005 · 0,87 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2005 · 0,87 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="216" cy="69.67972438433073" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2006 · 0,79 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2006 · 0,79 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="252.00000000000003" cy="59.13742503508996" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2007 · 0,74 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2007 · 0,74 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="288" cy="57.75934668878394" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2008 · 0,73 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2008 · 0,73 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="324" cy="58.24167410999107" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2009 · 0,71 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2009 · 0,71 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="360" cy="60.44659946408066" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2010 · 1,03 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2010 · 1,03 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="396" cy="67.61260686487174" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2011 · 0,96 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="gaz · 2011 · 0,96 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="432" cy="55.990812811024654" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2012 · 0,91 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2012 · 0,91 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="468" cy="54.61273446471866" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2013 · 0,75 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="gaz · 2013 · 0,75 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="72.8952405257114" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2016 · 0,86 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="gaz · 2016 · 0,86 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="74.80158223810129" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="gaz · 2017 · 0,72 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="gaz · 2017 · 0,72 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="0" cy="53.625111649866" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2000 · 1,13 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2000 · 1,13 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="36" cy="42.66938879673345" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2001 · 1,19 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2001 · 1,19 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="72" cy="55.76113308664032" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2002 · 1,19 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2002 · 1,19 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="108" cy="55.99081281102467" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2003 · 1,20 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2003 · 1,20 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="144" cy="59.573816511420205" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2004 · 1,21 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2004 · 1,21 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="180" cy="73.95176725787928" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2005 · 1,30 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2005 · 1,30 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="216" cy="64.67270639275232" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2006 · 1,39 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2006 · 1,39 TWh · 2,2 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="252.00000000000003" cy="54.47492663008805" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2007 · 1,29 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2007 · 1,29 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="288" cy="53.1427842286589" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2008 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2008 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="324" cy="53.76291948449662" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2009 · 1,24 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2009 · 1,24 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="360" cy="55.30177363787166" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2010 · 1,21 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2010 · 1,21 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="396" cy="62.67449279060863" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2011 · 1,19 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2011 · 1,19 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="432" cy="51.02973076432312" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2012 · 1,25 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2012 · 1,25 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="468" cy="49.95023605971675" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2013 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2013 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="504.00000000000006" cy="47.19407936710478" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2014 · 1,35 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2014 · 1,35 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="540" cy="56.17455659053212" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2015 · 1,23 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9" data-detail="pétrole · 2015 · 1,23 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 3ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="67.98009442388673" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2016 · 1,28 TWh · 2,1 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2016 · 1,28 TWh · 2,1 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="70.18501977797624" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2017 · 1,29 TWh · 2,1 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2017 · 1,29 TWh · 2,1 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="56.01378078346312" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2018 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2018 · 1,28 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="46.252392497129065" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2019 · 1,29 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2019 · 1,29 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="50.96082684700785" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2020 · 1,25 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2020 · 1,25 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="62.99604440474675" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2021 · 1,22 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2021 · 1,22 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="66.02781676661989" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2022 · 1,21 TWh · 2,0 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2022 · 1,21 TWh · 2,0 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="46.505040193951814" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2023 · 1,16 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2023 · 1,16 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="27.579430904682965" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2024 · 1,22 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2024 · 1,22 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="58.2646420824295" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="pétrole · 2025 · 1,23 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="pétrole · 2025 · 1,23 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="36" cy="38.374377950746464" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2001 · 0,68 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2001 · 0,68 TWh · 1,0 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="72" cy="51.39721832333804" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2002 · 0,71 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2002 · 0,71 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="108" cy="51.58096210284552" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2003 · 0,72 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2003 · 0,72 TWh · 1,1 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="144" cy="55.0491259410489" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2004 · 0,76 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2004 · 0,76 TWh · 1,2 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="180" cy="69.1055250733699" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2005 · 0,81 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2005 · 0,81 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="216" cy="59.39007273191271" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2006 · 0,91 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2006 · 0,91 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="252.00000000000003" cy="49.467908638509634" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2007 · 0,89 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2007 · 0,89 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="288" cy="48.11279826464205" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2008 · 0,91 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2008 · 0,91 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="324" cy="48.89370932754881" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2009 · 0,88 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2009 · 0,88 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="360" cy="50.40959550848542" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2010 · 0,92 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2010 · 0,92 TWh · 1,4 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="396" cy="57.75934668878395" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2011 · 0,95 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2011 · 0,95 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="432" cy="45.838968993237245" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2012 · 1,01 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2012 · 1,01 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="468" cy="44.62166645400028" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2013 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2013 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="504.00000000000006" cy="41.566926119688674" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2014 · 1,10 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9" data-detail="autres renouv. · 2014 · 1,10 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 4ᵉ source sur 9"></circle><circle class="pt" cx="540" cy="50.80005103993878" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2015 · 1,11 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2015 · 1,11 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="576" cy="62.35294117647062" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2016 · 1,17 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2016 · 1,17 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="612" cy="64.5348985581217" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2017 · 1,17 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2017 · 1,17 TWh · 1,9 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="648" cy="50.40959550848545" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2018 · 1,16 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2018 · 1,16 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="684" cy="40.60227127727453" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2019 · 1,17 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2019 · 1,17 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="720" cy="45.37960954446862" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2020 · 1,18 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2020 · 1,18 TWh · 1,7 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="756" cy="57.644506826591844" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2021 · 1,11 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2021 · 1,11 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="792" cy="60.74518310578029" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2022 · 1,09 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9" data-detail="autres renouv. · 2022 · 1,09 TWh · 1,8 % de l&#x27;électricité suisse cette année-là · 5ᵉ source sur 9"></circle><circle class="pt" cx="828" cy="41.45208625749654" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2023 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="autres renouv. · 2023 · 1,04 TWh · 1,5 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="864" cy="22.38866913359709" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2024 · 1,04 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="autres renouv. · 2024 · 1,04 TWh · 1,3 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><circle class="pt" cx="900" cy="53.05091233890519" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="autres renouv. · 2025 · 1,04 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9" data-detail="autres renouv. · 2025 · 1,04 TWh · 1,6 % de l&#x27;électricité suisse cette année-là · 6ᵉ source sur 9"></circle><rect class="hit-area" x="0" y="0" width="900" height="400" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#111044;left:92%;top:69.19548296542044%;transform:translate(-50%, -50%);background:transparent;padding:0">hydraulique</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#111044;left:28.000000000000004%;top:31.631364042363145%;transform:translate(-50%, -50%);background:transparent;padding:0">nucléaire</span><span class="end-label" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:12px;font-weight:600;font-style:normal;letter-spacing:0px;text-transform:none;color:#111044;left:92%;top:21.46803623835651%;transform:translate(-50%, -50%);background:transparent;padding:0">solaire</span><span class="note" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:500;font-style:normal;letter-spacing:1.8px;text-transform:uppercase;color:#ffffff;left:64%;transform:translateX(-50%) translateY(-160%);white-space:normal;max-width:min(46%, 24em);top:20.273701671558%">2016 : le solaire passe troisième</span><span class="note" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:500;font-style:normal;letter-spacing:1.8px;text-transform:uppercase;color:#ffffff;left:0%;top:1%;background:transparent;padding:0">2000 : 66,1 TWh</span><span class="note" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:500;font-style:normal;letter-spacing:1.8px;text-transform:uppercase;color:#ffffff;right:0%;top:1%;background:transparent;padding:0">2025 : 65,0 TWh</span></div><div class="x-axis" style="pointer-events:none"><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:0%">2000</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:20%">2005</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:40%">2010</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:60%">2015</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:80%">2020</span><span class="axis-label x" style="font-family:&quot;Futura&quot;, Helvetica, Arial, sans-serif;font-size:10px;font-weight:400;font-style:normal;letter-spacing:1.2px;text-transform:none;color:#a5a4b8;left:100%">2025</span></div></div><p class="chart-reading" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:10px 0 0">Lecture : survolez, touchez ou tabulez n&#x27;importe quel endroit d&#x27;une bande pour lire la source, l&#x27;année, ses TWh, sa part de cette année-là et son rang. Un streamgraph est le graphique le moins mesurable de ce catalogue : on voit une bande enfler et on ne peut dire ni de combien, ni depuis quoi, ni quand elle a dépassé sa voisine.</p><p class="chart-source" style="font-family:&quot;Avenir Next&quot;, Helvetica, Arial, sans-serif;font-size:12.5px;font-weight:400;font-style:normal;letter-spacing:0px;text-transform:none;color:#a5a4b8;margin:6px 0 0">Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · Suisse, 2000-2025</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/chart-web/assets/interaction.mjs
+//
+// The one script the web format ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `doctrine`'s own verification rule, an interactive format is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video formats use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// formats to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Index of the entry closest to `(x, y)` in BOTH axes. Pure, like `nearestIndex`.
+ *
+ *  WHY THIS EXISTS, AND WHY IT IS NOT THE DEFAULT. `nearestIndex` resolves a pointer by x alone,
+ *  which is exactly right for a series: every reading owns a column, and a reader aiming anywhere in
+ *  that column means that reading. It is exactly WRONG for a grid — a calendar's twelve months, a
+ *  heatmap's rows, a cartogram's tiles all put several marks at the same x, and an x-only answer
+ *  picks whichever of them the markup happened to list first. That is not a near miss, it is a
+ *  confident wrong answer, which is the worst thing an interactive chart can give.
+ *
+ *  A beat opts in by putting `data-hit="cell"` on its own `<svg class="chart">`. Nothing already
+ *  shipped changes: without the attribute this function is never called. */
+function nearestCell(cxs, cys, x, y) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const dx = cxs[i] - x;
+    const dy = cys[i] - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+  // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
+  // and `data-cy` so this layer never has to know what shape they are.
+  const cys = points.map((p) =>
+    parseFloat(p.getAttribute("cy") ?? p.getAttribute("data-cy") ?? "0"),
+  );
+  const byCell = svg.getAttribute("data-hit") === "cell";
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    const index = byCell
+      ? nearestCell(cxs, cys, local.x, local.y)
+      : nearestIndex(cxs, local.x);
+    show(points[index], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE HOVERABLE LINE. Wires every `.line-hit` in the page — the transparent stroked twin a
+ * component draws immediately after a visible path — to hover, tap and keyboard focus.
+ *
+ * WHY A LINE NEEDS ITS OWN WIRING AT ALL. Every other target in this format is a point or a box, and
+ * `initChart` above resolves a pointer to the nearest of them by x. A line has no x: a slope's
+ * connector is a diagonal whose bounding box is mostly empty space, and a route's segment doubles
+ * back on itself. The reading a line carries is also different in kind — it is what LINKS its two
+ * ends (both values, the change between them, the category), which is exactly the thing a
+ * per-endpoint tooltip cannot say however many endpoints it answers.
+ *
+ * `pointer-events: stroke` is the load-bearing property, and it is set in the format's stylesheet
+ * rather than here: it makes the STROKE the hit region instead of the bounding box. The twin is
+ * transparent and generously wide (`LINE_HIT_WIDTH` in the component that draws it), so the reader
+ * aims at the line they can see and hits a target twice the touch-target floor.
+ *
+ * This function never invents a reading: it reads back the `data-detail` string the component baked
+ * server-side from the beat's own frozen data, into the same `#tooltip` every other mode uses.
+ */
+function initLines(root, tooltip) {
+  const lines = Array.prototype.slice.call(root.querySelectorAll(".line-hit"));
+  if (lines.length === 0) return;
+
+  // WHY A LINE IS RESOLVED BY NEAREST AND NOT BY WHICHEVER TWIN CAUGHT THE EVENT. The twin is
+  // deliberately wide, so on a chart whose lines converge it covers its neighbours, and the one the
+  // browser hands the event to is simply the last in document order. Measured on the slope beat at
+  // 375 x 812 before this existed: 21 of 60 probes taken ON a line's own stroke were answered by a
+  // DIFFERENT line — "pointing 50% along Switzerland answered with Spain". Same shape as the
+  // nearest-by-x rule `initChart` already applies to points, in the coordinate a line actually has:
+  // distance to the stroke. Sampled rather than solved, because a `<path>` may be any shape and
+  // `getPointAtLength` is the only thing that knows.
+  const SAMPLES = 48;
+  let cache = null;
+  function samples() {
+    const key = window.innerWidth + "x" + window.innerHeight;
+    if (cache && cache.key === key) return cache.points;
+    const points = lines.map(function (line) {
+      const total = line.getTotalLength ? line.getTotalLength() : 0;
+      const m = line.getScreenCTM();
+      const out = [];
+      if (!total || !m) return out;
+      for (let i = 0; i <= SAMPLES; i++) {
+        const p = line.getPointAtLength((total * i) / SAMPLES);
+        out.push({
+          x: p.x * m.a + p.y * m.c + m.e,
+          y: p.x * m.b + p.y * m.d + m.f,
+        });
+      }
+      return out;
+    });
+    cache = { key: key, points: points };
+    return points;
+  }
+
+  function nearest(clientX, clientY) {
+    const points = samples();
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < lines.length; i++)
+      for (const p of points[i]) {
+        const d = (p.x - clientX) * (p.x - clientX) + (p.y - clientY) * (p.y - clientY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = lines[i];
+        }
+      }
+    return best;
+  }
+
+  function clear() {
+    lines.forEach(function (l) {
+      l.classList.remove("line-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(line, clientX, clientY) {
+    lines.forEach(function (l) {
+      l.classList.toggle("line-active", l === line);
+    });
+    tooltip.textContent = line.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function fromPointer(evt) {
+    const line = nearest(evt.clientX, evt.clientY);
+    if (line) show(line, evt.clientX, evt.clientY);
+  }
+
+  lines.forEach(function (line) {
+    line.addEventListener("pointerenter", fromPointer);
+    line.addEventListener("pointermove", fromPointer);
+    line.addEventListener("pointerdown", fromPointer);
+    line.addEventListener("pointerleave", clear);
+    // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
+    // `aria-label` is read with this script absent. Focus is unambiguous about which line was
+    // addressed, so it never goes through `nearest`.
+    line.addEventListener("focus", function () {
+      const r = line.getBoundingClientRect();
+      show(
+        line,
+        Math.round(r.left + r.width / 2),
+        Math.round(r.top + r.height / 2),
+      );
+    });
+    line.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
+      return;
+    if (tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+/**
+ * THE ENTRANCE TRIGGER — the whole of this format's entrance that is script, and it is one class.
+ *
+ * WHAT IT DOES NOT DO, which is the point. It writes no opacity, no transform and no length. Every
+ * number the entrance uses was computed server-side from the beat's own geometry and the entrance
+ * contract (`assets/entrance.ts`) and written on the elements as custom properties; the keyframes
+ * and the delays live in the stylesheet, inside `@media (prefers-reduced-motion: no-preference)`.
+ * This function's entire job is to say WHEN, once, per figure.
+ *
+ * WHY AN OBSERVER AND NOT `DOMContentLoaded`. This format's delivery model is an embed: a CMS drops
+ * the file into an article and the figure may sit two screens below the fold. An entrance that
+ * plays on load plays to nobody, and a reader who scrolls to it finds a finished chart with a
+ * two-second build they never saw — strictly worse than never having animated it. So the trigger is
+ * the figure ENTERING THE READER'S VIEW.
+ *
+ * THE MARGIN IS A FRACTION OF THE WINDOW, NOT OF THE FIGURE, and that is deliberate: a
+ * `threshold: 0.35` never fires for a figure taller than the viewport, which on a phone is most of
+ * them. `rootMargin: "0px 0px -15% 0px"` shrinks the observed region by 15 % of the window's own
+ * height instead, so the entrance starts once the figure's top has come a sixth of the way up the
+ * screen — reachable at every figure height there is.
+ *
+ * ONCE, AND THEN NEVER AGAIN: `unobserve` on the first intersection. A graphic that rebuilt itself
+ * every time it scrolled past would be decoration, and the contract has no loop in it.
+ *
+ * NO OBSERVER AT ALL (an engine without `IntersectionObserver`): the class goes on immediately. The
+ * entrance plays on load, which is the behaviour this function exists to improve on but is still
+ * strictly better than a figure that never gets its class and — with `animation-fill-mode:
+ * backwards` scoped to `.entered` — is complete either way. It is never the settled page that is at
+ * risk here; only when the build runs.
+ *
+ * A figure whose beat declared no layers gets no observer: the query below finds nothing to watch.
+ * Inert in a page that did not ask for it, exactly as `initLines` above is inert in a page with no
+ * `.line-hit` — the shape this file already had.
+ */
+function initEntrance(root) {
+  const figures = Array.prototype.slice
+    .call(root.querySelectorAll(".chart-figure"))
+    .filter(function (figure) {
+      return figure.querySelector("[data-entrance-motion]") !== null;
+    });
+  if (figures.length === 0) return;
+
+  if (typeof IntersectionObserver === "undefined") {
+    figures.forEach(function (figure) {
+      figure.classList.add("entered");
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("entered");
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0, rootMargin: "0px 0px -15% 0px" },
+  );
+  figures.forEach(function (figure) {
+    observer.observe(figure);
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+    initLines(svg, tooltip);
+  });
+  initEntrance(document);
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>

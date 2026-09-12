@@ -1,0 +1,412 @@
+{
+  "url": "https://www.datawrapper.de/_/FdWeD/",
+  "archive": "search",
+  "family": "bullet",
+  "id": "datawrapper-de-fdwed",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "European countries with lowest &amp; highest voter turnout | Created with Datawrapper",
+    "ground": "rgb(249, 249, 249)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 3,
+        "sample": "Login",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 13 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "Datawrapper is developed by",
+        "colors": [
+          "rgb(133, 133, 133)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "The author of this visualization has .",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(133, 133, 133)"
+        ]
+      },
+      {
+        "family": "Bitter",
+        "size": 26,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Bitter | 26 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "With , you can\n\t\t\t                    create visualizations ",
+        "colors": [
+          "rgb(79, 79, 79)",
+          "rgb(29, 129, 162)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "enabled reuse",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "It's free to use and no sign-in is needed to try it out your",
+        "colors": [
+          "rgb(133, 133, 133)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(51, 51, 51)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(29, 129, 162)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 400,
+      "ch": 50
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 219,
+      "nearTheTop": true,
+      "x": 447,
+      "y": 219,
+      "w": 546,
+      "h": 464,
+      "ratio": 1.18
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://datawrapper.dwcdn.net/FdWeD/11/",
+      "title": "European countries with lowest &amp; highest voter turnout",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 400 | normal | 0 | none",
+          "count": 22,
+          "sample": "European",
+          "colors": [
+            "rgb(24, 24, 24)",
+            "rgb(255, 255, 255)",
+            "rgb(51, 51, 51)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 700 | normal | 0 | none",
+          "count": 6,
+          "sample": "Romania (2020)",
+          "colors": [
+            "rgb(24, 24, 24)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 11,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 11 | 400 | normal | 0 | none",
+          "count": 2,
+          "sample": "Source:",
+          "colors": [
+            "rgb(136, 136, 136)",
+            "rgb(0, 136, 204)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 22,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 22 | 700 | normal | 0 | none",
+          "count": 1,
+          "sample": "European countries with lowest & highest voter turnout",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Roboto",
+          "size": 12,
+          "weight": "400",
+          "style": "italic",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Roboto | 12 | 400 | italic | 0 | none",
+          "count": 1,
+          "sample": "Voting is compulsory in Belgium.",
+          "colors": [
+            "rgb(101, 101, 101)"
+          ]
+        }
+      ],
+      "marks": [],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.5705562397372742,
+      "h": 250.37037037209183,
+      "s": 0.010121204548260782,
+      "l": 0.9998914390692111,
+      "chroma": 0.0000021975347729297212
+    },
+    "chromatic": [
+      {
+        "hex": "#267C87",
+        "share": 0.08342806618668687,
+        "h": 186.80412371134022,
+        "s": 0.5606936416184971,
+        "l": 0.3392156862745098,
+        "chroma": 0.3803921568627451
+      },
+      {
+        "hex": "#C71E1D",
+        "share": 0.03504720853858785,
+        "h": 0.3529411764705882,
+        "s": 0.7456140350877192,
+        "l": 0.4470588235294118,
+        "chroma": 0.6666666666666666
+      },
+      {
+        "hex": "#0289CD",
+        "share": 0.0003394593911835291,
+        "h": 200,
+        "s": 0.9801846430984013,
+        "l": 0.40501595987232103,
+        "chroma": 0.7939808481532148
+      },
+      {
+        "hex": "#0A8DCE",
+        "share": 0.0001973601111532146,
+        "h": 199.92235390273805,
+        "s": 0.9042867701404288,
+        "l": 0.4244705882352941,
+        "chroma": 0.767686274509804
+      },
+      {
+        "hex": "#C92423",
+        "share": 0.0001539408866995074,
+        "h": 0.3623973981725247,
+        "s": 0.7025350886737024,
+        "l": 0.4620915032679739,
+        "chroma": 0.649270990447461
+      },
+      {
+        "hex": "#93CDE9",
+        "share": 0.00011052166224580017,
+        "h": 199.92555831265506,
+        "s": 0.6653824986241055,
+        "l": 0.7455182072829132,
+        "chroma": 0.33865546218487397
+      },
+      {
+        "hex": "#C2E3F3",
+        "share": 0.0000986800555766073,
+        "h": 199.90074441687347,
+        "s": 0.6653824986241059,
+        "l": 0.8574901960784314,
+        "chroma": 0.1896470588235295
+      },
+      {
+        "hex": "#35A1D7",
+        "share": 0.00009078565113047871,
+        "h": 199.96231493943472,
+        "s": 0.66852618319237,
+        "l": 0.5262574595055414,
+        "chroma": 0.6334185848252345
+      },
+      {
+        "hex": "#CC3332",
+        "share": 0.00008683844890741443,
+        "h": 0.3889216263995299,
+        "s": 0.6067214873078299,
+        "l": 0.4985739750445633,
+        "chroma": 0.6049910873440286
+      },
+      {
+        "hex": "#EDB4B4",
+        "share": 0.00007894404446128584,
+        "h": 0.316901408450715,
+        "s": 0.6074866310160432,
+        "l": 0.8166666666666667,
+        "chroma": 0.22274509803921572
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.5705562397372742,
+        "h": 250.37037037209183,
+        "s": 0.010121204548260782,
+        "l": 0.9998914390692111,
+        "chroma": 0.0000021975347729297212
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.12420266515094101,
+        "h": 184.47761193997704,
+        "s": 0.00008877876200001149,
+        "l": 0.9529722713467259,
+        "chroma": 0.000008350127059020274
+      },
+      {
+        "hex": "#C4C4C4",
+        "share": 0.11381757610205886,
+        "h": 0,
+        "s": 0,
+        "l": 0.7685746828643023,
+        "chroma": 0
+      },
+      {
+        "hex": "#D8D8D8",
+        "share": 0.01226790450928382,
+        "h": 0,
+        "s": 0,
+        "l": 0.8489249753955637,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.010392983453328281,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#181818",
+        "share": 0.00668656056587091,
+        "h": 0,
+        "s": 0,
+        "l": 0.09461768178345718,
+        "chroma": 0
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0020012315270935962,
+        "h": 0,
+        "s": 0,
+        "l": 0.8944811849789226,
+        "chroma": 0
+      },
+      {
+        "hex": "#B4B4B4",
+        "share": 0.00183939623594796,
+        "h": 0,
+        "s": 0,
+        "l": 0.7050913069090297,
+        "chroma": 0
+      },
+      {
+        "hex": "#9B9B9B",
+        "share": 0.0017762410003789315,
+        "h": 0,
+        "s": 0,
+        "l": 0.6079477124183007,
+        "chroma": 0
+      },
+      {
+        "hex": "#939393",
+        "share": 0.0017604521914866742,
+        "h": 0,
+        "s": 0,
+        "l": 0.5770509100501188,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 187,
+        "share": 0.08479774535809019,
+        "size": 14
+      },
+      {
+        "hue": 0,
+        "share": 0.03577744094985475,
+        "size": 10
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 253344
+  }
+}

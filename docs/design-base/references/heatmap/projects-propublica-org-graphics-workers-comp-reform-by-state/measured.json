@@ -1,0 +1,603 @@
+{
+  "url": "http://projects.propublica.org/graphics/workers-comp-reform-by-state",
+  "archive": "url-list",
+  "family": "heatmap",
+  "id": "projects-propublica-org-graphics-workers-comp-reform-by-state",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Workers' Compensation Reforms by State",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Helvetica Neue",
+        "size": 10,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 10 | 400 | normal | 0 | none",
+        "count": 202,
+        "sample": "Raised Benefits",
+        "colors": [
+          "rgb(39, 135, 118)",
+          "rgb(128, 28, 25)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 13 | 400 | normal | 0 | none",
+        "count": 13,
+        "sample": "2002",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 13,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0.26,
+        "transform": "none",
+        "key": "Helvetica | 13 | 200 | normal | 0.26 | none",
+        "count": 4,
+        "sample": "Cut Benefits",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica Neue",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica Neue | 13 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "2002",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 14,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 14 | 400 | italic | 0 | none",
+        "count": 3,
+        "sample": "by and , ProPublica, Mar. 4, 2015",
+        "colors": [
+          "rgb(119, 119, 119)",
+          "rgb(91, 152, 195)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 15.5,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 15.5 | 200 | normal | 0 | none",
+        "count": 3,
+        "sample": "Over the past 10 months, ProPublica has analyzed reams of in",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 13,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 13 | 200 | normal | 0 | none",
+        "count": 3,
+        "sample": "U.S. Department of Labor, Actuarial & Technical Solutions, N",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 11,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.22,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 11 | 700 | normal | 0.22 | none",
+        "count": 3,
+        "sample": "SOURCES:",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 11.4,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Helvetica | 11.4 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "Share on Facebook",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 11,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.15,
+        "transform": "none",
+        "key": "Helvetica | 11 | 400 | normal | 0.15 | none",
+        "count": 2,
+        "sample": "Ever filed for workers’ comp?",
+        "colors": [
+          "rgb(68, 68, 68)",
+          "rgb(91, 152, 195)"
+        ]
+      },
+      {
+        "family": "ff-meta-serif-web-1",
+        "size": 38.4,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-meta-serif-web-1 | 38.4 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "ProPublica",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "jaf-bernina-sans-condensed",
+        "size": 12.5,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "jaf-bernina-sans-condensed | 12.5 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Donate",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "jaf-bernina-sans-condensed",
+        "size": 34,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "jaf-bernina-sans-condensed | 34 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Workers' Compensation Reforms by State",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.15,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 15 | 400 | normal | 0.15 | none",
+        "count": 1,
+        "sample": "Over the past decade, states across the country have been un",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 15,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0.15,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 15 | 400 | italic | 0.15 | none",
+        "count": 1,
+        "sample": "Related Story  »",
+        "colors": [
+          "rgb(91, 152, 195)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 18 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "See Which States",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 14.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 14.5 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Or",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "ff-tisa-web-pro",
+        "size": 15.5,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "ff-tisa-web-pro | 15.5 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Click on the map or select a state to see details of the wor",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Helvetica",
+        "size": 12.5,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0.24,
+        "transform": "none",
+        "key": "Helvetica | 12.5 | 200 | normal | 0.24 | none",
+        "count": 1,
+        "sample": "Look Up Your State",
+        "colors": [
+          "rgb(153, 153, 153)"
+        ]
+      },
+      {
+        "family": "jaf-bernina-sans-condensed",
+        "size": 19,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.19,
+        "transform": "none",
+        "key": "jaf-bernina-sans-condensed | 19 | 700 | normal | 0.19 | none",
+        "count": 1,
+        "sample": "Methodology",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 13 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© Copyright 2017 Pro Publica Inc.",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(232, 141, 127)",
+        "count": 147
+      },
+      {
+        "colour": "fill rgb(255, 255, 224)",
+        "count": 110
+      },
+      {
+        "colour": "fill rgb(236, 160, 143)",
+        "count": 94
+      },
+      {
+        "colour": "fill rgb(251, 236, 208)",
+        "count": 81
+      },
+      {
+        "colour": "fill rgb(247, 217, 192)",
+        "count": 81
+      },
+      {
+        "colour": "fill rgb(239, 180, 160)",
+        "count": 68
+      },
+      {
+        "colour": "fill rgb(211, 231, 202)",
+        "count": 55
+      },
+      {
+        "colour": "fill rgb(243, 199, 176)",
+        "count": 40
+      },
+      {
+        "colour": "fill rgb(168, 207, 181)",
+        "count": 28
+      },
+      {
+        "colour": "fill rgb(186, 91, 81)",
+        "count": 27
+      },
+      {
+        "colour": "fill rgb(125, 183, 160)",
+        "count": 25
+      },
+      {
+        "colour": "fill rgb(197, 103, 93)",
+        "count": 12
+      },
+      {
+        "colour": "fill rgb(174, 78, 70)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(102, 102, 102)",
+        "count": 11
+      },
+      {
+        "colour": "fill rgb(82, 159, 139)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(39, 135, 118)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(140, 41, 36)",
+        "count": 6
+      },
+      {
+        "colour": "fill rgb(151, 53, 48)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 902,
+      "ch": 139
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 659,
+      "nearTheTop": true,
+      "x": 240,
+      "y": 659,
+      "w": 960,
+      "h": 670,
+      "ratio": 1.43
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.22691231343283583,
+      "h": 47.99999999998901,
+      "s": 0.5591371187706883,
+      "l": 0.9998916362708152,
+      "chroma": 0.00012118036663111287
+    },
+    "chromatic": [
+      {
+        "hex": "#E88D7F",
+        "share": 0.13649098258706469,
+        "h": 8.000000000000005,
+        "s": 0.6953642384105958,
+        "l": 0.7039215686274509,
+        "chroma": 0.4117647058823529
+      },
+      {
+        "hex": "#ECA08F",
+        "share": 0.09058924129353234,
+        "h": 10.967741935483868,
+        "s": 0.7099236641221376,
+        "l": 0.7431372549019608,
+        "chroma": 0.3647058823529412
+      },
+      {
+        "hex": "#F7D9C0",
+        "share": 0.07347014925373134,
+        "h": 27.27272727272727,
+        "s": 0.774647887323944,
+        "l": 0.8607843137254902,
+        "chroma": 0.21568627450980393
+      },
+      {
+        "hex": "#EFB4A0",
+        "share": 0.06346548507462686,
+        "h": 15.153407520398039,
+        "s": 0.7116235019852111,
+        "l": 0.7824195159066052,
+        "chroma": 0.30967077210835825
+      },
+      {
+        "hex": "#F3C7B0",
+        "share": 0.03687189054726368,
+        "h": 20.577269327719435,
+        "s": 0.7361991965250726,
+        "l": 0.8216122812761468,
+        "chroma": 0.2626577903888827
+      },
+      {
+        "hex": "#BA5B51",
+        "share": 0.025208333333333333,
+        "h": 5.714285714285718,
+        "s": 0.4320987654320988,
+        "l": 0.5235294117647058,
+        "chroma": 0.4117647058823529
+      },
+      {
+        "hex": "#7DB7A0",
+        "share": 0.02295087064676617,
+        "h": 156.21336896334648,
+        "s": 0.2871271058582236,
+        "l": 0.6039142631717367,
+        "chroma": 0.22745390257444253
+      },
+      {
+        "hex": "#AE4E46",
+        "share": 0.011458333333333333,
+        "h": 4.615384615384616,
+        "s": 0.4262295081967213,
+        "l": 0.47843137254901963,
+        "chroma": 0.40784313725490196
+      },
+      {
+        "hex": "#C5675D",
+        "share": 0.010329601990049751,
+        "h": 5.769230769230773,
+        "s": 0.4727272727272728,
+        "l": 0.5686274509803921,
+        "chroma": 0.407843137254902
+      },
+      {
+        "hex": "#529F8B",
+        "share": 0.006875,
+        "h": 164.4155844155844,
+        "s": 0.31950207468879666,
+        "l": 0.4725490196078431,
+        "chroma": 0.30196078431372547
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.22691231343283583,
+        "h": 47.99999999998901,
+        "s": 0.5591371187706883,
+        "l": 0.9998916362708152,
+        "chroma": 0.00012118036663111287
+      },
+      {
+        "hex": "#FFFFE0",
+        "share": 0.10394589552238806,
+        "h": 60,
+        "s": 1,
+        "l": 0.9392795617753518,
+        "chroma": 0.12144087644929646
+      },
+      {
+        "hex": "#FBECD0",
+        "share": 0.07610385572139304,
+        "h": 39.06808199121526,
+        "s": 0.8431429604352381,
+        "l": 0.900058162590879,
+        "chroma": 0.168530513328927
+      },
+      {
+        "hex": "#D3E7CA",
+        "share": 0.05163090796019901,
+        "h": 101.3793103448276,
+        "s": 0.3766233766233766,
+        "l": 0.8490196078431372,
+        "chroma": 0.11372549019607847
+      },
+      {
+        "hex": "#A8CFB5",
+        "share": 0.025242537313432834,
+        "h": 140,
+        "s": 0.2888888888888889,
+        "l": 0.7352941176470589,
+        "chroma": 0.15294117647058825
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0019387437810945273,
+        "h": 0,
+        "s": 0,
+        "l": 0.000025158419422299794,
+        "chroma": 0
+      },
+      {
+        "hex": "#FEFCF4",
+        "share": 0.0014878731343283581,
+        "h": 48.87902330743616,
+        "s": 0.8381395348837215,
+        "l": 0.9757719179625873,
+        "chroma": 0.0406130268199234
+      },
+      {
+        "hex": "#FDF5F2",
+        "share": 0.0009235074626865672,
+        "h": 15.522935779816434,
+        "s": 0.6736711990111235,
+        "l": 0.9706245461147422,
+        "chroma": 0.039578794480755186
+      },
+      {
+        "hex": "#FFFEEC",
+        "share": 0.0008722014925373134,
+        "h": 57.12153518123663,
+        "s": 0.9630390143737161,
+        "l": 0.962552864282968,
+        "chroma": 0.07212610534409847
+      },
+      {
+        "hex": "#FDF3EC",
+        "share": 0.0007353855721393035,
+        "h": 24.900849858356942,
+        "s": 0.7673913043478264,
+        "l": 0.9580483356133151,
+        "chroma": 0.06438668490652077
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 8,
+        "share": 0.45734141791044786,
+        "size": 21
+      },
+      {
+        "hue": 156,
+        "share": 0.03670087064676617,
+        "size": 3
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 643200
+  }
+}

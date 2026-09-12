@@ -1,0 +1,490 @@
+{
+  "url": "https://usafacts.org/articles/the-viz-lab/supreme-court-tenure/",
+  "archive": "url-list",
+  "family": "gantt",
+  "id": "usafacts-org-articles-the-viz-lab-supreme-court-tenure",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept\"",
+  "entry": null,
+  "style": {
+    "title": "The Supreme Court has had 116 justices. Here's who put them there. | USAFacts",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Aeonik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Aeonik | 14 | 500 | normal | 0 | none",
+        "count": 37,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)",
+          "rgb(78, 78, 78)",
+          "rgba(255, 255, 255, 0.9)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Aeonik | 16 | 500 | normal | 0 | none",
+        "count": 21,
+        "sample": "Economy",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)",
+          "rgb(78, 78, 78)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 20,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Aeonik | 20 | 500 | normal | 0 | none",
+        "count": 14,
+        "sample": "Subscribe for weekly, data-driven insights. No spin, just th",
+        "colors": [
+          "rgb(78, 78, 78)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Aeonik | 20 | 400 | normal | 0 | none",
+        "count": 13,
+        "sample": "Of the 116 people who have served on the US Supreme Court, n",
+        "colors": [
+          "rgb(78, 78, 78)",
+          "rgb(0, 0, 0)",
+          "rgb(112, 112, 112)",
+          "rgb(36, 36, 36)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 30,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.3,
+        "transform": "none",
+        "key": "Aeonik | 30 | 500 | normal | -0.3 | none",
+        "count": 9,
+        "sample": "An analysis of Supreme Court confirmations across US history",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 40,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.4,
+        "transform": "none",
+        "key": "Aeonik | 40 | 500 | normal | -0.4 | none",
+        "count": 4,
+        "sample": "The balance of the Supreme Court has shifted throughout hist",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.3,
+        "transform": "none",
+        "key": "Aeonik | 14 | 500 | normal | -0.3 | none",
+        "count": 3,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Aeonik Mono",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": -0.56,
+        "transform": "uppercase",
+        "key": "Aeonik Mono | 14 | 400 | normal | -0.56 | uppercase",
+        "count": 1,
+        "sample": "THE VIZ LAB",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Aeonik",
+        "size": 64,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.64,
+        "transform": "none",
+        "key": "Aeonik | 64 | 500 | normal | -0.64 | none",
+        "count": 1,
+        "sample": "The Supreme Court has had 116 justices. Here's who put them ",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 19
+      },
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 16
+      },
+      {
+        "colour": "stroke rgb(225, 25, 122)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(163, 0, 79)",
+        "count": 3
+      },
+      {
+        "colour": "fill rgb(78, 78, 78)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(225, 25, 122)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(143, 143, 140)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 800,
+      "ch": 53
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 1463,
+      "nearTheTop": true,
+      "x": 346,
+      "y": 1463,
+      "w": 748,
+      "h": 3598,
+      "ratio": 0.21
+    },
+    "graphicFrame": {
+      "url": "https://flourish-api.com/api/v1/live/template?api_key=3goF8OCJm_6uIV2mKjGuNtOFa5mZ2yCS-G0AZZRyOOLpJd2Ab6D35hjZgV3UcxGy&api_version=5.4.2&template=%40ambert%2Fcourt-tenure-chart&version=1.0.1&auto=1",
+      "title": "Flourish template: Court Tenure Chart",
+      "ground": "rgb(247, 247, 243)",
+      "type": [
+        {
+          "family": "Aeonik",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Aeonik | 14 | 400 | normal | 0 | none",
+          "count": 172,
+          "sample": "Appointed by",
+          "colors": [
+            "rgb(78, 78, 78)",
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Aeonik",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Aeonik | 12 | 400 | normal | 0 | none",
+          "count": 44,
+          "sample": "1797",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        },
+        {
+          "family": "Aeonik",
+          "size": 14,
+          "weight": "700",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Aeonik | 14 | 700 | normal | 0 | none",
+          "count": 5,
+          "sample": "Merrick Garland",
+          "colors": [
+            "rgb(0, 0, 0)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "stroke rgb(34, 34, 34)",
+          "count": 121
+        },
+        {
+          "colour": "fill rgb(236, 146, 161)",
+          "count": 50
+        },
+        {
+          "colour": "fill rgb(137, 182, 255)",
+          "count": 38
+        },
+        {
+          "colour": "fill rgb(255, 255, 255)",
+          "count": 23
+        },
+        {
+          "colour": "fill rgb(209, 209, 203)",
+          "count": 19
+        },
+        {
+          "colour": "fill url(\"#hatchR\")",
+          "count": 9
+        },
+        {
+          "colour": "fill url(\"#hatchO\")",
+          "count": 4
+        },
+        {
+          "colour": "fill url(\"#hatchD\")",
+          "count": 4
+        },
+        {
+          "colour": "fill rgb(34, 34, 34)",
+          "count": 4
+        },
+        {
+          "colour": "stroke rgb(247, 247, 243)",
+          "count": 4
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#F7F7F3",
+      "share": 0.7876219111627671,
+      "h": 59.999992921716654,
+      "s": 0.19993020417425295,
+      "l": 0.9607812139966401,
+      "chroma": 0.015682039786236168
+    },
+    "chromatic": [
+      {
+        "hex": "#EC92A1",
+        "share": 0.06763041261782392,
+        "h": 349.9991623803782,
+        "s": 0.7031087151440767,
+        "l": 0.7490369303632536,
+        "chroma": 0.35290864288181234
+      },
+      {
+        "hex": "#89B6FF",
+        "share": 0.034786854253551436,
+        "h": 217.11824308605904,
+        "s": 0.9999688625958858,
+        "l": 0.7686188640930299,
+        "chroma": 0.4627478625980739
+      },
+      {
+        "hex": "#6AA2FF",
+        "share": 0.0007579968669462832,
+        "h": 217.5795185477506,
+        "s": 0.999986845739993,
+        "l": 0.7077239523260285,
+        "chroma": 0.5845444059976932
+      },
+      {
+        "hex": "#EA6D81",
+        "share": 0.0006327787570634904,
+        "h": 350.40083613457244,
+        "s": 0.7480770314437059,
+        "l": 0.6730844069865175,
+        "chroma": 0.48911609270836937
+      },
+      {
+        "hex": "#ED9CA9",
+        "share": 0.0005161066902884253,
+        "h": 350.2113841280515,
+        "s": 0.6975798238412969,
+        "l": 0.7712940611809879,
+        "chroma": 0.3190812970256498
+      },
+      {
+        "hex": "#EFB2BB",
+        "share": 0.0004436511074185599,
+        "h": 351.14768951978255,
+        "s": 0.6559387663214769,
+        "l": 0.8176339212401879,
+        "chroma": 0.23924196144119292
+      },
+      {
+        "hex": "#F2B4BE",
+        "share": 0.0004287884237529465,
+        "h": 349.887990130795,
+        "s": 0.6961558355372949,
+        "l": 0.825896285723995,
+        "chroma": 0.24240663336391743
+      },
+      {
+        "hex": "#ED98A6",
+        "share": 0.000378255299289861,
+        "h": 349.93331407107775,
+        "s": 0.7024672614939963,
+        "l": 0.7627547286105012,
+        "chroma": 0.33331407219076237
+      },
+      {
+        "hex": "#85B3FE",
+        "share": 0.0003700808232737736,
+        "h": 217.15299481865284,
+        "s": 0.9776468395159789,
+        "l": 0.7571009528309316,
+        "chroma": 0.4749389715725647
+      },
+      {
+        "hex": "#7CADFF",
+        "share": 0.0002805331541884529,
+        "h": 217.4263725609017,
+        "s": 0.9998788172564228,
+        "l": 0.7428282041293339,
+        "chroma": 0.5142812621737436
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#F7F7F3",
+        "share": 0.7876219111627671,
+        "h": 59.999992921716654,
+        "s": 0.19993020417425295,
+        "l": 0.9607812139966401,
+        "chroma": 0.015682039786236168
+      },
+      {
+        "hex": "#FFFFFF",
+        "share": 0.08169348390222732,
+        "h": 58.42460615151619,
+        "s": 0.15226454966036973,
+        "l": 0.9996877007163674,
+        "chroma": 0.00009510421956315795
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0023115188770945236,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#222222",
+        "share": 0.001233602744245912,
+        "h": 60.40133779264057,
+        "s": 0.0013166527955752179,
+        "l": 0.1341194188518781,
+        "chroma": 0.0003531774155444978
+      },
+      {
+        "hex": "#F9F9F5",
+        "share": 0.001207964614922729,
+        "h": 60,
+        "s": 0.20363234003586647,
+        "l": 0.9683849916466125,
+        "chroma": 0.012875676262507518
+      },
+      {
+        "hex": "#F4CDD2",
+        "share": 0.0005818740655087646,
+        "h": 352.4320701043063,
+        "s": 0.6323374340949036,
+        "l": 0.878884631758195,
+        "chroma": 0.15317156236696472
+      },
+      {
+        "hex": "#F5E3E3",
+        "share": 0.0005313409410456789,
+        "h": 1.0359021266865458,
+        "s": 0.47876067440332903,
+        "l": 0.9248539695598519,
+        "chroma": 0.07195392842451676
+      },
+      {
+        "hex": "#3B3B3B",
+        "share": 0.0005079322142723378,
+        "h": 60,
+        "s": 0.003194571090062056,
+        "l": 0.23123628383321143,
+        "chroma": 0.0014774014946139225
+      },
+      {
+        "hex": "#6B6B6A",
+        "share": 0.00040203559315484243,
+        "h": 60,
+        "s": 0.0024592617010110616,
+        "l": 0.41781196767061723,
+        "chroma": 0.0020550179406328417
+      },
+      {
+        "hex": "#333332",
+        "share": 0.00036227791434932655,
+        "h": 60,
+        "s": 0.0006704046806436085,
+        "l": 0.19798491704374058,
+        "chroma": 0.00026546003016592046
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 350,
+        "share": 0.07114060693255017,
+        "size": 12
+      },
+      {
+        "hue": 217,
+        "share": 0.03788052185854885,
+        "size": 12
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 2691304
+  }
+}

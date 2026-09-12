@@ -1,0 +1,411 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/charts/iea-total-oil-stocks-may-2026",
+  "archive": "search",
+  "family": "grouped-bar",
+  "id": "iea-org-data-and-statistics-charts-iea-total-oil-stocks-may-2026",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "IEA total oil stocks, May 2026 – Charts – Data & Statistics - IEA",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 59,
+        "sample": "million barrels",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0 | none",
+        "count": 27,
+        "sample": "Public",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 8,
+        "sample": "Revenues and expenditures from fossil fuel trade in the Stat",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Open",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 10.8,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 10.8 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Natural gas",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "IEA total oil stocks, May 2026",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 153
+      },
+      {
+        "colour": "fill rgb(62, 122, 211)",
+        "count": 32
+      },
+      {
+        "colour": "fill rgb(255, 117, 75)",
+        "count": 30
+      },
+      {
+        "colour": "fill rgb(177, 135, 239)",
+        "count": 28
+      },
+      {
+        "colour": "fill rgb(73, 211, 255)",
+        "count": 14
+      },
+      {
+        "colour": "fill rgb(255, 183, 67)",
+        "count": 10
+      },
+      {
+        "colour": "fill rgb(104, 243, 148)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(255, 244, 90)",
+        "count": 8
+      },
+      {
+        "colour": "fill rgb(0, 173, 161)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(73, 211, 255)",
+        "count": 5
+      },
+      {
+        "colour": "fill rgb(0, 68, 255)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(230, 230, 230)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(175, 106, 177)",
+        "count": 2
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 473,
+      "nearTheTop": true,
+      "x": 122,
+      "y": 473,
+      "w": 1162,
+      "h": 500,
+      "ratio": 2.32
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8624681583476764,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999935200604606,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#49D3FF",
+        "share": 0.08235800344234079,
+        "h": 194.50549450549448,
+        "s": 1,
+        "l": 0.6431372549019607,
+        "chroma": 0.7137254901960784
+      },
+      {
+        "hex": "#0044FF",
+        "share": 0.03459036144578313,
+        "h": 224,
+        "s": 1,
+        "l": 0.5,
+        "chroma": 1
+      },
+      {
+        "hex": "#527580",
+        "share": 0.0023287435456110154,
+        "h": 194.34782608695656,
+        "s": 0.21904761904761902,
+        "l": 0.4117647058823529,
+        "chroma": 0.18039215686274507
+      },
+      {
+        "hex": "#405180",
+        "share": 0.001244406196213425,
+        "h": 224.0625,
+        "s": 0.3333333333333333,
+        "l": 0.3764705882352941,
+        "chroma": 0.25098039215686274
+      },
+      {
+        "hex": "#4C6F7A",
+        "share": 0.000024096385542168674,
+        "h": 194.6273291925466,
+        "s": 0.23232323232323235,
+        "l": 0.38823529411764707,
+        "chroma": 0.18039215686274512
+      },
+      {
+        "hex": "#3A4B7A",
+        "share": 0.000010327022375215146,
+        "h": 224.0625,
+        "s": 0.3555555555555555,
+        "l": 0.35294117647058826,
+        "chroma": 0.25098039215686274
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8624681583476764,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999935200604606,
+        "chroma": 0
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.011728055077452669,
+        "h": 0,
+        "s": 0,
+        "l": 0.9017794966533722,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.00202065404475043,
+        "h": 0,
+        "s": 0,
+        "l": 0.0006112836957610984,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.00023407917383821,
+        "h": 0,
+        "s": 0,
+        "l": 0.92520184544406,
+        "chroma": 0
+      },
+      {
+        "hex": "#848484",
+        "share": 0.00023407917383821,
+        "h": 0,
+        "s": 0,
+        "l": 0.5162629757785467,
+        "chroma": 0
+      },
+      {
+        "hex": "#A4A4A4",
+        "share": 0.00019793459552495696,
+        "h": 0,
+        "s": 0,
+        "l": 0.6418414322250638,
+        "chroma": 0
+      },
+      {
+        "hex": "#7B7B7B",
+        "share": 0.00018588640275387264,
+        "h": 0,
+        "s": 0,
+        "l": 0.48155410312273056,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.00018416523235800344,
+        "h": 0,
+        "s": 0,
+        "l": 0.9550302363936228,
+        "chroma": 0
+      },
+      {
+        "hex": "#939393",
+        "share": 0.0001549053356282272,
+        "h": 0,
+        "s": 0,
+        "l": 0.5771241830065359,
+        "chroma": 0
+      },
+      {
+        "hex": "#ABABAB",
+        "share": 0.00013941480206540447,
+        "h": 0,
+        "s": 0,
+        "l": 0.6718470104091019,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 195,
+        "share": 0.12055593803786574,
+        "size": 6
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 581000
+  }
+}

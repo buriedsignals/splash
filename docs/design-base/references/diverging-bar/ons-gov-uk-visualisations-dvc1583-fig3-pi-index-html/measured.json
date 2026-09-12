@@ -1,0 +1,196 @@
+{
+  "url": "https://www.ons.gov.uk/visualisations/dvc1583/Fig3/pi/index.html",
+  "archive": "search",
+  "family": "diverging-bar",
+  "id": "ons-gov-uk-visualisations-dvc1583-fig3-pi-index-html",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Suitable unique description of bar chart, dvc xxx",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 15,
+        "sample": "-3,000",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 0,
+      "nearTheTop": true,
+      "x": 370,
+      "y": 0,
+      "w": 700,
+      "h": 176,
+      "ratio": 3.98
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.9087824675324675,
+      "h": 0,
+      "s": 0,
+      "l": 0.999945849975009,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#27A0CC",
+        "share": 0.02762987012987013,
+        "h": 195.99999999999997,
+        "s": 0.6790123456790124,
+        "l": 0.47647058823529415,
+        "chroma": 0.6470588235294118
+      },
+      {
+        "hex": "#003C57",
+        "share": 0.014188311688311687,
+        "h": 198.6206896551724,
+        "s": 1,
+        "l": 0.17058823529411765,
+        "chroma": 0.3411764705882353
+      },
+      {
+        "hex": "#5FB8D9",
+        "share": 0.0001866883116883117,
+        "h": 196.2295081967213,
+        "s": 0.6161616161616162,
+        "l": 0.611764705882353,
+        "chroma": 0.4784313725490196
+      },
+      {
+        "hex": "#33A5CF",
+        "share": 0.0001866883116883117,
+        "h": 196.15384615384613,
+        "s": 0.6190476190476191,
+        "l": 0.5058823529411764,
+        "chroma": 0.611764705882353
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.9087824675324675,
+        "h": 0,
+        "s": 0,
+        "l": 0.999945849975009,
+        "chroma": 0
+      },
+      {
+        "hex": "#E5E5E5",
+        "share": 0.01103896103896104,
+        "h": 0,
+        "s": 0,
+        "l": 0.8973125720876586,
+        "chroma": 0
+      },
+      {
+        "hex": "#CCCCCC",
+        "share": 0.006574675324675324,
+        "h": 0,
+        "s": 0,
+        "l": 0.7996368917937546,
+        "chroma": 0
+      },
+      {
+        "hex": "#666666",
+        "share": 0.005397727272727273,
+        "h": 0,
+        "s": 0,
+        "l": 0.4,
+        "chroma": 0
+      },
+      {
+        "hex": "#6B6B6B",
+        "share": 0.003246753246753247,
+        "h": 0,
+        "s": 0,
+        "l": 0.4177450980392157,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0021347402597402597,
+        "h": 0,
+        "s": 0,
+        "l": 0.9550734362185939,
+        "chroma": 0
+      },
+      {
+        "hex": "#9B9B9B",
+        "share": 0.002086038961038961,
+        "h": 0,
+        "s": 0,
+        "l": 0.6062561989776455,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0018587662337662338,
+        "h": 0,
+        "s": 0,
+        "l": 0.9262779347546879,
+        "chroma": 0
+      },
+      {
+        "hex": "#747474",
+        "share": 0.0016314935064935066,
+        "h": 0,
+        "s": 0,
+        "l": 0.45503853282606577,
+        "chroma": 0
+      },
+      {
+        "hex": "#ACACAC",
+        "share": 0.001599025974025974,
+        "h": 0,
+        "s": 0,
+        "l": 0.6732955110978401,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 196,
+        "share": 0.04219155844155844,
+        "size": 4
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 123200
+  }
+}

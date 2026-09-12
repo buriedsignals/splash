@@ -125,6 +125,14 @@ function wrap(
   return line ? [...lines, line] : lines;
 }
 
+/**
+ * How much of a bar is given up to separate it from its neighbour, as a FRACTION of the bar.
+ * Measured across the histogram family: two publications hold a hairline (2–4 % and 7–13 %), one
+ * holds a third of the bar at two sizes, and the proposal's ceiling is about a tenth. Three per cent
+ * is inside both hairlines and under the ceiling.
+ */
+const BIN_SEPARATION = 0.03;
+
 /** Pure geometry: bins to bar rectangles, edge-to-edge on the variable's own real unit (never bin
  *  index), height a zero-anchored count. */
 export function histogramGeometry(
@@ -429,14 +437,27 @@ export function CarbonFootprintHistogram({
         </g>
       ))}
 
-      {/* Bars sit edge-to-edge — no gap between bins, because the bins are contiguous slices of
-          one continuous variable, not discrete categories (`references/types/histogram.md`). */}
+      {/* A HAIRLINE, IN PROPORTION TO THE BAR — and the sheet it contradicts was measured first.
+          `references/types/histogram.md` says bars are drawn edge-to-edge with no gap, because the
+          bins are contiguous slices of one continuous variable rather than discrete categories.
+          The histogram harvest (2026-09-08) scanned the pixels of every form-correct record in the
+          family and **not one of the five draws them edge-to-edge**: Datawrapper 1–2 px on a 54 px
+          bar, data-to-viz 1–2 px on 15 px, populationpyramid.net 1 px as the bar's own stroke,
+          Figure.NZ 5–6 px on 16 px at two different sizes. The sheet's REASON survives — remove the
+          separation and the eye reads one connected shape — and published practice has decided that
+          a hairline does not break that reading while a third of the bar does. The proposal's
+          replacement is a ceiling rather than a prohibition: no more than about a tenth of the bar.
+
+          The separation here was a flat `- 1`, and a constant is the wrong shape for this. On this
+          1920-wide frame the bars are about 155 px, so one pixel is 0.6 % — invisible, and the bins
+          are not individually countable, which is the thing the hairline buys. Three per cent sits
+          inside both hairline publications (2–4 % and 7–13 %) and well under the ceiling. */}
       {bars.map((b) => (
         <rect
           key={b.lo}
           x={b.x}
           y={b.y}
-          width={Math.max(b.width - 1, 0)}
+          width={Math.max(b.width - Math.max(1, b.width * BIN_SEPARATION), 0)}
           height={b.height}
           fill={muted}
         />

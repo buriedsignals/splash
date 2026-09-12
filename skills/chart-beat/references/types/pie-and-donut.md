@@ -65,3 +65,11 @@ non-negotiable rather than nice-to-have: every slice's hue must be colourblind-s
 its neighbours, and every slice's label (or its legend entry) must actually render, every time — a
 label that silently fails to place due to overlap turns that wedge into color-only information for
 a CVD reader, with no other channel left to fall back on.
+
+## The worked example in this tree
+
+`proof/static-donut-world-co2-share` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

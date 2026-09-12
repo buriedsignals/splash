@@ -128,6 +128,33 @@ describe("the pixel route", () => {
     expect(out.chromatic[0].hex).toBe("#1757B6");
   });
 
+  it("should never report the ground as part of the palette", () => {
+    // THE DEFECT THIS CLOSES. A saturated ground has chroma like any other colour, so it entered the
+    // chromatic set and — covering most of the frame — dominated it. Measured on three real records:
+    // Pudding's navy `#111044` at 95.3% was reported as BOTH the ground and the palette, and the
+    // shape came back "sequential", which is a description of the paper. ABC's `#175482` at 92.1%
+    // came back "monochrome" for the same reason. The modal colour is the ground; once it has been
+    // named that, it is not also a mark.
+    const png = new PNG({ width: 100, height: 100 });
+    for (let y = 0; y < 100; y += 1)
+      for (let x = 0; x < 100; x += 1) {
+        const i = (100 * y + x) << 2;
+        // Navy everywhere, a mint band across a tenth of it — the shape of a dark direction.
+        const mint = x >= 45 && x < 55;
+        png.data[i] = mint ? 79 : 17;
+        png.data[i + 1] = mint ? 224 : 16;
+        png.data[i + 2] = mint ? 192 : 68;
+        png.data[i + 3] = 255;
+      }
+    const path = join(DIR, "navy.png");
+    writeFileSync(path, PNG.sync.write(png));
+
+    const out = readPixelPalette(path);
+    expect(out.ground.hex).toBe("#111044");
+    expect(out.chromatic.map((c) => c.hex)).not.toContain("#111044");
+    expect(out.chromatic[0].hex).toBe("#4FE0C0");
+  });
+
   it("should find every pole on a sparse graphic, where each covers under one percent", () => {
     // THE DEFECT THIS CLOSES. An absolute noise floor of 0.4% of all pixels called the IIB
     // "Who's Suing Whom in AI" network MONOCHROME — six hues from 5 to 331 degrees, each covering

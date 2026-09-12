@@ -68,3 +68,11 @@ tooltip anchored to a point near the frame edge needs to flip or clamp the
 same way the direct label does, or a keyboard/pointer user near the border
 gets a tooltip that's partly or fully cut off exactly where reading it
 matters most.
+
+## The worked example in this tree
+
+`proof/static-proportional-symbol-europe-capacity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

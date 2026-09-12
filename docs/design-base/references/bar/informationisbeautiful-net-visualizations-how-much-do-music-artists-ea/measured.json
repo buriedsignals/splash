@@ -1,0 +1,482 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/how-much-do-music-artists-earn-online-2015-remix/",
+  "archive": "informationisbeautiful",
+  "family": "bar",
+  "id": "informationisbeautiful-net-visualizations-how-much-do-music-artists-ea",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "How Much Do Music Artists Earn Online – 2015 Remix — Information is Beautiful",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 33,
+        "sample": "Do digital music streaming services rip off artists? Taylor ",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 9,
+        "sample": "BBC, Rolling Stone, CD Baby, Tunecore, Trichordlist, Music S",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 8,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | italic | 0 | none",
+        "count": 7,
+        "sample": "Album download via distributor unsigned",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "The Plastics Crisis, The Myth of Plastic Recycling and Biopl",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "See how the streaming music services compare: ?",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "Sources:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 3,
+        "sample": "One great big infographic",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 28,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.7,
+        "transform": "none",
+        "key": "IBM Plex Sans | 28 | 600 | normal | -0.7 | none",
+        "count": 1,
+        "sample": "Corrections",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 11243,
+      "ratio": 0.11
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#1C1C1C",
+      "share": 0.561635225807169,
+      "h": 325.44206479964134,
+      "s": 0.000024135976125075943,
+      "l": 0.10981954328353896,
+      "chroma": 0.000005301203749516481
+    },
+    "chromatic": [
+      {
+        "hex": "#E80E8A",
+        "share": 0.3367695454949747,
+        "h": 325.87155055083275,
+        "s": 0.8861776103804924,
+        "l": 0.48235326119956207,
+        "chroma": 0.8549013207381307
+      },
+      {
+        "hex": "#F794E0",
+        "share": 0.07010424541937206,
+        "h": 313.93937347210647,
+        "s": 0.8608695010608212,
+        "l": 0.7745095726403932,
+        "chroma": 0.38823566339011206
+      },
+      {
+        "hex": "#821553",
+        "share": 0.004140006559637107,
+        "h": 325.870632322755,
+        "s": 0.7219331859709631,
+        "l": 0.2961524803613854,
+        "chroma": 0.4276046073609961
+      },
+      {
+        "hex": "#7DBCC4",
+        "share": 0.0019904051409766078,
+        "h": 186.76356340407327,
+        "s": 0.3756158579508732,
+        "l": 0.6294067675946233,
+        "chroma": 0.2784013898814658
+      },
+      {
+        "hex": "#E60E89",
+        "share": 0.0002911533843280263,
+        "h": 325.83668209866295,
+        "s": 0.8850505565135602,
+        "l": 0.47762646824839716,
+        "chroma": 0.8454471430577004
+      },
+      {
+        "hex": "#DC0F84",
+        "share": 0.00025710442052832876,
+        "h": 325.8738018347801,
+        "s": 0.8723179581916082,
+        "l": 0.4607032326444091,
+        "chroma": 0.8037594064652888
+      },
+      {
+        "hex": "#73154B",
+        "share": 0.00023674452992973407,
+        "h": 325.55177370277954,
+        "s": 0.6920758097091895,
+        "l": 0.2672847712610139,
+        "chroma": 0.36996264898680337
+      },
+      {
+        "hex": "#641643",
+        "share": 0.0001924808769901272,
+        "h": 325.45234628321015,
+        "s": 0.6387739030949587,
+        "l": 0.23820697954271958,
+        "chroma": 0.3043208041339279
+      },
+      {
+        "hex": "#E10F86",
+        "share": 0.00017031430667971181,
+        "h": 325.8667053532569,
+        "s": 0.879126952410914,
+        "l": 0.4704402364781082,
+        "chroma": 0.8271533827729378
+      },
+      {
+        "hex": "#4B1935",
+        "share": 0.00016475529218180202,
+        "h": 325.7737889382808,
+        "s": 0.5017755336123962,
+        "l": 0.19538955185617055,
+        "chroma": 0.19608339328983387
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#1C1C1C",
+        "share": 0.561635225807169,
+        "h": 325.44206479964134,
+        "s": 0.000024135976125075943,
+        "l": 0.10981954328353896,
+        "chroma": 0.000005301203749516481
+      },
+      {
+        "hex": "#4D4D4D",
+        "share": 0.002303516632571378,
+        "h": 330,
+        "s": 3.909770320097871e-7,
+        "l": 0.3025694259604294,
+        "chroma": 2.3659539227782744e-7
+      },
+      {
+        "hex": "#232323",
+        "share": 0.001380928688962021,
+        "h": 308.0998952148098,
+        "s": 0.004111461830756603,
+        "l": 0.13741099116645603,
+        "chroma": 0.0011299200906146334
+      },
+      {
+        "hex": "#2B2B2B",
+        "share": 0.0011052015698656942,
+        "h": 280,
+        "s": 0.000004342445230850561,
+        "l": 0.17033859126800674,
+        "chroma": 0.0000014793720065631177
+      },
+      {
+        "hex": "#333333",
+        "share": 0.0009066057769278662,
+        "h": 330.0000000004617,
+        "s": 0.00000893987931156874,
+        "l": 0.20172919324854185,
+        "chroma": 0.0000036068692825241833
+      },
+      {
+        "hex": "#3B3B3B",
+        "share": 0.0008772124877701682,
+        "h": 320,
+        "s": 0.000004001936937517153,
+        "l": 0.23287016327443524,
+        "chroma": 0.0000018638634161072254
+      },
+      {
+        "hex": "#9A9A9A",
+        "share": 0.0007951475362447746,
+        "h": 0,
+        "s": 0,
+        "l": 0.6029068203354049,
+        "chroma": 0
+      },
+      {
+        "hex": "#444444",
+        "share": 0.0007371253224228409,
+        "h": 300,
+        "s": 6.98108057261268e-7,
+        "l": 0.26477297932747756,
+        "chroma": 3.696803004271665e-7
+      },
+      {
+        "hex": "#828282",
+        "share": 0.000685773925998399,
+        "h": 0,
+        "s": 0,
+        "l": 0.5078711512976859,
+        "chroma": 0
+      },
+      {
+        "hex": "#535353",
+        "share": 0.0006705561238103709,
+        "h": 330,
+        "s": 0.000003723733713300296,
+        "l": 0.32739733820989536,
+        "chroma": 0.000002438281011873933
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 326,
+        "share": 0.41417451414213285,
+        "size": 23
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 14391040
+  }
+}

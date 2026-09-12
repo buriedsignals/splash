@@ -1,0 +1,438 @@
+{
+  "url": "https://www.iea.org/data-and-statistics/charts/marginal-cost-curve-for-oil-and-gas-methane-abatement-by-policy-type-2025",
+  "archive": "search",
+  "family": "marimekko",
+  "id": "iea-org-data-and-statistics-charts-marginal-cost-curve-for-oil-and-gas",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Marginal cost curve for oil and gas methane abatement by policy type, 2025 – Charts – Data & Statistics - IEA",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 400 | normal | 0 | none",
+        "count": 87,
+        "sample": "USD/tCO₂-eq",
+        "colors": [
+          "rgb(111, 111, 111)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 14 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "About",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 500 | normal | 0 | none",
+        "count": 16,
+        "sample": "Zero non-emergency flaring and venting",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": -0.14,
+        "transform": "none",
+        "key": "Graphik | 14 | 500 | normal | -0.14 | none",
+        "count": 8,
+        "sample": "Liquefied natural gas export capacity in selected countries,",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 22,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -0.44,
+        "transform": "none",
+        "key": "Graphik | 22 | 700 | normal | -0.44 | none",
+        "count": 7,
+        "sample": "Sign In",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(111, 111, 111)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Open",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 18 | 500 | normal | 0 | none",
+        "count": 5,
+        "sample": "Energy system",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Create a free IEA account to download our reports or subcrib",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 68, 255)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 16 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "Sign in",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 600 | normal | 0 | none",
+        "count": 3,
+        "sample": "United States",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 46,
+        "weight": "700",
+        "style": "normal",
+        "tracking": -1.38,
+        "transform": "none",
+        "key": "Graphik | 46 | 700 | normal | -1.38 | none",
+        "count": 1,
+        "sample": "Marginal cost curve for oil and gas methane abatement by pol",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Graphik",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Graphik | 12 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "68%",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(73, 211, 255)",
+        "count": 127
+      },
+      {
+        "colour": "stroke rgb(73, 211, 255)",
+        "count": 113
+      },
+      {
+        "colour": "fill rgb(104, 243, 148)",
+        "count": 101
+      },
+      {
+        "colour": "stroke rgb(104, 243, 148)",
+        "count": 100
+      },
+      {
+        "colour": "fill rgb(0, 173, 161)",
+        "count": 77
+      },
+      {
+        "colour": "stroke rgb(0, 0, 0)",
+        "count": 72
+      },
+      {
+        "colour": "stroke rgb(0, 173, 161)",
+        "count": 67
+      },
+      {
+        "colour": "fill rgb(62, 122, 211)",
+        "count": 39
+      },
+      {
+        "colour": "stroke rgb(62, 122, 211)",
+        "count": 32
+      },
+      {
+        "colour": "fill rgb(255, 244, 90)",
+        "count": 14
+      },
+      {
+        "colour": "fill rgb(255, 117, 75)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(204, 204, 204)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 5
+      },
+      {
+        "colour": "stroke rgb(175, 106, 177)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(255, 183, 67)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 251, 208)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(254, 248, 160)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(194, 239, 251)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 183, 67)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(175, 106, 177)",
+        "count": 1
+      }
+    ],
+    "column": null,
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 521,
+      "nearTheTop": true,
+      "x": 122,
+      "y": 521,
+      "w": 1162,
+      "h": 500,
+      "ratio": 2.32
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.8859294320137694,
+      "h": 0,
+      "s": 0,
+      "l": 0.999993318343414,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#49D3FF",
+        "share": 0.03829776247848537,
+        "h": 194.50549450549448,
+        "s": 1,
+        "l": 0.6431372549019607,
+        "chroma": 0.7137254901960784
+      },
+      {
+        "hex": "#68F394",
+        "share": 0.029185886402753873,
+        "h": 138.9928057553957,
+        "s": 0.8527607361963189,
+        "l": 0.6803921568627451,
+        "chroma": 0.5450980392156862
+      },
+      {
+        "hex": "#00ADA1",
+        "share": 0.025196213425129087,
+        "h": 175.83815028901734,
+        "s": 1,
+        "l": 0.3392156862745098,
+        "chroma": 0.6784313725490196
+      },
+      {
+        "hex": "#3E7AD3",
+        "share": 0.005836488812392427,
+        "h": 215.83892617449666,
+        "s": 0.6286919831223627,
+        "l": 0.5352941176470588,
+        "chroma": 0.584313725490196
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.8859294320137694,
+        "h": 0,
+        "s": 0,
+        "l": 0.999993318343414,
+        "chroma": 0
+      },
+      {
+        "hex": "#E6E6E6",
+        "share": 0.009046471600688468,
+        "h": 0,
+        "s": 0,
+        "l": 0.9018309606947802,
+        "chroma": 0
+      },
+      {
+        "hex": "#000000",
+        "share": 0.0031204819277108435,
+        "h": 0,
+        "s": 0,
+        "l": 0.00008219504017823346,
+        "chroma": 0
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.00026506024096385544,
+        "h": 0,
+        "s": 0,
+        "l": 0.956811815635345,
+        "chroma": 0
+      },
+      {
+        "hex": "#8B8B8B",
+        "share": 0.00018932874354561101,
+        "h": 0,
+        "s": 0,
+        "l": 0.5460249554367201,
+        "chroma": 0
+      },
+      {
+        "hex": "#848484",
+        "share": 0.00018760757314974181,
+        "h": 0,
+        "s": 0,
+        "l": 0.5164597949271452,
+        "chroma": 0
+      },
+      {
+        "hex": "#7C7C7C",
+        "share": 0.0001772805507745267,
+        "h": 0,
+        "s": 0,
+        "l": 0.48657909765848084,
+        "chroma": 0
+      },
+      {
+        "hex": "#9B9B9B",
+        "share": 0.00016179001721170397,
+        "h": 0,
+        "s": 0,
+        "l": 0.608552357113058,
+        "chroma": 0
+      },
+      {
+        "hex": "#939393",
+        "share": 0.00016179001721170397,
+        "h": 0,
+        "s": 0,
+        "l": 0.5757613683771381,
+        "chroma": 0
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.0001566265060240964,
+        "h": 0,
+        "s": 0,
+        "l": 0.9270415858651153,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 195,
+        "share": 0.06933046471600689,
+        "size": 3
+      },
+      {
+        "hue": 139,
+        "share": 0.029185886402753873,
+        "size": 1
+      }
+    ],
+    "ramped": 1,
+    "shape": "diverging",
+    "pixels": 581000
+  }
+}

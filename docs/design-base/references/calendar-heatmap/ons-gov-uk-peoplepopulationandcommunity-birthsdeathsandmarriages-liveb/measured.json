@@ -1,0 +1,557 @@
+{
+  "url": "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths/articles/howpopularisyourbirthday/2015-12-18",
+  "archive": "search",
+  "family": "calendar-heatmap",
+  "id": "ons-gov-uk-peoplepopulationandcommunity-birthsdeathsandmarriages-liveb",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept additional cookies\"",
+  "entry": null,
+  "style": {
+    "title": "How popular is your birthday? - Office for National Statistics",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "Open Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 18 | 400 | normal | 0 | none",
+        "count": 55,
+        "sample": "Cookies are small files stored on your device when you visit",
+        "colors": [
+          "rgb(34, 34, 34)",
+          "rgb(32, 96, 149)",
+          "rgb(255, 255, 255)",
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 14 | 400 | normal | 0 | none",
+        "count": 17,
+        "sample": "Skip to main content",
+        "colors": [
+          "rgb(32, 96, 149)",
+          "rgb(229, 230, 231)",
+          "rgb(255, 255, 255)",
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 17,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 17 | 700 | normal | 0 | none",
+        "count": 7,
+        "sample": "Accept additional cookies",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(32, 96, 149)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 24,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 24 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "How popular do you think your own birthday is? Find out with",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "18 December 2015",
+        "colors": [
+          "rgb(50, 49, 50)",
+          "rgb(32, 96, 149)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 16,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 16 | 600 | normal | 0 | none",
+        "count": 4,
+        "sample": "Embed this interactive",
+        "colors": [
+          "rgb(50, 49, 50)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 18 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Average daily births, England and Wales, 1995 to 2014",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 24,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 24 | 800 | normal | 0 | none",
+        "count": 3,
+        "sample": "Help",
+        "colors": [
+          "rgb(245, 245, 246)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 12 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "English (EN) |",
+        "colors": [
+          "rgb(50, 49, 50)",
+          "rgb(32, 96, 149)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 26,
+        "weight": "800",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 26 | 800 | normal | 0 | none",
+        "count": 1,
+        "sample": "Cookies on ons.gov.uk",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 17,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 17 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Search for a keyword(s) or time series ID",
+        "colors": [
+          "rgb(229, 230, 231)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 38,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 38 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "How popular is your birthday?",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 24 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "A peak in births in late September show that more babies are",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "th",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      },
+      {
+        "family": "Open Sans",
+        "size": 110,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Open Sans | 110 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "48",
+        "colors": [
+          "rgb(50, 49, 50)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 944,
+      "ch": 105
+    },
+    "graphic": {
+      "tag": "iframe",
+      "documentTop": 1490,
+      "nearTheTop": true,
+      "x": 248,
+      "y": 1490,
+      "w": 700,
+      "h": 1102,
+      "ratio": 0.64
+    },
+    "typeSource": "the graphic's own document, in style.graphicFrame",
+    "graphicFrame": {
+      "url": "https://www.ons.gov.uk/visualisations/nesscontent/dvc307/chart1/index.html?initialWidth=700&childId=0e1-43cd-a52b-3920481cb99c&parentTitle=How%20popular%20is%20your%20birthday%3F%20-%20Office%20for%20National%20Statistics&parentUrl=https%3A%2F%2Fwww.ons.gov.uk%2Fpeoplepopulationandcommunity%2Fbirthsdeathsandmarriages%2Flivebirths%2Farticles%2Fhowpopularisyourbirthday%2F2015-12-18",
+      "title": "",
+      "ground": "rgba(0, 0, 0, 0)",
+      "type": [
+        {
+          "family": "Open Sans",
+          "size": 14,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Open Sans | 14 | 400 | normal | 0 | none",
+          "count": 22,
+          "sample": "10",
+          "colors": [
+            "rgb(34, 34, 34)"
+          ]
+        },
+        {
+          "family": "Open Sans",
+          "size": 14,
+          "weight": "300",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Open Sans | 14 | 300 | normal | 0 | none",
+          "count": 12,
+          "sample": "Jan",
+          "colors": [
+            "rgb(34, 34, 34)"
+          ]
+        },
+        {
+          "family": "Open Sans",
+          "size": 12,
+          "weight": "400",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Open Sans | 12 | 400 | normal | 0 | none",
+          "count": 6,
+          "sample": "1,350",
+          "colors": [
+            "rgb(34, 34, 34)"
+          ]
+        },
+        {
+          "family": "Open Sans",
+          "size": 15,
+          "weight": "800",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Open Sans | 15 | 800 | normal | 0 | none",
+          "count": 2,
+          "sample": "Number of Births",
+          "colors": [
+            "rgb(102, 102, 102)"
+          ]
+        },
+        {
+          "family": "Open Sans",
+          "size": 14,
+          "weight": "100",
+          "style": "normal",
+          "tracking": 0,
+          "transform": "none",
+          "key": "Open Sans | 14 | 100 | normal | 0 | none",
+          "count": 2,
+          "sample": "Source:",
+          "colors": [
+            "rgb(128, 128, 128)",
+            "rgb(71, 116, 204)"
+          ]
+        }
+      ],
+      "marks": [
+        {
+          "colour": "fill rgb(254, 204, 92)",
+          "count": 157
+        },
+        {
+          "colour": "fill rgb(253, 141, 60)",
+          "count": 122
+        },
+        {
+          "colour": "fill rgb(240, 59, 32)",
+          "count": 69
+        },
+        {
+          "colour": "fill rgb(189, 0, 38)",
+          "count": 19
+        },
+        {
+          "colour": "fill rgb(255, 255, 255)",
+          "count": 6
+        },
+        {
+          "colour": "stroke rgb(102, 102, 102)",
+          "count": 5
+        },
+        {
+          "colour": "fill rgb(255, 255, 178)",
+          "count": 4
+        }
+      ],
+      "column": null
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.3076095410941146,
+      "h": 34.94022367920142,
+      "s": 0.33583732677110306,
+      "l": 0.9999361995208973,
+      "chroma": 0.000042853164697098656
+    },
+    "chromatic": [
+      {
+        "hex": "#FECC5C",
+        "share": 0.25971869328493646,
+        "h": 41.48148148148149,
+        "s": 0.9878048780487805,
+        "l": 0.6784313725490196,
+        "chroma": 0.6352941176470588
+      },
+      {
+        "hex": "#FD8D3C",
+        "share": 0.20056002074150894,
+        "h": 25.18134715025907,
+        "s": 0.9796954314720813,
+        "l": 0.6137254901960785,
+        "chroma": 0.7568627450980392
+      },
+      {
+        "hex": "#F03B20",
+        "share": 0.11297381384495722,
+        "h": 7.788461538461539,
+        "s": 0.8739495798319328,
+        "l": 0.5333333333333333,
+        "chroma": 0.8156862745098039
+      },
+      {
+        "hex": "#BD0026",
+        "share": 0.02979517759917034,
+        "h": 347.93650793650795,
+        "s": 1,
+        "l": 0.37058823529411766,
+        "chroma": 0.7411764705882353
+      },
+      {
+        "hex": "#FFFFB2",
+        "share": 0.005088151413015297,
+        "h": 60,
+        "s": 1,
+        "l": 0.8490196078431372,
+        "chroma": 0.3019607843137255
+      },
+      {
+        "hex": "#FED475",
+        "share": 0.002977702877884366,
+        "h": 41.579406106284715,
+        "s": 0.985648459099358,
+        "l": 0.7267492978906843,
+        "chroma": 0.5386582669637294
+      },
+      {
+        "hex": "#FFE5AD",
+        "share": 0.002693803474202748,
+        "h": 41.1973356025705,
+        "s": 0.9926712612072023,
+        "l": 0.8380295910471984,
+        "chroma": 0.32156674026684773
+      },
+      {
+        "hex": "#FEC69D",
+        "share": 0.0026004666839512572,
+        "h": 25.25228231055798,
+        "s": 0.9798824638466014,
+        "l": 0.8050671514867164,
+        "chroma": 0.3820225597716653
+      },
+      {
+        "hex": "#FFEEC9",
+        "share": 0.002490277417682136,
+        "h": 41.19373758123197,
+        "s": 1,
+        "l": 0.8936654724357207,
+        "chroma": 0.2126690551285585
+      },
+      {
+        "hex": "#FED67D",
+        "share": 0.002488981073373088,
+        "h": 41.395348837209305,
+        "s": 0.984732824427481,
+        "l": 0.7431372549019608,
+        "chroma": 0.5058823529411764
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.3076095410941146,
+        "h": 34.94022367920142,
+        "s": 0.33583732677110306,
+        "l": 0.9999361995208973,
+        "chroma": 0.000042853164697098656
+      },
+      {
+        "hex": "#FFF5E4",
+        "share": 0.004244231267824734,
+        "h": 36.673660334561916,
+        "s": 1,
+        "l": 0.9471923772563393,
+        "chroma": 0.10561524548732137
+      },
+      {
+        "hex": "#FFFBF5",
+        "share": 0.003189007000259269,
+        "h": 38.91099725962122,
+        "s": 1,
+        "l": 0.9799306551889049,
+        "chroma": 0.04013868962219036
+      },
+      {
+        "hex": "#858585",
+        "share": 0.0018369198859217008,
+        "h": 0,
+        "s": 0,
+        "l": 0.5204394813677059,
+        "chroma": 0
+      },
+      {
+        "hex": "#FCDDD9",
+        "share": 0.0015970961887477313,
+        "h": 7.732876077486334,
+        "s": 0.8537627601487701,
+        "l": 0.9195505474917239,
+        "chroma": 0.13736949325184633
+      },
+      {
+        "hex": "#FFECDE",
+        "share": 0.0015439460720767435,
+        "h": 25.306287622034503,
+        "s": 1,
+        "l": 0.9349072290545102,
+        "chroma": 0.13018554189097964
+      },
+      {
+        "hex": "#666666",
+        "share": 0.0014596836919885921,
+        "h": 0,
+        "s": 0,
+        "l": 0.399867655765681,
+        "chroma": 0
+      },
+      {
+        "hex": "#FFF4DD",
+        "share": 0.001317085817993259,
+        "h": 40.58971613761974,
+        "s": 1,
+        "l": 0.9333043847460244,
+        "chroma": 0.1333912305079512
+      },
+      {
+        "hex": "#FFF9EA",
+        "share": 0.0010707803992740471,
+        "h": 41.49284606102397,
+        "s": 1,
+        "l": 0.9586882210511323,
+        "chroma": 0.08262355789773534
+      },
+      {
+        "hex": "#FFF2D6",
+        "share": 0.0009787399533316048,
+        "h": 40.977829412334195,
+        "s": 1,
+        "l": 0.9195247370471368,
+        "chroma": 0.16095052590572645
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 41,
+        "share": 0.6118304381643765,
+        "size": 23
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 771400
+  }
+}

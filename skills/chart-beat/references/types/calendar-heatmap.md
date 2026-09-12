@@ -51,3 +51,11 @@ in exactly the direction that makes it disappear. Every stop in the ramp needs r
 against the calendar's actual background — not an assumed white page — because a calendar heatmap is
 frequently the densest grid of individually-meaningful cells in this whole set, and a vanishing bottom
 third of the ramp here means an entire season's worth of low readings reads as blank.
+
+## The worked example in this tree
+
+`proof/static-calendar-heatmap-geneva` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

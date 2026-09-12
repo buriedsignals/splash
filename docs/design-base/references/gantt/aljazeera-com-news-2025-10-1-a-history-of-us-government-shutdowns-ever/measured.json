@@ -1,0 +1,582 @@
+{
+  "url": "https://www.aljazeera.com/news/2025/10/1/a-history-of-us-government-shutdowns-every-closure-and-how-long-it-lasted",
+  "archive": "url-list",
+  "family": "gantt",
+  "id": "aljazeera-com-news-2025-10-1-a-history-of-us-government-shutdowns-ever",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "#onetrust-accept-btn-handler",
+  "entry": null,
+  "style": {
+    "title": "A history of US government shutdowns: Every closure and how long it lasted | Donald Trump News | Al Jazeera",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 400 | normal | 0 | none",
+        "count": 41,
+        "sample": "Sign up",
+        "colors": [
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)",
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 20 | 400 | normal | 0 | none",
+        "count": 38,
+        "sample": "The United States federal at 12:01am East Coast time (04:01 ",
+        "colors": [
+          "rgb(0, 0, 0)",
+          "rgb(0, 89, 165)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Advertisement",
+        "colors": [
+          "rgb(89, 89, 89)",
+          "rgb(0, 0, 0)",
+          "rgb(98, 98, 98)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 500 | normal | 0 | none",
+        "count": 12,
+        "sample": "Skip to Content",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 20,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 20 | 400 | normal | 0 | none",
+        "count": 12,
+        "sample": "Rubio heads to Ecuador, Colombia, Peru after right-wing vict",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 32,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 32 | 700 | normal | 0 | none",
+        "count": 8,
+        "sample": "What is a government shutdown?",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 18 | 300 | normal | 0 | none",
+        "count": 4,
+        "sample": "Rightward shift in Latin America comes as Washington pledges",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 20 | 700 | normal | 0 | none",
+        "count": 4,
+        "sample": "About",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Advertisement",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 24,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Roboto | 24 | 300 | normal | 0 | uppercase",
+        "count": 3,
+        "sample": "Related",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 19,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 19 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "News",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Roboto | 18 | 700 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Live",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 14 | 900 | normal | 0 | none",
+        "count": 1,
+        "sample": "Donald Trump",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 23 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "EXPLAINER",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 40,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 40 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "A history of US government shutdowns: Every closure and how ",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 24,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 24 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "The US government has had 20 funding gaps, resulting in 10 s",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 16 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Marium Ali",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 14,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Roboto | 14 | 300 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Recommended Stories",
+        "colors": [
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "02:25",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Roboto",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Roboto | 15 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026 Al Jazeera Media Network",
+        "colors": [
+          "rgb(89, 89, 89)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(0, 0, 0)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(250, 144, 0)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(89, 89, 89)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(251, 187, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(81, 142, 248)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(40, 180, 70)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(241, 67, 54)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(25, 119, 243)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(254, 254, 254)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(255, 0, 0)",
+        "count": 1
+      },
+      {
+        "colour": "fill url(\"#instagram-colored-outline-a\")",
+        "count": 1
+      },
+      {
+        "colour": "fill url(\"#instagram-colored-outline-b\")",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(188, 48, 160)",
+        "count": 1
+      },
+      {
+        "colour": "fill url(\"#instagram-colored-outline-c\")",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(255, 121, 2)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 770,
+      "ch": 77
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 2134,
+      "nearTheTop": false,
+      "x": 135,
+      "y": 2134,
+      "w": 770,
+      "h": 1078,
+      "ratio": 0.71
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.7210167733844614,
+      "h": 161.54745933255973,
+      "s": 0.29459279203615873,
+      "l": 0.9994689802093044,
+      "chroma": 0.00031286920553497133
+    },
+    "chromatic": [
+      {
+        "hex": "#B23A47",
+        "share": 0.05416561154722715,
+        "h": 353.57630043492287,
+        "s": 0.5081727995122822,
+        "l": 0.4628310916075952,
+        "chroma": 0.4703963430471144
+      },
+      {
+        "hex": "#335A96",
+        "share": 0.039272148464349024,
+        "h": 216.33015812102522,
+        "s": 0.49100296386090186,
+        "l": 0.3936518343520164,
+        "chroma": 0.3865684347922417
+      },
+      {
+        "hex": "#B33A49",
+        "share": 0.005650616792678074,
+        "h": 352.60745107637297,
+        "s": 0.5073569904006393,
+        "l": 0.46501636079100866,
+        "chroma": 0.471858602595968
+      },
+      {
+        "hex": "#FA9000",
+        "share": 0.0042602708340869905,
+        "h": 34.56,
+        "s": 1,
+        "l": 0.49019607843137253,
+        "chroma": 0.9803921568627451
+      },
+      {
+        "hex": "#AE3C44",
+        "share": 0.0011093827249816107,
+        "h": 355.42694948994654,
+        "s": 0.4885186098560812,
+        "l": 0.458041346973572,
+        "chroma": 0.4475234441602727
+      },
+      {
+        "hex": "#335A99",
+        "share": 0.000900770538653547,
+        "h": 217.4103538508067,
+        "s": 0.49770613682026704,
+        "l": 0.4010788251043389,
+        "chroma": 0.3992387852061841
+      },
+      {
+        "hex": "#AD3C49",
+        "share": 0.0008151551327038793,
+        "h": 352.8482268762731,
+        "s": 0.48629771670942007,
+        "l": 0.45681633600185634,
+        "chroma": 0.444297482306532
+      },
+      {
+        "hex": "#A2434D",
+        "share": 0.0006535711271087316,
+        "h": 353.3870563513331,
+        "s": 0.41760391591726975,
+        "l": 0.44935605238405324,
+        "chroma": 0.37530569423341287
+      },
+      {
+        "hex": "#3A598B",
+        "share": 0.0006270424097722148,
+        "h": 216.96391715892108,
+        "s": 0.4109320621179774,
+        "l": 0.38679864253393664,
+        "chroma": 0.31789592760180996
+      },
+      {
+        "hex": "#FFD1D3",
+        "share": 0.0004304887313243859,
+        "h": 357.90931836211627,
+        "s": 0.9945378406263271,
+        "l": 0.909501839951667,
+        "chroma": 0.1800076893502499
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.7210167733844614,
+        "h": 161.54745933255973,
+        "s": 0.29459279203615873,
+        "l": 0.9994689802093044,
+        "chroma": 0.00031286920553497133
+      },
+      {
+        "hex": "#262E36",
+        "share": 0.03593194178152395,
+        "h": 209.7586146469583,
+        "s": 0.1735768280334561,
+        "l": 0.17955613549534183,
+        "chroma": 0.06233356890645378
+      },
+      {
+        "hex": "#B9C3D3",
+        "share": 0.02511907776531732,
+        "h": 216.69284742997007,
+        "s": 0.2312179195878954,
+        "l": 0.7754654874287097,
+        "chroma": 0.10383280574483178
+      },
+      {
+        "hex": "#F4F4F4",
+        "share": 0.0067503527113554965,
+        "h": 200.45454545454476,
+        "s": 0.012224744788608669,
+        "l": 0.9558756979033127,
+        "chroma": 0.0010788166642149433
+      },
+      {
+        "hex": "#B6C3D3",
+        "share": 0.005871287486886373,
+        "h": 212.55811947379763,
+        "s": 0.2441160160883878,
+        "l": 0.7705161505966116,
+        "chroma": 0.11204136614596549
+      },
+      {
+        "hex": "#EBEBEC",
+        "share": 0.004882489840707111,
+        "h": 198.3837510803783,
+        "s": 0.01452258720455835,
+        "l": 0.9228383672560158,
+        "chroma": 0.0022411730807412322
+      },
+      {
+        "hex": "#CCD5E2",
+        "share": 0.004461647915686913,
+        "h": 214.98368218290682,
+        "s": 0.275372993134764,
+        "l": 0.8431457339692634,
+        "chroma": 0.08638685744568098
+      },
+      {
+        "hex": "#292D33",
+        "share": 0.003529525256544755,
+        "h": 215.7704613479203,
+        "s": 0.10723574746271083,
+        "l": 0.1815798816964435,
+        "chroma": 0.03894370867581745
+      },
+      {
+        "hex": "#E4E4E4",
+        "share": 0.0033824114604058893,
+        "h": 200.4938271604937,
+        "s": 0.006441437262256374,
+        "l": 0.8945174932718185,
+        "chroma": 0.0013589178987102324
+      },
+      {
+        "hex": "#DBDBDB",
+        "share": 0.0028506312628875305,
+        "h": 205.06224066390203,
+        "s": 0.004276259367255551,
+        "l": 0.8597649381241499,
+        "chroma": 0.0011993629939285322
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 354,
+        "share": 0.06398123696173837,
+        "size": 11
+      },
+      {
+        "hue": 216,
+        "share": 0.042253011612343086,
+        "size": 9
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 829290
+  }
+}

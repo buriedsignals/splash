@@ -235,4 +235,69 @@ describe("the arbiter", () => {
     expect(dropped).toHaveLength(0);
     expect(placed[0].anchor).toBe("above");
   });
+
+  it("should place a label only where its request says it may go", () => {
+    // A row's value belongs beyond its own bar's tip and nowhere else. `above` is free here, and
+    // the four-anchor default takes it — which on a row chart means the label names the row above.
+    const request = {
+      id: "value-Germany",
+      treatment: "value-beyond-the-growing-tip-in-ink",
+      text: "-6,46",
+      at: { x: 400, y: 300 },
+      priority: 6,
+    };
+
+    const loose = placeLabels([request], { frame: FRAME, measure });
+    expect(loose.placed[0].anchor).toBe("above");
+
+    const bound = placeLabels([{ ...request, anchors: ["left"] }], {
+      frame: FRAME,
+      measure,
+    });
+    expect(bound.placed[0].anchor).toBe("left");
+    expect(bound.placed[0].box.x + bound.placed[0].box.width).toBeLessThan(400);
+  });
+
+  it("should drop a label whose only named anchor has no room, rather than fall back to another", () => {
+    // The point of narrowing the anchors is that the fallbacks are refused. A label the caller
+    // cannot honestly place anywhere else is dropped and reported — an absent number is a visible
+    // hole; a number beside the wrong row is not.
+    const { placed, dropped } = placeLabels(
+      [
+        {
+          id: "value-Germany",
+          treatment: "value-beyond-the-growing-tip-in-ink",
+          text: "-6,46",
+          at: { x: 400, y: 300 },
+          priority: 6,
+          anchors: ["left"],
+        },
+      ],
+      {
+        frame: FRAME,
+        measure,
+        avoid: [{ x: 300, y: 280, width: 100, height: 40 }],
+      },
+    );
+
+    expect(placed).toHaveLength(0);
+    expect(dropped[0].id).toBe("value-Germany");
+  });
+
+  it("should refuse a misspelt anchor rather than silently trying all four", () => {
+    expect(() =>
+      placeLabels(
+        [
+          {
+            id: "value-Germany",
+            treatment: "value-beyond-the-growing-tip-in-ink",
+            text: "-6,46",
+            at: { x: 400, y: 300 },
+            anchors: ["beyond"],
+          },
+        ],
+        { frame: FRAME, measure },
+      ),
+    ).toThrow(/beyond/);
+  });
 });

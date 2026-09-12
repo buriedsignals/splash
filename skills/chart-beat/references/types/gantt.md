@@ -49,3 +49,11 @@ typically the row's category name sitting in the row gutter, in neutral ink, rat
 printed inside a coloured fill — but if a value or duration label is ever added inside the bar itself,
 the same real-contrast-against-the-actual-fill discipline the rest of this family uses applies here
 too.
+
+## The worked example in this tree
+
+`proof/static-gantt-top-ten-tenure` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

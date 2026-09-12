@@ -1,0 +1,489 @@
+{
+  "url": "https://www.pewresearch.org/chart/self-reported-voting-patterns-in-2024-election-varied-across-engagement-groups/",
+  "archive": "search",
+  "family": "grouped-bar",
+  "id": "pewresearch-org-chart-self-reported-voting-patterns-in-2024-election-v",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": "button \"Accept All Cookies\"",
+  "entry": null,
+  "style": {
+    "title": "Self-reported voting patterns in 2024 election varied across engagement groups | Pew Research Center",
+    "ground": "rgb(255, 255, 255)",
+    "type": [
+      {
+        "family": "franklin-gothic-urw",
+        "size": 15,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 15 | 400 | normal | 0 | none",
+        "count": 16,
+        "sample": "Read our research on:",
+        "colors": [
+          "rgb(42, 42, 42)",
+          "rgb(52, 110, 173)",
+          "rgb(255, 255, 255)",
+          "rgb(0, 0, 0)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 16 | 400 | normal | 0 | none",
+        "count": 15,
+        "sample": "Home",
+        "colors": [
+          "rgb(52, 110, 173)",
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 200 | normal | 0 | none",
+        "count": 12,
+        "sample": "22",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.32,
+        "transform": "uppercase",
+        "key": "franklin-gothic-urw | 16 | 400 | normal | 0.32 | uppercase",
+        "count": 7,
+        "sample": "Research Topics",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1.2,
+        "transform": "uppercase",
+        "key": "franklin-gothic-urw | 12 | 400 | normal | 1.2 | uppercase",
+        "count": 6,
+        "sample": "Numbers, Facts and Trends Shaping Your World",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 400 | normal | 0 | none",
+        "count": 6,
+        "sample": "Outsiders",
+        "colors": [
+          "rgb(42, 42, 42)",
+          "rgb(129, 129, 129)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 700 | normal | 0 | none",
+        "count": 6,
+        "sample": "Donald Trump",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 13,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 13 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "901 E St. NW, Suite 300 Washington, DC 20004 USA",
+        "colors": [
+          "rgb(42, 42, 42)",
+          "rgb(52, 110, 173)",
+          "rgb(86, 86, 86)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.2,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 400 | normal | 0.2 | none",
+        "count": 3,
+        "sample": "Data",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "franklin-gothic-urw | 13 | 700 | normal | 0 | uppercase",
+        "count": 2,
+        "sample": "Research Topics",
+        "colors": [
+          "rgb(86, 86, 86)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "franklin-gothic-urw | 12 | 400 | normal | 1 | uppercase",
+        "count": 1,
+        "sample": "July 16, 2026",
+        "colors": [
+          "rgb(86, 86, 86)"
+        ]
+      },
+      {
+        "family": "abril-text",
+        "size": 35,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abril-text | 35 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Self-reported voting patterns in 2024 election varied across",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 18 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Self-reported voting patterns in 2024 election varied across",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "Georgia",
+        "size": 14,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Georgia | 14 | 400 | italic | 0 | none",
+        "count": 1,
+        "sample": "% of U.S. adults in each engagement group who say they voted",
+        "colors": [
+          "rgb(86, 86, 86)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0.2,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 500 | normal | 0.2 | none",
+        "count": 1,
+        "sample": "PEW-KNIGHT INITIATIVE",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 12,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0.2,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 12 | 700 | normal | 0.2 | none",
+        "count": 1,
+        "sample": "Chart",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "abril-text",
+        "size": 20,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "abril-text | 20 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up for our weekly newsletter",
+        "colors": [
+          "rgb(42, 42, 42)"
+        ]
+      },
+      {
+        "family": "franklin-gothic-urw",
+        "size": 13,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "franklin-gothic-urw | 13 | 700 | normal | 0 | none",
+        "count": 1,
+        "sample": "ABOUT PEW RESEARCH CENTER",
+        "colors": [
+          "rgb(52, 110, 173)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(42, 42, 42)",
+        "count": 9
+      },
+      {
+        "colour": "fill rgb(191, 59, 39)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(69, 106, 131)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(198, 200, 202)",
+        "count": 4
+      },
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 1200,
+      "ch": 185
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 632,
+      "nearTheTop": true,
+      "x": 400,
+      "y": 632,
+      "w": 420,
+      "h": 170,
+      "ratio": 2.47
+    },
+    "typeSource": "the page, which contains the graphic — the two are not separated"
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.832983193277311,
+      "h": 0,
+      "s": 0,
+      "l": 0.9999444815336811,
+      "chroma": 0
+    },
+    "chromatic": [
+      {
+        "hex": "#456A83",
+        "share": 0.034509803921568626,
+        "h": 204.17291066282422,
+        "s": 0.3096555416741032,
+        "l": 0.3923669467787114,
+        "chroma": 0.2429971988795518
+      },
+      {
+        "hex": "#BF3B27",
+        "share": 0.03214285714285714,
+        "h": 7.894736842105263,
+        "s": 0.6608695652173913,
+        "l": 0.45098039215686275,
+        "chroma": 0.596078431372549
+      },
+      {
+        "hex": "#F5CF95",
+        "share": 0.003137254901960784,
+        "h": 36.24999999999999,
+        "s": 0.827586206896552,
+        "l": 0.7725490196078432,
+        "chroma": 0.3764705882352941
+      },
+      {
+        "hex": "#748FA2",
+        "share": 0.001568627450980392,
+        "h": 204.78260869565216,
+        "s": 0.19827586206896547,
+        "l": 0.5450980392156862,
+        "chroma": 0.18039215686274507
+      },
+      {
+        "hex": "#E09F96",
+        "share": 0.0011904761904761906,
+        "h": 7.297297297297296,
+        "s": 0.5441176470588235,
+        "l": 0.7333333333333334,
+        "chroma": 0.2901960784313725
+      },
+      {
+        "hex": "#C03D2A",
+        "share": 0.0011904761904761906,
+        "h": 7.6000000000000005,
+        "s": 0.6410256410256411,
+        "l": 0.4588235294117647,
+        "chroma": 0.5882352941176471
+      },
+      {
+        "hex": "#F5D098",
+        "share": 0.00011204481792717087,
+        "h": 36.12903225806451,
+        "s": 0.8230088495575224,
+        "l": 0.7784313725490196,
+        "chroma": 0.3647058823529412
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.832983193277311,
+        "h": 0,
+        "s": 0,
+        "l": 0.9999444815336811,
+        "chroma": 0
+      },
+      {
+        "hex": "#C6C8CA",
+        "share": 0.03333333333333333,
+        "h": 210,
+        "s": 0.036387264457439755,
+        "l": 0.784453781512605,
+        "chroma": 0.015686274509803866
+      },
+      {
+        "hex": "#000000",
+        "share": 0.008571428571428572,
+        "h": 0,
+        "s": 0,
+        "l": 0,
+        "chroma": 0
+      },
+      {
+        "hex": "#F3F3F3",
+        "share": 0.00407563025210084,
+        "h": 237.93103448276275,
+        "s": 0.016661878770467015,
+        "l": 0.953089414459942,
+        "chroma": 0.0015632369786401368
+      },
+      {
+        "hex": "#E3E4E4",
+        "share": 0.003487394957983193,
+        "h": 210.00000000000122,
+        "s": 0.01307477596591747,
+        "l": 0.8927947082447436,
+        "chroma": 0.002803370344121592
+      },
+      {
+        "hex": "#D4D5D5",
+        "share": 0.0030672268907563026,
+        "h": 199.99999999999966,
+        "s": 0.018134715025906783,
+        "l": 0.8341122750470051,
+        "chroma": 0.006016653236637137
+      },
+      {
+        "hex": "#ECECEC",
+        "share": 0.00196078431372549,
+        "h": 0,
+        "s": 0,
+        "l": 0.9245098039215687,
+        "chroma": 0
+      },
+      {
+        "hex": "#434343",
+        "share": 0.0019327731092436975,
+        "h": 0,
+        "s": 0,
+        "l": 0.26229042341574316,
+        "chroma": 0
+      },
+      {
+        "hex": "#ADADAD",
+        "share": 0.0019047619047619048,
+        "h": 0,
+        "s": 0,
+        "l": 0.6779123414071512,
+        "chroma": 0
+      },
+      {
+        "hex": "#2B2B2B",
+        "share": 0.0018907563025210084,
+        "h": 0,
+        "s": 0,
+        "l": 0.16737835875090779,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 204,
+        "share": 0.03607843137254902,
+        "size": 2
+      },
+      {
+        "hue": 8,
+        "share": 0.03777310924369748,
+        "size": 5
+      }
+    ],
+    "ramped": 2,
+    "shape": "diverging",
+    "pixels": 71400
+  }
+}

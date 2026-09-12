@@ -62,3 +62,11 @@ and "stays on the canvas" are two different guarantees, and this type's
 declutter only gives you the first one. Don't assume edge-safety is solved
 just because the labels don't overlap each other — check the actual rendered
 edges before shipping.
+
+## The worked example in this tree
+
+`proof/static-locator-zaporizhzhia` — a **directed** beat of this type: written by hand under the doctrine, taken through a
+filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
+three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
+sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
+worked example, not a component to import — nothing here is parameterised.

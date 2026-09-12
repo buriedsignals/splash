@@ -1,0 +1,464 @@
+{
+  "url": "https://informationisbeautiful.net/visualizations/star-wars-last-jedi-one-of-the-biggest-rotten-tomatoes-audience-vs-critics-score-splits-ever/",
+  "archive": "informationisbeautiful",
+  "family": "scatter",
+  "id": "informationisbeautiful-net-visualizations-star-wars-last-jedi-one-of-t",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Star Wars ‘Last Jedi’: One of the Biggest Rotten Tomatoes Audience vs Critics Score Splits Ever — Information is Beautif",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 400 | normal | 0 | none",
+        "count": 22,
+        "sample": "is the biggest movie ever to create such a . (93% critics vs",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 500 | normal | 0 | none",
+        "count": 9,
+        "sample": "Facebook",
+        "colors": [
+          "rgb(42, 42, 46)",
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 16,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "capitalize",
+        "key": "Quicksand | 16 | 500 | normal | 0 | capitalize",
+        "count": 7,
+        "sample": "About",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 21,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.52,
+        "transform": "none",
+        "key": "Quicksand | 21 | 600 | normal | -0.52 | none",
+        "count": 6,
+        "sample": "Based on a *True* True Story?",
+        "colors": [
+          "rgb(79, 79, 86)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 13.3,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 13.3 | 700 | normal | 0 | none",
+        "count": 5,
+        "sample": "Our mission",
+        "colors": [
+          "rgb(240, 98, 146)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 16 | 400 | normal | 0 | none",
+        "count": 4,
+        "sample": "Scene-by-scene breakdown of Hollywood \"true stories\"",
+        "colors": [
+          "rgb(158, 158, 158)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 700 | normal | 0 | none",
+        "count": 3,
+        "sample": "Star Wars: The Last Jedi",
+        "colors": [
+          "rgb(79, 79, 86)",
+          "rgb(189, 189, 189)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "600",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 600 | normal | 0 | none",
+        "count": 2,
+        "sample": "Learn to do data-viz with our online seminars.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 23,
+        "weight": "900",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "Quicksand | 23 | 900 | normal | 0 | none",
+        "count": 2,
+        "sample": "New!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 23,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 23 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Find Out More",
+        "colors": [
+          "rgb(51, 51, 51)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 18,
+        "weight": "600",
+        "style": "normal",
+        "tracking": -0.04,
+        "transform": "none",
+        "key": "Quicksand | 18 | 600 | normal | -0.04 | none",
+        "count": 2,
+        "sample": "Share this:",
+        "colors": [
+          "rgb(42, 42, 46)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "700",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 700 | normal | 0 | none",
+        "count": 2,
+        "sample": "Data:",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 14 | 400 | normal | 0 | none",
+        "count": 2,
+        "sample": "View the data",
+        "colors": [
+          "rgb(102, 102, 102)"
+        ]
+      },
+      {
+        "family": "Quicksand",
+        "size": 11,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "Quicksand | 11 | 500 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "Subscribe",
+        "colors": [
+          "rgb(97, 97, 97)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 18,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 18 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Sign up now!",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "IBM Plex Sans",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "IBM Plex Sans | 12 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "© 2026",
+        "colors": [
+          "rgb(204, 204, 204)"
+        ]
+      }
+    ],
+    "marks": [],
+    "column": {
+      "px": 700,
+      "ch": 78
+    },
+    "graphic": {
+      "tag": "img",
+      "documentTop": 176,
+      "nearTheTop": true,
+      "x": 80,
+      "y": 176,
+      "w": 1280,
+      "h": 745,
+      "ratio": 1.72
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#333333",
+      "share": 0.9011661073825503,
+      "h": 92.20000000004245,
+      "s": 0.00005129440285732256,
+      "l": 0.20017104999681473,
+      "chroma": 0.000020535308957819742
+    },
+    "chromatic": [
+      {
+        "hex": "#FFD300",
+        "share": 0.007612206375838926,
+        "h": 49.64739633214358,
+        "s": 0.9998195150683304,
+        "l": 0.49987169409711807,
+        "chroma": 0.9995629495771308
+      },
+      {
+        "hex": "#F7931E",
+        "share": 0.003993288590604027,
+        "h": 32.35047712210986,
+        "s": 0.9306282575042305,
+        "l": 0.5429817515241391,
+        "chroma": 0.8506281924534519
+      },
+      {
+        "hex": "#8CF968",
+        "share": 0.003955536912751678,
+        "h": 105.10474818196947,
+        "s": 0.9233817523017726,
+        "l": 0.6921272326534007,
+        "chroma": 0.5685681907969975
+      },
+      {
+        "hex": "#0CDBF8",
+        "share": 0.0017785234899328859,
+        "h": 187.3728813559322,
+        "s": 0.9440000000000002,
+        "l": 0.5098039215686274,
+        "chroma": 0.9254901960784314
+      },
+      {
+        "hex": "#D48CE5",
+        "share": 0.0013779362416107383,
+        "h": 288.5366605052372,
+        "s": 0.6298767801123315,
+        "l": 0.7231593398394365,
+        "chroma": 0.34875100725221597
+      },
+      {
+        "hex": "#5B5229",
+        "share": 0.0005778104026845638,
+        "h": 49.662271988441404,
+        "s": 0.38062830824224925,
+        "l": 0.2588342051884275,
+        "chroma": 0.19703925127219674
+      },
+      {
+        "hex": "#7B6C21",
+        "share": 0.0004456795302013423,
+        "h": 49.66351154566258,
+        "s": 0.579575596816976,
+        "l": 0.30612226066897347,
+        "chroma": 0.35484198385236443
+      },
+      {
+        "hex": "#84731F",
+        "share": 0.00039848993288590603,
+        "h": 49.71241863962868,
+        "s": 0.624188666418478,
+        "l": 0.3187874097007224,
+        "chroma": 0.3979669762641898
+      },
+      {
+        "hex": "#A48B17",
+        "share": 0.00039639261744966445,
+        "h": 49.66927600284654,
+        "s": 0.7581712338492119,
+        "l": 0.3653387280838261,
+        "chroma": 0.5539786284884324
+      },
+      {
+        "hex": "#295C64",
+        "share": 0.0003533976510067114,
+        "h": 187.43489517234374,
+        "s": 0.41461977226326535,
+        "l": 0.27643567812881825,
+        "chroma": 0.22923139582242388
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#333333",
+        "share": 0.9011661073825503,
+        "h": 92.20000000004245,
+        "s": 0.00005129440285732256,
+        "l": 0.20017104999681473,
+        "chroma": 0.000020535308957819742
+      },
+      {
+        "hex": "#3B3B3B",
+        "share": 0.012805159395973154,
+        "h": 278.2119815668188,
+        "s": 0.0007518239526260848,
+        "l": 0.2317352884975135,
+        "chroma": 0.0003484482811222933
+      },
+      {
+        "hex": "#434343",
+        "share": 0.004614093959731544,
+        "h": 184.28571428563802,
+        "s": 0.00004752561291058671,
+        "l": 0.26254723707664884,
+        "chroma": 0.0000249554367200977
+      },
+      {
+        "hex": "#4B4B4B",
+        "share": 0.0031008808724832214,
+        "h": 162.8571428570916,
+        "s": 0.00001571864523248471,
+        "l": 0.29529862672157126,
+        "chroma": 0.000009283388702152617
+      },
+      {
+        "hex": "#838383",
+        "share": 0.002989723154362416,
+        "h": 199.99999999946192,
+        "s": 0.0000042379765075379366,
+        "l": 0.513149840785139,
+        "chroma": 0.000004126519074887369
+      },
+      {
+        "hex": "#ABABAB",
+        "share": 0.0029268036912751677,
+        "h": 0,
+        "s": 0,
+        "l": 0.6705404626917052,
+        "chroma": 0
+      },
+      {
+        "hex": "#5B5B5B",
+        "share": 0.0027904781879194633,
+        "h": 120,
+        "s": 0.0000020540418408400537,
+        "l": 0.35873657993825114,
+        "chroma": 0.0000014737198900660609
+      },
+      {
+        "hex": "#535353",
+        "share": 0.0027338506711409396,
+        "h": 210,
+        "s": 0.000009203272683782338,
+        "l": 0.32689365734786435,
+        "chroma": 0.000006016982934342607
+      },
+      {
+        "hex": "#7B7B7B",
+        "share": 0.002724412751677852,
+        "h": 180,
+        "s": 0.0000031191515907578955,
+        "l": 0.4839318329333273,
+        "chroma": 0.000003018913493024744
+      },
+      {
+        "hex": "#3C3A32",
+        "share": 0.0022640520134228188,
+        "h": 52.1114190426981,
+        "s": 0.09027763053554236,
+        "l": 0.2141668710096359,
+        "chroma": 0.03866895530792214
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 50,
+        "share": 0.01642407718120805,
+        "size": 16
+      },
+      {
+        "hue": 105,
+        "share": 0.003955536912751678,
+        "size": 1
+      },
+      {
+        "hue": 187,
+        "share": 0.003291736577181208,
+        "size": 6
+      }
+    ],
+    "ramped": 2,
+    "shape": "categorical",
+    "pixels": 953600
+  }
+}

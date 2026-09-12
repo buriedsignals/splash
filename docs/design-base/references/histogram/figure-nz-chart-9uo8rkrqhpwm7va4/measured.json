@@ -1,0 +1,523 @@
+{
+  "url": "https://figure.nz/chart/9uO8rkrqhPWM7VA4",
+  "archive": "url-list",
+  "family": "histogram",
+  "id": "figure-nz-chart-9uo8rkrqhpwm7va4",
+  "harvestedAt": "2026-09-08",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "routes": {
+    "style": {
+      "state": "ok"
+    },
+    "pixel": {
+      "state": "ok",
+      "measuredFrom": "graphic.png"
+    }
+  },
+  "consent": null,
+  "entry": null,
+  "style": {
+    "title": "Distribution of incomes from wages and salaries in New Zealand - Figure.NZ",
+    "ground": "rgba(0, 0, 0, 0)",
+    "type": [
+      {
+        "family": "FoundersGroteskCondensed",
+        "size": 14,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskCondensed | 14 | 300 | normal | 0 | none",
+        "count": 54,
+        "sample": "5,000",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 18 | 400 | normal | 0 | none",
+        "count": 26,
+        "sample": "or explore",
+        "colors": [
+          "rgb(84, 97, 200)",
+          "rgb(255, 255, 255)",
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskCondensed",
+        "size": 72,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "FoundersGroteskCondensed | 72 | 400 | normal | 0.72 | none",
+        "count": 22,
+        "sample": "Median weekly income from wages and",
+        "colors": [
+          "rgb(84, 97, 200)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 18,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 18 | 400 | normal | 0.72 | none",
+        "count": 20,
+        "sample": "calculated $10,000 bands for the years 2009 to 2025.",
+        "colors": [
+          "rgb(63, 82, 111)",
+          "rgb(84, 97, 200)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskCondensed",
+        "size": 60,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "FoundersGroteskCondensed | 60 | 300 | normal | 0.72 | none",
+        "count": 12,
+        "sample": "2017 Q2–2023 Q2",
+        "colors": [
+          "rgb(84, 97, 200)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 14,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "uppercase",
+        "key": "FoundersGroteskRegular | 14 | 200 | normal | 0.72 | uppercase",
+        "count": 11,
+        "sample": "Notes",
+        "colors": [
+          "rgb(118, 118, 118)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 14,
+        "weight": "200",
+        "style": "normal",
+        "tracking": 1,
+        "transform": "uppercase",
+        "key": "FoundersGroteskRegular | 14 | 200 | normal | 1 | uppercase",
+        "count": 5,
+        "sample": "Learn about us",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 16,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 16 | 400 | normal | 0.72 | none",
+        "count": 2,
+        "sample": "Employment",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "a",
+        "size": 0,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "a | 0 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Figure.nz",
+        "colors": [
+          "rgba(0, 0, 0, 0)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 24,
+        "weight": "500",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 24 | 500 | normal | 0 | none",
+        "count": 1,
+        "sample": "Distribution of incomes from wages and salaries in New Zeala",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 24 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "By taxable income band, year ended March 2025, NZD millions",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskCondensedMedium",
+        "size": 24,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskCondensedMedium | 24 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Distribution of incomes from wages and salaries in New Zeala",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskCondensed",
+        "size": 20,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskCondensed | 20 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "By taxable income band, year ended March 2025, NZD millions",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 18,
+        "weight": "300",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 18 | 300 | normal | 0 | none",
+        "count": 1,
+        "sample": "Download",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 12,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "uppercase",
+        "key": "FoundersGroteskRegular | 12 | 400 | normal | 0 | uppercase",
+        "count": 1,
+        "sample": "See more",
+        "colors": [
+          "rgb(84, 97, 200)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 18,
+        "weight": "400",
+        "style": "italic",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 18 | 400 | italic | 0.72 | none",
+        "count": 1,
+        "sample": "Tax Statistics: Wage and salary distributions for individual",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "monospace",
+        "size": 15.3,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0.72,
+        "transform": "none",
+        "key": "monospace | 15.3 | 400 | normal | 0.72 | none",
+        "count": 1,
+        "sample": "BD7:CK242",
+        "colors": [
+          "rgb(63, 82, 111)"
+        ]
+      },
+      {
+        "family": "FoundersGroteskRegular",
+        "size": 14,
+        "weight": "400",
+        "style": "normal",
+        "tracking": 0,
+        "transform": "none",
+        "key": "FoundersGroteskRegular | 14 | 400 | normal | 0 | none",
+        "count": 1,
+        "sample": "Copyright © 2026 Figure NZ Trust.",
+        "colors": [
+          "rgb(255, 255, 255)"
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "colour": "fill rgb(255, 255, 255)",
+        "count": 13
+      },
+      {
+        "colour": "fill rgb(152, 76, 172)",
+        "count": 7
+      },
+      {
+        "colour": "fill rgb(135, 22, 113)",
+        "count": 7
+      },
+      {
+        "colour": "stroke rgb(150, 214, 186)",
+        "count": 3
+      },
+      {
+        "colour": "stroke rgb(186, 10, 135)",
+        "count": 3
+      },
+      {
+        "colour": "stroke rgb(104, 104, 104)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(40, 123, 182)",
+        "count": 2
+      },
+      {
+        "colour": "stroke rgb(58, 138, 211)",
+        "count": 2
+      },
+      {
+        "colour": "fill rgb(84, 97, 200)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(216, 216, 216)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(53, 29, 59)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(125, 181, 228)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(58, 138, 211)",
+        "count": 1
+      },
+      {
+        "colour": "fill rgb(38, 66, 155)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(3, 19, 67)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(210, 243, 151)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(152, 76, 172)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(135, 22, 113)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(250, 243, 121)",
+        "count": 1
+      },
+      {
+        "colour": "stroke rgb(53, 29, 59)",
+        "count": 1
+      }
+    ],
+    "column": {
+      "px": 964,
+      "ch": 107
+    },
+    "graphic": {
+      "tag": "svg",
+      "documentTop": 311,
+      "nearTheTop": true,
+      "x": 320,
+      "y": 311,
+      "w": 800,
+      "h": 1200,
+      "ratio": 0.67
+    }
+  },
+  "pixel": {
+    "ground": {
+      "hex": "#FFFFFF",
+      "share": 0.834565625,
+      "h": 210.24467245497922,
+      "s": 0.15414250375077737,
+      "l": 0.9999396505163088,
+      "chroma": 0.00001860484103244353
+    },
+    "chromatic": [
+      {
+        "hex": "#3D4F6E",
+        "share": 0.010185416666666667,
+        "h": 217.9591836734694,
+        "s": 0.28654970760233917,
+        "l": 0.33529411764705885,
+        "chroma": 0.19215686274509805
+      },
+      {
+        "hex": "#5461C8",
+        "share": 0.005244791666666667,
+        "h": 233.2758620689655,
+        "s": 0.5132743362831858,
+        "l": 0.5568627450980392,
+        "chroma": 0.4549019607843137
+      },
+      {
+        "hex": "#475875",
+        "share": 0.0010604166666666668,
+        "h": 217.82608695652175,
+        "s": 0.24468085106382972,
+        "l": 0.3686274509803922,
+        "chroma": 0.18039215686274507
+      },
+      {
+        "hex": "#7F89D6",
+        "share": 0.00013333333333333334,
+        "h": 233.10344827586206,
+        "s": 0.5147928994082841,
+        "l": 0.6686274509803922,
+        "chroma": 0.3411764705882353
+      },
+      {
+        "hex": "#AAB0E4",
+        "share": 0.00012083333333333333,
+        "h": 233.79310344827587,
+        "s": 0.5178571428571429,
+        "l": 0.7803921568627451,
+        "chroma": 0.22745098039215694
+      }
+    ],
+    "neutral": [
+      {
+        "hex": "#FFFFFF",
+        "share": 0.834565625,
+        "h": 210.24467245497922,
+        "s": 0.15414250375077737,
+        "l": 0.9999396505163088,
+        "chroma": 0.00001860484103244353
+      },
+      {
+        "hex": "#351D3B",
+        "share": 0.091378125,
+        "h": 288,
+        "s": 0.34090909090909094,
+        "l": 0.17254901960784313,
+        "chroma": 0.11764705882352942
+      },
+      {
+        "hex": "#CDC7CE",
+        "share": 0.004263541666666666,
+        "h": 291.42857142857144,
+        "s": 0.06666666666666671,
+        "l": 0.7941176470588236,
+        "chroma": 0.027450980392156876
+      },
+      {
+        "hex": "#EBEBEC",
+        "share": 0.004079166666666667,
+        "h": 219.1926605504612,
+        "s": 0.02133267225969785,
+        "l": 0.9232480121772918,
+        "chroma": 0.003274650003004309
+      },
+      {
+        "hex": "#9A8E9D",
+        "share": 0.003621875,
+        "h": 287.99999999999994,
+        "s": 0.07109004739336496,
+        "l": 0.5862745098039216,
+        "chroma": 0.05882352941176472
+      },
+      {
+        "hex": "#68566C",
+        "share": 0.0035510416666666668,
+        "h": 289.0909090909091,
+        "s": 0.11340206185567007,
+        "l": 0.3803921568627451,
+        "chroma": 0.08627450980392154
+      },
+      {
+        "hex": "#F4F4F5",
+        "share": 0.0035302083333333335,
+        "h": 217.65791750793431,
+        "s": 0.04861120847997038,
+        "l": 0.9587355862970742,
+        "chroma": 0.004011826034633348
+      },
+      {
+        "hex": "#E2E2E2",
+        "share": 0.0023927083333333335,
+        "h": 0,
+        "s": 0,
+        "l": 0.8869403399148079,
+        "chroma": 0
+      },
+      {
+        "hex": "#BCC2CD",
+        "share": 0.0015020833333333334,
+        "h": 218.2379106304836,
+        "s": 0.14590565105298584,
+        "l": 0.7716257376737103,
+        "chroma": 0.06664219085692535
+      },
+      {
+        "hex": "#AEAEAE",
+        "share": 0.0013833333333333334,
+        "h": 0,
+        "s": 0,
+        "l": 0.6812544294826364,
+        "chroma": 0
+      }
+    ],
+    "clusters": [
+      {
+        "hue": 218,
+        "share": 0.016744791666666668,
+        "size": 5
+      }
+    ],
+    "ramped": 1,
+    "shape": "sequential",
+    "pixels": 960000
+  }
+}
