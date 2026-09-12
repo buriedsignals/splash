@@ -36,3 +36,8 @@ brand.json
 
 # Jeff orchestration state (lite records stay local; see spotlight convention)
 .jeff/
+
+# Fetched typefaces (shared/design-base/typefaces.mjs). The cache lives OUTSIDE every checkout by
+# default (~/.cache/splash/typefaces) so nothing can be committed and a second clone reuses it.
+# This line only covers the case where SPLASH_TYPEFACE_CACHE is pointed inside the tree.
+.splash-typefaces/

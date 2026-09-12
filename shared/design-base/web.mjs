@@ -23,7 +23,7 @@
 //   2. **A concrete family carries a generic fallback.** `resolve-families.mjs` resolves a role to
 //      a face that exists ON THE MACHINE THAT RENDERS. A web page is set on the reader's machine,
 //      which is a different machine, so the resolved face is the first item of a stack and the
-//      role's own generic keyword closes it. Without that a reader without Superclarendon gets the
+//      role's own generic keyword closes it. Without that a reader without Merriweather gets the
 //      browser's default serif anyway — but by accident, and a `sans` register would get a serif.
 //
 // A NOTE ON SIZES, so nobody re-derives it. A direction's sizes were measured for a 960 x 540 plate
@@ -44,7 +44,7 @@ const GENERIC = (() => {
   return out;
 })();
 
-/** `"Superclarendon", Georgia, serif` — the resolved face, then a face almost every machine has,
+/** `"Merriweather", Georgia, serif` — the resolved face, then a face almost every machine has,
  *  then the keyword. A family this base has never laddered still closes honestly. */
 export function fontStack(family) {
   const generic = GENERIC.get(family) ?? "sans-serif";
