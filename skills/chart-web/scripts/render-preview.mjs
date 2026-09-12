@@ -20,6 +20,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import { fontFilesForSvg } from "./typefaces.mjs";
 import {
   deriveFurniture,
   measureText,
@@ -79,7 +80,11 @@ assertDrawnInActiveTypeface(svg, { where: "the seed" });
 const widthMatch = svg.match(/\bwidth="(\d+(?:\.\d+)?)"/);
 const previewWidth = widthMatch ? Number(widthMatch[1]) : 900;
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: previewWidth } })
+const png = new Resvg(svg, {
+  // The files, and system fonts off — see `render-still.mjs`.
+  font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
+  fitTo: { mode: "width", value: previewWidth },
+})
   .render()
   .asPng();
 

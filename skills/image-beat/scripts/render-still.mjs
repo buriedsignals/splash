@@ -18,6 +18,11 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+// THE FONT FILES, and they are the load-bearing half of every resvg call below. `typefaces.mjs` is
+// carried beside this file (canonical: `shared/design-base/typefaces.mjs`) for the same reason
+// `colour.mjs` is — a skill directory is copy-pasteable on its own and may import nothing outside
+// itself.
+import { fontFilesFor, fontFilesForSvg } from "./typefaces.mjs";
 // THE COLOUR MATHS AND THE PALETTE READER live in `./colour.mjs`, carried beside every copy of this
 // file and into `palette` and `newsroom-charter`, so the proposal, the charter and the render measure
 // with one function. Re-exported here so nothing that imports them from this file changes.
@@ -60,18 +65,28 @@ export {
  * the runner resolved. Until a runner calls `useTypeface` this is the built-in default and
  * `activeTypeface().origin` says `default` — the honest word for "nobody chose this".
  *
- * WHY BOTH RESVG CALL SITES BELOW STILL SAY `loadSystemFonts: true`, and why that is the safe
- * shape rather than an oversight. The measured defect is not a missed COPY, it is a missed CALL
- * SITE inside one copy: the `measureText` probe and the rasteriser, and when they disagree the
- * paint gets the house face while every gutter was measured in the fallback — three static beats
- * clipped in ten places when that was simulated (`survey/typeface-feasibility.md` §4-B). Neither
- * site is parameterised, so the two cannot disagree. The price is stated in `useTypeface`: this
- * version resolves a face that is INSTALLED on the rendering machine. Handing resvg a font FILE
- * (`fontFiles`, measured working in §1) needs both call sites parameterised, which means vendoring
- * a changed `measureText` and `rasterise` into all 22 copies, and that is the next step rather
- * than this one.
+ * EVERY RESVG CALL SITE BELOW NOW SAYS `loadSystemFonts: false` AND IS HANDED THE FILES. That is
+ * the half of this that carries the weight, and it is worth saying why the opposite looks fine.
+ * With `loadSystemFonts: true`, a face resvg cannot find is silently replaced by one the machine
+ * happens to have: the PNG comes out looking right HERE and comes out in another typeface on a
+ * newsroom's Linux box, with nothing anywhere going red. With it false, a face that was not handed
+ * over draws NOTHING — which is loud, and which `a-render-without-its-files-draws-nothing.test.ts`
+ * asserts directly, because a mechanism nobody can see fail is decoration.
+ *
+ * AND THE FILES ARE THE SAME ON BOTH SIDES. The measured defect this guards is not a missed COPY,
+ * it is a missed CALL SITE inside one copy: the `measureText` probe and the rasteriser, and when
+ * they disagree the paint gets one face while every gutter was measured in another — three static
+ * beats clipped in ten places when that was simulated (`survey/typeface-feasibility.md` §4-B). So
+ * `measureText`, `measureTextBand` and `rasterise` all resolve their files through the one function
+ * (`fontFilesFor`/`fontFilesForSvg` in `typefaces.mjs`), off the family and weight actually asked
+ * for. The face is fetched from Google Fonts on first use and cached outside the repository, so it
+ * does not depend on what is installed here — the price `useTypeface` used to state is paid off.
  */
-const DEFAULT_FONT_FAMILY = "Helvetica, Arial, sans-serif";
+// Open Sans heads the stack because it is a Google Font — redistributable, fetchable, and one of
+// the seventeen MapTiler serves as map glyphs — where Helvetica is a licensed face this render can
+// no longer draw from. The rest of the stack is what a BROWSER falls back to in the web genre; the
+// rasteriser reads only the first name.
+const DEFAULT_FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 export let FONT_FAMILY = DEFAULT_FONT_FAMILY;
 let ACTIVE_TYPEFACE = {
   family: DEFAULT_FONT_FAMILY,
@@ -263,30 +278,32 @@ export function requestedFamily(stack) {
 }
 
 /**
- * DOES THIS MACHINE ACTUALLY HAVE THE FACE? Measured, not assumed
- * (`survey/typeface-feasibility.md` §1): resvg NEVER errors on a family it cannot find. It renders
+ * CAN THIS RENDER ACTUALLY SET THE FACE? The question changed with the answer, and the old one is
+ * worth recording because it is the one everybody assumes.
+ *
+ * It used to be "does this MACHINE have the face", and it had to be measured obliquely
+ * (`survey/typeface-feasibility.md` §1): resvg NEVER errors on a family it cannot find — it renders
  * happily in whatever it does have and there is no return value that says so. Chrome falls back
- * silently, and Canvas `measureText` falls back silently. No substrate will ever tell us.
+ * silently, Canvas `measureText` falls back silently, no substrate will ever tell us. So the probe
+ * laid a string out in the requested family and in a family that exists nowhere and compared the
+ * ink: identical ink meant both fell back.
  *
- * So the resolution is measured the only way it can be: lay the same string out in the requested
- * family and in a family that certainly exists nowhere, and compare the ink. Identical ink means
- * the requested family resolved to the same fallback the nonsense one did — it did not resolve.
+ * With `loadSystemFonts: false` the machine's own library is not in the picture at all, and the
+ * question becomes a plain one with a plain answer: is there a FILE for this face. `typefaceFile`
+ * either produces one — from the cache, or fetched from Google Fonts on first use — or refuses with
+ * a sentence naming the family. Nothing is oblique and nothing is probabilistic.
  *
- * Its blind spot, stated: a face whose metrics are IDENTICAL to the fallback's at every character
- * of the probe string would read as unresolved. The string below is long and mixed precisely to
- * make that improbable, and the failure direction is the safe one — a false refusal is loud, a
- * false acceptance is a PNG in a face nobody chose.
+ * A newsroom's own licensed face, installed on this machine and nowhere else, no longer resolves
+ * here. That is the deliberate trade: a beat that could only ever be rendered on one laptop was
+ * never reproducible, and `skills/palette/scripts/typeface.mjs` still asks the machine question for
+ * the PROPOSAL, where it is the right question.
  */
-const RESOLUTION_PROBE = "Handgloves 0123456789 — MWmw il1 %";
 export function familyResolves(family) {
-  const ink = (name) => {
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
-      `<text x="0" y="300" font-family="${name}" font-size="120">${RESOLUTION_PROBE}</text></svg>`;
-    const box = new Resvg(svg, { font: { loadSystemFonts: true } }).getBBox();
-    return box ? `${box.x}|${box.y}|${box.width}|${box.height}` : "none";
-  };
-  return ink(requestedFamily(family)) !== ink("NoSuchFaceExistsAnywhere-ZZQX");
+  try {
+    return fontFilesFor(family).length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -302,10 +319,11 @@ export function useTypeface(typeface) {
   }
   if (typeface.origin !== "default" && !familyResolves(typeface.family)) {
     throw new Error(
-      `the typeface recorded in ${typeface.source} does not resolve on this machine: nothing here ` +
-        `answers to ${JSON.stringify(requestedFamily(typeface.family))}, and resvg would have ` +
-        `rendered the fallback and said nothing. Install the face, or record one this machine has, ` +
-        `or record origin: default and accept the fallback as a choice.`,
+      `the typeface recorded in ${typeface.source} cannot be set by this render: there is no font ` +
+        `file for ${JSON.stringify(requestedFamily(typeface.family))} — it is not a Google family, ` +
+        `or the cache does not hold it and this machine has no network. With loadSystemFonts off, ` +
+        `resvg would have drawn NOTHING rather than a fallback. Record a family Google serves ` +
+        `(the design base's own ladders are seventeen of them), or record origin: default.`,
     );
   }
   ACTIVE_TYPEFACE = {
@@ -389,7 +407,9 @@ export function measureText(text, options) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
     `<text x="0" y="300" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
     `</svg>`;
-  const box = new Resvg(probe, { font: { loadSystemFonts: true } }).getBBox();
+  const box = new Resvg(probe, {
+    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
+  }).getBBox();
   const width = box ? box.x + box.width : 0;
   measured.set(key, width);
   return width;
@@ -430,7 +450,9 @@ export function measureTextBand(text, options) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="600">` +
     `<text x="0" y="${baseline}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
     `</svg>`;
-  const box = new Resvg(probe, { font: { loadSystemFonts: true } }).getBBox();
+  const box = new Resvg(probe, {
+    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
+  }).getBBox();
   const band = box
     ? { ascent: baseline - box.y, descent: box.y + box.height - baseline }
     : { ascent: fontSize * 0.72, descent: fontSize * 0.08 };
@@ -485,7 +507,7 @@ export async function renderStill({
 /** `scale` device pixels per frame pixel — see `renderStill`, where the default is argued. */
 function rasterise(svg, width, scale = 2) {
   const image = new Resvg(svg, {
-    font: { loadSystemFonts: true },
+    font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
     fitTo: { mode: "width", value: width * scale },
   }).render();
   return image.asPng();

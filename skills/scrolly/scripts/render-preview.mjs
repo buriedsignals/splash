@@ -17,6 +17,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import { fontFilesForSvg } from "./typefaces.mjs";
 import { deriveFurniture, readPalette, readTypeface, useTypeface, assertDrawnInActiveTypeface } from "./render-still.mjs";
 import { STEPS_META, FRAME, DrawnGraphicFrame } from "../assets/ScrollySeed.tsx";
 
@@ -54,7 +55,11 @@ const svg = renderToStaticMarkup(
 );
 assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: FRAME.width } })
+const png = new Resvg(svg, {
+  // The files, and system fonts off — see `render-still.mjs`.
+  font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
+  fitTo: { mode: "width", value: FRAME.width },
+})
   .render()
   .asPng();
 

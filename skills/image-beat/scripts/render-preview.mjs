@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import { fontFilesForSvg } from "./typefaces.mjs";
 import { readPalette, readTypeface, useTypeface, assertDrawnInActiveTypeface } from "./render-still.mjs";
 import { readImageMeta, checkOrientation, checkWeight, toDataUri } from "./image-raster.mjs";
 import { ImageBeatSeed, imageBeatLayout } from "../assets/ImageBeatSeed.tsx";
@@ -73,7 +74,11 @@ const svg = renderToStaticMarkup(
 );
 assertDrawnInActiveTypeface(svg, { where: "the seed" });
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: layout.width } })
+const png = new Resvg(svg, {
+  // The files, and system fonts off — see `render-still.mjs`.
+  font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
+  fitTo: { mode: "width", value: layout.width },
+})
   .render()
   .asPng();
 

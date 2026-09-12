@@ -11,6 +11,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import { fontFilesForSvg } from "./typefaces.mjs";
 import {
   deriveFurniture,
   measureText,
@@ -82,6 +83,9 @@ assertDrawnInActiveTypeface(svg, { where: "the seed" });
 // "Three export sizes, and the frame IS the delivered pixel size", for the measurement that
 // settled it and for the option that lost.
 const png = new Resvg(svg, {
+  // The files, and system fonts off — the same contract `render-still.mjs` states. A preview drawn
+  // in whatever this machine happens to have is a preview of a picture nobody ships.
+  font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
   fitTo: { mode: "width", value: sizeFor(SIZE).width },
 })
   .render()
