@@ -36,8 +36,10 @@ const HEAVY_PACKAGES = [
   /^@resvg\//,
   /^maplibre-gl(\/|$)/,
 ];
-// A subprocess that renders, verifies a render, builds, or runs a script under `bun`/`node`.
-const SPAWN = /\b(spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\(\s*(["'`])(bun|node|ffmpeg|git)\2|Bun\.spawn(Sync)?\s*\(/;
+// A subprocess that renders, verifies a render, builds, runs a script under `bun`/`node`, or
+// reaches the network — `curl` is how `typefaces.mjs` fetches a face on a cold cache, and a test
+// that can make a network round trip is not a fast one.
+const SPAWN = /\b(spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\(\s*(["'`])(bun|node|ffmpeg|git|curl)\2|Bun\.spawn(Sync)?\s*\(/;
 const LANE_MARKER = /^\/\/\s*LANE:\s*heavy\b/m;
 
 function* walk(dir) {

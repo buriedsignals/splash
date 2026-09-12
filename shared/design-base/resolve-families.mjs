@@ -9,24 +9,50 @@
 // and loses the weight with it (`glyph-coverage.mjs`).
 //
 // So the ladder is walked in order and each candidate is asked the coverage question against THIS
-// BEAT'S OWN TEXT. On the Swiss CO₂ beat, whose title carries `CO₂`, that visibly changes the
-// answer: Superclarendon and Iowan Old Style are refused, and the serif role resolves further down
-// the ladder. The guard is not decorative — it decides the typeface.
+// BEAT'S OWN TEXT, read out of the face's own cmap. On a beat whose title carries `CO₂`, that
+// visibly changes the answer: Lato and Roboto Slab have no U+2082, so they are refused and the role
+// resolves further down the ladder. The guard is not decorative — it decides the typeface.
 //
-// It lives in `scripts/` because it reads the corpus's abstract roles, which exist only here. A
-// delivered root carries a direction whose families are already concrete.
+// It reads the corpus's abstract roles, which exist only in this repository. A delivered root
+// carries a direction whose families are already concrete.
 
 import { missingGlyphs } from "#shared/chart-beat/glyph-coverage.mjs";
 import { REGISTERS } from "#shared/chart-beat/registers.mjs";
 
 /**
- * Candidates per role, best first. Every one is a face macOS ships, because a direction that needs
- * a licensed font is a direction no reader outside that newsroom can be shown.
+ * CANDIDATES PER ROLE, BEST FIRST — AND EVERY ONE IS A GOOGLE FONT THAT MAPTILER SERVES.
+ *
+ * THE OLD LADDERS SAID THE OPPOSITE AND THE REASONING INVERTED ITSELF. They ran Superclarendon,
+ * Iowan Old Style, Avenir Next and Futura, under the note that "a direction that needs a licensed
+ * font is a direction no reader outside that newsroom can be shown". Every one of those is a face
+ * macOS ships — which means every one is licensed to Apple, redistributable by nobody, and absent
+ * from every Linux and Windows machine a newsroom might render on. A direction resolved to one of
+ * them could be shown HERE and nowhere else.
+ *
+ * Google Fonts invert it back: redistributable, fetchable, and a catalogue wide enough that a
+ * newsroom installs nothing. `typefaces.mjs` turns a family on these ladders into a `.ttf` on disk,
+ * and `render-still.mjs` hands that file to resvg with `loadSystemFonts: false`, so what a reader
+ * sees does not depend on what the rendering machine happens to have.
+ *
+ * AND THE CHOICE IS BOUNDED BY THE MAP, not by taste alone. MapLibre draws no system font: it reads
+ * signed distance fields served by the style host, and MapTiler Cloud serves eighteen families of
+ * which SEVENTEEN are Google Fonts (`shared/map-beat/glyphs.mjs` holds the probe). Every family
+ * below is one of those seventeen, so a map label and the panel label beside it are the same design
+ * — one served as glyphs, one fetched as a file — with no SDF baking anywhere. A beat that files a
+ * family outside the seventeen still needs `bakeGlyphs`; nothing here does.
+ *
+ * WHY EACH LADDER IS ORDERED THE WAY IT IS. The role comes first — a `geometric sans` headed by a
+ * slab serif would be wrong however well it covers — and coverage decides the ties. Measured from
+ * the cmaps on 2026-09-12: Lato, Roboto Slab and Roboto Mono have no U+2082, so `CO₂` would drop
+ * them; Merriweather, Noto Serif, Inter, Montserrat and Source Sans 3 carry everything this
+ * repository's beats set, arrows included. Source Sans 3 sits low on the sans ladder for a reason
+ * that is not typographic: MapTiler serves it under its old name, `Source Sans Pro`, so a beat that
+ * resolved to it would have to name the face differently on the two sides.
  */
 export const LADDERS = Object.freeze({
-  serif: ["Superclarendon", "Iowan Old Style", "Georgia", "Baskerville", "Palatino", "Times New Roman"],
-  sans: ["Avenir Next", "Helvetica Neue", "Optima", "Helvetica"],
-  "geometric sans": ["Futura", "Avenir Next", "Helvetica Neue", "Helvetica"],
+  serif: ["Merriweather", "Noto Serif", "PT Serif", "Libre Baskerville", "Roboto Slab"],
+  sans: ["Open Sans", "Inter", "Roboto", "Nunito", "PT Sans", "Ubuntu", "Lato", "Source Sans 3"],
+  "geometric sans": ["Montserrat", "Rubik", "Nunito", "Inter"],
 });
 
 /**
