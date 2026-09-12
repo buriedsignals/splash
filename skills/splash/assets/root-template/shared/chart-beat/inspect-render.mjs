@@ -36,6 +36,7 @@
 
 import { Resvg } from "@resvg/resvg-js";
 import { contrast } from "./render-still.mjs";
+import { fontFilesForSvg } from "./typefaces.mjs";
 
 // Upscale before diffing so even a small/thin glyph has enough device pixels to contain true
 // "core" ink (fully covered, not blended by anti-aliasing) — this does not run in a hot loop.
@@ -183,7 +184,9 @@ function toHex([r, g, b]) {
 
 function renderPixels(svg, ground) {
   const image = new Resvg(svg, {
-    font: { loadSystemFonts: true },
+    // The SAME files the delivered PNG is drawn from — see `render-still.mjs`'s own note. An
+    // inspection that rasterised in a fallback face would be measuring a picture nobody ships.
+    font: { loadSystemFonts: false, fontFiles: fontFilesForSvg(svg) },
     fitTo: { mode: "zoom", value: ZOOM },
     background: ground,
   }).render();

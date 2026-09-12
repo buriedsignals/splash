@@ -1,5 +1,5 @@
 ---
-family: "Helvetica, Arial, sans-serif"
+family: "Open Sans, Helvetica, Arial, sans-serif"
 origin: default
 ---
 
@@ -20,9 +20,15 @@ colour.
 publishes in; the journalist decides whether the graphic uses it. That decision is what `origin`
 records: `newsroom` or `journalist` means somebody chose, `default` means nobody did.
 
-**A face that cannot be resolved is REFUSED, never substituted.** Resvg never errors on a family
-it cannot find — it renders
-the fallback and reports nothing, as do Chrome and Canvas `measureText`. So `useTypeface` lays a
-probe string out in the recorded family and in a family that exists nowhere, and refuses when the
-two produce identical ink, naming the family and this file. A journalist told "this machine does
-not have Marr Sans" has chosen; a silent stack has not.
+**A face that cannot be resolved is REFUSED, never substituted.** The render hands resvg font
+FILES and turns `loadSystemFonts` off, so a face nobody supplied draws nothing at all rather than
+quietly becoming whatever this machine happens to have. `useTypeface` asks `typefaceFile` for the
+recorded family first and refuses with its name when there is no file — not a Google family, or no
+cached copy and no network. A journalist told "we cannot set Marr Sans here" has chosen; a silent
+stack has not.
+
+**Why Open Sans heads the stack.** It is a Google Font: redistributable, fetched on first use into
+a cache outside the repository, and one of the seventeen families MapTiler serves as map glyphs —
+so a map label and a panel label can be the same face with no glyph baking. Helvetica and Arial
+stay behind it for the WEB genre, where the reader's own browser does the falling back; the
+rasteriser reads only the first name.

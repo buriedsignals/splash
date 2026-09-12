@@ -736,7 +736,7 @@ export function ChartWebSeed({
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
-          fontFamily="Helvetica, Arial, sans-serif"
+          fontFamily="Open Sans, Helvetica, Arial, sans-serif"
         >
           <desc>{alt}</desc>
           <rect
@@ -1135,7 +1135,7 @@ export function ChartWebPreviewSvg({
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      fontFamily="Helvetica, Arial, sans-serif"
+      fontFamily="Open Sans, Helvetica, Arial, sans-serif"
     >
       <desc>{alt}</desc>
       <rect x={0} y={0} width={width} height={height} fill={ground} />
