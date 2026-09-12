@@ -57,6 +57,7 @@ describe("the pilot choropleth on the plan", () => {
     "should publish a drawn size on every plan, in whole pixels",
     async () => {
       const { plans } = await runner();
+      expect(Object.keys(plans).length).toBeGreaterThan(0);
       for (const plan of Object.values(plans)) {
         expect(Number.isInteger(plan.camera.drawn.width)).toBe(true);
         expect(Number.isInteger(plan.camera.drawn.height)).toBe(true);
