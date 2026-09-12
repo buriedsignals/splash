@@ -255,8 +255,13 @@ if (!CORNERS || !(FRAME?.width > 0))
  *  baked, which made the drawn size depend on the plate and the plate depend on the drawn size. The
  *  layout arithmetic makes `mapW / mapH` equal this aspect by construction, so a plate baked at the
  *  drawn size is the same camera at a different pixel scale — `fitBounds` on the same bounds at the
- *  same aspect returns the same corners. */
-export const CAMERA_ASPECT = 1000 / 760;
+ *  same aspect returns the same corners.
+ *
+ *  IT IS READ OFF `PLATE_SIZE`, not typed again beside it. Two bare literals for one measurement is
+ *  how the drawn size and the plate drifted apart in the first place; a re-bake at another size now
+ *  moves the aspect with it instead of leaving the two silently disagreeing. */
+const [PLATE_W, PLATE_H] = PLATE_SIZE.split("x").map(Number);
+export const CAMERA_ASPECT = PLATE_W / PLATE_H;
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const Y_NORTH = mercY(CORNERS.north);
 const Y_SOUTH = mercY(CORNERS.south);
@@ -589,11 +594,37 @@ const studyAreas = {
     geometry: f.geometry,
   })),
 };
+/** THESE ARE THE DECLARED ANCHORS — THE SEAT OF EACH COUNTRY'S OWN LARGEST RING — AND THEY ARE NOT
+ *  WHERE THE PICTURE PUTS THE WORDS. The plate places a country's name by SEARCH: inside the shape
+ *  when the whole word fits inside it, and otherwise in the nearest open water on a leader, which is
+ *  how six of the seven names are drawn today. The anchor is where the search STARTS.
+ *
+ *  8a carries the anchor because 8a lifts no placement — spec §5 keeps placement with the beat, and
+ *  the search needs the drawn camera, the land grid and the labels already taken. 8B MUST CARRY THE
+ *  SEARCHED POSITIONS INTO THE PLAN, not these. A plan that is baked from the declared anchors would
+ *  put every country name somewhere the picture never put it — inside Norway rather than out in the
+ *  Norwegian Sea — and nothing in the plan would notice, because an anchor is a perfectly valid
+ *  coordinate. The sea layer below carries the same caveat about its forms. */
 const anchorPointOf = (iso) => {
   const shape = shapes.find((s) => s.iso === iso);
+  if (!shape) throw new Error(`${FRENCH[iso] ?? iso} is named on the map but has no frozen shape`);
+  /** An anchor is `null` when a shape has no ring big enough to seat one. The first version read
+   *  `shape.anchor.x` straight through and a country in that state came back as a TypeError on a
+   *  property of null — a stack trace where the beat should say which country it cannot place. */
+  if (!shape.anchor)
+    throw new Error(
+      `${shape.name} is named on the map but its frozen shape carries no anchor, so the beat has ` +
+        `nowhere to put the word. Drop it from the named set or give the shape a ring to seat it in.`,
+    );
   return {
     type: "Feature",
-    properties: { iso, name: shape.name.toUpperCase() },
+    properties: {
+      iso,
+      name: shape.name.toUpperCase(),
+      // The cell the word sits on is what its ink and its halo are measured against, so the value
+      // that chooses that cell travels with the point.
+      value: shape.value,
+    },
     geometry: { type: "Point", coordinates: unproject([shape.anchor.x, shape.anchor.y]) },
   };
 };
@@ -636,7 +667,6 @@ function layersFor(direction, g) {
     TEXT_CONTRAST_MIN,
   );
   const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
-  const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
 
   const axis = resolveRegister(direction, "axis");
   const area = { ...axis, letterSpacing: Math.max(Number(axis.letterSpacing ?? 0), 0.8) };
@@ -645,8 +675,18 @@ function layersFor(direction, g) {
   /** A register's tracking is measured in PIXELS on the plate and declared in EMS on a map. Same
    *  measurement, the unit the reader of it expects. */
   const tracking = (r) => Number(r.letterSpacing ?? 0) / r.fontSize;
-  const halo = Math.max(2.5, g.axisBand.ascent * 0.34) / 2;
-  const words = (id, data, register, colour, haloColour) => ({
+  /** …AND A HALO IS A STROKE ON THE PLATE AND A RADIUS ON A MAP. SVG strokes a glyph outline
+   *  CENTRED on its path, so half the width falls inside the letter and half outside; MapLibre's
+   *  `text-halo-width` is the distance the halo reaches OUTWARD. Half the stroke is the same halo,
+   *  in the unit its reader expects — the same kind of conversion as the tracking above, and not a
+   *  number to be "corrected" back to the stroke width. */
+  const haloOf = (strokeWidth) => strokeWidth / 2;
+  const AREA_HALO = haloOf(Math.max(2.5, g.axisBand.ascent * 0.34));
+  /** A sea name is set at its own halo, and it is NOT the area one: the plate strokes it at
+   *  `max(2, ascent * 0.3)` where an area name takes `max(2.5, ascent * 0.34)`. Spending one value
+   *  on both is how two measurements become one guess. */
+  const WATER_HALO = haloOf(Math.max(2, g.axisBand.ascent * 0.3));
+  const words = (id, data, register, colour, haloColour, haloWidth) => ({
     id,
     role: "place",
     type: "symbol",
@@ -657,8 +697,42 @@ function layersFor(direction, g) {
       "text-size": register.fontSize,
       "text-letter-spacing": tracking(register),
     },
-    paint: { "text-color": colour, "text-halo-color": haloColour, "text-halo-width": halo },
+    paint: { "text-color": colour, "text-halo-color": haloColour, "text-halo-width": haloWidth },
   });
+
+  /** A WORD'S INK IS CHOSEN AGAINST THE CELL IT LANDS ON, NOT AGAINST THE PAGE. The component
+   *  records this as a defect it already found and repaired: walking the ink to the floor against
+   *  the GROUND is measuring against a colour the letters never touch, and the pixel guard cleared
+   *  it because it samples the most common ground under the box. The halo is struck in that same
+   *  cell, so whatever is behind the word the letters sit on a known colour and the ink is right
+   *  once. And a FEATURE is taken to 7:1 rather than the 4.5 floor: the seven countries the headline
+   *  is about should be the first thing read on the plate, not the last thing that technically
+   *  passes. The cell varies per country, so the two inks travel per feature rather than per layer.
+   *
+   *  The cell is the one under the DECLARED ANCHOR — the country's own class — which is what the
+   *  component uses for a name that sits inside its shape. A name the search pushes out to sea takes
+   *  the water instead, and that is 8b's to carry, with the searched position. */
+  const classOf = (v) => BREAKS.filter((b) => v >= b).length;
+  const cellUnder = (v) => (v === null ? missingFill : classFill(classOf(v)));
+  const inked = (points, register) => ({
+    type: "FeatureCollection",
+    features: points.features.map((f) => {
+      const onCell = cellUnder(f.properties.value ?? null);
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          onCell,
+          ink:
+            register === feature
+              ? adjustToContrast(direction.accent, onCell, 7)
+              : adjustToContrast(muted, onCell, TEXT_CONTRAST_MIN),
+        },
+      };
+    }),
+  });
+  const areaWords = (id, points, register) =>
+    words(id, inked(points, register), register, ["get", "ink"], ["get", "onCell"], AREA_HALO);
 
   const hasValue = ["!=", ["get", "value"], null];
   return [
@@ -706,9 +780,19 @@ function layersFor(direction, g) {
         "circle-stroke-width": direction.stroke.rule * 1.6,
       },
     },
-    words("named-areas", namedAreas, feature, accentInk, direction.ground),
-    words("context-areas", contextAreas, area, mutedInk, direction.ground),
-    { ...words("sea-names", seaNames, waterReg, waterInk, mix(direction.ground, waterHue, 0.16)), role: "water" },
+    areaWords("named-areas", namedAreas, feature),
+    areaWords("context-areas", contextAreas, area),
+    {
+      ...words(
+        "sea-names",
+        seaNames,
+        waterReg,
+        waterInk,
+        mix(direction.ground, waterHue, 0.16),
+        WATER_HALO,
+      ),
+      role: "water",
+    },
   ];
 }
 
