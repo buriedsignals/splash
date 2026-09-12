@@ -17,6 +17,7 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,13 +32,25 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  *  does: Cyprus sits at 33°E and Ukraine's eastern border at 40°. A bake that stopped at 33 cropped
  *  both, and `assertCameraReachesBounds` below is what turns that into a refusal rather than a plate
  *  nobody checked. Iceland at 24°W sets the west edge. */
-const BEAT = {
+/** EXPORTED so a caller deciding whether an already-baked plate is still current can compare what
+ *  it recorded against what this bake would use TODAY, rather than keeping a second, driftable copy
+ *  of the same window and style beside it. */
+export const BEAT = {
   bounds: [
     [-25, 34],
     [42, 68],
   ],
   style: "dataviz-light",
 };
+
+/** THE COUNTRY SHAPES ARE A FILE, and comparing what a bake did with one against what it would do
+ *  with another means comparing the file, not the derived (thinned, frame-culled) geometry the bake
+ *  writes into `geometry.json` — that derivation is lossy and its output is not a stable fingerprint
+ *  of its input. A digest of the file's own bytes is. */
+export async function digestOf(path) {
+  const bytes = await Bun.file(path).arrayBuffer();
+  return createHash("sha256").update(Buffer.from(bytes)).digest("hex");
+}
 
 const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
 const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
@@ -167,18 +180,6 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
   );
 }
 
-const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
-const env = parseEnvFile(await readFile(keyPath, "utf8"));
-const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((a) => env[a]).find(Boolean);
-if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
-
-const collection = JSON.parse(await readFile(countriesPath, "utf8"));
-const shapes = collection.features.map((f) => ({
-  key: f.properties.ADM0_A3,
-  name: f.properties.NAME_FR ?? f.properties.NAME,
-  geometry: f.geometry,
-}));
-
 /**
  * Polygon PARTS, not a flattened ring list: each part is its own `[outer, ...holes]`. A flattened
  * list loses which rings belong to which part — for a MultiPolygon shape (France's mainland +
@@ -190,6 +191,22 @@ const shapes = collection.features.map((f) => ({
 function partsOf(geometry) {
   return geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];
 }
+
+/** THE ACTUAL BAKE, run only when this file is the entry point — never on import. `BEAT` and
+ *  `digestOf` above are exported for a caller to compare against, and importing them must not also
+ *  launch a browser and spend the MapTiler key. */
+async function bake() {
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+const env = parseEnvFile(await readFile(keyPath, "utf8"));
+const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((a) => env[a]).find(Boolean);
+if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
+
+const collection = JSON.parse(await readFile(countriesPath, "utf8"));
+const shapes = collection.features.map((f) => ({
+  key: f.properties.ADM0_A3,
+  name: f.properties.NAME_FR ?? f.properties.NAME,
+  geometry: f.geometry,
+}));
 
 const browser = await puppeteer.launch({
   headless: true,
@@ -354,12 +371,18 @@ const shapesOut = projected.map((s) => {
 
 const empty = shapesOut.filter((s) => s.parts.length === 0).map((s) => s.key);
 
+/** THE CACHE'S FINGERPRINT OF THE SHAPES FILE, recorded because this bake is what consumed it —
+ *  the caller that later decides whether a plate is still current has no cheap, stable way to ask
+ *  "is this the same `shapes.geojson`" other than reading back what the bake itself hashed. */
+const shapesDigest = await digestOf(countriesPath);
+
 const geometry = {
   frame,
   bounds: BEAT.bounds,
   style: styleFlag ?? BEAT.style,
   water: waterFlag ?? null,
   land: landFlag ?? null,
+  shapesDigest,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
   frameCorners,
@@ -377,3 +400,6 @@ console.log(
     `geometry → ${geometryPath}  ${shapesOut.length} shapes\n` +
     `off-frame entirely: ${empty.length ? empty.join(", ") : "none"}`,
 );
+}
+
+if (import.meta.main) await bake();
