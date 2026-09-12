@@ -13,7 +13,7 @@
 //
 // Usage:  bun proof/static-choropleth-europe-lowcarbon/render-directions.mjs
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -33,6 +33,7 @@ import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.
 import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateIsCurrent } from "./plate-cache.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
@@ -193,23 +194,18 @@ const plateDir = (id) => join(HERE, "plate", id);
 /** THE CACHE IS KEYED ON WHAT THE PLATE IS, NOT ON WHETHER A FILE IS THERE. It used to be existence
  *  alone, and that is a cache that cannot be invalidated: re-tinting the basemap, or baking at
  *  another size, left the old plate in place and the whole change appeared to work while nothing
- *  moved. Every input the bake takes is already recorded in the plate's own `geometry.json`, so the
- *  recorded values are what the cache compares. */
-function plateIsCurrent(dir, water, land) {
-  if (!existsSync(join(dir, "geometry.json")) || !existsSync(join(dir, "plate.png"))) return false;
-  const was = JSON.parse(readFileSync(join(dir, "geometry.json"), "utf8"));
-  const [width, height] = PLATE_SIZE.split("x").map(Number);
-  return (
-    was.frame?.width === width && was.frame?.height === height && was.water === water && was.land === land
-  );
-}
-function ensurePlate(id, water, land) {
+ *  moved. Every input the bake takes — the drawn size, the tints, the bounds and style `bake.mjs`
+ *  itself defaults to, and the frozen shapes file — is compared against what the plate's own
+ *  `geometry.json` recorded, in `plate-cache.mjs` beside this file. */
+const SHAPES_PATH = join(HERE, "shapes.geojson");
+async function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (plateIsCurrent(dir, water, land)) return;
+  const [width, height] = PLATE_SIZE.split("x").map(Number);
+  if (await plateIsCurrent(dir, { width, height, water, land, countriesPath: SHAPES_PATH })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
-    [join(HERE, "bake.mjs"), "--size", PLATE_SIZE, "--countries", join(HERE, "shapes.geojson"),
+    [join(HERE, "bake.mjs"), "--size", PLATE_SIZE, "--countries", SHAPES_PATH,
      "--water", water, "--land", land, "--out", dir],
     { cwd: HERE, stdio: "inherit" },
   );
@@ -235,7 +231,7 @@ for (const file of DIRECTION_FILES) {
     `${id}: sea ${t.water} on land ${t.land} — ${t.seaLandContrast.toFixed(3)}:1, ` +
       `${contrast(t.water, direction.ground).toFixed(3)}:1 against the page`,
   );
-  ensurePlate(id, t.water, t.land);
+  await ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
 const plateFacts = await factsOf(DIRECTION_FILES[0].replace(/\.md$/, ""));
