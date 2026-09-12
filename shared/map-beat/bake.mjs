@@ -3,7 +3,43 @@
 // BAKING A PLAN AT THE SIZE THE LAYOUT PUBLISHED. Never at a size chosen here and reduced later:
 // see `geometry.mjs` for why, and for the ratio it cost on four of the six converted types.
 
+import { join } from "node:path";
 import { transformStyle } from "./style.mjs";
+
+/** The shape MapLibre asks a glyph endpoint for, with the two placeholders it substitutes itself.
+ *  A fontstack is a name with spaces in it, so it arrives percent-encoded. */
+const GLYPH_PATH = /^\/([^/]+)\/(\d+-\d+)\.pbf$/;
+
+/** MapLibre fetches glyphs over HTTP, so the beat's own faces need an origin. Ephemeral port, no
+ *  fixed number — two bakes running at once must not fight over one. */
+export function serveGlyphs(dir) {
+  const server = Bun.serve({
+    port: 0,
+    async fetch(request) {
+      const match = GLYPH_PATH.exec(new URL(request.url).pathname);
+      if (!match) return new Response("not a glyph range", { status: 404 });
+      /** A FONTSTACK IS A NAME, NOT A PATH — and the shape of the URL does not say so on its own.
+       *  `%2E%2E%2Fsomewhere` is ONE path segment until it is decoded, at which point it is a climb
+       *  out of the glyph directory: the request comes from a style document, which is not this
+       *  beat's to trust, so what the decoding produced is checked rather than the shape it had. */
+      const stack = decodeURIComponent(match[1]);
+      const climbs =
+        stack.includes("/") || stack.includes("\\") || stack.includes("\0") || stack === "." || stack === "..";
+      if (climbs) return new Response("not a fontstack name", { status: 404 });
+      const file = Bun.file(join(dir, stack, `${match[2]}.pbf`));
+      /** A RANGE THAT WAS NEVER BAKED IS A 404, NEVER AN EMPTY 200. MapLibre reads an empty body as
+       *  a range that carries no glyphs and draws the word with those characters simply absent, with
+       *  no error — which is the silent failure this whole sub-project exists to end. */
+      if (!(await file.exists())) return new Response("no glyphs baked for that range", { status: 404 });
+      return new Response(file, { headers: { "content-type": "application/x-protobuf" } });
+    },
+  });
+  return {
+    // The braces are LITERAL: MapLibre substitutes them itself, once per stack and range it needs.
+    url: `http://localhost:${server.port}/{fontstack}/{range}.pbf`,
+    stop: () => server.stop(true),
+  };
+}
 
 const RANGE_SIZE = 256;
 const rangeOf = (code) => {
