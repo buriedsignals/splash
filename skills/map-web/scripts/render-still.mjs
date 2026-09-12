@@ -308,10 +308,14 @@ export function familyResolves(family) {
 
 /**
  * Put a recorded typeface in force, or REFUSE. Nothing renders in a value nobody chose: a face
- * that does not resolve is named, with where it was recorded, rather than silently substituted.
+ * there is no file for is named, with where it was recorded, rather than silently substituted.
  *
- * A journalist told "we cannot get Marr Sans on this machine; your charts will be set in the
- * fallback — accept, or install it" has CHOSEN. A silent stack has not.
+ * THE OFFER CHANGED WITH THE MECHANISM, and the old wording would mislead. It used to be "we cannot
+ * get Marr Sans on this machine; your charts will be set in the fallback — accept, or install it".
+ * There is no fallback now (`loadSystemFonts` is off, so an unsupplied face draws nothing) and
+ * installing it would not help (the render reads files this module fetches, not the font library).
+ * The honest offer is: record a family Google serves, or record `origin: default` and accept the
+ * substrate's own stack as a choice. Either way a journalist has CHOSEN. A silent stack has not.
  */
 export function useTypeface(typeface) {
   if (!typeface || typeof typeface !== "object" || !typeface.family) {
