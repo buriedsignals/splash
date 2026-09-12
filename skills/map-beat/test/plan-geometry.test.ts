@@ -35,4 +35,17 @@ describe("the geometry a layout publishes", () => {
       }),
     ).toThrow(/compressed/);
   });
+
+  // A GUARD THAT HOLDS ONE FIELD AND NOT THE OTHERS IS WHERE THE DEFECT HIDES. The three cases
+  // above only ever mismatch the width, so dropping the x, y or height comparison would leave them
+  // green — and a plate offset by its origin misplaces every mark just as surely as a squeezed one.
+  it.each([
+    ["x", { x: 4, y: 20, width: 574, height: 436 }],
+    ["y", { x: 10, y: 2, width: 574, height: 436 }],
+    ["height", { x: 10, y: 20, width: 574, height: 300 }],
+  ])("should refuse a plate whose %s does not match the marks", (_field, plate) => {
+    expect(() =>
+      assertPlateMatchesMarks({ mapX: 10, mapY: 20, mapW: 574, mapH: 436, plate }),
+    ).toThrow(/compressed/);
+  });
 });
