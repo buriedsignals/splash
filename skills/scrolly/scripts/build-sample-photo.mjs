@@ -52,7 +52,13 @@ const svg = `
 </svg>
 `.trim();
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: WIDTH } })
+// No text in this scene, so no font sets anything — but the switch is stated rather than
+// defaulted: resvg's own default is `loadSystemFonts: true`, and a construction that says nothing
+// reads, to the guard and to a person, exactly like one that meant it.
+const png = new Resvg(svg, {
+  font: { loadSystemFonts: false, fontFiles: [] },
+  fitTo: { mode: "width", value: WIDTH },
+})
   .render()
   .asPng();
 
