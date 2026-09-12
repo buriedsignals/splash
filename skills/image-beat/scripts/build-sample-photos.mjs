@@ -29,7 +29,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(HERE, "..", "assets", "sample-data");
 
 function render(svg, width) {
-  return new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng();
+  // No text anywhere in these scenes, so there is nothing for a font to set — but the switch is
+  // still stated rather than defaulted. resvg's own default is `loadSystemFonts: true`, and a
+  // construction that says nothing is indistinguishable, to a reader and to the guard in
+  // `splash/test/a-render-without-its-files-draws-nothing.test.ts`, from one that meant it.
+  return new Resvg(svg, {
+    font: { loadSystemFonts: false, fontFiles: [] },
+    fitTo: { mode: "width", value: width },
+  })
+    .render()
+    .asPng();
 }
 
 // Flat, illustrated scenes — no gradient wash, the same "the field is flat" rule this project's
