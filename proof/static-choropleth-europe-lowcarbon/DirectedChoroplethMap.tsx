@@ -68,6 +68,278 @@ export type Callout = {
   toY: number;
 };
 
+/** The measuring helpers the LADDER and the DRAWING both spend, at module scope because both now
+ *  need them and neither owns them. Nothing here closes over a render: they are pure functions of a
+ *  string and a register. */
+const set = (text: string, r: { transform: string }) =>
+  applyCase(text, r.transform);
+const sizeOf = (r: {
+  fontSize: number;
+  fontWeight: number;
+  fontFamily: string;
+}) => ({
+  fontSize: r.fontSize,
+  fontWeight: r.fontWeight,
+  fontFamily: r.fontFamily,
+});
+const widthOf = (text: string, r: any) =>
+  measureText(text, sizeOf(r)) +
+  Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
+const BAND_PROBE = "Hxpg1,";
+const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
+/** A register, resolved against the direction and given the ink its own row names. */
+const registerOf = (direction: any, name: RegisterName) => {
+  const { ink, muted } = deriveFurniture(direction.ground);
+  const r = resolveRegister(direction, name);
+  return {
+    ...r,
+    fill: ({ ink, muted, accent: direction.accent } as Record<string, string>)[
+      r.ink
+    ],
+  };
+};
+
+/** THE DRAWN SIZE IS A LAYOUT OUTPUT, AND IT HAS EXACTLY ONE DEFINITION. The runner needs it before
+ *  it can bake a plate at the right size; the component needs it to draw. Computing it twice is how
+ *  the two drifted apart in the first place, so neither computes it: both call this.
+ *
+ *  Nothing in the ladder's logic changed when it moved here — the rungs, their order and their
+ *  arithmetic are the ones the beat has always walked, and the three renders came out byte-identical
+ *  across the move. What the chosen rung yields beyond the panel width (the layout it produced, the
+ *  bands and the leads the drawing measures against) is RETURNED rather than recomputed below, for
+ *  the same reason the drawn size is. */
+export function mapGeometryFor({
+  aspect,
+  callout,
+  title,
+  limits,
+  reading,
+  source,
+  direction,
+}: {
+  aspect: number;
+  callout: Callout;
+  title: string[];
+  limits: string[];
+  reading: string[];
+  source: string;
+  direction: any;
+}) {
+  const { width, height } = FRAME;
+  const PAD = direction.pad;
+  const display = registerOf(direction, "display");
+  const eyebrowReg = registerOf(direction, "eyebrow");
+  const body = registerOf(direction, "body");
+  const axis = registerOf(direction, "axis");
+  const annot = registerOf(direction, "annot");
+  const axisBand = bandOf(axis);
+  const annotBand = bandOf(annot);
+
+  /** WRAPPING IS MEMOISED BY TEXT, WIDTH AND REGISTER. Every rung of the ladder re-wraps all five
+   *  blocks of the panel, and the source and the callout are byte-identical at every rung — the
+   *  same paragraph was being broken twenty-six times, and each break measures every growing prefix
+   *  through a rasteriser that scans the system fonts on the ones it has not seen. The answer is a
+   *  pure function of its three inputs, so it is computed once. */
+  const wrapCache = new Map<string, string[]>();
+  function wrap(text: string, maxWidth: number, r: any): string[] {
+    const key = `${r.fontFamily}|${r.fontSize}|${r.fontWeight}|${r.letterSpacing}|${maxWidth}|${text}`;
+    const hit = wrapCache.get(key);
+    if (hit) return hit;
+    const lines: string[] = [];
+    let current = "";
+    for (const word of text.split(/\s+/)) {
+      const trial = current ? `${current} ${word}` : word;
+      if (current && widthOf(trial, r) > maxWidth) {
+        lines.push(current);
+        current = word;
+      } else current = trial;
+    }
+    if (current) lines.push(current);
+    wrapCache.set(key, lines);
+    return lines;
+  }
+
+  // ── the layout: TWO COLUMNS, because the map is the subject ───────────────
+  //
+  // THE FIRST VERSION PUT THE HEADER ABOVE THE MAP, the way every chart in this base does, and that
+  // is the wrong shape for this form. A chart's plot can be any aspect the frame gives it; a map's
+  // is fixed by the ground it shows. Europe in an equal-area projection is 1.39:1, so filling the
+  // width of a 960px plate would need 616px of height — more than the whole plate is tall. Stacked,
+  // the map is bound by whatever height the header leaves, and it came out 306 x 220 on a page where
+  // two thirds of the width sat empty.
+  //
+  // So the text goes BESIDE the map, which is what both ProPublica map records do — a large map with
+  // its own panel — and the map takes the full height of the plate. Same page, same registers, and
+  // 2.4x the map.
+  const titleLead = display.fontSize * 1.22;
+  const bodyLead = body.fontSize * 1.45;
+  const annotLead = annot.fontSize * 1.4;
+  const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
+
+  /** The panel is a SHARE of the plate rather than a fixed width, so a direction with a larger body
+   *  register gets a proportionally wider column instead of a narrower map — and the share itself is
+   *  a rung, spent LAST. The order is the plate's own priority, stated: cut the reading line, then
+   *  the standfirst, then the headline, and only when there is nothing left to cut does the panel
+   *  take width from the map. `nocturne` sets its body register in Futura and overran the foot by
+   *  35px at every copy rung; it takes a wider column rather than a smaller Europe. */
+  /** The narrowest panel comes FIRST, because the biggest map is what the beat wants: at 26 % the
+   *  camera fills the plate's whole height and there is no slack above or below it, which is the
+   *  point of putting the text beside it. Wider shares are the ladder's last rungs, spent only when
+   *  the copy will not fit. */
+  const SHARES = [0.26, 0.29, 0.33, 0.37, 0.41, 0.45];
+  const GUTTER = 26;
+  const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
+
+  /** THE PANEL IS A STACK, AND EVERY BLOCK IN IT IS MEASURED. The first version placed the callout
+   *  relative to the reading line's top and let it grow upward — and when the ladder dropped the
+   *  reading line, the callout grew straight through the key. A block whose position is derived from
+   *  a block that may not exist is a block that will one day be drawn on top of something. */
+  const layoutFor = (panel: number, t: number, l: number, r: number) => {
+    const titleLines = wrap(set(title[t], display), panel, display);
+    const limitLines = wrap(set(limits[l], body), panel, body);
+    const calloutLines = callout.lines.flatMap((c) =>
+      wrap(set(c, annot), panel, annot),
+    );
+    const readingLines =
+      r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
+    const sourceLines = wrap(set(source, body), panel, body);
+
+    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+    const titleTop =
+      eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
+    const calloutTop =
+      limitsTop +
+      limitLines.length * bodyLead +
+      annot.fontSize * 0.7 +
+      annotBand.ascent;
+    const keyTop =
+      calloutTop +
+      calloutLines.length * annotLead +
+      axisBand.ascent * 0.8 +
+      axisBand.ascent;
+    const readingTop =
+      keyTop + keyRoom + annot.fontSize * 1.0 + annotBand.ascent;
+    const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
+    const footTop =
+      readingTop + Math.max(0, readingLines.length - 1) * annotLead;
+    return {
+      titleLines,
+      limitLines,
+      calloutLines,
+      readingLines,
+      sourceLines,
+      eyebrowBaseline,
+      titleTop,
+      limitsTop,
+      calloutTop,
+      keyTop,
+      readingTop,
+      sourceTop,
+      /** What the panel has left over the plate's own foot. */
+      spare: sourceTop - bodyLead * 0.9 - footTop,
+    };
+  };
+
+  /** THE LADDER NOW ANSWERS A DIFFERENT QUESTION. Stacked, it asked how much height was left for the
+   *  map; beside, the map's height is fixed and the ladder asks whether the PANEL's copy fits the
+   *  column it has. The rungs and their order are unchanged — reading line first, then the
+   *  standfirst, then the headline — because that is the order a desk cuts in whatever the shape of
+   *  the page. */
+  const rungs: Array<{
+    share: number;
+    title: number;
+    limit: number;
+    reading: number;
+  }> = [];
+  for (const share of SHARES)
+    for (let t = 0; t < title.length; t++)
+      for (let l = 0; l < limits.length; l++) {
+        for (let r = 0; r < reading.length; r++)
+          rungs.push({ share, title: t, limit: l, reading: r });
+        rungs.push({ share, title: t, limit: l, reading: -1 });
+      }
+  /** THE LADDER IS WALKED LAZILY, AND THAT IS NOT A MICRO-OPTIMISATION. Building every rung's
+   *  layout eagerly and then taking the first that fits computed 144 of them to use one — and each
+   *  layout wraps five blocks of copy, each wrap measures every growing prefix, and every prefix
+   *  the upstream cache has not seen instantiates a rasteriser that scans the system fonts. The
+   *  render took three minutes, of which 176 seconds were SYSTEM time: the shape of the number said
+   *  syscalls, not arithmetic, and three guesses that ignored it were all wrong. Stop at the first
+   *  rung that fits; compute the rest only to report the shortfall. */
+  let fits: {
+    rung: (typeof rungs)[number];
+    layout: ReturnType<typeof layoutFor>;
+  } | null = null;
+  for (const rung of rungs) {
+    const layout = layoutFor(
+      panelFor(rung.share),
+      rung.title,
+      rung.limit,
+      rung.reading,
+    );
+    if (layout.spare >= 0) {
+      fits = { rung, layout };
+      break;
+    }
+  }
+  if (!fits) {
+    const best = rungs
+      .map((rung) => ({
+        rung,
+        layout: layoutFor(
+          panelFor(rung.share),
+          rung.title,
+          rung.limit,
+          rung.reading,
+        ),
+      }))
+      .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
+    throw new Error(
+      `the panel's copy does not fit its column in this direction: the shortest rung at the widest ` +
+        `panel still overruns the foot by ${(-best.layout.spare).toFixed(0)}px. Give the beat ` +
+        `shorter forms — do not shrink the map, which is the subject.`,
+    );
+  }
+  const layout = fits.layout;
+  const panel = panelFor(fits.rung.share);
+  const mapBox = {
+    x: PAD + panel + GUTTER,
+    y: PAD,
+    width: width - PAD * 2 - panel - GUTTER,
+    height: height - PAD * 2,
+  };
+  /** ONE SCALE FOR BOTH AXES, AND THE BOX IS FILLED — the map covers its whole box and the surplus
+   *  is CROPPED, rather than the map being letterboxed inside it.
+   *
+   *  Fitting the camera inside the box (`min`) never distorts, and it left 42px of empty plate above
+   *  and below whenever the box was narrower than the camera: Rémy read that as the map not taking
+   *  the space it should. `max` fills both dimensions at one scale, so the map is still not
+   *  stretched — the frame simply shows less ground on one axis. The crop is anchored WEST, because
+   *  the ground it gives up is the far east of Russia and the ground it must not give up is Iceland,
+   *  which is one of the seven the headline is about. */
+  const fill = Math.max(mapBox.width, mapBox.height * aspect);
+  const mapW = fill;
+  const mapH = fill / aspect;
+  const mapX = mapBox.x;
+  const mapY = mapBox.y + (mapBox.height - mapH) / 2;
+  return {
+    rung: fits.rung,
+    layout,
+    panel,
+    mapBox,
+    mapX,
+    mapY,
+    mapW,
+    mapH,
+    axisBand,
+    annotBand,
+    titleLead,
+    bodyLead,
+    annotLead,
+  };
+}
+
 export function DirectedChoroplethMap({
   shapes,
   plate,
@@ -115,63 +387,14 @@ export function DirectedChoroplethMap({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
-  const display = reg("display");
-  const eyebrowReg = reg("eyebrow");
-  const body = reg("body");
-  const axis = reg("axis");
-  const annot = reg("annot");
-
-  const set = (text: string, r: { transform: string }) =>
-    applyCase(text, r.transform);
-  const sizeOf = (r: {
-    fontSize: number;
-    fontWeight: number;
-    fontFamily: string;
-  }) => ({
-    fontSize: r.fontSize,
-    fontWeight: r.fontWeight,
-    fontFamily: r.fontFamily,
-  });
-  const widthOf = (text: string, r: any) =>
-    measureText(text, sizeOf(r)) +
-    Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
-  const BAND_PROBE = "Hxpg1,";
-  const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
-
-  /** WRAPPING IS MEMOISED BY TEXT, WIDTH AND REGISTER. Every rung of the ladder re-wraps all five
-   *  blocks of the panel, and the source and the callout are byte-identical at every rung — the
-   *  same paragraph was being broken twenty-six times, and each break measures every growing prefix
-   *  through a rasteriser that scans the system fonts on the ones it has not seen. The answer is a
-   *  pure function of its three inputs, so it is computed once. */
-  const wrapCache = new Map<string, string[]>();
-  function wrap(text: string, maxWidth: number, r: any): string[] {
-    const key = `${r.fontFamily}|${r.fontSize}|${r.fontWeight}|${r.letterSpacing}|${maxWidth}|${text}`;
-    const hit = wrapCache.get(key);
-    if (hit) return hit;
-    const lines: string[] = [];
-    let current = "";
-    for (const word of text.split(/\s+/)) {
-      const trial = current ? `${current} ${word}` : word;
-      if (current && widthOf(trial, r) > maxWidth) {
-        lines.push(current);
-        current = word;
-      } else current = trial;
-    }
-    if (current) lines.push(current);
-    wrapCache.set(key, lines);
-    return lines;
-  }
+  const display = registerOf(direction, "display");
+  const eyebrowReg = registerOf(direction, "eyebrow");
+  const body = registerOf(direction, "body");
+  const axis = registerOf(direction, "axis");
+  const annot = registerOf(direction, "annot");
 
   const line = (r: any) => ({
     fontFamily: r.fontFamily,
@@ -187,8 +410,32 @@ export function DirectedChoroplethMap({
     TEXT_CONTRAST_MIN,
   );
   const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
-  const axisBand = bandOf(axis);
-  const annotBand = bandOf(annot);
+
+  /** THE COPY-FITTING LADDER AND THE DRAWN SIZE, ASKED FOR RATHER THAN COMPUTED — one definition,
+   *  shared with the runner that has to size a plate before this component ever runs. */
+  const {
+    rung,
+    layout,
+    panel,
+    mapBox,
+    mapX,
+    mapY,
+    mapW,
+    mapH,
+    axisBand,
+    annotBand,
+    titleLead,
+    bodyLead,
+    annotLead,
+  } = mapGeometryFor({
+    aspect,
+    callout,
+    title,
+    limits,
+    reading,
+    source,
+    direction,
+  });
 
   // ── the ramp, the basemap and the water ───────────────────────────────────
   /** ONE HUE, FIVE CLASSES, LIGHTNESS FALLING THE WHOLE WAY — the heatmap's construction, reused
@@ -226,139 +473,6 @@ export function DirectedChoroplethMap({
         `the basemap must stay under 1.6:1 so the ramp is the only thing with weight on the plate`,
     );
 
-  // ── the layout: TWO COLUMNS, because the map is the subject ───────────────
-  //
-  // THE FIRST VERSION PUT THE HEADER ABOVE THE MAP, the way every chart in this base does, and that
-  // is the wrong shape for this form. A chart's plot can be any aspect the frame gives it; a map's
-  // is fixed by the ground it shows. Europe in an equal-area projection is 1.39:1, so filling the
-  // width of a 960px plate would need 616px of height — more than the whole plate is tall. Stacked,
-  // the map is bound by whatever height the header leaves, and it came out 306 x 220 on a page where
-  // two thirds of the width sat empty.
-  //
-  // So the text goes BESIDE the map, which is what both ProPublica map records do — a large map with
-  // its own panel — and the map takes the full height of the plate. Same page, same registers, and
-  // 2.4x the map.
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
-  const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
-
-  /** The panel is a SHARE of the plate rather than a fixed width, so a direction with a larger body
-   *  register gets a proportionally wider column instead of a narrower map — and the share itself is
-   *  a rung, spent LAST. The order is the plate's own priority, stated: cut the reading line, then
-   *  the standfirst, then the headline, and only when there is nothing left to cut does the panel
-   *  take width from the map. `nocturne` sets its body register in Futura and overran the foot by
-   *  35px at every copy rung; it takes a wider column rather than a smaller Europe. */
-  /** The narrowest panel comes FIRST, because the biggest map is what the beat wants: at 26 % the
-   *  camera fills the plate's whole height and there is no slack above or below it, which is the
-   *  point of putting the text beside it. Wider shares are the ladder's last rungs, spent only when
-   *  the copy will not fit. */
-  const SHARES = [0.26, 0.29, 0.33, 0.37, 0.41, 0.45];
-  const GUTTER = 26;
-  const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
-
-  /** THE PANEL IS A STACK, AND EVERY BLOCK IN IT IS MEASURED. The first version placed the callout
-   *  relative to the reading line's top and let it grow upward — and when the ladder dropped the
-   *  reading line, the callout grew straight through the key. A block whose position is derived from
-   *  a block that may not exist is a block that will one day be drawn on top of something. */
-  const layoutFor = (panel: number, t: number, l: number, r: number) => {
-    const titleLines = wrap(set(title[t], display), panel, display);
-    const limitLines = wrap(set(limits[l], body), panel, body);
-    const calloutLines = callout.lines.flatMap((c) => wrap(set(c, annot), panel, annot));
-    const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
-    const sourceLines = wrap(set(source, body), panel, body);
-
-    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-    const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
-    const calloutTop =
-      limitsTop + limitLines.length * bodyLead + annot.fontSize * 0.7 + annotBand.ascent;
-    const keyTop =
-      calloutTop + calloutLines.length * annotLead + axisBand.ascent * 0.8 + axisBand.ascent;
-    const readingTop = keyTop + keyRoom + annot.fontSize * 1.0 + annotBand.ascent;
-    const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-    const footTop = readingTop + Math.max(0, readingLines.length - 1) * annotLead;
-    return {
-      titleLines,
-      limitLines,
-      calloutLines,
-      readingLines,
-      sourceLines,
-      eyebrowBaseline,
-      titleTop,
-      limitsTop,
-      calloutTop,
-      keyTop,
-      readingTop,
-      sourceTop,
-      /** What the panel has left over the plate's own foot. */
-      spare: sourceTop - bodyLead * 0.9 - footTop,
-    };
-  };
-
-  /** THE LADDER NOW ANSWERS A DIFFERENT QUESTION. Stacked, it asked how much height was left for the
-   *  map; beside, the map's height is fixed and the ladder asks whether the PANEL's copy fits the
-   *  column it has. The rungs and their order are unchanged — reading line first, then the
-   *  standfirst, then the headline — because that is the order a desk cuts in whatever the shape of
-   *  the page. */
-  const rungs: Array<{ share: number; title: number; limit: number; reading: number }> = [];
-  for (const share of SHARES)
-    for (let t = 0; t < title.length; t++)
-      for (let l = 0; l < limits.length; l++) {
-        for (let r = 0; r < reading.length; r++)
-          rungs.push({ share, title: t, limit: l, reading: r });
-        rungs.push({ share, title: t, limit: l, reading: -1 });
-      }
-  /** THE LADDER IS WALKED LAZILY, AND THAT IS NOT A MICRO-OPTIMISATION. Building every rung's
-   *  layout eagerly and then taking the first that fits computed 144 of them to use one — and each
-   *  layout wraps five blocks of copy, each wrap measures every growing prefix, and every prefix
-   *  the upstream cache has not seen instantiates a rasteriser that scans the system fonts. The
-   *  render took three minutes, of which 176 seconds were SYSTEM time: the shape of the number said
-   *  syscalls, not arithmetic, and three guesses that ignored it were all wrong. Stop at the first
-   *  rung that fits; compute the rest only to report the shortfall. */
-  let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
-  for (const rung of rungs) {
-    const layout = layoutFor(panelFor(rung.share), rung.title, rung.limit, rung.reading);
-    if (layout.spare >= 0) {
-      fits = { rung, layout };
-      break;
-    }
-  }
-  if (!fits) {
-    const best = rungs
-      .map((rung) => ({
-        rung,
-        layout: layoutFor(panelFor(rung.share), rung.title, rung.limit, rung.reading),
-      }))
-      .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
-    throw new Error(
-      `the panel's copy does not fit its column in this direction: the shortest rung at the widest ` +
-        `panel still overruns the foot by ${(-best.layout.spare).toFixed(0)}px. Give the beat ` +
-        `shorter forms — do not shrink the map, which is the subject.`,
-    );
-  }
-  const layout = fits.layout;
-  const panel = panelFor(fits.rung.share);
-  const mapBox = {
-    x: PAD + panel + GUTTER,
-    y: PAD,
-    width: width - PAD * 2 - panel - GUTTER,
-    height: height - PAD * 2,
-  };
-  /** ONE SCALE FOR BOTH AXES, AND THE BOX IS FILLED — the map covers its whole box and the surplus
-   *  is CROPPED, rather than the map being letterboxed inside it.
-   *
-   *  Fitting the camera inside the box (`min`) never distorts, and it left 42px of empty plate above
-   *  and below whenever the box was narrower than the camera: Rémy read that as the map not taking
-   *  the space it should. `max` fills both dimensions at one scale, so the map is still not
-   *  stretched — the frame simply shows less ground on one axis. The crop is anchored WEST, because
-   *  the ground it gives up is the far east of Russia and the ground it must not give up is Iceland,
-   *  which is one of the seven the headline is about. */
-  const fill = Math.max(mapBox.width, mapBox.height * aspect);
-  const mapW = fill;
-  const mapH = fill / aspect;
-  const mapX = mapBox.x;
-  const mapY = mapBox.y + (mapBox.height - mapH) / 2;
   /** What of the unit box actually survives the crop — the bound every label placement is held to,
    *  so nothing is placed on ground the frame does not show. */
   const visible = {
@@ -371,9 +485,9 @@ export function DirectedChoroplethMap({
     mapY + p[1] * mapW,
   ];
   onLadder?.(
-    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
-      (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · panel ${(fits.rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px spare` +
+    `ladder: headline ${rung.title + 1}, standfirst ${rung.limit + 1}, reading ` +
+      (rung.reading < 0 ? "dropped" : `form ${rung.reading + 1}`) +
+      ` · panel ${(rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px spare` +
       ` · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)}`,
   );
 
@@ -409,14 +523,20 @@ export function DirectedChoroplethMap({
   /** Water takes the AXIS size in italic, not the annot size: it is the basemap naming itself, and
    *  the first version set it at the annot register, where three sea names were the loudest text on
    *  the map and collided with the callout. */
-  const waterReg = { ...axis, fontStyle: "italic", letterSpacing: 0, transform: "none" };
+  const waterReg = {
+    ...axis,
+    fontStyle: "italic",
+    letterSpacing: 0,
+    transform: "none",
+  };
 
   const inRing = (ring: Array<[number, number]>, x: number, y: number) => {
     let hit = false;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
       const [xi, yi] = ring[i];
       const [xj, yj] = ring[j];
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
+        hit = !hit;
     }
     return hit;
   };
@@ -522,14 +642,16 @@ export function DirectedChoroplethMap({
      *  had its baseline under the bottom edge and printed as half a word. A guard that holds one
      *  class of mark and not the other is the shape most defects here take. */
     if (x - half < 0.004 || x + half > visible.x1 - 0.004) return false;
-    if (y - up < visible.y0 + 0.004 || y + down > visible.y1 - 0.004) return false;
+    if (y - up < visible.y0 + 0.004 || y + down > visible.y1 - 0.004)
+      return false;
     /** ELEVEN COLUMNS, NOT FIVE. `ISLANDE` is wider than Iceland, and with five sample columns the
      *  island slipped between two of them: every probe was open water and the drawn word still had
      *  its first letters on the coast. A sample grid coarser than the smallest thing it has to find
      *  will one day fail to find it. */
     for (let i = 0; i <= 10; i++) {
       const dx = -half + (i / 10) * half * 2;
-      for (const dy of [-up, (down - up) / 2, down]) if (onLand(x + dx, y + dy)) return false;
+      for (const dy of [-up, (down - up) / 2, down])
+        if (onLand(x + dx, y + dy)) return false;
     }
     return true;
   };
@@ -572,7 +694,10 @@ export function DirectedChoroplethMap({
     /** The search reaches as far as the label is long, rather than a fixed distance: a sea is
      *  usually wider somewhere else, and how much further "somewhere else" is scales with the word,
      *  not with a constant somebody once typed. */
-    const step = Math.max(0.008, widthOnce(set(text, waterReg), waterReg) / mapW / 3);
+    const step = Math.max(
+      0.008,
+      widthOnce(set(text, waterReg), waterReg) / mapW / 3,
+    );
     /** AND THE SEARCH HAS A LEASH. Ten rings of a step that scales with the word is more than half
      *  the frame for a long name: `Mer Baltique` walked out of the Baltic, across Denmark and into
      *  the North Sea, where it sat two lines above `Mer du Nord` — both labels legible, both clear
@@ -634,7 +759,9 @@ export function DirectedChoroplethMap({
     );
   onLadder?.(
     `waters: ${waterForms.map((w) => w.text).join(", ") || "none"}` +
-      (unplaced.length ? ` · not placed, narrower than their own name here: ${unplaced.join(", ")}` : ""),
+      (unplaced.length
+        ? ` · not placed, narrower than their own name here: ${unplaced.join(", ")}`
+        : ""),
   );
 
   const feature = { ...area, fontWeight: 700 };
@@ -651,7 +778,9 @@ export function DirectedChoroplethMap({
     const reg = named.includes(sh.iso) ? feature : area;
     const half = widthOnce(set(sh.name, reg).toUpperCase(), reg) / 2 / mapW;
     const { x, y } = sh.anchor;
-    return [0, -half / 2, half / 2, -half, half].every((dx) => inRing(ring, x + dx, y));
+    return [0, -half / 2, half / 2, -half, half].every((dx) =>
+      inRing(ring, x + dx, y),
+    );
   };
   const insideFits = (sh: Shape) =>
     sh.anchor !== null &&
@@ -675,7 +804,13 @@ export function DirectedChoroplethMap({
       y1: y * mapW + axisBand.descent,
     };
   };
-  const placeNear = (text: string, sx: number, sy: number, taken: any[], reg: any) => {
+  const placeNear = (
+    text: string,
+    sx: number,
+    sy: number,
+    taken: any[],
+    reg: any,
+  ) => {
     const ok = (x: number, y: number) =>
       fitsAt(text, x, y, reg) && clearOf(labelBox(text, x, y, reg), taken);
     /** THE SEARCH LEANS OUTWARD. The spiral is nearest-first by radius, which is right, but within a
@@ -685,8 +820,12 @@ export function DirectedChoroplethMap({
      *  from the middle of the frame, which is where an atlas puts a label it cannot fit in place,
      *  and which makes crossing leaders the exception rather than the tie-break. */
     const outward = Math.atan2(sy - visible.y1 / 2, sx - visible.x1 / 2);
-    const angles = Array.from({ length: 32 }, (_, a) => (a / 32) * Math.PI * 2).sort((p, q) => {
-      const d = (t: number) => Math.abs(Math.atan2(Math.sin(t - outward), Math.cos(t - outward)));
+    const angles = Array.from(
+      { length: 32 },
+      (_, a) => (a / 32) * Math.PI * 2,
+    ).sort((p, q) => {
+      const d = (t: number) =>
+        Math.abs(Math.atan2(Math.sin(t - outward), Math.cos(t - outward)));
       return d(p) - d(q);
     });
     const step = 0.012;
@@ -712,8 +851,14 @@ export function DirectedChoroplethMap({
   };
 
   const wanted: Array<{ shape: Shape; klass: "feature" | "area" }> = [
-    ...named.map((iso) => ({ shape: byIso.get(iso)!, klass: "feature" as const })),
-    ...context.map((iso) => ({ shape: byIso.get(iso)!, klass: "area" as const })),
+    ...named.map((iso) => ({
+      shape: byIso.get(iso)!,
+      klass: "feature" as const,
+    })),
+    ...context.map((iso) => ({
+      shape: byIso.get(iso)!,
+      klass: "area" as const,
+    })),
   ].filter((w) => Boolean(w.shape));
   const placedLabels: Array<{
     iso: string;
@@ -726,11 +871,16 @@ export function DirectedChoroplethMap({
   }> = [];
   const notOnTheMap: string[] = [];
   {
-    const taken: any[] = waterForms.map((w) => labelBox(w.text, w.x, w.y, waterReg));
+    const taken: any[] = waterForms.map((w) =>
+      labelBox(w.text, w.x, w.y, waterReg),
+    );
     for (const { shape: sh, klass } of wanted) {
       const reg = klass === "feature" ? feature : area;
       const text = set(sh.name, reg).toUpperCase();
-      if (insideFits(sh) && clearOf(labelBox(text, sh.anchor!.x, sh.anchor!.y, reg), taken)) {
+      if (
+        insideFits(sh) &&
+        clearOf(labelBox(text, sh.anchor!.x, sh.anchor!.y, reg), taken)
+      ) {
         taken.push(labelBox(text, sh.anchor!.x, sh.anchor!.y, reg));
         placedLabels.push({
           iso: sh.iso,
@@ -738,12 +888,15 @@ export function DirectedChoroplethMap({
           x: sh.anchor!.x,
           y: sh.anchor!.y,
           from: null,
-          onCell: sh.value === null ? missingFill : classFill(classOf(sh.value)),
+          onCell:
+            sh.value === null ? missingFill : classFill(classOf(sh.value)),
           klass,
         });
         continue;
       }
-      const spot = sh.anchor ? placeNear(text, sh.anchor.x, sh.anchor.y, taken, reg) : null;
+      const spot = sh.anchor
+        ? placeNear(text, sh.anchor.x, sh.anchor.y, taken, reg)
+        : null;
       if (spot) {
         taken.push(labelBox(text, spot.x, spot.y, reg));
         placedLabels.push({
@@ -815,14 +968,24 @@ export function DirectedChoroplethMap({
         </text>
       ))}
       {layout.sourceLines.map((l, i) => (
-        <text key={`s${i}`} x={PAD} y={layout.sourceTop + i * bodyLead} {...line(body)}>
+        <text
+          key={`s${i}`}
+          x={PAD}
+          y={layout.sourceTop + i * bodyLead}
+          {...line(body)}
+        >
           {l}
         </text>
       ))}
 
       <defs>
         <clipPath id="camera">
-          <rect x={mapBox.x} y={mapBox.y} width={mapBox.width} height={mapBox.height} />
+          <rect
+            x={mapBox.x}
+            y={mapBox.y}
+            width={mapBox.width}
+            height={mapBox.height}
+          />
         </clipPath>
       </defs>
 
@@ -836,7 +999,13 @@ export function DirectedChoroplethMap({
             A rect of the direction's own ground goes underneath it: the image is opaque and exactly
             covers the box, so nothing shows through — but if a bake ever came back short, the gap
             would be the plate's ground rather than white paper. */}
-        <rect x={mapX} y={mapY} width={mapW} height={mapH} fill={namesWater ? water : direction.ground} />
+        <rect
+          x={mapX}
+          y={mapY}
+          width={mapW}
+          height={mapH}
+          fill={namesWater ? water : direction.ground}
+        />
         <image
           href={plate}
           x={mapX}
@@ -949,7 +1118,6 @@ export function DirectedChoroplethMap({
           ))}
       </g>
 
-
       {/* THE FEATURE THE STORY IS ABOUT — SCMP's third treatment, split in two because the map now
           runs to the plate's own edge and a leader from Albania to the panel would cross the whole
           continent. On the MAP, the subject takes a ring in the accent, which is
@@ -1003,14 +1171,23 @@ export function DirectedChoroplethMap({
                       y={top + axisBand.ascent * 2 + 2}
                       textAnchor="middle"
                       {...line(axis)}
-                      fill={adjustToContrast(classFill(i), direction.ground, TEXT_CONTRAST_MIN)}
+                      fill={adjustToContrast(
+                        classFill(i),
+                        direction.ground,
+                        TEXT_CONTRAST_MIN,
+                      )}
                     >
                       {set(format(breaks[i - 1]), axis)}
                     </text>
                   )}
                 </g>
               ))}
-              <text x={left} y={top - axisBand.descent - 4} {...line(axis)} fill={mutedInk}>
+              <text
+                x={left}
+                y={top - axisBand.descent - 4}
+                {...line(axis)}
+                fill={mutedInk}
+              >
                 {set(unit, axis)}
               </text>
               <rect

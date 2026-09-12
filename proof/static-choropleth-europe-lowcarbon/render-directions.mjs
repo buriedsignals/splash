@@ -19,13 +19,24 @@ import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, deriveFurniture } from "#shared/chart-beat/render-still.mjs";
+import {
+  renderStill,
+  deriveFurniture,
+  adjustToContrast,
+  TEXT_CONTRAST_MIN,
+} from "#shared/chart-beat/render-still.mjs";
 import { readPalette, mix } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
+import { resolveRegister } from "#shared/chart-beat/registers.mjs";
+import { makePlan, validatePlan } from "#shared/map-beat/plan.mjs";
+import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
-import { DirectedChoroplethMap } from "./DirectedChoroplethMap.tsx";
+import { matchConvention } from "../../skills/palette/scripts/palette.mjs";
+import { DirectedChoroplethMap, mapGeometryFor } from "./DirectedChoroplethMap.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -193,7 +204,13 @@ function ensurePlate(id, water, land) {
 
 /** The two tints a basemap is allowed on a directed plate, both derived from the direction and
  *  neither invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the
- *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour. */
+ *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour.
+ *
+ *  THESE ARE THE PLATES' OWN TINTS AND THEY DO NOT MOVE HERE. `#shared/map-beat/tints.mjs` answers
+ *  the same question differently — it takes the filed WATER hue rather than the accent, and hunts
+ *  the smallest dose that separates sea from land by a measured 1.22:1 — and adopting it would
+ *  re-bake three committed plates and change every render. That is a picture change, and this pass
+ *  is a contract change: the swap belongs to the pass that re-bakes. */
 const plateTints = (d) => ({
   water: mix(d.ground, d.accent, 0.16),
   land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
@@ -207,25 +224,39 @@ for (const file of DIRECTION_FILES) {
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
 const plateFacts = await factsOf(DIRECTION_FILES[0].replace(/\.md$/, ""));
+/** THE THREE PLATES MUST SHOW THE SAME GROUND — and that is a claim about DEGREES, not about
+ *  pixels. It used to be both: the frame sizes had to match as well, which was true only while every
+ *  plate was baked at one hard-coded size. The drawn size is a layout output now, so a direction
+ *  whose panel is wider gets a smaller plate of the SAME camera, and demanding equal frames would
+ *  refuse a correct bake. What may never differ is where a degree lands: `fitBounds` on the same
+ *  bounds at the same aspect returns the same corners at any pixel scale, so the corners are
+ *  compared and the sizes are not. */
+const CORNER_TOLERANCE = 1e-9;
 for (const file of DIRECTION_FILES.slice(1)) {
   const id = file.replace(/\.md$/, "");
   const other = await factsOf(id);
-  if (
-    other.frame.width !== plateFacts.frame.width ||
-    other.frame.height !== plateFacts.frame.height ||
-    JSON.stringify(other.frameCorners) !== JSON.stringify(plateFacts.frameCorners)
-  )
+  const apart = ["west", "east", "south", "north"].filter(
+    (edge) => Math.abs(other.frameCorners[edge] - plateFacts.frameCorners[edge]) > CORNER_TOLERANCE,
+  );
+  if (apart.length)
     throw new Error(
-      `the ${id} plate was baked on a different camera than ${DIRECTION_FILES[0]}: three plates that ` +
-        `disagree about where a degree is would put the same country in three places, and nothing ` +
-        `else here would notice`,
+      `the ${id} plate was baked on a different camera than ${DIRECTION_FILES[0]} — its ` +
+        `${apart.join(", ")} edge${apart.length > 1 ? "s disagree" : " disagrees"} by more than ` +
+        `${CORNER_TOLERANCE}°: three plates that disagree about where a degree is would put the same ` +
+        `country in three places, and nothing else here would notice. Their pixel SIZES are allowed ` +
+        `to differ — the drawn size is the layout's output, one per direction.`,
     );
 }
 const FRAME = plateFacts.frame;
 const CORNERS = plateFacts.frameCorners;
 if (!CORNERS || !(FRAME?.width > 0))
   throw new Error("this plate predates the camera facts: re-bake it with bake.mjs");
-export const CAMERA_ASPECT = FRAME.width / FRAME.height;
+/** THE CAMERA'S ASPECT IS DECLARED, NOT DISCOVERED. It used to be read back from a plate already
+ *  baked, which made the drawn size depend on the plate and the plate depend on the drawn size. The
+ *  layout arithmetic makes `mapW / mapH` equal this aspect by construction, so a plate baked at the
+ *  drawn size is the same camera at a different pixel scale — `fitBounds` on the same bounds at the
+ *  same aspect returns the same corners. */
+export const CAMERA_ASPECT = 1000 / 760;
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const Y_NORTH = mercY(CORNERS.north);
 const Y_SOUTH = mercY(CORNERS.south);
@@ -234,6 +265,16 @@ const project = ([lon, lat]) => {
   const py = ((mercY(lat) - Y_NORTH) / (Y_SOUTH - Y_NORTH)) * FRAME.height;
   return [px / FRAME.width, py / FRAME.width];
 };
+/** …AND BACK, exactly. The PLAN speaks degrees — a layer's data is geography, not a unit box — while
+ *  everything this file measures (an anchor, a sea's placed name) is already in the camera's unit
+ *  box. The two are the same camera, so the way back is the algebra above read in reverse rather
+ *  than a second, approximate answer to the same question. */
+const unproject = ([x, y]) => [
+  CORNERS.west + x * (CORNERS.east - CORNERS.west),
+  (Math.atan(Math.exp(Y_NORTH + ((y * FRAME.width) / FRAME.height) * (Y_SOUTH - Y_NORTH))) -
+    Math.PI / 4) *
+    (360 / Math.PI),
+];
 console.log(
   `camera: MapTiler plate, ${FRAME.width}x${FRAME.height}, ` +
     `${CORNERS.west.toFixed(2)}..${CORNERS.east.toFixed(2)}E ` +
@@ -344,6 +385,15 @@ if (above.length !== 7)
       `(${above.map((r) => `${r.label} ${r.lowCarbon.toFixed(1)}`).join(", ")})`,
   );
 
+/** THE BEAT'S CLAIM, ITS PLANS AND ITS GEOMETRY, PUBLISHED. `above` is the whole headline — the
+ *  seven countries over the floor — and it was a local const nothing outside this file could read,
+ *  so the one sentence the beat exists for was checkable only by looking at the picture. The plan
+ *  and the drawn size go out beside it for the same reason: what a renderer will be handed is now
+ *  something a test can hold. */
+export const report = { above: above.map((r) => ({ iso: r.iso, lowCarbon: r.lowCarbon })) };
+export const plans = {};
+export const geometry = {};
+
 /** ALBANIA'S NEIGHBOURS ARE DERIVED FROM THE FROZEN SHAPES, not typed from memory. Two countries
  *  are neighbours when a vertex of one lands within a tenth of a degree of a vertex of the other.
  *  The test is coarse in the safe direction — it can only ever find MORE neighbours than exist, so a
@@ -444,7 +494,8 @@ const WATERS = [
   { forms: ["Mer Baltique", "Baltique", "Balt."], lon: 19.5, lat: 58.0 },
 ].map((w) => {
   const [x, y] = project([w.lon, w.lat]);
-  return { forms: w.forms, x, y };
+  // The unit-box position is what the component draws with; the degrees are what the PLAN carries.
+  return { forms: w.forms, x, y, lon: w.lon, lat: w.lat };
 });
 
 const oddValue = value.get(ODD_ONE);
@@ -496,11 +547,170 @@ const filed = readdirSync(DIRECTIONS)
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
 const BEAT_FACTS = { evidenceLevels: BREAKS.length + 1 };
 console.log(
-  report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), {
+  reportComposition(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), {
     beat: BEAT_FACTS,
   }),
 );
 console.log("");
+
+// ── the plan: what this beat OWNS on the map, and nothing else ──────────────
+//
+// THE GEOGRAPHY IS MAPTILER'S AND IS NEVER REDRAWN. A layer here marks what belongs to the study —
+// a class, a border between two of its own areas, the ringed subject, a word the beat placed. Land
+// and coastline are the basemap's, and `assertNoDoubledBasemap` refuses a layer that claims them.
+//
+// The legend, the headline, the standfirst, the reading line, the source line and the callout's
+// sentence live OUTSIDE the map rectangle. They are not layers, and they stay where they are.
+//
+// In 8a the plan is BUILT and VALIDATED, and nothing renders from it yet: the four guards run
+// against the picture the beat already draws, so a plan that could not be rendered is caught before
+// anything depends on it.
+
+/** The bounds are the plate's own, read back from the bake rather than retyped — a plan that named
+ *  a different window than the plate beside it would be a plan for a different map. */
+const BOUNDS = plateFacts.bounds;
+/** THE STYLE IS NAMED, NOT FETCHED. Fetching MapTiler's style document costs the key and a round
+ *  trip, and nothing in 8a mounts the plan. What the plan carries is the style this beat's plates
+ *  were ACTUALLY baked in, taken off the plate's own record. */
+const STYLE = { name: plateFacts.style };
+
+/** The study set as geography, in degrees — the same frozen rings the plate is drawn from, carrying
+ *  the value each area is classed on and whether the source was supposed to report it at all. */
+const studyAreas = {
+  type: "FeatureCollection",
+  features: geo.features.map((f) => ({
+    type: "Feature",
+    properties: {
+      iso: f.properties.iso,
+      name: FRENCH[f.properties.iso] ?? f.properties.name,
+      value: value.has(f.properties.iso) ? value.get(f.properties.iso).lowCarbon : null,
+      inStudySet: studySet.includes(f.properties.iso),
+    },
+    geometry: f.geometry,
+  })),
+};
+const anchorPointOf = (iso) => {
+  const shape = shapes.find((s) => s.iso === iso);
+  return {
+    type: "Feature",
+    properties: { iso, name: shape.name.toUpperCase() },
+    geometry: { type: "Point", coordinates: unproject([shape.anchor.x, shape.anchor.y]) },
+  };
+};
+const pointsFor = (isos) => ({
+  type: "FeatureCollection",
+  features: isos.filter((iso) => shapes.some((s) => s.iso === iso)).map(anchorPointOf),
+});
+const namedAreas = pointsFor(above.map((r) => r.iso));
+const contextAreas = pointsFor(ranked.slice(-3).map((r) => r.iso));
+const subjectArea = { type: "FeatureCollection", features: [anchorPointOf(ODD_ONE)] };
+const seaNames = {
+  type: "FeatureCollection",
+  features: WATERS.map((w) => ({
+    type: "Feature",
+    // The longest form is what the beat ASKS for; which form survives the camera is the drawing's
+    // measurement, and 8b is where the plan learns the answer.
+    properties: { name: w.forms[0], forms: w.forms },
+    geometry: { type: "Point", coordinates: [w.lon, w.lat] },
+  })),
+};
+
+/** EVERY VALUE BELOW IS THE COMPONENT'S OWN, TRANSPORTED. Not one of them was chosen here: the ramp
+ *  is the heatmap's construction between the direction's poles, the border is `deriveFurniture`'s
+ *  `grid` step, the ring is the accent walked to the text floor, the labels are the axis register
+ *  with the same tracking the plate sets them in. A number invented for the plan would be a second
+ *  answer to a question the drawing has already measured. */
+function layersFor(direction, g) {
+  const { ink, muted, grid } = deriveFurniture(direction.ground);
+  const low = mix(direction.accent, direction.ground, 0.88);
+  const high = mix(direction.accent, ink, 0.3);
+  const classCount = BREAKS.length + 1;
+  const classFill = (i) => mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
+  const landNoValue = mix(direction.ground, ink, 0.05);
+  const coast = mix(direction.ground, ink, 0.22);
+  const missingFill = mix(direction.ground, ink, 0.13);
+  const waterHue = matchConvention("water").accent;
+  const waterInk = adjustToContrast(
+    waterHue,
+    mix(direction.ground, waterHue, 0.16),
+    TEXT_CONTRAST_MIN,
+  );
+  const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
+  const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
+
+  const axis = resolveRegister(direction, "axis");
+  const area = { ...axis, letterSpacing: Math.max(Number(axis.letterSpacing ?? 0), 0.8) };
+  const feature = { ...area, fontWeight: 700 };
+  const waterReg = { ...axis, fontStyle: "italic", letterSpacing: 0 };
+  /** A register's tracking is measured in PIXELS on the plate and declared in EMS on a map. Same
+   *  measurement, the unit the reader of it expects. */
+  const tracking = (r) => Number(r.letterSpacing ?? 0) / r.fontSize;
+  const halo = Math.max(2.5, g.axisBand.ascent * 0.34) / 2;
+  const words = (id, data, register, colour, haloColour) => ({
+    id,
+    role: "place",
+    type: "symbol",
+    data,
+    layout: {
+      "text-field": ["get", "name"],
+      "text-font": [register.fontFamily],
+      "text-size": register.fontSize,
+      "text-letter-spacing": tracking(register),
+    },
+    paint: { "text-color": colour, "text-halo-color": haloColour, "text-halo-width": halo },
+  });
+
+  const hasValue = ["!=", ["get", "value"], null];
+  return [
+    {
+      id: "classes",
+      role: "study-area",
+      type: "fill",
+      data: studyAreas,
+      paint: {
+        "fill-color": [
+          "case",
+          hasValue,
+          ["step", ["get", "value"], classFill(0), ...BREAKS.flatMap((b, i) => [b, classFill(i + 1)])],
+          ["get", "inStudySet"],
+          missingFill,
+          landNoValue,
+        ],
+      },
+    },
+    {
+      id: "borders",
+      role: "study-border",
+      type: "line",
+      data: studyAreas,
+      paint: {
+        // An area with no value takes the coast step rather than the grid one — the same two inks,
+        // chosen the same way, as the plate draws them.
+        "line-color": ["case", hasValue, grid, coast],
+        "line-width": direction.stroke.hairline,
+      },
+    },
+    {
+      id: "subject-ring",
+      role: "subject",
+      type: "circle",
+      data: subjectArea,
+      paint: {
+        "circle-radius": Math.max(
+          (Math.max(shapes.find((s) => s.iso === ODD_ONE).anchor.width,
+            shapes.find((s) => s.iso === ODD_ONE).anchor.height) * g.mapW) / 2 + 5,
+          7,
+        ),
+        "circle-opacity": 0,
+        "circle-stroke-color": accentInk,
+        "circle-stroke-width": direction.stroke.rule * 1.6,
+      },
+    },
+    words("named-areas", namedAreas, feature, accentInk, direction.ground),
+    words("context-areas", contextAreas, area, mutedInk, direction.ground),
+    { ...words("sea-names", seaNames, waterReg, waterInk, mix(direction.ground, waterHue, 0.16)), role: "water" },
+  ];
+}
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
@@ -514,6 +724,36 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           ? `   refused: ${d.refused.map((r) => `${r.family} [${r.missing.join(",")}]`).join(", ")}`
           : ""),
     );
+
+  /** WHERE AND HOW LARGE THIS DIRECTION DRAWS ITS MAP — asked of the component's own layout rather
+   *  than guessed here, and carrying the plate rectangle beside the map rectangle so the two can be
+   *  compared instead of assumed equal. */
+  const g = mapGeometryFor({
+    aspect: CAMERA_ASPECT,
+    callout: CALLOUT,
+    title,
+    limits,
+    reading,
+    source,
+    direction,
+  });
+  geometry[id] = { ...g, plate: { x: g.mapX, y: g.mapY, width: g.mapW, height: g.mapH } };
+  assertPlateMatchesMarks(geometry[id]);
+
+  const plan = makePlan({
+    style: STYLE,
+    camera: { bounds: BOUNDS, drawn: drawnSizeOf(geometry[id]) },
+    layers: layersFor(direction, g),
+  });
+  const violations = [...validatePlan(plan), ...validateExpressions(plan)];
+  if (violations.length)
+    throw new Error(`the plan for ${id} is not renderable:\n  ${violations.join("\n  ")}`);
+  assertNoDoubledBasemap(plan);
+  plans[id] = plan;
+  console.log(
+    `  plan: ${plan.layers.length} layers (${plan.layers.map((l) => l.id).join(", ")}) · ` +
+      `drawn ${plan.camera.drawn.width} x ${plan.camera.drawn.height}`,
+  );
 
   try {
     await renderStill({
