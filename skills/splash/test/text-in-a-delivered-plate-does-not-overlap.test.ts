@@ -89,7 +89,9 @@ describe("the ink reader", () => {
   const svg = (runs: string) =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200">${runs}</svg>`;
   const run = (text: string, x: number, y: number, anchor = "start") =>
-    `<text x="${x}" y="${y}" font-family="Avenir Next" font-size="14" font-weight="400" text-anchor="${anchor}">${text}</text>`;
+    // A Google family the ladders really hold, because the render draws from FILES now: a probe set
+    // in a macOS face is a probe `measureText` refuses before it can read anything.
+    `<text x="${x}" y="${y}" font-family="Open Sans" font-size="14" font-weight="400" text-anchor="${anchor}">${text}</text>`;
 
   it("should see two runs printed over each other", () => {
     const hits = overlappingRuns(inkBoxes(svg(run("Luxembourg", 40, 100) + run("−20,48", 60, 100))));

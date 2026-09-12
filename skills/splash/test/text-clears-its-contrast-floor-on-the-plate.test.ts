@@ -65,7 +65,8 @@ describe("the contrast reader", () => {
     `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80">` +
     `<rect x="0" y="0" width="200" height="80" fill="#FFFFFF"/>` +
     `<rect x="10" y="20" width="180" height="40" fill="${band}"/>` +
-    `<text x="20" y="46" font-family="Avenir Next" font-size="14" font-weight="400" fill="${fill}">42 TWh</text>` +
+    // A Google family the ladders really hold — see the note in the ink reader's own probe.
+    `<text x="20" y="46" font-family="Open Sans" font-size="14" font-weight="400" fill="${fill}">42 TWh</text>` +
     `</svg>`;
 
   const measure = (fill: string, band: string) => {
