@@ -411,6 +411,15 @@ export function measureText(text, options) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
     `<text x="0" y="300" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
     `</svg>`;
+  // KNOWN AND DEFERRED — AN ITALIC RUN IS MEASURED ON THE UPRIGHT FILE. Neither `measureText` nor
+  // `measureTextBand` takes a `fontStyle`, so the probe below never declares one and `fontFilesFor`
+  // is asked for the upright face only. An italic register is therefore measured in roman and drawn
+  // in italic, and its gutters are wrong by the difference between the two faces' advances. It is
+  // PRE-EXISTING — the probe never declared `font-style` when system fonts were on either — and it
+  // is deferred rather than forgotten: the repair adds `fontStyle` to both functions' options and to
+  // every call site that sets an italic register, which is a signature change across many beats, and
+  // the italic runs in the choropleth are its sea labels, which a later task moves into MapLibre.
+  // Recorded here so it is found as a decision rather than rediscovered as a mystery.
   const box = new Resvg(probe, {
     font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
   }).getBBox();

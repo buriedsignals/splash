@@ -61,7 +61,14 @@ const LEGEND = {
   markerGap: 14,
 };
 
-const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+/** THE ONE FONT STACK, AND IT IS THE TRUNK'S `DEFAULT_FONT_FAMILY` SPELLED AGAIN. A composition
+ *  cannot import `render-still.mjs` — it carries a native rasteriser no browser bundle can load —
+ *  so the value is a literal here, and a literal is a thing that drifts. It must not: every render
+ *  in this twin draws with `loadSystemFonts: false` from files `typefaces.mjs` fetches, and
+ *  Helvetica is a licensed face there is no file for, so a stack that LEADS with it measures and
+ *  draws nothing. Open Sans leads because it is redistributable, fetchable and served as map
+ *  glyphs; Helvetica and Arial stay behind it for the browser, which does its own falling back. */
+const FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 
 export type Co2MapVideoProps = {
   geometry: {
