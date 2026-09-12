@@ -7,23 +7,39 @@
 // `origin: default`, and the first a journalist heard of the typeface was a render refusing it.
 // The exchange (movement ⑨) named a `proposeTypeface` that did not exist.
 //
-// THE SHAPE IS `paletteDecision`'s. When the newsroom's first recorded face resolves on this
-// machine there is nothing to decide, so the answer is derived and written with `origin: newsroom`.
-// When none resolves the journalist is asked — shown which recorded faces are present and which
-// are absent, and offered the substrate's own stack as an explicit choice — because a face this
-// machine does not have is refused, never substituted (`useTypeface` in every `render-still.mjs`).
+// THE SHAPE IS `paletteDecision`'s. When the newsroom's first recorded face resolves there is
+// nothing to decide, so the answer is derived and written with `origin: newsroom`. When none
+// resolves the journalist is asked — shown which recorded faces are available and which are not,
+// and offered the substrate's own stack as an explicit choice — because a face there is no file
+// for is refused, never substituted (`useTypeface` in every `render-still.mjs`).
 //
-// WHAT "RESOLVES" MEANS is measured, never assumed: resvg draws the fallback for a family it does
-// not have and reports nothing. `familyResolves` below lays a probe string out in the requested
-// family and in a family that exists nowhere and compares the ink. It is the same probe every
-// `render-still.mjs` carries; it is written again here (ten lines) because this skill installs on
-// its own and imports no other skill. The probe is Latin, so a story set in another script gets an
-// answer about Latin glyphs — stated here rather than papered over with a sampling machinery.
+// WHAT "RESOLVES" MEANS CHANGED WITH THE RENDER, AND THE OLD ANSWER WAS WORSE THAN USELESS HERE.
+// It used to mean "does this MACHINE have the face", measured obliquely: resvg never errors on a
+// family it cannot find, so the probe laid a string out in the requested family and in a family
+// that exists nowhere and compared the ink. That question is now the wrong one. Every render in
+// this twin draws with `loadSystemFonts: false` from files `typefaces.mjs` fetches, so the font
+// library on the machine that renders is not consulted at all — a face installed here resolves for
+// nothing, and a proposal that recommended one would recommend a face the render then REFUSES.
+//
+// So the proposal asks the render's own question: IS THERE A FILE. `familyResolves` below is
+// `render-still.mjs`'s, to the line — `fontFilesFor(family).length > 0` — and the catalogue it
+// answers yes to is the families the ladder can fetch: Google Fonts, redistributable, installed by
+// nobody. `typefaces.mjs` is CARRIED beside this file (a skill installs on its own and imports no
+// other skill), so this asks it through the same entry point the rasteriser does, and the answer
+// here and the answer at the render cannot drift apart.
 
-import { Resvg } from "@resvg/resvg-js";
+import { fontFilesFor, SERVED_BY_MAPTILER } from "./typefaces.mjs";
 
 export const TYPEFACE_ORIGINS = ["newsroom", "journalist", "default"];
-export const DEFAULT_STACK = "Helvetica, Arial, sans-serif";
+
+/** THE SUBSTRATE'S OWN STACK, AND IT MUST BE THE TRUNK'S. `useTypeface` exempts `origin: default`
+ *  from the file check, so whatever is recorded here is written into a `TYPEFACE.md` and never
+ *  questioned again — and then `measureText` asks `fontFilesFor` for its FIRST family on the first
+ *  gutter it measures. While this read `Helvetica, Arial, sans-serif` and `render-still.mjs`'s
+ *  `DEFAULT_FONT_FAMILY` read `Open Sans, …`, a journalist who accepted the documented default got
+ *  a throw out of every measurement. The two are one value in two files that cannot import each
+ *  other; `typeface.test.ts` reads the trunk's and holds them equal. */
+export const DEFAULT_STACK = "Open Sans, Helvetica, Arial, sans-serif";
 
 /** The faces `NEWSROOM.md` records, most prominent first. */
 export function newsroomTypefaces(newsroom) {
@@ -38,23 +54,27 @@ export function requestedFamily(stack) {
   return String(stack).split(",")[0].replace(/^["']|["']$/g, "").trim();
 }
 
-const RESOLUTION_PROBE = "Handgloves 0123456789 — MWmw il1 %";
-
-/** Does this machine actually have the face? Identical ink to a nonsense family means no. */
+/**
+ * CAN A RENDER ACTUALLY SET THIS FACE? — the same question `render-still.mjs`'s own
+ * `familyResolves` asks, answered by the same function, so the proposal cannot recommend a family
+ * the render will refuse.
+ *
+ * It is "is there a file", not "is it installed": `fontFilesFor` hands back a cached path, or
+ * fetches the face from Google Fonts on first use, or throws naming the family. A refusal is
+ * `false` rather than an exception because this is a PROPOSAL — a name the catalogue does not carry
+ * is an option the journalist is shown as unavailable, not a crash in the exchange.
+ */
 export function familyResolves(family) {
-  const ink = (name) => {
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
-      `<text x="0" y="300" font-family="${name}" font-size="120">${RESOLUTION_PROBE}</text></svg>`;
-    const box = new Resvg(svg, { font: { loadSystemFonts: true } }).getBBox();
-    return box ? `${box.x}|${box.y}|${box.width}|${box.height}` : "none";
-  };
-  return ink(requestedFamily(family)) !== ink("NoSuchFaceExistsAnywhere-ZZQX");
+  try {
+    return fontFilesFor(family).length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Every face the newsroom recorded, each measured on this machine, plus the substrate's own stack.
- * `resolves` is injectable so the proposal can be tested without a font library.
+ * Every face the newsroom recorded, each asked whether a render could set it, plus the substrate's
+ * own stack. `resolves` is injectable so the proposal can be tested without reaching the catalogue.
  */
 export function proposeTypeface({ newsroom, resolves = familyResolves } = {}) {
   const faces = newsroomTypefaces(newsroom);
@@ -71,9 +91,10 @@ export function proposeTypeface({ newsroom, resolves = familyResolves } = {}) {
 
 /**
  * Whether there is a typeface decision at all. `ask: false` carries the derived answer — the
- * newsroom's first recorded face, present on this machine. `ask: true` carries the proposal and
- * the reason, and the journalist chooses: another recorded face that is present, the default
- * stack (recorded as `origin: default`, a choice with the gap named), or installing the face.
+ * newsroom's first recorded face, one a render can actually set. `ask: true` carries the proposal
+ * and the reason, and the journalist chooses: another recorded face that is available, a Google
+ * family that is, or the default stack (recorded as `origin: default`, a choice with the gap
+ * named). Installing a face is not on the list, because it is no longer a route to anything.
  */
 export function typefaceDecision({ newsroom, resolves = familyResolves } = {}) {
   const proposal = proposeTypeface({ newsroom, resolves });
@@ -90,7 +111,7 @@ export function typefaceDecision({ newsroom, resolves = familyResolves } = {}) {
   if (first.present) {
     return {
       ask: false,
-      reason: "the newsroom's first recorded face resolves on this machine",
+      reason: "the newsroom's first recorded face is one this render can set",
       typeface: { family: first.family, origin: "newsroom" },
       proposal,
     };
@@ -100,12 +121,15 @@ export function typefaceDecision({ newsroom, resolves = familyResolves } = {}) {
   return {
     ask: true,
     reason:
-      `this machine does not have ${absent.map((f) => JSON.stringify(f)).join(", ")}` +
+      `there is no font file for ${absent.map((f) => JSON.stringify(f)).join(", ")}` +
       (present.length
-        ? `; it does have ${present.map((f) => JSON.stringify(f)).join(", ")}`
+        ? `; there is one for ${present.map((f) => JSON.stringify(f)).join(", ")}`
         : `; none of the newsroom's recorded faces resolve here`) +
-      " — a render would refuse the face rather than substitute for it, so the journalist chooses: " +
-      "a recorded face that is present, the default stack as a stated choice, or installing the face",
+      " — a render would refuse a face it has no file for rather than substitute for it, and " +
+      "installing that face on this machine would not change it: every render draws from the files " +
+      "this skill fetches, with the machine's own font library switched off. The journalist " +
+      "chooses: a recorded face that is available, another Google family, or the default stack as " +
+      "a stated choice",
     proposal,
   };
 }
@@ -114,10 +138,25 @@ export function typefaceDecision({ newsroom, resolves = familyResolves } = {}) {
 export function formatTypefaceProposal({ reason, proposal }) {
   const lines = ["Which typeface should this story's graphics be set in?", "", reason + ".", ""];
   for (const option of proposal.options) {
-    const state = option.origin === "default" ? "the substrate's own stack, always present" : option.present ? "present on this machine" : "ABSENT on this machine";
+    const state =
+      option.origin === "default"
+        ? "the substrate's own stack, always available"
+        : option.present
+          ? "available — a font file can be fetched for it"
+          : "UNAVAILABLE — there is no font file for it";
     lines.push(`- **${option.family}** — ${state}. Recorded as \`origin: ${option.origin}\`.`);
   }
-  lines.push("", "A face that is absent can be installed; the render will refuse it until it is.");
+  lines.push(
+    "",
+    "INSTALLING A FACE DOES NOT HELP. Every render here draws from font files this skill fetches, " +
+      "with the machine's own font library switched off — so a face that is unavailable stays " +
+      "unavailable however many laptops it is installed on, and a face that is available needs no " +
+      "installing anywhere.",
+    "",
+    "The catalogue is Google Fonts, which the ladder fetches on first use and caches. " +
+      `Seventeen of them are also served as map glyphs, so a map label and the panel beside it come ` +
+      `from the same design: ${SERVED_BY_MAPTILER.join(" · ")}.`,
+  );
   return lines.join("\n");
 }
 
@@ -140,11 +179,12 @@ export function formatTypeface({ family, origin }) {
         " machine that renders, so nobody was asked — there was nothing here to decide."
       : origin === "journalist"
         ? "Recorded from the typeface proposal, chosen by the journalist."
-        : "The substrate's own stack, chosen as a stated fallback because the newsroom's recorded" +
-          " faces do not resolve on the machine that renders. `origin: default` is the honest word.",
+        : "The substrate's own stack, chosen as a stated fallback because there is no font file for" +
+          " any of the newsroom's recorded faces. `origin: default` is the honest word.",
     "",
-    "A render refuses a face this machine cannot resolve rather than substituting for it; see",
-    "`useTypeface` in the craft skill's `render-still.mjs`.",
+    "A render draws from font files only, with the machine's own font library switched off, and",
+    "refuses a face it has no file for rather than substituting for it; see `useTypeface` in the",
+    "craft skill's `render-still.mjs`.",
     "",
   ].join("\n");
 }
