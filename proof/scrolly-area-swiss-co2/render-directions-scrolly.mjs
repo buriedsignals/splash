@@ -1,21 +1,20 @@
 // Switzerland's annual CO₂ since 1858 as a filled area, rendered once per FILED DIRECTION into a
 // self-contained scrolly page. The `area` type in the scrolly format.
 //
-// THE SAME PLATE AS `static-area-swiss-co2`, READ IN ORDER. The data, the claim and its assertions,
-// the words and the colour rules are the static beat's own; the scroll only decides the order in
-// which the reader is asked to see them. Four cards, four readings of one picture:
+// THE SUBJECT OF `static-area-swiss-co2`, CHOREOGRAPHED. The data, the claim and its assertions and the
+// colour rules are the static beat's own; the scroll tells them with its own gestures
+// (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. the height is a rate — the curve alone, the peak and the last year named in the card;
-//   2. the surface is the stock — the area fills under the curve as the reader scrolls;
-//   3. the stock splits at the midpoint year — the rule, and the earlier half turning to its tint;
-//   4. the two halves are the same size — the later half named, and the plate's own reading line.
+//   1. the height is a rate — the curve traces itself year by year;
+//   2. what the rate did — the 1973 peak and the last reading named on the curve;
+//   3. the surface is the stock — it fills left to right while the stock counts up to its total;
+//   4. the stock splits at the midpoint year — the rule, the earlier half turning to its tint, named;
+//   5. the recent half, on its own scale — the x window closes onto 1986–2024;
+//   6. two surfaces of one size — the whole series again, both halves named.
 //
 // WHAT "DIRECTED" MEANS FOR A SCROLLY PAGE, and it is what it means for a plate and for a web page:
 // the direction is read from its own record, its families resolved against THIS beat's own text,
-// its registers become the page's type — the eyebrow, the title, every card, the credit and every
-// word on the frame — and its ground and accent are the only colours the page names.
-//
-// `renders/`, PLURAL, like its static and web siblings.
+// its registers become the page's type, and its ground and accent are the only colours the page names.
 //
 // Usage:  bun proof/scrolly-area-swiss-co2/render-directions-scrolly.mjs
 
@@ -76,6 +75,13 @@ if (!(shareAfter > 45 && shareAfter < 50))
 if (!(after.length * 3 < before.length))
   throw new Error(`the headline says the recent half is far shorter; it is ${after.length} years against ${before.length}`);
 const peak = readings.reduce((a, b) => (b.mt > a.mt ? b : a));
+/** The fifth card's comparison, asserted: the recent half's yearly mean against the earlier half's. */
+const meanOf = (span) => span.reduce((s, r) => s + r.mt, 0) / span.length;
+const meanBefore = meanOf(before);
+const meanAfter = meanOf(after);
+const floorAfter = Math.min(...after.map((r) => r.mt));
+if (!(meanAfter > 3 * meanBefore)) throw new Error(`card 5 says the recent years emit over three times the earlier ones; ${meanAfter.toFixed(1)} against ${meanBefore.toFixed(1)}`);
+if (!(floorAfter >= 30)) throw new Error(`card 5 says no recent year fell under 30 Mt; one fell to ${floorAfter.toFixed(1)}`);
 const last = readings[readings.length - 1];
 const first = readings[0].year;
 
@@ -89,15 +95,26 @@ const title = [
   `La moitié du CO₂ suisse depuis ${first} a été émise après ${midpoint}`,
   `Le CO₂ suisse depuis ${first}`,
 ];
+const NB = "\u00A0";
 const prose = [
-  [`La hauteur ne dit que le débit d’une année : ${one(peak.mt)} Mt au pic de ${peak.year}, ${one(last.mt)} Mt en ${last.year}.`],
-  [`L’aire sous la courbe est le stock : ${n0(total)} Mt cumulées depuis ${first}.`],
-  [`Les ${before.length} années de ${first} à ${midpoint} en portent ${one(shareBefore)} %.`],
+  [`La hauteur ne dit que le débit d’une année : ce que la Suisse émet en douze mois, depuis ${first}.`],
+  [`${one(peak.mt)}${NB}Mt au pic de ${peak.year}, ${one(last.mt)}${NB}Mt en ${last.year}.`],
+  [`L’aire sous la courbe est le stock : ${n0(total)}${NB}Mt cumulées depuis ${first}.`],
+  [`La moitié du stock est atteinte en ${midpoint} : les ${before.length} années jusque-là en portent ${one(shareBefore)}${NB}%.`],
   [
-    `Les ${after.length} années qui suivent ${midpoint} en portent ${one(shareAfter)} % — les deux surfaces teintées sont de même taille.`,
+    `Resserrées sur leur propre échelle, les ${after.length} années suivantes : ${one(meanAfter)}${NB}Mt par an en moyenne, aucune sous 30${NB}Mt — contre ${one(meanBefore)}${NB}Mt par an avant.`,
+  ],
+  [
+    `Les ${after.length} années qui suivent ${midpoint} en portent ${one(shareAfter)}${NB}% : deux surfaces de même taille.`,
     `Lecture : la hauteur est le débit d’une année, l’aire est le stock accumulé. C’est tout ce qu’une aire dit de plus qu’une courbe — et elle ne le dit que si la base est à zéro.`,
   ],
 ];
+const stockSuffix = `Mt cumulées depuis ${first}`;
+const peakLabel = `${peak.year} · ${one(peak.mt)}${NB}Mt`;
+/** The window opens on the first year AFTER the midpoint: the recent half, and not its boundary rule
+ *  pressed against the frame's edge. */
+const zoomFrom = midpoint + 1;
+const zoomTicks = readings.map((r) => r.year).filter((yr) => yr >= zoomFrom && (yr % 5 === 0 || yr === last.year));
 const source = "Source : Global Carbon Budget 2025, via Our World in Data · émissions territoriales";
 const unit = "millions de tonnes de CO₂ par an";
 const halves = [
@@ -117,19 +134,21 @@ const alt =
 
 /** One state per card; see `area-drive.mjs` for what each field paints. */
 const STATES = [
-  { line: 1, fill: 0, split: 0, rule: 0, halfA: 0, halfB: 0, end: 1 },
-  { line: 0, fill: 1, split: 0, rule: 0, halfA: 0, halfB: 0, end: 1 },
-  { line: 0, fill: 1, split: 1, rule: 1, halfA: 1, halfB: 0, end: 1 },
-  { line: 0, fill: 1, split: 1, rule: 1, halfA: 1, halfB: 1, end: 1 },
+  { trace: 0, line: 1, peak: 0, end: 0, fill: 0, stock: 0, split: 0, halfA: 0, rescale: 0, halfB: 0 },
+  { trace: 1, line: 1, peak: 1, end: 1, fill: 0, stock: 0, split: 0, halfA: 0, rescale: 0, halfB: 0 },
+  { trace: 1, line: 0, peak: 0, end: 1, fill: 1, stock: 1, split: 0, halfA: 0, rescale: 0, halfB: 0 },
+  { trace: 1, line: 0, peak: 0, end: 1, fill: 1, stock: 0, split: 1, halfA: 1, rescale: 0, halfB: 0 },
+  { trace: 1, line: 0, peak: 0, end: 1, fill: 1, stock: 0, split: 1, halfA: 0, rescale: 1, halfB: 0 },
+  { trace: 1, line: 0, peak: 0, end: 1, fill: 1, stock: 0, split: 1, halfA: 1, rescale: 0, halfB: 1 },
 ];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: `${yTicks.join(" ")} ${xTicks.join(" ")}`,
+  axis: `${yTicks.join(" ")} ${xTicks.join(" ")} ${zoomTicks.join(" ")}`,
   annot: `${unit} ${halves.map((h) => `${h.from}–${h.to} · ${h.share} %`).join(" ")}`,
-  value: `${midpoint} ${endLabel}`,
+  value: `${midpoint} ${endLabel} ${peakLabel} ${n0(total)} ${stockSuffix} 0123456789`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -164,14 +183,20 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     Math.ceil(measureText(endLabel, valueFace) + Number.parseFloat(regs.value.letterSpacing) * endLabel.length) + 12;
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["debit", "stock", "moitie", "meme-taille"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["debit", "pic", "stock", "moitie", "recente", "meme-taille"][i], prose: p })),
       reveal: {
         element: createElement(DirectedAreaScrolly, {
           readings,
           halves,
           midpoint,
+          peak,
           yTicks,
           xTicks,
+          zoomTicks,
+          zoomFrom,
+          peakLabel,
+          stockTotal: n0(total),
+          stockSuffix,
           unit,
           endLabel,
           alt,
