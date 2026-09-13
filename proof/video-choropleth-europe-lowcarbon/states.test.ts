@@ -27,49 +27,27 @@ describe("statesFor", () => {
     expect(hold).toEqual(conclusion);
   });
 
-  it("should bring the furniture up at establish, with no class, name or camera move yet", () => {
+  it("should open on the title card alone at establish — no map class, name or panel yet", () => {
     expect(establish).toEqual({
-      furniture: 1,
-      classes: 0,
-      filter: 0,
-      floor: 0,
-      count: 0,
-      top: 0,
-      zoom: 0,
-      odd: 0,
-      neighbours: 0,
-      missing: 0,
+      title: 1, furniture: 0, classes: 0, filter: 0, floor: 0, count: 0,
+      top: 0, zoom: 0, odd: 0, neighbours: 0, missing: 0, end: 0,
     });
   });
 
-  it("should reveal the classes at reference (card 2) and nothing else", () => {
-    expect(reference).toEqual({ ...establish, classes: 1 });
+  it("should give the title card way to the map, bring the panel up and reveal the classes at reference (card 2)", () => {
+    expect(reference).toEqual({ ...establish, title: 0, furniture: 1, classes: 1 });
   });
 
   it("should raise the floor through every borne, count and name the six at reveal (cards 3 and 4 together)", () => {
     expect(reveal).toEqual({ ...reference, filter: 1, floor: 1, count: 1, top: 1 });
   });
 
-  it("should zoom, lift the filter, drop the six and name Albania and its neighbours at subject (card 5)", () => {
-    expect(subjectState).toEqual({
-      ...reveal,
-      filter: 0,
-      top: 0,
-      zoom: 1,
-      odd: 1,
-      neighbours: 1,
-    });
+  it("should zoom, lift the filter, drop the six and the panel, and name Albania and its neighbours at subject (card 5)", () => {
+    expect(subjectState).toEqual({ ...reveal, furniture: 0, filter: 0, top: 0, zoom: 1, odd: 1, neighbours: 1 });
   });
 
-  it("should pull back and name the six, Albania and Ukraine at conclusion (card 6), the counter kept", () => {
-    expect(conclusion).toEqual({
-      ...subjectState,
-      zoom: 0,
-      neighbours: 0,
-      top: 1,
-      missing: 1,
-    });
-    expect(conclusion.count).toBe(1);
+  it("should pull back, name the six, Albania and Ukraine, and close on the end card at conclusion (card 6)", () => {
+    expect(conclusion).toEqual({ ...subjectState, furniture: 1, zoom: 0, neighbours: 0, top: 1, missing: 1, end: 1 });
   });
 
   it("should refuse a subject that changes nothing from reveal (the guard it runs through)", () => {

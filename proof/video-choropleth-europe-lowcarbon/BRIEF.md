@@ -40,27 +40,20 @@ neighbour is under 60 %.**
 
 No MapLibre, no MapTiler, no key, no proxy.
 
-## The picture (1920 × 1080)
+## The picture — shots, not a page (1920 × 1080)
 
-Between `frameInsetFor("landscape")` on the sides (85 px) and the same rule read on the frame's height at
-the top and bottom (`max(round(40/900 × 1080), 2 × 30)` = 60 px), laid out from both ends so the map takes
-every pixel the words do not need:
+The owner (2026-09-14): « Le layout vidéo ne doit pas être comme les autres, genre premier plan le titre en
+premier puis ensuite tout un storytelling ». The video is cut into shots:
 
-1. **Header** (top-down) — the eyebrow, then the title on ONE line. **The counter** « 7 pays au-dessus de
-   94 % », right-aligned, its room reserved from frame 0: on the title's line when title and count hold one
-   line, else on the eyebrow's line, else on a row of its own. With the title that names Albania no direction
-   can hold both on the title's line (creme would need the title at 39 px, under the 45 px count), so the count
-   sits on the eyebrow's line in all three.
-2. **Map stage** — exactly the height between the header and the key, the full width between the insets; the
-   camera's box is fitted in it and the view widened to the stage (`fitViewBox`), the geography drawn past the
-   frame so no side is bare. Sea and bare land in the plate's tints.
-3. **Key** (bottom-up) — two lines: the six class swatches; under them the five bornes, the key's label
-   « part bas-carbone de la production » straight after « 94 % », and the « donnée non rapportée » swatch and
-   words (after the label when the line holds them, else after the swatches).
-4. **Source** — one line at the bottom margin; beside the key when it fits there (it does not, in any
-   direction, without cutting a credit).
-
-No prose card, no conclusion sentence, no side panel. The counter and the key are never over the map.
+1. **The title card** (`establish`) — the eyebrow and the longest title form, the one that names Albania,
+   alone on the direction's ground, as large as the display register draws, wrapped to a reading measure
+   (72 % of the content width, at most four lines), the block centred on the frame's height.
+2. **The story** (`reference` → `conclusion`) — the map on the whole frame, edge to edge; the camera is the
+   viewBox. The count and the key sit in ONE PANEL, seated by measurement where it covers the least land
+   under the overview camera (1.4–2.5 % in the three directions); it comes with the classes and leaves for
+   the close-up. Names are pills at their seats, clear of the panel and of each other.
+3. **The end card** (end of `conclusion`, then `hold`) — the claim, stated once its evidence has been shown,
+   and the source on the bottom margin.
 
 ## The copy (French)
 

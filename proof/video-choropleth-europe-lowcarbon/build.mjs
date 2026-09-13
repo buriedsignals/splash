@@ -42,6 +42,10 @@ const ROLE_PRIORITY = ["odd", "top", "neighbour", "missing"];
  *  set on France reads as naming France, so « Suisse » steps beside France's name rather than over France,
  *  and at the close-up the neighbours' names sit around Albania rather than on it. */
 const NAMED_COVER = 4;
+/** The side, in stage pixels, of the cells the panel's cover of land is counted on. */
+const PANEL_CELL = 16;
+/** The step, in stage pixels, of the positions the panel is tried at. */
+const PANEL_STEP = 20;
 
 // ── the subject, its geometry and its words ─────────────────────────────────────────────────────────────
 
@@ -70,6 +74,11 @@ export function copyOf(subject) {
     ],
     /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the
      *  counter the cursor steps through (BRIEF.md). The last one is the claim. */
+    /** THE END CARD'S CLAIM, stated once its evidence has been shown — longest form first. */
+    claim: [
+      `Sept pays dépassent ${FLOOR}${NB}% d’électricité bas-carbone : six au nord-ouest, et l’Albanie, dont les ${neighbours.length} voisins mesurés sont tous sous ${subject.NEIGHBOUR_CEILING}${NB}%.`,
+      `Sept pays dépassent ${FLOOR}${NB}% : six au nord-ouest, et l’Albanie.`,
+    ],
     counterSteps: [
       `${value.size} pays`,
       ...BREAKS.map((b) => `${[...value.values()].filter((v) => v.lowCarbon >= b).length} pays au-dessus de ${b}${NB}%`),
@@ -103,7 +112,7 @@ export function copyOf(subject) {
 export function textPerRegisterOf(copy) {
   const bySlot = (slot) => copy.names.filter((n) => n.slot === slot).map((n) => n.text);
   return {
-    display: copy.title.join(" "),
+    display: [...copy.title, ...copy.claim].join(" "),
     eyebrow: copy.eyebrow,
     body: copy.source.join(" "),
     annot: copy.waters.map((w) => w.text).join(" "),
@@ -211,6 +220,41 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       gap,
     ),
   };
+  // ── the panel: seated where it covers the least land at the overview ─────────────────────────────────────
+  // The story runs on the whole frame, so the count and the key sit OVER the map; the place is measured, not
+  // chosen: every position on a `PANEL_STEP` grid inside the margins is tried, and the one whose box covers the
+  // fewest cells of land under the overview camera wins (ties: lower, then further left — the Atlantic's side).
+  const allRings = geometry.shapes.map((sh) => ({ box: sh.box, rings: ringsOf(sh.path) }));
+  const landAt = (vb, sx, sy) => {
+    const x = vb.x + (sx / stage.width) * vb.w;
+    const y = vb.y + (sy / stage.height) * vb.h;
+    return allRings.some((sh) => x >= sh.box.x && x <= sh.box.x + sh.box.w && y >= sh.box.y && y <= sh.box.y + sh.box.h && sh.rings.some((ring) => insideRing(ring, x, y)));
+  };
+  const landCols = Math.ceil(stage.width / PANEL_CELL);
+  const landRows = Math.ceil(stage.height / PANEL_CELL);
+  const land = new Uint8Array(landCols * landRows);
+  for (let j = 0; j < landRows; j++)
+    for (let i = 0; i < landCols; i++) land[j * landCols + i] = landAt(cameras.overview, (i + 0.5) * PANEL_CELL, (j + 0.5) * PANEL_CELL) ? 1 : 0;
+  const landShare = (box) => {
+    let covered = 0;
+    let total = 0;
+    for (let j = Math.floor(box.y / PANEL_CELL); j < Math.ceil((box.y + box.height) / PANEL_CELL); j++)
+      for (let i = Math.floor(box.x / PANEL_CELL); i < Math.ceil((box.x + box.width) / PANEL_CELL); i++) {
+        total++;
+        covered += land[j * landCols + i] ?? 0;
+      }
+    return total ? covered / total : 0;
+  };
+  const { inset, vInset, panel: panelLayout } = layout;
+  let panelAt = null;
+  for (let y = stage.height - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
+    for (let x = inset; x + panelLayout.width <= stage.width - inset; x += PANEL_STEP) {
+      const share = landShare({ x, y, width: panelLayout.width, height: panelLayout.height });
+      if (!panelAt || share < panelAt.share - 1e-9) panelAt = { x, y, share };
+    }
+  if (!panelAt) throw new Error(`a ${panelLayout.width}×${panelLayout.height} panel does not fit inside the margins`);
+  const panelBox = { x: panelAt.x, y: panelAt.y, width: panelLayout.width, height: panelLayout.height };
+
   /** WHICH COUNTRY IS UNDER EACH CELL of the stage, per camera — so a pill can prefer the sea, context land
    *  or its own country over a neighbour whose class it would hide. */
   const ownerOf = (camera) => {
@@ -253,6 +297,8 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     const b = toStage(vb, stage, { x: odd.box.x + odd.box.w, y: odd.box.y + odd.box.h });
     return { x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y };
   };
+  /** Albania's ring, in stage pixels under a camera — the obstacle its own overview name steps beside. */
+  const ringPxAt = (vb) => (ringRadius / vb.w) * stage.width + strokes.ring;
   const placed = {};
   for (const camera of ["overview", "closeUp"]) {
     const items = pills
@@ -266,14 +312,15 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
         const at = toStage(cameras[camera], stage, p.seatAt);
         // At the close-up no other country's name may sit on Albania: the shot is there to show it.
         const avoid = camera === "closeUp" && p.role !== "odd" ? [subjectBoxAt(cameras.closeUp)] : [];
-        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid };
+        const slack = camera === "overview" && p.role === "odd" ? ringPxAt(cameras.overview) : 0;
+        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid, slack };
       });
     // At the overview the ring is smaller than Albania's own pill: a pill centred on the seat would hide the
     // ring entirely, so the ring is kept clear and the name steps beside it. At the close-up the ring
     // encloses Albania's name, as in the scrolly.
     const ringAt = toStage(cameras.overview, stage, odd.seat);
     const ringPx = (ringRadius / cameras.overview.w) * stage.width + strokes.ring;
-    const obstacles = camera === "overview" ? [{ x: ringAt.x - ringPx, y: ringAt.y - ringPx, width: 2 * ringPx, height: 2 * ringPx }] : [];
+    const obstacles = camera === "overview" ? [{ x: ringAt.x - ringPx, y: ringAt.y - ringPx, width: 2 * ringPx, height: 2 * ringPx }, panelBox] : [];
     // COVER IS WEIGHED AT THE OVERVIEW ONLY. There a name is wider than most countries and has to choose what
     // it hides; in the close-up every country is larger than its name, and the seat itself is the place —
     // weighing cover there walked « Macédoine du Nord » off North Macedonia onto the sea past Albania.
@@ -311,7 +358,8 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
         .filter((n) => n.camera === "overview")
         .some((n) => box.x < n.x + n.width + gap && n.x < box.x + box.width + gap && box.y < n.y + n.height + gap && n.y < box.y + box.height + gap);
       const inside = box.x >= gap && box.y >= gap && box.x + box.width <= stage.width - gap && box.y + box.height <= stage.height - gap;
-      return inside && !touches && overSea(box);
+      const underPanel = box.x < panelBox.x + panelBox.width + gap && panelBox.x < box.x + box.width + gap && box.y < panelBox.y + panelBox.height + gap && panelBox.y < box.y + box.height + gap;
+      return inside && !touches && !underPanel && overSea(box);
     });
 
   const strokeScale = sizeFor(SIZE).typeScale;
@@ -319,9 +367,9 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     frame: layout.frame,
     stage,
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
-    lines: layout.lines,
-    swatches: layout.swatches,
-    missingSwatch: layout.missingSwatch,
+    titleCard: layout.titleCard,
+    endCard: layout.endCard,
+    panel: { ...panelLayout, at: { x: panelBox.x, y: panelBox.y } },
     colours,
     strokes,
     seaBox: { x: -CLIP_MARGIN.x, y: -CLIP_MARGIN.y, w: FRAME.width + 2 * CLIP_MARGIN.x, h: FRAME.height + 2 * CLIP_MARGIN.y },
@@ -334,5 +382,5 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
   };
-  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.title.form, titleSize: layout.title.fontSize, sourceForm: layout.source.form, stage, droppedWaters: copy.waters.length - waters.length } };
+  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, droppedWaters: copy.waters.length - waters.length } };
 }

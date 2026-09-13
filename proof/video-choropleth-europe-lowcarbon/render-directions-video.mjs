@@ -109,6 +109,8 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         { name: "mid-reveal-filter", frame: mid("reveal", WINDOWS.reveal.filter) },
         ...[0.3, 0.6].map((k) => ({ name: `reveal-floor-${k}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.filter[0] + k * (WINDOWS.reveal.filter[1] - WINDOWS.reveal.filter[0]))) })),
         { name: "subject-counting", frame: Math.round(T.subject.start + T.subject.duration * 0.82) },
+        { name: "title-card", frame: Math.round(T.establish.duration / 2) },
+        { name: "conclusion-map", frame: Math.round(T.conclusion.start + T.conclusion.duration * 0.7) },
         { name: "mid-subject-camera", frame: mid("subject", WINDOWS.subject.zoom) },
         { name: "mid-conclusion-camera", frame: mid("conclusion", WINDOWS.conclusion.zoom) },
         { name: "first", frame: 0 },

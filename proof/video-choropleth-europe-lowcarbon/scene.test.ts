@@ -89,7 +89,9 @@ for (const id of DIRECTIONS) {
           );
           const dx = Math.max(n.x - n.seat.x, 0, n.seat.x - n.x - n.width);
           const dy = Math.max(n.y - n.seat.y, 0, n.seat.y - n.y - n.height);
-          expect([n.key, Math.hypot(dx, dy) <= n.height + 1e-6]).toEqual([
+          // Albania's overview name steps beside its ring, so it may stand the ring's radius further off.
+          const slack = camera === "overview" && n.role === "odd" ? (props.ring.r / props.cameras.overview.w) * props.stage.width + props.strokes.ring : 0;
+          expect([n.key, Math.hypot(dx, dy) <= n.height + slack + 1e-6]).toEqual([
             n.key,
             true,
           ]);
@@ -173,8 +175,8 @@ for (const id of DIRECTIONS) {
     });
 
     it("should step the counter down the floor — 40, 32, 26, 20, 12, then 7 above 94 % — and keep it to the last frame", () => {
-      expect(props.lines.counter.map((l: any) => Number.parseInt(l.text, 10))).toEqual([40, 32, 26, 20, 12, 7]);
-      expect(props.lines.counter.at(-1).text).toContain("94");
+      expect(props.panel.counter.map((l: any) => Number.parseInt(l.text, 10))).toEqual([40, 32, 26, 20, 12, 7]);
+      expect(props.panel.counter.at(-1).text).toContain("94");
       const steps = new Set<number>();
       for (let f = T.reveal.start; f <= last("reveal"); f++) steps.add(sceneAt(props, f).counter.step);
       expect([...steps].sort()).toEqual([0, 1, 2, 3, 4, 5]);

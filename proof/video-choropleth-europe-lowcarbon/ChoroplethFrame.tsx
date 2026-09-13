@@ -1,11 +1,12 @@
 /**
- * One frame of « Sept pays européens dépassent 94 % d'électricité bas-carbone », version 2 — the scrolly's
- * picture (BRIEF.md, « The picture »), drawn as one SVG at the frame's own size.
+ * One frame of « Sept pays européens dépassent 94 % d'électricité bas-carbone » — a video in SHOTS, not a
+ * page: the title card, then the story on the whole frame with its panel, then the end card (BRIEF.md,
+ * `layout.mjs`).
  *
  * NOTHING HERE IS MEASURED OR CHOSEN. Every word is drawn at the coordinates `layout.mjs` measured in Bun,
  * in the register its slot names, and carries that width (`data-width`) for the width agreement; every pill
- * sits where `build.mjs` placed it for its camera; every colour and stroke comes from the direction through
- * `colours` and `strokes`; what moves at this frame is `sceneAt` (`scene.mjs`).
+ * sits where `build.mjs` placed it for its camera, the panel where it covers the least land; every colour and
+ * stroke comes from the direction through `colours` and `strokes`; what moves at this frame is `sceneAt`.
  *
  * A pure component of its props and `frame`, so Bun can render the same markup and hold it to the type
  * floor; `DirectedChoroplethVideo.tsx` gives it the Remotion frame and the embedded faces.
@@ -31,17 +32,19 @@ export type ChoroplethFrameProps = {
   frame: { width: number; height: number };
   stage: Rect;
   registers: Record<Slot, Register>;
-  lines: {
-    eyebrow: Line;
-    title: Line;
+  titleCard: { register: Register; eyebrow: Line; title: Line[] };
+  endCard: { register: Register; claim: Line[]; source: Line };
+  panel: {
+    at: { x: number; y: number };
+    width: number;
+    height: number;
     counter: Line[];
+    swatches: Rect[];
     bornes: Line[];
     unit: Line;
+    missingSwatch: Rect;
     missingLabel: Line;
-    source: Line & { anchor?: "start" | "end" };
   };
-  swatches: Rect[];
-  missingSwatch: Rect;
   colours: {
     ground: string;
     sea: string;
@@ -141,22 +144,39 @@ function Word({
 export function ChoroplethFrame(
   props: ChoroplethFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> },
 ) {
-  const { frame, stage, registers: r, lines, colours, strokes } = props;
+  const {
+    frame,
+    stage,
+    registers: r,
+    colours,
+    strokes,
+    panel,
+    titleCard,
+    endCard,
+  } = props;
   const scene = sceneAt(props as never, props.at);
   const vb = scene.viewBox;
-  const counter = lines.counter[scene.counter.step];
+  const counter = panel.counter[scene.counter.step];
   // The floor's cursor, on the key: between the left edges of the swatches either side of its position.
-  const at = Math.min(scene.cursor.at, props.swatches.length - 1);
-  const lower = props.swatches[Math.floor(at)];
-  const upper = props.swatches[Math.min(Math.floor(at) + 1, props.swatches.length - 1)];
+  const at = Math.min(scene.cursor.at, panel.swatches.length - 1);
+  const lower = panel.swatches[Math.floor(at)];
+  const upper =
+    panel.swatches[Math.min(Math.floor(at) + 1, panel.swatches.length - 1)];
   const cursorX = lower.x + (upper.x - lower.x) * (at - Math.floor(at));
   /** A share counting up from zero to the value its name states. */
   const counted = (n: { role: string; text: string }) => {
     const t = (scene.countUp as Record<string, number>)[n.role];
     const match = /(\d+)(\s*%)$/.exec(n.text);
     // Before its window the name is not shown yet, and after it the value stands: both draw the final text.
-    if (t === undefined || !match || t <= 0 || t >= 1) return { text: n.text, final: true };
-    return { text: n.text.slice(0, match.index) + String(Math.round(Number(match[1]) * t)) + match[2], final: false };
+    if (t === undefined || !match || t <= 0 || t >= 1)
+      return { text: n.text, final: true };
+    return {
+      text:
+        n.text.slice(0, match.index) +
+        String(Math.round(Number(match[1]) * t)) +
+        match[2],
+      final: false,
+    };
   };
 
   return (
@@ -169,30 +189,7 @@ export function ChoroplethFrame(
     >
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
 
-      {/* Header: up once at establish, never moving again. */}
-      <Word
-        line={lines.eyebrow}
-        register={r.eyebrow}
-        fill={colours.text.eyebrow}
-        opacity={scene.furniture}
-      />
-      <Word
-        line={lines.title}
-        register={r.display}
-        fill={colours.text.title}
-        opacity={scene.furniture}
-      />
-
-      {/* The counter's row, reserved from frame 0. */}
-      <Word
-        line={counter}
-        register={r.value}
-        fill={colours.text.counter}
-        opacity={scene.counter.opacity}
-        anchor="end"
-      />
-
-      {/* The map: the viewBox is the camera. */}
+      {/* ── THE STORY: the map on the whole frame; the viewBox is the camera. ── */}
       <svg
         x={stage.x}
         y={stage.y}
@@ -248,87 +245,133 @@ export function ChoroplethFrame(
       {props.names.map((n) => {
         const shown = counted(n);
         return (
-        <g key={n.key} opacity={scene.names[n.key]}>
-          <rect
-            x={stage.x + n.x}
-            y={stage.y + n.y}
-            width={n.width}
-            height={n.height}
-            fill={colours.ground}
-          />
-          <Word
-            line={{
-              text: shown.text,
-              x: stage.x + n.x + n.textX,
-              y: stage.y + n.y + n.baseline,
-              width: n.textWidth,
-            }}
-            register={r[n.register]}
-            fill={n.accent ? colours.text.nameAccent : colours.text.nameInk}
-            opacity={1}
-            measured={shown.final}
-          />
-        </g>
+          <g key={n.key} opacity={scene.names[n.key]}>
+            <rect
+              x={stage.x + n.x}
+              y={stage.y + n.y}
+              width={n.width}
+              height={n.height}
+              fill={colours.ground}
+            />
+            <Word
+              line={{
+                text: shown.text,
+                x: stage.x + n.x + n.textX,
+                y: stage.y + n.y + n.baseline,
+                width: n.textWidth,
+              }}
+              register={r[n.register]}
+              fill={n.accent ? colours.text.nameAccent : colours.text.nameInk}
+              opacity={1}
+              measured={shown.final}
+            />
+          </g>
         );
       })}
 
-      {/* The key: the frame of it with the furniture, each class's swatch and borne with its class. */}
-      {props.swatches.map((s, i) => (
-        <rect
-          key={`swatch${i}`}
-          x={s.x}
-          y={s.y}
-          width={s.width}
-          height={s.height}
-          fill={colours.classFills[i]}
-          opacity={scene.swatches[i] * (1 - STEPPED_BACK_FADE * scene.swatchesBack[i])}
-        />
-      ))}
-      {lines.bornes.map((line, i) => (
+      {/* ── THE PANEL: the count over the key, seated where it covers the least land, with its gestures. ── */}
+      <g
+        transform={`translate(${panel.at.x} ${panel.at.y})`}
+        opacity={scene.furniture}
+      >
+        <rect width={panel.width} height={panel.height} fill={colours.ground} />
         <Word
-          key={`borne${i}`}
-          line={line}
+          line={counter}
+          register={r.value}
+          fill={colours.text.counter}
+          opacity={scene.counter.opacity}
+        />
+        {panel.swatches.map((s, i) => (
+          <rect
+            key={`swatch${i}`}
+            x={s.x}
+            y={s.y}
+            width={s.width}
+            height={s.height}
+            fill={colours.classFills[i]}
+            opacity={
+              scene.swatches[i] *
+              (1 - STEPPED_BACK_FADE * scene.swatchesBack[i])
+            }
+          />
+        ))}
+        {panel.bornes.map((line, i) => (
+          <Word
+            key={`borne${i}`}
+            line={line}
+            register={r.axis}
+            fill={colours.text.key}
+            opacity={scene.swatches[i]}
+          />
+        ))}
+        <rect
+          x={cursorX - 1.5 * strokes.ring}
+          y={panel.swatches[0].y - panel.swatches[0].height / 2}
+          width={3 * strokes.ring}
+          height={2 * panel.swatches[0].height}
+          fill={colours.text.counter}
+          opacity={scene.cursor.opacity}
+        />
+        <Word
+          line={panel.unit}
           register={r.axis}
           fill={colours.text.key}
-          opacity={scene.swatches[i]}
+          opacity={1}
         />
-      ))}
-      <rect
-        x={cursorX - 1.5 * strokes.ring}
-        y={props.swatches[0].y - props.swatches[0].height / 2}
-        width={3 * strokes.ring}
-        height={2 * props.swatches[0].height}
-        fill={colours.text.counter}
-        opacity={scene.cursor.opacity}
-      />
-      <Word
-        line={lines.unit}
-        register={r.axis}
-        fill={colours.text.key}
-        opacity={scene.furniture}
-      />
-      <rect
-        x={props.missingSwatch.x}
-        y={props.missingSwatch.y}
-        width={props.missingSwatch.width}
-        height={props.missingSwatch.height}
-        fill={colours.missingFill}
-        opacity={scene.furniture}
-      />
-      <Word
-        line={lines.missingLabel}
-        register={r.axis}
-        fill={colours.text.key}
-        opacity={scene.furniture}
-      />
+        <rect
+          x={panel.missingSwatch.x}
+          y={panel.missingSwatch.y}
+          width={panel.missingSwatch.width}
+          height={panel.missingSwatch.height}
+          fill={colours.missingFill}
+        />
+        <Word
+          line={panel.missingLabel}
+          register={r.axis}
+          fill={colours.text.key}
+          opacity={1}
+        />
+      </g>
 
-      <Word
-        line={lines.source}
-        anchor={lines.source.anchor}
-        register={r.axis}
-        fill={colours.text.source}
-        opacity={scene.furniture}
-      />
+      {/* ── THE TITLE CARD: before the story, alone on the ground. ── */}
+      <g opacity={scene.title}>
+        <rect width={frame.width} height={frame.height} fill={colours.ground} />
+        <Word
+          line={titleCard.eyebrow}
+          register={r.eyebrow}
+          fill={colours.text.eyebrow}
+          opacity={1}
+        />
+        {titleCard.title.map((line, i) => (
+          <Word
+            key={`title${i}`}
+            line={line}
+            register={titleCard.register}
+            fill={colours.text.title}
+            opacity={1}
+          />
+        ))}
+      </g>
+
+      {/* ── THE END CARD: the claim, once its evidence has been shown, and the source. ── */}
+      <g opacity={scene.end}>
+        <rect width={frame.width} height={frame.height} fill={colours.ground} />
+        {endCard.claim.map((line, i) => (
+          <Word
+            key={`claim${i}`}
+            line={line}
+            register={endCard.register}
+            fill={colours.text.title}
+            opacity={1}
+          />
+        ))}
+        <Word
+          line={endCard.source}
+          register={r.axis}
+          fill={colours.text.source}
+          opacity={1}
+        />
+      </g>
     </svg>
   );
 }
