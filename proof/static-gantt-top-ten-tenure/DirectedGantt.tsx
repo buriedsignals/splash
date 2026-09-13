@@ -31,7 +31,14 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  READING_TO_SOURCE,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -75,14 +82,10 @@ export function DirectedGantt({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -117,14 +120,14 @@ export function DirectedGantt({
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const limitChoices = (Array.isArray(limits) ? limits : [limits]).filter(Boolean);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+  const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+  const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
   /** THE WORDS GIVE WAY BEFORE THE ROWS DO. Sixteen rows want 14.7px of pitch each to carry their
    *  labels, and this frame gives 8.8px with a three-line reading under it — the component refuses
@@ -139,10 +142,10 @@ export function DirectedGantt({
       PAD -
       (sourceLines.length - 1) * bodyLead -
       readingLines.length * bodyLead -
-      (readingLines.length ? annot.fontSize * 0.6 : 0);
-    const top = limitsTop + limitLines.length * bodyLead + annot.fontSize * 1.1;
+      (readingLines.length ? gapOf(annot, READING_TO_SOURCE) : 0);
+    const top = limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.7857);
     const plot =
-      bottom - annot.fontSize * 0.9 - bandOf(axis).ascent - bandOf(axis).descent - 6 - top;
+      bottom - gapOf(annot, 0.6429) - bandOf(axis).ascent - bandOf(axis).descent - 6 - top;
     return plot / rows.length >= rowsOwe;
   };
   const chosen = (() => {
@@ -167,7 +170,7 @@ export function DirectedGantt({
       `/${limitChoices.length}, reading ${readingLines.length ? `${readingLines.length} line(s)` : "dropped"}`,
   );
 
-  const readingTop = sourceTop - readingLines.length * bodyLead - annot.fontSize * 0.6;
+  const readingTop = sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
 
   // ── the rows ──────────────────────────────────────────────────────────────
   const dated = on("both-dates-in-the-row-label");
@@ -178,8 +181,8 @@ export function DirectedGantt({
   const labelOf = (row: Row) => (dated ? `${row.label}  ${spanLabel(row)}` : row.label);
   const gutter = Math.max(...rows.map((r) => widthOf(set(labelOf(r), annot), annot))) + 16;
 
-  const plotTop = limitsTop + limitLines.length * bodyLead + annot.fontSize * 1.1;
-  const plotBottom = readingTop - annot.fontSize * 0.9 - axisBand.ascent - axisBand.descent - 6;
+  const plotTop = limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.7857);
+  const plotBottom = readingTop - gapOf(annot, 0.6429) - axisBand.ascent - axisBand.descent - 6;
   const plotLeft = PAD + gutter;
   const plotRight = width - PAD;
 

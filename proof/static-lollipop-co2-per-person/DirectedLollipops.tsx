@@ -39,7 +39,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix, contrast, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -89,14 +95,10 @@ export function DirectedLollipops({
 }) {
   const { width, height } = FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -161,9 +163,9 @@ export function DirectedLollipops({
 
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
 
   /** THE FURNITURE UNDER THE BASELINE IS THREE ROWS, in the reference's own order: the two dates
    *  under their own stems, then the change on the pair's centreline, then the name. */
@@ -182,13 +184,15 @@ export function DirectedLollipops({
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
     const sourceLines = wrap(set(source, body), column, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-    const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
+    const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
     const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 2.2 + valueBand.ascent;
     const zeroY =
-      (readingLines.length ? readingTop - annotBand.ascent - annot.fontSize * 0.9 : sourceTop - bodyLead * 1.2) -
+      (readingLines.length
+        ? readingTop - annotBand.ascent - gapOf(annot, 0.6429)
+        : sourceTop - bodyLead * 1.2) -
       footRoom;
     return {
       titleLines,
