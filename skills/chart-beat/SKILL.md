@@ -57,6 +57,10 @@ And from the runtime already beside this skill:
   `docs/design-base/treatments/<id>.md` in the twin is the record.
 - **`resolveRegister(direction, name)` + `applyCase`** (`#shared/chart-beat/registers.mjs`) — the
   register a run is set in, resolved against the chosen direction.
+- **`registerOf(direction, name)` + `leadOf(r)` / `gapOf(r, n)`** (`#shared/design-base/register.mjs`)
+  — how a STATIC beat resolves its registers: sized to its role's cap height and set on its face's
+  own line. Every lead is `leadOf(r)` and every block gap `gapOf(r, n)` — never `fontSize * <literal>`,
+  which is the same number on every face.
 
 **Three rules that are not negotiable, because a guard fails on each of them:**
 

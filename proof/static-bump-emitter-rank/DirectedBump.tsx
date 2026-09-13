@@ -39,8 +39,14 @@ import {
 // runner's output was being piped to /dev/null while two mutation checks grepped the SVG the LAST
 // successful render had left on disk and reported it green. A stale artifact read as a fresh one.
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -82,17 +88,10 @@ export function DirectedBump({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -156,16 +155,16 @@ export function DirectedBump({
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
+  const titleLead = leadOf(display);
   const limitLines = wrap(set(limits, body), column, body);
-  const bodyLead = body.fontSize * 1.45;
+  const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
-    eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
   const limitsTop =
-    titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   /** An entry's label carries its rank where the treatment applies: `3 India`, not `India`. */
@@ -185,8 +184,8 @@ export function DirectedBump({
   const plot = {
     left: PAD + widestEdge + 16,
     right: width - PAD - widestEdge - 16,
-    top: limitsTop + limitLines.length * bodyLead + annot.fontSize * 2,
-    bottom: sourceTop - body.fontSize * 1.6 - axis.fontSize * 2.4,
+    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.4286),
+    bottom: sourceTop - gapOf(body, 1.1034) - axis.fontSize * 2.4,
   };
 
   const x = scaleLinear()
@@ -218,7 +217,7 @@ export function DirectedBump({
               at: { x: x(first.year) - 10, y: y(first.rank)! },
               priority: isSubject ? 9 : 5,
               register: value,
-              anchor: "end" as const,
+              anchors: ["left"],
             },
           ]
         : [];
@@ -235,7 +234,9 @@ export function DirectedBump({
         at: { x: x(last.year) + 10, y: y(last.rank)! },
         priority: isSubject ? 9 : last.year === lastYear ? 6 : 3,
         register: value,
-        anchor: "start" as const,
+        // ONE honest position each. The arbiter's default is all four, `above` first, and a rank
+        // label set above its point sits on the row above — see `labels-sit-on-their-rank.test.ts`.
+        anchors: ["right"],
       },
     ];
     return [...left, ...right];
