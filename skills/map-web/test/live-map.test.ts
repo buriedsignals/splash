@@ -16,17 +16,22 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  cameraScale,
   planIsUnkeyed,
   readLivePlan,
   selectedGroup,
 } from "../assets/live-map.mjs";
+// `cameraScale` moved to the trunk with the rest of the plan contract — `assets/mount.mjs` is the
+// carried copy of `shared/map-beat/mount.mjs` the page inlines, and `carried-copies.test.ts` holds
+// the two byte-identical, so testing it here tests the trunk's own arithmetic.
+import { cameraScale, markScaleOf } from "../assets/mount.mjs";
 import {
   POINTER_TOLERANCE_PX,
   SCALE_TOLERANCE,
   SHAPES,
   expectedRadiusPx,
+  mapTilerKeyIn,
   parseEnvFile,
+  radiusStrategyOf,
 } from "../scripts/verify-live-map.mjs";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
@@ -34,7 +39,10 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
 function keyFromEnv(): string | null {
   const path = join(TWIN, ".env");
   if (!existsSync(path)) return null;
-  return parseEnvFile(readFileSync(path, "utf8")).MAPTILER_KEY ?? null;
+  // The ALIASES too, not the canonical name alone: this checkout's own `.env` carries
+  // `REMOTION_MAPTILER_KEY`, so reading `MAPTILER_KEY` here made this guard print "live map not
+  // driven" and pass on the one machine it was written on.
+  return mapTilerKeyIn(parseEnvFile(readFileSync(path, "utf8"))) || null;
 }
 
 /** A plate baked at zoom 3.879, which is the seed's own. */
@@ -130,14 +138,42 @@ describe("the drawn circle and the answering circle, measured in a real browser"
     // hit-tests against the circle it painted — so it passed against a copy with the defect put
     // back on purpose. `expectedRadiusPx` is the independent derivation that replaced it: it takes
     // the plate's own ground scale and the zoom, and never looks at the page.
-    const bakeDegreesPerPixel = 360 / (512 * 2 ** 3.879);
-    expect(expectedRadiusPx(62, bakeDegreesPerPixel, 3.879)).toBeCloseTo(62, 6);
-    expect(expectedRadiusPx(62, bakeDegreesPerPixel, 4.879)).toBeCloseTo(
-      124,
-      6,
-    );
-    // And it does not take a container, so no box's aspect can get into it.
+    const bakePlan = { degreesPerPixel: 360 / (512 * 2 ** 3.879), bakeZoom: 3.879 };
+    expect(expectedRadiusPx(62, bakePlan, 3.879)).toBeCloseTo(62, 6);
+    expect(expectedRadiusPx(62, bakePlan, 4.879)).toBeCloseTo(124, 6);
+    // And it does not take a container, so no box's aspect can get into it. Four arguments now:
+    // the frame radius, the plan, the live zoom, and WHICH OF THE THREE THINGS A RADIUS CAN MEAN —
+    // none of them a box.
     expect(expectedRadiusPx.length).toBe(3);
+  });
+
+  it("should answer a PIN at its baked size, whatever the camera is doing", () => {
+    // The fourth argument is not decoration. This guard assumed every mark was camera-scaled, and
+    // driven against `proof/mapgen-locator-web` — whose markers are pins — it called a 6px pin a
+    // 17.3px circle and then reported the browser's own hit testing as broken. A pin is the same
+    // screen size at every zoom, exactly as the plate drew it.
+    const bakePlan = { degreesPerPixel: 360 / (512 * 2 ** 11.071), bakeZoom: 11.071 };
+    expect(expectedRadiusPx(6, bakePlan, 11.071, "fixed")).toBe(6);
+    expect(expectedRadiusPx(6, bakePlan, 12.598, "fixed")).toBe(6);
+    // …and it is NOT the same answer a value-encoding circle gets at that camera.
+    expect(expectedRadiusPx(6, bakePlan, 12.598, "camera")).toBeCloseTo(6 * 2 ** 1.527, 6);
+  });
+
+  it("should read the strategy off the plan's own layer rather than assuming one", () => {
+    expect(radiusStrategyOf({ layers: [{ id: "mw-marks", radius: "fixed" }] })).toBe("fixed");
+    expect(radiusStrategyOf({ layers: [{ id: "mw-marks", radius: "ground" }] })).toBe("ground");
+    // A plan that declares none means what every plan meant before the field existed.
+    expect(radiusStrategyOf({ layers: [{ id: "mw-marks" }] })).toBe("camera");
+  });
+
+  it("should keep the OVERLAY on the mark's own rule, which is what came apart", () => {
+    // `markScaleOf` is the trunk's answer to "one mark, two halves, two mechanisms", third
+    // instance: the locator's painted halo was `r · cameraScale · 2 + pad` — 40px of ring around a
+    // 12px pin at that beat's own 2.88x — while the pin itself was drawn flat.
+    const pin = { layers: [{ id: "mw-marks", radius: "fixed" }] };
+    const disc = { layers: [{ id: "mw-marks", radius: "camera" }] };
+    expect(markScaleOf(pin, 2.882)).toBe(1);
+    expect(markScaleOf(disc, 2.882)).toBe(2.882);
   });
 
   it("should hold its tolerances at the measurements' own noise, not at a fudge factor", () => {
@@ -178,7 +214,7 @@ describe("the drawn circle and the answering circle, measured in a real browser"
       if (!runnable) {
         console.log(
           key === null
-            ? "live map not driven: no MAPTILER_KEY in twin/.env."
+            ? "live map not driven: no MapTiler key in twin/.env (MAPTILER_KEY or one of its aliases)."
             : `live map not driven: ${html} is missing — run 'bun skills/map-web/scripts/render-web.mjs' to regenerate this skill's own committed proof page.`,
         );
         return;

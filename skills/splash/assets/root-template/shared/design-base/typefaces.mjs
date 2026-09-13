@@ -1173,15 +1173,37 @@ function declarationBlocks(css) {
 }
 
 /** `700`, `bold`, `var(--title-weight)` — the number, or null when nothing here can say. */
-function resolveWeight(raw, vars) {
+/**
+ * A DECLARED VALUE WITH ITS `var()` FOLLOWED — for any font property, not just the weight.
+ *
+ * The weight has always been resolved this way; the FAMILY and the SLOPE were read raw, so a
+ * stylesheet that took them from a custom property handed this file the literal string
+ * `var(--title-family)` as a family name and `var(--subtitle-style)` as a slope. The first is
+ * refused by `assertFamily` (it is not a fetchable Google family, and rightly so); the second falls
+ * through every branch and comes back `null`, which means an italic register asks for an UPRIGHT
+ * face, gets one embedded, and the browser fakes the slope — a substitution with no error at all.
+ *
+ * Measured on `proof/mapgen-locator-web` the moment `figureVars` began carrying families: the page
+ * sets its title from `--title-family` and its source line from `--source-family` plus
+ * `--subtitle-style`, which is exactly how a filed direction reaches a stylesheet that does not
+ * know which direction it is being rendered in.
+ *
+ * `depth` stops a `--a: var(--b); --b: var(--a)` pair from recursing; a cycle resolves to nothing,
+ * which is what an unresolvable value already means here.
+ */
+function resolveVar(raw, vars, depth = 0) {
   const value = String(raw ?? "").trim();
-  if (!value) return null;
   const asVar = /^var\(\s*(--[A-Za-z0-9_-]+)\s*(?:,([^)]*))?\)$/.exec(value);
-  if (asVar) {
-    const held = vars.get(asVar[1]);
-    if (held !== undefined) return resolveWeight(held, vars);
-    return asVar[2] !== undefined ? resolveWeight(asVar[2], vars) : null;
-  }
+  if (!asVar) return value;
+  if (depth > 8) return "";
+  const held = vars.get(asVar[1]);
+  if (held !== undefined) return resolveVar(held, vars, depth + 1);
+  return asVar[2] !== undefined ? resolveVar(asVar[2], vars, depth + 1) : "";
+}
+
+function resolveWeight(raw, vars) {
+  const value = resolveVar(raw, vars);
+  if (!value) return null;
   if (/^\d{3,4}$/.test(value)) return Number(value);
   if (value === "bold") return 700;
   if (value === "normal") return 400;
@@ -1191,9 +1213,12 @@ function resolveWeight(raw, vars) {
 function readFont(source, vars) {
   const family = /font-family\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/.exec(source)?.[1];
   const weight = /font-weight\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/.exec(source)?.[1];
-  const style = /font-style\s*[:=]\s*"?([a-z]+)"?/.exec(source)?.[1];
+  // Widened from `[a-z]+` so a `var(--…)` slope is captured and can be followed; the branch below
+  // still only ever answers `italic`, `normal` or nothing.
+  const style = resolveVar(/font-style\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/.exec(source)?.[1], vars).toLowerCase();
+  const resolvedFamily = family ? resolveVar(family, vars) : "";
   return {
-    family: family ? requestedFamily(family) : null,
+    family: resolvedFamily ? requestedFamily(resolvedFamily) : null,
     weight: weight === undefined ? null : resolveWeight(weight, vars),
     weightDeclared: weight ?? null,
     style: style === "italic" ? "italic" : style === "normal" ? "normal" : null,
@@ -1266,8 +1291,21 @@ export function fontRequestsInHtml(html) {
     .replace(/<script[\s\S]*?<\/script>/gi, " ");
   const tags = [...markup.matchAll(/<[a-zA-Z][^>]*>/g)].map((m) => decodeEntities(m[0]));
 
+  // QUOTES ARE PART OF A VALUE IN A STYLESHEET, AND A BOUNDARY IN AN ATTRIBUTE — so the two are read
+  // by two patterns rather than one.
+  //
+  // The single pattern excluded quotes, which was harmless while custom properties only ever carried
+  // numbers, and silently dropped every FAMILY property the moment `figureVars` started emitting one:
+  // a font stack opens with a quote (`--title-family: "Merriweather", Georgia, serif`), so the value
+  // was captured as the empty string and the `var()` that reads it could never be followed.
+  //
+  // A TAG KEEPS THE NARROW PATTERN, and that is not an oversight. These tags have already been
+  // through `decodeEntities`, so a `&quot;` inside a style attribute is now a plain `"` and the
+  // attribute's own closing quote is no longer distinguishable from a quote in its value. Stopping
+  // at the first quote is the conservative reading, and it is what this has always done.
   const vars = new Map();
-  for (const source of [sheet, ...tags])
+  for (const m of sheet.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;{}]+)/g)) vars.set(m[1], m[2].trim());
+  for (const source of tags)
     for (const m of source.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;"'{}]+)/g)) vars.set(m[1], m[2].trim());
 
   const units = [...declarationBlocks(sheet), ...tags];

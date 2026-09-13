@@ -83,7 +83,11 @@ const SEED = {
   // The subject, and the seed's own mark sizing — the live layer draws from the SAME `radiusScale`
   // the SVG draws from, so the swap cannot change how big a circle is.
   subjectKey: "paris",
-  waterFill: "#aac9e0",
+  // Rule 7 of `geo-discipline.md`: water reads as a blue tint, never grey. Named as a TINT SET
+  // rather than as one colour because that is the shape `shared/map-beat/style.mjs` applies, live
+  // and baked, from one rule — and a beat that has measured its land names that here too. This seed
+  // leaves land as `dataviz-light` draws it, which is why only `water` is named.
+  tints: { water: "#aac9e0" },
   // The accessible region table: OPT-IN per beat, and off here. What that costs a reader with no
   // spatial access to the map is stated plainly in references/map-web-discipline.md, "The
   // accessibility question" — read it before leaving this false in a beat of your own. Turning it
@@ -150,7 +154,7 @@ export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
  * — `frameCorners` is the extent the camera ACTUALLY showed, which is not the bounds it was asked
  * for, and it has only been recorded since 2026-08-10. This function is why that task came first.
  */
-export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
+export function livePlan({ geometry, subjectKey, accent, muted, tints }) {
   const corners = geometry.frameCorners;
   if (!corners || !(geometry.degreesPerPixel > 0))
     throw new Error(
@@ -172,7 +176,13 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    // The style's own name, for the refusal `assertLiveStyleAnswered` prints — a URL carrying a key
+    // placeholder is not what a reader of an error message needs to see.
+    styleName: geometry.style,
+    // The tints `shared/map-beat/style.mjs` paints the LIVE style with, which are the tints the
+    // plate was baked in. One set, two applications: if the live map and its own fallback disagree
+    // about the colour of water, the swap is visible and the beat is broken.
+    tints,
     frame: geometry.frame,
     // The bake's own ground-per-pixel. The live map derives every mark's drawn radius from the
     // RATIO of this to its own, so a symbol covers the same piece of the world it covered on the
@@ -329,7 +339,7 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
     ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
       `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
       `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
-      `<script>\n${inlineable(await readFile(join(HERE, "../assets/live-map.mjs"), "utf8"))}\n</script>`
+      `<script>\n${await liveScript()}\n</script>`
     : "";
 
   const groups = groupsOf(props.geometry.points);
@@ -386,10 +396,41 @@ ${liveBlock}
   return { outPath };
 }
 
-/** Strips the `export` keyword from each top-level declaration — see `interaction.mjs`'s own
- *  header note for why. */
+/** Strips the `export` keyword from each top-level declaration, and the relative `import` lines a
+ *  carried trunk module is reached by — see `interaction.mjs`'s own header note for why the page
+ *  gets a classic script rather than a module.
+ *
+ *  The import lines go rather than being rewritten because `liveScript` below concatenates the
+ *  modules they name into the SAME script, in dependency order: once they are one script, every
+ *  imported name is already a top-level binding in scope. Only a RELATIVE specifier is stripped —
+ *  a bare package name would be a dependency this page does not carry, and leaving it in place
+ *  makes that a syntax error a reader sees rather than a missing symbol they do not. */
 function inlineable(moduleSource) {
-  return moduleSource.replace(/^export /gm, "");
+  return moduleSource
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["']\.[^"']*["'];?[ \t]*\n/gm, "")
+    .replace(/^export /gm, "");
+}
+
+/**
+ * THE LIVE LAYER IS THE TRUNK PLUS THIS FORMAT'S OWN PAGE MECHANICS, in one classic script.
+ *
+ * `live-map.mjs` used to carry all of it — the radius strategies, the layer mounting, the style's
+ * water and labels — one byte-identical copy per web beat, which is the drift this sub-project
+ * exists to remove. Those now live in `shared/map-beat/` and are CARRIED beside the asset
+ * (`assets/plan.mjs`, `assets/style.mjs`, `assets/mount.mjs`, each naming its canonical on line 1,
+ * held byte-identical by `carried-copies.test.ts`) because a skill directory may not import out of
+ * itself.
+ *
+ * ORDER IS DEPENDENCY ORDER, not alphabetical: `live-map.mjs` calls into all three, and a `const`
+ * declared after its use is a temporal-dead-zone error at runtime rather than a hoisted function.
+ */
+const LIVE_MODULES = ["plan.mjs", "style.mjs", "mount.mjs", "live-map.mjs"];
+
+async function liveScript() {
+  const parts = [];
+  for (const name of LIVE_MODULES)
+    parts.push(inlineable(await readFile(join(HERE, "..", "assets", name), "utf8")));
+  return parts.join("\n");
 }
 
 function escapeHtml(text) {
@@ -844,7 +885,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME, regionTa
           subjectKey: SEED.subjectKey,
           accent: SEED.accent,
           muted: deriveFurniture(SEED.ground).muted,
-          waterFill: SEED.waterFill,
+          tints: SEED.tints,
         })
       : null,
   });

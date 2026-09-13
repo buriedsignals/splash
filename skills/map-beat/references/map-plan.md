@@ -51,10 +51,13 @@ anything. It used to trust the file, which holds only while the writer and the r
 — a plan reaching a renderer from a second beat, from an older `--plan` file, or from a hand edit
 would have been mounted unchecked. A plan is a FILE; whoever draws from it validates it.
 
-Half of this already exists and is not being reinvented: `skills/map-web/assets/live-map.mjs`
-already reads this shape, with its three radius strategies — a value-encoding circle held fixed in
-screen pixels, a point whose ground footprint doubles per zoom level, a pin that does not move.
-The work is carrying that contract to the other three renderers, not designing a new one.
+**And the web renderer is now ON it** (2026-09-13). `skills/map-web/assets/live-map.mjs` already read
+this shape, with its three radius strategies — a value-encoding circle held fixed in screen pixels, a
+point whose ground footprint doubles per zoom level, a pin that does not move — but it read it from
+its own copy of the wiring, one byte-identical copy per web beat. Those three strategies
+(`cameraScale`, `groundRadiusExpression`, `radiusPaintOf`, `markScaleOf`) are now `mount.mjs`'s, and
+`mountPlan` honours `layer.radius`, so the same function mounts a still's plan and a live map's. §7
+below records what else moved with them and where the boundary now sits.
 
 ## 2. What is in the map, and what stays outside
 
@@ -215,3 +218,71 @@ glyph range drops a character from a word silently; a style with `text-offset` b
 of two expressions draws an empty layer, also silently. None of these raise, log, or show up
 anywhere except in the rendered pixels — which is why §4's guards are assertions written after a
 defect was already found by looking at an image, not defences against a hypothetical.
+
+---
+
+## 7. The web renderer, and where the boundary sits
+
+`proof/mapgen-locator-web/` is the pilot for web the way the choropleth is the pilot for still: it
+declares a plan, validates it, and is drawn by trunk code in both of its layers. The other four
+`mapgen-*-web` beats — choropleth, symbol, dot, hexgrid — are not converted, in that owner order.
+
+**A web beat is TWO renderers of one plan**, and the pair is the point: a LIVE MapLibre map in the
+reader's browser (ruling R1) over a BAKED plate that is the whole beat with no JavaScript at all
+(a rotated key, a CSP that refuses `api.maptiler.com`, no network). They must be one cartography or
+the swap between them is visible, and until this conversion they were not: the bake swept the style
+by regex while the live layer named `["Water", "Water shadow"]` by hand and painted them a
+hard-coded `#aac9e0`, in two files, in five beats.
+
+| | the trunk answers it | notes |
+| --- | --- | --- |
+| what a layer's `radius` means | `mount.mjs` — `radiusPaintOf`, `cameraScale`, `groundRadiusExpression` | `mountPlan` applies it at mount, so no frame of MapLibre's default 5px |
+| how big the FURNITURE around a mark is | `mount.mjs` — `markScaleOf` | a pin's halo does not grow with the camera; guard 9 |
+| what the style's water, land and labels become | `style.mjs` — `styleDecisionFor`, applied by `transformStyle` (document) or `applyLiveStyle` (live map) | one rule, two applications; guard 10 |
+| what colours the basemap may be | `tints.mjs` — `plateTints` | guard 7, unchanged |
+| whether a plan can be drawn at all | `plan.mjs` — `validateLivePlan` | guard 11 |
+| the two-layer swap, the reader's leash, hover, the CSS filter's live mirror, the HTML overlay | **`map-web` owns these** | they are the WEB format answering R1/R2, not the plan contract |
+
+### Three more guards, same reason as the first eight
+
+**9. The furniture around a mark follows the mark's own rule** — `markScaleOf`, `mount.mjs`. The
+fourth instance of `map-web`'s own "one mark, two halves, two mechanisms": a locator's pins were
+painted flat (correct) while their halos, label gutters and baseline offsets were scaled by the
+camera — 40px of ring around a 12px pin at that beat's own 2.88×. Both halves were internally
+consistent, which is why nothing was red.
+
+**10. A live style that answered nothing did not find the style it was written for** —
+`assertLiveStyleAnswered`, `style.mjs`. `dataviz-light` carries a background, a water fill and dozens
+of symbol layers; a sweep that re-tinted NONE of them met a renamed layer, a different style, or a
+style that never loaded. The plate would still be blue and the live map would not.
+
+**11. Whoever draws a plan validates it, and a web plan crosses a machine** — `validateLivePlan`,
+`plan.mjs`. A web plan is serialised into the page as JSON and read back by a script that never met
+the code that wrote it: `Object.freeze` does not survive that and neither does any check the writer
+made. Until this existed the live layer validated nothing at all. It asks for the style URL, the
+drawn size, `degreesPerPixel`, well-formed `studyBounds`, `bakeZoom` when a ground-scaled layer needs
+it, and no duplicate ids.
+
+### `keepTextures`, and the door it nearly opened
+
+A beat may name provider geography it KEEPS (`keepTextures: [/road/i]`), because the texture sweep
+was written for a continent and a city locator frames 4 km: the street network is how a reader places
+markers against a city they know. It is stated in the beat's own file, with the reason, and the
+default is still to hide everything.
+
+**It never brings a LABEL back, and that is checked before anything else.** `dataviz-light` calls one
+of its SYMBOL layers `Road labels`, so the first version of `/road/i` matched it and the live map came
+back with the provider's street names printed across it — measured in a real browser, not read.
+That is words the beat did not write (§2's line) AND a font stack nobody in this beat chose, which is
+the exact door guard 2 stands behind. A texture is a texture; a word is a word.
+
+### Guard 2 in the web case: no glyph is ever requested
+
+`map-web` asks MapTiler for no glyph at all. Both halves hide every symbol layer, and every word on
+the page — marker names, tooltips, title, caveat, table — is HTML set in the page's own embedded
+face. Verified on the regenerated locator: zero MapLibre-drawn text layers visible. So the bare-family
+substitution the static side paid for cannot arrive by the same route here, and `maptilerFace` has
+deliberately NOT been promoted out of the choropleth: nothing in `map-web` calls it. The day a web
+beat draws a word inside its map, that helper belongs in `glyphs.mjs` beside `assertNotFallback`, and
+the family is already in hand — the design base's sans ladder heads with Open Sans, which is one of
+the seventeen §5 lists, so the panel and the map label come from the identical file.

@@ -9,10 +9,12 @@
 // frame — the geometry stretches, the type never does). So the same register has to arrive as a CSS
 // declaration block instead, and that translation is here rather than copied into forty beats.
 //
-// WHAT THIS FILE REFUSES TO DO. It does not read a direction's ground or accent — `render-web.mjs`'s
-// `buildCss` already sets `--ground`/`--accent`/`--ink`/`--muted`/`--grid` from the props the runner
-// hands it, and a second place computing furniture colour is the drift `deriveFurniture` exists to
-// prevent. It only ever answers: what does THIS register look like, in CSS, under THIS direction.
+// WHAT THIS FILE REFUSES TO DO. It does not COLOUR from a direction's ground or accent —
+// `render-web.mjs`'s `buildCss` already sets `--ground`/`--accent`/`--ink`/`--muted`/`--grid` from
+// the props the runner hands it, and a second place computing furniture colour is the drift
+// `deriveFurniture` exists to prevent. The caller's `ink` map stays the only source of a `color:`
+// here; `registerOf` derives a `fill` of its own out of the direction's ground and this file throws
+// it away. It only ever answers: what does THIS register look like, in CSS, under THIS direction.
 //
 // TWO DIFFERENCES FROM THE STATIC TRANSLATION, both deliberate:
 //
@@ -29,9 +31,27 @@
 // A NOTE ON SIZES, so nobody re-derives it. A direction's sizes were measured for a 960 x 540 plate
 // and are used here as CSS pixels unchanged. That is not an oversight: the fluid frame's own type
 // scale (24/14/13/12 in `ChartWebSeed`'s `FRAME`) sits in the same regime, and rescaling would make
-// the directions differ from their own records for no measured reason.
+// the directions differ from their own records for no measured reason. What a size IS, though, is
+// now `registerOf`'s answer rather than `resolveRegister`'s: a filed size names a CAP HEIGHT, and
+// the face the ladder actually picked is resolved to the point size that reaches it. A web page and
+// a still on the same direction therefore set at the same optical size, which they did not before.
+//
+// AND THE LINE THEY SET ON. A register carries a `lineHeight` — its face's own declared line times
+// the direction's `leading` coefficient — and it is emitted here as a UNITLESS CSS `line-height`.
+// Unitless is the whole point: it inherits as a RATIO and is multiplied by each element's own
+// font-size, which is exactly what `leadOf(r) = r.lineHeight * r.fontSize` means in the trunk. A
+// `px` value would inherit as a fixed box and a nested `<small>` would set on its parent's line.
+// Measured on 2026-09-13 against resvg on three faces, seven lines: baseline-to-baseline agrees to
+// within 0.04 px (`docs/splash/2026-09-13-adaptive-leading-spec.md` §5.4). The first-baseline
+// correction measured in that same section is deliberately NOT implemented here — a web beat draws
+// no SVG `<text>` and has no baseline to match; its text is HTML in CSS flow.
+//
+// `registerOf` MEASURES THROUGH RESVG, so this file is node-only at emit time. That is already
+// true of every consumer: each `Directed*Web.tsx` is handed to `renderToStaticMarkup` in node by
+// `render-web.mjs`, and nothing in this tree bundles one for a browser. A page's client-side
+// JavaScript is written as a string literal in the runner, never compiled from these modules.
 
-import { resolveRegister } from "#shared/chart-beat/registers.mjs";
+import { registerOf } from "#shared/design-base/register.mjs";
 import { LADDERS } from "#shared/design-base/resolve-families.mjs";
 
 /** Which generic keyword closes a stack, per concrete face on the ladders. Built from the ladders
@@ -63,7 +83,7 @@ export function fontStack(family) {
  *        direction's own ground — `{ ink, muted, accent }`, exactly what `renderWeb` passes down.
  */
 export function webRegister(direction, name, { ink, family = "chart" } = {}) {
-  const r = resolveRegister(direction, name, { family });
+  const r = registerOf(direction, name, { family });
   if (!ink || !(r.ink in ink))
     throw new Error(
       `register ${name} asks for ink role "${r.ink}"; the caller supplied ` +
@@ -75,6 +95,10 @@ export function webRegister(direction, name, { ink, family = "chart" } = {}) {
     fontSize: `${r.fontSize}px`,
     fontWeight: r.fontWeight,
     fontStyle: r.fontStyle,
+    // Unitless, and it must stay unitless — see the header. React emits a bare number for
+    // `lineHeight` (it is one of the few style properties it does not append `px` to), which is
+    // the value this needs; a string would work too and a `${…}px` string would be the defect.
+    lineHeight: r.lineHeight,
     letterSpacing: `${r.letterSpacing}px`,
     textTransform: r.transform === "none" ? "none" : r.transform,
     color: ink[r.ink],
@@ -95,18 +119,43 @@ export function webRegisters(direction, ctx) {
  *
  * Every rule in `buildCss` that sizes a word reads one of these, so a direction that sets a 32px
  * display and a 10px axis produces a page whose proportions are the direction's, not the format's.
+ *
+ * AND WHICH FAMILY, which is the half that was missing and the reason a direction had two
+ * typographic voices depending on genre. Every web stylesheet in this tree sets `font-family`
+ * exactly once, on `body`, from `dominantFontStack` — the family that appears MOST OFTEN in the
+ * markup, which on any beat with an axis is the furniture sans. The display register's own family
+ * had no route to the page at all: `rapport` sets its display in a serif and its body in an italic
+ * serif, and the delivered web page came out entirely in the sans, while the same direction's
+ * STATIC plate set the title in Merriweather. Measured on `proof/mapgen-locator-web`, whose markup
+ * names no family whatsoever, so `dominantFontStack` returned its own `HOUSE_SANS_STACK` fallback
+ * and every word on the page — title included — was set in it.
+ *
+ * A register's family arrives here as a complete STACK (`fontStack`), not a bare family name, so a
+ * stylesheet rule reads one custom property and needs no fallback of its own. Adding these is
+ * additive: a stylesheet that does not read them is byte-unchanged.
  */
 export function figureVars(regs) {
   const px = (style) => style.fontSize;
+  const family = (style) => style.fontFamily;
   return {
     "--title-size": px(regs.display),
     "--title-weight": regs.display.fontWeight,
+    "--title-family": family(regs.display),
     "--subtitle-size": px(regs.body),
+    "--subtitle-family": family(regs.body),
+    "--subtitle-style": regs.body.fontStyle,
     "--source-size": px(regs.body),
+    "--source-family": family(regs.body),
     "--axis-size": px(regs.axis),
+    "--axis-family": family(regs.axis),
     "--label-size": px(regs.value),
     "--label-weight": regs.value.fontWeight,
+    "--label-family": family(regs.value),
     "--note-size": px(regs.annot),
+    "--note-family": family(regs.annot),
+    "--eyebrow-family": family(regs.eyebrow),
+    "--eyebrow-weight": regs.eyebrow.fontWeight,
+    "--eyebrow-tracking": regs.eyebrow.letterSpacing,
     "--filter-size": px(regs.body),
   };
 }
@@ -116,7 +165,10 @@ export function figureVars(regs) {
  * y-axis gutter (`measureText` needs a size and a weight, not a CSS string).
  */
 export function measurable(direction, name, { family = "chart" } = {}) {
-  const r = resolveRegister(direction, name, { family });
+  // `registerOf`, not `resolveRegister`: a gutter is measured in the size the page will DRAW at,
+  // which is the cap-height-resolved one. Measuring the filed size and drawing the resolved one is
+  // the same class of defect as measuring one face and drawing another.
+  const r = registerOf(direction, name, { family });
   return {
     fontSize: r.fontSize,
     fontWeight: r.fontWeight,

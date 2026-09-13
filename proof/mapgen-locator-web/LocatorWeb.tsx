@@ -94,14 +94,34 @@ export const HIT_TARGET_PX = Math.max(
  *  overlay is sized in frame units. Declared here because the SSR declutter has to MEASURE the label
  *  at exactly the size the stylesheet will draw it at. */
 export const LABEL_FONT = { fontSize: 11.5, fontWeight: 600 };
-/** How far the label's near edge sits from the marker's CENTRE, in frame units. Derived from the
- *  marker rather than typed beside it, so a bigger pin pushes its own name clear. */
-export const LABEL_GAP_FRAME = MARKER_RADIUS_PX + 4;
+/** How far the label's near edge sits from the marker's CENTRE, in frame units.
+ *
+ *  IT CLEARS THE MARK'S OWN FURNITURE, not just the mark. This was `MARKER_RADIUS_PX + 4`, which
+ *  put the chip's white box 4 units outside a 6px dot that carries a 1.4px white stroke — about
+ *  2.6 units of visible ground, and the two read as one shape. Measured on the delivered page:
+ *  8.8 CSS px between the World Health Organization's dot and its box on the plate, and 4 px live,
+ *  with the European Free Trade Association's box crossing its own marker.
+ *
+ *  `HIT_TARGET_PX / 2` is the radius of the biggest circle this beat ever paints on a mark — the
+ *  focus halo and the touch target, which are one circle (`live-map.mjs`'s `HALO_FLOOR_PX` is this
+ *  same number). A label starting inside it is a label drawn over a reader's own focus ring, which
+ *  is what 10 was. Derived, so a beat that raises the marker past 14 gets a gutter that grows with
+ *  it rather than one that silently stays inside its own halo. */
+export const LABEL_GAP_FRAME = HIT_TARGET_PX / 2;
 /** The label chip's own padding and line box, in CSS pixels — the numbers `render-web.mjs`'s
  *  `.point-label` rule draws, kept here because the declutter measures the box the reader sees, not
  *  the glyphs alone. */
 export const LABEL_PAD_X = 4;
 export const LABEL_PAD_Y = 3;
+/** The chip's LINE BOX, stated rather than left to the browser's `normal`.
+ *
+ *  The declutter measured a chip as `fontSize + 2 · padY` = 17.5 px tall and the browser drew it
+ *  21 px tall, because `line-height: normal` on an 11.5 px face is about 15 px and not 11.5. A 20%
+ *  under-measure on the one axis names stack along: measured at 900x1400 on the delivered page,
+ *  "International Labour Organization" and "United Nations Office at Geneva" were placed 20.6 px
+ *  apart for boxes the browser drew 21 px tall, and the two touched. Stated here, drawn from here,
+ *  and measured from here — one number, three readers. */
+export const LABEL_LINE_PX = 15;
 /* THE OUT-OF-MAP ZOOM CONTROL IS GONE (B6.14b, by name). There is no `ZOOM_SCALE`, no
    `mw-zoom-toggle` checkbox and no "Zoom in (1.4×, bounded)" label anywhere in this beat: the reader
    zooms with MapTiler's own NavigationControl, which `live-map.mjs` adds to the map itself. */
@@ -169,7 +189,7 @@ export function labelPlacements(
   const out = new Map<string, LabelPlacement>();
   for (const point of points) {
     const width = measure(point.name, LABEL_FONT) + LABEL_PAD_X * 2;
-    const height = LABEL_FONT.fontSize + LABEL_PAD_Y * 2;
+    const height = LABEL_LINE_PX + LABEL_PAD_Y * 2;
     const preferred = labelSide(point.px, frame.width, LABEL_GAP_FRAME + width);
     const other = preferred === "right" ? "left" : "right";
     const beside = (side: "left" | "right"): Omit<LabelPlacement, "clears"> => ({
@@ -414,7 +434,19 @@ export function LocatorWeb({
               };
               if (anchor === "right") style.right = `${100 - (xPct - gapPct)}%`;
               else if (anchor === "left") style.left = `${xPct + gapPct}%`;
-              else style.left = `${(box.x / frame.width) * 100}%`;
+              else {
+                // A CENTRED LABEL IS ANCHORED ON ITS OWN CENTRE, for exactly the reason the two
+                // branches above anchor their NEAR edge. This used to place the box's LEFT edge at
+                // `box.x / frame.width` — a percentage of the frame — while `box.width` was measured
+                // in fixed CSS pixels at the plate's 1:1 size. The two agree only when the plate is
+                // drawn at exactly its baked size, and drift by `(scale − 1) · width / 2` at any
+                // other: measured on the delivered page, the World Economic Forum's name sat
+                // **81.5 px to the left of its own dot**, over the lake, with nothing joining the
+                // two — a label that at a glance labels nothing. `translateX(-50%)` centres it at
+                // every size, which is what "centred" was always supposed to mean.
+                style.left = `${xPct}%`;
+                style.transform = "translate(-50%, -50%)";
+              }
               return (
                 <span
                   key={point.key}
@@ -427,6 +459,12 @@ export function LocatorWeb({
                   // its pin (the CSS `translateY(-50%)` above does it) rather than nudged off a
                   // circle whose size varies.
                   data-side={side}
+                  // WHICH EDGE THE PLACEMENT IS ANCHORED BY, carried so the live layer re-places
+                  // this name the way the plate placed it. `reposition` read `data-side` alone and
+                  // had no way to know a name was CENTRED above its point, so the live map drew
+                  // every centred label beside its marker instead — one placement, two answers,
+                  // and the swap between the plate and the live map moved the word.
+                  data-anchor={anchor}
                   data-gap={LABEL_GAP_FRAME}
                   data-dy={dy}
                   data-group={slugOf(point.category)}
@@ -457,6 +495,16 @@ export function LocatorWeb({
                   data-key={point.key}
                   data-detail={detail}
                   data-group={slugOf(point.category)}
+                  {...{
+                    /** THE MARK'S OWN RADIUS, IN THE BAKE'S FRAME UNITS, ON THE BUTTON THAT HALOES
+                     *  IT. Without it `reposition` never sizes this button and the painted highlight
+                     *  is whatever the stylesheet last said — which is how the halo guard in
+                     *  `verify-live-map.mjs` came to be SKIPPED entirely on this beat (it reads
+                     *  `data-r`, and a `.pt` with none is passed over). The halo then cannot be
+                     *  wrong and cannot be right; it is simply unmeasured. A pin is drawn at one
+                     *  radius, so this is that radius, stated once, read by both halves. */
+                    "data-r": MARKER_RADIUS_PX,
+                  }}
                 />
               );
             })}

@@ -1,0 +1,150 @@
+# Quatre sessions en parallèle — qui possède quoi
+
+Quatre passes qualité tournent en même temps, une par genre, toutes parties de `b49a59b3`.
+Chacune a son worktree sous le conteneur `splash/` :
+
+| worktree | branche | genre | territoire |
+| --- | --- | --- | --- |
+| `sp1/` | `maps/sp1-plan-contract` | **web** (charts + maps) | `skills/chart-web`, `skills/map-web`, `proof/web-*`, `proof/mapgen-*-web` |
+| `video/` | `quality/video` | **vidéo** | `skills/chart-video`, les beats vidéo de `proof/` |
+| `scrolly/` | `quality/scrolly` | **scrolly** | `skills/scrolly`, `proof/scrolly-*`, `proof/mapscrolly-*`, `proof/mapmore-scrolly-*` |
+| `rerender/` | `rerender/static-corpus` | **statique** | re-rendu du corpus + l'interlignage adaptatif dans `shared/design-base` |
+
+Rien n'est fusionné sans l'accord de Rémy. Il valide à l'œil, genre par genre.
+
+## La règle qui évite les collisions
+
+**Ton skill et tes beats sont à toi. Le tronc `shared/` n'est à personne.**
+
+Un changement dans `shared/` doit être **annoncé aux autres sessions avant d'être commencé**, en
+nommant les fichiers exacts. Ce protocole tourne déjà et il a marché : la session statique a annoncé
+son interlignage, la session web a répondu avec la liste précise de ce qu'elle tenait, et aucune
+collision n'a eu lieu.
+
+Le vrai générateur de collisions n'est pas le tronc lui-même : c'est que **`carried-copies.test.ts`
+impose l'identité à l'octet** entre chaque module du tronc et ses copies sous `skills/*/scripts/` et
+`skills/splash/assets/root-template/`. Donc toucher un module du tronc force une mise à jour dans le
+territoire de tout le monde. Règle : qui change un module du tronc met à jour **toutes** ses copies
+dans le même commit, et l'annonce avant.
+
+## Ce qui est déjà fait et dont tu hérites
+
+Lire `.superpowers/sdd/2026-09-12-sp1-map-plan-contract/KNOWN-STATE.md` — l'état connu, les 3 échecs
+préexistants, et la consigne de coût. **Ne remesure pas la ligne de base, elle est écrite.**
+
+L'essentiel :
+
+- Le design base tire ses fontes des **Google Fonts** (cache gitignoré, hors du repo), et resvg rend
+  en `loadSystemFonts: false` : un fichier manquant **échoue** au lieu de retomber en silence sur une
+  face système. Échelles : serif → **Merriweather**, sans → **Open Sans**, geometric sans →
+  **Montserrat**.
+- Une page web embarque désormais en **woff2 sous-ensemblé** les faces que son CSS nomme, et la
+  construction échoue s'il manque une face ou un caractère (`de112dff`, `b49a59b3`).
+- MapTiler sert 17 de ses 18 familles, toutes des Google Fonts — **aucune cuisson SDF n'est
+  nécessaire**. Et une famille NUE demandée à MapTiler revient en **Noto Sans**, sans erreur.
+- Le tronc `shared/map-beat/` (7 modules) est relu et figé. Contrat :
+  `skills/map-beat/references/map-plan.md`.
+
+## Le défaut que vous avez tous les deux, très probablement
+
+Le correctif typographique web est passé par `render-web.mjs`, donc **chart-web et map-web sont
+couverts — scrolly et vidéo ne le sont pas.**
+
+- **Scrolly** émet par `skills/scrolly/scripts/render-scrolly.mjs`, qui porte encore un
+  `body { font-family: Helvetica… }` littéral et n'embarque aucune face. Une page scrolly déclare donc
+  une famille et ne la charge jamais : le navigateur du lecteur retombe en silence sur autre chose.
+  C'est exactement le défaut qu'on vient de fermer côté web.
+- **Vidéo** rend dans un Chrome sans tête via Remotion. Le précédent du repo est explicite —
+  `film/scripts/fetch-typefaces.mjs` embarque les octets « parce qu'une frame peinte avant l'arrivée
+  d'une feuille de style réseau est une frame dans la mauvaise fonte, sans rien pour le dire ».
+  Vérifie que les beats vidéo font pareil ; s'ils s'appuient sur une fonte système, chaque frame est
+  suspecte.
+
+**Réutilisez la fonction partagée, n'en réécrivez pas une seconde.** Elle vit dans le design base et
+elle sait déjà : récupérer, vérifier par magic number avant cache, sous-ensembler aux caractères que
+la page peut afficher, et lire la plage réellement livrée dans le `cmap` des octets produits.
+
+Deux pièges déjà mesurés, à ne pas redécouvrir :
+
+1. **Ne sous-ensemble jamais depuis le HTML rendu.** Ces pages sont interactives ; du texte apparaît
+   au survol qui n'est pas dans le markup. Un glyphe absent seulement au survol passe toutes les
+   captures d'écran.
+2. **`document.fonts.check()` ment.** Un caractère hors de toutes les plages déclarées n'a besoin
+   d'aucune fonte custom, donc la fonction répond `true` pendant que le glyphe sort du repli. Relire
+   `FontFace.unicodeRange`, ou mesurer un différentiel de largeur contre un repli délibéré.
+
+## Méthode
+
+Un type à la fois, montré à Rémy avant de passer au suivant — sauf s'il demande un lot. Et **regarde
+le résultat** : une suite verte ne prouve aucun des défauts qui comptent. Pour la vidéo, extraire des
+frames du mp4 ; un still de revue ne prouve jamais un mécanisme d'entrée.
+
+## Règles non négociables
+
+- **Bun**, toujours. Jamais npm, jamais node.
+- **Aucune mention de Claude ou d'Anthropic** nulle part — commits, code, commentaires, PR.
+- Pathspec explicite sur `git add` ET `git commit`. Jamais `-A`, jamais nu.
+- Aucune clé dans un fichier commité. Le `.env` est déjà dans ton worktree.
+- Ne fusionne rien sans l'accord explicite de Rémy.
+- Vérifier par mutation est obligatoire : nommer la mutation qui fait rougir chaque garde, et la
+  lancer. C'est la seule discipline qui a attrapé un vrai défaut à chaque tâche de cette branche.
+
+## L'interlignage adaptatif arrive chez vous — planifiez-le
+
+La session statique (`rerender/static-corpus`) remonte en ce moment dans `shared/design-base/` le
+mécanisme qui rendait une taille filée **adaptative à la fonte** : une taille est une hauteur de
+capitale, mesurée sur le fichier de fonte, et l'échelle de copie peut échanger taille contre forme.
+Elle y ajoute l'interlignage, avec `registerOf` / `leadOf` / `gapOf` dans un nouveau
+`shared/design-base/register.mjs`, et une 9e colonne `leading` **obligatoire** dans les enregistrements
+de direction.
+
+**Décision de Rémy : une fois posé côté statique, ça s'implémente pour les trois autres exports —
+web, vidéo, scrolly.** Ce n'est donc pas une curiosité du statique, c'est le prochain chantier
+commun. Deux conséquences immédiates :
+
+1. **Une couture existe déjà et elle est silencieuse.** `shared/design-base/web.mjs` transforme un
+   registre en objet de style React sans jamais poser de `lineHeight` : le `leading` que le tronc
+   portera sera donc **jeté sans bruit**, et statique et web divergeront sur le rythme vertical sans
+   que rien ne rougisse. La session web en est propriétaire et la fermera. Si vos émetteurs (vidéo,
+   scrolly) ont la même forme — et c'est probable — la vôtre est à vous.
+2. **La règle d'adoption est écrite** dans la spec de la session statique (§3.3) : passer par
+   `registerOf` / `leadOf`, ou refuser `null` au point d'usage exactement comme `registerOf` le fait.
+   Une garde parcourt tout le repo et fait échouer toute source qui lit `.leading` en dehors des trois
+   modules autorisés — donc si vous le lisez directement, vous le saurez.
+
+En attendant, ne préparez rien à l'avance : le tronc n'a pas encore atterri, et bâtir contre une API
+non posée est le meilleur moyen de la recopier de travers.
+
+## Cadence de validation
+
+Rémy valide **un type à la fois** au début de chaque genre, pour s'assurer que la production est
+correcte et faire remonter le moindre défaut. On n'accélère qu'une fois la confiance établie, et
+c'est lui qui le dit — pas nous.
+
+## Pour la session VIDÉO en particulier : la première ligne de base
+
+Mesuré par la session statique, sur un vrai paragraphe de 7 lignes, avec les mêmes octets de fonte,
+sur les trois têtes d'échelle. **Ce n'est pas une règle, c'est une mesure sur un seul moteur**
+(Chrome 151, macOS sans tête, DPR émulé) — non vérifiée sur Linux, sur un vrai écran Retina, ni sur
+Firefox ou Safari.
+
+1. **L'espacement entre lignes de base concorde** entre resvg et Chrome : `lineHeight × fontSize`
+   arrondi au 1/64 de pixel, dérive ≤ 0,04 px sur sept lignes. Donc `line-height` unitless se partage
+   tel quel.
+2. **Le placement de la PREMIÈRE ligne de base, non.** La formule naïve du demi-interligne est fausse
+   de 0,5 à 1 px : Chrome arrondit l'ascendante et la descendante au pixel entier AVANT de diviser.
+   Mesuré contre naïf : Open Sans 14,000 vs 14,469 · Merriweather 13,000 vs 14,046 · Montserrat
+   10,000 vs 10,585.
+3. Chrome peint les glyphes à la ligne de base arrondie au pixel CSS entier, à DPR 1, 2 et 8 ; resvg
+   dessine en sous-pixel anti-aliasé. Jusqu'à ±0,5 px d'encre par ligne. Consigné, aucune action.
+
+**Le point 2 ne concerne PAS le web** : un beat web ne dessine aucun `<text>`, tout son texte est du
+HTML en flux CSS, sans ligne de base explicite à faire coïncider avec quoi que ce soit.
+
+**Il vous concerne, vous, si un composant Remotion place ses lignes à la main** via la commodité en
+pixels `leadOf` — c'est exactement la situation « un bloc en flux CSS doit aligner sa première ligne
+de base sur une coordonnée explicite ». Dans ce cas : **mesurez un repère de ligne de base sur le
+moteur où vous livrez, ne compilez pas la formule.** Une règle d'arrondi propre à une version de
+navigateur, cuite dans du code partagé, est fausse en silence sur tous les moteurs non mesurés.
+
+Tables complètes dans la spec de `rerender/static-corpus`, §5.4.

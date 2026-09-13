@@ -42,6 +42,13 @@ import { splashEnvPath } from "./splash-root.mjs";
 import { keepPoint } from "../assets/geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+/** THE TRUNK'S OWN STYLE SWEEP, carried into this skill's `assets/` (line 1 of that file names
+ *  `shared/map-beat/style.mjs` as its canonical, and `carried-copies.test.ts` holds the two
+ *  byte-identical) because a skill directory may not import out of itself. It is the SAME file the
+ *  live page inlines, so the plate and the live map over it cannot be two cartographies — which they
+ *  were: this bake hid `symbol` and boundary layers while the live layer's own copy of the rule hid
+ *  a different set, and each named `["Water", "Water shadow"]` by hand in its own file. */
+const TRUNK_STYLE = join(HERE, "..", "assets", "style.mjs");
 
 /**
  * The camera: a box around this beat's own sample of European metro areas (Lisbon to Athens,
@@ -56,6 +63,12 @@ const BEAT = {
     [28, 64],
   ],
   style: "dataviz-light",
+  /** Rule 7 of `geo-discipline.md`, named as a TINT SET rather than as one colour because that is
+   *  the shape `shared/map-beat/style.mjs` applies — live and baked, from one rule. This seed leaves
+   *  `dataviz-light`'s land as the provider drew it, so only `water` is named; `render-web.mjs`'s
+   *  `SEED.tints` carries the identical value, because the plate and the live map over it have to
+   *  agree about the colour of water or the swap between them is visible. */
+  tints: { water: "#aac9e0" },
 };
 
 const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
@@ -305,8 +318,19 @@ if (sealed) {
 }
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
+// THE PAGE RUNS THE TRUNK'S OWN SOURCE, not a paraphrase of it. `page.evaluate` ships a function
+// body across the process boundary with no closure, so a module this script imports is not reachable
+// from inside the browser — which is exactly how the sweep came to be written twice. The file is
+// read, its `export` keywords stripped (the page takes a classic script, the same treatment
+// `render-web.mjs` gives it), and its two entry points hung off `window`.
+await page.addScriptTag({
+  content:
+    (await readFile(TRUNK_STYLE, "utf8")).replace(/^export /gm, "") +
+    "\nwindow.__applyLiveStyle = applyLiveStyle;\nwindow.__assertLiveStyleAnswered = assertLiveStyleAnswered;\n",
+});
+
 const gate = await page.evaluate(
-  async ({ key, style, styleDefinition, bounds, settleMs, width, height }) => {
+  async ({ key, style, styleDefinition, bounds, settleMs, width, height, tints }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: styleDefinition ?? `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -321,20 +345,14 @@ const gate = await page.evaluate(
     window.__map = map;
     await new Promise((resolve) => map.once("style.load", resolve));
 
-    // Rule 9: quiet the plate. Every place label, road label and boundary line the provider ships
-    // is a layer doing none of the five jobs here — the circles and this beat's own labels carry it.
-    const hidden = [];
-    for (const layer of map.getStyle().layers)
-      if (layer.type === "symbol" || /border|boundary|admin/i.test(layer.id)) {
-        map.setLayoutProperty(layer.id, "visibility", "none");
-        hidden.push(layer.id);
-      }
-
-    // Rule 7: water reads as a blue tint, never grey — see this file's own header note. Left
-    // uncorrected, MapTiler's `dataviz-light` water is close enough to grey to read as no-data on
-    // a beat where the ocean is not covered by anything else.
-    for (const id of ["Water", "Water shadow"])
-      if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", "#aac9e0");
+    // Rules 7 and 9 in ONE CALL, and it is the trunk's. Quiet the plate (every place label, road
+    // label and boundary line the provider ships is a layer doing none of the five jobs here) and
+    // paint the water the beat named — `dataviz-light`'s own water is close enough to grey to read
+    // as no-data on a beat where the ocean is not covered by anything else.
+    //
+    // `assertLiveStyleAnswered` is what refuses a sweep that matched nothing: a renamed provider
+    // layer would otherwise leave the plate in the provider's near-grey with no error at all.
+    const swept = window.__assertLiveStyleAnswered(window.__applyLiveStyle(map, { tints }), style || "the sealed style document");
 
     // Rule 1: idle OR a bounded settle, and say which. `idle` alone never fires when one tile never
     // resolves, and the capture then hangs forever rather than slowly.
@@ -353,13 +371,28 @@ const gate = await page.evaluate(
     return {
       how,
       ms: Date.now() - started,
-      hidden: hidden.length,
+      hidden: swept.hidden,
+      tinted: swept.tinted,
       zoom: map.getZoom(),
       topLeft: map.unproject([0, 0]),
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, styleDefinition: sealedStyle, bounds: beatBounds, settleMs, width: size, height: size },
+  {
+    key,
+    style: BEAT.style,
+    styleDefinition: sealedStyle,
+    bounds: beatBounds,
+    settleMs,
+    width: size,
+    height: size,
+    // The SEED names only its water: it leaves `dataviz-light`'s land as the provider drew it, and
+    // `applyLiveStyle` paints only the tints it is given. A story beat measures both through
+    // `plateTints` — which this skill cannot reach, because `tints.mjs` imports across the `shared/`
+    // tree and a skill directory may not. Stated as a known cost of the copy boundary, not hidden:
+    // `proof/mapgen-locator-web` is the beat that shows the measured shape.
+    tints: BEAT.tints,
+  },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -405,7 +438,7 @@ const geometryPath = join(outDir, "geometry.json");
 await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
-  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} and re-tinted ${gate.tinted} basemap layers · zoom ${geometry.zoom}\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${projectedPoints.length} points\n` +
     `off-frame: ${offFrame.length ? offFrame.join(", ") : "none"}`,
