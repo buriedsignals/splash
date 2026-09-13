@@ -15,9 +15,13 @@
 // cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
 // restyles, so a re-bake months later is a different picture under the same marks.
 //
+// THE SIZE COMES FROM THE PLAN. `--size` is OPTIONAL and is an assertion, not a setting: given, it
+// must equal `plan.camera.drawn` or the bake refuses. See `drawnSizeFor` below for why the old
+// shape — take `--size`, then overwrite the plan's own camera with it — made guard 5 unassertable.
+//
 // Usage:
 //   bun proof/static-choropleth-europe-lowcarbon/bake.mjs \
-//     --size 574x436 --plan /tmp/creme.plan.json --water '#cedde1' --land '#f4f1e3' --out plate/creme
+//     --plan /tmp/creme.plan.json --water '#cedde1' --land '#f4f1e3' --out plate/creme
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -27,7 +31,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { bakePlan, assertRangesServed, rangesNeededBy } from "#shared/map-beat/bake.mjs";
-import { mountPlan } from "#shared/map-beat/mount.mjs";
+import { mountPlan, validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validatePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 import { assertNotFallback, maptilerGlyphs, DEFAULT_RANGES } from "#shared/map-beat/glyphs.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -151,6 +157,61 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
   );
 }
 
+/** THE PLAN IS VALIDATED BY THE THING THAT MOUNTS IT, not only by the thing that wrote it.
+ *
+ *  `references/map-plan.md` §1 says `validatePlan` is the one function every renderer calls before
+ *  it draws anything, and this bake is a renderer. It used to mount a plan it had never checked:
+ *  `render-directions.mjs` validated the plan it BUILT, and the bake trusted the file. That holds
+ *  only while the two are the same run — a plan reaching this CLI from a second beat, an older
+ *  `--plan` file, or a hand edit would be mounted unvalidated, and every fault these guards catch
+ *  (a duplicated layer id, a pair property assembled from two expressions, a layer that redraws the
+ *  ground) is one MapLibre reports by drawing the wrong picture in silence.
+ *
+ *  Exported so the refusal itself is testable without a browser or a key. */
+export function assertPlanIsRenderable(plan, where = "the plan handed to this bake") {
+  const violations = [...validatePlan(plan), ...validateExpressions(plan)];
+  if (violations.length)
+    throw new Error(`${where} is not renderable:\n  ${violations.join("\n  ")}`);
+  assertNoDoubledBasemap(plan);
+  return plan;
+}
+
+/** GUARD 5 IS ASSERTED HERE OR IT IS ASSERTED NOWHERE.
+ *
+ *  The drawn size is a LAYOUT OUTPUT — `geometry.mjs` says so in its own header — and the plan is
+ *  where the layout publishes it. This bake used to take it from `--size` instead and OVERWRITE
+ *  `plan.camera.drawn` with it on the way into `bakePlan`, so the one guard whose whole purpose is
+ *  "the bake happens at the size the layout published" could not fail: it compared the caller's
+ *  number against the caller's own number. The two agreed only because `render-directions.mjs`
+ *  happens to pass the same value twice; a second caller, or one flag edited by hand, would have
+ *  baked a plate at a size nothing draws at and nothing would have said so.
+ *
+ *  So the PLAN decides, `--size` is optional, and a disagreement is a refusal rather than a silent
+ *  preference for one of the two. `--size` is kept because it is what makes the disagreement
+ *  visible: a caller that states a size is a caller asserting one, and an assertion that is wrong
+ *  should stop the bake. */
+export function drawnSizeFor(plan, sizeArg) {
+  const drawn = plan?.camera?.drawn;
+  if (!drawn?.width || !drawn?.height)
+    throw new Error(
+      "the plan carries no camera.drawn — the layout publishes the size a map is baked at, and " +
+        "this bake reads it there. A plate baked at a size the component does not draw makes every " +
+        "absolute length wrong by the ratio, invisibly.",
+    );
+  if (sizeArg === null || sizeArg === undefined) return { width: drawn.width, height: drawn.height };
+  const [width, height] = String(sizeArg).split("x").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`--size must be <width>x<height>, got ${JSON.stringify(sizeArg)}`);
+  if (width !== drawn.width || height !== drawn.height)
+    throw new Error(
+      `--size says ${width}x${height} and the plan's camera.drawn says ${drawn.width}x${drawn.height}. ` +
+        "These are two answers to one question and this bake will not pick between them: the drawn " +
+        "size is what the LAYOUT published, so either the plan is stale or the flag is. Re-run the " +
+        "beat, or drop --size and let the plan speak.",
+    );
+  return { width: drawn.width, height: drawn.height };
+}
+
 /** THE FACES THE PLAN ASKS FOR MUST BE THE FACES MAPTILER SERVES.
  *
  *  MapTiler answers 200 for a family it does not have and hands back Noto Sans, so a map that asks
@@ -186,7 +247,7 @@ async function assertFacesServed(plan, key) {
  *  `digestOf` above are exported for a caller to compare against, and importing them must not also
  *  launch a browser and spend the MapTiler key. */
 async function bake() {
-  const [width, height] = flag("--size", "1000x760").split("x").map(Number);
+  const sizeArg = flag("--size", null);
   const outDir = flag("--out", join(HERE, "plate"));
   const planPath = flag("--plan", null);
   const keyPath = flag("--env", join(HERE, "../../.env"));
@@ -209,6 +270,8 @@ async function bake() {
   if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
 
   const plan = JSON.parse(await readFile(planPath, "utf8"));
+  assertPlanIsRenderable(plan, planPath);
+  const { width, height } = drawnSizeFor(plan, sizeArg);
 
   /** THE STYLE IS A DOCUMENT HERE AND A NAME EVERYWHERE ELSE. `transformStyle` has to REWRITE the
    *  style — hide the basemap's own labels and lines, repaint water and land — and MapLibre offers
@@ -247,7 +310,9 @@ async function bake() {
   const started = Date.now();
   const { camera: read } = await bakePlan({
     page,
-    plan: { ...plan, style: styleDoc, camera: { ...plan.camera, drawn: { width, height } } },
+    /** The camera travels UNTOUCHED. Only the style is swapped for the document fetched above —
+     *  overwriting `camera.drawn` here is exactly what made guard 5 unassertable. */
+    plan: { ...plan, style: styleDoc },
     glyphsUrl: styleDoc.glyphs,
     tints: { water, land },
     keepLabels: [],
