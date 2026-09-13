@@ -155,9 +155,16 @@ une transformation de la chaîne elle-même, faite avant que Chrome ne la voie.
 - elle dessine aux coordonnées reçues, et vérifie **l'accord de largeur**, défini ainsi : Bun mesure
   chaque ligne mise en page comme `measureText(texte casé, { fontSize, fontWeight, fontFamily,
   fontStyle }) + letterSpacing × (nombre de caractères − 1)` ; Chrome relit la même ligne avec
-  `SVGTextElement.getComputedTextLength()` ; le rendu est annulé quand `|chrome − bun| > max(1 px,
-  1 % de bun)`. Cette tolérance est le défaut ; elle est recalibrée sur les trois directions du
-  pilote, et le maximum mesuré remplacera cette phrase une fois le pilote rendu ;
+  `SVGTextElement.getComputedTextLength()`, moins l'espacement que CSS ajoute après le dernier
+  caractère et moins l'approche droite du dernier glyphe (mesurée sur le même visage par le canvas) —
+  Bun mesure l'encre, Chrome la somme des avances ; le rendu est annulé quand `|chrome − bun| >
+  max(1 px, 2 % de bun)`. *Recalibrée sur le pilote (`proof/video-choropleth-europe-lowcarbon`,
+  2026-09-14), depuis 1 % :* écart maximal mesuré **creme 1,61 %** (3,52 px, « plus de 94 % »,
+  Merriweather Italic 39 px ; 4,19 px au plus en absolu, la source), **rapport 1,20 %** (8,63 px, la
+  conclusion en Merriweather Italic 41 px), **nocturne 0,62 %** (1,79 px, « PLUS DE 94 % » ; 4,92 px
+  au plus en absolu, la source). Le reste n'est pas du bruit : Bun mesure le TrueType statique de
+  Google, Chrome dessine le woff2 web, deux fontes différentes — chargée depuis le TrueType, la même
+  ligne mesure dans Chrome exactement la largeur de Bun ;
 - elle ne tape **aucune** taille, graisse, interligne, écart de bloc ni couleur : tout vient des
   registres et de la direction reçus en props ;
 - ses fenêtres d'animation dérivent de son contrat de timing (`progressOf`, `checkTiming`).
