@@ -3,6 +3,8 @@ import {
   filedDirections,
   resolveDirectionFamilies,
 } from "#shared/design-base/index.mjs";
+import { registerOf } from "#shared/design-base/register.mjs";
+import { REGISTERS } from "#shared/chart-beat/registers.mjs";
 import {
   scaleRegister,
   videoRegistersOf,
@@ -62,10 +64,11 @@ describe("videoRegistersOf", () => {
 
   for (const direction of filedDirections()) {
     it(`should draw every ${direction.id} register at or above the landscape floor`, () => {
-      const registers = videoRegistersOf(
-        resolveDirectionFamilies(direction, text),
-        "landscape",
+      const fitted = resolveDirectionFamilies(direction, text);
+      const resolvedByName = Object.fromEntries(
+        REGISTERS.map((name) => [name, registerOf(fitted, name)]),
       );
+      const registers = videoRegistersOf(resolvedByName, "landscape");
       const under = Object.entries(registers)
         .filter(([, r]) => r.fontSize < 30)
         .map(([name]) => name);

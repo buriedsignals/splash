@@ -13,12 +13,16 @@
 // drops the leading without a word; a composition reading this object cannot, because `lead` is
 // one of the fields it draws with.
 //
-// Runs in Bun only: `registerOf` measures through resvg, which no browser bundle can load. The
-// composition receives the result as props.
+// NO `#shared/*` IMPORT HERE. This module never calls `registerOf` itself — it takes an object of
+// already-resolved registers. A beat reaches `#shared/design-base/register.mjs` legitimately (it is
+// the one place a beat is allowed to cross the skill boundary, the same way `render-still.mjs`
+// reaches `#shared/chart-beat/render-still.mjs`); this seam stays inside the skill so it can be
+// carried into `map-beat` by a plain `// twin/` copy with nothing to re-point.
+//
+// Runs in Bun only: `registerOf`, upstream of this, measures through resvg, which no browser bundle
+// can load. The composition receives the scaled result as props.
 
-import { registerOf } from "#shared/design-base/register.mjs";
-import { REGISTERS } from "#shared/chart-beat/registers.mjs";
-import { sizeFor } from "#shared/chart-video/sizes.mjs";
+import { sizeFor } from "./sizes.mjs";
 
 /**
  * @param {{fontFamily: string, fontSize: number, fontWeight: number, fontStyle: string,
@@ -40,8 +44,18 @@ export function scaleRegister(resolved, { typeScale, minTypePx }) {
   };
 }
 
-/** Every register of a direction that has been through `resolveDirectionFamilies`, at `sizeName`. */
-export function videoRegistersOf(direction, sizeName) {
+/**
+ * Every register of a direction, already resolved by the beat's own `registerOf` calls, scaled to
+ * `sizeName`.
+ *
+ * @param {{display: object, eyebrow: object, body: object, annot: object, value: object, axis: object}} resolvedByName
+ *        one `registerOf(direction, name)` result per register name — resolved outside this module,
+ *        by a beat that has already been through `resolveDirectionFamilies`.
+ * @param {string} sizeName  one of `sizeFor`'s three rows
+ */
+export function videoRegistersOf(resolvedByName, sizeName) {
   const row = sizeFor(sizeName);
-  return Object.fromEntries(REGISTERS.map((name) => [name, scaleRegister(registerOf(direction, name), row)]));
+  return Object.fromEntries(
+    Object.entries(resolvedByName).map(([name, resolved]) => [name, scaleRegister(resolved, row)]),
+  );
 }
