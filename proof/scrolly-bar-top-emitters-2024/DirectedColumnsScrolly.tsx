@@ -227,7 +227,6 @@ export function DirectedColumnsScrolly({
                 width: pct(b.step),
                 top: 0,
                 textAlign: "center",
-                lineHeight: 1.2,
               })}
             >
               {r.name}
