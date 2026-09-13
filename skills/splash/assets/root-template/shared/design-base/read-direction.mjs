@@ -11,6 +11,19 @@
 // this repository. A delivered root carries the resolved direction, never the record it came from.
 
 import { readFileSync } from "node:fs";
+import { CORE_REGISTERS, FAMILY_REGISTERS } from "#shared/chart-beat/registers.mjs";
+
+/** Every register name a direction may file, core and apparatus. A table row naming one of these
+ *  is a register row, and is held to the full shape; any other table in the record is prose. */
+const REGISTER_NAMES = new Set([
+  ...CORE_REGISTERS,
+  ...Object.values(FAMILY_REGISTERS).flatMap((f) => Object.keys(f)),
+]);
+
+/** The line a register sets on, as a multiple of its face's own declared line. Outside this range
+ *  the cell is a typo — `145` for `1.45` — and not a design. */
+const LEADING_RANGE = Object.freeze([0.7, 2.0]);
+const LEADING_SOURCES = Object.freeze(["measured", "chosen"]);
 
 /** `- ground: #FFFCEE` → `#FFFCEE`. */
 function field(text, key) {
@@ -89,8 +102,20 @@ export function deriveStrokes(filed) {
 export function readDirectionFromMarkdown(text, id = "(unnamed)") {
   const registers = {};
   for (const cells of tableRows(text, "register")) {
-    const [name, family, size, weight, italic, tracking, transform, ink] = cells;
-    if (!name || cells.length < 8) continue;
+    const [name, family, size, weight, italic, tracking, transform, ink, leading] = cells;
+    if (!REGISTER_NAMES.has(plain(name ?? ""))) continue;
+    if (cells.length < 9 || plain(leading ?? "") === "")
+      throw new Error(
+        `direction ${id} files no leading for its ${name} register — the register table carries a ` +
+          `ninth column, the line as a multiple of the face's own declared line height, and a row ` +
+          `without it is refused rather than given a typed default`,
+      );
+    const line = number(leading);
+    if (line < LEADING_RANGE[0] || line > LEADING_RANGE[1])
+      throw new Error(
+        `direction ${id} files a leading of ${leading} for its ${name} register, outside ` +
+          `${LEADING_RANGE.join("..")} — a multiple of the face's own line, so 1.45 rather than 145`,
+      );
     registers[name] = {
       family: plain(family),
       size: number(size),
@@ -99,9 +124,17 @@ export function readDirectionFromMarkdown(text, id = "(unnamed)") {
       tracking: number(tracking),
       transform: plain(transform),
       ink: plain(ink),
+      leading: line,
     };
   }
 
+  const leadingSource = field(text, "leadingSource");
+  if (!LEADING_SOURCES.includes(leadingSource))
+    throw new Error(
+      `direction ${id} does not say where its leading came from — file \`- leadingSource: measured\` ` +
+        `or \`- leadingSource: chosen\`. Nothing harvests a reference's line height yet, so a value ` +
+        `that is not claimed is not assumed to be measured`,
+    );
 
   const stroke = field(text, "stroke");
   return {
@@ -122,6 +155,7 @@ export function readDirectionFromMarkdown(text, id = "(unnamed)") {
     // record; `chosen` says a person decided it, and then the record is not asked to contain it.
     groundSource: field(text, "groundSource") ?? "measured",
     accentSource: field(text, "accentSource") ?? "measured",
+    leadingSource,
     pad: field(text, "pad") ? number(field(text, "pad")) : null,
     header: field(text, "header"),
     headRule: /^true$/i.test(field(text, "headRule") ?? ""),

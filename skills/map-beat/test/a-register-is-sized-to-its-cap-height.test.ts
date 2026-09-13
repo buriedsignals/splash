@@ -22,10 +22,7 @@ import { join } from "node:path";
 import { LADDERS } from "#shared/design-base/resolve-families.mjs";
 import { measureTextBand } from "#shared/chart-beat/render-still.mjs";
 import { readDirection } from "../../../scripts/design-base/read-direction.mjs";
-import {
-  capRatioOf,
-  registerOf,
-} from "../../../proof/static-choropleth-europe-lowcarbon/DirectedChoroplethMap.tsx";
+import { capRatioOf, registerOf } from "#shared/design-base/register.mjs";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
