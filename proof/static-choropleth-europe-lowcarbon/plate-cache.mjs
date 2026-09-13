@@ -1,10 +1,11 @@
 // Whether a baked plate can be reused, decided by comparing every input the bake takes against what
 // its own `geometry.json` recorded — not by whether the files merely exist.
 //
-// THE COUNTRY SHAPES ARE A FILE, not a value cheap to compare: the culled geometry `bake.mjs`
-// writes into `geometry.json` is derived (thinned, cropped to the frame) and comparing that would be
-// slow and fragile. What is compared instead is a digest of `shapes.geojson`'s own bytes, taken at
-// bake time and carried in `geometry.json` for exactly this comparison.
+// THE PLAN IS A FILE, and it is the whole of what the bake now draws: the study shapes, every class
+// fill, every border ink, every placed word and the ring. Comparing a digest of that file's own
+// bytes — taken at bake time and carried in `geometry.json` for exactly this comparison — is what
+// notices a plate whose marks have moved. It replaces the shapes digest this used to compare, and
+// subsumes it: the shapes travel inside the plan.
 //
 // BOUNDS AND STYLE ARE BAKE-SIDE DEFAULTS in this beat — this caller never passes `--bounds` or
 // `--style` — so the honest comparison is not against a second copy of them kept here, but against
@@ -17,17 +18,16 @@ import { BEAT, digestOf } from "./bake.mjs";
 
 /** `dir` holds a baked plate (`geometry.json` + `plate.png`). `inputs` is what a render is about to
  *  ask the bake for: the drawn `width`/`height`, the direction's `water`/`land` tints, and the
- *  `countriesPath` this bake culls its shapes from. `bounds` and `style` are not asked for here —
- *  they are read off `BEAT`, the bake's own current defaults.
+ *  `planPath` this bake will mount. `bounds` and `style` are not asked for here — they are read off
+ *  `BEAT`, the bake's own current defaults.
  *
- *  NOT COMPARED, and why: `--settle` (how long the bake waits for MapLibre to report idle) — this
- *  caller never passes it, and `bake.mjs` does not record it in `geometry.json` at all, so there is
- *  nothing here to compare it against. Recording it would be `bake.mjs`'s change to make, not this
- *  one's to fake. */
-export async function plateIsCurrent(dir, { width, height, water, land, countriesPath }) {
+ *  NOT COMPARED, and why: nothing. Every flag `bake.mjs` accepts is either compared here or read
+ *  off `BEAT` above, which is what makes this a cache that cannot go stale. If the bake grows an
+ *  input, recording it in `geometry.json` is that change's job and comparing it is this one's. */
+export async function plateIsCurrent(dir, { width, height, water, land, planPath }) {
   if (!existsSync(join(dir, "geometry.json")) || !existsSync(join(dir, "plate.png"))) return false;
   const was = JSON.parse(readFileSync(join(dir, "geometry.json"), "utf8"));
-  const shapesDigest = await digestOf(countriesPath);
+  const planDigest = await digestOf(planPath);
   return (
     was.frame?.width === width &&
     was.frame?.height === height &&
@@ -35,6 +35,6 @@ export async function plateIsCurrent(dir, { width, height, water, land, countrie
     was.land === land &&
     JSON.stringify(was.bounds) === JSON.stringify(BEAT.bounds) &&
     was.style === BEAT.style &&
-    was.shapesDigest === shapesDigest
+    was.planDigest === planDigest
   );
 }

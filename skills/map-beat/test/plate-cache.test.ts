@@ -11,9 +11,13 @@ import { plateIsCurrent } from "../../../proof/static-choropleth-europe-lowcarbo
 /**
  * `plateIsCurrent` used to compare only the drawn size and the two tints — three of the six inputs
  * `bake.mjs` actually takes and records — so a change to the camera bounds, the MapTiler style, or
- * the shapes file left a stale plate in place and reported it as current. Every case below changes
- * exactly one recorded input and expects the cache to notice; a run over a temp directory, never the
+ * the plan left a stale plate in place and reported it as current. Every case below changes exactly
+ * one recorded input and expects the cache to notice; a run over a temp directory, never the
  * committed plates, so nothing here can trigger a re-bake of what is already shipped.
+ *
+ * THE PLAN IS WHAT THE SHAPES DIGEST USED TO BE, and it is strictly more: the bake mounts the beat's
+ * plan, so the study shapes, every class fill and every placed word are inside the file this hashes.
+ * A label that moved a pixel now invalidates the plate; under the shapes digest it did not.
  */
 
 /** A `geometry.json` exactly as `bake.mjs` would write one, for a plate baked with the given inputs
@@ -25,7 +29,7 @@ function geometryFor({
   land,
   bounds,
   style,
-  shapesDigest,
+  planDigest,
 }) {
   return {
     frame: { width, height },
@@ -33,28 +37,26 @@ function geometryFor({
     style,
     water,
     land,
-    shapesDigest,
-    gatedBy: "idle",
+    planDigest,
     zoom: 4,
     frameCorners: { west: -25, east: 42, south: 34, north: 68 },
     worldWidthPx: 8192,
     degreesPerPixel: 0.01,
     metresPerPixel: 1000,
-    shapes: [],
   };
 }
 
 describe("plateIsCurrent", () => {
   const INPUTS = { width: 500, height: 400, water: "#111111", land: "#eeeeee" };
   let dir: string;
-  let countriesPath: string;
+  let planPath: string;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "plate-cache-"));
-    countriesPath = join(dir, "shapes.geojson");
+    planPath = join(dir, "plan.json");
     writeFileSync(
-      countriesPath,
-      JSON.stringify({ type: "FeatureCollection", features: [] }),
+      planPath,
+      JSON.stringify({ style: { name: "dataviz-light" }, camera: {}, layers: [] }),
     );
     // The cache only checks that a plate image exists; its bytes are never read.
     writeFileSync(
@@ -68,10 +70,10 @@ describe("plateIsCurrent", () => {
   });
 
   /** Writes `geometry.json` as a bake of `INPUTS` (plus `BEAT`'s current bounds and style) would
-   *  have recorded it, with the digest always taken off `countriesPath`'s CURRENT bytes — so a test
-   *  that wants a stale shapes file changes the file itself after calling this, not the digest. */
+   *  have recorded it, with the digest always taken off `planPath`'s CURRENT bytes — so a test that
+   *  wants a stale plan changes the file itself after calling this, not the digest. */
   async function recordCurrentBake(overrides: Record<string, unknown> = {}) {
-    const shapesDigest = await digestOf(countriesPath);
+    const planDigest = await digestOf(planPath);
     writeFileSync(
       join(dir, "geometry.json"),
       JSON.stringify(
@@ -82,14 +84,14 @@ describe("plateIsCurrent", () => {
           land: INPUTS.land,
           bounds: BEAT.bounds,
           style: BEAT.style,
-          shapesDigest,
+          planDigest,
           ...overrides,
         }),
       ),
     );
   }
 
-  const check = () => plateIsCurrent(dir, { ...INPUTS, countriesPath });
+  const check = () => plateIsCurrent(dir, { ...INPUTS, planPath });
 
   it("should accept a plate whose every recorded input still matches", async () => {
     await recordCurrentBake();
@@ -135,14 +137,15 @@ describe("plateIsCurrent", () => {
     expect(await check()).toBe(false);
   });
 
-  it("should refuse a plate whose shapes file has since changed", async () => {
+  it("should refuse a plate whose plan has since changed", async () => {
     await recordCurrentBake();
     // The recorded digest is of the OLD bytes; changing the file after the fact is the stale case.
     writeFileSync(
-      countriesPath,
+      planPath,
       JSON.stringify({
-        type: "FeatureCollection",
-        features: [{ id: "a new country" }],
+        style: { name: "dataviz-light" },
+        camera: {},
+        layers: [{ id: "classes", type: "fill" }],
       }),
     );
     expect(await check()).toBe(false);
