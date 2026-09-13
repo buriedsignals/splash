@@ -42,12 +42,11 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import {
-  resolveRegister,
   applyCase,
   DERIVED_SIZE_RATIO,
 } from "#shared/chart-beat/registers.mjs";
 import { viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
-import { LADDERS } from "#shared/design-base/resolve-families.mjs";
+import { capRatioOf, registerOf } from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -111,100 +110,6 @@ const widthOf = (text: string, r: any) =>
   Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
 const BAND_PROBE = "Hxpg1,";
 const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
-
-/**
- * A FILED SIZE NAMES A CAP HEIGHT, NOT A POINT SIZE — AND THE CAP HEIGHT IS MEASURED FROM THE FILE
- * THE RENDER WILL ACTUALLY DRAW WITH.
- *
- * THE DEFECT. A direction files `display: 32`. `resolve-families.mjs` turns the ROLE that row names
- * into a concrete family by asking each candidate on the role's ladder whether it covers this beat's
- * own text — so the family is a function of the COPY, and one missing code point moves it (Lato and
- * Roboto Slab have no U+2082, so a headline carrying `CO₂` resolves further down). The size did not
- * move with it. A `32` measured on the head of the ladder was spent unchanged on whatever face the
- * coverage question happened to land on, and two faces at 32px are not the same size on the page:
- * measured here on 2026-09-13, cap height per unit of nominal size runs from 0.693 (Ubuntu) to 0.770
- * (Libre Baskerville) — 11 % of optical size, silently, with nothing anywhere going red.
- *
- * THE RULE. A register's filed size is read as the cap height it produces ON THE HEAD OF ITS OWN
- * ROLE'S LADDER, and every other face is resolved to the size that reaches the same cap height. The
- * ladder may change the family; it may not change the size on the page. The reference is measured,
- * per weight, out of the `.ttf` `typefaces.mjs` fetched — never a table of per-family constants,
- * which is the next thing to go stale the day a newsroom files a family nobody anticipated.
- *
- * This is the discipline `shared/map-beat/tints.mjs` already applies to colour: *a fixed dose cannot
- * work across three grounds*, so the basemap targets a MEASURED gap and solves for the dose. A fixed
- * point size cannot work across three faces, so a register targets a measured cap height and solves
- * for the size.
- *
- * WHAT IT IS NOT. Cap height is the VERTICAL half only. At one cap height two faces still set at
- * different widths — that is what makes them different typefaces and normalising it away would be
- * wrong — so the horizontal half is `mapGeometryFor`'s size-for-lines ladder, below.
- */
-const CAP_PROBE = "H";
-/** Measured large, then divided: resvg reports an integer-ish ink box, so a 200px probe carries
- *  more significant figures than a 10px one. The ratio is linear in size and is asserted to be. */
-const CAP_PROBE_SIZE = 200;
-const capRatios = new Map<string, number>();
-export function capRatioOf(fontFamily: string, fontWeight: number) {
-  const key = `${fontFamily}|${fontWeight}`;
-  const held = capRatios.get(key);
-  if (held !== undefined) return held;
-  const ratio =
-    measureTextBand(CAP_PROBE, {
-      fontSize: CAP_PROBE_SIZE,
-      fontWeight,
-      fontFamily,
-    }).ascent / CAP_PROBE_SIZE;
-  if (!(ratio > 0.4 && ratio < 1))
-    throw new Error(
-      `the cap height of ${fontFamily} at weight ${fontWeight} measured ${ratio.toFixed(4)} of its ` +
-        `nominal size, which is not a cap height — a Latin face runs about 0.69 to 0.77. The face ` +
-        `was probably not handed to the rasteriser at all, in which case nothing was drawn and the ` +
-        `ink box is empty.`,
-    );
-  capRatios.set(key, ratio);
-  return ratio;
-}
-
-/** The face a register's role resolves to FIRST — the reference its filed size was read against.
- *  `resolveDirectionFamilies` records the role beside the family it chose; a direction that never
- *  went through it (a test handing a concrete family straight in) has no role to reference, and
- *  then the face IS its own reference and the filed size stands. */
-const ladderHeadFor = (direction: any, name: RegisterName): string | null => {
-  const decision = direction?.decisions?.find((d: any) => d.register === name);
-  const ladder = decision
-    ? (LADDERS as Record<string, string[]>)[decision.role]
-    : null;
-  return ladder?.[0] ?? null;
-};
-
-/** A register, resolved against the direction, sized to its role's own cap height, and given the ink
- *  its own row names.
- *
- *  `filedSize` travels beside `fontSize` because the two answer different questions and the layout
- *  needs both: `fontSize` is what the glyphs are DRAWN at, `filedSize` is the direction's own
- *  vertical rhythm — the leading, the gaps between blocks — which is a design decision about the
- *  page and must not move when the face does. Tracking is filed in pixels at the filed size, which
- *  is an em fact written in px, so it travels with the drawn size. */
-export const registerOf = (direction: any, name: RegisterName) => {
-  const { ink, muted } = deriveFurniture(direction.ground);
-  const r = resolveRegister(direction, name);
-  const head = ladderHeadFor(direction, name);
-  const scale = head
-    ? capRatioOf(head, r.fontWeight) / capRatioOf(r.fontFamily, r.fontWeight)
-    : 1;
-  const fontSize = Math.round(r.fontSize * scale * 100) / 100;
-  return {
-    ...r,
-    fontSize,
-    filedSize: r.fontSize,
-    referenceFamily: head ?? r.fontFamily,
-    letterSpacing: (Number(r.letterSpacing ?? 0) * fontSize) / r.fontSize,
-    fill: ({ ink, muted, accent: direction.accent } as Record<string, string>)[
-      r.ink
-    ],
-  };
-};
 
 /**
  * HOW SMALL A HEADLINE MAY GET BEFORE IT HAS STOPPED BEING ONE. TWO FLOORS, AND THE HIGHER BINDS —
