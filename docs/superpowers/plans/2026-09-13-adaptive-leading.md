@@ -22,7 +22,7 @@ reste à migrer et un outil compare la géométrie des SVG avant/après.
 
 - Runtime **Bun**, jamais npm ni node. Code, commentaires, noms, messages d'erreur et de commit en
   **anglais**.
-- **Aucune mention de Claude ou d'Anthropic**, nulle part (commits, code, commentaires).
+- **Aucune attribution à un assistant IA ni à un éditeur**, nulle part (commits, code, commentaires).
 - `git add <chemins>` puis `git commit <mêmes chemins>` — **pathspec explicite, jamais `-A`, jamais
   nu** : l'arbre est partagé.
 - Un module du tronc modifié ou ajouté est **porté à l'octet** partout où `carried-copies.test.ts`
