@@ -1331,6 +1331,7 @@
     try {
       const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
       const live = saved && typeof saved.token === 'string' && saved.token
+        && typeof saved.email === 'string' && saved.email
         && !(saved.expires_at && Date.parse(saved.expires_at) <= Date.now());
       account = live ? saved : null;
     } catch { account = null; }
@@ -1560,6 +1561,7 @@
   const ask = (q) => fetch(API + '/api/graphics/examples', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    credentials: 'omit',
     body: JSON.stringify({ query: q }),
   });
 
@@ -1579,14 +1581,14 @@
       /* A refused token is forgotten, and the search happens anyway. */
       if (res.status === 401 && account) {
         saveAccount(null);
-        limit = 5;
+        limit = 5; left = null;
         res = await ask(q);
       }
       readLimits(res);
 
       if (res.status === 429) {
         const d = await res.json().catch(() => ({}));
-        limit = d.limit || limit; left = 0; drawQuota();
+        limit = Number(d.limit) || limit; left = 0; drawQuota();
         all = [];
         if (account) {
           box('ink', 'Limit reached',
@@ -1788,19 +1790,36 @@
         res = await fetch(API + '/auth/token/poll', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'omit',
           body: JSON.stringify({ request_id: requestId }),
         });
       } catch { continue; }   // a dropped connection mid-wait is not an answer; ask again
+      if (run !== polling) return;
       if (res.status === 202) continue;
-      if (res.ok) {
-        const d = await res.json();
+      if (res.status === 429 || (res.status >= 500 && res.status < 600)) continue;
+      if (res.status === 200) {
+        let d;
+        try { d = await res.json(); } catch {
+          say('ko', 'Sign-in failed. Send a new link to try again.');
+          $('vform').hidden = false;
+          return;
+        }
+        if (run !== polling) return;
+        if (!(typeof d.token === 'string' && d.token && typeof d.email === 'string' && d.email)) {
+          say('ko', 'Sign-in failed. Send a new link to try again.');
+          $('vform').hidden = false;
+          return;
+        }
         saveAccount({ token: d.token, email: d.email, expires_at: d.expires_at });
         say('ok', 'Connected as ' + d.email + '.');
         await refreshAccount();
         setTimeout(closeModal, 1500);
         return;
       }
-      break;   // 410 or anything else: this sign-in is over
+      if (res.status === 410) break;   // this sign-in is over
+      say('ko', 'Sign-in failed. Send a new link to try again.');
+      $('vform').hidden = false;
+      return;
     }
     if (run !== polling) return;
     say('ko', 'The sign-in link expired. Send a new one.');
@@ -1810,12 +1829,12 @@
   $('vform').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = $('vbtn');
-    const run = ++polling;
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
       const res = await fetch(API + '/auth/token/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
         body: JSON.stringify({ email: $('vmail').value }),
       });
       const d = await res.json().catch(() => ({}));
@@ -1825,6 +1844,7 @@
           : (d.error || 'Something went wrong.'));
         return;
       }
+      const run = ++polling;
       $('vform').hidden = true;
       say('ok', 'Check your email and press Connect. This page signs in on its own.');
       waitForConnect(d.request_id, d.poll_interval, d.expires_at, run);
@@ -1846,7 +1866,7 @@
   async function refreshAccount() {
     if (!account) return;
     try {
-      const res = await fetch(API + '/auth/status', { headers: authHeaders() });
+      const res = await fetch(API + '/auth/status', { headers: authHeaders(), credentials: 'omit' });
       if (res.status === 401) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
       if (!res.ok) return;
       const d = await res.json();
