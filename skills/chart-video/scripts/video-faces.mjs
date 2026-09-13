@@ -45,15 +45,71 @@ function stringsOf(value, out = []) {
   return out;
 }
 
+/** One request per distinct family × weight × style — `wanted` and a direction's own registers can
+ *  both repeat a combination (two core voices sharing a face at the same weight), and each is asked
+ *  for once. */
+function dedupeWanted(list) {
+  const seen = new Map();
+  for (const request of list) {
+    const key = `${request.family}|${request.weight}|${request.style ?? "normal"}`;
+    if (!seen.has(key)) seen.set(key, request);
+  }
+  return [...seen.values()];
+}
+
+/**
+ * The deduplicated `[{ family, weight, style }]` a directed video's registers ask for — one entry
+ * per distinct family × weight × style among its six resolved registers (`display`, `eyebrow`,
+ * `body`, `annot`, `value`, `axis`), the `wanted` form `videoFaces` takes.
+ *
+ * @param {Record<string, {fontFamily: string, fontWeight: number, fontStyle?: "normal"|"italic"}>} registers
+ * @returns {Array<{family: string, weight: number, style: "normal"|"italic"}>}
+ */
+export function wantedOf(registers) {
+  return dedupeWanted(
+    Object.values(registers).map((r) => ({
+      family: r.fontFamily,
+      weight: r.fontWeight,
+      style: r.fontStyle === "italic" ? "italic" : "normal",
+    })),
+  );
+}
+
 /**
  * @param {{wanted?: Array<{family: string, weight?: number, style?: "normal"|"italic"}>,
  *          stack?: string, weights?: number[], props: object}} beat
  *        `wanted` is what a directed video passes — one entry per family × weight × style its
  *        registers resolve to. `stack` + `weights` is the single-family form the seed uses.
+ *        `wanted` and `stack`/`weights` are the same choice made two ways: exactly one form may be
+ *        given, never neither and never both — a caller confused about which one it is driving is
+ *        exactly the caller this refuses.
+ *
+ *        THE TEXT ITSELF IS ALREADY CASED. A directed beat runs its treatment's words through
+ *        `applyCase(text, register.transform)` in Bun before they ever reach `props`, so the subset
+ *        cut here — and the face `stringsOf` scans — is cut from the CASED strings, not the
+ *        treatment's own casing.
  */
 export async function videoFaces({ wanted, stack, weights, props }) {
-  const requests =
-    wanted ?? [...new Set(weights)].map((weight) => ({ family: requestedFamily(stack), weight }));
+  const hasWanted = Array.isArray(wanted) && wanted.length > 0;
+  const hasStackForm = stack !== undefined && weights !== undefined;
+  if (hasWanted && hasStackForm)
+    throw new Error(
+      "videoFaces: pass either `wanted` or `stack` + `weights`, not both — a caller driving both " +
+        "forms at once does not know which one it means.",
+    );
+  if (!hasWanted && !hasStackForm)
+    throw new Error(
+      "videoFaces: pass `wanted` (a non-empty array) or `stack` + `weights` — neither form was given.",
+    );
+  if (props && (Object.hasOwn(props, "fontFamily") || Object.hasOwn(props, "faces")))
+    throw new Error(
+      "videoFaces: props already carries a `fontFamily` or `faces` key — the spread in " +
+        "writeRenderProps would silently overwrite it with the ones this call resolves.",
+    );
+
+  const requests = hasWanted
+    ? dedupeWanted(wanted)
+    : [...new Set(weights)].map((weight) => ({ family: requestedFamily(stack), weight }));
   const faces = await embeddedWebFaces(requests, [LATIN_1, ...stringsOf(props)].join("\n"));
   return {
     fontFamily: stack ?? null,

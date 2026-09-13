@@ -3,7 +3,11 @@ import { uncoveredText } from "../assets/face-coverage";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { videoFaces, writeRenderProps } from "../scripts/video-faces.mjs";
+import {
+  videoFaces,
+  wantedOf,
+  writeRenderProps,
+} from "../scripts/video-faces.mjs";
 
 /**
  * The node-side half: the faces a video render hands its composition, as bytes, cut from the
@@ -109,6 +113,84 @@ describe("videoFaces", () => {
       },
     ];
     expect(uncoveredText(runs, faces)).toEqual([]);
+  });
+});
+
+describe("wantedOf", () => {
+  it("should dedupe registers that share a family, weight and style into one request", () => {
+    const registers = {
+      display: {
+        fontFamily: "Merriweather",
+        fontWeight: 700,
+        fontStyle: "normal",
+      },
+      eyebrow: {
+        fontFamily: "Open Sans",
+        fontWeight: 400,
+        fontStyle: "normal",
+      },
+      body: { fontFamily: "Open Sans", fontWeight: 400, fontStyle: "normal" },
+      annot: { fontFamily: "Open Sans", fontWeight: 400, fontStyle: "italic" },
+      value: {
+        fontFamily: "Merriweather",
+        fontWeight: 700,
+        fontStyle: "normal",
+      },
+      axis: { fontFamily: "Open Sans", fontWeight: 400, fontStyle: "normal" },
+    };
+    expect(wantedOf(registers)).toEqual([
+      { family: "Merriweather", weight: 700, style: "normal" },
+      { family: "Open Sans", weight: 400, style: "normal" },
+      { family: "Open Sans", weight: 400, style: "italic" },
+    ]);
+  });
+
+  it("should treat a missing fontStyle as normal", () => {
+    const registers = { display: { fontFamily: "Open Sans", fontWeight: 400 } };
+    expect(wantedOf(registers)).toEqual([
+      { family: "Open Sans", weight: 400, style: "normal" },
+    ]);
+  });
+});
+
+describe("videoFaces refusals", () => {
+  it("should refuse when neither wanted nor stack+weights is given", async () => {
+    await expect(videoFaces({ props: { title: "a" } })).rejects.toThrow(
+      /pass `wanted`.*or `stack` \+ `weights`.*neither/,
+    );
+  });
+
+  it("should refuse an empty wanted array with no stack+weights either", async () => {
+    await expect(
+      videoFaces({ wanted: [], props: { title: "a" } }),
+    ).rejects.toThrow(/neither form was given/);
+  });
+
+  it("should refuse when both wanted and stack+weights are given", async () => {
+    await expect(
+      videoFaces({
+        wanted: [{ family: "Open Sans", weight: 400 }],
+        stack: STACK,
+        weights: [400],
+        props: { title: "a" },
+      }),
+    ).rejects.toThrow(/not both/);
+  });
+
+  it("should refuse props that already carry a fontFamily key", async () => {
+    await expect(
+      videoFaces({
+        stack: STACK,
+        weights: [400],
+        props: { fontFamily: "already set" },
+      }),
+    ).rejects.toThrow(/already carries a `fontFamily` or `faces` key/);
+  });
+
+  it("should refuse props that already carry a faces key", async () => {
+    await expect(
+      videoFaces({ stack: STACK, weights: [400], props: { faces: [] } }),
+    ).rejects.toThrow(/already carries a `fontFamily` or `faces` key/);
   });
 });
 

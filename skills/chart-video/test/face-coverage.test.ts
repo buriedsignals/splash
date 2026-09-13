@@ -93,6 +93,16 @@ describe("uncoveredText", () => {
     ]);
   });
 
+  it("should not let a lowercase œ's coverage stand in for its uppercase Œ", () => {
+    // U+0153 (œ) and U+0152 (Œ, its uppercase) are distinct code points — a face embedded only for
+    // the lowercase ligature does not cover a directed video's uppercase register.
+    const faces = [openSans(400, "U+153")];
+    const runs = [{ text: "Œ", family: "Open Sans", weight: 400 }];
+    expect(uncoveredText(runs, faces)).toEqual([
+      { codePoint: 0x152, family: "Open Sans", weight: 400 },
+    ]);
+  });
+
   it("should accept an italic run set in an embedded italic face", () => {
     const faces = [{ ...openSans(400, "U+61"), style: "italic" as const }];
     const runs = [

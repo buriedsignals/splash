@@ -32,13 +32,26 @@ function bytesOf(base64: string): ArrayBuffer {
   return out.buffer;
 }
 
+/** `uppercase`/`lowercase`/`capitalize` applied the way CSS `text-transform` renders it, so a
+ *  legacy beat that still sets it in CSS (F1 forbids it in a directed composition, but does not
+ *  reach beats that predate the design base) is checked against the text Chrome actually painted,
+ *  not the text the DOM node carries before the browser's own rendering transform. */
+function cased(text: string, transform: string): string {
+  if (transform === "uppercase") return text.toUpperCase();
+  if (transform === "lowercase") return text.toLowerCase();
+  if (transform === "capitalize")
+    return text.replace(/\b\w/g, (c) => c.toUpperCase());
+  return text;
+}
+
 function drawnRuns(root: Element): DrawnRun[] {
   const runs: DrawnRun[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const text = node.textContent ?? "";
-    if (!text.trim() || !node.parentElement) continue;
+    const raw = node.textContent ?? "";
+    if (!raw.trim() || !node.parentElement) continue;
     const style = getComputedStyle(node.parentElement);
+    const text = cased(raw, style.textTransform);
     runs.push({
       text,
       family: style.fontFamily
