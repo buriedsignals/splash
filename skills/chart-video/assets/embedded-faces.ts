@@ -68,17 +68,28 @@ function drawnRuns(root: Element): DrawnRun[] {
   return runs;
 }
 
-const FALLBACK = "monospace";
+// A fallback unlike any face a ladder actually files. Plain `monospace` is the generic CSS keyword
+// Chrome resolves to a system mono face — the SAME family a direction's own `mono` role would use
+// (`shared/design-base` ladders can file one). Falling back to `monospace` while probing a genuine
+// mono register would measure the two fonts identically for reasons that have nothing to do with
+// coverage, and `inUse` would read that as "not drawn in the named face" when it plainly was —
+// a false negative on exactly the direction this check exists to protect. `"Courier New", monospace`
+// is still monospaced (so a proportional named face still measures differently against it) but is
+// a real, specific family no ladder in this corpus files, so it can never collide with one.
+const FALLBACK = '"Courier New", monospace';
 const proven = new Set<string>();
 
-/** Is the named face the one Chrome sets this text in? Width against a deliberate fallback. */
-function inUse({ text, family, weight }: DrawnRun): boolean {
-  const key = `${family}|${weight}`;
+/** Is the named face — at this weight AND this style — the one Chrome sets this text in? Width
+ *  against a deliberate fallback. An italic run measured with an upright fallback (or the reverse)
+ *  can measure the same by accident on a short run, so the probe's own `font` carries the style. */
+function inUse({ text, family, weight, style }: DrawnRun): boolean {
+  const key = `${family}|${weight}|${style ?? "normal"}`;
   if (proven.has(key)) return true;
   const context = document.createElement("canvas").getContext("2d")!;
-  context.font = `${weight} 40px "${family}", ${FALLBACK}`;
+  const italic = style === "italic" ? "italic " : "";
+  context.font = `${italic}${weight} 40px "${family}", ${FALLBACK}`;
   const named = context.measureText(text).width;
-  context.font = `${weight} 40px ${FALLBACK}`;
+  context.font = `${italic}${weight} 40px ${FALLBACK}`;
   if (named === context.measureText(text).width) return false;
   proven.add(key);
   return true;
