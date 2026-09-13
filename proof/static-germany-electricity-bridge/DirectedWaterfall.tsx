@@ -43,7 +43,13 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
 
 /**
@@ -144,17 +150,10 @@ export function DirectedWaterfall({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -232,24 +231,24 @@ export function DirectedWaterfall({
   /** The gap under the eyebrow is measured against the DISPLAY that follows it: a 9.5 px eyebrow
    *  leading a 32 px title by one and a half of its own sizes puts the title's ascenders through
    *  it, which is what the first render of this beat did. */
-  const eyebrowLead = eyebrowReg.fontSize * 0.9;
+  const eyebrowLead = gapOf(eyebrowReg, EYEBROW_TO_DISPLAY);
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
+  const titleLead = leadOf(display);
   const limitLines = wrap(set(limits, body), column, body);
-  const bodyLead = body.fontSize * 1.45;
+  const bodyLead = leadOf(body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop = eyebrowBaseline + eyebrowLead + display.fontSize;
   const limitsTop =
-    titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceLines = wrap(set(source, body), column, body);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   const plot = {
     left: PAD + widthOf("000", axis) + 12,
     right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + body.fontSize * 1.4,
-    bottom: sourceTop - body.fontSize * 1.2 - annot.fontSize * 2.4,
+    top: limitsTop + limitLines.length * bodyLead + gapOf(body, 0.9655),
+    bottom: sourceTop - gapOf(body, 0.8276) - gapOf(annot, 1.7143),
   };
 
   const { bars, value: scale, ticks } = bridgeGeometry(steps, plot);
@@ -374,12 +373,12 @@ export function DirectedWaterfall({
         dropped.map((d) => `${d.id} (${d.why})`).join("; "),
     );
   const byId = new Map(placed.map((p) => [p.id, p]));
-  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string, fill?: string) => {
     const p = byId.get(id);
     if (!p) return null;
-    const r = registerOf.get(id)!;
+    const r = registerById.get(id)!;
     /** EVERY ARBITRATED LABEL BREAKS THE LINES IT CROSSES. The arbiter keeps a label off other
      *  labels and off the marks; it knows nothing about the rules, connectors and leaders that run
      *  across the plate, and a stroke through a word is not an overlap of two boxes, so no guard

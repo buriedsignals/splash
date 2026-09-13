@@ -6,6 +6,7 @@
 - groundSource: chosen
 - accent: #1F5C8B
 - accentSource: chosen
+- leadingSource: chosen
 - pad: 46
 - header: split
 - headRule: true
@@ -27,14 +28,21 @@ direction takes, and the reasons are below rather than in a paragraph a machine 
 
 ## Registers
 
-| register | family | size | weight | italic | tracking | case | ink |
-| --- | --- | ---: | ---: | --- | ---: | --- | --- |
-| display | serif | 27 | 700 | no | −0.3 | none | ink |
-| eyebrow | sans | 9.5 | 700 | no | 1.6 | uppercase | accent |
-| body | serif | 13 | 400 | **yes** | 0 | none | muted |
-| axis | sans | 11 | 400 | no | 0.5 | none | muted |
-| annot | sans | 10 | 700 | no | 1.3 | uppercase | ink |
-| value | sans | 14.5 | 700 | no | 0 | none | accent |
+| register | family | size | weight | italic | tracking | case | ink | leading |
+| --- | --- | ---: | ---: | --- | ---: | --- | --- | ---: |
+| display | serif | 27 | 700 | no | −0.3 | none | ink | 0.9706 |
+| eyebrow | sans | 9.5 | 700 | no | 1.6 | uppercase | accent | 0.8812 |
+| body | serif | 13 | 400 | **yes** | 0 | none | muted | 1.1535 |
+| axis | sans | 11 | 400 | no | 0.5 | none | muted | 0.8812 |
+| annot | sans | 10 | 700 | no | 1.3 | uppercase | ink | 1.0280 |
+| value | sans | 14.5 | 700 | no | 0 | none | accent | 0.8812 |
+
+**The leading is CHOSEN, and calibrated rather than measured.** Nothing harvests a reference's line
+height yet — it would also need the reference's own face metrics. Each value is the multiplier every
+directed component used to type (`display 1.22`, `body 1.45`, `annot 1.4`, and `1.2` for the
+single-line registers) divided by the natural line height of the head of the register's role
+ladder, read out of its file. On the head face the page does not move; on any other face the line
+follows the face. See `docs/splash/2026-09-13-adaptive-leading-spec.md` §4.
 
 Style route on the reference: **four families** (Tiempos Headline, Tiempos Text, Graphik, graphik),
 weights 400 / 500 / 700 / 900, **eight distinct sizes from 13.3 to 47.8 px**, eleven italic runs,

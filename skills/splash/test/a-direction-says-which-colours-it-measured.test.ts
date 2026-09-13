@@ -162,10 +162,11 @@ describe("a direction that says nothing about where its colours came from", () =
 - measuredFrom: some-reference
 - ground: #FFFFFF
 - accent: #123456
+- leadingSource: chosen
 
-| register | family | size | weight | italic | tracking | case | ink |
-| --- | --- | ---: | ---: | --- | ---: | --- | --- |
-| display | sans | 24 | 700 | no | 0 | none | ink |
+| register | family | size | weight | italic | tracking | case | ink | leading |
+| --- | --- | ---: | ---: | --- | ---: | --- | --- | ---: |
+| display | sans | 24 | 700 | no | 0 | none | ink | 1.0 |
 `;
 
   it("should be read as claiming both were measured", () => {

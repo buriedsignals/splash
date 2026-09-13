@@ -32,7 +32,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 import { matchConvention } from "../../skills/palette/scripts/palette.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
@@ -81,17 +87,10 @@ export function DirectedDotDensity({
 }) {
   const { width, height } = FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -170,9 +169,9 @@ export function DirectedDotDensity({
   const subjectInk = accentInk;
 
   // ── the layout: the map is the subject, so the text sits beside it ─────────
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
   const SHARES = [0.3, 0.34, 0.38, 0.42];
   const GUTTER = 24;
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
@@ -197,18 +196,18 @@ export function DirectedDotDensity({
     const subjectLines = wrap(set(subjectNote, annot), panel - swatchInset, annot);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
     const keyTop =
       limitsTop +
       standfirstLines.length * bodyLead +
-      annot.fontSize * 1.2 +
+      gapOf(annot, 0.8571) +
       annotBand.ascent;
     const limitTop = keyTop + (dotLines.length + subjectLines.length) * annotLead;
     const limitLead = axisBand.ascent + axisBand.descent + 2;
     const readingTop =
-      limitTop + limitLines.length * limitLead + annotBand.ascent + annot.fontSize * 0.6;
+      limitTop + limitLines.length * limitLead + annotBand.ascent + gapOf(annot, 0.4286);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop =
       readingTop + Math.max(0, readingLines.length - 1) * annotLead;

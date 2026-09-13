@@ -94,7 +94,7 @@ const INK_ROLES = Object.freeze(["ink", "muted", "accent"]);
  *
  * @param {{id?: string, registers: Record<string, object>}} direction
  * @param {string} name  one of `REGISTERS`
- * @returns {{fontFamily: string, fontSize: number, fontWeight: number, fontStyle: "normal"|"italic", letterSpacing: number, transform: string, ink: "ink"|"muted"|"accent"}}
+ * @returns {{fontFamily: string, fontSize: number, fontWeight: number, fontStyle: "normal"|"italic", letterSpacing: number, transform: string, ink: "ink"|"muted"|"accent", leading: number|null}}
  */
 export function resolveRegister(direction, name, { family = "chart" } = {}) {
   const known = registersFor(family);
@@ -141,6 +141,10 @@ export function resolveRegister(direction, name, { family = "chart" } = {}) {
     letterSpacing: spec.tracking ?? 0,
     transform: spec.transform ?? "none",
     ink: spec.ink,
+    /** The line this register sets on, as a multiple of its face's declared line height — null
+     *  only for a direction built in code without one; `registerOf` refuses that case. A derived
+     *  apparatus register inherits it from the voice it derives from, as it inherits the face. */
+    leading: spec.leading ?? null,
     /** Null when the direction recorded this register itself; the core voice it came from when the
      *  family derived it. A report says which, so nothing looks measured that was inferred. */
     derivedFrom,

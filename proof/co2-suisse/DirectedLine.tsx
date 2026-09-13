@@ -6,7 +6,7 @@
  * `TITLE = { fontSize: 26, fontWeight: 700 }` and five siblings — constants copied from beat to
  * beat until the whole tree used one family, four weights, and zero italic, tracking or case across
  * 122 components — this one asks a DIRECTION what each register looks like, and never learns the
- * answer. `resolveRegister` returns the attributes; `applyCase` decides whether the direction
+ * answer. `registerOf` returns the attributes; `applyCase` decides whether the direction
  * shouts; `deriveFurniture` turns an ink ROLE into a colour against the real ground.
  *
  * Its treatment labels go through the ARBITER rather than being placed one by one. That is the
@@ -31,10 +31,11 @@ import {
   measureText,
   measureTextBand,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
 import { inkThatReadsOver } from "#shared/chart-beat/annotation-ink.mjs";
 import { NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { leadOf, registerOf } from "#shared/design-base/register.mjs";
 
 const FRAME = { width: 900, height: 560 };
 const UNIT = "Mt";
@@ -80,17 +81,10 @@ export function DirectedLine({
 
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
 
   /** A register, resolved once, with its ink already turned from a role into a colour. */
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -129,7 +123,7 @@ export function DirectedLine({
   const centred = direction.header === "centre";
   const titleWidth = split ? (width - PAD * 2) * 0.62 : width - PAD * 2;
   const titleLines = wrap(set(title, display), titleWidth, display);
-  const lead = display.fontSize * 1.25;
+  const lead = leadOf(display);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleBaseline = eyebrowBaseline + 20 + display.fontSize;
@@ -137,7 +131,7 @@ export function DirectedLine({
 
   const limitsWidth = split ? (width - PAD * 2) * 0.33 : width - PAD * 2;
   const limitsLines = wrap(limits, limitsWidth, body);
-  const bodyLead = body.fontSize * 1.5;
+  const bodyLead = leadOf(body);
   const limitsBaseline = split ? titleBaseline : titleBottom + 26;
   const limitsBottom = limitsBaseline + (limitsLines.length - 1) * bodyLead;
 
@@ -356,12 +350,12 @@ export function DirectedLine({
         dropped.map((d) => `${d.id} (${d.why})`).join("; "),
     );
   const byId = new Map(placed.map((p) => [p.id, p]));
-  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string) => {
     const p = byId.get(id);
     if (!p) return null;
-    const r = registerOf.get(id)!;
+    const r = registerById.get(id)!;
     return (
       <text
         x={p.box.x}

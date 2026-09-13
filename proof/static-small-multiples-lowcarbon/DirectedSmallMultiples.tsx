@@ -34,7 +34,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -85,17 +91,10 @@ export function DirectedSmallMultiples({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -168,9 +167,9 @@ export function DirectedSmallMultiples({
 
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
   const keyRoom = annotBand.ascent + annotBand.descent + 10;
 
   /** WHAT ONE PANEL OWES. Its name in the annot register, its two columns, its own baseline, and its
@@ -209,15 +208,15 @@ export function DirectedSmallMultiples({
     const sourceLines = wrap(set(source, body), column, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + body.fontSize * 0.7;
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.4828);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = readingLines.length
       ? sourceTop - bodyLead - readingLines.length * annotLead
       : sourceTop - bodyLead * 0.4;
     const top = limitsTop + limitLines.length * bodyLead + keyRoom;
-    const bottom = readingTop - annot.fontSize * 1.2;
+    const bottom = readingTop - gapOf(annot, 0.8571);
     return {
       titleLines,
       limitLines,

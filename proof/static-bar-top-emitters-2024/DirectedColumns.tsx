@@ -35,8 +35,14 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -76,14 +82,10 @@ export function DirectedColumns({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -141,14 +143,16 @@ export function DirectedColumns({
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+  const titleTop =
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+  const limitsTop =
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   // ── the plot ──────────────────────────────────────────────────────────────
@@ -163,10 +167,14 @@ export function DirectedColumns({
   const nameLines = new Map(
     rows.map((r) => [r.name, wrap(set(r.name, annot), band.bandwidth(), annot).slice(0, 2)]),
   );
-  const nameLead = annot.fontSize * 1.2;
+  const nameLead = leadOf(annot);
   const deepestName = Math.max(...[...nameLines.values()].map((l) => l.length));
 
-  const baseline = sourceTop - body.fontSize * 1.6 - deepestName * nameLead - annot.fontSize * 0.6;
+  const baseline =
+    sourceTop -
+    gapOf(body, 1.1034) -
+    deepestName * nameLead -
+    gapOf(annot, 0.4286);
   /** The value labels stand ABOVE their columns, so the tallest column needs a line of clearance
    *  under the standfirst, and the bracket needs a line under the rule. Both are measured. */
   const valueBand = measureTextBand(format(rows[0].value), sizeOf(value));
@@ -263,12 +271,12 @@ export function DirectedColumns({
   if (dropped.length)
     console.log(`  arbiter dropped ${dropped.length}: ${dropped.map((d) => d.id).join(", ")}`);
   const byId = new Map(placed.map((p) => [p.id, p]));
-  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string, fill?: string, weight?: number) => {
     const p = byId.get(id);
     if (!p) return null;
-    const r = registerOf.get(id)!;
+    const r = registerById.get(id)!;
     return (
       <text
         key={id}
