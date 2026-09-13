@@ -18,12 +18,23 @@ import { typefaceFile } from "./typefaces.mjs";
 
 const USE_TYPO_METRICS = 1 << 7;
 const REQUIRED = ["head", "hhea", "OS/2"];
+/** How far into each table this file reads: `unitsPerEm` ends at 20, the hhea line gap at 10, the
+ *  OS/2 typo line gap at 74. */
+const READ_TO = { head: 20, hhea: 10, "OS/2": 74 };
 const held = new Map();
+
+const truncated = (where, what) =>
+  new Error(
+    `${where} is truncated: the file ends before ${what}, so it declares no line height this ` +
+      `render can read — fetch the face again`,
+  );
 
 /** The sfnt table directory: tag → offset. */
 function tablesOf(bytes, where) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.byteLength < 12) throw truncated(where, "its table directory");
   const count = view.getUint16(4);
+  if (bytes.byteLength < 12 + count * 16) throw truncated(where, "its table directory");
   const offsets = {};
   for (let i = 0; i < count; i++) {
     const record = 12 + i * 16;
@@ -35,6 +46,8 @@ function tablesOf(bytes, where) {
       `${where} has no ${missing.join(", ")} table, so it declares no line height this render can ` +
         `read — a leading computed without one would be a guess`,
     );
+  for (const tag of REQUIRED)
+    if (offsets[tag] + READ_TO[tag] > bytes.byteLength) throw truncated(where, `its ${tag} table`);
   return { view, offsets };
 }
 
@@ -52,7 +65,20 @@ export function naturalLineHeightOf(family, weight = 400, { italic = false } = {
   if (hit !== undefined) return hit;
 
   const where = `${family} ${weight}${italic ? " italic" : ""}`;
-  const { view, offsets } = tablesOf(readFileSync(typefaceFile(family, weight, { italic })), where);
+  const ratio = naturalLineHeightFromBytes(readFileSync(typefaceFile(family, weight, { italic })), where);
+  held.set(key, ratio);
+  return ratio;
+}
+
+/**
+ * The same line, read out of a face file's bytes rather than found by family.
+ *
+ * @param {Uint8Array} bytes  the whole `.ttf`
+ * @param {string} where      the face, for the error, e.g. `Merriweather 400 italic`
+ * @returns {number}
+ */
+export function naturalLineHeightFromBytes(bytes, where) {
+  const { view, offsets } = tablesOf(bytes, where);
   const unitsPerEm = view.getUint16(offsets.head + 18);
   const os2 = offsets["OS/2"];
   const hhea = offsets.hhea;
@@ -66,7 +92,5 @@ export function naturalLineHeightOf(family, weight = 400, { italic = false } = {
         `height — the ${typo ? "OS/2 typo" : "hhea"} metrics of this file are empty or corrupt`,
     );
 
-  const ratio = units / unitsPerEm;
-  held.set(key, ratio);
-  return ratio;
+  return units / unitsPerEm;
 }
