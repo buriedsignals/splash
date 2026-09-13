@@ -28,7 +28,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "./render-still.mjs";
+
 import {
   HIT_TARGET_PX,
   LABEL_FONT,
@@ -47,9 +47,37 @@ import {
   readingOrder,
   slugOf,
 } from "./geo-locator.ts";
-// `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
-// a beat is a story, not a skill, so it may reach out where a skill may not.
-import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+// ONE `render-still.mjs`, REACHED THROUGH THE `#shared/…` SUBPATH ALIAS — a beat is a story, not a
+// skill, so it may reach out where a skill may not.
+//
+// This file used to import `deriveFurniture`/`measureText` from a COPY of that module sitting beside
+// it and `readPalette`/`seriesInks` from the shared one, in two import statements four lines apart:
+// two copies of one module in one file, which is the drift this sub-project exists to remove. The
+// copy had already stopped working — it imports `./typefaces.mjs`, which the design base's move to
+// Google Fonts added as a sibling of the canonical and which was never copied here, so this beat
+// could not render AT ALL on this branch (`Cannot find module './typefaces.mjs'`). Eleven other map
+// beats under `proof/` carry the same broken copy.
+import { deriveFurniture, measureText, readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+// THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES. This beat's CSS used to say
+// `font-family: Helvetica, Arial, sans-serif` and load nothing: Helvetica is a licensed face that
+// exists on the author's Mac and on no CI runner, no Android phone and no Linux desktop, so the
+// delivered page was set in whatever each reader happened to have. The design base moved to Google
+// Fonts (commits de112dff, b49a59b3) and the format's own `render-web.mjs` followed; this beat did
+// not. `assertFontsEmbedded` now refuses a page that names a family it does not carry.
+import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "#shared/design-base/typefaces.mjs";
+// THE TRUNK — the plan contract, reached through the `#shared/…` alias a beat is allowed to use.
+// `plan.mjs`, `style.mjs` and `mount.mjs` are also INLINED into the delivered page (see
+// `liveScript` below): the live layer runs the trunk's own source rather than a copy of it.
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateLivePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this beat.
@@ -60,6 +88,31 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
+
+/**
+ * THE LIVE LAYER IS THE TRUNK PLUS THIS BEAT'S OWN PAGE MECHANICS, in one classic script.
+ *
+ * `live-map.mjs` used to carry all of it — the radius strategies, the layer mounting, the style's
+ * water and labels — as a byte-identical copy in every map × web beat, which is exactly the drift
+ * `references/map-plan.md` opens by naming. Those three now live in `shared/map-beat/` and are read
+ * FROM THERE, resolved through the same subpath alias the imports above use rather than by a
+ * relative climb out of this beat.
+ *
+ * ORDER IS DEPENDENCY ORDER, not alphabetical: `live-map.mjs` calls into all three, and a `const`
+ * declared after its use is a temporal-dead-zone error at runtime rather than a hoisted function.
+ */
+const LIVE_MODULES = [
+  fileURLToPath(import.meta.resolve("#shared/map-beat/plan.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/mount.mjs")),
+  join(HERE, "live-map.mjs"),
+];
+
+async function liveScript() {
+  const parts = [];
+  for (const path of LIVE_MODULES) parts.push(inlineable(await readFile(path, "utf8")));
+  return parts.join("\n");
+}
 
 // The colours are READ, not typed — see `PALETTE.md` beside this file. A locator draws no value
 // channel, so category colour is this map's ENTIRE data encoding; all three come out of the
@@ -89,10 +142,12 @@ const BEAT = {
   // api.maptiler.com) — the page then ships as the fallback layer alone, which is exactly what this
   // beat was before the ruling.
   live: true,
-  // Rule 7 of `geo-discipline.md`, and the same value `bake-plate.mjs` paints the plate's water
-  // with: if the live map and its own fallback disagree about the colour of water, the swap is
-  // visible and the beat is broken.
-  waterFill: "#aac9e0",
+  // Rule 7 of `geo-discipline.md` is NOT a constant here any more. The tints the live style is
+  // painted with are READ OFF THE PLATE's own `geometry.json` — `bake-plate.mjs` measures them with
+  // the trunk's `plateTints` and records what it actually baked in. A second constant in this file
+  // is how a fallback plate and the live map over it come to be two different cartographies, and
+  // the swap between them is visible.
+  //
   // The caveat and the alt are NOT here. Both used to be typed, and both were false of the picture
   // beside them: the alt called the orange tier "nearby" when the International Civil Defence
   // Organisation — an orange marker — is by nearest-neighbour distance the most isolated marker on
@@ -183,12 +238,18 @@ export function separationHeadroom(points, metresPerPixel) {
  * — `frameCorners` is the extent the camera ACTUALLY showed, which is not the bounds it was asked
  * for, and it has only been recorded since 2026-08-10.
  */
-export function livePlan({ geometry, ground, waterFill }) {
+export function livePlan({ geometry, ground }) {
   const corners = geometry.frameCorners;
   if (!corners || !(geometry.degreesPerPixel > 0))
     throw new Error(
       "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
         "constrained to nor a ground scale to draw its marks at",
+    );
+  if (!geometry.tints?.water)
+    throw new Error(
+      "this plate predates the MEASURED tints: re-bake it. Before `plateTints` reached this beat the " +
+        "water was a constant typed into two files, and the live map would now be painted from a " +
+        "third — a plate and a live map that disagree about the colour of water make a visible swap",
     );
   const lons = geometry.points.map((p) => p.lon);
   const lats = geometry.points.map((p) => p.lat);
@@ -200,7 +261,18 @@ export function livePlan({ geometry, ground, waterFill }) {
   for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    // The style's own name, for the refusal `assertLiveStyleAnswered` prints: a URL carrying a key
+    // placeholder is not what a reader of an error message needs to see.
+    styleName: geometry.style,
+    // WHAT THE PLATE WAS ACTUALLY BAKED IN, not a second answer to the same question. Recorded by
+    // `bake-plate.mjs` from the trunk's own `plateTints`; a plate baked before that was recorded is
+    // refused below rather than silently painted a different blue from the one under it.
+    tints: geometry.tints,
+    // …AND WHAT IT KEPT. Same source, same reason: the plate and the live map over it have to be one
+    // cartography, so the sweep that quieted the plate is the sweep the live map runs, with the same
+    // exceptions. A regular expression cannot survive `JSON.stringify`, so it travels as source and
+    // flags and `live-map.mjs` rebuilds it — the plan is a FILE, and a file carries no prototypes.
+    keepTextures: geometry.keepTextures ?? [],
     frame: geometry.frame,
     // The bake's own ground-per-pixel. `live-map.mjs` derives the scale it places labels and hit
     // targets at from the RATIO of this to the live camera's own.
@@ -349,17 +421,30 @@ async function renderMapWeb({
     ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
       `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
       `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
-      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+      `<script>\n${await liveScript()}\n</script>`
     : "";
 
-  const html = `<!doctype html>
+  // THE PAGE'S OWN FAMILY, READ OFF WHAT THE COMPONENTS ACTUALLY ASKED FOR rather than typed into
+  // the stylesheet. `dominantFontStack` reads the markup; `embeddedWebFaces` fetches and SUBSETS
+  // each face to the characters this page can display; `assertFontsEmbedded` refuses a page naming a
+  // family it does not carry. The document is assembled twice from one template — once to be read
+  // for its font requests and its displayable text, once to be written with the faces in it.
+  //
+  // AND THE FAMILY IS ONE MAPTILER ALSO SERVES. The design base's sans ladder heads with Open Sans,
+  // which is one of the seventeen Google families MapTiler's glyph endpoint answers to
+  // (`references/map-plan.md` §5), so the words on this page and any word a future map layer sets
+  // inside the map come from the identical file. It replaces `Helvetica, Arial, sans-serif` — a
+  // licensed face this page never loaded, present on the author's Mac and on nothing else.
+  const stack = dominantFontStack(mapHtml + caveatHtml + tableHtml);
+  const baseCss = buildCss({ ...props, ...furniture, fontStack: stack });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture })}
+${css}
 </style>
 </head>
 <body>
@@ -379,16 +464,30 @@ ${liveBlock}
 </html>
 `;
 
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
+
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
   return { outPath };
 }
 
-/** Strips the `export` keyword from each top-level declaration — see `interaction.mjs`'s own
- *  header note for why. */
+/** Strips the `export` keyword from each top-level declaration, and the relative `import` lines a
+ *  trunk module is reached by — see `interaction.mjs`'s own header note for why the page gets a
+ *  classic script rather than a module.
+ *
+ *  The import lines go rather than being rewritten because `liveScript` above concatenates the
+ *  modules they name into the SAME script, in dependency order: once they are one script, every
+ *  imported name is already a top-level binding in scope. Only a RELATIVE specifier is stripped — a
+ *  bare package name would be a dependency this page does not carry, and leaving it in place makes
+ *  that a syntax error a reader sees rather than a missing symbol they do not. */
 function inlineable(moduleSource) {
-  return moduleSource.replace(/^export /gm, "");
+  return moduleSource
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["']\.[^"']*["'];?[ \t]*\n/gm, "")
+    .replace(/^export /gm, "");
 }
 
 function escapeHtml(text) {
@@ -437,7 +536,7 @@ function assertDistinctSlugs(categories) {
  * window is too short for it. The table itself is untouched — whether it should become something
  * more compact is B5.2 and it is the owner's decision, not this stylesheet's.
  */
-function buildCss({ ground, ink, muted }) {
+function buildCss({ ground, ink, muted, fontStack = "sans-serif" }) {
   assertDistinctSlugs(CATEGORY_ORDER);
   const filterRules = CATEGORY_ORDER.map((category) => {
     // The SLUG is what every marker, label, button and table row carries as `data-group`, and the
@@ -478,7 +577,9 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The family the components themselves asked for, carried as bytes by the @font-face block
+     above. This rule used to say "Helvetica, Arial, sans-serif" — a licensed face nothing loaded. */
+  font-family: ${fontStack};
 }
 /* FIT THE WINDOW (B5.1). The whole beat is one window tall and never scrolls: the map column takes
    what is left after its own furniture, and the reading pane holding the eleven-row table is bounded
@@ -1021,12 +1122,20 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const points = merged.map((p) => (apartKeys.has(p.key) ? { ...p, priority: -1 } : p));
 
   const plan = BEAT.live
-    ? livePlan({
-        geometry: { ...geometry, points },
-        ground: BEAT.ground,
-        waterFill: BEAT.waterFill,
-      })
+    ? livePlan({ geometry: { ...geometry, points }, ground: BEAT.ground })
     : null;
+  /** THE RENDERER VALIDATES THE PLAN IT WROTE, before the reader's browser has to. The three guards
+   *  are `references/map-plan.md`'s own — a duplicate layer id MapLibre drops in silence, a pair
+   *  property assembled from two expressions that draws an empty layer, a beat layer redrawing the
+   *  basemap's geography — plus the live camera's four facts. None of them was checked anywhere in
+   *  this format before; MapLibre reports none of them either. */
+  if (plan) {
+    assertNoDoubledBasemap(plan);
+    const complaints = [...validateLivePlan(plan), ...validateExpressions(plan)];
+    if (complaints.length)
+      throw new Error(`this beat's live plan is not renderable:\n  - ${complaints.join("\n  - ")}`);
+    console.log(`plan: ${plan.layers.length} layer(s), validated — ids, expressions, basemap, camera facts.`);
+  }
   if (plan)
     console.log(
       `leash: the closest pair (${separation.closest.a.name} / ${separation.closest.b.name}) is ` +

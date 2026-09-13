@@ -457,6 +457,16 @@ export function LocatorWeb({
                   data-key={point.key}
                   data-detail={detail}
                   data-group={slugOf(point.category)}
+                  {...{
+                    /** THE MARK'S OWN RADIUS, IN THE BAKE'S FRAME UNITS, ON THE BUTTON THAT HALOES
+                     *  IT. Without it `reposition` never sizes this button and the painted highlight
+                     *  is whatever the stylesheet last said — which is how the halo guard in
+                     *  `verify-live-map.mjs` came to be SKIPPED entirely on this beat (it reads
+                     *  `data-r`, and a `.pt` with none is passed over). The halo then cannot be
+                     *  wrong and cannot be right; it is simply unmeasured. A pin is drawn at one
+                     *  radius, so this is that radius, stated once, read by both halves. */
+                    "data-r": MARKER_RADIUS_PX,
+                  }}
                 />
               );
             })}

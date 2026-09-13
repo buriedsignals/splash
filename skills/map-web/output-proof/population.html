@@ -5,6 +5,33 @@
 <title>A sample of major European metro-area populations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: block;
+  src: url(data:font/woff2;base64,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) format("woff2");
+  unicode-range: U+23, U+25-29, U+2B-3B, U+3D, U+3F, U+41-46, U+48-49, U+4B-50, U+52-57, U+59-5A, U+5F, U+61-70, U+72-7A, U+A9, U+B0, U+B7, U+2013-2014, U+2019, U+2212;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: block;
+  src: url(data:font/woff2;base64,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) format("woff2");
+  unicode-range: U+23, U+25-29, U+2B-3B, U+3D, U+3F, U+41-46, U+48-49, U+4B-50, U+52-57, U+59-5A, U+5F, U+61-70, U+72-7A, U+A9, U+B0, U+B7, U+2013-2014, U+2019, U+2212;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-display: block;
+  src: url(data:font/woff2;base64,d09GMgABAAAAABrkAA8AAAAAMCwAABqJAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGigbHhyEUAZgP1NUQVRaAIFEERAKyjC8WQuCBgABNgIkA4N2BCAFhDwHIBtIJyMRNpPVChKyv07gpogkL8ouYlYJzKxu70oWc+61Wyr+19HxBgU1nzssq7gTrt/Dj5BkFp7n792576/RmFMsjyJbS2AChxIGXtxhXf9VujOqSj7NTPqBrsu8LyzNxhqnPYFDsM0OFSsxGiMaoyhREZC0EMEOVOzAXtgxcVW6zbnudx/6m6vmof+5z5vJvPy/7FeusHg8O2APRC3rehSqyrVunW4gov32g1dCJBQqidAKkRJEZO29Q7+WYP1PAO45APofwJvj/y1N6X6txl6577m0DpA7K/XxBpDZ7IxWo79zpyt7bb1aVRfpXHWuclVxkZzOXAAJNI1RaQWl4ErDwgKD83gAwQk0IAnAoKuZ6kGeA4npsRiJ1ePTa7hssHIVEcptCaJZIpUXnQwB+MCVFWkEGxDzYQp9n7BthViEIC/uGkULZHrLLgPiJIC/gGZsgcNAM15bhS11btBeVnntoH12Scs9j5ltDQCnDzK13oxD0izSWXpC/4MUsqc2EWdletPthsZ6IO22FJcC9ri6shgCjhtL68DrNLe+BVzPl41gf82kpYkkoqLqqgCqVrPGH99J0pUVS0SF33uP3bX51FBDgRhaRPSYpFxy/SQxU+hQo0haMSGrxCT6ctGjl2ARdhFiiecGYhIyd+PtKvjpBvmA6uwzxD4avabdTTRXmUKSm8CAujlg6RzoZVKZGkaRAaqtdykHqbJ+bTufz03nDkLVyjpTXRlckLU6AMVj9D5C9lxYmKjrun/gKqISs2AAdGIkAkSA5iqk6DlM5D1431ylqAAFxqh+BcDz+uLqH/bRwcmaJ4DmK5ot7N0qnsNgJG43/00C+380AuQ3APT52CMAqkQ8yqSRTF7eaUjorqytSgiA5V5VWyblX6ZeSYxCyAQqRLkcTjUaMHJsC684WY+p7o4gToIKWZXiWhdxn+x6/aqSJjLjwZM3JAw8CrpoGYpMschaA1bN1eNzipr6GrGY3RdaEAJaf6Ysv9KvJ+7mKsllgjPq5OigY0DP133V/iIQIE7uJVxJSEu0GiK+S0BSuWru+i2ikwAZBvBdOWQs2xKnlc41OGe7HFLpagUxSVmFeWmaCFkWygFc0dQ6N4oyMZmRvP/2pFz85cHJJa3mhilele0f96VkdvloqDPxpCc0ImLjIrKgP4z0+yLH+eI00JEc50kqVLJvfFgyHpHBfo6tDYuYO5JyjKca6mQDNVt9GvU1den+vpJumo5H1KPpQS4bWvg6LqyQTLP9UFrKOUOpsZbGQdvw2Jj2UDH8uGNPyh/EDuVmaVCbmIvng4XOVTWURQ3QVN0W+bRCmWCDiXJPn5JjkFKjtxt3vb+vfEE1JnJNeeQe+ZJS9j2BGJlxr/2Aed1vyfb23p43dt8f5eZhQWFv+rS8fUBZ9nEaw/yTzkx8ZDBSaE1P7ZaCt9uxBhXoKqFdKh0uYx+D0dFerugL3genqHiILmfCs/KJlZSpj+sy6pJ5Coca1RP9Uaz3cu2xtx2XGXIlDYxKfLRvuJSxHzqcDUVPKQNyT9cSHjN7thXDcN4sKQbkzF5mTe7A6KDbRzDFSbm9wyWMxFmZVcU9bSzoFRbZ6L7QZ/NRLwzk1F0MgsFcQw+KkAkdm8tPH/ESUre/5vYR/SkYttkE16Lk/jDSNUKJ0E6RUXLZo8H2N6URzKW7RKxGFPfwrrdzz61BRZO5eVVY6MrEfeF4VBWMBQvPoIwPp7DEnHMefo9nA1jALzcwRzYLWXfX5FyRXG/MVeIPy+Lqsy8YBVPYsnxkpK3SaQZyOxYoE00e5CDfxh+/zRrS5uc1ORNfoTTr06+PTfOumqSz3/37bRWQjb7nrRrvM08Y6yOLa5PsGyNi6mZVY2TOi76xUrdVV0v2hf6PkldrAKKBIjGIqQQWsHpVru+elvvcYKFNECLlm1C+HfD6uKupMieSszP8KPkXrxhltUVro9WqRgkO4+Y4V+zoJS+0YcODyYo+wXR1mb6SKSUGIv0Uz4/6Cpu+hBjFx/SyYtyFPdR9tQajrz1rYzmheq6wsc+IywRHtUzNBRMmU268z0Tm1uouibEePTAuWGwf6u63sAWEvsUtPsc+Vuo1PVZt/HWjE9fJyCiKtTlzcum0AQ1yde+LpaWiHovx7eaNhNgi0g5bb55U7lYmnF5lNvWbEKZutAj27Gn3ZwTyCn4chF0RsJCtYI7RIXJUHBMogoPzTzVpAMHOQmd7T1yKEPZ4ebAG5g9WExutx4bi9pSwaz9LRsE7hxhhmFMRAEvUG0bnZrQn0hubyHS7KHMSU7krazj7m5oiVmf77RKUVD7h98ynn01mZBwt+NpKmbJqVWEcZI1MfHrA4E1oaC9FaZdUaFoMEa8wLHEhZv0ZulZMi9vji/xwDu5XEOrlKOXeunSjKoJuTU0243O/RbZLrZ04/qdyLriRqqNwoy+6FA6Pz0+FovA8Ak1lRjnZTx6UJHYboDq/S/79Op5GfGGhVBcXXMMlEsjS8q/XR9PA4JGFMvn6aDpohN24tkZn5+qqalVRpvhlZ8S9lBWC1d83tj1a6CnUe1vJMeevFYlLCT6GsvC/yjmFThPbmZ1w8c0swfIxYa7aEUazuV9lEeL2ER4Yz3l8l/1wiXSN5lvPwJ19PuvNBbBWcA7veNc5ju88k4+8bTvNkEsFqhK5oj+MMnCXarwxsyZ+XGKhdkVuL2ClRC1JUsmtJl4m0wwXpFdvXeBu6wpxRb1kJlkG15qifaHKemRXUDwxe+U7KI4/tr1vEidt7qnjqc/2Ny/2mWPhVouTZ9jxg2fo3gNhsSHK1vA5Q4kvHaJR5vtXya8n+GIWCT8TFIqGQxlaksurNF/sbkIoQ8qQWkPq+m5SgFFAOCdlc7yL9VP1ycd/Ydz1AdrElwG+gUJR/Q85+ELwGC1gz1cJLtqyE9b44eWw4e8hw/O472UmNFy1JSZMQseWy+RP/NgcEhO/tb+/vP4PoB54eWjszcMHBz5M7h/58OBh/5vxEV9EO78Twff18+mUfO8ON3ir/argDBNjDkPjNuU+TM17P+xvwS78VgGT8K3MaUx0E7t24ggPTQ219fMeVKF+0OGm7hFZpnpWnW03mjBjpnF9T5h5gtJEZHdlFsNBDZNsnOXHYXWshEBYdnwi1pKGiG/Lz2b3IpoVDd6hOJgQb7+0UwlunHQsMjIIqKwLTOR6jOVAmO2kj3e1HrvoSsvJtmsfD3q78OCRpZfZ+dWaPh7A2W7c26NKMz5/89nA09MbDg433zeeYVTpVnxRlZ63FzBXsmhbbuMv81uXW3uXAf//uwoolzHfcT3MLAxvvAiflUAC1JkLIhdANZdA8vP0JPsR8GSkpycJCWw/CfSVBY/5+QL/4cdLziq5Z06wa6ceLSfid3dj8A9WDk0/Xk7Cf9g9Yvslsyg6OrPQ/svRw3ZHpjgmJqP4+dcrQG53zgYSKUQzRa5rTVTn8peI54H706UiXmp683BAOzmpMCUuehAbHlDWf64hfMY+rfFSbMpCbl7khbmz+Zk/P0sdAj6GCazQ9oYIupLYvPLyQjuvcONH5kb+phHd7EaE1Q27qLWBusIQPGvSrrr8RAWvDxGQjI4qTCjAFuixHZ5kDBM8t8P7Xnw4DZDvfDd8//HtWzY7d2FbsDGfbCUUIRwujBYTN7EidMdLAMNbHc134/LPNveXP/2Rv5q9YYIyuY01u+EYw2n3COFGlw7WzSBqYJc5COfNr9fMdJNdWLIgMq3c8BvtwYGxd1HTlqlirueSIqSsD19poOyJ9kvfoAWXW5PLTiRxLrUN5Dy7m89PPRraeDB475dOVgO/v6SonUsqQQWkurnr5frHsj2AsMFf/3y5+nHIYFsZGHZt8i6H5A9k09CV3FicUbhZWwq1PZZbvPwkhn/wWWT2fBE7tLMmGW8YYJrJ8auhZRX2b4VKkEJiarm1NY2FcT5IZh4OBf8ZDE8nIOLlP5CZxVE0bwQt3mdnM9bHne5DLY4C/pWoCsNv9AcHxt9FzlhkiLucp0dJ2xy5Wk9+B+2TvkYJKbeOLD2ayNlsHch9dq+gI+1oSONg8N4fnfRGfn9JfnsxuRgZkOrmAc/1Z3IQ/ZOcJJL8r/38iaFPCxr/f62Ach3zHYdj5mChxkt6sxJIg21AwCu8Jhzp9S4uyvJdXF9EhLUurS8B9RPeWL3U0Bh/x0BnQqgh3jk8i5oQMeQQYkxYoNvdRpRtPV0fprmUpiTh3F/4odUwjta7vgSSnxci3I+AD0civEhIgG3psmnp+qUPPS6p9+n4ZVZDa6F2lHZse69WnAYlvrEVSEMFK5q6I5dI7jXp5DBZSZJsVRCuObOm9Nh/zCEZOWHG65GSRE4CnzF8nXz912RteXoAglXvnAvsP/5JHA3KbPHY5E1HfzxX0R25YBCps0XVX9XNf258pC3s1ThDaeGiUMpE2m1buiVxPchgzAGQ7f/9soaNHP/SDaCCs68wwyte394dyvj7YcbgFeNpCagM+IkAUAFiE9dscsnkMg7MvwFQgfsm7qLxJWNAkgdv+cP8PQAV7JGHyW/BabAZvAYIWwSwjZ7WHAP1dY6t0pLXB17K6fG0d/4vdQu4aJDWJUzFmqFDWP2HVX6YOqlVVMOxFX+83ba1v8iAaKO6uCbpHKD6ABPL860S7qKVIo0Q1M8tf/hGlodqxRShlSJNwBfyCETqP5kiwaY2/iTPLoDkyQtE5amXfLzt0X//sjrSjQ88vT3F+HyyqrvnRBXt8xRkS/959+lKxkdg3CXQFP77RrT7dHXFw6DBfYZ7ACro3ZgSrszc7xiWHc3r5QKjVcGJz4yCY+0poT3lLIz2gRq5GMwOdvN70nBh4On4RDe3kDeYCHzOtFSUHttljeLbFcr00S+pxo+8siKLbD3onr6BtCZsojlKqwLDZrnXRRbnLdyPbM/etGFaBJ2mGU5aUHGJVs4ENx8vchUqwaLAbjKV1guOvftvdgu9NQOI64LlvrJ3wk3r6obGn+b3+tZm5mby+ATkYFYvCF0X6H4S/OblPiv58+/BM7Wyi4v5f466mfeViJ2gQFmgui0QlfNPaVWmwBiyOEOYTJAiXZlaLiecDFW9I3gn40DrhUUpRsvRAwLlIhRjYLQR2VfR/8k5xI7CGErRcjT/GOUSzfK7MgY0YPRKk94vrMMqdX1ro5NdCwUMzTHrqsAbW3uj1lXIn8B5yCOtMg0YjSbcvHtk/d8Jy33iO6zgCuMo1gCa1pU983sGIn5K1D07ickkDthg9IPG8OZXnWzILSIL0ObkKAITiy8abKgF6s6wfF/RYn1JS9RgbOn6W7jm8dQ/Gx9rSvsjTiiY1ywCUdjX5LicUIcDoFD5SM65AW7lxtHjFScAW2n/diH3x9nN2j97D/tYg8bcwGMXeXoezLJwr6nSIu/xElIEo9Xi/darVn2gqbTxBq6h/d7gAqnEkh70WypEOse+ZReIwg6bdUs+o+OKrRRP9nDnIHO6R/M3DvKqttbWqk4DY1gC/1Zh5rN9pa+EB0fnupImTWkmpwjGMwYFI59LG34cO1oi/Kq2ZzG9rlWq4SsgOPKSUMBKaVBmcGdwNfNQQHAzdWwcnYMrUVtALGkQFW3xWFZMkAx4tfPi7VAHh9eUp3HOh+ToFUgJNCUbJoxnFrAnz1EbdZCiFz/yKo/pj+nGuM3unr+usO1E0tPEY+WcTwlO9XWdcNnSHOVO2IRTPZ1pycr4eV+WqXOwC64mTHIkKp6VEZ/BSWezOJkZbE4GUHeG1XqKZnvLmLGxpUZo3hIpaqnl5s54eWJZenIx1Wm22HgHiMKAuiORuEPMm3AOcUMhQ9ydXXHuSBTODbjuOEbKfjuu/s3Ml4Ri39h5zUYO9FIgPRwUzs2VMSfPuucgVuAI7UBHCoUlyx59dC8PxtyuzMi1bfErTfm1Uw8lHD1+6vbtnelSJi+uqWh5OmhnmmSeQXH1Z2ZR7KaLzXaIa3C+jHoclmvoXzxFNqMqOtCOhANrfsKx66fvRN0xVLx+3Bj0jt8l45aErTICqLOWDag79R1ncEVZJ3ANHUF3GtZKf+9Uj/T9W135x95WUOg+w6XHxnLpbjOFhW6TXCqro/ocsBZJWH+jq3U8DWxUVJG4FhTkA1mUeIzpuV0g6nUa3iv1hhpaaq18ipmDc+yDZOtx7afzqBxyRqTLXN5K6Tqw4ido+UJzlB8Frqt5Z5pSCHZcgv8u8bDuWSlJJrPUHbhBEKmJXZu4zpxxOEbvcojheSdqDhvtaViXhkgyTzBrJWLyIjv/6T3NOWRKNsYsYuHd5iGMKBdHkzsZTnEmsUZthOB84D9lTZMPWo7hqvpHdXlR+uqIPYlDBNwu/7PniieeRAwDyNtE4hFdvoxpMrbSEFOySIpcar61O1GewEtPLqE4zpSYgDENEvHbq/pIg9YY8ViTFtyr+q+PP+6AvzykUahLM1kzS4VJF8cqMzWzNVLHO34LKcUR37Qa3dMoV8oNFHeXISjQFfAFU2jIMHpMPQuWZSRuB8vRrPqnw+g/pSoi2OeUqSX9s+pXlVS2Vo2TjOwBuQNSAMCI4GX+f2oExVCKaKdhmYrPg/xf2od2TJPzeodCEuwxkl3HA77oezPsvOkY43jQjGnX/yAjs6o6aPDLETj5wEYU0zcvpSkOD2YoXL6skDm0Xz79yma2wshwmuLmJcX0Ct2rW79u1MZcO5pX61Oh2+RWqh6jaVVcN993oHCqzi5b3bAKytHkTFe8iJiZjvm7oTJie3LhVWxt7V+RU9MRfzfWMl5PzGxHA02We1wvIbyTGUPi9xLZ7B4iuZPJJHf2EFg9hMhoPDE6Gk+IiibiI6OBWScprm77BSowmK6DNnN87WQfZREUVXC72ze2sp+X62uXys4MQdeVlQAVzq2a/mJOMImDVZWgK0anBRfMtQiCKrXf7vMzqDEPYIQjvT0i/eKzqxMTQrDODv6ubq4xJrmkrCftbkCPfCb12Hc4BCscoAykYyICKGmaN4BM7g+XYDcUMtjdZXJ2hF04EXHi8k+Y3NPgBFAJFGwroF3HfMf0MNMPtSs0q5SLc4Bpl8DxjuCk47oARBcs31wGVnFivJWTK3UlDX7HHHmeRy2E2PB+Z2ZIzzNg0n2mPUNhLXvMsHa1qar10IG5wAaNb4M+tcYuZA4aj2biGCZomTWiqf4CkPhAot092V1UFPYeqJJvFU6npeNIsdex+pwEUtZSW3tCmxc2E+dqTkB7rgqQ0cGpc9nMnxnJGwZOKD80FuXnZI9DBqpAeC7r5nb+CGOnHw7m60DVwG9k7M2jh/v+nx2d3Hn84MDe7DDKt62L79uGQvq0dXX6tAPdvJs6KLHcHuojeFoJ1oknEiY+meCBL2hrrWLg6ltwsbG9VMpiFctsLa5tiSh3wR5llAS31CMGOjr6EYj4AFQwUCHfZvWSKQs1LNPDce2LpDpdtFhuL3XGKKMI51QuEiIxFucdWtLeUVUzO9Xd6kMICwkIDMPYoY2S4LZwQqAdCFT83iSPd5RdeNpdZbkYe39ldebRZ6hkK7e05iipHVgL3CccsBy/xiJxHUAFALdUKElgzRCWtGJ9+KxacIurwEckoWt+uUabKj/VPGBcLrqI7+mXFRYSypoqoIz05uZnDCP9LTOd7/XrngLnffuXzW5d+EuwcW7D97XwAQQkShirI+7sGD7G+FMOX+loubNa3/MFgWPxk327Zq6b5OxPh/36jGXKItD7Hgtt8GVuLWwrAqKPXyynyxXl0wNjlA4+jcyZL2LjO6uTwwwDv/u4dVH/5dBi3uWQvIFsGuo7FqAA9749K/RCF89Yf59AZh4ODd/9poSer+YRW+AatXGE5ePO+H7kx8XFlETRvD1pHB8Q4P+dyeh0cfS5pA0cvlJP3YP2y/Tbl/cUGmp+62SMKmgrDi9RUkBPYd9OVAxIAiBEEDUGBgCAyyQEoYxf9SJ+xGBI9a9W1Xmis9A2APO6zY2QJiCmWJUbdBMQzGs2AoCfs0JCCY4EEyqhkUhCJwwSpUQEfn8moQRHggmV0EgkoROGLyoCTmYXOg358+vP0NvWCLlAZoVZ4DQAItpQAZgEQOiFKAwYAiBqIqpLeorU+wt7iqVCZL7ZnzdxSrgMkGKyysKpwAnYd53d9s+7GBbmAYX8u8LZAPPnbcz4HOs/e1a9FHjAatbuz5s4bEETDY/EtJvxHa6+K1Y2IcUOZ7CxhpPg5dfZbcNDDVcuoZAfVk6AieVqxjnW4W7VL+IBD2ftwlUdtqCJhkdivj4IQPNy569mXXTfVb+uVBIAeP994XcA4PP0affnzT+sM1+rBmByACDgF/uYHoXHnhWfPPk63+ZMscCu+Rdi+QVm9ZuaYj0EPplXdhITs8HEhaBjPjUlXRSfSAP0QQSEgynkQBRggWqFQw2gD56UU9+IUsECMGbhdFGkqHzO6cyH4q81wlpkakVTS5rWiQ40AWGcRctfA0Xr8+RAXB5Fp7xzqPwTsL4hl08B9O/41BX//zYKPf82WfomXgwqV902vscw00GpKDNZ9KCfqX9tXfcUWm2YqdLll8SbYA6pdTSrnoHpmx8sIwGYX1HJBFBPNEBqn4DmNuLqemDFTzhB2uZGxSLFe5kohcnCPIQEQvew6gwalfh/r7VzfkIBgAEPsAMzsJ7WpGxiWOA9uiKmLkLyUWhaaW3+ZCZ5hoz6bYwzC3B5DsS8DnO5clbeT0bOApYnSTsspq1fHBInthRgWPNgxwQEcAEPaiORjpDa442BG24bM1X0f/FmvDDJ5nhHH0+Ndy1TVSn142NGSBoXNwF6HwHgW0XGC0ALxsegH30cATIER4Egjs6fHJgbm57KTMPkMFMSWSGKzJK5KUR2KtAvpxcnjpJjnA0TWmQ7jAft9NAMN41o5/zZViZIvo7Oyk68XBrcwdrWVgrl7B6o0FDUSVoDghOf28WZWdB6uJw/HP3FySg0mjEbcO1tzymQ9AB2WSuItzvpSZpkHbq+ufmzGjGdNLWEOVH52e42NvEJ2+mcG2vNqjFXYPqE8c5lc6qAOWbPJt1fXfZO2kz4ZH322QM=) format("woff2");
+  unicode-range: U+23, U+25-29, U+2B-3B, U+3D, U+3F, U+41-46, U+48-49, U+4B-50, U+52-57, U+59-5A, U+5F, U+61-70, U+72-7A, U+A9, U+B0, U+B7, U+2013-2014, U+2019, U+2212;
+}
 :root {
   --ground: #FFFFFF;
   --accent: #0B7A75;
@@ -20,7 +47,10 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The beat's OWN face, read off the markup it just drew (dominantFontStack) — not a literal.
+     This rule used to say "Helvetica, Arial, sans-serif", which set every word the components do
+     not style themselves, the tooltip above all, in a typeface nobody chose and nothing embedded. */
+  font-family: "Open Sans", Helvetica, Arial, sans-serif;
 }
 /* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
    window tall: every piece of furniture takes the height it needs, and .mw-stage is handed
@@ -439,7 +469,7 @@ if (typeof document !== "undefined") initAll();
 <style>
 .maplibregl-map{font:12px/20px Helvetica Neue,Arial,Helvetica,sans-serif;overflow:hidden;position:relative;-webkit-tap-highlight-color:rgb(0 0 0/0)}.maplibregl-canvas{left:0;position:absolute;top:0}.maplibregl-map:fullscreen{height:100%;width:100%}.maplibregl-ctrl-group button.maplibregl-ctrl-compass{touch-action:none}.maplibregl-canvas-container.maplibregl-interactive,.maplibregl-ctrl-group button.maplibregl-ctrl-compass{cursor:grab;-webkit-user-select:none;-moz-user-select:none;user-select:none}.maplibregl-canvas-container.maplibregl-interactive.maplibregl-track-pointer{cursor:pointer}.maplibregl-canvas-container.maplibregl-interactive:active,.maplibregl-ctrl-group button.maplibregl-ctrl-compass:active{cursor:grabbing}.maplibregl-canvas-container.maplibregl-touch-zoom-rotate,.maplibregl-canvas-container.maplibregl-touch-zoom-rotate .maplibregl-canvas{touch-action:pan-x pan-y}.maplibregl-canvas-container.maplibregl-touch-drag-pan,.maplibregl-canvas-container.maplibregl-touch-drag-pan .maplibregl-canvas{touch-action:pinch-zoom}.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan,.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan .maplibregl-canvas{touch-action:none}.maplibregl-canvas-container.maplibregl-touch-drag-pan.maplibregl-cooperative-gestures,.maplibregl-canvas-container.maplibregl-touch-drag-pan.maplibregl-cooperative-gestures .maplibregl-canvas{touch-action:pan-x pan-y}.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-top-left,.maplibregl-ctrl-top-right{pointer-events:none;position:absolute;z-index:2}.maplibregl-ctrl-top-left{left:0;top:0}.maplibregl-ctrl-top-right{right:0;top:0}.maplibregl-ctrl-bottom-left{bottom:0;left:0}.maplibregl-ctrl-bottom-right{bottom:0;right:0}.maplibregl-ctrl{clear:both;pointer-events:auto;transform:translate(0)}.maplibregl-ctrl-top-left .maplibregl-ctrl{float:left;margin:10px 0 0 10px}.maplibregl-ctrl-top-right .maplibregl-ctrl{float:right;margin:10px 10px 0 0}.maplibregl-ctrl-bottom-left .maplibregl-ctrl{float:left;margin:0 0 10px 10px}.maplibregl-ctrl-bottom-right .maplibregl-ctrl{float:right;margin:0 10px 10px 0}.maplibregl-ctrl-group{background:#fff;border-radius:4px}.maplibregl-ctrl-group:not(:empty){box-shadow:0 0 0 2px rgba(0,0,0,.1)}@media (forced-colors:active){.maplibregl-ctrl-group:not(:empty){box-shadow:0 0 0 2px ButtonText}}.maplibregl-ctrl-group button{background-color:transparent;border:0;box-sizing:border-box;cursor:pointer;display:block;height:29px;outline:none;padding:0;width:29px}.maplibregl-ctrl-group button+button{border-top:1px solid #ddd}.maplibregl-ctrl button .maplibregl-ctrl-icon{background-position:50%;background-repeat:no-repeat;display:block;height:100%;width:100%}@media (forced-colors:active){.maplibregl-ctrl-icon{background-color:transparent}.maplibregl-ctrl-group button+button{border-top:1px solid ButtonText}}.maplibregl-ctrl button::-moz-focus-inner{border:0;padding:0}.maplibregl-ctrl-attrib-button:focus,.maplibregl-ctrl-group button:focus{box-shadow:0 0 2px 2px #0096ff}.maplibregl-ctrl button:disabled{cursor:not-allowed}.maplibregl-ctrl button:disabled .maplibregl-ctrl-icon{opacity:.25}.maplibregl-ctrl button:not(:disabled):hover{background-color:rgb(0 0 0/5%)}.maplibregl-ctrl-group button:focus:focus-visible{box-shadow:0 0 2px 2px #0096ff}.maplibregl-ctrl-group button:focus:not(:focus-visible){box-shadow:none}.maplibregl-ctrl-group button:focus:first-child{border-radius:4px 4px 0 0}.maplibregl-ctrl-group button:focus:last-child{border-radius:0 0 4px 4px}.maplibregl-ctrl-group button:focus:only-child{border-radius:inherit}.maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 29 29'%3E%3Cpath d='M10 13c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h9c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 29 29'%3E%3Cpath d='M14.5 8.5c-.75 0-1.5.75-1.5 1.5v3h-3c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h3v3c0 .75.75 1.5 1.5 1.5S16 19.75 16 19v-3h3c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13h-3v-3c0-.75-.75-1.5-1.5-1.5'/%3E%3C/svg%3E")}@media (forced-colors:active){.maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='M10 13c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h9c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='M14.5 8.5c-.75 0-1.5.75-1.5 1.5v3h-3c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h3v3c0 .75.75 1.5 1.5 1.5S16 19.75 16 19v-3h3c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13h-3v-3c0-.75-.75-1.5-1.5-1.5'/%3E%3C/svg%3E")}}@media (forced-colors:active) and (prefers-color-scheme:light){.maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M10 13c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h9c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M14.5 8.5c-.75 0-1.5.75-1.5 1.5v3h-3c-.75 0-1.5.75-1.5 1.5S9.25 16 10 16h3v3c0 .75.75 1.5 1.5 1.5S16 19.75 16 19v-3h3c.75 0 1.5-.75 1.5-1.5S19.75 13 19 13h-3v-3c0-.75-.75-1.5-1.5-1.5'/%3E%3C/svg%3E")}}.maplibregl-ctrl button.maplibregl-ctrl-fullscreen .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 29 29'%3E%3Cpath d='M24 16v5.5c0 1.75-.75 2.5-2.5 2.5H16v-1l3-1.5-4-5.5 1-1 5.5 4 1.5-3zM6 16l1.5 3 5.5-4 1 1-4 5.5 3 1.5v1H7.5C5.75 24 5 23.25 5 21.5V16zm7-11v1l-3 1.5 4 5.5-1 1-5.5-4L6 13H5V7.5C5 5.75 5.75 5 7.5 5zm11 2.5c0-1.75-.75-2.5-2.5-2.5H16v1l3 1.5-4 5.5 1 1 5.5-4 1.5 3h1z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-shrink .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M18.5 16c-1.75 0-2.5.75-2.5 2.5V24h1l1.5-3 5.5 4 1-1-4-5.5 3-1.5v-1zM13 18.5c0-1.75-.75-2.5-2.5-2.5H5v1l3 1.5L4 24l1 1 5.5-4 1.5 3h1zm3-8c0 1.75.75 2.5 2.5 2.5H24v-1l-3-1.5L25 5l-1-1-5.5 4L17 5h-1zM10.5 13c1.75 0 2.5-.75 2.5-2.5V5h-1l-1.5 3L5 4 4 5l4 5.5L5 12v1z'/%3E%3C/svg%3E")}@media (forced-colors:active){.maplibregl-ctrl button.maplibregl-ctrl-fullscreen .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='M24 16v5.5c0 1.75-.75 2.5-2.5 2.5H16v-1l3-1.5-4-5.5 1-1 5.5 4 1.5-3zM6 16l1.5 3 5.5-4 1 1-4 5.5 3 1.5v1H7.5C5.75 24 5 23.25 5 21.5V16zm7-11v1l-3 1.5 4 5.5-1 1-5.5-4L6 13H5V7.5C5 5.75 5.75 5 7.5 5zm11 2.5c0-1.75-.75-2.5-2.5-2.5H16v1l3 1.5-4 5.5 1 1 5.5-4 1.5 3h1z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-shrink .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='M18.5 16c-1.75 0-2.5.75-2.5 2.5V24h1l1.5-3 5.5 4 1-1-4-5.5 3-1.5v-1zM13 18.5c0-1.75-.75-2.5-2.5-2.5H5v1l3 1.5L4 24l1 1 5.5-4 1.5 3h1zm3-8c0 1.75.75 2.5 2.5 2.5H24v-1l-3-1.5L25 5l-1-1-5.5 4L17 5h-1zM10.5 13c1.75 0 2.5-.75 2.5-2.5V5h-1l-1.5 3L5 4 4 5l4 5.5L5 12v1z'/%3E%3C/svg%3E")}}@media (forced-colors:active) and (prefers-color-scheme:light){.maplibregl-ctrl button.maplibregl-ctrl-fullscreen .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M24 16v5.5c0 1.75-.75 2.5-2.5 2.5H16v-1l3-1.5-4-5.5 1-1 5.5 4 1.5-3zM6 16l1.5 3 5.5-4 1 1-4 5.5 3 1.5v1H7.5C5.75 24 5 23.25 5 21.5V16zm7-11v1l-3 1.5 4 5.5-1 1-5.5-4L6 13H5V7.5C5 5.75 5.75 5 7.5 5zm11 2.5c0-1.75-.75-2.5-2.5-2.5H16v1l3 1.5-4 5.5 1 1 5.5-4 1.5 3h1z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-shrink .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='M18.5 16c-1.75 0-2.5.75-2.5 2.5V24h1l1.5-3 5.5 4 1-1-4-5.5 3-1.5v-1zM13 18.5c0-1.75-.75-2.5-2.5-2.5H5v1l3 1.5L4 24l1 1 5.5-4 1.5 3h1zm3-8c0 1.75.75 2.5 2.5 2.5H24v-1l-3-1.5L25 5l-1-1-5.5 4L17 5h-1zM10.5 13c1.75 0 2.5-.75 2.5-2.5V5h-1l-1.5 3L5 4 4 5l4 5.5L5 12v1z'/%3E%3C/svg%3E")}}.maplibregl-ctrl button.maplibregl-ctrl-compass .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23ccc' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E")}@media (forced-colors:active){.maplibregl-ctrl button.maplibregl-ctrl-compass .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23ccc' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E")}}@media (forced-colors:active) and (prefers-color-scheme:light){.maplibregl-ctrl button.maplibregl-ctrl-compass .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23ccc' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E")}}.maplibregl-ctrl button.maplibregl-ctrl-terrain .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' fill='%23333' viewBox='0 0 22 22'%3E%3Cpath d='m1.754 13.406 4.453-4.851 3.09 3.09 3.281 3.277.969-.969-3.309-3.312 3.844-4.121 6.148 6.886h1.082v-.855l-7.207-8.07-4.84 5.187L6.169 6.57l-5.48 5.965v.871ZM.688 16.844h20.625v1.375H.688Zm0 0'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-terrain-enabled .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' fill='%2333b5e5' viewBox='0 0 22 22'%3E%3Cpath d='m1.754 13.406 4.453-4.851 3.09 3.09 3.281 3.277.969-.969-3.309-3.312 3.844-4.121 6.148 6.886h1.082v-.855l-7.207-8.07-4.84 5.187L6.169 6.57l-5.48 5.965v.871ZM.688 16.844h20.625v1.375H.688Zm0 0'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23333' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate:disabled .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23aaa' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3Cpath fill='red' d='m14 5 1 1-9 9-1-1z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-active .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%2333b5e5' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-active-error .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23e58978' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-background .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%2333b5e5' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-background-error .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23e54e33' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-waiting .maplibregl-ctrl-icon{animation:maplibregl-spin 2s linear infinite}@media (forced-colors:active){.maplibregl-ctrl button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate:disabled .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23999' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3Cpath fill='red' d='m14 5 1 1-9 9-1-1z'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-active .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%2333b5e5' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-active-error .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23e58978' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-background .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%2333b5e5' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-background-error .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23e54e33' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3C/svg%3E")}}@media (forced-colors:active) and (prefers-color-scheme:light){.maplibregl-ctrl button.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/svg%3E")}.maplibregl-ctrl button.maplibregl-ctrl-geolocate:disabled .maplibregl-ctrl-icon{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23666' viewBox='0 0 20 20'%3E%3Cpath d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3Cpath fill='red' d='m14 5 1 1-9 9-1-1z'/%3E%3C/svg%3E")}}@keyframes maplibregl-spin{0%{transform:rotate(0deg)}to{transform:rotate(1turn)}}a.maplibregl-ctrl-logo{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='23' fill='none'%3E%3Cpath fill='%23000' fill-opacity='.4' fill-rule='evenodd' d='M17.408 16.796h-1.827l2.501-12.095h.198l3.324 6.533.988 2.19.988-2.19 3.258-6.533h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.929 5.644h-.098l-2.914-5.644-.757-1.71-.345 1.71zm1.958-3.42-.726 3.663a1.255 1.255 0 0 1-1.232 1.011h-1.827a1.255 1.255 0 0 1-1.229-1.509l2.501-12.095a1.255 1.255 0 0 1 1.23-1.001h.197a1.25 1.25 0 0 1 1.12.685l3.19 6.273 3.125-6.263a1.25 1.25 0 0 1 1.123-.695h.181a1.255 1.255 0 0 1 1.227.991l1.443 6.71a5 5 0 0 1 .314-.787l.009-.016a4.6 4.6 0 0 1 1.777-1.887c.782-.46 1.668-.667 2.611-.667a4.6 4.6 0 0 1 1.7.32l.306.134c.21-.16.474-.256.759-.256h1.694a1.255 1.255 0 0 1 1.212.925 1.255 1.255 0 0 1 1.212-.925h1.711c.284 0 .545.094.755.252.613-.3 1.312-.45 2.075-.45 1.356 0 2.557.445 3.482 1.4q.47.48.763 1.064V4.701a1.255 1.255 0 0 1 1.255-1.255h1.86A1.255 1.255 0 0 1 54.44 4.7v9.194h2.217c.19 0 .37.043.532.118v-4.77c0-.356.147-.678.385-.906a2.42 2.42 0 0 1-.682-1.71c0-.665.267-1.253.735-1.7a2.45 2.45 0 0 1 1.722-.674 2.43 2.43 0 0 1 1.705.675q.318.302.504.683V4.7a1.255 1.255 0 0 1 1.255-1.255h1.744A1.255 1.255 0 0 1 65.812 4.7v3.335a4.8 4.8 0 0 1 1.526-.246c.938 0 1.817.214 2.59.69a4.47 4.47 0 0 1 1.67 1.743v-.98a1.255 1.255 0 0 1 1.256-1.256h1.777c.233 0 .451.064.639.174a3.4 3.4 0 0 1 1.567-.372c.346 0 .861.02 1.285.232a1.25 1.25 0 0 1 .689 1.004 4.7 4.7 0 0 1 .853-.588c.795-.44 1.675-.647 2.61-.647 1.385 0 2.65.39 3.525 1.396.836.938 1.168 2.173 1.168 3.528q-.001.515-.056 1.051a1.255 1.255 0 0 1-.947 1.09l.408.952a1.255 1.255 0 0 1-.477 1.552c-.418.268-.92.463-1.458.612-.613.171-1.304.244-2.049.244-1.06 0-2.043-.207-2.886-.698l-.015-.008c-.798-.48-1.419-1.135-1.818-1.963l-.004-.008a5.8 5.8 0 0 1-.548-2.512q0-.429.053-.843a1.3 1.3 0 0 1-.333-.086l-.166-.004c-.223 0-.426.062-.643.228-.03.024-.142.139-.142.59v3.883a1.255 1.255 0 0 1-1.256 1.256h-1.777a1.255 1.255 0 0 1-1.256-1.256V15.69l-.032.057a4.8 4.8 0 0 1-1.86 1.833 5.04 5.04 0 0 1-2.484.634 4.5 4.5 0 0 1-1.935-.424 1.25 1.25 0 0 1-.764.258h-1.71a1.255 1.255 0 0 1-1.256-1.255V7.687a2.4 2.4 0 0 1-.428.625c.253.23.412.561.412.93v7.553a1.255 1.255 0 0 1-1.256 1.255h-1.843a1.25 1.25 0 0 1-.894-.373c-.228.23-.544.373-.894.373H51.32a1.255 1.255 0 0 1-1.256-1.255v-1.251l-.061.117a4.7 4.7 0 0 1-1.782 1.884 4.77 4.77 0 0 1-2.485.67 5.6 5.6 0 0 1-1.485-.188l.009 2.764a1.255 1.255 0 0 1-1.255 1.259h-1.729a1.255 1.255 0 0 1-1.255-1.255v-3.537a1.255 1.255 0 0 1-1.167.793h-1.679a1.25 1.25 0 0 1-.77-.263 4.5 4.5 0 0 1-1.945.429c-.885 0-1.724-.21-2.495-.632l-.017-.01a5 5 0 0 1-1.081-.836 1.255 1.255 0 0 1-1.254 1.312h-1.81a1.255 1.255 0 0 1-1.228-.99l-.782-3.625-2.044 3.939a1.25 1.25 0 0 1-1.115.676h-.098a1.25 1.25 0 0 1-1.116-.68l-2.061-3.994zM35.92 16.63l.207-.114.223-.15q.493-.356.735-.785l.061-.118.033 1.332h1.678V9.242h-1.694l-.033 1.267q-.133-.329-.526-.658l-.032-.028a3.2 3.2 0 0 0-.668-.428l-.27-.12a3.3 3.3 0 0 0-1.235-.23q-1.136-.001-1.974.493a3.36 3.36 0 0 0-1.3 1.382q-.445.89-.444 2.074 0 1.2.51 2.107a3.8 3.8 0 0 0 1.382 1.381 3.9 3.9 0 0 0 1.893.477q.795 0 1.455-.33zm-2.789-5.38q-.576.675-.575 1.762 0 1.102.559 1.794.576.675 1.645.675a2.25 2.25 0 0 0 .934-.19 2.2 2.2 0 0 0 .468-.29l.178-.161a2.2 2.2 0 0 0 .397-.561q.244-.5.244-1.15v-.115q0-.708-.296-1.267l-.043-.077a2.2 2.2 0 0 0-.633-.709l-.13-.086-.047-.028a2.1 2.1 0 0 0-1.073-.285q-1.052 0-1.629.692zm2.316 2.706c.163-.17.28-.407.28-.83v-.114c0-.292-.06-.508-.15-.68a.96.96 0 0 0-.353-.389.85.85 0 0 0-.464-.127c-.4 0-.56.114-.664.239l-.01.012c-.148.174-.275.45-.275.945 0 .506.122.801.27.99.097.11.266.224.68.224.303 0 .504-.09.687-.269zm7.545 1.705a2.6 2.6 0 0 0 .331.423q.319.33.755.548l.173.074q.65.255 1.49.255 1.02 0 1.844-.493a3.45 3.45 0 0 0 1.316-1.4q.493-.904.493-2.089 0-1.909-.988-2.913-.988-1.02-2.584-1.02-.898 0-1.575.347a3 3 0 0 0-.415.262l-.199.166a3.4 3.4 0 0 0-.64.82V9.242h-1.712v11.553h1.729l-.017-5.134zm.53-1.138q.206.29.48.5l.155.11.053.034q.51.296 1.119.297 1.07 0 1.645-.675.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.435 0-.835.16a2 2 0 0 0-.284.136 2 2 0 0 0-.363.254 2.2 2.2 0 0 0-.46.569l-.082.162a2.6 2.6 0 0 0-.213 1.072v.115q0 .707.296 1.267l.135.211zm.964-.818a1.1 1.1 0 0 0 .367.385.94.94 0 0 0 .476.118c.423 0 .59-.117.687-.23.159-.194.28-.478.28-.95 0-.53-.133-.8-.266-.952l-.021-.025c-.078-.094-.231-.221-.68-.221a1 1 0 0 0-.503.135l-.012.007a.86.86 0 0 0-.335.343c-.073.133-.132.324-.132.614v.115a1.4 1.4 0 0 0 .14.66zm15.7-6.222q.347-.346.346-.856a1.05 1.05 0 0 0-.345-.79 1.18 1.18 0 0 0-.84-.329q-.51 0-.855.33a1.05 1.05 0 0 0-.346.79q0 .51.346.855.345.346.856.346.51 0 .839-.346zm4.337 9.314.033-1.332q.191.403.59.747l.098.081a4 4 0 0 0 .316.224l.223.122a3.2 3.2 0 0 0 1.44.322 3.8 3.8 0 0 0 1.875-.477 3.5 3.5 0 0 0 1.382-1.366q.527-.89.526-2.09 0-1.184-.444-2.073a3.24 3.24 0 0 0-1.283-1.399q-.823-.51-1.942-.51a3.5 3.5 0 0 0-1.527.344l-.086.043-.165.09a3 3 0 0 0-.33.214q-.432.315-.656.707a2 2 0 0 0-.099.198l.082-1.283V4.701h-1.744v12.095zm.473-2.509a2.5 2.5 0 0 0 .566.7q.117.098.245.18l.144.08a2.1 2.1 0 0 0 .975.232q1.07 0 1.645-.675.576-.69.576-1.778 0-1.102-.576-1.777-.56-.691-1.645-.692a2.2 2.2 0 0 0-1.015.235q-.22.113-.415.282l-.15.142a2.1 2.1 0 0 0-.42.594q-.223.479-.223 1.1v.115q0 .705.293 1.26zm2.616-.293c.157-.191.28-.479.28-.967 0-.51-.13-.79-.276-.961l-.021-.026c-.082-.1-.232-.225-.67-.225a.87.87 0 0 0-.681.279l-.012.011c-.154.155-.274.38-.274.807v.115c0 .285.057.499.144.669a1.1 1.1 0 0 0 .367.405c.137.082.28.123.455.123.423 0 .59-.118.686-.23zm8.266-3.013q.345-.13.724-.14l.069-.002q.493 0 .642.099l.247-1.794q-.196-.099-.717-.099a2.3 2.3 0 0 0-.545.063 2 2 0 0 0-.411.148 2.2 2.2 0 0 0-.4.249 2.5 2.5 0 0 0-.485.499 2.7 2.7 0 0 0-.32.581l-.05.137v-1.48h-1.778v7.553h1.777v-3.884q0-.546.159-.943a1.5 1.5 0 0 1 .466-.636 2.5 2.5 0 0 1 .399-.253 2 2 0 0 1 .224-.099zm9.784 2.656.05-.922q0-1.743-.856-2.698-.838-.97-2.584-.97-1.119-.001-2.007.493a3.46 3.46 0 0 0-1.4 1.382q-.493.906-.493 2.106 0 1.07.428 1.975.428.89 1.332 1.432.906.526 2.255.526.973 0 1.668-.185l.044-.012.135-.04q.613-.184.984-.421l-.542-1.267q-.3.162-.642.274l-.297.087q-.51.131-1.3.131-.954 0-1.497-.444a1.6 1.6 0 0 1-.192-.193q-.366-.44-.512-1.234l-.004-.021zm-5.427-1.256-.003.022h3.752v-.138q-.011-.727-.288-1.118a1 1 0 0 0-.156-.176q-.46-.428-1.316-.428-.986 0-1.494.604-.379.45-.494 1.234zm-27.053 2.77V4.7h-1.86v12.095h5.333V15.15zm7.103-5.908v7.553h-1.843V9.242h1.843z'/%3E%3Cpath fill='%23fff' d='m19.63 11.151-.757-1.71-.345 1.71-1.12 5.644h-1.827L18.083 4.7h.197l3.325 6.533.988 2.19.988-2.19L26.839 4.7h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.93 5.644h-.098l-2.913-5.644zm14.836 5.81q-1.02 0-1.893-.478a3.8 3.8 0 0 1-1.381-1.382q-.51-.906-.51-2.106 0-1.185.444-2.074a3.36 3.36 0 0 1 1.3-1.382q.839-.494 1.974-.494a3.3 3.3 0 0 1 1.234.231 3.3 3.3 0 0 1 .97.575q.396.33.527.659l.033-1.267h1.694v7.553H37.18l-.033-1.332q-.279.593-1.02 1.053a3.17 3.17 0 0 1-1.662.444zm.296-1.482q.938 0 1.58-.642.642-.66.642-1.711v-.115q0-.708-.296-1.267a2.2 2.2 0 0 0-.807-.872 2.1 2.1 0 0 0-1.119-.313q-1.053 0-1.629.692-.575.675-.575 1.76 0 1.103.559 1.795.577.675 1.645.675zm6.521-6.237h1.711v1.4q.906-1.597 2.83-1.597 1.596 0 2.584 1.02.988 1.005.988 2.914 0 1.185-.493 2.09a3.46 3.46 0 0 1-1.316 1.399 3.5 3.5 0 0 1-1.844.493q-.954 0-1.662-.329a2.67 2.67 0 0 1-1.086-.97l.017 5.134h-1.728zm4.048 6.22q1.07 0 1.645-.674.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.592 0-1.12.296-.51.28-.822.823-.296.527-.296 1.234v.115q0 .708.296 1.267.313.543.823.855.51.296 1.119.297z'/%3E%3Cpath fill='%23e1e3e9' d='M51.325 4.7h1.86v10.45h3.473v1.646h-5.333zm7.12 4.542h1.843v7.553h-1.843zm.905-1.415a1.16 1.16 0 0 1-.856-.346 1.17 1.17 0 0 1-.346-.856 1.05 1.05 0 0 1 .346-.79q.346-.329.856-.329.494 0 .839.33a1.05 1.05 0 0 1 .345.79 1.16 1.16 0 0 1-.345.855q-.33.346-.84.346zm7.875 9.133a3.17 3.17 0 0 1-1.662-.444q-.723-.46-1.004-1.053l-.033 1.332h-1.71V4.701h1.743v4.657l-.082 1.283q.279-.658 1.086-1.119a3.5 3.5 0 0 1 1.778-.477q1.119 0 1.942.51a3.24 3.24 0 0 1 1.283 1.4q.445.888.444 2.072 0 1.201-.526 2.09a3.5 3.5 0 0 1-1.382 1.366 3.8 3.8 0 0 1-1.876.477zm-.296-1.481q1.069 0 1.645-.675.577-.69.577-1.778 0-1.102-.577-1.776-.56-.691-1.645-.692a2.12 2.12 0 0 0-1.58.659q-.642.641-.642 1.694v.115q0 .71.296 1.267a2.4 2.4 0 0 0 .807.872 2.1 2.1 0 0 0 1.119.313zm5.927-6.237h1.777v1.481q.263-.757.856-1.217a2.14 2.14 0 0 1 1.349-.46q.527 0 .724.098l-.247 1.794q-.149-.099-.642-.099-.774 0-1.416.494-.626.493-.626 1.58v3.883h-1.777V9.242zm9.534 7.718q-1.35 0-2.255-.526-.904-.543-1.332-1.432a4.6 4.6 0 0 1-.428-1.975q0-1.2.493-2.106a3.46 3.46 0 0 1 1.4-1.382q.889-.495 2.007-.494 1.744 0 2.584.97.855.956.856 2.7 0 .444-.05.92h-5.43q.18 1.005.708 1.45.542.443 1.497.443.79 0 1.3-.131a4 4 0 0 0 .938-.362l.542 1.267q-.411.263-1.119.46-.708.198-1.711.197zm1.596-4.558q.016-1.02-.444-1.432-.46-.428-1.316-.428-1.728 0-1.991 1.86z'/%3E%3Cpath d='M5.074 15.948a.484.657 0 0 0-.486.659v1.84a.484.657 0 0 0 .486.659h4.101a.484.657 0 0 0 .486-.659v-1.84a.484.657 0 0 0-.486-.659zm3.56 1.16H5.617v.838h3.017z' style='fill:%23fff;fill-rule:evenodd;stroke-width:1.03600001'/%3E%3Cg style='stroke-width:1.12603545'%3E%3Cpath d='M-9.408-1.416c-3.833-.025-7.056 2.912-7.08 6.615-.02 3.08 1.653 4.832 3.107 6.268.903.892 1.721 1.74 2.32 2.902l-.525-.004c-.543-.003-.992.304-1.24.639a1.87 1.87 0 0 0-.362 1.121l-.011 1.877c-.003.402.104.787.347 1.125.244.338.688.653 1.23.656l4.142.028c.542.003.99-.306 1.238-.641a1.87 1.87 0 0 0 .363-1.121l.012-1.875a1.87 1.87 0 0 0-.348-1.127c-.243-.338-.688-.653-1.23-.656l-.518-.004c.597-1.145 1.425-1.983 2.348-2.87 1.473-1.414 3.18-3.149 3.2-6.226-.016-3.59-2.923-6.684-6.993-6.707m-.006 1.1v.002c3.274.02 5.92 2.532 5.9 5.6-.017 2.706-1.39 4.026-2.863 5.44-1.034.994-2.118 2.033-2.814 3.633-.018.041-.052.055-.075.065q-.013.004-.02.01a.34.34 0 0 1-.226.084.34.34 0 0 1-.224-.086l-.092-.077c-.699-1.615-1.768-2.669-2.781-3.67-1.454-1.435-2.797-2.762-2.78-5.478.02-3.067 2.7-5.545 5.975-5.523m-.02 2.826c-1.62-.01-2.944 1.315-2.955 2.96-.01 1.646 1.295 2.988 2.916 2.999h.002c1.621.01 2.943-1.316 2.953-2.961.011-1.646-1.294-2.988-2.916-2.998m-.005 1.1c1.017.006 1.829.83 1.822 1.89s-.83 1.874-1.848 1.867c-1.018-.006-1.829-.83-1.822-1.89s.83-1.874 1.848-1.868m-2.155 11.857 4.14.025c.271.002.49.305.487.676l-.013 1.875c-.003.37-.224.67-.495.668l-4.14-.025c-.27-.002-.487-.306-.485-.676l.012-1.875c.003-.37.224-.67.494-.668' style='color:%23000;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:%23000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;clip-rule:evenodd;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:%23000;solid-opacity:1;vector-effect:none;fill:%23000;fill-opacity:.4;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-9.415-.316C-12.69-.338-15.37 2.14-15.39 5.207c-.017 2.716 1.326 4.041 2.78 5.477 1.013 1 2.081 2.055 2.78 3.67l.092.076a.34.34 0 0 0 .225.086.34.34 0 0 0 .227-.083l.019-.01c.022-.009.057-.024.074-.064.697-1.6 1.78-2.64 2.814-3.634 1.473-1.414 2.847-2.733 2.864-5.44.02-3.067-2.627-5.58-5.901-5.601m-.057 8.784c1.621.011 2.944-1.315 2.955-2.96.01-1.646-1.295-2.988-2.916-2.999-1.622-.01-2.945 1.315-2.955 2.96s1.295 2.989 2.916 3' style='clip-rule:evenodd;fill:%23e1e3e9;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-11.594 15.465c-.27-.002-.492.297-.494.668l-.012 1.876c-.003.371.214.673.485.675l4.14.027c.271.002.492-.298.495-.668l.012-1.877c.003-.37-.215-.672-.485-.674z' style='clip-rule:evenodd;fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3C/g%3E%3C/svg%3E");background-repeat:no-repeat;cursor:pointer;display:block;height:23px;margin:0 0 -4px -4px;overflow:hidden;width:88px}a.maplibregl-ctrl-logo.maplibregl-compact{width:14px}@media (forced-colors:active){a.maplibregl-ctrl-logo{background-color:transparent;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='23' fill='none'%3E%3Cpath fill='%23000' fill-opacity='.4' fill-rule='evenodd' d='M17.408 16.796h-1.827l2.501-12.095h.198l3.324 6.533.988 2.19.988-2.19 3.258-6.533h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.929 5.644h-.098l-2.914-5.644-.757-1.71-.345 1.71zm1.958-3.42-.726 3.663a1.255 1.255 0 0 1-1.232 1.011h-1.827a1.255 1.255 0 0 1-1.229-1.509l2.501-12.095a1.255 1.255 0 0 1 1.23-1.001h.197a1.25 1.25 0 0 1 1.12.685l3.19 6.273 3.125-6.263a1.25 1.25 0 0 1 1.123-.695h.181a1.255 1.255 0 0 1 1.227.991l1.443 6.71a5 5 0 0 1 .314-.787l.009-.016a4.6 4.6 0 0 1 1.777-1.887c.782-.46 1.668-.667 2.611-.667a4.6 4.6 0 0 1 1.7.32l.306.134c.21-.16.474-.256.759-.256h1.694a1.255 1.255 0 0 1 1.212.925 1.255 1.255 0 0 1 1.212-.925h1.711c.284 0 .545.094.755.252.613-.3 1.312-.45 2.075-.45 1.356 0 2.557.445 3.482 1.4q.47.48.763 1.064V4.701a1.255 1.255 0 0 1 1.255-1.255h1.86A1.255 1.255 0 0 1 54.44 4.7v9.194h2.217c.19 0 .37.043.532.118v-4.77c0-.356.147-.678.385-.906a2.42 2.42 0 0 1-.682-1.71c0-.665.267-1.253.735-1.7a2.45 2.45 0 0 1 1.722-.674 2.43 2.43 0 0 1 1.705.675q.318.302.504.683V4.7a1.255 1.255 0 0 1 1.255-1.255h1.744A1.255 1.255 0 0 1 65.812 4.7v3.335a4.8 4.8 0 0 1 1.526-.246c.938 0 1.817.214 2.59.69a4.47 4.47 0 0 1 1.67 1.743v-.98a1.255 1.255 0 0 1 1.256-1.256h1.777c.233 0 .451.064.639.174a3.4 3.4 0 0 1 1.567-.372c.346 0 .861.02 1.285.232a1.25 1.25 0 0 1 .689 1.004 4.7 4.7 0 0 1 .853-.588c.795-.44 1.675-.647 2.61-.647 1.385 0 2.65.39 3.525 1.396.836.938 1.168 2.173 1.168 3.528q-.001.515-.056 1.051a1.255 1.255 0 0 1-.947 1.09l.408.952a1.255 1.255 0 0 1-.477 1.552c-.418.268-.92.463-1.458.612-.613.171-1.304.244-2.049.244-1.06 0-2.043-.207-2.886-.698l-.015-.008c-.798-.48-1.419-1.135-1.818-1.963l-.004-.008a5.8 5.8 0 0 1-.548-2.512q0-.429.053-.843a1.3 1.3 0 0 1-.333-.086l-.166-.004c-.223 0-.426.062-.643.228-.03.024-.142.139-.142.59v3.883a1.255 1.255 0 0 1-1.256 1.256h-1.777a1.255 1.255 0 0 1-1.256-1.256V15.69l-.032.057a4.8 4.8 0 0 1-1.86 1.833 5.04 5.04 0 0 1-2.484.634 4.5 4.5 0 0 1-1.935-.424 1.25 1.25 0 0 1-.764.258h-1.71a1.255 1.255 0 0 1-1.256-1.255V7.687a2.4 2.4 0 0 1-.428.625c.253.23.412.561.412.93v7.553a1.255 1.255 0 0 1-1.256 1.255h-1.843a1.25 1.25 0 0 1-.894-.373c-.228.23-.544.373-.894.373H51.32a1.255 1.255 0 0 1-1.256-1.255v-1.251l-.061.117a4.7 4.7 0 0 1-1.782 1.884 4.77 4.77 0 0 1-2.485.67 5.6 5.6 0 0 1-1.485-.188l.009 2.764a1.255 1.255 0 0 1-1.255 1.259h-1.729a1.255 1.255 0 0 1-1.255-1.255v-3.537a1.255 1.255 0 0 1-1.167.793h-1.679a1.25 1.25 0 0 1-.77-.263 4.5 4.5 0 0 1-1.945.429c-.885 0-1.724-.21-2.495-.632l-.017-.01a5 5 0 0 1-1.081-.836 1.255 1.255 0 0 1-1.254 1.312h-1.81a1.255 1.255 0 0 1-1.228-.99l-.782-3.625-2.044 3.939a1.25 1.25 0 0 1-1.115.676h-.098a1.25 1.25 0 0 1-1.116-.68l-2.061-3.994zM35.92 16.63l.207-.114.223-.15q.493-.356.735-.785l.061-.118.033 1.332h1.678V9.242h-1.694l-.033 1.267q-.133-.329-.526-.658l-.032-.028a3.2 3.2 0 0 0-.668-.428l-.27-.12a3.3 3.3 0 0 0-1.235-.23q-1.136-.001-1.974.493a3.36 3.36 0 0 0-1.3 1.382q-.445.89-.444 2.074 0 1.2.51 2.107a3.8 3.8 0 0 0 1.382 1.381 3.9 3.9 0 0 0 1.893.477q.795 0 1.455-.33zm-2.789-5.38q-.576.675-.575 1.762 0 1.102.559 1.794.576.675 1.645.675a2.25 2.25 0 0 0 .934-.19 2.2 2.2 0 0 0 .468-.29l.178-.161a2.2 2.2 0 0 0 .397-.561q.244-.5.244-1.15v-.115q0-.708-.296-1.267l-.043-.077a2.2 2.2 0 0 0-.633-.709l-.13-.086-.047-.028a2.1 2.1 0 0 0-1.073-.285q-1.052 0-1.629.692zm2.316 2.706c.163-.17.28-.407.28-.83v-.114c0-.292-.06-.508-.15-.68a.96.96 0 0 0-.353-.389.85.85 0 0 0-.464-.127c-.4 0-.56.114-.664.239l-.01.012c-.148.174-.275.45-.275.945 0 .506.122.801.27.99.097.11.266.224.68.224.303 0 .504-.09.687-.269zm7.545 1.705a2.6 2.6 0 0 0 .331.423q.319.33.755.548l.173.074q.65.255 1.49.255 1.02 0 1.844-.493a3.45 3.45 0 0 0 1.316-1.4q.493-.904.493-2.089 0-1.909-.988-2.913-.988-1.02-2.584-1.02-.898 0-1.575.347a3 3 0 0 0-.415.262l-.199.166a3.4 3.4 0 0 0-.64.82V9.242h-1.712v11.553h1.729l-.017-5.134zm.53-1.138q.206.29.48.5l.155.11.053.034q.51.296 1.119.297 1.07 0 1.645-.675.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.435 0-.835.16a2 2 0 0 0-.284.136 2 2 0 0 0-.363.254 2.2 2.2 0 0 0-.46.569l-.082.162a2.6 2.6 0 0 0-.213 1.072v.115q0 .707.296 1.267l.135.211zm.964-.818a1.1 1.1 0 0 0 .367.385.94.94 0 0 0 .476.118c.423 0 .59-.117.687-.23.159-.194.28-.478.28-.95 0-.53-.133-.8-.266-.952l-.021-.025c-.078-.094-.231-.221-.68-.221a1 1 0 0 0-.503.135l-.012.007a.86.86 0 0 0-.335.343c-.073.133-.132.324-.132.614v.115a1.4 1.4 0 0 0 .14.66zm15.7-6.222q.347-.346.346-.856a1.05 1.05 0 0 0-.345-.79 1.18 1.18 0 0 0-.84-.329q-.51 0-.855.33a1.05 1.05 0 0 0-.346.79q0 .51.346.855.345.346.856.346.51 0 .839-.346zm4.337 9.314.033-1.332q.191.403.59.747l.098.081a4 4 0 0 0 .316.224l.223.122a3.2 3.2 0 0 0 1.44.322 3.8 3.8 0 0 0 1.875-.477 3.5 3.5 0 0 0 1.382-1.366q.527-.89.526-2.09 0-1.184-.444-2.073a3.24 3.24 0 0 0-1.283-1.399q-.823-.51-1.942-.51a3.5 3.5 0 0 0-1.527.344l-.086.043-.165.09a3 3 0 0 0-.33.214q-.432.315-.656.707a2 2 0 0 0-.099.198l.082-1.283V4.701h-1.744v12.095zm.473-2.509a2.5 2.5 0 0 0 .566.7q.117.098.245.18l.144.08a2.1 2.1 0 0 0 .975.232q1.07 0 1.645-.675.576-.69.576-1.778 0-1.102-.576-1.777-.56-.691-1.645-.692a2.2 2.2 0 0 0-1.015.235q-.22.113-.415.282l-.15.142a2.1 2.1 0 0 0-.42.594q-.223.479-.223 1.1v.115q0 .705.293 1.26zm2.616-.293c.157-.191.28-.479.28-.967 0-.51-.13-.79-.276-.961l-.021-.026c-.082-.1-.232-.225-.67-.225a.87.87 0 0 0-.681.279l-.012.011c-.154.155-.274.38-.274.807v.115c0 .285.057.499.144.669a1.1 1.1 0 0 0 .367.405c.137.082.28.123.455.123.423 0 .59-.118.686-.23zm8.266-3.013q.345-.13.724-.14l.069-.002q.493 0 .642.099l.247-1.794q-.196-.099-.717-.099a2.3 2.3 0 0 0-.545.063 2 2 0 0 0-.411.148 2.2 2.2 0 0 0-.4.249 2.5 2.5 0 0 0-.485.499 2.7 2.7 0 0 0-.32.581l-.05.137v-1.48h-1.778v7.553h1.777v-3.884q0-.546.159-.943a1.5 1.5 0 0 1 .466-.636 2.5 2.5 0 0 1 .399-.253 2 2 0 0 1 .224-.099zm9.784 2.656.05-.922q0-1.743-.856-2.698-.838-.97-2.584-.97-1.119-.001-2.007.493a3.46 3.46 0 0 0-1.4 1.382q-.493.906-.493 2.106 0 1.07.428 1.975.428.89 1.332 1.432.906.526 2.255.526.973 0 1.668-.185l.044-.012.135-.04q.613-.184.984-.421l-.542-1.267q-.3.162-.642.274l-.297.087q-.51.131-1.3.131-.954 0-1.497-.444a1.6 1.6 0 0 1-.192-.193q-.366-.44-.512-1.234l-.004-.021zm-5.427-1.256-.003.022h3.752v-.138q-.011-.727-.288-1.118a1 1 0 0 0-.156-.176q-.46-.428-1.316-.428-.986 0-1.494.604-.379.45-.494 1.234zm-27.053 2.77V4.7h-1.86v12.095h5.333V15.15zm7.103-5.908v7.553h-1.843V9.242h1.843z'/%3E%3Cpath fill='%23fff' d='m19.63 11.151-.757-1.71-.345 1.71-1.12 5.644h-1.827L18.083 4.7h.197l3.325 6.533.988 2.19.988-2.19L26.839 4.7h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.93 5.644h-.098l-2.913-5.644zm14.836 5.81q-1.02 0-1.893-.478a3.8 3.8 0 0 1-1.381-1.382q-.51-.906-.51-2.106 0-1.185.444-2.074a3.36 3.36 0 0 1 1.3-1.382q.839-.494 1.974-.494a3.3 3.3 0 0 1 1.234.231 3.3 3.3 0 0 1 .97.575q.396.33.527.659l.033-1.267h1.694v7.553H37.18l-.033-1.332q-.279.593-1.02 1.053a3.17 3.17 0 0 1-1.662.444zm.296-1.482q.938 0 1.58-.642.642-.66.642-1.711v-.115q0-.708-.296-1.267a2.2 2.2 0 0 0-.807-.872 2.1 2.1 0 0 0-1.119-.313q-1.053 0-1.629.692-.575.675-.575 1.76 0 1.103.559 1.795.577.675 1.645.675zm6.521-6.237h1.711v1.4q.906-1.597 2.83-1.597 1.596 0 2.584 1.02.988 1.005.988 2.914 0 1.185-.493 2.09a3.46 3.46 0 0 1-1.316 1.399 3.5 3.5 0 0 1-1.844.493q-.954 0-1.662-.329a2.67 2.67 0 0 1-1.086-.97l.017 5.134h-1.728zm4.048 6.22q1.07 0 1.645-.674.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.592 0-1.12.296-.51.28-.822.823-.296.527-.296 1.234v.115q0 .708.296 1.267.313.543.823.855.51.296 1.119.297z'/%3E%3Cpath fill='%23e1e3e9' d='M51.325 4.7h1.86v10.45h3.473v1.646h-5.333zm7.12 4.542h1.843v7.553h-1.843zm.905-1.415a1.16 1.16 0 0 1-.856-.346 1.17 1.17 0 0 1-.346-.856 1.05 1.05 0 0 1 .346-.79q.346-.329.856-.329.494 0 .839.33a1.05 1.05 0 0 1 .345.79 1.16 1.16 0 0 1-.345.855q-.33.346-.84.346zm7.875 9.133a3.17 3.17 0 0 1-1.662-.444q-.723-.46-1.004-1.053l-.033 1.332h-1.71V4.701h1.743v4.657l-.082 1.283q.279-.658 1.086-1.119a3.5 3.5 0 0 1 1.778-.477q1.119 0 1.942.51a3.24 3.24 0 0 1 1.283 1.4q.445.888.444 2.072 0 1.201-.526 2.09a3.5 3.5 0 0 1-1.382 1.366 3.8 3.8 0 0 1-1.876.477zm-.296-1.481q1.069 0 1.645-.675.577-.69.577-1.778 0-1.102-.577-1.776-.56-.691-1.645-.692a2.12 2.12 0 0 0-1.58.659q-.642.641-.642 1.694v.115q0 .71.296 1.267a2.4 2.4 0 0 0 .807.872 2.1 2.1 0 0 0 1.119.313zm5.927-6.237h1.777v1.481q.263-.757.856-1.217a2.14 2.14 0 0 1 1.349-.46q.527 0 .724.098l-.247 1.794q-.149-.099-.642-.099-.774 0-1.416.494-.626.493-.626 1.58v3.883h-1.777V9.242zm9.534 7.718q-1.35 0-2.255-.526-.904-.543-1.332-1.432a4.6 4.6 0 0 1-.428-1.975q0-1.2.493-2.106a3.46 3.46 0 0 1 1.4-1.382q.889-.495 2.007-.494 1.744 0 2.584.97.855.956.856 2.7 0 .444-.05.92h-5.43q.18 1.005.708 1.45.542.443 1.497.443.79 0 1.3-.131a4 4 0 0 0 .938-.362l.542 1.267q-.411.263-1.119.46-.708.198-1.711.197zm1.596-4.558q.016-1.02-.444-1.432-.46-.428-1.316-.428-1.728 0-1.991 1.86z'/%3E%3Cpath d='M5.074 15.948a.484.657 0 0 0-.486.659v1.84a.484.657 0 0 0 .486.659h4.101a.484.657 0 0 0 .486-.659v-1.84a.484.657 0 0 0-.486-.659zm3.56 1.16H5.617v.838h3.017z' style='fill:%23fff;fill-rule:evenodd;stroke-width:1.03600001'/%3E%3Cg style='stroke-width:1.12603545'%3E%3Cpath d='M-9.408-1.416c-3.833-.025-7.056 2.912-7.08 6.615-.02 3.08 1.653 4.832 3.107 6.268.903.892 1.721 1.74 2.32 2.902l-.525-.004c-.543-.003-.992.304-1.24.639a1.87 1.87 0 0 0-.362 1.121l-.011 1.877c-.003.402.104.787.347 1.125.244.338.688.653 1.23.656l4.142.028c.542.003.99-.306 1.238-.641a1.87 1.87 0 0 0 .363-1.121l.012-1.875a1.87 1.87 0 0 0-.348-1.127c-.243-.338-.688-.653-1.23-.656l-.518-.004c.597-1.145 1.425-1.983 2.348-2.87 1.473-1.414 3.18-3.149 3.2-6.226-.016-3.59-2.923-6.684-6.993-6.707m-.006 1.1v.002c3.274.02 5.92 2.532 5.9 5.6-.017 2.706-1.39 4.026-2.863 5.44-1.034.994-2.118 2.033-2.814 3.633-.018.041-.052.055-.075.065q-.013.004-.02.01a.34.34 0 0 1-.226.084.34.34 0 0 1-.224-.086l-.092-.077c-.699-1.615-1.768-2.669-2.781-3.67-1.454-1.435-2.797-2.762-2.78-5.478.02-3.067 2.7-5.545 5.975-5.523m-.02 2.826c-1.62-.01-2.944 1.315-2.955 2.96-.01 1.646 1.295 2.988 2.916 2.999h.002c1.621.01 2.943-1.316 2.953-2.961.011-1.646-1.294-2.988-2.916-2.998m-.005 1.1c1.017.006 1.829.83 1.822 1.89s-.83 1.874-1.848 1.867c-1.018-.006-1.829-.83-1.822-1.89s.83-1.874 1.848-1.868m-2.155 11.857 4.14.025c.271.002.49.305.487.676l-.013 1.875c-.003.37-.224.67-.495.668l-4.14-.025c-.27-.002-.487-.306-.485-.676l.012-1.875c.003-.37.224-.67.494-.668' style='color:%23000;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:%23000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;clip-rule:evenodd;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:%23000;solid-opacity:1;vector-effect:none;fill:%23000;fill-opacity:.4;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-9.415-.316C-12.69-.338-15.37 2.14-15.39 5.207c-.017 2.716 1.326 4.041 2.78 5.477 1.013 1 2.081 2.055 2.78 3.67l.092.076a.34.34 0 0 0 .225.086.34.34 0 0 0 .227-.083l.019-.01c.022-.009.057-.024.074-.064.697-1.6 1.78-2.64 2.814-3.634 1.473-1.414 2.847-2.733 2.864-5.44.02-3.067-2.627-5.58-5.901-5.601m-.057 8.784c1.621.011 2.944-1.315 2.955-2.96.01-1.646-1.295-2.988-2.916-2.999-1.622-.01-2.945 1.315-2.955 2.96s1.295 2.989 2.916 3' style='clip-rule:evenodd;fill:%23e1e3e9;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-11.594 15.465c-.27-.002-.492.297-.494.668l-.012 1.876c-.003.371.214.673.485.675l4.14.027c.271.002.492-.298.495-.668l.012-1.877c.003-.37-.215-.672-.485-.674z' style='clip-rule:evenodd;fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3C/g%3E%3C/svg%3E")}}@media (forced-colors:active) and (prefers-color-scheme:light){a.maplibregl-ctrl-logo{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='88' height='23' fill='none'%3E%3Cpath fill='%23000' fill-opacity='.4' fill-rule='evenodd' d='M17.408 16.796h-1.827l2.501-12.095h.198l3.324 6.533.988 2.19.988-2.19 3.258-6.533h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.929 5.644h-.098l-2.914-5.644-.757-1.71-.345 1.71zm1.958-3.42-.726 3.663a1.255 1.255 0 0 1-1.232 1.011h-1.827a1.255 1.255 0 0 1-1.229-1.509l2.501-12.095a1.255 1.255 0 0 1 1.23-1.001h.197a1.25 1.25 0 0 1 1.12.685l3.19 6.273 3.125-6.263a1.25 1.25 0 0 1 1.123-.695h.181a1.255 1.255 0 0 1 1.227.991l1.443 6.71a5 5 0 0 1 .314-.787l.009-.016a4.6 4.6 0 0 1 1.777-1.887c.782-.46 1.668-.667 2.611-.667a4.6 4.6 0 0 1 1.7.32l.306.134c.21-.16.474-.256.759-.256h1.694a1.255 1.255 0 0 1 1.212.925 1.255 1.255 0 0 1 1.212-.925h1.711c.284 0 .545.094.755.252.613-.3 1.312-.45 2.075-.45 1.356 0 2.557.445 3.482 1.4q.47.48.763 1.064V4.701a1.255 1.255 0 0 1 1.255-1.255h1.86A1.255 1.255 0 0 1 54.44 4.7v9.194h2.217c.19 0 .37.043.532.118v-4.77c0-.356.147-.678.385-.906a2.42 2.42 0 0 1-.682-1.71c0-.665.267-1.253.735-1.7a2.45 2.45 0 0 1 1.722-.674 2.43 2.43 0 0 1 1.705.675q.318.302.504.683V4.7a1.255 1.255 0 0 1 1.255-1.255h1.744A1.255 1.255 0 0 1 65.812 4.7v3.335a4.8 4.8 0 0 1 1.526-.246c.938 0 1.817.214 2.59.69a4.47 4.47 0 0 1 1.67 1.743v-.98a1.255 1.255 0 0 1 1.256-1.256h1.777c.233 0 .451.064.639.174a3.4 3.4 0 0 1 1.567-.372c.346 0 .861.02 1.285.232a1.25 1.25 0 0 1 .689 1.004 4.7 4.7 0 0 1 .853-.588c.795-.44 1.675-.647 2.61-.647 1.385 0 2.65.39 3.525 1.396.836.938 1.168 2.173 1.168 3.528q-.001.515-.056 1.051a1.255 1.255 0 0 1-.947 1.09l.408.952a1.255 1.255 0 0 1-.477 1.552c-.418.268-.92.463-1.458.612-.613.171-1.304.244-2.049.244-1.06 0-2.043-.207-2.886-.698l-.015-.008c-.798-.48-1.419-1.135-1.818-1.963l-.004-.008a5.8 5.8 0 0 1-.548-2.512q0-.429.053-.843a1.3 1.3 0 0 1-.333-.086l-.166-.004c-.223 0-.426.062-.643.228-.03.024-.142.139-.142.59v3.883a1.255 1.255 0 0 1-1.256 1.256h-1.777a1.255 1.255 0 0 1-1.256-1.256V15.69l-.032.057a4.8 4.8 0 0 1-1.86 1.833 5.04 5.04 0 0 1-2.484.634 4.5 4.5 0 0 1-1.935-.424 1.25 1.25 0 0 1-.764.258h-1.71a1.255 1.255 0 0 1-1.256-1.255V7.687a2.4 2.4 0 0 1-.428.625c.253.23.412.561.412.93v7.553a1.255 1.255 0 0 1-1.256 1.255h-1.843a1.25 1.25 0 0 1-.894-.373c-.228.23-.544.373-.894.373H51.32a1.255 1.255 0 0 1-1.256-1.255v-1.251l-.061.117a4.7 4.7 0 0 1-1.782 1.884 4.77 4.77 0 0 1-2.485.67 5.6 5.6 0 0 1-1.485-.188l.009 2.764a1.255 1.255 0 0 1-1.255 1.259h-1.729a1.255 1.255 0 0 1-1.255-1.255v-3.537a1.255 1.255 0 0 1-1.167.793h-1.679a1.25 1.25 0 0 1-.77-.263 4.5 4.5 0 0 1-1.945.429c-.885 0-1.724-.21-2.495-.632l-.017-.01a5 5 0 0 1-1.081-.836 1.255 1.255 0 0 1-1.254 1.312h-1.81a1.255 1.255 0 0 1-1.228-.99l-.782-3.625-2.044 3.939a1.25 1.25 0 0 1-1.115.676h-.098a1.25 1.25 0 0 1-1.116-.68l-2.061-3.994zM35.92 16.63l.207-.114.223-.15q.493-.356.735-.785l.061-.118.033 1.332h1.678V9.242h-1.694l-.033 1.267q-.133-.329-.526-.658l-.032-.028a3.2 3.2 0 0 0-.668-.428l-.27-.12a3.3 3.3 0 0 0-1.235-.23q-1.136-.001-1.974.493a3.36 3.36 0 0 0-1.3 1.382q-.445.89-.444 2.074 0 1.2.51 2.107a3.8 3.8 0 0 0 1.382 1.381 3.9 3.9 0 0 0 1.893.477q.795 0 1.455-.33zm-2.789-5.38q-.576.675-.575 1.762 0 1.102.559 1.794.576.675 1.645.675a2.25 2.25 0 0 0 .934-.19 2.2 2.2 0 0 0 .468-.29l.178-.161a2.2 2.2 0 0 0 .397-.561q.244-.5.244-1.15v-.115q0-.708-.296-1.267l-.043-.077a2.2 2.2 0 0 0-.633-.709l-.13-.086-.047-.028a2.1 2.1 0 0 0-1.073-.285q-1.052 0-1.629.692zm2.316 2.706c.163-.17.28-.407.28-.83v-.114c0-.292-.06-.508-.15-.68a.96.96 0 0 0-.353-.389.85.85 0 0 0-.464-.127c-.4 0-.56.114-.664.239l-.01.012c-.148.174-.275.45-.275.945 0 .506.122.801.27.99.097.11.266.224.68.224.303 0 .504-.09.687-.269zm7.545 1.705a2.6 2.6 0 0 0 .331.423q.319.33.755.548l.173.074q.65.255 1.49.255 1.02 0 1.844-.493a3.45 3.45 0 0 0 1.316-1.4q.493-.904.493-2.089 0-1.909-.988-2.913-.988-1.02-2.584-1.02-.898 0-1.575.347a3 3 0 0 0-.415.262l-.199.166a3.4 3.4 0 0 0-.64.82V9.242h-1.712v11.553h1.729l-.017-5.134zm.53-1.138q.206.29.48.5l.155.11.053.034q.51.296 1.119.297 1.07 0 1.645-.675.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.435 0-.835.16a2 2 0 0 0-.284.136 2 2 0 0 0-.363.254 2.2 2.2 0 0 0-.46.569l-.082.162a2.6 2.6 0 0 0-.213 1.072v.115q0 .707.296 1.267l.135.211zm.964-.818a1.1 1.1 0 0 0 .367.385.94.94 0 0 0 .476.118c.423 0 .59-.117.687-.23.159-.194.28-.478.28-.95 0-.53-.133-.8-.266-.952l-.021-.025c-.078-.094-.231-.221-.68-.221a1 1 0 0 0-.503.135l-.012.007a.86.86 0 0 0-.335.343c-.073.133-.132.324-.132.614v.115a1.4 1.4 0 0 0 .14.66zm15.7-6.222q.347-.346.346-.856a1.05 1.05 0 0 0-.345-.79 1.18 1.18 0 0 0-.84-.329q-.51 0-.855.33a1.05 1.05 0 0 0-.346.79q0 .51.346.855.345.346.856.346.51 0 .839-.346zm4.337 9.314.033-1.332q.191.403.59.747l.098.081a4 4 0 0 0 .316.224l.223.122a3.2 3.2 0 0 0 1.44.322 3.8 3.8 0 0 0 1.875-.477 3.5 3.5 0 0 0 1.382-1.366q.527-.89.526-2.09 0-1.184-.444-2.073a3.24 3.24 0 0 0-1.283-1.399q-.823-.51-1.942-.51a3.5 3.5 0 0 0-1.527.344l-.086.043-.165.09a3 3 0 0 0-.33.214q-.432.315-.656.707a2 2 0 0 0-.099.198l.082-1.283V4.701h-1.744v12.095zm.473-2.509a2.5 2.5 0 0 0 .566.7q.117.098.245.18l.144.08a2.1 2.1 0 0 0 .975.232q1.07 0 1.645-.675.576-.69.576-1.778 0-1.102-.576-1.777-.56-.691-1.645-.692a2.2 2.2 0 0 0-1.015.235q-.22.113-.415.282l-.15.142a2.1 2.1 0 0 0-.42.594q-.223.479-.223 1.1v.115q0 .705.293 1.26zm2.616-.293c.157-.191.28-.479.28-.967 0-.51-.13-.79-.276-.961l-.021-.026c-.082-.1-.232-.225-.67-.225a.87.87 0 0 0-.681.279l-.012.011c-.154.155-.274.38-.274.807v.115c0 .285.057.499.144.669a1.1 1.1 0 0 0 .367.405c.137.082.28.123.455.123.423 0 .59-.118.686-.23zm8.266-3.013q.345-.13.724-.14l.069-.002q.493 0 .642.099l.247-1.794q-.196-.099-.717-.099a2.3 2.3 0 0 0-.545.063 2 2 0 0 0-.411.148 2.2 2.2 0 0 0-.4.249 2.5 2.5 0 0 0-.485.499 2.7 2.7 0 0 0-.32.581l-.05.137v-1.48h-1.778v7.553h1.777v-3.884q0-.546.159-.943a1.5 1.5 0 0 1 .466-.636 2.5 2.5 0 0 1 .399-.253 2 2 0 0 1 .224-.099zm9.784 2.656.05-.922q0-1.743-.856-2.698-.838-.97-2.584-.97-1.119-.001-2.007.493a3.46 3.46 0 0 0-1.4 1.382q-.493.906-.493 2.106 0 1.07.428 1.975.428.89 1.332 1.432.906.526 2.255.526.973 0 1.668-.185l.044-.012.135-.04q.613-.184.984-.421l-.542-1.267q-.3.162-.642.274l-.297.087q-.51.131-1.3.131-.954 0-1.497-.444a1.6 1.6 0 0 1-.192-.193q-.366-.44-.512-1.234l-.004-.021zm-5.427-1.256-.003.022h3.752v-.138q-.011-.727-.288-1.118a1 1 0 0 0-.156-.176q-.46-.428-1.316-.428-.986 0-1.494.604-.379.45-.494 1.234zm-27.053 2.77V4.7h-1.86v12.095h5.333V15.15zm7.103-5.908v7.553h-1.843V9.242h1.843z'/%3E%3Cpath fill='%23fff' d='m19.63 11.151-.757-1.71-.345 1.71-1.12 5.644h-1.827L18.083 4.7h.197l3.325 6.533.988 2.19.988-2.19L26.839 4.7h.181l2.6 12.095h-1.81l-1.218-5.644-.362-1.71-.658 1.71-2.93 5.644h-.098l-2.913-5.644zm14.836 5.81q-1.02 0-1.893-.478a3.8 3.8 0 0 1-1.381-1.382q-.51-.906-.51-2.106 0-1.185.444-2.074a3.36 3.36 0 0 1 1.3-1.382q.839-.494 1.974-.494a3.3 3.3 0 0 1 1.234.231 3.3 3.3 0 0 1 .97.575q.396.33.527.659l.033-1.267h1.694v7.553H37.18l-.033-1.332q-.279.593-1.02 1.053a3.17 3.17 0 0 1-1.662.444zm.296-1.482q.938 0 1.58-.642.642-.66.642-1.711v-.115q0-.708-.296-1.267a2.2 2.2 0 0 0-.807-.872 2.1 2.1 0 0 0-1.119-.313q-1.053 0-1.629.692-.575.675-.575 1.76 0 1.103.559 1.795.577.675 1.645.675zm6.521-6.237h1.711v1.4q.906-1.597 2.83-1.597 1.596 0 2.584 1.02.988 1.005.988 2.914 0 1.185-.493 2.09a3.46 3.46 0 0 1-1.316 1.399 3.5 3.5 0 0 1-1.844.493q-.954 0-1.662-.329a2.67 2.67 0 0 1-1.086-.97l.017 5.134h-1.728zm4.048 6.22q1.07 0 1.645-.674.577-.69.576-1.762 0-1.119-.576-1.777-.558-.675-1.645-.675-.592 0-1.12.296-.51.28-.822.823-.296.527-.296 1.234v.115q0 .708.296 1.267.313.543.823.855.51.296 1.119.297z'/%3E%3Cpath fill='%23e1e3e9' d='M51.325 4.7h1.86v10.45h3.473v1.646h-5.333zm7.12 4.542h1.843v7.553h-1.843zm.905-1.415a1.16 1.16 0 0 1-.856-.346 1.17 1.17 0 0 1-.346-.856 1.05 1.05 0 0 1 .346-.79q.346-.329.856-.329.494 0 .839.33a1.05 1.05 0 0 1 .345.79 1.16 1.16 0 0 1-.345.855q-.33.346-.84.346zm7.875 9.133a3.17 3.17 0 0 1-1.662-.444q-.723-.46-1.004-1.053l-.033 1.332h-1.71V4.701h1.743v4.657l-.082 1.283q.279-.658 1.086-1.119a3.5 3.5 0 0 1 1.778-.477q1.119 0 1.942.51a3.24 3.24 0 0 1 1.283 1.4q.445.888.444 2.072 0 1.201-.526 2.09a3.5 3.5 0 0 1-1.382 1.366 3.8 3.8 0 0 1-1.876.477zm-.296-1.481q1.069 0 1.645-.675.577-.69.577-1.778 0-1.102-.577-1.776-.56-.691-1.645-.692a2.12 2.12 0 0 0-1.58.659q-.642.641-.642 1.694v.115q0 .71.296 1.267a2.4 2.4 0 0 0 .807.872 2.1 2.1 0 0 0 1.119.313zm5.927-6.237h1.777v1.481q.263-.757.856-1.217a2.14 2.14 0 0 1 1.349-.46q.527 0 .724.098l-.247 1.794q-.149-.099-.642-.099-.774 0-1.416.494-.626.493-.626 1.58v3.883h-1.777V9.242zm9.534 7.718q-1.35 0-2.255-.526-.904-.543-1.332-1.432a4.6 4.6 0 0 1-.428-1.975q0-1.2.493-2.106a3.46 3.46 0 0 1 1.4-1.382q.889-.495 2.007-.494 1.744 0 2.584.97.855.956.856 2.7 0 .444-.05.92h-5.43q.18 1.005.708 1.45.542.443 1.497.443.79 0 1.3-.131a4 4 0 0 0 .938-.362l.542 1.267q-.411.263-1.119.46-.708.198-1.711.197zm1.596-4.558q.016-1.02-.444-1.432-.46-.428-1.316-.428-1.728 0-1.991 1.86z'/%3E%3Cpath d='M5.074 15.948a.484.657 0 0 0-.486.659v1.84a.484.657 0 0 0 .486.659h4.101a.484.657 0 0 0 .486-.659v-1.84a.484.657 0 0 0-.486-.659zm3.56 1.16H5.617v.838h3.017z' style='fill:%23fff;fill-rule:evenodd;stroke-width:1.03600001'/%3E%3Cg style='stroke-width:1.12603545'%3E%3Cpath d='M-9.408-1.416c-3.833-.025-7.056 2.912-7.08 6.615-.02 3.08 1.653 4.832 3.107 6.268.903.892 1.721 1.74 2.32 2.902l-.525-.004c-.543-.003-.992.304-1.24.639a1.87 1.87 0 0 0-.362 1.121l-.011 1.877c-.003.402.104.787.347 1.125.244.338.688.653 1.23.656l4.142.028c.542.003.99-.306 1.238-.641a1.87 1.87 0 0 0 .363-1.121l.012-1.875a1.87 1.87 0 0 0-.348-1.127c-.243-.338-.688-.653-1.23-.656l-.518-.004c.597-1.145 1.425-1.983 2.348-2.87 1.473-1.414 3.18-3.149 3.2-6.226-.016-3.59-2.923-6.684-6.993-6.707m-.006 1.1v.002c3.274.02 5.92 2.532 5.9 5.6-.017 2.706-1.39 4.026-2.863 5.44-1.034.994-2.118 2.033-2.814 3.633-.018.041-.052.055-.075.065q-.013.004-.02.01a.34.34 0 0 1-.226.084.34.34 0 0 1-.224-.086l-.092-.077c-.699-1.615-1.768-2.669-2.781-3.67-1.454-1.435-2.797-2.762-2.78-5.478.02-3.067 2.7-5.545 5.975-5.523m-.02 2.826c-1.62-.01-2.944 1.315-2.955 2.96-.01 1.646 1.295 2.988 2.916 2.999h.002c1.621.01 2.943-1.316 2.953-2.961.011-1.646-1.294-2.988-2.916-2.998m-.005 1.1c1.017.006 1.829.83 1.822 1.89s-.83 1.874-1.848 1.867c-1.018-.006-1.829-.83-1.822-1.89s.83-1.874 1.848-1.868m-2.155 11.857 4.14.025c.271.002.49.305.487.676l-.013 1.875c-.003.37-.224.67-.495.668l-4.14-.025c-.27-.002-.487-.306-.485-.676l.012-1.875c.003-.37.224-.67.494-.668' style='color:%23000;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:%23000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;clip-rule:evenodd;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:%23000;solid-opacity:1;vector-effect:none;fill:%23000;fill-opacity:.4;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-9.415-.316C-12.69-.338-15.37 2.14-15.39 5.207c-.017 2.716 1.326 4.041 2.78 5.477 1.013 1 2.081 2.055 2.78 3.67l.092.076a.34.34 0 0 0 .225.086.34.34 0 0 0 .227-.083l.019-.01c.022-.009.057-.024.074-.064.697-1.6 1.78-2.64 2.814-3.634 1.473-1.414 2.847-2.733 2.864-5.44.02-3.067-2.627-5.58-5.901-5.601m-.057 8.784c1.621.011 2.944-1.315 2.955-2.96.01-1.646-1.295-2.988-2.916-2.999-1.622-.01-2.945 1.315-2.955 2.96s1.295 2.989 2.916 3' style='clip-rule:evenodd;fill:%23e1e3e9;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3Cpath d='M-11.594 15.465c-.27-.002-.492.297-.494.668l-.012 1.876c-.003.371.214.673.485.675l4.14.027c.271.002.492-.298.495-.668l.012-1.877c.003-.37-.215-.672-.485-.674z' style='clip-rule:evenodd;fill:%23fff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2.47727823;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:.4' transform='translate(15.553 2.85)scale(.88807)'/%3E%3C/g%3E%3C/svg%3E")}}.maplibregl-ctrl.maplibregl-ctrl-attrib{background-color:hsla(0,0%,100%,.5);margin:0;padding:0 5px}@media screen{.maplibregl-ctrl-attrib.maplibregl-compact{background-color:#fff;border-radius:12px;box-sizing:content-box;color:#000;margin:10px;min-height:20px;padding:2px 24px 2px 0;position:relative}.maplibregl-ctrl-attrib.maplibregl-compact-show{padding:2px 28px 2px 8px;visibility:visible}.maplibregl-ctrl-bottom-left>.maplibregl-ctrl-attrib.maplibregl-compact-show,.maplibregl-ctrl-top-left>.maplibregl-ctrl-attrib.maplibregl-compact-show{border-radius:12px;padding:2px 8px 2px 28px}.maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-inner{display:none}.maplibregl-ctrl-attrib-button{background-color:hsla(0,0%,100%,.5);background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");border:0;border-radius:12px;box-sizing:border-box;cursor:pointer;display:none;height:24px;outline:none;position:absolute;right:0;top:0;width:24px}.maplibregl-ctrl-attrib summary.maplibregl-ctrl-attrib-button{-webkit-appearance:none;-moz-appearance:none;appearance:none;list-style:none}.maplibregl-ctrl-attrib summary.maplibregl-ctrl-attrib-button::-webkit-details-marker{display:none}.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib-button,.maplibregl-ctrl-top-left .maplibregl-ctrl-attrib-button{left:0}.maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button,.maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner{display:block}.maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button{background-color:rgb(0 0 0/5%)}.maplibregl-ctrl-bottom-right>.maplibregl-ctrl-attrib.maplibregl-compact:after{bottom:0;right:0}.maplibregl-ctrl-top-right>.maplibregl-ctrl-attrib.maplibregl-compact:after{right:0;top:0}.maplibregl-ctrl-top-left>.maplibregl-ctrl-attrib.maplibregl-compact:after{left:0;top:0}.maplibregl-ctrl-bottom-left>.maplibregl-ctrl-attrib.maplibregl-compact:after{bottom:0;left:0}}@media screen and (forced-colors:active){.maplibregl-ctrl-attrib.maplibregl-compact:after{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23fff' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E")}}@media screen and (forced-colors:active) and (prefers-color-scheme:light){.maplibregl-ctrl-attrib.maplibregl-compact:after{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E")}}.maplibregl-ctrl-attrib a{color:rgba(0,0,0,.75);text-decoration:none}.maplibregl-ctrl-attrib a:hover{color:inherit;text-decoration:underline}.maplibregl-attrib-empty{display:none}.maplibregl-ctrl-scale{background-color:hsla(0,0%,100%,.75);border:2px solid #333;border-top:#333;box-sizing:border-box;color:#333;font-size:10px;padding:0 5px}.maplibregl-popup{display:flex;left:0;pointer-events:none;position:absolute;top:0;will-change:transform}.maplibregl-popup-anchor-top,.maplibregl-popup-anchor-top-left,.maplibregl-popup-anchor-top-right{flex-direction:column}.maplibregl-popup-anchor-bottom,.maplibregl-popup-anchor-bottom-left,.maplibregl-popup-anchor-bottom-right{flex-direction:column-reverse}.maplibregl-popup-anchor-left{flex-direction:row}.maplibregl-popup-anchor-right{flex-direction:row-reverse}.maplibregl-popup-tip{border:10px solid transparent;height:0;width:0;z-index:1}.maplibregl-popup-anchor-top .maplibregl-popup-tip{align-self:center;border-bottom-color:#fff;border-top:none}.maplibregl-popup-anchor-top-left .maplibregl-popup-tip{align-self:flex-start;border-bottom-color:#fff;border-left:none;border-top:none}.maplibregl-popup-anchor-top-right .maplibregl-popup-tip{align-self:flex-end;border-bottom-color:#fff;border-right:none;border-top:none}.maplibregl-popup-anchor-bottom .maplibregl-popup-tip{align-self:center;border-bottom:none;border-top-color:#fff}.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip{align-self:flex-start;border-bottom:none;border-left:none;border-top-color:#fff}.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip{align-self:flex-end;border-bottom:none;border-right:none;border-top-color:#fff}.maplibregl-popup-anchor-left .maplibregl-popup-tip{align-self:center;border-left:none;border-right-color:#fff}.maplibregl-popup-anchor-right .maplibregl-popup-tip{align-self:center;border-left-color:#fff;border-right:none}.maplibregl-popup-close-button{background-color:transparent;border:0;border-radius:0 3px 0 0;cursor:pointer;position:absolute;right:0;top:0}.maplibregl-popup-close-button:hover{background-color:rgb(0 0 0/5%)}.maplibregl-popup-content{background:#fff;border-radius:3px;box-shadow:0 1px 2px rgba(0,0,0,.1);padding:15px 10px;pointer-events:auto;position:relative}.maplibregl-popup-anchor-top-left .maplibregl-popup-content{border-top-left-radius:0}.maplibregl-popup-anchor-top-right .maplibregl-popup-content{border-top-right-radius:0}.maplibregl-popup-anchor-bottom-left .maplibregl-popup-content{border-bottom-left-radius:0}.maplibregl-popup-anchor-bottom-right .maplibregl-popup-content{border-bottom-right-radius:0}.maplibregl-popup-track-pointer{display:none}.maplibregl-popup-track-pointer *{pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.maplibregl-map:hover .maplibregl-popup-track-pointer{display:flex}.maplibregl-map:active .maplibregl-popup-track-pointer{display:none}.maplibregl-marker{left:0;position:absolute;top:0;transition:opacity .2s;will-change:transform}.maplibregl-user-location-dot,.maplibregl-user-location-dot:before{background-color:#1da1f2;border-radius:50%;height:15px;width:15px}.maplibregl-user-location-dot:before{animation:maplibregl-user-location-dot-pulse 2s infinite;content:"";position:absolute}.maplibregl-user-location-dot:after{border:2px solid #fff;border-radius:50%;box-shadow:0 0 3px rgba(0,0,0,.35);box-sizing:border-box;content:"";height:19px;left:-2px;position:absolute;top:-2px;width:19px}@keyframes maplibregl-user-location-dot-pulse{0%{opacity:1;transform:scale(1)}70%{opacity:0;transform:scale(3)}to{opacity:0;transform:scale(1)}}.maplibregl-user-location-dot-stale{background-color:#aaa}.maplibregl-user-location-dot-stale:after{display:none}.maplibregl-user-location-accuracy-circle{background-color:#1da1f233;border-radius:100%;height:1px;width:1px}.maplibregl-crosshair,.maplibregl-crosshair .maplibregl-interactive,.maplibregl-crosshair .maplibregl-interactive:active{cursor:crosshair}.maplibregl-boxzoom{background:#fff;border:2px dotted #202020;height:0;left:0;opacity:.5;position:absolute;top:0;width:0}.maplibregl-cooperative-gesture-screen{align-items:center;background:rgba(0,0,0,.4);color:#fff;display:flex;font-size:1.4em;inset:0;justify-content:center;line-height:1.2;opacity:0;padding:1rem;pointer-events:none;position:absolute;transition:opacity 1s ease 1s;z-index:99999}.maplibregl-cooperative-gesture-screen.maplibregl-show{opacity:1;transition:opacity .05s}.maplibregl-cooperative-gesture-screen .maplibregl-mobile-message{display:none}@media (hover:none),(width <= 480px){.maplibregl-cooperative-gesture-screen .maplibregl-desktop-message{display:none}.maplibregl-cooperative-gesture-screen .maplibregl-mobile-message{display:block}}.maplibregl-pseudo-fullscreen{height:100%!important;left:0!important;position:fixed!important;top:0!important;width:100%!important;z-index:99999}
 </style>
-<script type="application/json" id="mw-live-plan">{"styleUrl":"https://api.maptiler.com/maps/dataviz-light/style.json?key=__MAPTILER_KEY__","waterFill":"#aac9e0","frame":{"width":1000,"height":1000},"degreesPerPixel":0.0478048,"metresPerPixel":3491.45,"bakeZoom":3.879,"studyBounds":{"west":-9.14,"east":23.73,"south":37.98,"north":59.33},"minZoomHeadroom":0.5399999999999996,"anchors":{"paris":[2.35,48.86],"london":[-0.13,51.51],"madrid":[-3.7,40.42],"barcelona":[2.17,41.39],"rome":[12.5,41.9],"berlin":[13.4,52.52],"athens":[23.73,37.98],"milan":[9.19,45.46],"lisbon":[-9.14,38.72],"vienna":[16.37,48.21],"warsaw":[21.01,52.23],"stockholm":[18.06,59.33],"dublin":[-6.26,53.35]},"layers":[{"id":"mw-marks","type":"circle","data":{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[2.35,48.86]},"properties":{"key":"paris","name":"Paris","value":11,"group":"western-europe","subject":true,"r":62}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-0.13,51.51]},"properties":{"key":"london","name":"London","value":9.5,"group":"western-europe","subject":false,"r":57.61786339164428}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-3.7,40.42]},"properties":{"key":"madrid","name":"Madrid","value":6.7,"group":"western-europe","subject":false,"r":48.38745141610017}},{"type":"Feature","geometry":{"type":"Point","coordinates":[2.17,41.39]},"properties":{"key":"barcelona","name":"Barcelona","value":5.6,"group":"western-europe","subject":false,"r":44.23737621678589}},{"type":"Feature","geometry":{"type":"Point","coordinates":[12.5,41.9]},"properties":{"key":"rome","name":"Rome","value":4.3,"group":"southern-europe","subject":false,"r":38.76408834803865}},{"type":"Feature","geometry":{"type":"Point","coordinates":[13.4,52.52]},"properties":{"key":"berlin","name":"Berlin","value":3.9,"group":"central-northern-europe","subject":false,"r":36.91710616059617}},{"type":"Feature","geometry":{"type":"Point","coordinates":[23.73,37.98]},"properties":{"key":"athens","name":"Athens","value":3.2,"group":"southern-europe","subject":false,"r":33.44031317817681}},{"type":"Feature","geometry":{"type":"Point","coordinates":[9.19,45.46]},"properties":{"key":"milan","name":"Milan","value":3.2,"group":"southern-europe","subject":false,"r":33.44031317817681}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-9.14,38.72]},"properties":{"key":"lisbon","name":"Lisbon","value":2.9,"group":"western-europe","subject":false,"r":31.83422971925317}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.37,48.21]},"properties":{"key":"vienna","name":"Vienna","value":2,"group":"central-northern-europe","subject":false,"r":26.436888828095697}},{"type":"Feature","geometry":{"type":"Point","coordinates":[21.01,52.23]},"properties":{"key":"warsaw","name":"Warsaw","value":1.9,"group":"central-northern-europe","subject":false,"r":25.76749185240264}},{"type":"Feature","geometry":{"type":"Point","coordinates":[18.06,59.33]},"properties":{"key":"stockholm","name":"Stockholm","value":1.7,"group":"central-northern-europe","subject":false,"r":24.37360718631379}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-6.26,53.35]},"properties":{"key":"dublin","name":"Dublin","value":1.4,"group":"western-europe","subject":false,"r":22.118688108392945}}]},"paint":{"circle-color":["case",["get","subject"],"#0B7A75","#616161"],"circle-opacity":["case",["get","subject"],0.55,0.38],"circle-stroke-color":["case",["get","subject"],"#0B7A75","#616161"],"circle-stroke-width":1},"radius":"camera","filterProperty":"group","hover":true}]}</script>
+<script type="application/json" id="mw-live-plan">{"styleUrl":"https://api.maptiler.com/maps/dataviz-light/style.json?key=__MAPTILER_KEY__","styleName":"dataviz-light","tints":{"water":"#aac9e0"},"frame":{"width":1000,"height":1000},"degreesPerPixel":0.0478048,"metresPerPixel":3491.45,"bakeZoom":3.879,"studyBounds":{"west":-9.14,"east":23.73,"south":37.98,"north":59.33},"minZoomHeadroom":0.5399999999999996,"anchors":{"paris":[2.35,48.86],"london":[-0.13,51.51],"madrid":[-3.7,40.42],"barcelona":[2.17,41.39],"rome":[12.5,41.9],"berlin":[13.4,52.52],"athens":[23.73,37.98],"milan":[9.19,45.46],"lisbon":[-9.14,38.72],"vienna":[16.37,48.21],"warsaw":[21.01,52.23],"stockholm":[18.06,59.33],"dublin":[-6.26,53.35]},"layers":[{"id":"mw-marks","type":"circle","data":{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[2.35,48.86]},"properties":{"key":"paris","name":"Paris","value":11,"group":"western-europe","subject":true,"r":62}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-0.13,51.51]},"properties":{"key":"london","name":"London","value":9.5,"group":"western-europe","subject":false,"r":57.61786339164428}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-3.7,40.42]},"properties":{"key":"madrid","name":"Madrid","value":6.7,"group":"western-europe","subject":false,"r":48.38745141610017}},{"type":"Feature","geometry":{"type":"Point","coordinates":[2.17,41.39]},"properties":{"key":"barcelona","name":"Barcelona","value":5.6,"group":"western-europe","subject":false,"r":44.23737621678589}},{"type":"Feature","geometry":{"type":"Point","coordinates":[12.5,41.9]},"properties":{"key":"rome","name":"Rome","value":4.3,"group":"southern-europe","subject":false,"r":38.76408834803865}},{"type":"Feature","geometry":{"type":"Point","coordinates":[13.4,52.52]},"properties":{"key":"berlin","name":"Berlin","value":3.9,"group":"central-northern-europe","subject":false,"r":36.91710616059617}},{"type":"Feature","geometry":{"type":"Point","coordinates":[23.73,37.98]},"properties":{"key":"athens","name":"Athens","value":3.2,"group":"southern-europe","subject":false,"r":33.44031317817681}},{"type":"Feature","geometry":{"type":"Point","coordinates":[9.19,45.46]},"properties":{"key":"milan","name":"Milan","value":3.2,"group":"southern-europe","subject":false,"r":33.44031317817681}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-9.14,38.72]},"properties":{"key":"lisbon","name":"Lisbon","value":2.9,"group":"western-europe","subject":false,"r":31.83422971925317}},{"type":"Feature","geometry":{"type":"Point","coordinates":[16.37,48.21]},"properties":{"key":"vienna","name":"Vienna","value":2,"group":"central-northern-europe","subject":false,"r":26.436888828095697}},{"type":"Feature","geometry":{"type":"Point","coordinates":[21.01,52.23]},"properties":{"key":"warsaw","name":"Warsaw","value":1.9,"group":"central-northern-europe","subject":false,"r":25.76749185240264}},{"type":"Feature","geometry":{"type":"Point","coordinates":[18.06,59.33]},"properties":{"key":"stockholm","name":"Stockholm","value":1.7,"group":"central-northern-europe","subject":false,"r":24.37360718631379}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-6.26,53.35]},"properties":{"key":"dublin","name":"Dublin","value":1.4,"group":"western-europe","subject":false,"r":22.118688108392945}}]},"paint":{"circle-color":["case",["get","subject"],"#0B7A75","#616161"],"circle-opacity":["case",["get","subject"],0.55,0.38],"circle-stroke-color":["case",["get","subject"],"#0B7A75","#616161"],"circle-stroke-width":1},"radius":"camera","filterProperty":"group","hover":true}]}</script>
 <script>
 /**
  * MapLibre GL JS
@@ -503,79 +533,313 @@ return maplibregl$1;
 
 </script>
 <script>
-// twin/skills/map-web/assets/live-map.mjs
+// twin/shared/map-beat/plan.mjs
 //
-// RULING R1 (2026-08-10), and the layer that keeps everything it did not ask to break.
+// THE CONTRACT THAT MAKES A MAP A MAP. A beat does not draw; it declares a PLAN — a MapTiler style
+// with this beat's transformations, a camera, and the layers the beat owns. Four renderers consume
+// it: the still, the video, the web page, the scrolly.
 //
-// The owner's ruling: *"la carte doit rester interactive tout le temps sinon il n'y a pas
-// d'intérêt d'être sur le web si on peut pas naviguer dedans"* — a web map you cannot move through
-// is a picture. So map × web is a LIVE MapTiler map with its native zoom and pan, constrained to
-// the subject's area. This OVERTURNS `references/map-web-discipline.md`'s own "Pan and zoom", which
-// rejected live tiles in writing; that section now records the reversal and its price rather than
-// having been quietly deleted.
-//
-// The straightforward reading of the ruling — delete the plate, ship a live map — throws away four
-// things this format already proved, all measurable: a complete no-JS render, a page that works
-// offline, a page that works when the key lapses, and a guard suite that does not need the network.
-// None of that is required by the ruling and all of it is cheap to keep, so the page ships in two
-// layers:
-//
-//   1. `#mw-fallback` — the SSR'd beat exactly as it rendered before: the baked plate as a data
-//      URI, the marks, the labels, the legend. Complete, script-free, request-free.
-//   2. `#mw-map` — an empty box that this file fills with a live map, and which is shown ONLY on
-//      `map.on("load")`. A style failure, a tile failure, a rotated key or no network at all leaves
-//      layer 1 exactly where it is.
-//
-// That last case is not decoration. MapTiler invalidates ALL of an account's keys at 100% of its
-// spending limit (documented), so the failure mode is every published article's map going blank at
-// once. Layer 1 is what stands between that and an article with a hole in it.
-//
-// ONE FILE, FIVE MAP TYPES. This is a byte-identical copy in every map × web beat (the twin
-// duplicates helpers rather than importing across skills), so it may not know what a beat draws.
-// Everything type-specific travels in the PLAN the renderer writes into the page — a list of
-// LAYERS, each declaring how its own marks answer three questions this file cannot answer for them:
-//
-//   - `radius: "camera"` — a circle whose size encodes a VALUE (proportional symbol). Derived from
-//     the camera at the fit, then held constant in screen pixels as the reader zooms, because the
-//     same number must not mean two things at two zooms.
-//   - `radius: "ground"` — a dot standing for a fixed number of people in a fixed piece of ground
-//     (dot density). Its GROUND area must be constant, so its screen radius doubles per zoom level
-//     — a `["interpolate", ["exponential", 2], ["zoom"], …]` expression, not a number.
-//   - `radius: "fixed"` — a locator marker, which is a pin rather than a measurement: the same
-//     screen size at every zoom, exactly as the plate drew it.
-//   - no `radius` at all — `fill` and `line` layers (choropleth regions, hex bins, routes). They
-//     are geographic polygons and reproject on their own; only their strokes are screen-sized.
-//
-// Inlined verbatim as a classic script by `scripts/render-web.mjs`, which strips `export` from each
-// top-level declaration — the same treatment `interaction.mjs` gets, and for the same reason: no
-// module script, so a CMS iframe or a sandboxed embed cannot refuse it.
+// Every rule enforced here comes from a defect the September 2026 spike hit in silence. MapLibre
+// refuses nothing: a duplicated id, a missing glyph range, an invalid expression — all of them go
+// unreported. What is not measured here is not measured anywhere.
 
-/** The plan the renderer wrote into the page: the style URL with its key, the camera's own bounds
- *  and zoom range, and the beat's own layers. Returns null when the page carries no plan, which is
- *  the shape a beat that opted out of live tiles takes. */
-function readLivePlan(doc) {
-  const el = doc.getElementById("mw-live-plan");
-  if (!el) return null;
-  try {
-    return JSON.parse(el.textContent);
-  } catch (err) {
-    return null;
+/** A plan is frozen: a renderer that could mutate it is a renderer that could disagree with the
+ *  still beside it. */
+function makePlan({ style, camera, layers }) {
+  return Object.freeze({
+    style,
+    camera: Object.freeze({ ...camera }),
+    layers: Object.freeze(layers.map((l) => Object.freeze({ ...l }))),
+  });
+}
+
+/** TWO LAYERS CANNOT SHARE AN ID. MapLibre keeps the first and drops the second without a word: on
+ *  the locator beat, the label layer was named after the circle layer and six cities stayed
+ *  anonymous for a full render cycle. Shared by every renderer, because every renderer mounts the
+ *  same layers. */
+function duplicateIdComplaints(layers) {
+  const out = [];
+  const seen = new Set();
+  for (const layer of layers) {
+    if (seen.has(layer.id))
+      out.push(
+        `two layers share the id "${layer.id}" — MapLibre keeps the first and drops the second without an error`,
+      );
+    seen.add(layer.id);
   }
+  return out;
 }
 
-/** True when the plan still carries the delivery placeholder rather than a key. R1b keeps the real
- *  key out of the repository, so the COMMITTED artifact is always in this state and its live layer
- *  never boots — which is exactly right: a proof artifact must not spend a newsroom's tile quota. */
-function planIsUnkeyed(plan) {
-  // The sentinel is ASSEMBLED, never written whole. `deliver` substitutes every occurrence of
-  // the placeholder in the delivered file, and this script is IN that file — a literal here would be
-  // rewritten to the key itself, so the check would then read "does the style URL contain the key",
-  // which is true, and every delivered map would refuse to boot. Found by driving the page in a real
-  // browser after substitution, not by reading it: the fallback rendered perfectly and nothing was
-  // red.
-  const sentinel = "__MAPTILER" + "_KEY__";
-  return !plan || !plan.styleUrl || plan.styleUrl.indexOf(sentinel) >= 0;
+function validatePlan(plan) {
+  const out = duplicateIdComplaints(plan.layers);
+
+  /** THE DRAWN SIZE IS A LAYOUT OUTPUT, NOT A SETTING. A plate baked at a size it is not drawn at
+   *  makes every absolute length wrong by the ratio — 1.74 times too thin on the first three types
+   *  the spike converted, and differently wrong per direction on the flow map. */
+  if (!plan.camera.drawn?.width || !plan.camera.drawn?.height)
+    out.push("the plan carries no drawn size — the layout must publish it before the bake");
+
+  return out;
 }
+
+/**
+ * THE SAME PLAN, READ BY THE RENDERER THAT RUNS IN A READER'S BROWSER.
+ *
+ * A web beat's plan is a FILE before it is an object: it is serialised into the page as JSON and
+ * read back by a script that never met the code that wrote it. `Object.freeze` does not survive that
+ * journey and neither does anything else the writer checked — so the reader checks again, which is
+ * this contract's own rule (`references/map-plan.md` §1: "A plan is a FILE; whoever draws from it
+ * validates it"). Until this existed the live layer validated NOTHING: a duplicate id, a missing
+ * camera fact or a plan truncated by a broken render all reached MapLibre, which reports none of
+ * them.
+ *
+ * The four facts beyond `validatePlan`'s own are the ones a LIVE camera needs and a baked one does
+ * not, and each was a real refusal already written by hand in one beat and missing from the next:
+ *
+ *   `styleUrl`        — what MapLibre loads. Absent, the map boots on nothing and stays blank.
+ *   `frame`           — the plate's own drawn size, this plan's answer to `camera.drawn`.
+ *   `degreesPerPixel` — the bake's ground scale. Every mark's drawn size is a RATIO against it, so
+ *                       a plan without it has no scale to draw a mark at, only a box to guess from.
+ *   `studyBounds`     — what the camera fits to at runtime. The plate's own corners are the wrong
+ *                       box (they were computed for the plate's aspect, not the reader's), and
+ *                       handing them over as a leash cropped six of thirteen points once already.
+ *
+ * Returns a list of strings, never throws — the same shape `validatePlan` takes, so a caller can
+ * decide whether an empty list is required or merely expected.
+ */
+function validateLivePlan(plan) {
+  if (!plan || typeof plan !== "object") return ["the page carries no live plan at all"];
+  const out = duplicateIdComplaints(plan.layers ?? []);
+
+  if (typeof plan.styleUrl !== "string" || plan.styleUrl === "")
+    out.push("the plan carries no style URL — the live map would boot on nothing and stay blank");
+  if (!plan.frame?.width || !plan.frame?.height)
+    out.push("the plan carries no drawn size — the layout must publish it before the bake");
+  if (!(plan.degreesPerPixel > 0))
+    out.push(
+      "the plan carries no `degreesPerPixel` — this plate predates the camera facts, and a mark has " +
+        "no ground scale to be drawn at, only a box to be guessed from",
+    );
+
+  const b = plan.studyBounds;
+  const finite = (v) => typeof v === "number" && Number.isFinite(v);
+  if (!b || !["west", "east", "south", "north"].every((k) => finite(b[k])))
+    out.push("the plan carries no `studyBounds` — the live camera has nothing to fit to at runtime");
+  else if (!(b.west < b.east) || !(b.south < b.north))
+    out.push(
+      `the plan's \`studyBounds\` are inverted (${b.west},${b.south} to ${b.east},${b.north}) — ` +
+        `\`fitBounds\` answers an inverted box by framing the rest of the world`,
+    );
+
+  /** A GROUND-SCALED LAYER INTERPOLATES ITS RADIUS FROM THE BAKED CAMERA. Without `bakeZoom` the
+   *  interpolation's own stops are `NaN`, MapLibre rejects the expression, and the layer draws
+   *  nothing — the silent-empty-layer shape again. Only asked of a plan that has such a layer. */
+  if ((plan.layers ?? []).some((l) => l.radius === "ground") && !Number.isFinite(plan.bakeZoom))
+    out.push(
+      "a layer is scaled to the GROUND but the plan carries no `bakeZoom`: the interpolation's own " +
+        "stops would be NaN and MapLibre draws an empty layer rather than reporting it",
+    );
+
+  return out;
+}
+
+
+// twin/shared/map-beat/style.mjs
+//
+// THE STYLE IS AN OBJECT, NOT A URL — and that is the only way to change `glyphs`. Handed a URL,
+// MapLibre reads MapTiler's endpoint before anyone has the handle, and `glyphs` has no setter: the
+// only recourse would be a full `setStyle`, which restarts the style and carries away every layer
+// just added to it.
+
+const TEXTURE =
+  /landcover|landuse|wood|forest|grass|park|scrub|sand|glacier|snow|ice|hillshade|shadow|highlight|pier|aeroway|building|tunnel|bridge|road|rail|path|ferry|transit/i;
+
+/**
+ * THE ONE DECISION, TAKEN ONCE, FOR BOTH WAYS A STYLE CAN BE CHANGED.
+ *
+ * A static bake is handed a style DOCUMENT and edits it before MapLibre ever sees it. A live map is
+ * handed a style URL, so by the time anything can speak to it the style is already loaded and the
+ * only handles are `setLayoutProperty` and `setPaintProperty`. Two mechanisms — and until this
+ * function existed, two rulebooks: the bake swept every layer by the regexes below while the live
+ * layer named `["Water", "Water shadow"]` by hand and painted them a hard-coded blue. The two agree
+ * only as long as MapTiler keeps those exact ids and nobody edits one list. When they disagree the
+ * fallback plate and the live map under it are different cartography, and the swap is visible.
+ *
+ * So the rule is stated once and applied twice. Returns what to do with ONE layer:
+ *   `hidden`   — this layer does one of the jobs the beat's own marks do, so it goes;
+ *   `property` — the paint property carrying this layer's colour, or null when it carries none;
+ *   `colour`   — what that property becomes.
+ */
+function styleDecisionFor(layer, { keepLabels = [], keepTextures = [] } = {}) {
+  const isLabel = layer.type === "symbol";
+  const keep = isLabel && keepLabels.some((re) => re.test(layer.id));
+  const isTexture =
+    layer.type === "hillshade" ||
+    layer.type === "raster" ||
+    layer.type === "line" ||
+    /border|boundary|admin/i.test(layer.id) ||
+    (TEXTURE.test(layer.id) && !/water/i.test(layer.id));
+  /** …AND THE ONE THING A BEAT MAY ASK TO KEEP, having said why.
+   *
+   *  The sweep above was written for a CONTINENT, where a road network is noise over a choropleth.
+   *  At CITY scale it is the opposite: `proof/mapgen-locator-web` frames 4 km of Geneva, and the
+   *  streets are how a reader places eleven markers against a city they may know. Putting that beat
+   *  on this sweep took the whole network out of its plate in one step, and nothing said so — the
+   *  plate simply came back 3x smaller and emptier.
+   *
+   *  So a beat may name what it keeps, and naming it is the point: `keepTextures: [/road/i]` is a
+   *  sentence in the beat's own file about what its geography needs, which is a different thing from
+   *  a sweep that never ran. The default is still to hide everything. */
+  /** AND IT NEVER BRINGS A LABEL BACK. `isLabel` is checked first, deliberately: a beat asking to
+   *  keep its street network writes `/road/i`, and `dataviz-light` calls one of its SYMBOL layers
+   *  `Road labels`. Measured in a real browser the moment this hatch was opened — the live map came
+   *  back with the provider's street names printed across it, which breaks the one line §2 of
+   *  `references/map-plan.md` draws (the beat writes every word inside the map) and, worse, hands
+   *  MapTiler a font stack nobody in this beat chose. That is the exact door guard 2 exists behind:
+   *  MapTiler answers 200 for a family it does not have and serves Noto Sans. A texture is a
+   *  texture; a word is a word. */
+  const kept = isTexture && !isLabel && keepTextures.some((re) => re.test(layer.id));
+  return { hidden: ((isLabel && !keep) || isTexture) && !kept, ...paintDecisionFor(layer) };
+}
+
+function paintDecisionFor(layer) {
+  if (layer.type === "background") return { property: "background-color", tint: "land" };
+  if (layer.type === "fill" && /water|ocean|sea|river|lake/i.test(layer.id))
+    return { property: "fill-color", tint: "water" };
+  if (layer.type === "fill" && /land|earth/i.test(layer.id) && !/water/i.test(layer.id))
+    return { property: "fill-color", tint: "land" };
+  return { property: null, tint: null };
+}
+
+function transformStyle(styleDoc, { tints, glyphs, keepLabels = [], keepTextures = [] }) {
+  const out = JSON.parse(JSON.stringify(styleDoc));
+  out.glyphs = glyphs;
+
+  for (const layer of out.layers) {
+    layer.layout = layer.layout ?? {};
+    layer.paint = layer.paint ?? {};
+    const { hidden, property, tint } = styleDecisionFor(layer, { keepLabels, keepTextures });
+    if (hidden) layer.layout.visibility = "none";
+    if (property && tints[tint]) layer.paint[property] = tints[tint];
+  }
+  return out;
+}
+
+/**
+ * THE SAME DECISION, APPLIED TO A MAP THAT HAS ALREADY LOADED ITS STYLE. Call it on `style.load`:
+ * before that `getStyle()` has no layers, and after `load` the reader has already seen the frame
+ * the beat did not choose.
+ *
+ * `map.getStyle().layers` is read ONCE into an array, because `setLayoutProperty` mutates the live
+ * style and iterating what you are editing is how a sweep comes to skip every second layer.
+ *
+ * It returns what it did — how many layers it hid and how many it re-tinted — so a caller can
+ * REFUSE a style that answered nothing. A sweep that matched no water layer at all leaves MapTiler's
+ * own near-grey `dataviz-light` water under a beat whose plate is blue, and nothing reports it: that
+ * is the silence this whole trunk exists to end, and the count is what turns it into a number.
+ */
+function applyLiveStyle(map, { tints, keepLabels = [], keepTextures = [] }) {
+  const layers = [...map.getStyle().layers];
+  let hidden = 0;
+  let tinted = 0;
+  for (const layer of layers) {
+    const decision = styleDecisionFor(layer, { keepLabels, keepTextures });
+    if (decision.hidden && map.getLayer(layer.id)) {
+      map.setLayoutProperty(layer.id, "visibility", "none");
+      hidden += 1;
+    }
+    /** A BEAT PAINTS THE TINTS IT MEASURED, AND ONLY THOSE. `plateTints` answers `water` and `land`
+     *  together, but a beat whose plate leaves the provider's land alone names only `water` — and
+     *  painting an unnamed tint would be `undefined` reaching `setPaintProperty`, which MapLibre
+     *  takes as "reset to the style's default" rather than as an error. Leaving it is a stated
+     *  choice; `assertLiveStyleAnswered` below is what catches the case where NOTHING matched. */
+    if (decision.property && tints[decision.tint] && map.getLayer(layer.id)) {
+      map.setPaintProperty(layer.id, decision.property, tints[decision.tint]);
+      tinted += 1;
+    }
+  }
+  return { hidden, tinted };
+}
+
+/** A LIVE STYLE THAT ANSWERED NOTHING IS NOT A QUIET STYLE. `dataviz-light` carries a background, a
+ *  water fill and dozens of symbol layers, so a sweep that re-tinted nothing did not find the style
+ *  it was written against — a renamed layer, a different MapTiler style, a style that never loaded.
+ *  The plate would still be blue and the live map under it would not, and the two are meant to be
+ *  one cartography. */
+function assertLiveStyleAnswered(result, styleName) {
+  /** Returns the result it was handed, so a caller reads `assert…(apply…(map, …), style)` and there
+   *  is no second variable for the two to come apart in. */
+  if (result.tinted > 0) return result;
+  throw new Error(
+    `the live style "${styleName}" carries no layer this beat's tints apply to: ${result.hidden} layers ` +
+      `were hidden and NONE was re-tinted, so the reader's map keeps the provider's own water while ` +
+      `the fallback plate under it is painted in the beat's. Two cartographies, one swap, no error`,
+  );
+}
+
+/** ONE BASEMAP, NOT TWO. Repainting land or coastline from the beat's own shapefile lays a second
+ *  geography over MapTiler's: two datasets that do not draw the same coast, offset by a hair, with a
+ *  halo around Iceland and Norway to show for it. A layer that means to say "this belongs to the
+ *  study" says it by tint, never by redrawing the ground. */
+function assertNoDoubledBasemap(plan) {
+  for (const layer of plan.layers)
+    if (layer.role === "basemap-land" || layer.role === "basemap-coast")
+      throw new Error(
+        `layer "${layer.id}" carries role "${layer.role}": the basemap would be doubled. MapTiler ` +
+          `draws the geography — at its own resolution, consistent with its own waters. A beat layer ` +
+          `marks what belongs to its study; it does not redraw the ground`,
+      );
+}
+
+// twin/shared/map-beat/mount.mjs
+//
+// MOUNTING A PLAN IN A LIVE MAP, and the one class of mistake MapLibre swallows whole: an expression
+// that is almost valid. `text-offset` accepts a literal pair, or ONE expression that returns a pair
+// — but an ARRAY of expressions is neither, and the layer renders nothing at all. No warning, no
+// error, just an empty layer that looks like a data problem for an hour.
+
+/** Property names whose value is a pair of numbers, and which therefore cannot be assembled from two
+ *  expressions. */
+const PAIR_PROPERTIES = ["text-offset", "icon-offset", "text-translate", "icon-translate"];
+
+const isExpression = (v) => Array.isArray(v) && typeof v[0] === "string";
+
+function validateExpressions(plan) {
+  const out = [];
+  for (const layer of plan.layers) {
+    for (const prop of PAIR_PROPERTIES) {
+      const value = layer.layout?.[prop] ?? layer.paint?.[prop];
+      if (value === undefined) continue;
+      if (isExpression(value)) continue;
+      if (Array.isArray(value) && value.length === 2 && value.every((v) => typeof v === "number")) continue;
+      out.push(
+        `layer "${layer.id}": "${prop}" is an array of expressions — MapLibre rejects it and the layer draws nothing`,
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * THE THREE THINGS A MARK'S RADIUS CAN MEAN, and why the plan has to say which. A circle on a map
+ * answers one of three different questions, and MapLibre cannot tell them apart:
+ *
+ *   - `radius: "camera"` — the circle encodes a VALUE (a proportional symbol). Its size is derived
+ *     from the camera once, at the fit, and then HELD in screen pixels: growing it with zoom would
+ *     make the same number mean two things at two zooms.
+ *   - `radius: "ground"` — the circle stands for a fixed piece of GROUND (a dot-density dot). Its
+ *     ground area must be constant, so its screen radius doubles per zoom level, DURING the gesture
+ *     and not only after it settles — an interpolation, never a number.
+ *   - `radius: "fixed"` — a locator pin. The same screen size at every zoom, exactly as the plate
+ *     drew it: a locator has no magnitude, so there is nothing for a camera to encode.
+ *
+ * A layer with no `radius` is a `fill`, a `line` or a `symbol`: geographic, reprojected by MapLibre
+ * itself, and none of this applies.
+ *
+ * These lived in `map-web`'s own `live-map.mjs`, one byte-identical copy per web beat. They are the
+ * plan contract, not a page mechanic — the still and the video ask the same question of the same
+ * plan — so they live where the plan lives.
+ */
 
 /**
  * THE MARK'S SCALE COMES FROM THE CAMERA, NOT FROM THE BOX. This is the fix for a defect the owner
@@ -587,23 +851,19 @@ function planIsUnkeyed(plan) {
  * which is the "fit, never stretch" arithmetic a RASTER PLATE needs: a plate must not be distorted,
  * so it fits by its tighter axis.
  *
- * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
- * this format's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
+ * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container, and
  * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
- * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
- * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
- * `Math.min` gave 0.583 — drawing Paris at 36px on cartography that had grown by 1.57x. A small dark
- * circle sitting in the middle of the country it is supposed to cover.
+ * halves of one circle came apart: measured on the symbol seed at 1600 x 900, the canvas is
+ * 1566 x 583, the camera fits ~32° of longitude across 1566px while the plate fitted ~48° across
+ * 1000px, and `Math.min` gave 0.583 — drawing Paris at 36px on cartography that had grown by 1.57x.
  *
  * The honest quantity is GROUND: a mark covers the same piece of the world it covered when baked.
- * `degreesPerPixel` is recorded in `geometry.json` by the bake (and only has been since the camera
- * facts landed), so this is a ratio of two measured facts rather than another constant:
+ * `degreesPerPixel` is recorded by the bake, so this is a ratio of two measured facts rather than
+ * another constant:
  *
  *     scale = bake degrees-per-pixel ÷ live degrees-per-pixel
  *
  * which is exactly `2 ** (liveZoom − bakeZoom)`, since `degreesPerPixel = 360 / (512 · 2**zoom)`.
- * A camera zoomed one level further in than the plate's draws its marks twice as wide, and the
- * symbols keep their relationship to the coastlines under them at every container shape.
  */
 function cameraScale(plan, map) {
   const liveDegreesPerPixel = 360 / (512 * Math.pow(2, map.getZoom()));
@@ -678,6 +938,156 @@ function planLayers(plan) {
   return (plan && plan.layers) || [];
 }
 
+/** THE ONE PLACE `radius` IS TURNED INTO A PAINT VALUE. A `circle-radius` decided in two places is
+ *  the "two numbers describing one circle" defect this format has already paid for twice: the halo
+ *  and the mark, then the filter and the mark. `mountPlan` calls this, and so does the live layer
+ *  when the camera moves — one derivation, two callers.
+ *
+ *  `scale` is `cameraScale`'s answer, passed in rather than recomputed: a caller that has already
+ *  fitted the camera must not get a second answer from a second read of the same map. */
+function radiusPaintOf(layer, plan, scale) {
+  if (layer.radius === "camera") return ["*", ["get", "r"], scale];
+  if (layer.radius === "ground")
+    return groundRadiusExpression(plan.bakeZoom, {
+      floorPx: layer.radiusFloorPx,
+      uniformRadius: layer.uniformRadius,
+    });
+  if (layer.radius === "fixed") return ["get", "r"];
+  return null;
+}
+
+/**
+ * HOW MUCH THE FURNITURE AROUND A MARK GROWS WITH THE CAMERA, which is the mark's own rule and not
+ * a second one. A halo, a label gutter and a hit target are all stated in the bake's frame units,
+ * and they have to travel with the circle they belong to — so a `fixed` pin, drawn at the same
+ * screen size at every zoom, takes a halo at the same screen size too.
+ *
+ * This exists because the two came apart, measured on `proof/mapgen-locator-web` the moment the
+ * radius strategies reached the trunk: its markers are pins drawn at 6px, and the painted halo
+ * around them was `r · cameraScale · 2 + pad` — 40px of ring around a 12px pin at the live camera's
+ * own 2.88x. Both halves were internally consistent and the guard could not see it, because the
+ * guard was applying the camera rule to the mark as well. Same shape as the two defects
+ * `references/map-web-discipline.md` already files under "one mark, two halves, two mechanisms",
+ * and this is the third, so the rule is stated ONCE here and read by both halves.
+ */
+function markScaleOf(plan, scale, layerId = "mw-marks") {
+  const layer = (plan.layers || []).find((l) => l.id === layerId);
+  /** `camera` and `ground` reach the same multiplier at a settled camera — `cameraScale` IS
+   *  `2 ** (zoom − bakeZoom)` — so only a pin stands apart. */
+  return (layer && layer.radius) === "fixed" ? 1 : scale;
+}
+
+/** Run inside the page. Sources first, then layers in plan order — a leader drawn over its own word
+ *  is a scratch.
+ *
+ *  A layer that declares a `radius` strategy gets its `circle-radius` from `radiusPaintOf` rather
+ *  than from its own paint. Adding a circle layer with NO radius at all would draw MapLibre's own
+ *  default 5px for one frame, which is a visible flash of the wrong circle — so the strategy is
+ *  applied at mount, and a camera-scaled layer is re-derived once the camera has actually fitted. */
+function mountPlan(map, plan) {
+  for (const layer of plan.layers)
+    if (!map.getSource(layer.id)) map.addSource(layer.id, { type: "geojson", data: layer.data });
+  for (const layer of plan.layers) {
+    const paint = { ...(layer.paint || {}) };
+    if (layer.radius) paint["circle-radius"] = radiusPaintOf(layer, plan, cameraScale(plan, map));
+    map.addLayer({
+      id: layer.id,
+      type: layer.type,
+      source: layer.id,
+      ...(layer.minzoom === undefined ? {} : { minzoom: layer.minzoom }),
+      ...(layer.maxzoom === undefined ? {} : { maxzoom: layer.maxzoom }),
+      ...(layer.layout ? { layout: layer.layout } : {}),
+      ...(Object.keys(paint).length ? { paint } : {}),
+    });
+  }
+}
+
+// twin/skills/map-web/assets/live-map.mjs
+//
+// RULING R1 (2026-08-10), and the layer that keeps everything it did not ask to break.
+//
+// The owner's ruling: *"la carte doit rester interactive tout le temps sinon il n'y a pas
+// d'intérêt d'être sur le web si on peut pas naviguer dedans"* — a web map you cannot move through
+// is a picture. So map × web is a LIVE MapTiler map with its native zoom and pan, constrained to
+// the subject's area. This OVERTURNS `references/map-web-discipline.md`'s own "Pan and zoom", which
+// rejected live tiles in writing; that section now records the reversal and its price rather than
+// having been quietly deleted.
+//
+// The straightforward reading of the ruling — delete the plate, ship a live map — throws away four
+// things this format already proved, all measurable: a complete no-JS render, a page that works
+// offline, a page that works when the key lapses, and a guard suite that does not need the network.
+// None of that is required by the ruling and all of it is cheap to keep, so the page ships in two
+// layers:
+//
+//   1. `#mw-fallback` — the SSR'd beat exactly as it rendered before: the baked plate as a data
+//      URI, the marks, the labels, the legend. Complete, script-free, request-free.
+//   2. `#mw-map` — an empty box that this file fills with a live map, and which is shown ONLY on
+//      `map.on("load")`. A style failure, a tile failure, a rotated key or no network at all leaves
+//      layer 1 exactly where it is.
+//
+// That last case is not decoration. MapTiler invalidates ALL of an account's keys at 100% of its
+// spending limit (documented), so the failure mode is every published article's map going blank at
+// once. Layer 1 is what stands between that and an article with a hole in it.
+//
+// ONE FILE, FIVE MAP TYPES. This is a byte-identical copy in every map × web beat (the twin
+// duplicates helpers rather than importing across skills), so it may not know what a beat draws.
+// Everything type-specific travels in the PLAN the renderer writes into the page — a list of
+// LAYERS, each declaring how its own marks answer three questions this file cannot answer for them:
+//
+//   - `radius: "camera"` — a circle whose size encodes a VALUE (proportional symbol). Derived from
+//     the camera at the fit, then held constant in screen pixels as the reader zooms, because the
+//     same number must not mean two things at two zooms.
+//   - `radius: "ground"` — a dot standing for a fixed number of people in a fixed piece of ground
+//     (dot density). Its GROUND area must be constant, so its screen radius doubles per zoom level
+//     — a `["interpolate", ["exponential", 2], ["zoom"], …]` expression, not a number.
+//   - `radius: "fixed"` — a locator marker, which is a pin rather than a measurement: the same
+//     screen size at every zoom, exactly as the plate drew it.
+//   - no `radius` at all — `fill` and `line` layers (choropleth regions, hex bins, routes). They
+//     are geographic polygons and reproject on their own; only their strokes are screen-sized.
+//
+// AND THE MAP HALF OF IT IS NO LONGER HERE. Everything above that is about the PLAN rather than
+// about this page — what a layer's `radius` strategy means, how a plan's layers are mounted, how a
+// style's water and labels are decided, what makes a plan valid — moved to `shared/map-beat/`,
+// which the still, the video and the scrolly read from too. This file keeps only what is genuinely
+// the WEB FORMAT's: the two-layer fallback swap, the reader's camera leash, the hover tooltip, the
+// CSS filter's live mirror, and the HTML overlay that follows the camera. The trunk modules are
+// carried beside it (`plan.mjs`, `style.mjs`, `mount.mjs`, line 1 of each naming its canonical) and
+// `carried-copies.test.ts` holds them byte-identical, because a skill directory may not import out
+// of itself.
+//
+// Inlined verbatim as a classic script by `scripts/render-web.mjs`, which strips `export` and the
+// trunk `import` lines from each top-level declaration and concatenates the trunk modules ahead of
+// this one into the SAME script — the same treatment `interaction.mjs` gets, and for the same
+// reason: no module script, so a CMS iframe or a sandboxed embed cannot refuse it.
+
+
+/** The plan the renderer wrote into the page: the style URL with its key, the camera's own bounds
+ *  and zoom range, and the beat's own layers. Returns null when the page carries no plan, which is
+ *  the shape a beat that opted out of live tiles takes. */
+function readLivePlan(doc) {
+  const el = doc.getElementById("mw-live-plan");
+  if (!el) return null;
+  try {
+    return JSON.parse(el.textContent);
+  } catch (err) {
+    return null;
+  }
+}
+
+/** True when the plan still carries the delivery placeholder rather than a key. R1b keeps the real
+ *  key out of the repository, so the COMMITTED artifact is always in this state and its live layer
+ *  never boots — which is exactly right: a proof artifact must not spend a newsroom's tile quota. */
+function planIsUnkeyed(plan) {
+  // The sentinel is ASSEMBLED, never written whole. `deliver` substitutes every occurrence of
+  // the placeholder in the delivered file, and this script is IN that file — a literal here would be
+  // rewritten to the key itself, so the check would then read "does the style URL contain the key",
+  // which is true, and every delivered map would refuse to boot. Found by driving the page in a real
+  // browser after substitution, not by reading it: the fallback rendered perfectly and nothing was
+  // red.
+  const sentinel = "__MAPTILER" + "_KEY__";
+  return !plan || !plan.styleUrl || plan.styleUrl.indexOf(sentinel) >= 0;
+}
+
 /**
  * Boots the live map and swaps it in. Everything that could fail — no MapLibre on the page, no
  * plan, a placeholder key, a style that never loads — returns quietly and leaves the fallback
@@ -689,6 +1099,16 @@ function initLiveMap(win) {
   const plan = readLivePlan(doc);
   if (planIsUnkeyed(plan)) return null;
   if (!win.maplibregl) return null;
+
+  /** THE RENDERER VALIDATES THE PLAN IT WAS HANDED, not the one somebody wrote. A plan reaches this
+   *  file as JSON in a `<script>` tag, from a render that ran on another machine on another day —
+   *  `Object.freeze` does not survive that and neither does anything the writer checked. A duplicate
+   *  layer id, a missing camera fact, a truncated plan: MapLibre reports none of them, it just draws
+   *  a map that is quietly wrong. This THROWS rather than falling back, because a malformed plan is a
+   *  build defect and hiding it behind the fallback plate is how it ships. */
+  const complaints = validateLivePlan(plan);
+  if (complaints.length)
+    throw new Error("this page's live plan is not renderable:\n  - " + complaints.join("\n  - "));
   const container = doc.getElementById("mw-map");
   const fallback = doc.getElementById("mw-fallback");
   if (!container || !fallback) return null;
@@ -727,37 +1147,35 @@ function initLiveMap(win) {
   map.addControl(new win.maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   map.on("style.load", function () {
-    // geo-discipline rule 7, re-applied to the LIVE style exactly as the bake applies it to the
-    // baked one. If the live map and its own fallback disagree about the colour of water, the swap
-    // is visible and the beat is broken — this is the one line that keeps them the same cartography.
-    const ids = ["Water", "Water shadow"];
-    for (let i = 0; i < ids.length; i++)
-      if (map.getLayer(ids[i])) map.setPaintProperty(ids[i], "fill-color", plan.waterFill);
-    // Rule 9: the beat draws the only labels. The provider's place names compete with the labels
-    // this beat positions itself, so they go, live exactly as baked.
-    const layers = map.getStyle().layers;
-    for (let i = 0; i < layers.length; i++)
-      if (layers[i].type === "symbol" || /border|boundary|admin/i.test(layers[i].id))
-        map.setLayoutProperty(layers[i].id, "visibility", "none");
+    // THE TRUNK'S OWN RULE, APPLIED TO THE LIVE STYLE. `applyLiveStyle` is the same decision
+    // `transformStyle` takes on the style DOCUMENT the plate is baked from — the same water regex,
+    // the same label and texture sweep, the same tints — so the live map and the fallback under it
+    // cannot be two cartographies. What it replaced named `["Water", "Water shadow"]` by hand and
+    // painted them a hard-coded blue, which agreed with the bake only for as long as MapTiler kept
+    // those exact ids and nobody edited one of the two lists.
+    //
+    // And it is ASSERTED rather than assumed: a sweep that re-tinted nothing did not find the style
+    // it was written against, and the reader would keep the provider's own near-grey water under a
+    // blue plate with nothing to say so.
+    assertLiveStyleAnswered(
+      applyLiveStyle(map, {
+        tints: plan.tints,
+        // A PLAN IS A FILE, AND A FILE CARRIES NO PROTOTYPES. A beat that keeps part of the
+        // provider's geography (a city locator keeps its street network) states it as a regular
+        // expression, which `JSON.stringify` flattens to `{}` — so it travels as source and flags
+        // and is rebuilt here. A `{}` reaching `.test()` throws; a `{}` silently matching nothing
+        // would have been the quieter and worse failure.
+        keepTextures: (plan.keepTextures || []).map(function (r) {
+          return new RegExp(r.source, r.flags);
+        }),
+      }),
+      plan.styleName || plan.styleUrl,
+    );
 
-    const declared = planLayers(plan);
-    for (let i = 0; i < declared.length; i++) {
-      const layer = declared[i];
-      map.addSource(layer.id, { type: "geojson", data: layer.data });
-      const paint = {};
-      for (const key in layer.paint) paint[key] = layer.paint[key];
-      // Placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is what
-      // sets the real number. Adding a circle layer with no radius at all would draw MapLibre's own
-      // default 5px for one frame, which is a visible flash of the wrong circle.
-      if (layer.radius === "camera") paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
-      else if (layer.radius === "ground")
-        paint["circle-radius"] = groundRadiusExpression(plan.bakeZoom, {
-          floorPx: layer.radiusFloorPx,
-          uniformRadius: layer.uniformRadius,
-        });
-      else if (layer.radius === "fixed") paint["circle-radius"] = ["get", "r"];
-      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: paint });
-    }
+    // The beat's own layers, mounted by the same `mountPlan` the still's bake mounts them with —
+    // including each layer's `radius` strategy, so a circle never flashes MapLibre's own default
+    // 5px for a frame before `applyMarkScale` reaches it.
+    mountPlan(map, plan);
   });
 
   map.on("load", function () {
@@ -976,7 +1394,7 @@ function applyMarkScale(map, doc, plan) {
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     if (layer.radius !== "camera" || !map.getLayer(layer.id)) continue;
-    map.setPaintProperty(layer.id, "circle-radius", ["*", ["get", "r"], scale]);
+    map.setPaintProperty(layer.id, "circle-radius", radiusPaintOf(layer, plan, scale));
   }
   reposition(map, doc, plan, scale);
   return scale;
@@ -1004,6 +1422,10 @@ const HALO_FLOOR_PX = 28;
 function reposition(map, doc, plan, scale) {
   const anchors = plan.anchors || {};
   if (!(scale > 0)) scale = cameraScale(plan, map);
+  // THE OVERLAY FOLLOWS THE MARK'S OWN RULE, not the camera's. A pin is drawn at the same screen
+  // size at every zoom, so its halo, its label gutter and its baseline offset are too — see
+  // `markScaleOf` in the trunk for the 40px ring around a 12px pin this closes.
+  const markScale = markScaleOf(plan, scale);
   const nodes = doc.querySelectorAll(".pt, .point-label");
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -1017,7 +1439,7 @@ function reposition(map, doc, plan, scale) {
     // that knows the number in pixels and a circle stated once cannot come apart.
     const markRadius = Number(node.getAttribute("data-r") || 0);
     if (markRadius > 0 && node.classList.contains("pt")) {
-      const diameter = Math.max(HALO_FLOOR_PX, markRadius * scale * 2 + HALO_PAD_PX);
+      const diameter = Math.max(HALO_FLOOR_PX, markRadius * markScale * 2 + HALO_PAD_PX);
       node.style.width = diameter + "px";
       node.style.height = diameter + "px";
     }
@@ -1026,8 +1448,8 @@ function reposition(map, doc, plan, scale) {
     // numbers travel on the node itself rather than being recomputed here, so the live label and
     // the fallback label are the same placement seen at two sizes.
     const side = node.getAttribute("data-side");
-    const gap = Number(node.getAttribute("data-gap") || 0) * scale;
-    const dy = Number(node.getAttribute("data-dy") || 0) * scale;
+    const gap = Number(node.getAttribute("data-gap") || 0) * markScale;
+    const dy = Number(node.getAttribute("data-dy") || 0) * markScale;
     node.style.top = at.y + dy + "px";
     if (side === "left") {
       node.style.left = "auto";

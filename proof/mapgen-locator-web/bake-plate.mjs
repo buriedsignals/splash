@@ -36,8 +36,47 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { orgsFromCsv } from "./geo-locator.ts";
+// THE TRUNK, REACHED THROUGH THE `#shared/…` SUBPATH ALIAS. A beat is a story, not a skill, so it
+// may reach out where a skill may not — and what it reaches for is the wiring
+// `references/map-plan.md` exists to stop it re-deriving. `plateTints` is guard 7 and
+// `applyLiveStyle` is the sweep both this bake and the live page now run.
+import { plateTints } from "#shared/map-beat/tints.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const TRUNK_STYLE = fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs"));
+
+/**
+ * THE TWO COLOURS OF THE BASEMAP, MEASURED RATHER THAN TYPED — guard 7 of `references/map-plan.md`.
+ *
+ * This line used to read `"#aac9e0"`, a constant carried byte-identically by every map × web beat
+ * and by the format's own seed, and it was never measured against anything. Measured now, on this
+ * beat's own white ground: `#aac9e0` sits at **1.730:1 against the page**, over the trunk's
+ * `BASEMAP_MAX` of 1.6:1 — a basemap carrying more weight against the page than the markers drawn on
+ * it, which is what `the-basemap-gives-up-its-contrast` forbids. `plateTints` searches for the
+ * SMALLEST dose that still separates sea from land by `SEA_LAND_MIN` (1.22:1) and answers
+ * `#cedfee` / `#f4f4f4` at 1.239:1 sea-to-land and 1.362:1 against the page.
+ *
+ * It is a CALL, not a recorded answer (rule 2: what is measured stays measured). A beat on another
+ * ground gets different numbers, on purpose, and a ground where no dose works at all is refused here
+ * rather than shown as a flat map.
+ */
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+const TINTS = plateTints({ ground: PALETTE.ground });
+
+/**
+ * THE ONE THING THIS BEAT'S GEOGRAPHY KEEPS, and it is a sentence about a city rather than a
+ * setting. The trunk's sweep hides every line layer, which is right for a choropleth of Europe —
+ * a road network over classed countries is noise. This frame is 4 km wide. The streets are how a
+ * reader places eleven markers against a city they may already know, and taking them out left a
+ * plate that was quieter and told the reader less about where anything is.
+ *
+ * Named as a regular expression against the provider's own layer ids rather than as a list of them,
+ * because `dataviz-light` splits its network across a dozen (`Road network`, `Road motorway`,
+ * `Tunnel`, …) and a list would go stale the next time MapTiler restyles. Everything else the sweep
+ * hides — hillshade, landuse, boundaries, every provider label — still goes.
+ */
+const KEEP_TEXTURES = [/road/i];
 
 // The camera: the SAME real bounds `proof/map-geneva-locator/bake.mjs` uses — central Geneva,
 // padded so no marker sits on the frame edge (the study set spans lon 6.122-6.192, lat
@@ -190,8 +229,19 @@ await page.setContent(
 );
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
+// THE PAGE RUNS THE TRUNK'S OWN SOURCE, not a paraphrase of it. `page.evaluate` ships a function
+// body across the process boundary with no closure, so a module the bake imports is not reachable
+// from inside the browser — which is exactly how the sweep came to be written twice. The file is
+// read, its `export` keywords stripped (the page takes a classic script, the same treatment
+// `render-web.mjs` gives it), and its two entry points hung off `window`.
+await page.addScriptTag({
+  content:
+    (await readFile(TRUNK_STYLE, "utf8")).replace(/^export /gm, "") +
+    "\nwindow.__applyLiveStyle = applyLiveStyle;\nwindow.__assertLiveStyleAnswered = assertLiveStyleAnswered;\n",
+});
+
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs, width, height }) => {
+  async ({ key, style, bounds, settleMs, width, height, tints, keepTextures }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -205,17 +255,25 @@ const gate = await page.evaluate(
     window.__map = map;
     await new Promise((resolve) => map.once("style.load", resolve));
 
-    // Rule 9: quiet the plate. Every place label, road label and boundary line the provider ships
-    // is a layer doing none of the five jobs here — the markers and this beat's own labels carry it.
-    const hidden = [];
-    for (const layer of map.getStyle().layers)
-      if (layer.type === "symbol" || /border|boundary|admin/i.test(layer.id)) {
-        map.setLayoutProperty(layer.id, "visibility", "none");
-        hidden.push(layer.id);
-      }
-    // Rule 7: water reads as a blue tint, never the style's own near-grey.
-    for (const id of ["Water", "Water shadow"])
-      if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", "#aac9e0");
+    // Rules 7 and 9 in ONE CALL, and it is the trunk's — `shared/map-beat/style.mjs`, injected into
+    // this page above. Quiet the plate (every place label, road label and boundary line the provider
+    // ships is a layer doing none of the jobs here) and paint the water and land the beat measured.
+    //
+    // What it replaced was two hand-written loops: a symbol/boundary sweep, and `["Water", "Water
+    // shadow"]` named by hand and painted a hard-coded blue. The live page carried its own copy of
+    // both, and the two agreed only for as long as MapTiler kept those ids and nobody edited one of
+    // the lists. The plate and the live map are now the same sweep, from the same file.
+    //
+    // A REGULAR EXPRESSION DOES NOT CROSS THIS BOUNDARY. `page.evaluate` serialises its arguments,
+    // and a RegExp serialises to `{}` — which `.test()` is not a method of, so it would throw here
+    // rather than quietly match nothing. It travels as source and flags and is rebuilt in the page.
+    const swept = window.__assertLiveStyleAnswered(
+      window.__applyLiveStyle(map, {
+        tints,
+        keepTextures: keepTextures.map((r) => new RegExp(r.source, r.flags)),
+      }),
+      style,
+    );
 
     const started = Date.now();
     const how = await new Promise((resolve) => {
@@ -232,13 +290,23 @@ const gate = await page.evaluate(
     return {
       how,
       ms: Date.now() - started,
-      hidden: hidden.length,
+      hidden: swept.hidden,
+      tinted: swept.tinted,
       zoom: map.getZoom(),
       topLeft: map.unproject([0, 0]),
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width: size, height: size },
+  {
+    key,
+    style: BEAT.style,
+    bounds: BEAT.bounds,
+    settleMs,
+    width: size,
+    height: size,
+    tints: TINTS,
+    keepTextures: KEEP_TEXTURES.map((r) => ({ source: r.source, flags: r.flags })),
+  },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -276,6 +344,12 @@ const geometry = {
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
   frameCorners,
+  // WHAT THE PLATE WAS ACTUALLY BAKED IN, travelling with it. The live page paints its own style
+  // from this rather than from a second constant of its own: a fallback plate and the live map
+  // under it disagreeing about the colour of water is a visible swap, and it is the one thing the
+  // two-layer arrangement must never do.
+  tints: TINTS,
+  keepTextures: KEEP_TEXTURES.map((r) => ({ source: r.source, flags: r.flags })),
   worldWidthPx: camera.worldWidthPx,
   degreesPerPixel: camera.degreesPerPixel,
   metresPerPixel: camera.metresPerPixel,
@@ -285,7 +359,8 @@ const geometryPath = join(outDir, "geometry.json");
 await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
-  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} and re-tinted ${gate.tinted} basemap layers · zoom ${geometry.zoom}\n` +
+    `tints    → water ${TINTS.water}, land ${TINTS.land}, sea/land ${TINTS.seaLandContrast.toFixed(3)}:1 (measured)\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${points.length} points\n` +
     `off-frame: ${offFrame.length ? offFrame.map((p) => p.name).join(", ") : "none"}`,
