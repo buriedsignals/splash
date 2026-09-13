@@ -165,6 +165,28 @@ export function measureProgress(panels, lane) {
  * into the markup at build time — this function never invents an id, and never reads how many steps
  * there are to decide how to behave, so it wires N steps exactly as it wires two.
  */
+/** The share of the component's height the header may take before its title steps down a form. */
+export const HEADER_SHARE = 0.22;
+
+/**
+ * THE LONGEST TITLE FORM THAT FITS. A directed beat hands the scaffold a ladder, longest first
+ * (`renderScrolly`'s `title`); the header is fixed and every line of it is taken from the graphic,
+ * so the title steps down until the header fits `HEADER_SHARE` of the frame, and stops at its
+ * shortest form whatever it measures. Re-run on resize: a phone turned sideways gets the long form
+ * back.
+ */
+export function fitTitle(root) {
+  const heading = root.querySelector(".scrolly-header h2[data-title-forms]");
+  const header = root.querySelector(".scrolly-header");
+  if (!heading || !header) return;
+  const forms = JSON.parse(heading.getAttribute("data-title-forms"));
+  const budget = root.clientHeight * HEADER_SHARE;
+  for (let i = 0; i < forms.length; i++) {
+    if (heading.textContent !== forms[i]) heading.textContent = forms[i];
+    if (header.offsetHeight <= budget) return;
+  }
+}
+
 export function initScrolly(root) {
   const steps = Array.prototype.slice.call(root.querySelectorAll(".step"));
   const panels = Array.prototype.slice.call(
@@ -227,7 +249,16 @@ export function initScrolly(root) {
   // is painted, so the class is already right for the frame the reader actually sees. No rAF
   // trampoline: adding one would deliberately paint one frame of the wrong step.
   scroller.addEventListener("scroll", update, { passive: true });
-  window.addEventListener("resize", update);
+  window.addEventListener("resize", function () {
+    fitTitle(root);
+    update();
+  });
+  fitTitle(root);
+  if (document.fonts && document.fonts.ready)
+    document.fonts.ready.then(function () {
+      fitTitle(root);
+      update();
+    });
   update();
 }
 

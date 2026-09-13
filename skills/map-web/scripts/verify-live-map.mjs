@@ -140,6 +140,20 @@ export function resolveChrome() {
   return found;
 }
 
+/** THE CANONICAL NAME FIRST, THEN EVERY ALIAS — `splash/scripts/keys.mjs`'s own list for this key,
+ *  duplicated the way this repository duplicates a helper across a copy boundary (a skill directory
+ *  may not import out of itself). This guard used to read `MAPTILER_KEY` alone, and a root that sets
+ *  only `REMOTION_MAPTILER_KEY` — which is what an existing Splash engine `.env` carries, and what
+ *  this very checkout carries — made it print "no MAPTILER_KEY", exit ZERO, and verify nothing. The
+ *  bake beside it has always read the aliases, so the plate baked while the live map went unchecked:
+ *  a guard that skips silently is the same failure shape as a map that draws in the wrong typeface. */
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+
+export function mapTilerKeyIn(env) {
+  for (const name of ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES]) if (env[name]) return env[name];
+  return "";
+}
+
 export function parseEnvFile(text) {
   const env = {};
   for (const line of text.split(/\r?\n/)) {
@@ -159,19 +173,43 @@ export function keyedCopy(htmlPath, key) {
   return out;
 }
 
-/** The radius a mark SHOULD be drawn at, from the plate's own ground scale and the live camera's —
- *  derived here rather than read from the page, so it is an independent second opinion rather than
- *  the implementation agreeing with itself. */
-export function expectedRadiusPx(frameRadius, planDegreesPerPixel, liveZoom) {
+/**
+ * The radius a mark SHOULD be drawn at — derived here rather than read from the page, so it is an
+ * independent second opinion rather than the implementation agreeing with itself.
+ *
+ * AND IT DEPENDS ON WHAT THE MARK MEANS. This took one argument and assumed every mark was
+ * camera-scaled, because it was written against the proportional-symbol seed and never run on
+ * anything else (the key-alias defect above is why: it printed "no MAPTILER_KEY" and exited zero on
+ * this checkout). Driven against `proof/mapgen-locator-web`, whose markers are PINS, it reported a
+ * 6px pin as 17.3px drawn and called the browser's own hit testing broken. Three strategies, the
+ * same three `shared/map-beat/mount.mjs` paints:
+ *
+ *   `camera` — the circle encodes a value: scaled once from the camera, then held.
+ *   `fixed`  — a pin: the same screen size at every zoom, exactly as the plate drew it.
+ *   `ground` — the circle stands for a piece of ground: doubling per zoom level.
+ */
+export function expectedRadiusPx(frameRadius, plan, liveZoom, strategy = "camera") {
+  if (strategy === "fixed") return frameRadius;
+  // `camera` and `ground` come to the SAME number: `cameraScale` is `bakeDpp / liveDpp`, which is
+  // exactly `2 ** (liveZoom − bakeZoom)`, which is what the ground rule interpolates to. They differ
+  // in WHEN they are applied — once at the fit against continuously during a gesture — not in what
+  // they answer at a settled camera, which is the only moment this guard measures.
   const liveDegreesPerPixel = 360 / (512 * Math.pow(2, liveZoom));
-  return frameRadius * (planDegreesPerPixel / liveDegreesPerPixel);
+  return frameRadius * (plan.degreesPerPixel / liveDegreesPerPixel);
+}
+
+/** The strategy the plan declares for the layer the marks come from. A plan that declares none is
+ *  camera-scaled, which is what every plan meant before the field existed. */
+export function radiusStrategyOf(plan, layerId = "mw-marks") {
+  const layer = (plan.layers || []).find((l) => l.id === layerId);
+  return (layer && layer.radius) || "camera";
 }
 
 /**
  * Drives one container shape and reports, per mark, what the map drew, what the camera implies, and
  * how far a real pointer still reaches it.
  */
-export async function measureShape(browser, keyedPath, shape) {
+export async function measureShape(browser, keyedPath, shape, strategy = "camera") {
   const page = await browser.newPage();
   await page.setViewport({ width: shape.width, height: shape.height, deviceScaleFactor: 1 });
   await page.goto(`file://${keyedPath}`, { waitUntil: "load" });
@@ -179,7 +217,7 @@ export async function measureShape(browser, keyedPath, shape) {
   // One idle beat, so the first tile paint cannot be mistaken for the mark layer not being there.
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const state = await page.evaluate(() => {
+  const state = await page.evaluate((strategy) => {
     const map = window.__mwMap;
     const container = document.getElementById("mw-map");
     const box = container.getBoundingClientRect();
@@ -192,7 +230,11 @@ export async function measureShape(browser, keyedPath, shape) {
       zoom: map.getZoom(),
       marks: features.map((feature) => {
         const at = map.project(feature.geometry.coordinates);
-        const drawn = feature.properties.r * scale;
+        // WHAT MAPLIBRE IS ACTUALLY PAINTING, and it is not `r * scale` for every beat. A camera-
+        // scaled circle is `r * scale`; a PIN is `r`, flat, at every zoom; a ground-scaled dot
+        // doubles per zoom level. Reading the camera-scaled form for all three is what made this
+        // guard call a 6px locator pin a 17.3px circle the browser could not hit.
+        const drawn = feature.properties.r * (strategy === "fixed" ? 1 : scale);
         return {
           key: feature.properties.key,
           drawn,
@@ -220,7 +262,7 @@ export async function measureShape(browser, keyedPath, shape) {
         };
       }),
     };
-  });
+  }, strategy);
 
   // The pointer walk, driven from OUTSIDE the page. Whether a reader can reach a mark is a fact
   // about the browser's own hit testing over the whole layered page — the canvas, the overlay's
@@ -300,6 +342,16 @@ export async function measureFilterStates(browser, keyedPath, shape) {
           labelledKeys: Array.from(document.querySelectorAll(".point-label"))
             .map((node) => node.getAttribute("data-key"))
             .filter(Boolean),
+          // …AND THE ONES A DECLUTTER DELIBERATELY PUT AWAY. A beat whose names would collide runs
+          // its own declutter on every camera move and sets `hidden` on the labels it drops
+          // (`interaction.mjs`'s `relabel`). That is ONE mechanism doing its job, not two
+          // disagreeing — but it is invisible to a check that only asks "is this label on screen",
+          // which called it a defect on `proof/mapgen-locator-web`'s eleventh name. Read separately
+          // so the invariant below can be stated against what is left: a label that is neither on
+          // screen NOR decluttered, while its mark is painted, is still the defect this guards.
+          declutteredKeys: Array.from(document.querySelectorAll(".point-label[hidden]"))
+            .map((node) => node.getAttribute("data-key"))
+            .filter(Boolean),
         };
       })),
     });
@@ -324,14 +376,15 @@ export async function verifyLiveMap({ htmlPath, key }) {
     executablePath: resolveChrome(),
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--hide-scrollbars"],
   });
+  const strategy = radiusStrategyOf(plan);
   try {
     const results = [];
-    for (const shape of SHAPES) results.push(await measureShape(browser, keyedPath, shape));
+    for (const shape of SHAPES) results.push(await measureShape(browser, keyedPath, shape, strategy));
     const failures = [];
     for (const result of results) {
       // 1. the drawn radius against the one the camera implies
       for (const mark of result.marks) {
-        const expected = expectedRadiusPx(mark.frameRadius, plan.degreesPerPixel, result.zoom);
+        const expected = expectedRadiusPx(mark.frameRadius, plan, result.zoom, strategy);
         const off = Math.abs(mark.drawn - expected) / Math.max(expected, 1e-6);
         if (off > SCALE_TOLERANCE)
           failures.push(
@@ -362,7 +415,7 @@ export async function verifyLiveMap({ htmlPath, key }) {
               `coordinate space whose two axes are not the same length is how this arrives.`,
           );
         if (!(halo.frameRadius > 0)) continue;
-        const drawn = expectedRadiusPx(halo.frameRadius, plan.degreesPerPixel, result.zoom);
+        const drawn = expectedRadiusPx(halo.frameRadius, plan, result.zoom, strategy);
         const expected = Math.max(HALO_FLOOR_PX, drawn * 2 + HALO_PAD_PX);
         if (Math.abs(halo.width - expected) > HALO_SIZE_TOLERANCE_PX)
           failures.push(
@@ -401,8 +454,9 @@ export async function verifyLiveMap({ htmlPath, key }) {
           `${filtering.shape}, filter ${state.chip}: the labels ${orphans.join(", ")} are still on screen ` +
             `with their own marks filtered away — a name floating over a mark that is not on the map`,
         );
+      const decluttered = new Set(state.declutteredKeys || []);
       const missing = state.labelledKeys.filter(
-        (key) => painted.has(key) && !state.labelKeys.includes(key),
+        (key) => painted.has(key) && !state.labelKeys.includes(key) && !decluttered.has(key),
       );
       if (missing.length > 0)
         failures.push(
@@ -442,9 +496,12 @@ if (import.meta.main) {
   // Explicit legacy verification reads the copied Splash root's `.env`; managed runs use Engine.
   const envPath = splashEnvPath(import.meta.dirname);
   const env = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, "utf8")) : {};
-  const key = flag("--key", process.env.MAPTILER_KEY ?? env.MAPTILER_KEY);
+  const key = flag("--key", mapTilerKeyIn(process.env) || mapTilerKeyIn(env));
   if (!key) {
-    console.log("no MAPTILER_KEY — the live map cannot be driven, so nothing was verified.");
+    console.log(
+      `no MapTiler key in the environment or in ${envPath} (looked for MAPTILER_KEY, ` +
+        `${MAPTILER_KEY_ALIASES.join(", ")}) — the live map cannot be driven, so nothing was verified.`,
+    );
     process.exit(0);
   }
   const { results, filtering, failures } = await verifyLiveMap({ htmlPath, key });
@@ -462,6 +519,7 @@ if (import.meta.main) {
   for (const state of filtering.states)
     console.log(
       `   filter ${state.chip.padEnd(34)} labels ${String(state.labelKeys.length).padStart(2)}/${String(state.labelledKeys.length).padStart(2)}  ` +
+        `decluttered ${String((state.declutteredKeys || []).length).padStart(2)}  ` +
         `hit targets ${String(state.buttonKeys.length).padStart(2)}  marks painted ${String(state.paintedKeys.length).padStart(2)}`,
     );
   if (failures.length > 0) {

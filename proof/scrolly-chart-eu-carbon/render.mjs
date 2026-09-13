@@ -23,6 +23,7 @@ import { createElement } from "react";
 import {
   deriveFurniture,
   readPalette,
+  FONT_FAMILY,
 } from "#shared/chart-beat/render-still.mjs";
 import { deriveFacts, parseReadings, bySeries, t, t2 } from "./carbon-data.ts";
 import {
@@ -72,6 +73,7 @@ function buildSteps(facts, series) {
 
   const shared = {
     ground,
+    font: FONT_FAMILY,
     ink: furniture.ink,
     muted: furniture.muted,
     grid: furniture.grid,

@@ -292,6 +292,9 @@ real beat writes its own runner in that same shape — never editing this skill'
   it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
   cannot resolve rather than substituting for it; a story root overrides it with its own file.
 
+- `references/directed-type-choreography.md` — a directed type beat is choreographed, not a static
+  plate replayed: the choreography written card by card first, every card changing the picture, and the
+  repertoire of scroll gestures (reveal in order, filter, zoom, reorder, rescale, count, compare, trace).
 - `references/scrolly-discipline.md` — the doctrine: what the card covers, measured, and the three
   things that follow (no band can be reserved, the card has two widths, some frames must be composed
   differently); the step height and what raising it buys and costs; the sticky-reservation fact and

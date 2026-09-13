@@ -28,10 +28,11 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "./render-still.mjs";
+
 import {
   HIT_TARGET_PX,
   LABEL_FONT,
+  LABEL_LINE_PX,
   LABEL_PAD_X,
   LABEL_PAD_Y,
   LocatorCaveat,
@@ -47,9 +48,54 @@ import {
   readingOrder,
   slugOf,
 } from "./geo-locator.ts";
-// `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
-// a beat is a story, not a skill, so it may reach out where a skill may not.
-import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+// ONE `render-still.mjs`, REACHED THROUGH THE `#shared/…` SUBPATH ALIAS — a beat is a story, not a
+// skill, so it may reach out where a skill may not.
+//
+// This file used to import `deriveFurniture`/`measureText` from a COPY of that module sitting beside
+// it and `readPalette`/`seriesInks` from the shared one, in two import statements four lines apart:
+// two copies of one module in one file, which is the drift this sub-project exists to remove. The
+// copy had already stopped working — it imports `./typefaces.mjs`, which the design base's move to
+// Google Fonts added as a sibling of the canonical and which was never copied here, so this beat
+// could not render AT ALL on this branch (`Cannot find module './typefaces.mjs'`). Eleven other map
+// beats under `proof/` carry the same broken copy.
+import { deriveFurniture, measureText, readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+// THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES. This beat's CSS used to say
+// `font-family: Helvetica, Arial, sans-serif` and load nothing: Helvetica is a licensed face that
+// exists on the author's Mac and on no CI runner, no Android phone and no Linux desktop, so the
+// delivered page was set in whatever each reader happened to have. The design base moved to Google
+// Fonts (commits de112dff, b49a59b3) and the format's own `render-web.mjs` followed; this beat did
+// not. `assertFontsEmbedded` now refuses a page that names a family it does not carry.
+import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "#shared/design-base/typefaces.mjs";
+// THE DIRECTION, AND WHY A MAP BEAT NOW READS ONE.
+//
+// `rapport` sets its display register in a SERIF and its body in an italic serif. The static
+// choropleth on the same ground renders its title in Merriweather; this page came out entirely in
+// Open Sans, so one direction had two typographic voices depending on the genre. The cause was not
+// in this beat: every web stylesheet in the tree sets `font-family` exactly ONCE, on `body`, from
+// `dominantFontStack` — the family that appears most often in the markup — and `figureVars` carried
+// the direction's sizes and weights but never its FAMILIES. This beat's markup names no family at
+// all, so `dominantFontStack` fell through to its own `HOUSE_SANS_STACK` and the title was set in
+// the fallback constant of a helper, which is not a typographic decision anybody took.
+//
+// `figureVars` now emits `--title-family` and its siblings (see `shared/design-base/web.mjs`), and
+// `buildCss` below reads them. Nothing here names Merriweather: the family comes off the serif
+// LADDER, chosen for the characters this beat actually sets.
+import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { figureVars, plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
+// THE TRUNK — the plan contract, reached through the `#shared/…` alias a beat is allowed to use.
+// `plan.mjs`, `style.mjs` and `mount.mjs` are also INLINED into the delivered page (see
+// `liveScript` below): the live layer runs the trunk's own source rather than a copy of it.
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateLivePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this beat.
@@ -60,6 +106,31 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
+
+/**
+ * THE LIVE LAYER IS THE TRUNK PLUS THIS BEAT'S OWN PAGE MECHANICS, in one classic script.
+ *
+ * `live-map.mjs` used to carry all of it — the radius strategies, the layer mounting, the style's
+ * water and labels — as a byte-identical copy in every map × web beat, which is exactly the drift
+ * `references/map-plan.md` opens by naming. Those three now live in `shared/map-beat/` and are read
+ * FROM THERE, resolved through the same subpath alias the imports above use rather than by a
+ * relative climb out of this beat.
+ *
+ * ORDER IS DEPENDENCY ORDER, not alphabetical: `live-map.mjs` calls into all three, and a `const`
+ * declared after its use is a temporal-dead-zone error at runtime rather than a hoisted function.
+ */
+const LIVE_MODULES = [
+  fileURLToPath(import.meta.resolve("#shared/map-beat/plan.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/mount.mjs")),
+  join(HERE, "live-map.mjs"),
+];
+
+async function liveScript() {
+  const parts = [];
+  for (const path of LIVE_MODULES) parts.push(inlineable(await readFile(path, "utf8")));
+  return parts.join("\n");
+}
 
 // The colours are READ, not typed — see `PALETTE.md` beside this file. A locator draws no value
 // channel, so category colour is this map's ENTIRE data encoding; all three come out of the
@@ -79,6 +150,12 @@ console.log(
 // ===== CONFIG — edit for your story =====
 const BEAT = {
   ground: PALETTE.ground,
+  // THE FILED DIRECTION THIS BEAT IS SET IN — the same one the static choropleth on this ground
+  // renders, so the two genres speak with one typographic voice. Named here, once, beside the
+  // palette: the direction decides the TYPE (family, weight, case, tracking); `PALETTE.md` decides
+  // the colour. Its recorded ground and this beat's recorded ground are checked against each other
+  // below rather than assumed to agree.
+  direction: "rapport",
   title: "Eleven international organisations headquartered in and around Geneva",
   source:
     "Source: Wikidata (query.wikidata.org/sparql), organisations within 6 km of central Geneva",
@@ -89,10 +166,12 @@ const BEAT = {
   // api.maptiler.com) — the page then ships as the fallback layer alone, which is exactly what this
   // beat was before the ruling.
   live: true,
-  // Rule 7 of `geo-discipline.md`, and the same value `bake-plate.mjs` paints the plate's water
-  // with: if the live map and its own fallback disagree about the colour of water, the swap is
-  // visible and the beat is broken.
-  waterFill: "#aac9e0",
+  // Rule 7 of `geo-discipline.md` is NOT a constant here any more. The tints the live style is
+  // painted with are READ OFF THE PLATE's own `geometry.json` — `bake-plate.mjs` measures them with
+  // the trunk's `plateTints` and records what it actually baked in. A second constant in this file
+  // is how a fallback plate and the live map over it come to be two different cartographies, and
+  // the swap between them is visible.
+  //
   // The caveat and the alt are NOT here. Both used to be typed, and both were false of the picture
   // beside them: the alt called the orange tier "nearby" when the International Civil Defence
   // Organisation — an orange marker — is by nearest-neighbour distance the most isolated marker on
@@ -101,7 +180,7 @@ const BEAT = {
   // below, from the coordinates, and the marker keys they name are passed as `mustLabel` so the
   // render throws rather than ship words the reader cannot check against the frame.
 };
-const PLATE_SIZE = 420; // the bake's own frame — see bake-plate.mjs's own header
+const PLATE_SIZE = 840; // the bake's own frame WIDTH — its height follows the stage aspect it measured; see bake-plate.mjs
 // FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
 // committed, so the delivered html could not be reproduced or audited — and MapTiler restyles, so
 // a re-bake months later is a different picture under the same markers. `ensurePlate` below bakes
@@ -183,12 +262,18 @@ export function separationHeadroom(points, metresPerPixel) {
  * — `frameCorners` is the extent the camera ACTUALLY showed, which is not the bounds it was asked
  * for, and it has only been recorded since 2026-08-10.
  */
-export function livePlan({ geometry, ground, waterFill }) {
+export function livePlan({ geometry, ground }) {
   const corners = geometry.frameCorners;
   if (!corners || !(geometry.degreesPerPixel > 0))
     throw new Error(
       "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
         "constrained to nor a ground scale to draw its marks at",
+    );
+  if (!geometry.tints?.water)
+    throw new Error(
+      "this plate predates the MEASURED tints: re-bake it. Before `plateTints` reached this beat the " +
+        "water was a constant typed into two files, and the live map would now be painted from a " +
+        "third — a plate and a live map that disagree about the colour of water make a visible swap",
     );
   const lons = geometry.points.map((p) => p.lon);
   const lats = geometry.points.map((p) => p.lat);
@@ -200,7 +285,18 @@ export function livePlan({ geometry, ground, waterFill }) {
   for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    // The style's own name, for the refusal `assertLiveStyleAnswered` prints: a URL carrying a key
+    // placeholder is not what a reader of an error message needs to see.
+    styleName: geometry.style,
+    // WHAT THE PLATE WAS ACTUALLY BAKED IN, not a second answer to the same question. Recorded by
+    // `bake-plate.mjs` from the trunk's own `plateTints`; a plate baked before that was recorded is
+    // refused below rather than silently painted a different blue from the one under it.
+    tints: geometry.tints,
+    // …AND WHAT IT KEPT. Same source, same reason: the plate and the live map over it have to be one
+    // cartography, so the sweep that quieted the plate is the sweep the live map runs, with the same
+    // exceptions. A regular expression cannot survive `JSON.stringify`, so it travels as source and
+    // flags and `live-map.mjs` rebuilds it — the plan is a FILE, and a file carries no prototypes.
+    keepTextures: geometry.keepTextures ?? [],
     frame: geometry.frame,
     // The bake's own ground-per-pixel. `live-map.mjs` derives the scale it places labels and hit
     // targets at from the RATIO of this to the live camera's own.
@@ -314,6 +410,43 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
+/**
+ * THE BEAT'S OWN DIRECTION, RESOLVED TO FACES THAT CAN SET ITS OWN WORDS.
+ *
+ * `resolveDirectionFamilies` walks each register's LADDER and takes the first family whose cmap
+ * covers the text that register will actually set on this page — so the serif here is Merriweather
+ * because Merriweather covers these eleven names and this caveat, not because anything typed it.
+ * A register whose text no family on its ladder can set REFUSES rather than substitutes, which is
+ * the whole reason the ladder exists.
+ *
+ * Every string passes through `plainSpaces` first: one U+202F or U+00A0 refuses every family and
+ * takes the render down with a message naming a code point rather than a word.
+ */
+function directionFor(props) {
+  const path = fileURLToPath(import.meta.resolve(`#shared/design-base/directions/${BEAT.direction}.md`));
+  const filed = readDirection(path);
+  // A direction records the ground it was measured against; `PALETTE.md` records the ground this
+  // beat draws on. Two grounds are two furniture ladders, and `deriveFurniture` only ever sees one
+  // of them — so they are compared rather than assumed to agree.
+  if (filed.ground.toUpperCase() !== String(props.ground).toUpperCase())
+    throw new Error(
+      `direction "${BEAT.direction}" is filed on ground ${filed.ground} and this beat's PALETTE.md ` +
+        `records ${props.ground}. A direction's registers are measured against its own ground; ` +
+        `pick the direction that matches the recorded palette, or re-record the palette.`,
+    );
+  const labels = props.geometry.points.map((p) => p.name).join(" ");
+  const textPerRegister = {
+    display: props.title,
+    eyebrow: props.legendCaption,
+    body: `${props.caveat} ${props.source} ${props.basemapCredit}`,
+    axis: labels,
+    annot: labels,
+    value: `${labels} ${props.geometry.points.map((p) => p.category).join(" ")}`,
+  };
+  for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plainSpaces(textPerRegister[key]);
+  return resolveDirectionFamilies(filed, textPerRegister);
+}
+
 async function renderMapWeb({
   component,
   caveat,
@@ -325,8 +458,28 @@ async function renderMapWeb({
   plan = null,
 }) {
   const furniture = deriveFurniture(props.ground);
+  // The registers, as CSS. `webRegisters` needs the three ink ROLES a register may ask for; it is
+  // handed this beat's OWN furniture and its OWN recorded accent, never the direction's colours —
+  // `PALETTE.md` is the colour authority here and `web.mjs`'s own header says the same. Only the
+  // TYPE half of each register reaches the stylesheet below; the `color:` rules are unchanged.
+  const direction = directionFor(props);
+  const regs = webRegisters(direction, {
+    ink: { ink: furniture.ink, muted: furniture.muted, accent: PALETTE.accent },
+  });
+  const vars = figureVars(regs);
+  console.log(
+    `direction ${direction.name} (${BEAT.direction}) — ` +
+      direction.decisions.map((d) => `${d.register}:${d.family}`).join(", "),
+  );
+  // THE NAME IS MEASURED IN THE FACE IT IS DRAWN IN. `measureText`'s own default family happened to
+  // equal this direction's value register, so the declutter and the stylesheet agreed by luck; a
+  // direction whose value register is anything else would have had the declutter measuring one face
+  // and the browser drawing another, and the only symptom would be names overlapping in the picture
+  // while every guard stayed green.
+  const labelFamily = direction.registers.value.family;
+  const measureInLabelFace = (text, font) => measureText(text, { fontFamily: labelFamily, ...font });
   const mapHtml = renderToStaticMarkup(
-    createElement(component, { ...props, ...furniture, measure: measureText }),
+    createElement(component, { ...props, ...furniture, measure: measureInLabelFace }),
   );
   const caveatHtml = renderToStaticMarkup(
     createElement(caveat, { caveat: props.caveat }),
@@ -349,17 +502,30 @@ async function renderMapWeb({
     ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
       `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
       `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
-      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+      `<script>\n${await liveScript()}\n</script>`
     : "";
 
-  const html = `<!doctype html>
+  // THE PAGE'S OWN FAMILY, READ OFF WHAT THE COMPONENTS ACTUALLY ASKED FOR rather than typed into
+  // the stylesheet. `dominantFontStack` reads the markup; `embeddedWebFaces` fetches and SUBSETS
+  // each face to the characters this page can display; `assertFontsEmbedded` refuses a page naming a
+  // family it does not carry. The document is assembled twice from one template — once to be read
+  // for its font requests and its displayable text, once to be written with the faces in it.
+  //
+  // AND THE FAMILY IS ONE MAPTILER ALSO SERVES. The design base's sans ladder heads with Open Sans,
+  // which is one of the seventeen Google families MapTiler's glyph endpoint answers to
+  // (`references/map-plan.md` §5), so the words on this page and any word a future map layer sets
+  // inside the map come from the identical file. It replaces `Helvetica, Arial, sans-serif` — a
+  // licensed face this page never loaded, present on the author's Mac and on nothing else.
+  const stack = dominantFontStack(mapHtml + caveatHtml + tableHtml);
+  const baseCss = buildCss({ ...props, ...furniture, fontStack: stack, vars, frame: props.geometry.frame });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture })}
+${css}
 </style>
 </head>
 <body>
@@ -379,16 +545,30 @@ ${liveBlock}
 </html>
 `;
 
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
+
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
   return { outPath };
 }
 
-/** Strips the `export` keyword from each top-level declaration — see `interaction.mjs`'s own
- *  header note for why. */
+/** Strips the `export` keyword from each top-level declaration, and the relative `import` lines a
+ *  trunk module is reached by — see `interaction.mjs`'s own header note for why the page gets a
+ *  classic script rather than a module.
+ *
+ *  The import lines go rather than being rewritten because `liveScript` above concatenates the
+ *  modules they name into the SAME script, in dependency order: once they are one script, every
+ *  imported name is already a top-level binding in scope. Only a RELATIVE specifier is stripped — a
+ *  bare package name would be a dependency this page does not carry, and leaving it in place makes
+ *  that a syntax error a reader sees rather than a missing symbol they do not. */
 function inlineable(moduleSource) {
-  return moduleSource.replace(/^export /gm, "");
+  return moduleSource
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["']\.[^"']*["'];?[ \t]*\n/gm, "")
+    .replace(/^export /gm, "");
 }
 
 function escapeHtml(text) {
@@ -437,7 +617,15 @@ function assertDistinctSlugs(categories) {
  * window is too short for it. The table itself is untouched — whether it should become something
  * more compact is B5.2 and it is the owner's decision, not this stylesheet's.
  */
-function buildCss({ ground, ink, muted }) {
+function buildCss({ ground, ink, muted, fontStack, vars, frame }) {
+  // NO DEFAULT. A bare `sans-serif` was the third font stack on this page and it named no family at
+  // all: a stylesheet that falls back to a generic keyword sets the whole beat in whatever the
+  // reader's browser happens to prefer, which is precisely the silent substitution the embedded
+  // faces exist to end. A caller that cannot say which face reaches this page has to say so.
+  if (!fontStack) throw new Error("buildCss was given no font stack — a page's family is read off its own markup, never defaulted");
+  if (!vars) throw new Error("buildCss was given no register vars — this page's type comes from the filed direction, never from the format's own scale");
+  if (!(frame && frame.width > 0 && frame.height > 0))
+    throw new Error("buildCss was given no plate frame — the viewport's bound is the plate's own aspect, and a square was assumed here once");
   assertDistinctSlugs(CATEGORY_ORDER);
   const filterRules = CATEGORY_ORDER.map((category) => {
     // The SLUG is what every marker, label, button and table row carries as `data-group`, and the
@@ -471,6 +659,13 @@ function buildCss({ ground, ink, muted }) {
   /* One number, used by the body's own padding AND by the height the beat is asked to fit inside,
      so the two can never disagree about how much room the page edge takes. */
   --page-pad: 16px;
+  /* THE FILED DIRECTION, AS CUSTOM PROPERTIES — figureVars over this beat's own resolved
+     registers. Every rule below that sets a family reads one of these, so the page's typographic
+     voice is the direction's and not this stylesheet's. The SIZES this beat draws are its own and
+     are left alone on purpose: a direction's sizes were measured for a 960 x 540 static plate,
+     while the two clamps below are a fit-the-window measurement taken on THIS page at 375 px
+     (see '.mw-title'). What a genre may not change is which FACE a register speaks in. */
+${Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join("\n")}
 }
 * { box-sizing: border-box; }
 body {
@@ -478,7 +673,9 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The family the components themselves asked for, carried as bytes by the @font-face block
+     above. This rule used to say "Helvetica, Arial, sans-serif" — a licensed face nothing loaded. */
+  font-family: ${fontStack};
 }
 /* FIT THE WINDOW (B5.1). The whole beat is one window tall and never scrolls: the map column takes
    what is left after its own furniture, and the reading pane holding the eleven-row table is bounded
@@ -494,10 +691,16 @@ body {
   height: calc(100svh - var(--page-pad) * 2);
   overflow: hidden;
 }
+/* THE MAP COLUMN HUGS ITS MAP. It used to take every pixel the window had left and hand it all to
+   the stage, which was right while the plate was a square — the square grew until the leftover
+   height bound it. A landscape plate needs width, not height: given 1248x931 it drew 1248x551 and
+   left 380px of empty column between the map and the caveat below it. So the column is content
+   sized and the stage's height comes from the plate's own aspect (below), which is also what keeps
+   'container-type: size' definite. */
 .map-web {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   min-width: 0;
 }
@@ -532,11 +735,19 @@ body {
    width over ~640 px, where the fixed size was already right. */
 .mw-title {
   font-size: clamp(16px, 1.4vw + 11.5px, 21px);
-  font-weight: 700;
+  /* FAMILY AND WEIGHT FROM THE DIRECTION'S DISPLAY REGISTER, size from the clamp above. The weight
+     used to be a typed 700 that happened to equal this direction's; the family had no route here at
+     all, and the title was set in whatever 'dominantFontStack' returned. */
+  font-family: var(--title-family);
+  font-weight: var(--title-weight);
   margin: 0 0 4px;
 }
 .mw-source {
   font-size: clamp(11px, 0.5vw + 9.5px, 13px);
+  /* The BODY register — including its slope. This direction files an italic body, and a direction
+     whose prose is italic says so in every genre or it is not one direction. */
+  font-family: var(--source-family);
+  font-style: var(--subtitle-style);
   color: var(--muted);
   margin: 0 0 12px;
 }
@@ -556,8 +767,12 @@ body {
   padding: 0;
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  /* The EYEBROW register: a small, tracked, uppercase run is exactly what this legend is, so its
+     family, weight and tracking come from the direction rather than from three typed numbers that
+     happened to look like one. */
+  font-family: var(--eyebrow-family);
+  font-weight: var(--eyebrow-weight);
+  letter-spacing: var(--eyebrow-tracking);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -644,7 +859,10 @@ body {
    size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
    CSS has no other way to say "as wide as you like, but never taller than the room left". */
 .mw-stage {
-  flex: 1 1 auto;
+  /* Shrinkable, never greedy: its base height is the plate's own aspect at the column's width, and
+     it gives that up — and only it — when a short window cannot hold the whole beat. */
+  flex: 0 1 auto;
+  aspect-ratio: ${frame.width} / ${frame.height};
   container-type: size;
   min-height: 150px;
 }
@@ -656,7 +874,12 @@ body {
 .mw-viewport {
   position: relative;
   width: 100%;
-  width: min(100cqw, 100cqh);
+  /* THE PLATE'S OWN ASPECT, READ OFF THE PLATE — never the square this said for as long as every
+     plate happened to be one. 'min(100cqw, 100cqh)' is only the right bound for a 1:1 frame; for
+     any other it shrinks the map to a fraction of the room it has. With the landscape plate the
+     bake now produces this fills the page's width at five of the six desktop shapes the map block
+     was measured at (see bake-plate.mjs), instead of leaving 318px of empty right margin. */
+  width: min(100cqw, calc(100cqh * ${(frame.width / frame.height).toFixed(4)}));
   max-width: 100%;
   /* Left-aligned, not centred: when the window's HEIGHT is what bounds the map, the leftover room is
      horizontal, and a centred map floats away from the title, the chips and the caveat, which are
@@ -699,8 +922,18 @@ svg.map { display: block; width: 100%; height: 100%; }
    decides which names have room, so they are read from that component rather than typed twice. */
 .point-label {
   position: absolute;
+  /* THE FAMILY IS THE DIRECTION'S (the value register — a name read off the map is a value, not
+     prose); the SIZE AND WEIGHT ARE THE BEAT'S, because LocatorWeb.tsx's deterministic declutter
+     MEASURES every name at exactly these two numbers before deciding which ones have room. A
+     stylesheet that sized this run from the direction would draw boxes the declutter never
+     measured, and names would overlap in the picture while the guard stayed green. */
+  font-family: var(--label-family);
   font-size: ${LABEL_FONT.fontSize}px;
   font-weight: ${LABEL_FONT.fontWeight};
+  /* The line box the declutter MEASURES the chip at, so the box it reasons about and the box the
+     browser paints are one box. Left to 'normal' the browser drew 21px where the declutter had
+     measured 17.5, and two names touched. */
+  line-height: ${LABEL_LINE_PX}px;
   color: var(--ink);
   background: var(--ground);
   padding: ${LABEL_PAD_Y}px ${LABEL_PAD_X}px;
@@ -1021,12 +1254,20 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const points = merged.map((p) => (apartKeys.has(p.key) ? { ...p, priority: -1 } : p));
 
   const plan = BEAT.live
-    ? livePlan({
-        geometry: { ...geometry, points },
-        ground: BEAT.ground,
-        waterFill: BEAT.waterFill,
-      })
+    ? livePlan({ geometry: { ...geometry, points }, ground: BEAT.ground })
     : null;
+  /** THE RENDERER VALIDATES THE PLAN IT WROTE, before the reader's browser has to. The three guards
+   *  are `references/map-plan.md`'s own — a duplicate layer id MapLibre drops in silence, a pair
+   *  property assembled from two expressions that draws an empty layer, a beat layer redrawing the
+   *  basemap's geography — plus the live camera's four facts. None of them was checked anywhere in
+   *  this format before; MapLibre reports none of them either. */
+  if (plan) {
+    assertNoDoubledBasemap(plan);
+    const complaints = [...validateLivePlan(plan), ...validateExpressions(plan)];
+    if (complaints.length)
+      throw new Error(`this beat's live plan is not renderable:\n  - ${complaints.join("\n  - ")}`);
+    console.log(`plan: ${plan.layers.length} layer(s), validated — ids, expressions, basemap, camera facts.`);
+  }
   if (plan)
     console.log(
       `leash: the closest pair (${separation.closest.a.name} / ${separation.closest.b.name}) is ` +

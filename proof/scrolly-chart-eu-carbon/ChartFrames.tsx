@@ -28,8 +28,9 @@
  *      stripe at every width. See `scrolly/references/scrolly-discipline.md`, "What the card
  *      covers."
  *
- * No component here imports a rasteriser: `ink`, `muted`, `grid`, `accent` and `ground` are props,
- * derived once in node by `render.mjs`, the same invariant every seed in this project keeps.
+ * No component here imports a rasteriser: `ink`, `muted`, `grid`, `accent`, `ground` and `font` are
+ * props, derived once in node by `render.mjs`, the same invariant every seed in this project keeps.
+ * `font` is the recorded typeface's stack, set once on the frame's root and inherited by every word.
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -52,8 +53,6 @@ export const PLOT = {
 /** The geometry-only viewBox every plot's own SVG stretches across. */
 export const VIEWBOX = { width: 1000, height: 500 } as const;
 
-const FONT = "Helvetica, Arial, sans-serif";
-
 const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
 
 /**
@@ -66,6 +65,7 @@ const gutter = (floorPx: number, fraction: number) =>
 
 type Furniture = {
   ground: string;
+  font: string;
   ink: string;
   muted: string;
   grid: string;
@@ -90,7 +90,6 @@ function Label({
     <div
       style={{
         position: "absolute",
-        fontFamily: FONT,
         whiteSpace: "nowrap",
         ...(chip
           ? { background: ground, padding: "1px 5px", borderRadius: "2px" }
@@ -110,6 +109,7 @@ function Label({
  */
 function Frame({
   ground,
+  font,
   muted,
   unit,
   left,
@@ -119,6 +119,7 @@ function Frame({
   children,
 }: {
   ground: string;
+  font: string;
   muted: string;
   unit: string;
   left: string;
@@ -133,6 +134,7 @@ function Frame({
         position: "absolute",
         inset: 0,
         background: ground,
+        fontFamily: font,
         overflow: "hidden",
       }}
     >
@@ -203,6 +205,7 @@ const axisY = (top: number, bottom: number) => (f: number) =>
  * comfortable would flatten exactly what the reader is being shown.
  */
 export function LineFrame({
+  font,
   series,
   facts,
   ground,
@@ -254,6 +257,7 @@ export function LineFrame({
   return (
     <Frame
       ground={ground}
+      font={font}
       muted={muted}
       unit={UNIT}
       left={left}
@@ -385,6 +389,7 @@ export function LineFrame({
  * need the height, and this frame has no annotation above the plot to make room for.
  */
 export function RankedBarFrame({
+  font,
   facts,
   ground,
   ink,
@@ -409,6 +414,7 @@ export function RankedBarFrame({
   return (
     <Frame
       ground={ground}
+      font={font}
       muted={muted}
       unit={`${UNIT}, ${facts.years[facts.years.length - 1]}`}
       left={left}
@@ -508,6 +514,7 @@ export function RankedBarFrame({
  * because it is the exception the step's prose names, not a second category.
  */
 export function SlopeFrame({
+  font,
   facts,
   ground,
   ink,
@@ -537,6 +544,7 @@ export function SlopeFrame({
   return (
     <Frame
       ground={ground}
+      font={font}
       muted={muted}
       unit={UNIT}
       left={left}
@@ -684,6 +692,7 @@ export function SlopeFrame({
  * pixel size, not with the geometry.
  */
 export function DotStripFrame({
+  font,
   facts,
   ground,
   ink,
@@ -737,6 +746,7 @@ export function DotStripFrame({
   return (
     <Frame
       ground={ground}
+      font={font}
       muted={muted}
       unit={`${UNIT}, ${facts.years[facts.years.length - 1]}`}
       left={left}

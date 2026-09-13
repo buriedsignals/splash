@@ -36,6 +36,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, contrast, readPalette } from "./render-still.mjs";
 import { toDataUri } from "./inline-asset.mjs";
 import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "./typefaces.mjs";
+import { assertStates } from "../assets/reveal.mjs";
+import {
   STEPS_META,
   ImageFrame,
   DrawnGraphicFrame,
@@ -63,7 +72,19 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * identically — SSR it, wrap it, toggle which wrapped copy is visible. That is the entire contract
  * that makes this scaffold able to assemble different media without knowing it is doing so.
  */
-async function renderScrolly({ steps, title, source, ground, outDir, name, proseLane = 0 }) {
+async function renderScrolly({
+  steps,
+  title,
+  source,
+  ground,
+  outDir,
+  name,
+  proseLane = 0,
+  type = null,
+  eyebrow = null,
+  lang = "en",
+  reveal = null,
+}) {
   if (!(proseLane >= 0 && proseLane < 0.6))
     throw new Error(
       `proseLane is the fraction of its own height a beat's frames keep clear at the bottom; got ${proseLane}`,
@@ -93,9 +114,47 @@ async function renderScrolly({ steps, title, source, ground, outDir, name, prose
       `prose panel contrast measured ${panelContrast.toFixed(2)}:1 against ground ${ground} — below the 4.5:1 floor; this should be structurally impossible given deriveFurniture's own guarantee, so something upstream is wrong`,
     );
 
+  // A TITLE LADDER, LIKE THE STATIC PLATE'S. The header never scrolls away, so every line of it is
+  // taken from the graphic at every scroll position; on a phone the long form of a directed title
+  // ran to seven lines. The forms go longest first; the longest is written (a reader without a
+  // script gets the whole headline) and `assets/interaction.mjs`'s `fitTitle` sets the longest that
+  // fits the header's share of the frame.
+  const titleForms = Array.isArray(title) ? title : [title];
+  if (titleForms.length === 0 || titleForms.some((f) => typeof f !== "string" || !f.trim()))
+    throw new Error(`a title ladder needs at least one non-empty form; got ${JSON.stringify(title)}`);
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(lang))
+    throw new Error(`lang must be a BCP 47 tag such as "fr" or "en-GB"; got ${JSON.stringify(lang)}`);
+  // A DIRECTED PAGE SETS ITS FURNITURE IN THE DIRECTION'S REGISTERS. `type` is the registers already
+  // resolved to CSS by the beat's runner (`#shared/design-base/web.mjs`, `webRegister`) — this skill
+  // imports nothing from the trunk, it only writes what it was handed, and refuses what it cannot
+  // write safely into an attribute.
+  const styled = (role) => (type && type[role] ? ` style="${styleAttr(type[role], role)}"` : "");
+  if (type)
+    for (const role of ["display", "body", "source"])
+      if (!type[role]) throw new Error(`a directed page needs the ${role} register; type carries ${Object.keys(type).join(", ")}`);
+  if (eyebrow !== null && !(type && type.eyebrow))
+    throw new Error("an eyebrow is set in the eyebrow register, and type carries none");
+
+  // ONE VISUAL, REVEALED BY THE SCROLL. The picture is rendered once, inside step 1's frame (so a
+  // reader without a script sees it whole), and `assets/reveal.mjs` moves it into the stack and
+  // paints the beat's states from the scaffold's own `data-progress`.
+  if (reveal) {
+    assertStates(reveal.states, steps.length);
+    if (typeof reveal.apply !== "string" || !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(reveal.apply))
+      throw new Error(`reveal.apply names the painting function and must be a plain identifier; got ${JSON.stringify(reveal.apply)}`);
+    if (!new RegExp(`function\\s+${reveal.apply.replace(/\$/g, "\\$")}\\s*\\(`).test(reveal.driver ?? ""))
+      throw new Error(`reveal.driver defines no function ${reveal.apply} — it is the one the scaffold calls to paint a state`);
+    if (/<\/script/i.test(reveal.driver))
+      throw new Error("reveal.driver contains a closing script tag and cannot be inlined");
+  }
+
   const frameHtml = steps
     .map((step, i) => {
-      const inner = renderToStaticMarkup(step.frame);
+      const inner = reveal
+        ? i === 0
+          ? `<div data-reveal="visual" style="position:absolute;inset:0">${renderToStaticMarkup(reveal.element)}</div>`
+          : ""
+        : renderToStaticMarkup(step.frame);
       return `      <div class="step-frame${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}" aria-hidden="true">
 ${inner}
       </div>`;
@@ -111,7 +170,7 @@ ${inner}
     .map(
       (step, i) => `      <section class="step${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}">
         <div class="step-panel" data-step="${escapeHtml(step.id)}">
-${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
+${step.prose.map((p) => `          <p${styled("body")}>${escapeHtml(p)}</p>`).join("\n")}
         </div>
       </section>`,
     )
@@ -133,20 +192,38 @@ ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
   );
   const inlineEmbedExit = inlineable(embedExitSource);
 
-  const html = `<!doctype html>
-<html lang="en">
+  const revealScript = reveal
+    ? `<script>
+(function () {
+${(await readFile(join(HERE, "../assets/reveal.mjs"), "utf8")).replace(/^export /gm, "")}
+${reveal.driver.replace(/^export /gm, "")}
+initReveal(document.querySelector('[data-reveal="visual"]'), ${JSON.stringify(reveal.states)}, ${reveal.apply});
+})();
+</script>
+`
+    : "";
+
+  // THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES — the same two-pass assembly
+  // `chart-web/scripts/render-web.mjs` runs. The body stack is read off the frames this page just
+  // drew, so the card, the title and the credit are set in the face the frames are set in; the
+  // draft is read for which faces and which characters, and the written page carries each face as
+  // a woff2 cut to those characters. `assertFontsEmbedded` refuses a page that names a family,
+  // weight or character it does not carry: a reader's machine is never asked to supply one.
+  const baseCss = buildCss({ ground, ...furniture, proseLane, fontStack: dominantFontStack(frameHtml) });
+  const page = (css) => `<!doctype html>
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
-<title>${escapeHtml(title)}</title>
+<title>${escapeHtml(titleForms[0])}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground, ...furniture, proseLane })}
+${css}
 </style>
 </head>
 <body>
 <article class="scrolly" data-prose-lane="${Math.round(proseLane * 100)}">
   <header class="scrolly-header">
-    <h2>${escapeHtml(title)}</h2>
+${eyebrow !== null ? `    <p class="scrolly-eyebrow"${styled("eyebrow")}>${escapeHtml(eyebrow)}</p>\n` : ""}    <h2${styled("display")}${titleForms.length > 1 ? ` data-title-forms="${escapeHtml(JSON.stringify(titleForms)).replace(/"/g, "&quot;")}"` : ""}>${escapeHtml(titleForms[0])}</h2>
   </header>
   <div class="scrolly-track">
     <div class="scrolly-graphic">
@@ -158,7 +235,7 @@ ${frameHtml}
 ${stepsHtml}
     </div>
   </div>
-  <p class="source">${escapeHtml(source)}</p>
+  <p class="source"${styled("source")}>${escapeHtml(source)}</p>
 </article>
 <script>
 ${inlineScript}
@@ -166,9 +243,14 @@ ${inlineScript}
 <script>
 ${inlineEmbedExit}
 </script>
-</body>
+${revealScript}</body>
 </html>
 `;
+
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -196,6 +278,20 @@ function inlineable(moduleSource) {
   return `(function () {\n${moduleSource.replace(/^export /gm, "")}\n})();`;
 }
 
+/** One register as an inline style attribute. A register's values come from a filed direction and a
+ *  family ladder, never from a reader, but they are written into an attribute all the same: a value
+ *  that could close the attribute, open a tag or chain a declaration is refused, not escaped. */
+function styleAttr(style, role) {
+  return Object.entries(style)
+    .map(([prop, value]) => {
+      const text = String(value);
+      if (!/^[A-Za-z]+$/.test(prop) || /[<>;{}\\]/.test(text) || /url\(/i.test(text))
+        throw new Error(`the ${role} register carries a value this page will not write: ${prop}: ${JSON.stringify(text)}`);
+      return `${prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}:${text.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}`;
+    })
+    .join(";");
+}
+
 function escapeHtml(text) {
   return text
     .replace(/&/g, "&amp;")
@@ -203,7 +299,7 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-function buildCss({ ground, ink, muted, grid, proseLane }) {
+function buildCss({ ground, ink, muted, grid, proseLane, fontStack }) {
   return `
 :root {
   --ground: ${ground};
@@ -230,13 +326,17 @@ function buildCss({ ground, ink, muted, grid, proseLane }) {
    and the page does not scroll," for the seventh correction that replaced the sticky model and for
    the measurement that condemned it. This is also what makes the file safe to embed in a CMS
    article: a component that scrolls its own prose never steals the host page's scroll. */
-html, body { height: 100%; }
+html { height: 100%; }
+/* \`height\` lives on this rule and not on a shared \`html, body\` one: the face scan reads the family
+   unstyled text inherits off the FIRST rule that names \`body\`, and a grouped rule with no family
+   in it would leave every inherited weight — the title's bold — unattributed and uncarried. */
 body {
+  height: 100%;
   margin: 0;
   overflow: hidden;
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: ${fontStack};
 }
 /* \`.scrolly\` itself carries NO width constraint — a sixth correction. The fourth build's fix
    constrained THIS element to a 640px reading measure, which centred it correctly but also capped
@@ -283,7 +383,11 @@ body {
 .scrolly-header {
   padding: 4px clamp(16px, 6vw, 56px) 10px;
 }
-.scrolly-header h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+/* The weight is NAMED, not left to the bold every browser gives an h2 by default: the faces this page
+   carries are chosen off its own CSS, and a weight only the UA stylesheet sets is a bold the browser
+   fakes out of the 400 face. No braces in this comment — the face scan does not strip comments. */
+.scrolly-header h2 { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; }
+.scrolly-eyebrow { margin: 0 0 6px; }
 /* The source follows the visual in DOM and layout order. It is page furniture, not part of the
    headline, and placing it here keeps the credit at the visual's floor at every viewport. */
 .scrolly > .source {
@@ -465,6 +569,9 @@ body {
    reason: the viewport with the least room to spare is the one a browser that ignores the query
    should get. */
 .step-panel {
+  /* \`width\`, not only \`max-width\`: a flex item is as wide as its words, and a short card set in a
+     small body register came out 85-90% of a phone's width — the in-between shape F4 refuses. */
+  width: 100%;
   max-width: 100%;
   background: var(--ground);
   color: var(--ink);
@@ -478,7 +585,7 @@ body {
    also below every desktop and laptop this format is checked at. */
 @media (min-width: 600px) {
   .step { padding: 0 var(--prose-gutter); }
-  .step-panel { max-width: min(46ch, 100%); }
+  .step-panel { width: auto; max-width: min(46ch, 100%); }
 }
 .step-panel p {
   margin: 0;
