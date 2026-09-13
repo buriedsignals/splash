@@ -4,7 +4,7 @@
 
 ### Human-gated visual journalism for AI agents
 
-**Turns reporting material into web, video, scrollytelling, and static visuals — storyboard approval, real rendered drafts, and per-output delivery, all in a journalist-owned story directory. 16 skills, 4 formats, local-first.**
+**Turns reporting material into web, video, scrollytelling, and static visuals — storyboard approval, real rendered drafts, and per-output delivery, all in a journalist-owned story directory. 17 skills, 4 formats, local-first.**
 
 [Workflow](#workflow) | [Delivery](#delivery-and-delivery) | [Install](#install) | [Story Directory](#story-directory)
 
@@ -254,7 +254,7 @@ In the listed `installPath` for `splash@splash-dev`, run
 `bun install --frozen-lockfile --production --ignore-scripts` as well: the plugin
 runs from Claude's cache, not the source checkout. Repeat this after plugin updates.
 Start a new Claude Code session and invoke `/splash:splash` (agent tool:
-`Skill(splash:splash)`). All 16 skills use the `splash:` namespace, including
+`Skill(splash:splash)`). All 17 skills use the `splash:` namespace, including
 `splash:analyst`, `splash:deliver`, and `splash:palette`; `splash-dev` is the
 marketplace name, not the skill prefix. For a session using the installed source
 checkout directly, `claude --plugin-dir "$PWD"` provides the same namespace.
@@ -294,6 +294,7 @@ credential paths, see
 | `analyst` | Dataset profiling before visual selection. |
 | `palette` | Newsroom palette and visual identity. |
 | `newsroom-charter` | Newsroom configuration and constraints. |
+| `inspiration` | What newsrooms have already published on a subject. |
 | `doctrine` | Visual and editorial doctrine. |
 | `splash` | Orchestration and human-gated workflow. |
 | `deliver` | Delivery forms, safeguards, and handover contract. |

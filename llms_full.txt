@@ -361,7 +361,7 @@ Legacy `.env` support is read-only compatibility for explicitly operated copied 
 
 ## 16. Executable skill contracts
 
-The repository currently ships 16 directories containing executable `SKILL.md` contracts:
+The repository currently ships 17 directories containing executable `SKILL.md` contracts:
 
 - `splash`: orchestration, phase recovery, owner dispatch, gates, retries
 - `intake`: freeze article, data, and profile inputs
@@ -377,6 +377,7 @@ The repository currently ships 16 directories containing executable `SKILL.md` c
 - `dw-beat`: Datawrapper-delegated chart production
 - `palette`: newsroom palette and visual identity
 - `newsroom-charter`: measured newsroom configuration and constraints
+- `inspiration`: what newsrooms have already published on a subject, searched without a story
 - `doctrine`: visual and editorial doctrine
 - `deliver`: delivery forms, safeguards, materialisation, and handover
 

@@ -70,6 +70,7 @@
 - [dw-beat](https://github.com/buriedsignals/splash/blob/main/skills/dw-beat/SKILL.md): delegated Datawrapper charts
 - [palette](https://github.com/buriedsignals/splash/blob/main/skills/palette/SKILL.md): newsroom palette and visual identity
 - [newsroom-charter](https://github.com/buriedsignals/splash/blob/main/skills/newsroom-charter/SKILL.md): measured newsroom constraints
+- [inspiration](https://github.com/buriedsignals/splash/blob/main/skills/inspiration/SKILL.md): what newsrooms have already published on a subject
 - [doctrine](https://github.com/buriedsignals/splash/blob/main/skills/doctrine/SKILL.md): visual and editorial doctrine
 - [deliver](https://github.com/buriedsignals/splash/blob/main/skills/deliver/SKILL.md): materialisation and handover
 
