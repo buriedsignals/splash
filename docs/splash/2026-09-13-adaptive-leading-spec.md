@@ -234,6 +234,29 @@ identiques, sauf le choroplèthe (interligne sur taille dessinée) et les trois 
 
 Puis : suites `fast` et `heavy`, `carried-copies` vert.
 
+### 5.4 Statique et navigateur, mesurés plutôt que supposés
+
+Mesuré le 2026-09-13 : un paragraphe réel de 7 lignes, les mêmes octets `.ttf` chargés par `@font-face`,
+rendu par resvg (lignes de base posées à `y0 + i × leadOf`) et par Chrome 151 headless sur macOS
+(`line-height: <lineHeight>` sans unité), sur les trois têtes de ladder.
+
+1. **Distance entre lignes de base — elles concordent.** Chrome espace les lignes de
+   `lineHeight × fontSize` arrondi par défaut au 1/64 px, première et dernière comprises : Open Sans
+   13 px 18,844 contre 18,851 ; Merriweather italique 13 px 18,844 contre 18,849 ; Montserrat 10 px
+   14,000 contre 14,000. Dérive ≤ 0,04 px à la septième ligne. resvg pose les lignes au centième.
+2. **Première ligne de base depuis le haut de la boîte CSS — la formule naïve du demi-interligne est
+   fausse de 0,5 à 1 px.** Chrome arrondit l'ascendante A et la descendante D au pixel avant de
+   partager : décalage = `A + floor(trunc64((floor64(lh × fs) − A − D) / 2))` ; 9 cas sur 9
+   (Open Sans 14,000 contre 14,469 naïf ; Merriweather 13,000 contre 14,046 ; Montserrat 10,000 contre
+   10,585). **C'est une mesure sur un moteur, pas une règle à compiler** : non vérifiée sous Linux,
+   sur un vrai écran Retina, dans Firefox ni Safari. Elle ne concerne **pas** le web, dont le texte est
+   un flux CSS sans ligne de base imposée. Elle ne compte que là où un bloc CSS doit aligner sa première
+   ligne de base sur une coordonnée explicite — un layout Remotion posé à la main, par exemple — et un
+   tel genre mesure alors un repère de ligne de base sur le moteur qu'il livre.
+3. **Peinture.** Chrome peint les glyphes à la ligne de base arrondie au pixel CSS (DPR 1, 2 et 8), là
+   où resvg antialiase au centième : ±0,5 px d'encre par ligne, sous tout seuil de ce projet. Consigné,
+   sans action.
+
 ## 6. La migration des 40 composants
 
 Chaque `…fontSize * k` d'un `Directed*.tsx` est classé :
