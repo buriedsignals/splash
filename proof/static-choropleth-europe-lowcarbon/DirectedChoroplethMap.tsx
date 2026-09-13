@@ -219,11 +219,31 @@ export function mapGeometryFor({
   // So the text goes BESIDE the map, which is what both ProPublica map records do — a large map with
   // its own panel — and the map takes the full height of the plate. Same page, same registers, and
   // 2.4x the map.
-  /** Every lead and every gap is the DRAWN register's own line — `leadOf` and `gapOf` in
-   *  `#shared/design-base/register.mjs` (spec `docs/splash/2026-09-13-adaptive-leading-spec.md`
-   *  §2.1) — so a headline the ladder shrinks tightens its own leading. */
-  const bodyLead = leadOf(body);
-  const annotLead = leadOf(annot);
+  /** TWO RHYTHMS, AND EACH HAS ONE JOB. Every lead and every gap is `leadOf` / `gapOf` in
+   *  `#shared/design-base/register.mjs`. The ladder CHOOSES on the FILED rhythm — each register on
+   *  its role's reference face at its filed size — so the headline form, the panel share and the
+   *  cuts are properties of the direction and do not move when coverage moves a family. The layout
+   *  it chose is DRAWN on the drawn rhythm, so a headline the ladder shrinks tightens its own
+   *  leading (spec `docs/splash/2026-09-13-adaptive-leading-spec.md` §2.1). */
+  const onReferenceFace = (name: RegisterName) => {
+    const drawn = registerOf(direction, name);
+    return registerOf(
+      {
+        ...direction,
+        registers: {
+          ...direction.registers,
+          [name]: { ...direction.registers[name], family: drawn.referenceFamily },
+        },
+      },
+      name,
+    );
+  };
+  const FILED_RHYTHM = {
+    display: onReferenceFace("display"),
+    eyebrow: onReferenceFace("eyebrow"),
+    body: onReferenceFace("body"),
+    annot: onReferenceFace("annot"),
+  };
   const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
 
   /** The panel is a SHARE of the plate rather than a fixed width, so a direction with a larger body
@@ -249,7 +269,8 @@ export function mapGeometryFor({
     t: number,
     l: number,
     r: number,
-    dsp: typeof display = display,
+    dsp: typeof display,
+    rhythm: "filed" | "drawn",
   ) => {
     const titleLines = wrap(set(title[t], dsp), panel, dsp);
     const limitLines = wrap(set(limits[l], body), panel, body);
@@ -260,15 +281,22 @@ export function mapGeometryFor({
       r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
     const sourceLines = wrap(set(source, body), panel, body);
 
+    const on =
+      rhythm === "filed"
+        ? FILED_RHYTHM
+        : { display: dsp, eyebrow: eyebrowReg, body, annot };
+    const titleLead = leadOf(on.display);
+    const bodyLead = leadOf(on.body);
+    const annotLead = leadOf(on.annot);
     const eyebrowBaseline = PAD + eyebrowReg.filedSize;
     const titleTop =
-      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.filedSize;
+      eyebrowBaseline + gapOf(on.eyebrow, EYEBROW_TO_DISPLAY) + display.filedSize;
     const limitsTop =
-      titleTop + titleLines.length * leadOf(dsp) + gapOf(body, 0.5517);
+      titleTop + titleLines.length * titleLead + gapOf(on.body, 0.5517);
     const calloutTop =
       limitsTop +
       limitLines.length * bodyLead +
-      gapOf(annot, 0.5) +
+      gapOf(on.annot, 0.5) +
       annotBand.ascent;
     const keyTop =
       calloutTop +
@@ -276,7 +304,7 @@ export function mapGeometryFor({
       axisBand.ascent * 0.8 +
       axisBand.ascent;
     const readingTop =
-      keyTop + keyRoom + gapOf(annot, 0.7143) + annotBand.ascent;
+      keyTop + keyRoom + gapOf(on.annot, 0.7143) + annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop =
       readingTop + Math.max(0, readingLines.length - 1) * annotLead;
@@ -441,6 +469,7 @@ export function mapGeometryFor({
       rung.limit,
       rung.reading,
       rung.display,
+      "filed",
     );
     if (layout.spare >= 0) {
       fits = { rung, layout };
@@ -457,6 +486,7 @@ export function mapGeometryFor({
           rung.limit,
           rung.reading,
           rung.display,
+          "filed",
         ),
       }))
       .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
@@ -466,8 +496,15 @@ export function mapGeometryFor({
         `shorter forms — do not shrink the map, which is the subject.`,
     );
   }
-  const layout = fits.layout;
   const panel = panelFor(fits.rung.share);
+  const layout = layoutFor(
+    panel,
+    fits.rung.title,
+    fits.rung.limit,
+    fits.rung.reading,
+    fits.rung.display,
+    "drawn",
+  );
   const mapBox = {
     x: PAD + panel + GUTTER,
     y: PAD,
@@ -500,8 +537,8 @@ export function mapGeometryFor({
     axisBand,
     annotBand,
     titleLead: leadOf(fits.rung.display),
-    bodyLead,
-    annotLead,
+    bodyLead: leadOf(body),
+    annotLead: leadOf(annot),
     /** THE HEADLINE IS DRAWN IN THE SIZE THE LADDER SOLVED, not in the one the direction filed. It
      *  is returned rather than recomputed for the same reason the drawn map size is: the component
      *  and the runner must not answer the same question twice. */
