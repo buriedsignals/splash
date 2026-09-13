@@ -887,7 +887,17 @@ export async function verifyTypefaces(browser, file) {
     else if (!use.loaded)
       out.failures.push(`${who} — the embedded bytes never loaded as a font`);
     const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
-    if (!(delta > 0.5))
+    // THE WIDTH DIFFERENTIAL CAN BE SILENT ON DIGITS. Measured on a bullet beat's axis ("0 50 100 %"):
+    // Open Sans 500 and Helvetica set those characters 0.2px apart over 164px. When the face is
+    // declared at that weight, loaded, and its parsed range reaches every character, equal widths are
+    // not a fallback — it is a string the two faces happen to set alike — so it is reported, not
+    // failed. Stripped faces, unloadable bytes and a range that misses a character still fail above.
+    const inconclusive = !(delta > 0.5) && use.hasExactFace && use.loaded && use.uncovered.length === 0;
+    if (inconclusive)
+      out.notes.push(
+        `${who}: width differential inconclusive (${delta.toFixed(1)}px over "${use.stack}") — face declared, loaded and covering`,
+      );
+    else if (!(delta > 0.5))
       out.failures.push(
         `${who} — draws its fallback: ${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}"`,
       );
