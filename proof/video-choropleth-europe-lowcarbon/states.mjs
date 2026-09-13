@@ -16,42 +16,22 @@
 // (`cameraFor`, re-used rather than re-derived — the same corners `proof/static-choropleth-europe-
 // lowcarbon/beat.mjs`'s `CAMERA` is built from). `subject` closes on the Balkans window BRIEF.md
 // names, 18.4-26.6°E x 36.4-43.5°N; `conclusion` and `hold` pull back to the establish camera again
-// ("conclusion camera = establish camera", BRIEF.md). Fitting a window into a pixel box needs an
-// actual pixel box: `drawnMapBoxFor` below calls `videoLayoutFor` (`layout.mjs`) exactly as the video
-// will at render time, on one filed direction (`creme.md` — any would do: the three filed directions'
-// drawn map boxes run 782x743 to 923x839, checked by hand, which moves the derived zoom by well
-// under a quarter of a level, never the difference between two states this module has to keep
-// distinct). The fit itself is the MapLibre/Mapbox GL convention `beat.mjs`'s own `cameraFor`
-// inverts — a world painted at `worldPx` pixels sits at zoom `log2(worldPx / 512)` — read here from a
-// window and a box to a zoom, rather than from a box to a window.
+// ("conclusion camera = establish camera", BRIEF.md).
+//
+// THE CAMERA IS FITTED TO THE CALLER'S OWN MAP BOX, NOT A HARD-CODED ONE. Fitting a window into a
+// pixel box needs an actual pixel box, and the three filed directions draw different ones (creme and
+// rapport near 920x837, nocturne 782x743, checked by hand) — a camera fitted to one direction's box
+// and drawn inside a NARROWER one shows less of the window on the binding axis than the window needs,
+// which is exactly how a fixed camera would crop Kosovo or Greece out of nocturne's own frame. So
+// `statesFor` takes `drawn` — the direction's own `videoLayoutFor(...).drawn` — from its caller; this
+// module never reads a direction file or resolves a register itself. The fit is the MapLibre/Mapbox
+// GL convention `beat.mjs`'s own `cameraFor` inverts — a world painted at `worldPx` pixels sits at
+// zoom `log2(worldPx / 512)` — read here from a window and a box to a zoom, rather than from a box to
+// a window.
 
-import { join } from "node:path";
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
-import { registerOf } from "#shared/design-base/register.mjs";
-import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
-import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { assertEventStates } from "../../skills/chart-video/scripts/choreography.mjs";
-import { CAMERA_ASPECT, cameraFor, copyOf } from "../static-choropleth-europe-lowcarbon/beat.mjs";
-import { caseCopy, videoCopyOf, videoLayoutFor } from "./layout.mjs";
-
-const DIRECTIONS = join(import.meta.dirname, "..", "..", "docs", "design-base", "directions");
-const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
-const REPRESENTATIVE_DIRECTION = "creme.md";
-
-/** The map box the video actually draws into, from the real layout — not guessed. */
-function drawnMapBoxFor(subject) {
-  const { textPerRegister } = copyOf(subject);
-  const rawCopy = videoCopyOf(subject);
-  const direction = resolveDirectionFamilies(
-    readDirection(join(DIRECTIONS, REPRESENTATIVE_DIRECTION)),
-    textPerRegister,
-  );
-  const resolved = Object.fromEntries(REGISTER_NAMES.map((n) => [n, registerOf(direction, n)]));
-  const registers = videoRegistersOf(resolved, "landscape");
-  const copy = caseCopy(rawCopy, registers);
-  return videoLayoutFor({ registers, copy, aspect: CAMERA_ASPECT, size: "landscape" }).drawn;
-}
+import { CAMERA_ASPECT, cameraFor } from "../static-choropleth-europe-lowcarbon/beat.mjs";
 
 // ── the camera: a window in degrees, fit into a pixel box, the MapLibre way ─────────────────────
 
@@ -141,11 +121,24 @@ function assertDerivedValues(subject) {
  * `reveal` share the overview camera; `subject` closes on the Balkans; `conclusion` and `hold` pull
  * back to the overview again, `hold` restating `conclusion` exactly — the one case
  * `assertEventStates` now allows, because a hold plays no gesture of its own.
+ *
+ * A state is the picture at the END of its event, not a script of what happens inside one — a name
+ * gated on its own class's fill, neighbour values arriving only once the camera has settled, the
+ * conclusion sentence arriving only after the pull-back: all sub-event timing BRIEF.md describes is
+ * the composition's job to read off `BRIEF.md` directly, not this module's to encode.
+ *
+ * @param {{ drawn: { width: number, height: number } }} options `drawn` is the direction's own
+ *        `videoLayoutFor(...).drawn` (`layout.mjs`) — the map box the camera is actually fitted to.
  */
-export function statesFor(subject) {
+export function statesFor(subject, { drawn } = {}) {
+  if (!drawn || !(drawn.width > 0) || !(drawn.height > 0))
+    throw new Error(
+      `statesFor needs the direction's own drawn map box as { drawn: { width, height } } — a ` +
+        `camera fitted to one direction's box and drawn inside another crops the window on the ` +
+        `binding axis. Got ${JSON.stringify(drawn)}.`,
+    );
   assertDerivedValues(subject);
 
-  const drawn = drawnMapBoxFor(subject);
   const overviewWindow = cameraFor({ width: 1000, height: 1000 / CAMERA_ASPECT }).corners;
   const overview = fitCamera(overviewWindow, drawn);
   const balkans = fitCamera(BALKANS_WINDOW, drawn);
