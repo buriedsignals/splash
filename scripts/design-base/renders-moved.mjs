@@ -6,7 +6,12 @@
 // with the same elements and the same text are compared number by number, and the largest move is
 // reported. A changed element or a re-wrapped line is a STRUCTURE change, reported as such.
 //
-// Usage:  bun scripts/design-base/renders-moved.mjs proof/<beat> [proof/<beat>…] [--tolerance 0.25]
+// A beat directory that does not exist is refused; a beat with no SVG on either side is ABSENT, which
+// is not `same` — an empty comparison proves nothing. The last line says how much was compared.
+//
+// Usage:  bun scripts/design-base/renders-moved.mjs proof/<beat> [proof/<beat>…]
+//           [--against <revision>]   (default HEAD)
+//           [--tolerance 0.25]       (px)
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -43,7 +48,7 @@ function atRevision(revision, path) {
 }
 
 /** `--name value` pairs, and everything else as positional arguments. */
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const options = { tolerance: 0.25, against: "HEAD" };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -52,7 +57,7 @@ function parseArgs(argv) {
     else positional.push(argv[i]);
   }
   if (!(options.tolerance >= 0)) throw new Error(`--tolerance takes a number of pixels`);
-  if (!/^[\w./~^-]+$/.test(options.against ?? ""))
+  if (!/^[\w./~^-]+$/.test(options.against ?? "") || options.against.startsWith("-"))
     throw new Error(`--against takes a git revision, not ${options.against}`);
   return { ...options, beats: positional };
 }
@@ -60,11 +65,15 @@ function parseArgs(argv) {
 if (import.meta.main) {
   const { tolerance, against, beats } = parseArgs(process.argv.slice(2));
   if (!beats.length) throw new Error("name at least one beat directory, e.g. proof/static-bump-emitter-rank");
+  const missing = beats.filter((beat) => !existsSync(resolve(beat)));
+  if (missing.length) throw new Error(`no such beat directory: ${missing.join(", ")}`);
 
   let moved = 0;
+  let compared = 0;
   for (const beat of beats) {
     const dir = join(resolve(beat), "renders");
     const here = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".svg")).sort() : [];
+    compared += here.length;
     for (const name of here) {
       const path = relative(ROOT, join(dir, name));
       const before = atRevision(against, path);
@@ -82,11 +91,18 @@ if (import.meta.main) {
       cwd: ROOT,
       encoding: "utf8",
     });
-    for (const path of listed.stdout.split("\n").filter((p) => p.endsWith(".svg")))
+    const filed = listed.stdout.split("\n").filter((p) => p.endsWith(".svg"));
+    for (const path of filed)
       if (!existsSync(join(ROOT, path))) {
         console.log(`GONE       ${path}`);
+        compared++;
         moved++;
       }
+    if (!here.length && !filed.length) {
+      console.log(`ABSENT     ${relative(ROOT, resolve(beat))}`);
+      moved++;
+    }
   }
+  console.log(`compared ${compared} svg(s) in ${beats.length} beat(s)`);
   process.exit(moved ? 1 : 0);
 }
