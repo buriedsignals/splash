@@ -14,10 +14,17 @@
  * `direct-end-label-in-the-series-colour` — the last reading is labelled at the end of the line in
  * the line's own colour, so no legend is needed for a single series.
  *
- * WHAT THE WEB ADDS. A line's whole argument is the SHAPE, and a static frame can print perhaps four
- * of its 167 readings. Every year here answers with its own value, how far it sits below the peak,
- * and — the reading this beat exists for — how many years it had been since the series was last this
- * low. That last number is what turns "it is falling" into "it has undone half a century".
+ * WHAT THE WEB ADDS, AND IT IS NOT THE TOOLTIP. A still prints four of the 167 readings and asserts
+ * ONE comparison — today against 1967 — because a plate has room for one rule, and the reader has to
+ * take that baseline because it is the only one on the frame. Here the baseline is theirs: every one
+ * of the 167 years answers with its own value, its distance under the peak, how far back it winds
+ * the series, and how far 2024 sits from it. The interaction is declared control by control in
+ * `BRIEF.md` and carried into the render as `interaction`, so the prose and the page cannot drift
+ * (`chart-web/references/directed-interaction.md`).
+ *
+ * EVERY READING IS FOCUSABLE AT BUILD TIME, so the keyboard reader is not on a thinner path: the
+ * script adds Left/Right/Home/End and the same detail box hover shows, and with no script at all the
+ * plate is complete — the whole curve, the rule, the peak, the end label and every word.
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
