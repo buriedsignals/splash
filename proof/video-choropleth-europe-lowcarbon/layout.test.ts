@@ -32,20 +32,42 @@ for (const id of DIRECTIONS) {
   const { rows, lines, stage, registers } = layout;
 
   describe(`the rows of ${id}`, () => {
-    it("should run header, counter, stage, key and source top to bottom without overlapping, inside the insets", () => {
-      const order = [
-        rows.header,
-        rows.counter,
-        rows.stage,
-        rows.key,
-        rows.source,
-      ];
-      expect(order[0].top).toBeGreaterThanOrEqual(inset);
-      for (let i = 1; i < order.length; i++)
-        expect(order[i].top).toBeGreaterThan(order[i - 1].bottom);
-      expect(order.at(-1)!.bottom).toBeLessThanOrEqual(
-        row.height - inset + 0.01,
-      );
+    it("should start the header at the top margin, end the source within one axis lead of the bottom margin, and give the stage exactly the rest", () => {
+      const vInset = layout.vInset;
+      expect(rows.header.top).toBe(vInset);
+      expect(row.height - vInset - rows.source.bottom).toBeGreaterThanOrEqual(-0.01);
+      expect(row.height - vInset - rows.source.bottom).toBeLessThanOrEqual(registers.axis.lead);
+      expect(stage.y).toBeGreaterThan(rows.header.bottom);
+      expect(stage.y - rows.header.bottom).toBeLessThanOrEqual(registers.axis.lead / 2);
+      expect(rows.key.top - (stage.y + stage.height)).toBeGreaterThan(0);
+      expect(rows.key.top - (stage.y + stage.height)).toBeLessThanOrEqual(registers.axis.lead / 2);
+      expect(rows.source.top).toBeGreaterThanOrEqual(rows.key.top);
+    });
+
+    it("should take the frame's top and bottom margin from frameInsetFor's rule read on the height", () => {
+      expect(layout.vInset).toBe(Math.max(Math.round((40 / 900) * row.height), row.minTypePx * 2));
+    });
+
+    it("should give the map at least 690 px of height", () => {
+      expect(stage.height).toBeGreaterThanOrEqual(690);
+    });
+
+    it("should never set the counter on a row of its own when the title's or the eyebrow's line can hold it", () => {
+      const counterW = Math.max(...lines.counter.map((l: any) => l.width));
+      const fitsTitle = lines.title.width + registers.axis.lead + counterW <= budget;
+      const fitsEyebrow = lines.eyebrow.width + registers.axis.lead + counterW <= budget;
+      expect(layout.counterPlace).toBe(fitsTitle ? "title" : fitsEyebrow ? "eyebrow" : "row");
+      const y = lines.counter[0].y;
+      if (layout.counterPlace === "eyebrow") expect(y).toBe(lines.eyebrow.y);
+      if (layout.counterPlace === "title") expect(y).toBe(lines.title.y);
+      expect(y).toBeLessThan(stage.y);
+    });
+
+    it("should set the key's label straight after the « 94 % » borne, on the bornes' line", () => {
+      const last = lines.bornes.at(-1);
+      expect(lines.unit.y).toBe(last.y);
+      expect(lines.unit.x - (last.x + last.width)).toBeGreaterThan(0);
+      expect(lines.unit.x - (last.x + last.width)).toBeLessThanOrEqual(registers.axis.lead);
     });
 
     it("should give the map stage the full width between the insets", () => {
@@ -98,9 +120,8 @@ for (const id of DIRECTIONS) {
         expect(r.fontSize).toBeGreaterThanOrEqual(row.minTypePx);
     });
 
-    it("should right-align every count on the content's right edge, in its own row above the stage", () => {
+    it("should right-align every count on the content's right edge", () => {
       for (const line of lines.counter) expect(line.x).toBe(inset + content);
-      expect(rows.counter.bottom).toBeLessThan(stage.y);
     });
 
     it("should set the source on one line within the budget", () => {
@@ -122,11 +143,13 @@ for (const id of DIRECTIONS) {
       });
     });
 
-    it("should keep the key's words inside the content width", () => {
-      for (const l of [lines.unit, lines.missingLabel])
-        expect(l.x + measured(l.text, registers.axis)).toBeLessThanOrEqual(
-          inset + content,
-        );
+    it("should keep the key's words inside the content width, clear of each other", () => {
+      const boxes = [...lines.bornes, lines.unit, lines.missingLabel].map((l: any) => ({ x: l.x, y: l.y, w: measured(l.text, registers.axis) }));
+      for (const b of boxes) expect(b.x + b.w).toBeLessThanOrEqual(inset + content);
+      for (let i = 0; i < boxes.length; i++)
+        for (let j = i + 1; j < boxes.length; j++)
+          if (boxes[i].y === boxes[j].y) expect(boxes[i].x + boxes[i].w < boxes[j].x || boxes[j].x + boxes[j].w < boxes[i].x).toBe(true);
+      expect(layout.missingSwatch.x + layout.missingSwatch.width).toBeLessThan(lines.missingLabel.x);
     });
 
     it("should carry the widths an independent measurement finds", () => {

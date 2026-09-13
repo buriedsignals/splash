@@ -38,7 +38,7 @@ export type ChoroplethFrameProps = {
     bornes: Line[];
     unit: Line;
     missingLabel: Line;
-    source: Line;
+    source: Line & { anchor?: "start" | "end" };
   };
   swatches: Rect[];
   missingSwatch: Rect;
@@ -294,6 +294,7 @@ export function ChoroplethFrame(
 
       <Word
         line={lines.source}
+        anchor={lines.source.anchor}
         register={r.axis}
         fill={colours.text.source}
         opacity={scene.furniture}

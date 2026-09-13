@@ -42,16 +42,23 @@ No MapLibre, no MapTiler, no key, no proxy.
 
 ## The picture (1920 × 1080)
 
-Top to bottom, between `frameInsetFor("landscape")` on every side:
+Between `frameInsetFor("landscape")` on the sides (85 px) and the same rule read on the frame's height at
+the top and bottom (`max(round(40/900 × 1080), 2 × 30)` = 60 px), laid out from both ends so the map takes
+every pixel the words do not need:
 
-1. **Header row** — the eyebrow, then the title on ONE line.
-2. **Counter row** — « 7 pays au-dessus de 94 % », right-aligned, its room reserved from frame 0.
-3. **Map stage** — the rest of the height, the full width between the insets; the camera's box is
-   fitted in it and the view widened to the stage (`fitViewBox`), the geography drawn past the frame
-   so no side is bare. Sea and bare land in the plate's tints.
-4. **Key row** — the six class swatches with their five bornes beneath, then « part bas-carbone de
-   la production » and the « donnée non rapportée » swatch.
-5. **Source row** — one line.
+1. **Header** (top-down) — the eyebrow, then the title on ONE line. **The counter** « 7 pays au-dessus de
+   94 % », right-aligned, its room reserved from frame 0: on the title's line when title and count hold one
+   line, else on the eyebrow's line, else on a row of its own. With the title that names Albania no direction
+   can hold both on the title's line (creme would need the title at 39 px, under the 45 px count), so the count
+   sits on the eyebrow's line in all three.
+2. **Map stage** — exactly the height between the header and the key, the full width between the insets; the
+   camera's box is fitted in it and the view widened to the stage (`fitViewBox`), the geography drawn past the
+   frame so no side is bare. Sea and bare land in the plate's tints.
+3. **Key** (bottom-up) — two lines: the six class swatches; under them the five bornes, the key's label
+   « part bas-carbone de la production » straight after « 94 % », and the « donnée non rapportée » swatch and
+   words (after the label when the line holds them, else after the swatches).
+4. **Source** — one line at the bottom margin; beside the key when it fits there (it does not, in any
+   direction, without cutting a credit).
 
 No prose card, no conclusion sentence, no side panel. The counter and the key are never over the map.
 
@@ -64,7 +71,7 @@ No prose card, no conclusion sentence, no side panel. The counter and the key ar
 | counter | « {n} pays au-dessus de 94 % », n counting 0 → 7 | value |
 | key | 40 % · 55 % · 70 % · 85 % · 94 % · part bas-carbone de la production · donnée non rapportée | axis |
 | names, north-west | Islande · Suède · Norvège · Finlande · France · Suisse | axis |
-| names, close-up | Albanie · 100 % · Monténégro · 59 % · Macédoine du Nord · 39 % · Grèce · 49 % · Kosovo, hors données | value (Albania), axis |
+| names, close-up | Albanie · 100 % · Monténégro · 59 % · Macédoine du Nord · 39 % · Grèce · 49 % · Kosovo, hors données — no name but Albania's may sit on Albania's box | value (Albania), axis |
 | names, pull back | the six · Albanie · 100 % · Ukraine · donnée non rapportée | axis — Albania in the figures voice only in its close-up, where it is the whole shot; at the overview a 45 px pill pushed France and Switzerland off their countries |
 | seas | Mer du Nord · Méditerranée · Baltique — drawn at the overview only, and only where the whole word lies over sea and touches no name. At 39 px the scrolly's three sea names, at the scrolly's centres, all run onto land (Denmark, Sweden, Sicily), so none is drawn in any direction | annot |
 | source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », shortened to the longest of its forms that holds one line | axis |
