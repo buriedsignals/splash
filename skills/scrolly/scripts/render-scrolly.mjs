@@ -36,6 +36,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, contrast, readPalette } from "./render-still.mjs";
 import { toDataUri } from "./inline-asset.mjs";
 import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "./typefaces.mjs";
+import {
   STEPS_META,
   ImageFrame,
   DrawnGraphicFrame,
@@ -133,14 +141,21 @@ ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
   );
   const inlineEmbedExit = inlineable(embedExitSource);
 
-  const html = `<!doctype html>
+  // THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES — the same two-pass assembly
+  // `chart-web/scripts/render-web.mjs` runs. The body stack is read off the frames this page just
+  // drew, so the card, the title and the credit are set in the face the frames are set in; the
+  // draft is read for which faces and which characters, and the written page carries each face as
+  // a woff2 cut to those characters. `assertFontsEmbedded` refuses a page that names a family,
+  // weight or character it does not carry: a reader's machine is never asked to supply one.
+  const baseCss = buildCss({ ground, ...furniture, proseLane, fontStack: dominantFontStack(frameHtml) });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground, ...furniture, proseLane })}
+${css}
 </style>
 </head>
 <body>
@@ -169,6 +184,11 @@ ${inlineEmbedExit}
 </body>
 </html>
 `;
+
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -203,7 +223,7 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-function buildCss({ ground, ink, muted, grid, proseLane }) {
+function buildCss({ ground, ink, muted, grid, proseLane, fontStack }) {
   return `
 :root {
   --ground: ${ground};
@@ -230,13 +250,17 @@ function buildCss({ ground, ink, muted, grid, proseLane }) {
    and the page does not scroll," for the seventh correction that replaced the sticky model and for
    the measurement that condemned it. This is also what makes the file safe to embed in a CMS
    article: a component that scrolls its own prose never steals the host page's scroll. */
-html, body { height: 100%; }
+html { height: 100%; }
+/* \`height\` lives on this rule and not on a shared \`html, body\` one: the face scan reads the family
+   unstyled text inherits off the FIRST rule that names \`body\`, and a grouped rule with no family
+   in it would leave every inherited weight — the title's bold — unattributed and uncarried. */
 body {
+  height: 100%;
   margin: 0;
   overflow: hidden;
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: ${fontStack};
 }
 /* \`.scrolly\` itself carries NO width constraint — a sixth correction. The fourth build's fix
    constrained THIS element to a 640px reading measure, which centred it correctly but also capped
@@ -283,7 +307,10 @@ body {
 .scrolly-header {
   padding: 4px clamp(16px, 6vw, 56px) 10px;
 }
-.scrolly-header h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+/* The weight is NAMED, not left to the bold every browser gives an h2 by default: the faces this page
+   carries are chosen off its own CSS, and a weight only the UA stylesheet sets is a bold the browser
+   fakes out of the 400 face. No braces in this comment — the face scan does not strip comments. */
+.scrolly-header h2 { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; }
 /* The source follows the visual in DOM and layout order. It is page furniture, not part of the
    headline, and placing it here keeps the credit at the visual's floor at every viewport. */
 .scrolly > .source {

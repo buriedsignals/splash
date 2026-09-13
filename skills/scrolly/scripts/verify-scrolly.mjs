@@ -98,6 +98,14 @@
 //      standing in for the continuous one), and that the two stay in LOCK-STEP: the active step is
 //      never more than half a step away from where the progress says the reader is, which is what
 //      keeps a scrubbed drawing and the caption beside it describing the same moment.
+//   T. EVERY WORD IS SET IN THE FACE THE PAGE NAMES, NOT IN THE BRIDGE BEHIND IT. Once per file, not
+//      per width. `probeTypefaces` (the carried `./typefaces.mjs`) walks every text node — every
+//      frame's labels included, visible or not yet — and for each (family, weight, style) the page
+//      sets: the document declares a face for it, the face's `unicodeRange` as the browser parsed it
+//      reaches every character, and the same string measures a different width with the family
+//      taken out of its stack. The last is the one a family merely installed on this machine cannot
+//      satisfy. The format has no tooltip and writes no drawn text at run time, so the load-time
+//      walk is the whole surface.
 //
 // WHAT IS REPORTED BUT NOT ASSERTED, and why. THE CENSUS OF WHAT THE CARD COVERS: how many
 // animation frames of the pass a card sat over one of the active frame's own labels, how many it sat
@@ -115,6 +123,7 @@
 
 import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
+import { probeTypefaces } from "./typefaces.mjs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -821,7 +830,46 @@ export async function verifyStates(browser, file) {
   return out;
 }
 
-/** Drives every file at every width, plus the two state checks per file, on ONE browser. */
+/** T — every word is set in the face the page names. See this file's header. */
+export async function verifyTypefaces(browser, file) {
+  const out = { failures: [], notes: [] };
+  const name = file.split("/").slice(-2).join("/");
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.goto(`file://${file}`, { waitUntil: "load" });
+  const { uses, declared } = await page.evaluate(probeTypefaces);
+  await page.close();
+
+  if (uses.length === 0)
+    out.failures.push(`${name} @ typeface: no word on this page is set in a named family — every one falls to a generic stack`);
+  for (const use of uses) {
+    const who = `${name} @ typeface: ${use.family} ${use.weight} ${use.style}`;
+    if (!use.hasFace) {
+      out.failures.push(`${who} — ${use.nodes} text nodes ask for it and the page carries no face for it; the reader sees ${use.fallbackStack}`);
+      continue;
+    }
+    if (!use.hasExactFace) out.failures.push(`${who} — carried, but not at that weight and style`);
+    if (use.uncovered.length > 0)
+      out.failures.push(`${who} — no embedded unicode-range reaches ${use.uncovered.join(", ")}; drawn by the fallback`);
+    else if (!use.loaded)
+      out.failures.push(`${who} — the embedded bytes never loaded as a font`);
+    const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+    if (!(delta > 0.5))
+      out.failures.push(
+        `${who} — draws its fallback: ${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}"`,
+      );
+    else
+      out.notes.push(`${who}: ${use.characters} characters, ${use.nodes} nodes, ${delta.toFixed(1)}px from its fallback`);
+  }
+  const used = new Set(uses.map((u) => `${u.family}|${u.weight}|${u.style}`));
+  const unused = new Set(
+    declared.filter((f) => f.status === "unloaded" && !used.has(`${f.family}|${f.weight}|${f.style}`)).map((f) => `${f.family} ${f.weight} ${f.style}`),
+  );
+  for (const face of unused) out.notes.push(`${name} @ typeface: ${face} is carried and never used`);
+  return out;
+}
+
+/** Drives every file at every width, plus the state and typeface checks per file, on ONE browser. */
 export async function verifyAll(files, widths = WIDTHS) {
   const browser = await puppeteer.launch({
     executablePath: resolveChrome(),
@@ -841,6 +889,9 @@ export async function verifyAll(files, widths = WIDTHS) {
       const s = await verifyStates(browser, file);
       failures.push(...s.failures);
       notes.push(...s.notes);
+      const t = await verifyTypefaces(browser, file);
+      failures.push(...t.failures);
+      notes.push(...t.notes);
     }
     await page.close();
   } finally {
