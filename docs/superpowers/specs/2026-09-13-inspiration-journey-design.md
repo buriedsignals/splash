@@ -125,20 +125,79 @@ already falls back to the HTTP API.
   validated by `GET https://infoviz.design/auth/status` with the Bearer (the Datawrapper `/v3/me` pattern).
   The validator must require `200` **and** `authenticated === true`: `/auth/status` without a Bearer also
   answers 200 (anonymous), and an invalid Bearer answers `401 {error:"invalid_token"}`.
-- Engine side (measured on `origin/main` 52fed4f): registry entry in `bsig/internal/keys/registry.go`, a
-  `ValidateInfovizRecord` in `validators.go` (pattern: `ValidateNavigator` / `providerGET`), the pinned ID lists
-  in `keys_test.go` and `keys_verb_test.go`, the desktop lists (`desktop/src/shared/contracts.ts`
-  `RECORD_KEY_IDS`, `renderer-journalist.ts` `SPLASH_KEY_IDS`), and a Splash operation that receives the
-  token (`run/splash.go` `splashOperations`, `validateSplashOperationRequest`, `execpolicy/policy.go`).
-  Precedent for the change set: commit `28e2c3e`. Reaching journalists needs a signed Indicator Labs release.
-- Splash side, landing only once Engine knows the ID: `INFOVIZ_TOKEN` in `CREDENTIAL_IDS`, `CREDENTIAL_POLICIES`,
-  `self-managed.mjs` `PROVIDERS`, `legacy-env.mjs`, their tests; an `inspiration-search` operation in
-  `run-operation.mjs` so the agent's search runs through `bsig run splash` with the token; the account
-  connection flow (email → Connect → poll → `replace`) living in `installer/` or `apps/goose/`, not in the skill;
-  the preflight `inspiration` capability; the 401 → "reconnect" path in the skill.
-- Engine already runs an email-confirmation flow for Navigator (`bsig auth login`, `internal/auth/devicecode.go`):
-  Part 2's plan decides whether the infoviz connection reuses that shape inside Engine instead.
-- **Nothing is pushed to `buriedsignals/engine` without Rémy's explicit go** (and likely Tom's).
+Decided 2026-09-14 (Rémy):
+- **D9** — the journalist connects the account from **Indicator Labs** with a **Connect** button (email → press
+  Connect in the email), the Navigator way. No token is ever pasted, copied or shown.
+- **D10** — self-installs without Engine stay **anonymous** in the agent (no `INFOVIZ_TOKEN` environment variable).
+- **D11** — Engine shape: a **generic "email-flow" acquisition** for record credentials, not an infoviz-specific
+  auth verb. Infoviz is its first user.
+
+Measured on Engine `origin/main` 52fed4f (why the shape is what it is):
+- Navigator's flow (`bsig/internal/auth/devicecode.go`, `bsig auth start|poll`) reads the poll outcome from a
+  body `status`; infoviz answers by HTTP code (202 / 200 / 410) with a POST poll — it cannot be reused as is,
+  and `docs/packages/auth-standard.md` forbids a shared auth library.
+- Credentials reach Splash only through `bsig run splash <op>` with a per-operation allowlist
+  (`bsig/internal/run/splash.go`); a credential is mandatory for an operation that declares it.
+- The desktop's Splash "Connected services" rows come from `SPLASH_KEY_IDS` and render a paste prompt
+  (`renderer-product-controls.tsx` `CredentialControl`); Navigator has its own "Connect account" section.
+
+#### Part 2a — Engine (`buriedsignals/engine`: `bsig` + desktop)
+
+- **Registry** (`bsig/internal/keys/registry.go`): `INFOVIZ_TOKEN` — `StorageRecord`, `SensitivitySecret`,
+  `ValidatorPolicy: "authenticated-account-request"`, `ReplacementBehavior: "validate-before-atomic-replacement"`,
+  `BaseURL: "https://infoviz.design"`, a new acquisition field set to email-flow (existing entries: paste).
+  Metadata: name "Infoviz account", purpose "Raises Splash inspiration searches from 5 to 10 a day.",
+  acquisition URL `https://splash.buriedsignals.com/inspiration.html`.
+- **Validator** `ValidateInfovizRecord` (`validators.go`): rejects any validation context; `GET {base}/auth/status`
+  with the Bearer via `providerGET`; valid only on 200 **and** `authenticated === true`; one verified dimension.
+- **Email-flow acquisition** — a small infoviz package (its own wire contract) behind a generic verb:
+  - `bsig keys connect <ID> start <email>` → result `{flowId (opaque), expiresInSeconds, pollIntervalSeconds}`;
+  - `bsig keys connect <ID> poll <flowId>` → `pending` | `connected` (the token was received and written through
+    the record broker's `Replace`, which validates it) | `expired`; 429 / 5xx / network → still `pending`;
+  - the token never appears on stdout, in events or logs (registered with the redactor on arrival);
+  - bounded cadence (interval 1-60 s, lifetime ≤ 30 min, 30 s per request); no server-side cancel exists, so
+    cancel only forgets the flow;
+  - only IDs whose registry entry declares email-flow accept `connect`; `set`/`replace` stay refused paths for
+    them from the desktop (Engine still accepts `replace` on stdin for tests and recovery).
+- **Operation** `inspiration-search`: credentials `[INFOVIZ_TOKEN]`, provider timeout, request
+  `{parameters:{query}}` with a non-empty query ≤ 1000 characters and no story fields; added to
+  `execpolicy/policy.go`.
+- **Desktop**: `INFOVIZ_TOKEN` in `RECORD_KEY_IDS` and `SPLASH_KEY_IDS`; the Splash "Connected services" row for an
+  email-flow credential shows an email field and **Connect** / **Reconnect** instead of "Enter token…"; the main
+  process holds the flow id (renderer gets only an opaque flow token, as for Navigator); the renderer schedules
+  polls and also polls on window focus; copy: "Check your email and press Connect.", "Connected as {email hint}",
+  "The link expired. Connect again."; "Check saved token" validates as for other records.
+- **Tests**: the infoviz package (start, 202/200/410, 429/5xx retry, lifetime, redaction), the validator, pinned ID
+  lists (`keys_test.go`, `keys_verb_test.go`), Splash operation tables (`splash_test.go`), desktop contracts and
+  workflow tests; a release-runbook manual check "Infoviz Connect".
+- **Catalog**: `bsig/catalog/catalog.json` pins a Splash commit that contains Part 2b-1 (re-signed minisig).
+- **Delivery**: a branch of the local Engine clone → a PR to `buriedsignals/engine` reviewed by Tom → a signed
+  Indicator Labs release triggered by Tom. **Nothing is pushed to `buriedsignals/engine` without Rémy's explicit go.**
+
+#### Part 2b — Splash
+
+**2b-1 — safe before the Engine release** (an Engine that does not know the ID simply leaves the agent anonymous):
+- `skills/splash/scripts/run-operation.mjs`: `inspiration-search` in `OPERATION_IDS`; requires parameter `query`;
+  runs `skills/inspiration/scripts/sealed-search.mjs` as a child (as `datawrapper-produce` does).
+- `skills/inspiration/scripts/sealed-search.mjs`: bounded JSON on stdin `{query}`; reads `INFOVIZ_TOKEN`; searches
+  with the Bearer; on `invalid-token` runs exactly one anonymous search and returns it with
+  `accountNeedsReconnect: true`; prints the result JSON.
+- `search.mjs`: optional `token` (Bearer), new reason `invalid-token` (401 with a token).
+- `format.mjs`: when `accountNeedsReconnect`, first line "Your Infoviz account needs reconnecting: Indicator Labs →
+  Connected services → Infoviz → Reconnect." then the anonymous list.
+- Path choice inside the CLI (the agent still runs one command, `search.mjs --stdin`): if `SPLASH_BSIG_PATH` is set
+  and `bsig --json keys status INFOVIZ_TOKEN` reports it stored → `bsig run splash inspiration-search` with the
+  request JSON-encoded on stdin, and the result parsed from the run's `stdout`; otherwise (unset, not stored,
+  unknown ID, any bsig failure) → the direct anonymous search. The spawning lives in its own module, injected in
+  tests; no test spawns a process.
+- `SKILL.md`: one line — with an Infoviz account connected in Indicator Labs, the same command uses it; nothing is
+  done in chat.
+
+**2b-2 — only once the Engine release is live**:
+- `INFOVIZ_TOKEN` in `apps/goose/contract.mjs` `CREDENTIAL_IDS`, `installer/setup/engine-bridge.mjs`
+  `CREDENTIAL_POLICIES`, `apps/goose/self-managed.mjs` `PROVIDERS` (self-install row: "Available with Indicator
+  Labs only"), `installer/setup/legacy-env.mjs`, and the tests that pin those lists. Not in `.env.example`
+  (self-installs stay anonymous). No preflight capability (the studio's Connected services row covers status).
 
 ### Part 3 — `inspiration` skill (Splash), anonymous
 
@@ -215,7 +274,7 @@ So Part 3 ships the **anonymous** journey only; everything account-related in th
 One plan per part:
 
 1. infoviz back-end — unblocks 3 and 4. (Executed; deploy gated.)
-2. Engine credential + agent account — Engine repo and the Splash account wiring described in Part 2.
+2. Agent account — 2b-1 (Splash, safe first) → 2a (Engine PR, Tom) → signed Indicator Labs release → 2b-2 (Splash).
 3. `inspiration` skill, anonymous — works against the live API today.
 4. Web page — its sign-in needs the deployed back-end; merge `feat-inspiration` to `main` (which publishes
    Pages) only after Part 1 is deployed.
