@@ -46,7 +46,13 @@ import {
   DERIVED_SIZE_RATIO,
 } from "#shared/chart-beat/registers.mjs";
 import { viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
-import { capRatioOf, registerOf } from "#shared/design-base/register.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  capRatioOf,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -213,14 +219,11 @@ export function mapGeometryFor({
   // So the text goes BESIDE the map, which is what both ProPublica map records do — a large map with
   // its own panel — and the map takes the full height of the plate. Same page, same registers, and
   // 2.4x the map.
-  /** EVERY LEAD AND EVERY GAP IS THE FILED SIZE'S, NEVER THE DRAWN ONE. The direction's vertical
-   *  rhythm is a decision about the PAGE; the face only decides how wide the words set. Once a
-   *  register is sized to a cap-height target, its filed size IS its cap height in disguise, so a
-   *  rhythm read off `filedSize` is the same rhythm on every face — and a headline the ladder has
-   *  shrunk keeps the block it was given rather than quietly reflowing everything under it. */
-  const titleLead = display.filedSize * 1.22;
-  const bodyLead = body.filedSize * 1.45;
-  const annotLead = annot.filedSize * 1.4;
+  /** Every lead and every gap is the DRAWN register's own line — `leadOf` and `gapOf` in
+   *  `#shared/design-base/register.mjs` (spec `docs/splash/2026-09-13-adaptive-leading-spec.md`
+   *  §2.1) — so a headline the ladder shrinks tightens its own leading. */
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
   const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
 
   /** The panel is a SHARE of the plate rather than a fixed width, so a direction with a larger body
@@ -259,13 +262,13 @@ export function mapGeometryFor({
 
     const eyebrowBaseline = PAD + eyebrowReg.filedSize;
     const titleTop =
-      eyebrowBaseline + eyebrowReg.filedSize * 0.9 + display.filedSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.filedSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + body.filedSize * 0.8;
+      titleTop + titleLines.length * leadOf(dsp) + gapOf(body, 0.5517);
     const calloutTop =
       limitsTop +
       limitLines.length * bodyLead +
-      annot.filedSize * 0.7 +
+      gapOf(annot, 0.5) +
       annotBand.ascent;
     const keyTop =
       calloutTop +
@@ -273,7 +276,7 @@ export function mapGeometryFor({
       axisBand.ascent * 0.8 +
       axisBand.ascent;
     const readingTop =
-      keyTop + keyRoom + annot.filedSize * 1.0 + annotBand.ascent;
+      keyTop + keyRoom + gapOf(annot, 0.7143) + annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop =
       readingTop + Math.max(0, readingLines.length - 1) * annotLead;
@@ -496,7 +499,7 @@ export function mapGeometryFor({
     mapH,
     axisBand,
     annotBand,
-    titleLead,
+    titleLead: leadOf(fits.rung.display),
     bodyLead,
     annotLead,
     /** THE HEADLINE IS DRAWN IN THE SIZE THE LADDER SOLVED, not in the one the direction filed. It
