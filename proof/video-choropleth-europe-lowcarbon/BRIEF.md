@@ -103,8 +103,10 @@ Rules the composition keeps:
 - Names are short pills at each country's seat (its most interior point), kept apart, and kept
   inside the stage; the pills for one camera are placed once, in Bun, for the full set that camera
   ever shows, so no name moves when another arrives. A pill that would touch another steps to the
-  nearest clear position that keeps it against its country, preferring sea and its own land over a
-  neighbour's (Albania's own land counted four times, so the close-up's names sit around it). At the
+  nearest clear position that keeps it against its country; at the overview, where a name is wider
+  than most countries, that position also prefers sea and its own land over a neighbour's, a named
+  country's land counted four times, so « Suisse » does not sit on France. In the close-up every
+  country is larger than its name and each name keeps its seat unless another name is in the way. At the
   overview Albania's ring is kept clear, so its name sits beside the ring rather than over it.
 - The first frame is not empty; the hold is at least 60 frames; the whole is at least 12 s.
 - Remotion directly: the still at `--frame=-1` first, then the mp4; `--concurrency=1`; an empty

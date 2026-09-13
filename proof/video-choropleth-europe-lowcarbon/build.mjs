@@ -38,9 +38,10 @@ const SEA_SAMPLES = 24;
 const OWNER_CELL = 8;
 /** The order names are placed in, per camera: the subject, the claim, its neighbours, the absence. */
 const ROLE_PRIORITY = ["odd", "top", "neighbour", "missing"];
-/** A cell of Albania's own land hidden under another country's name counts this many times: the close-up
- *  is there to show Albania, and its neighbours' names sit around it, not on it. */
-const SUBJECT_COVER = 4;
+/** A cell of a NAMED country's land hidden under another country's name counts this many times: a word
+ *  set on France reads as naming France, so « Suisse » steps beside France's name rather than over France,
+ *  and at the close-up the neighbours' names sit around Albania rather than on it. */
+const NAMED_COVER = 4;
 
 // ── the subject, its geometry and its words ─────────────────────────────────────────────────────────────
 
@@ -227,15 +228,17 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   };
   const coverFor = (camera) => {
     const { grid, cols, rows } = ownerOf(camera);
+    const named = new Set(pills.filter((p) => p.camera === camera).map((p) => p.seat));
     return (box, key) => {
-      const own = pills.find((p) => p.key === key).seat;
+      const pill = pills.find((p) => p.key === key);
+      const own = pill.seat;
       let covered = 0;
       let total = 0;
       for (let j = Math.max(0, Math.floor(box.y / OWNER_CELL)); j < Math.min(rows, Math.ceil((box.y + box.height) / OWNER_CELL)); j++)
         for (let i = Math.max(0, Math.floor(box.x / OWNER_CELL)); i < Math.min(cols, Math.ceil((box.x + box.width) / OWNER_CELL)); i++) {
           total++;
           const owner = grid[j * cols + i];
-          if (owner !== null && owner !== own) covered += owner === subject.ODD_ONE ? SUBJECT_COVER : 1;
+          if (owner !== null && owner !== own) covered += named.has(owner) ? NAMED_COVER : 1;
         }
       return total ? covered / total : 0;
     };
@@ -259,7 +262,10 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     const ringAt = toStage(cameras.overview, stage, odd.seat);
     const ringPx = (ringRadius / cameras.overview.w) * stage.width + strokes.ring;
     const obstacles = camera === "overview" ? [{ x: ringAt.x - ringPx, y: ringAt.y - ringPx, width: 2 * ringPx, height: 2 * ringPx }] : [];
-    Object.assign(placed, placePills(items, stage, gap, { obstacles, cover: coverFor(camera) }));
+    // COVER IS WEIGHED AT THE OVERVIEW ONLY. There a name is wider than most countries and has to choose what
+    // it hides; in the close-up every country is larger than its name, and the seat itself is the place —
+    // weighing cover there walked « Macédoine du Nord » off North Macedonia onto the sea past Albania.
+    Object.assign(placed, placePills(items, stage, gap, camera === "overview" ? { obstacles, cover: coverFor(camera) } : { obstacles }));
   }
   const names = pills.map(({ seatAt, slot, reach, ...p }) => ({ ...p, seat: { ...toStage(cameras[p.camera], stage, seatAt) }, ...placed[p.key] }));
 
