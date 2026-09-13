@@ -1,14 +1,16 @@
 // The world's CO₂ per person in 2023, one circle per country sized by population, rendered once per
 // FILED DIRECTION into a self-contained scrolly page. The `beeswarm` type in the scrolly format.
 //
-// THE SAME PLATE AS `static-beeswarm-co2-per-person`, READ IN ORDER. The data, the claims and their
-// assertions, the two derived callouts and the words are the static beat's own:
+// THE SUBJECT OF `static-beeswarm-co2-per-person`, CHOREOGRAPHED. The data, the claims and their
+// assertions, the two derived callouts and the colour rules are the static beat's own; the scroll tells
+// them with its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. what a circle is, and what its surface means — the field;
-//   2. the largest circle, and where it sits against the median country — India ringed and named;
-//   3. the world average against what most people emit — the rule and its label;
-//   4. the tail past 20 t, and how few people live in it — the farthest circle named, and the plate's
-//      own reading line.
+//   1. a country is placed by its tonnes per person — 213 dots of one size;
+//   2. its surface is its population — the dots swell and the field re-packs;
+//   3. the largest circle, below the median country — India ringed and named;
+//   4. the world average above what most people emit — the rule, and a filter to the people under it;
+//   5. the tail past 20 t, and how few live in it — a filter to the tail, Qatar named;
+//   6. the whole field again, both named, and the plate's reading line.
 //
 // Usage:  bun proof/scrolly-beeswarm-co2-per-person/render-directions-scrolly.mjs
 
@@ -74,15 +76,17 @@ const title = [
   `${above.length} pays au-dessus de ${HIGH} t de CO₂ par personne, ${one(aboveShare)} % de l’humanité`,
   `Le CO₂ par personne, pays par pays`,
 ];
+const NB = "\u00A0";
 const prose = [
-  [`Un cercle par pays, placé selon ses tonnes de CO₂ par habitant en 2023 ; sa surface est sa population.`],
-  [`Le plus gros cercle du champ est ${frenchOf(biggest.entity).withArticle}, ${one(biggest.tonnes)} t — sous la médiane des ${countries.length} pays, ${one(medianCountry)} t.`],
-  [`La moyenne mondiale, ${one(weightedMean)} t, est déjà plus haute que ce qu’émettent ${Math.round(belowMean)} % des gens.`],
-  [
-    `Au-delà de ${HIGH} t, ${above.length} pays seulement : ${one(aboveShare)} % de l’humanité. Le plus éloigné, ${frenchOf(farthest.entity).withArticle}, émet ${one(farthest.tonnes)} t par personne.`,
-    `Lecture : la position est le taux, la surface est le nombre de gens. Le champ est dense à gauche parce que c’est là que vit le monde, et la queue de droite est faite de petits pays.`,
-  ],
+  [`Un cercle par pays, placé selon ses tonnes de CO₂ par habitant en 2023.`],
+  [`Sa surface est sa population : le champ se déforme là où vit le monde.`],
+  [`Le plus gros cercle du champ est ${frenchOf(biggest.entity).withArticle}, ${one(biggest.tonnes)}${NB}t — sous la médiane des ${countries.length} pays, ${one(medianCountry)}${NB}t.`],
+  [`La moyenne mondiale, ${one(weightedMean)}${NB}t, est déjà plus haute que ce qu’émettent ${Math.round(belowMean)}${NB}% des gens.`],
+  [`Au-delà de ${HIGH}${NB}t, ${above.length} pays seulement : ${one(aboveShare)}${NB}% de l’humanité. Le plus éloigné, ${frenchOf(farthest.entity).withArticle}, émet ${one(farthest.tonnes)}${NB}t par personne.`],
+  [`Lecture : la position est le taux, la surface est le nombre de gens. Le champ est dense à gauche parce que c’est là que vit le monde, et la queue de droite est faite de petits pays.`],
 ];
+const meanCount = { template: `{n}${NB}% des gens émettent moins`, value: Math.round(belowMean) };
+const tailCount = { template: `${above.length} pays au-delà de ${HIGH}${NB}t : {n}${NB}% de l’humanité`, value: Number(aboveShare.toFixed(1)) };
 const source = "Sources : Global Carbon Budget 2025 · population (2023), via Our World in Data";
 const axisName = "tonnes de CO₂ par personne, 2023";
 const markerLabel = `moyenne mondiale ${one(weightedMean)} t`;
@@ -102,10 +106,12 @@ const alt =
 
 /** One state per card; see `swarm-drive.mjs` for what each field paints. */
 const STATES = [
-  { first: 0, mean: 0, far: 0 },
-  { first: 1, mean: 0, far: 0 },
-  { first: 1, mean: 1, far: 0 },
-  { first: 1, mean: 1, far: 1 },
+  { grow: 0, first: 0, mean: 0, below: 0, tail: 0, far: 0 },
+  { grow: 1, first: 0, mean: 0, below: 0, tail: 0, far: 0 },
+  { grow: 1, first: 1, mean: 0, below: 0, tail: 0, far: 0 },
+  { grow: 1, first: 1, mean: 1, below: 1, tail: 0, far: 0 },
+  { grow: 1, first: 1, mean: 1, below: 0, tail: 1, far: 1 },
+  { grow: 1, first: 1, mean: 1, below: 0, tail: 0, far: 1 },
 ];
 
 const textPerRegister = {
@@ -114,7 +120,7 @@ const textPerRegister = {
   body: `${prose.flat().join(" ")} ${source}`,
   axis: `${axisName} ${tickValues.join(" ")} ${markerLabel}`,
   annot: cardsText.flatMap((c) => c.lines).join(" "),
-  value: cardsText.map((c) => c.name).join(" "),
+  value: `${cardsText.map((c) => c.name).join(" ")} ${meanCount.template} ${tailCount.template} 0123456789,`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -152,7 +158,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const cardHeightPx = Math.ceil(Number.parseFloat(regs.value.fontSize) * 1.3 + 2 * Number.parseFloat(regs.annot.fontSize) * 1.35);
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["cercle", "plus-gros", "moyenne", "queue"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["position", "population", "plus-gros", "moyenne", "queue", "lecture"][i], prose: p })),
       reveal: {
         element: createElement(DirectedBeeswarmScrolly, {
           marks: countries.map(({ code, tonnes, people }) => ({ code, tonnes, people })),
@@ -160,6 +166,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           cardHeightPx,
           mean: weightedMean,
           markerLabel,
+          high: HIGH,
+          meanCount,
+          tailCount,
           axisName,
           axisNameWidth: Math.ceil(widthIn(axisName, regs.axis, 700)),
           ticks: tickValues.map((v) => ({ value: v, width: Math.ceil(widthIn(String(v), regs.axis)) })),

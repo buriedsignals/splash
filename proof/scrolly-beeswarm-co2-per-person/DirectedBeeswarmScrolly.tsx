@@ -43,6 +43,9 @@ export function DirectedBeeswarmScrolly({
   cardHeightPx,
   mean,
   markerLabel,
+  high,
+  meanCount,
+  tailCount,
   axisName,
   axisNameWidth,
   ticks,
@@ -61,6 +64,12 @@ export function DirectedBeeswarmScrolly({
   cardHeightPx: number;
   mean: number;
   markerLabel: string;
+  /** The tail threshold, in tonnes per person. */
+  high: number;
+  /** The two counters the filters bring, as the page prints them when fully counted; the driver writes
+   *  their running number into the `{n}` slot. */
+  meanCount: { template: string; value: number };
+  tailCount: { template: string; value: number };
   axisName: string;
   axisNameWidth: number;
   ticks: { value: number; width: number }[];
@@ -99,6 +108,8 @@ export function DirectedBeeswarmScrolly({
   });
   const pctY = (px: number) => `${(px / H) * 100}%`;
   const swarm = mix(accent, ground, 0.45);
+  /** The neutral a filtered circle steps back to — a circle still, just not the one the card names. */
+  const neutral = mix(ground, ink, 0.14);
   const ringed = adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
   const mutedInk = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
   const rule = mix(ground, ink, 0.45);
@@ -115,6 +126,8 @@ export function DirectedBeeswarmScrolly({
       aria-label={alt}
       data-swarm={JSON.stringify({ marks, xMax })}
       data-mean={mean}
+      data-high={high}
+      data-colours={JSON.stringify({ swarm, neutral })}
       data-cards={JSON.stringify(
         cards.map((c) => ({ code: c.code, role: c.role })),
       )}
@@ -237,6 +250,22 @@ export function DirectedBeeswarmScrolly({
           })}
         >
           {markerLabel}
+        </span>
+        <span
+          data-part="mean-count"
+          data-template={meanCount.template}
+          data-value={meanCount.value}
+          style={abs({ ...regs.value, color: ringed, left: `calc(${pctX(layout.x(mean))} + 6px)`, top: pctY(bandBottom + 4 + labelHeight), whiteSpace: "nowrap", opacity: 0 })}
+        >
+          {meanCount.template.replace("{n}", String(meanCount.value))}
+        </span>
+        <span
+          data-part="tail-count"
+          data-template={tailCount.template}
+          data-value={tailCount.value}
+          style={abs({ ...regs.value, color: ringed, left: `calc(${pctX(layout.x(high))} + 4px)`, top: pctY(midline - 34), whiteSpace: "nowrap", background: ground, padding: "1px 4px", opacity: 0 })}
+        >
+          {tailCount.template.replace("{n}", String(tailCount.value))}
         </span>
       </div>
 

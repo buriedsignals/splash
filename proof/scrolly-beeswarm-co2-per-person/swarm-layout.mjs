@@ -24,10 +24,11 @@ export function swarmScale(xMax, width) {
   return (value) => 6 + (value / domain) * (width - 12);
 }
 
-/** One packing at one largest radius; `cy` is relative to the band's midline. */
-export function packSwarm(marks, x, maxRadius) {
+/** One packing at one largest radius; `cy` is relative to the band's midline. With `uniform`, every mark
+ *  is a dot of that radius — the field before its surfaces mean anything. */
+export function packSwarm(marks, x, maxRadius, uniform = null) {
   const biggest = Math.max(...marks.map((m) => m.people));
-  const radiusOf = (m) => Math.max(MIN_RADIUS, Math.sqrt(m.people / biggest) * maxRadius);
+  const radiusOf = (m) => (uniform !== null ? uniform : Math.max(MIN_RADIUS, Math.sqrt(m.people / biggest) * maxRadius));
   const placed = [];
   let extent = 0;
   for (const m of [...marks].sort((a, b) => b.people - a.people)) {
