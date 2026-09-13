@@ -20,7 +20,7 @@ L'interligne, lui, ne suit rien :
 
 - **Coefficients figés, recopiés.** Il est tapé dans chaque composant, en multiple de la taille :
   `display.fontSize * 1.22` et `body.fontSize * 1.45` 38 fois chacun, `annot.fontSize * 1.4`
-  24 fois, `annot.fontSize * 1.2` 17 fois. Les écarts entre blocs pareil : `eyebrowReg.fontSize * 0.9`
+  20 fois. Les écarts entre blocs pareil : `eyebrowReg.fontSize * 0.9`
   38 fois, `body.fontSize * 0.6` 17 fois.
 - **Aucune direction ne le dépose.** `docs/design-base/directions/*.md` porte taille, graisse,
   italique, approche, casse et encre, pas d'interligne.
@@ -68,9 +68,17 @@ hauteur naturelle. Chaque direction garde ainsi son rythme propre, comme elle ga
 
 ### 2.3 Les écarts entre blocs sont des multiples d'interligne
 
-`gap(n) = n × lead`, sur le registre qui porte déjà l'écart aujourd'hui. Les `n` sont des
-constantes du tronc, pas des colonnes de direction : les écarts actuels sont identiques dans les
-trois directions, et §4 montre qu'ils restent indépendants de la direction une fois calibrés.
+`gapOf(r, n) = n × leadOf(r)`, sur le registre qui porte déjà l'écart aujourd'hui. Aucun `n` n'est
+une colonne de direction : les écarts actuels sont identiques dans les trois directions, et §4 montre
+qu'ils restent indépendants de la direction une fois calibrés.
+
+Un `n` est une **constante du tronc** quand l'écart est uniforme dans tout le corpus — relevé le
+2026-09-13 : eyebrow → titre (`eyebrowReg.fontSize * 0.9`, 38 composants sur 38) et lecture → source
+(`annot.fontSize * 0.6`, 9 sur 9). Ailleurs, les écarts varient d'un composant à l'autre parce qu'ils
+portent la place que *ce* graphique réserve à ses étiquettes (titre → chapô à 0.6, 0.7 ou 0.8 ;
+chapô → tracé de 1.1 à 3.0). Ceux-là gardent un `n` **propre au composant**, mais exprimé en
+interlignes : ils deviennent adaptatifs sans que rien ne bouge. Les unifier est une décision de
+composition, pas d'interligne, et reste hors de ce chantier.
 
 ## 3. L'architecture
 
@@ -81,7 +89,8 @@ trois directions, et §4 montre qu'ils restent indépendants de la direction une
 - Lit le fichier que rend `typefaceFile(family, weight, { italic })`.
 - Parse `head` (`unitsPerEm`), `hhea` et `OS/2` ; applique §2.1.
 - Mis en cache par `family|weight|italic`.
-- Pur : aucun import de resvg. Ses tests tournent dans la voie rapide.
+- Aucun import de resvg : c'est une lecture de tables. Il importe `typefaces.mjs`, qui peut lancer
+  `curl` sur un cache froid, donc `scripts/test-lanes.mjs` range ses tests dans la voie lourde.
 - Nouveau fichier plutôt qu'ajout à `typefaces.mjs`, que l'autre session vient de modifier
   (`de112dff`).
 
@@ -105,11 +114,22 @@ Retour : tout ce que `registerOf` rend aujourd'hui (`fontSize` résolu par la ca
 `referenceFamily`, `letterSpacing`, `fill`), plus :
 
 - `naturalLineHeight` — celle de la face dessinée, pour qu'un rapport puisse la citer ;
-- `lead` — §2.1 ;
-- `gap(n)` — §2.3.
+- `lineHeight` — `naturalLineHeight × leading`, en em.
 
-Les constantes `n` des écarts sont exportées par ce module, nommées par ce qu'elles séparent
-(`EYEBROW_TO_DISPLAY`, `DISPLAY_TO_BODY`…) ; la liste exacte sort de la classification de §6.
+Et deux fonctions, pas des méthodes :
+
+- `leadOf(r) = r.lineHeight × r.fontSize` — §2.1 ;
+- `gapOf(r, n) = n × leadOf(r)` — §2.3.
+
+**Des fonctions, parce qu'un registre se recopie.** Le choroplèthe essaie son titre à plusieurs
+tailles en écrivant `{ ...display, fontSize }`. Une méthode `lead` calculée à la résolution
+garderait l'ancienne taille dans la copie ; une fonction lit la taille de l'objet qu'on lui tend.
+
+Constantes exportées : `EYEBROW_TO_DISPLAY` (0.75 interligne d'eyebrow) et `READING_TO_SOURCE`
+(0.4286 interligne d'annotation) — les deux écarts uniformes de §2.3.
+
+`registerOf` n'est **pas** réexporté par `index.mjs` : il importe resvg, et `index.mjs` est lu par
+des tests de la voie rapide.
 
 ### 3.5 Les copies portées
 
@@ -121,7 +141,7 @@ une copie d'un fichier modifié. L'identité à l'octet reste la règle.
 
 **But : aucun changement visuel sur les faces de tête.** Pour chaque direction et chaque registre :
 
-`leading = multiplicateurHérité ÷ hauteurNaturelle(tête du rôle)`, arrondi au millième.
+`leading = multiplicateurHérité ÷ hauteurNaturelle(tête du rôle)`, arrondi au dix-millième.
 
 Multiplicateurs hérités : `display 1.22`, `body 1.45`, `annot 1.4`. `eyebrow`, `axis` et `value`
 n'ont pas d'interligne multi-ligne commun dans le corpus ; ils prennent `1.2`, pour que les écarts
@@ -141,12 +161,24 @@ d'ici.
 
 Puisque `lead ÷ taille` vaut le multiplicateur hérité sur la face de tête **dans toutes les
 directions**, un écart hérité `k × taille` devient `n = k ÷ multiplicateur` indépendant de la
-direction : `body 0.6` → `0.414`, `eyebrow 0.9` → `0.75`.
+direction : `body 0.6` → `0.4138`, `eyebrow 0.9` → `0.75`, `annot 0.6` → `0.4286`.
 
-**Écart connu.** `annot` porte aujourd'hui deux interlignes (`1.4` ×24, `1.2` ×17). Un seul
-coefficient par registre ne peut pas reproduire les deux. Si la classification de §6 confirme que
-les `1.2` sont des interlignes et non des écarts, les composants concernés prennent `1.4` et
-changent visiblement ; chacun est regardé (§5).
+**Écart connu : quatre interlignes atypiques.** Un seul coefficient par registre ne peut pas
+reproduire un interligne qu'un composant a tapé à part. Relevé le 2026-09-13 :
+
+| composant | aujourd'hui | devient |
+| --- | --- | --- |
+| `co2-suisse` | `lead = display.fontSize * 1.25` | `leadOf(display)` (1.22) |
+| `co2-suisse` | `bodyLead = body.fontSize * 1.5` | `leadOf(body)` (1.45) |
+| `more-boxplot-france-co2-decades` | `nameLead = annot.fontSize * 1.5` | `leadOf(annot)` (1.4) |
+| `static-bar-top-emitters-2024` | `nameLead = annot.fontSize * 1.2` | `leadOf(annot)` (1.4) |
+
+Ces trois beats bougent visiblement ; chacun est regardé (§5.3).
+
+**Pas migrés : les interlignes mesurés à l'encre.** Sept composants posent déjà un interligne sur la
+bande d'encre de la face dessinée (`axisBand.ascent + axisBand.descent + 2`, pour des listes serrées
+de légende). Ils sont déjà adaptatifs et ne portent aucun coefficient littéral ; les passer sur la
+hauteur naturelle desserrerait ces listes. Ils restent tels quels.
 
 ## 5. Les erreurs et les tests
 
@@ -165,18 +197,21 @@ changent visiblement ; chacun est regardé (§5).
   (hhea, pas typo 1.050) ; une famille absente lève.
 - **`read-direction`** — une ligne à 8 cellules lève ; les trois directions déposées portent
   `leading` sur chaque registre.
-- **`register.test.ts`** — `lead = hauteurNaturelle × leading × fontSize` ; un `fontSize` à 90 %
-  donne un `lead` à 90 % ; sur chaque face de tête, `lead` reproduit le multiplicateur hérité à
-  0,05 px près ; un registre dérivé hérite du `leading` de sa source.
-- **Garde dérivée** — aucun `proof/*/Directed*.tsx` ne déclare un interligne ou un écart entre
-  blocs en `…fontSize * <littéral>`. Elle parcourt l'arbre ; pas de liste d'exemptions.
+- **`register.test.ts`** — `leadOf(r) = hauteurNaturelle × leading × fontSize` ; une copie à 90 %
+  de la taille donne un interligne à 90 % ; sur chaque face de tête, `leadOf` reproduit le
+  multiplicateur hérité à 0,01 px près ; un registre dérivé hérite du `leading` de sa source.
+- **Garde dérivée** — dans les `Directed*.tsx` des beats qui ont un `render-directions.mjs`, aucun
+  `…Lead = <registre>.(fontSize|filedSize) * <littéral>`, aucun `eyebrowReg.(fontSize|filedSize) *`,
+  et aucun `(display|body|annot).(fontSize|filedSize) * <littéral>` qui suit directement un bloc de
+  texte — `…Lines.length * …Lead ±`, `readingTop −`, `sourceTop −`, `annotBand.ascent −`, lus sur la
+  source aux blancs normalisés. Elle parcourt l'arbre ; pas de liste d'exemptions.
 
 ### 5.3 La preuve visuelle
 
-Re-rendre les 40 beats et comparer pixel à pixel aux rendus présents sur la branche avant la
-migration. Attendu : identiques, sauf le choroplèthe (interligne sur taille dessinée) et les
-composants de l'écart connu (§4). Tout rendu qui diffère est regardé, et listé dans le rapport de
-fin.
+Re-rendre les 40 beats et comparer la **géométrie des SVG** à celle des rendus commités avant la
+migration : mêmes éléments, mêmes nombres à 0,25 px près dans l’espace 960 × 540 — un demi-pixel du fichier livré, sous le seuil du visible, au-dessus du cumul des arrondis d’une colonne de blocs. Attendu :
+identiques, sauf le choroplèthe (interligne sur taille dessinée) et les trois beats de l'écart connu
+(§4). Tout rendu qui diffère est regardé, et listé dans le rapport de fin.
 
 Puis : suites `fast` et `heavy`, `carried-copies` vert.
 
@@ -184,9 +219,15 @@ Puis : suites `fast` et `heavy`, `carried-copies` vert.
 
 Chaque `…fontSize * k` d'un `Directed*.tsx` est classé :
 
-1. **interligne** d'un bloc de plusieurs lignes → `r.lead` ;
-2. **écart entre blocs** → `r.gap(n)` avec une constante du tronc ;
-3. **décalage local** (marge sous l'axe, décalage d'une étiquette sur sa marque) → reste tel quel.
+1. **interligne** d'un bloc de plusieurs lignes → `leadOf(r)` ;
+2. **écart entre blocs de texte ou entre un bloc et le tracé**, sur `display`, `body` ou `annot` →
+   `gapOf(r, CONSTANTE)` si l'écart est uniforme (§2.3), sinon `gapOf(r, k ÷ multiplicateur)` ;
+3. **décalage local** → reste tel quel. C'est tout ce qui est sur `axis` ou `value` (place des
+   étiquettes d'axe, cadre de l'arbitre), et tout ce qui positionne une étiquette isolée par rapport
+   à une marque, une graduation ou un bord du tracé (`y=`, `y1=`, `at:`, `frame:`).
+
+La garde de §5.2 et la preuve visuelle de §5.3 sont ce qui attrape une erreur de classement : un
+élément qui bouge sans figurer dans l'écart connu est un classement faux.
 
 Le choroplèthe importe `registerOf` du tronc et perd sa copie locale. Les composants qui
 n'utilisent pas encore `registerOf` y passent, et héritent du même coup de la résolution par
