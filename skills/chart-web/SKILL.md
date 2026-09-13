@@ -129,6 +129,8 @@ look at them; each catches what the other is blind to.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, the fluid frame (geometry stretches, type stays fixed), the filter rule, what must never become interactive, the one box this format allows |
+| Doctrine | `references/directed-interaction.md` | The interaction is written before the code, control by control, in the beat's `BRIEF.md`; a control whose state equals the default state is refused at render time; the repertoire of web gestures and what the corpus actually ships |
+| Guard | `assets/interaction-plan.ts` | `GESTURES`, `shippedControls`, `assertControlsChangeSomething`, `assertInteractionPlan` — the states are derived from the rendered markup, never declared; carried byte-identical into `map-web` |
 | Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with that story's own STILL beat — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here. Not shared with the video SEED: that is a skill file and carries its own inlined copy |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `ChartWebSeed`-shaped component: SVG geometry plus HTML/CSS furniture, called once — not two pre-rendered rungs |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
@@ -334,6 +336,11 @@ skill into a journalist's root — the whole premise — did not build.
 
 - `references/web-discipline.md` — the rules this format is written under, each attached to the
   reasoning or the defect that produced it.
+- `references/directed-interaction.md` — the web sibling of `scrolly`'s and `chart-video`'s
+  choreography references. A choreography is a sequence the author controls; an interaction is a
+  space the reader explores, so the unit is a question the reader arrives with and the comparison
+  is against the DEFAULT state rather than the state before. Carries the repertoire and the
+  mechanical refusal `assets/interaction-plan.ts` enforces.
 - `assets/ChartWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (rainfall over a sample town, fell by a third), not a stripped mechanics demo.
   `FRAME`, `ChartWebSeed`, `ChartWebPreviewSvg`, `chartGeometry`, `segments`, `xTickValues`,

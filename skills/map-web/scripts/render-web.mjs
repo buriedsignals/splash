@@ -44,6 +44,7 @@ import {
 import { toDataUri } from "./inline-asset.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { groupsOf, markLayers, maxZoomForStudySet, radiusScale, slugOf } from "../assets/geo-symbol.ts";
+import { assertInteractionPlan } from "../assets/interaction-plan.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this skill.
@@ -386,6 +387,15 @@ ${liveBlock}
 `;
 
   const draft = page(baseCss);
+
+  // EVERY CONTROL CHANGES THE PICTURE — see the same block in `chart-web/scripts/render-web.mjs`,
+  // and `../assets/interaction-plan.ts` (carried from `chart-web`) for the whole reasoning. A
+  // control whose state, once applied, equals the default state is one the reader operates while
+  // nothing moves. This format is where the corpus's one measured instance of that lives: a locator
+  // whose eleven markers are each labelled on the map and each answer a hover with their own label
+  // and the category already printed on their filter chip.
+  assertInteractionPlan(draft, props.interaction ?? null, name ?? "this beat");
+
   const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);

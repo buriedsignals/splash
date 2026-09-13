@@ -66,6 +66,7 @@ import {
   filterNotes,
   filterOptionsForMarkup,
 } from "../assets/filter.ts";
+import { assertInteractionPlan } from "../assets/interaction-plan.ts";
 import {
   ChartWebSeed,
   FRAME,
@@ -213,6 +214,16 @@ ${inlineScript}
 `;
 
   const draft = page(baseCss);
+
+  // EVERY CONTROL CHANGES THE PICTURE, and it is refused here rather than in CI so an author meets
+  // it while writing the beat. A control whose state, once applied, equals the default state is one
+  // the reader operates while nothing moves — the web sibling of the card `assertStates` refuses in
+  // `scrolly` and the event `assertEventStates` refuses in `chart-video`. `props.interaction` is
+  // the plan the beat wrote before the code (`assets/interaction-plan.ts`); a beat that has not
+  // written one yet still meets the mechanical half, and the census names it
+  // (`splash/test/web-interaction-changes-the-picture.test.ts`).
+  assertInteractionPlan(draft, props.interaction ?? null, name ?? "this beat");
+
   const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
