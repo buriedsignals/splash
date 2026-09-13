@@ -100,7 +100,7 @@ console.log(
 );
 
 const columns = chosen.map((c, i) => {
-  const { n } = followersNeeded(ranked.indexOf(c));
+  const { n, sum } = followersNeeded(ranked.indexOf(c));
   // `followersNeeded` returns null when the whole tail below a country still does not reach it. That
   // cannot happen at these ranks and it is not left to chance: the answer this page exists to give
   // would otherwise print the word "null" beside a country's name.
@@ -115,12 +115,75 @@ const columns = chosen.map((c, i) => {
     name: NAMES[c.code],
     gt: c.tonnes / 1e9,
     label: fr(c.tonnes / 1e9),
+    followers: n,
+    followersGt: sum / 1e9,
     detail:
       `${fr(share, 1)} % du total mondial · il faut additionner les ${n} pays suivants du ` +
       `classement pour l'égaler`,
   };
 });
 console.table(columns.map((c, i) => ({ rang: i + 1, pays: c.name, Gt: c.label, détail: c.detail })));
+
+// ── the control, and the two ranks it refuses to offer ────────────────────────────────────────
+//
+// ONE ARITHMETIC, THREE READERS. `followersNeeded` was already computed above, once, over the full
+// 215-country ranking, for the sentence a hover gives. The SAME `{ n, sum }` builds this control's
+// options, its towers and its notes. Nothing below re-derives a count or a total.
+//
+// AND A RANK IS ONLY OFFERED WHEN THE PLATE CAN DRAW ITS WHOLE ANSWER. Measured on this file:
+// eight of the ten ranks are matched by a run of countries that is entirely inside the ten drawn;
+// Corée du S. needs Canada (rank 11) and Allemagne needs Canada and Brésil, which this beat does not
+// draw. A tower one column short of what its own sentence counts is a picture that lies, so the
+// option is not offered at all — both countries still answer the hover with their own `n`, which is
+// the channel that does not need the columns to be on the plate.
+const stackOptions = [];
+const offPlate = [];
+columns.forEach((c, i) => {
+  const last = i + c.followers;
+  if (last > columns.length - 1) {
+    offPlate.push(`${c.name} (il lui faut ${c.followers} pays, jusqu'au rang ${last + 1})`);
+    return;
+  }
+  const onto = columns.slice(i + 1, last + 1).map((x) => x.code);
+  if (onto.length !== c.followers)
+    throw new Error(`${c.code}: ${onto.length} colonnes empilées pour un compte de ${c.followers}`);
+  stackOptions.push({
+    key: c.code,
+    label: c.name,
+    // The accessible name CONTAINS the visible one, which `assertStackDeclaration` refuses the
+    // declaration without: a name that does not is the WCAG 2.5.3 failure and puts the option out of
+    // reach of a reader speaking what they can see.
+    announce:
+      `${c.name} — empiler les ${c.followers} pays suivants du classement, ` +
+      `${fr(c.followersGt)} Gt contre ${c.label} Gt`,
+    note:
+      `Les ${c.followers} pays suivants du classement · ${fr(c.followersGt)} Gt réunis · ` +
+      `${c.name} : ${c.label} Gt`,
+    onto,
+  });
+});
+if (stackOptions.length < 2)
+  throw new Error(
+    `only ${stackOptions.length} of the ${HOW_MANY} ranks can have their whole run drawn on this ` +
+      "plate, so the control would be a choice of one — draw more columns or drop the control",
+  );
+console.log(
+  `empilable : ${stackOptions.length} rangs sur ${HOW_MANY} · hors plaque : ${offPlate.join(" ; ") || "aucun"}\n`,
+);
+console.table(
+  stackOptions.map((o) => ({
+    contre: o.label,
+    pays: o.onto.length,
+    empilés: o.onto.join(" "),
+    total: o.note.split(" · ")[1],
+  })),
+);
+
+const stackPlan = {
+  label: "Empiler contre",
+  noneLabel: "Le classement seul",
+  options: stackOptions,
+};
 
 const facts = beatFacts(
   columns.map((c) => ({ key: c.code, label: c.name, value: c.gt })),
@@ -134,19 +197,25 @@ const caveat =
   `Émissions annuelles de CO₂ en ${YEAR}, en milliards de tonnes. Les ${HOW_MANY} premiers pays du ` +
   `classement mondial — ${fr(topShare, 1)} % du total. Chaque colonne porte son chiffre : la page ne ` +
   `dessine pas d'axe des valeurs, seulement son zéro.`;
-const bracketNote = `les ${nextN} suivants réunis : ${fr(running / 1e9)} Gt`;
 const readingLine =
-  `Lecture : survolez, touchez ou tabulez une colonne pour lire sa part du total mondial et le ` +
-  `nombre de pays qu'il faut additionner, plus bas dans le classement, pour l'égaler — la ` +
-  `question du titre, posée à chacun des dix.`;
+  `Lecture : survolez, touchez ou tabulez une colonne pour lire sa part du total mondial. Dans ` +
+  `« Empiler contre », choisissez un pays : les colonnes du dessous s'empilent à côté de lui jusqu'à ` +
+  `l'atteindre. La pile doit l'atteindre, pas rester dessous : elle compte donc un pays de plus que ` +
+  `le titre.`;
 const source = `Source : Global Carbon Budget 2025, via Our World in Data · ${YEAR} · ${countries.length} pays classés`;
 
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source}`,
+  body: `${caveat} ${readingLine} ${source} ${stackPlan.label} ${stackPlan.noneLabel} ${stackOptions
+    .map((o) => `${o.label} ${o.announce} ${o.note}`)
+    .join(" ")}`,
   axis: columns.map((c) => c.name).join(" "),
-  annot: bracketNote,
+  // Nothing on this page sets the annot register any more — the bracket's caption was the one thing
+  // that did, and it went with the bracket. The register is still declared because `figureVars`
+  // still emits `--note-family`, so the face it names is still requested and must still cover the
+  // words the page can display: the control's own, which are the ones that moved into this slot.
+  annot: `${stackPlan.label} ${stackPlan.noneLabel} ${stackOptions.map((o) => o.note).join(" ")}`,
   value: columns.map((c) => c.label).join(" "),
 };
 
@@ -171,12 +240,14 @@ console.log("");
  */
 const interaction = {
   earns:
-    `A still of this ranking prints ten numbers and a sum. It cannot say what any one of those ` +
-    `columns is worth AGAINST THE WORLD — the plate draws only the ten, which are ` +
-    `${fr(topShare, 1)} % of the total, so a column's height is silent about the other ` +
-    `${fr(100 - topShare, 1)} % — and it cannot run the headline's own arithmetic on anything but ` +
-    `the subject. This page answers both, for all ${HOW_MANY}, from the full ` +
-    `${countries.length}-country ranking the plate only shows the head of.`,
+    `A still of this ranking prints ten numbers and a fixed bracket over five of them. It cannot ` +
+    `say what any one of those columns is worth AGAINST THE WORLD — the plate draws only the ten, ` +
+    `which are ${fr(topShare, 1)} % of the total, so a column's height is silent about the other ` +
+    `${fr(100 - topShare, 1)} % — and it can run the headline's own arithmetic only on the subject ` +
+    `the author chose. The scrolly sibling performs that addition for the reader as a sequence; ` +
+    `this page is the only one of the three where the READER picks the reference and watches the ` +
+    `columns below it stack up against it, on ${stackOptions.length} of the ${HOW_MANY} ranks, ` +
+    `from the full ${countries.length}-country ranking the plate only shows the head of.`,
   controls: [
     {
       question:
@@ -190,6 +261,22 @@ const interaction = {
         `and how many countries below it in the full ${countries.length}-country ranking must be ` +
         `added together before they match it — the headline's own arithmetic asked of every rank ` +
         `instead of only of the subject.`,
+    },
+    {
+      question:
+        "Et si je pose la question à un autre pays : à partir de combien de pays du dessous " +
+        "est-ce qu'on l'égale, et à quoi ça ressemble ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        `The ${stackOptions.length} columns the plate can answer for each become a reference the ` +
+        `reader may choose. The columns below the chosen one LEAVE THEIR BANDS and stack on each ` +
+        `other in the band beside it, one on top of the next, until the tower reaches or passes its ` +
+        `height — ${stackOptions[0].onto.length} of them for ${stackOptions[0].label}, ` +
+        `${stackOptions[1].onto.length} for ${stackOptions[1].label}. The reference and its run ` +
+        `take the accent and every other column steps back to the neutral, the names of the ` +
+        `columns that went stay under the bands they left, and one sentence appears under the ` +
+        `control with the count and the running total. The fixed bracket this page used to draw is ` +
+        `gone: it was that comparison made once, for the subject the author chose.`,
     },
   ],
 };
@@ -236,7 +323,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         columns,
         interaction,
         subject: SUBJECT,
-        bracket: { from: 1, to: nextN, label: bracketNote },
+        stackPlan,
         top: columns[0].gt,
         title,
         eyebrow: EYEBROW,
@@ -244,12 +331,15 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         source,
         unit: UNIT,
         reading: readingLine,
-        bracketNote,
         alt:
           `Dix colonnes, une par pays, mesurant les émissions de CO₂ de ${YEAR} en milliards de ` +
           `tonnes. Celle de la ${NAMES[SUBJECT]}, ${fr(columns[0].gt)} Gt, dépasse à elle seule la ` +
-          `somme des ${nextN} suivantes (${fr(running / 1e9)} Gt), que réunit une accolade. ` +
-          `Les États-Unis suivent à ${fr(columns[1].gt)} Gt, l'Inde à ${fr(columns[2].gt)} Gt.`,
+          `somme des ${nextN} suivantes (${fr(running / 1e9)} Gt). Les États-Unis suivent à ` +
+          `${fr(columns[1].gt)} Gt, l'Inde à ${fr(columns[2].gt)} Gt. Un choix « Empiler contre » ` +
+          `fait quitter leur place aux colonnes situées sous le pays choisi et les empile l'une sur ` +
+          `l'autre à côté de lui jusqu'à l'égaler : ${stackOptions[0].onto.length} pays pour la ` +
+          `${stackOptions[0].label}, ${stackOptions[1].onto.length} pour les ` +
+          `${stackOptions[1].label}.`,
         direction,
         ground: direction.ground,
         accent: direction.accent,

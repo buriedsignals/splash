@@ -29,10 +29,14 @@ the comparison.
 render as `props.interaction`, so `assertInteractionPlan` checks this promise against the markup the
 page actually ships and the two cannot drift apart.
 
-**What this page earns.** A still of this ranking prints ten numbers and a sum. It cannot say what
-any one of those columns is worth *against the world* — the plate draws only the ten, which are
-68,9 % of the total, so a column's height is silent about the other 31,1 % — and it cannot run the
-headline's own arithmetic on anything but the subject. This page answers both, for all ten.
+**What this page earns.** A still of this ranking prints ten numbers and a fixed bracket over five
+of them. It cannot say what any one of those columns is worth *against the world* — the plate draws
+only the ten, which are 68,9 % of the total, so a column's height is silent about the other 31,1 % —
+and it can run the headline's own arithmetic **only on the subject the author chose**. The scrolly
+sibling stacks the followers against China *for* the reader, as a sequence; the still asserts it with
+a bracket. This page is the only one of the three where **the reader picks the reference and watches
+the addition happen** — against any of the eight columns the plate can draw the answer for, not only
+against China.
 
 ### Control 1 — ask a mark
 
@@ -50,6 +54,67 @@ headline's own arithmetic on anything but the subject. This page answers both, f
 Both readings are derived in the runner from the frozen file, asserted there, and baked into the
 answer server-side. The browser never formats a number.
 
+### Control 2 — stack the followers against any column
+
+- **The reader's question:** « Et si je pose la question à un autre pays : à partir de combien de
+  pays du dessous est-ce qu'on l'égale, et à quoi ça ressemble ? »
+- **The gesture:** `toggle-a-comparison` — a radio group, « Empiler contre : », one option per
+  column the plate can answer for, plus the option that is the plate itself.
+- **What changes in the picture:** the columns below the chosen one **leave their bands and stack on
+  each other**, one on top of the next, in the band immediately to the right of it, until the tower
+  reaches or passes its height. The chosen column and the stacked ones take the accent; the other
+  columns step back to the same neutral the nine non-subjects already wear. The stacked columns'
+  own value labels go with them; the country names stay under their now-empty bands, in the accent,
+  so the reader can see **which** countries went into the tower. One sentence appears under the
+  control with the count and the running total — « les 6 pays suivants · 12,45 Gt réunis · la Chine :
+  12,29 Gt ».
+
+**The count is not re-derived.** `followersNeeded` already computes it, once, over the full
+215-country ranking, for the hover answer control 1 gives. The same returned `{ n, sum }` is what
+builds this control's options, its tower and its sentence: one arithmetic, three readers.
+
+**No script.** The control is native radios in a `<fieldset>` plus CSS generated at build time —
+`:checked` and `:has()`, exactly the mechanism `chart-web/assets/filter.ts` narrows with, and
+nothing else. For each of the eight options the build emits the transform that carries each needed
+follower onto the tower (its own `translate()` in `viewBox` units, so it tracks the geometry at every
+width), the fills, the labels that go with the columns they belong to, and the sentence that appears.
+Counted on the delivered file: **94 rules across the eight options, plus five in the base block** —
+nine per option and one more per moved column, which is the only rule that cannot be grouped.
+Driven with the script disabled entirely, in all three directions: clicking « Chine » checks the
+radio, moves five columns (the sixth is the tower's own base and does not move), and reveals the
+sentence; with nothing chosen the page is the complete ranking, which is the state it ships in.
+
+**What the reader lights is a mark, never the frame.** The names under the ten bands, and the region
+each band answers a pointer for, do not move under any option. This was measured rather than assumed:
+the first build carried each column's own hit point with it onto the tower, and driving it produced
+the one thing `interaction.mjs` calls the worst answer an interactive chart can give — the script
+resolves a pointer to the nearest mark BY X, off the `cx` attributes it reads once at init, which a
+CSS transform never changes, so hovering anywhere on China's six-column tower answered « États-Unis »
+while the box anchored on whichever mark had moved there. A filter does not move the frame its marks
+were measured against and neither does this: a reader hovers a BAND, the band's name is printed under
+it, and the answer is that band's country. Verified in all three directions under a chosen option —
+the Inde, Iran and États-Unis bands each answer with the name printed beneath them.
+
+**The lit names take the accent and not a bold.** The plate may light ONE name with an accent and a
+weight together — that is a single subject the author picked — but an option lights three to seven,
+and doubling the accent across that many 11 px names thickens the tightest row on the page. Measured
+while deciding it, and recorded so the number is not re-read as a defect: with those names bolded,
+`verify-web`'s revealed-typeface probe reported « Open Sans 700 really DRAWS the words it reveals »
+as failing at **0,3 px of 956 px**. That is a FALSE red. Probed directly on the delivered page,
+« Chine » at 11 px/700 sets **31,32 px** in `"Open Sans", Helvetica, …` against **30,56 px** with Open
+Sans taken out, and `document.fonts` holds the 700 face as `loaded`: the face draws. The probe
+concatenates every character it has seen in one (stack, weight, style) into a single bag, and over a
+bag the size of ten country names the per-character differences between Open Sans Bold and Helvetica
+Bold cancel to 0,06 px. The rule shipped is the design's answer, not a way around the probe.
+
+**Two of the ten ranks get no option, and that is a measurement, not an omission.** Corée du S. needs
+Canada and the Allemagne needs le Canada and le Brésil — countries the plate does not draw. An option
+whose tower is one column short of what its own sentence claims is a picture that lies, so the build
+refuses to offer it: `render-directions-web.mjs` keeps only the ranks whose whole run of followers is
+on the plate, prints the two it dropped and why, and throws if fewer than two survive. Both countries
+still answer control 1 with their own `n` on hover, which is the channel that does not need the
+columns to be drawn.
+
 ### What was considered and is not shipped, with the measurement
 
 - **The cumulative share through this rank** ("les 2 premiers pèsent 44,5 % du total"). A genuine
@@ -63,10 +128,20 @@ answer server-side. The browser never formats a number.
   already states it once, in words, for the one pair it is about.
 - **A filter.** This beat declares none and `verify-web.mjs` skips its five filter checks
   accordingly. A ranking of ten carries no dimension orthogonal to the encoded variable, so any
-  narrowing would take marks out of the ranking the claim is made over.
+  narrowing would take marks out of the ranking the claim is made over. Control 2 is a radio group
+  in the same idiom and it is **not** a filter: nothing leaves the page, the frame does not move, and
+  the ten columns are all still drawn under every option.
+- **The fixed bracket, which this page used to draw.** It spanned the five columns the headline adds
+  up and captioned them with their sum — the answer, pre-made, in the one place the reader cannot ask
+  it anywhere else. That is the still's job and the still still does it. Here it was also the thing
+  standing where the reader's own comparison had to be built, so it is gone and control 2 is what
+  replaced it. Its own clearance arithmetic went with it; what that arithmetic was for is recorded
+  below.
 
 Everything the plate states is drawn unconditionally and survives with JavaScript off: the ten
-columns, their printed values, the bracket and its sum, the caveat, the reading line and the source.
+columns, their printed values, the caveat, the reading line and the source. The comparison the
+headline makes is no longer *drawn* for the reader — it is the first option of control 2, one
+keystroke away, and it works with the script absent.
 
 ## Treatments spent
 
@@ -77,9 +152,11 @@ columns, their printed values, the bracket and its sum, the caveat, the reading 
   other nine are one neutral step off the direction's own ground, taken to the non-text floor. A
   ranking where every bar shouts has no subject.
 
-The bracket is drawn where the comparison is made, spanning exactly the columns it adds up, so a
-reader can count the bars under it rather than trust a sentence. It is **HTML in the overlay, not a
-path in the `viewBox`** — see below.
+`accent-marks-the-thread` is spent **twice** here, and the second spending is the reader's. At rest
+the accent is on the subject alone. Under a chosen option it is on the chosen column and on the
+columns stacked against it — still one accent, still one thread, but the thread is now the comparison
+the reader asked for rather than the one the author picked. Nothing else on the page changes colour,
+and the nine-versus-one shape of the default is exactly the shape of every option.
 
 ## This type's own trap, and the form it takes here
 
@@ -95,7 +172,10 @@ poles against the fill and takes the higher — is not reached for and is not cl
 **Its reason survives, and it was open.** The trap's reason is *a rule standing in for a
 measurement*, and this page had three places where the accent was used as **type** on the strength of
 the direction having chosen it: the eyebrow (crème's `eyebrow` register reads its ink from the
-accent), the subject's value label, and the subject's own name on the x-axis. An accent is picked to
+accent), the subject's value label, and the subject's own name on the x-axis. Control 2 takes that
+from three places to twelve — under a chosen option the accent sets a value label and a name on the
+reference and on every column stacked against it — which is nine more places one measurement now
+covers, and the reason it was worth asserting rather than assuming. An accent is picked to
 be legible as a mark — a 3 : 1 floor — and 11-px type is held to 4.5 : 1. Nothing measured the
 difference. Measured now, at build time, against each direction's own ground: crème **6.64 : 1**,
 nocturne **10.80 : 1**, rapport **7.09 : 1**. All three pass, so nothing on the page changes; what
@@ -104,40 +184,29 @@ type a reader cannot read. The assertion is `assertLegible(accent, ground, { rol
 is measured, never adjusted: `adjustToContrast` walks a colour 2 % toward a pole even when it already
 passes, so adjusting here would darken three accents that are correct.
 
-## The bracket's clearance, and why a `viewBox` constant could not hold it
+## What the bracket's clearance arithmetic was for, and where it went
 
-The bracket used to be an SVG `path` placed **26 `viewBox` units** above the tallest column it spans.
-The `<svg>` carries `preserveAspectRatio="none"`, so a constant in geometry space is not a constant
-in reader pixels: 26 units is 42 CSS px on a 682 px plot and **8.5 CSS px on the 137 px plot a 320 px
-window produces**. The caption rides on the bracket, and the value label it has to clear is a fixed
-CSS height the direction decides — so the two collided at every width at or below 480 px, measured
-on the delivered files at **21.5 px of overlap on crème at 480, 28.7 px at 375, 27.1 px at 320**, and
-the same on the other two directions.
+The bracket was **HTML in the overlay, not a path in the `viewBox`**, and that was not a style
+choice. The `<svg>` carries `preserveAspectRatio="none"`, so a constant in geometry space is not a
+constant in reader pixels: the 26 `viewBox` units the bracket first sat above its tallest column were
+42 CSS px on a 682 px plot and **8.5 CSS px on the 137 px plot a 320 px window produces**. The
+caption rode on the bracket and the value label it had to clear is a fixed CSS height the direction
+decides, so the two collided at every width at or below 480 px — measured on the delivered files at
+21.5 px of overlap on crème at 480, 28.7 px at 375, 27.1 px at 320. The remedy was to state the
+clearance in the reader's own pixels (`leadOf(value) + 2 + 4 + 8`), and a second refusal held the
+caption to one line inside the narrowest plot this format is verified at.
 
-The remedy is the one the corpus already learned on the line beat: the clearance a reader sees must
-be stated in the reader's own pixels. The bracket is now **HTML in the overlay** — three borders on
-a positioned `div`, drawn at `direction.stroke.rule` width exactly as the path was — anchored by `%`
-to the tallest spanned column's own top and lifted by `leadOf(value) + 2 + 4 + 8 px`: that
-direction's own value-label box, the offset the label already stands off its column, and one gap. It
-is the same distance at 320 px and at 1600 px, in every direction, because it is never scaled by the
-`viewBox` at all. Measured on the delivered files: the bracket sits **8.0 px above the value label
-it has to clear at 320 px and 8.0 px above it at 1400 px**, against 8.5 px and 42 px before.
+**All of it is gone with the bracket, and none of it was thrown away as wrong.** The rule it taught
+is what decided where control 2's sentence goes: *a line of type anchored to geometry is a collision
+waiting for a narrow window*. So the stack's own sentence is **not** anchored to the tower. It is a
+paragraph in the figure's flex column, directly under the control that produces it — the same place
+and the same mechanism `filter.ts` puts its narrowing note, where it cannot collide with a value
+label at any width because it is not in the plot at all. Its row is reserved whether or not an option
+is chosen (`min-height` on the container), so choosing one never moves the plot.
 
-The caption moved with it, and had to change twice. Centred over the bracket's middle it **wrapped**
-— `noteAnchor` caps a label at `min(46%, 24em)` so it cannot run off the frame — and at 320 px the
-two-line box was taller than the room between the bracket and the top of the plot, so it climbed OUT
-of the plot and landed on the subject's own value label (4.2 × 20.0 px on crème). It is now anchored
-to the bracket's **left end**, held to one line, and the horizontal safety `noteAnchor`'s cap was
-providing is re-established as a **build-time refusal**: the caption must fit, on one line, in what
-is left of the narrowest plot this format is verified at. Measured across the three filed directions
-it sets 182.5 px (crème, 13 px Merriweather), 144.5 px (nocturne, uppercase and 1.8 px-tracked) and
-148.9 px (rapport) against 240 px of room.
-
-Measured after, on the delivered files: **zero caption/label collisions at 360, 375, 414, 480, 768,
-1024, 1400 and 1600 px in all three directions**, and `document.scrollWidth` equal to the viewport at
-every one. At 320 px one remains and it is the comb below, not the placement: crème's and rapport's
-"12,29" sets 46.4 px in a 27 px band, spills 19 px past its own column into the next one, and reaches
-the caption's left edge by 4.4 px and 3.9 px.
+What is still stated in reader pixels, for the same reason the bracket had to be: nothing. The stack
+is pure geometry — each follower's `translate()` is in `viewBox` units, which is exactly right,
+because a column moving onto another column must scale with the columns and not with the type.
 
 ## What is still wrong at phone widths, and why it is not closed here
 
@@ -170,23 +239,83 @@ arithmetic a fluid web page does not have.
 That is a second plate, not a placement fix, and it is a form decision this beat's siblings share.
 It is named here with its numbers rather than half-solved.
 
+**And the control is now the tightest thing in the vertical budget at 375 px, measured and only just
+clear.** This format fits the whole figure in the window (`.chart-figure`'s `max-height: 100dvh`) by
+letting the plot absorb the shortfall down to a 120 px floor and nothing else. Adding the control's
+own rows spent that slack. The first build overflowed nocturne by **14 px at 375 × 812** — the source
+line under the fold, `verify-web` red on two checks — and it was closed by paying for it rather than
+by shrinking the plot further: the reading line was rewritten to the same two facts in two sentences
+instead of three, the control's pills took 10 px of side padding instead of the filter's 12 (nine
+options is more than a filter carries, and at 375 px two pixels a pill is a whole wrapped row), and
+the two margins the control adds came down by 2 px each. Measured after, at 375 × 812:
+
+| direction | header | control | sentence | plot | reading | source | document |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| crème | 264,6 | 79,2 | 19,5 | 165,0 | 113,1 | 37,7 | **812** |
+| nocturne | 348,2 | 100,0 | 18,8 | 122,0 | 108,8 | 36,3 | **812** |
+| rapport | 216,4 | 79,2 | 19,5 | 165,0 | 113,1 | 37,7 | **812** |
+
+Nocturne's plot sits 2 px above its own floor: its uppercase display wraps to four lines at 375 px and
+takes 348 px of the 812 before anything else is drawn. It fits, and it has no room to spare — so the
+transpose named above is now load-bearing for a second reason, and a direction with a taller display
+than nocturne's would overflow rather than shrink.
+
 ## Verification
 
-`verify-web.mjs --file renders/<direction>.html` — creme **99 passed, 0 failed, 5 skipped**,
-nocturne **93 / 0 / 5**, rapport **87 / 0 / 5** (the counts differ by direction because the typeface
-probe runs once per face the page embeds). Every skip is the filter's; this beat declares none.
+`verify-web.mjs --file renders/<direction>.html` — crème **99 passed, 0 failed, 5 skipped**, nocturne
+**99 / 0 / 5**, rapport **93 / 0 / 5**. Every skip is the filter's; this beat declares none, and
+control 2 is not one (nothing leaves the page). The counts differ by direction because the typeface
+probe runs once per face the page embeds.
 
-Every control was driven in every direction at 1400 x 900: a real pointer over all ten columns
-answers **10 distinct readings** in each, and Tab walks all ten in ranking order, each `.pt` carrying
-its own `aria-label` and the answer box announcing through `aria-live="polite"`.
+**Control 1** was driven in every direction at 1400 × 900 before this pass and again after: a real
+pointer over all ten columns answers ten distinct readings in each, Tab walks all ten in ranking
+order, each `.pt` carries its own `aria-label`, and the answer box announces through
+`aria-live="polite"`. A tap is verified as a real touch sequence rather than as a pointer
+(`touchStart → 150 ms → touchEnd → 500 ms` at 390 × 844 through CDP) — see the patch in
+`render-directions-web.mjs` and the measurement behind it.
 
-A tap is verified as a real touch sequence, not as a pointer: `touchStart → 150 ms → touchEnd →
-500 ms` at 390 × 844 through CDP. Before the patch in `render-directions-web.mjs`, the answer
-appeared on the touch and **vanished when the finger lifted** — the page's own reading line promises
-« survolez, touchez ou tabulez » and the middle third was false. Chrome fires `pointerleave` up the
-whole chain when a touch pointer is destroyed, and the format's shared `interaction.mjs` clears on it
-unguarded; the patch restricts that clear to mouse and pen, which leaves a touch reader's answer up
-until they tap elsewhere.
+**Control 2 was driven the same way, option by option, in all three directions** — 294 assertions,
+all green, every one measured off the rendered rectangles rather than off the markup:
+
+- with nothing chosen: the untouched option is checked, no sentence is revealed, the subject alone
+  carries the accent, the ten columns stand in their own bands and every one sits on the zero
+  baseline;
+- for each of the eight options, clicked with a real pointer: exactly one sentence appears; the tower
+  carries as many columns as that sentence counts; every stacked column stands in one band; each one
+  sits on the one below it (bottom within 1,5 px of the previous top); the tower stands on the zero
+  baseline; **its top reaches or passes the column it is stacked against**; the value labels that
+  went are exactly the ones that moved; the names of the reference and of its run are the ones lit;
+  the default subject steps back unless it IS the reference; and the plot does not move when the
+  sentence appears;
+- keyboard: Tab alone reaches the radio group (12 hops from the top of the document), and an arrow
+  key moves the selection and the picture with it;
+- under a chosen option, the hover answer still names the band it is over, in all three directions.
+
+**With JavaScript disabled entirely**, in all three directions: the page prints 34 runs of words at
+rest (title, caveat, reading line, source, the ten names, the ten values and the control's own
+legend and nine labels), a real click on a pill checks it, five columns move onto the tower, and the
+sentence appears. Nothing on this page needs the script except the hover/tap answer, which is
+control 1's and was already so.
+
+**Every guard this beat and its vocabulary ship was reddened by a named mutation**, run against the
+real beat: offering the two ranks whose run leaves the plate (`KOR: 1 colonnes empilées pour un
+compte de 2`); stacking one column twice; stacking a column that ranks above the reference; an option
+with no sentence; an accessible name that does not contain its visible label; every sentence replaced
+by a string the plate already prints (`assertControlsChangeSomething`); the sentences removed from the
+markup altogether while the radios and all 94 rules stay; control 2 removed from the declared plan
+while the page ships it; the fieldset removed while the plan still declares it; a grouped selector
+that loses its own option scope; a scale with no headroom so the tallest tower leaves the frame; and
+the last column offered as a reference with no band beside it. All twelve reddened.
+
+Two findings from that battery, recorded rather than filed away:
+
+- **Renaming the fieldset's class does not remove the control**, and the first attempt at the
+  "declared but not shipped" mutation did exactly that and stayed green. Discovery keys on the radio
+  ids, deliberately, the same way `filterOptionSlugs` does — the mutation had to remove the radios.
+- **Deleting the selector-scope refusal from `stack.ts` reddens nothing on its own**, because it
+  guards the call site rather than itself: the rules are still built correctly without it. It reddens
+  — and so does `stack-vocabulary.test.ts`'s output-level check — the moment the call site is written
+  the way that shipped the defect.
 
 ## Source
 

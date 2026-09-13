@@ -4,19 +4,40 @@
  *
  * WHAT THE WEB ADDS TO A RANKING, AND WHY IT IS NOT THE PLATE REPEATED. Ten bars is few enough that
  * a static plate can label every one, so "hover to see the value" would be the same numbers a second
- * time — the repetition `web-discipline.md` refuses outright. The reading this page adds is a
- * DERIVED one the plate has no room for: for every country, how many of the countries BELOW it in
- * the same ranking you must add together before they match it. That is the headline's own arithmetic
- * — China against the next five — asked of all ten, and it is computed server-side over the full
- * 215-country ranking, not over the ten drawn.
+ * time — the repetition `web-discipline.md` refuses outright. Two readings are added instead, and
+ * neither is a number the plate holds:
+ *
+ *   1. FOR ONE COLUMN, ASKED: its share of the world total, and how many of the countries BELOW it
+ *      in the same ranking must be added together before they match it — the headline's own
+ *      arithmetic asked of all ten, computed server-side over the full 215-country ranking.
+ *   2. FOR ONE COLUMN, BUILT: the reader chooses a reference and the countries below it LEAVE THEIR
+ *      BANDS AND STACK ON EACH OTHER beside it, one on top of the next, until the tower reaches or
+ *      passes its height. The still asserts that comparison once, for China, with a bracket; the
+ *      scrolly performs it for the reader as a sequence; this is the only one of the three where
+ *      the reader picks the reference and watches the addition happen.
+ *
+ * THE FIXED BRACKET IS GONE, AND ITS REMOVAL IS THE POINT. It spanned the five columns the headline
+ * adds up and captioned them with their sum — the answer, pre-made, standing exactly where the
+ * reader's own comparison had to be built. A still should draw it and does. Here it was furniture
+ * doing the reader's work, so the control replaced it rather than joining it.
+ *
+ * NO SCRIPT DOES ANY OF THAT. The control is native radios in a `<fieldset>` plus CSS generated at
+ * build time — `:checked` and `:has()`, the same mechanism `chart-web/assets/filter.ts` narrows
+ * with. For each option the build emits the `translate()` that carries each needed follower onto the
+ * tower, in `viewBox` units so it tracks the geometry at every width; the fills; the value labels
+ * that go with the columns they belong to; and the sentence that appears under the control. With
+ * JavaScript off the control works identically, and with nothing chosen the page IS the complete
+ * ranking — which is the state it ships in and the state a reader with no script never leaves.
  *
  * `every-bar-labelled-lets-the-axis-go` — every column prints its own number, so the page carries a
  * zero baseline and a stated unit instead of a value axis. A length encoding still needs its zero
  * and it has one; what it does not need is a ruler nobody reads once every bar is written.
  *
- * `accent-marks-the-thread` — one column is the subject and carries the direction's accent. The
- * other nine are one neutral step off the direction's own ground: they are the comparison, and a
- * ranking where every bar shouts has no subject.
+ * `accent-marks-the-thread`, SPENT TWICE — once by the author and once by the reader. At rest the
+ * accent is on the subject alone and the other nine are one neutral step off the direction's own
+ * ground. Under a chosen option it is on the reference and on the columns stacked against it, and
+ * everything else — the default subject included — steps back to that same neutral. Still one
+ * accent, still one thread; the thread is now the comparison the reader asked for.
  *
  * THIS TYPE'S TRAP, IN THE FORM IT TAKES HERE. `references/types/bar-and-column.md` names one trap: a
  * value label printed inside or against a coloured bar needs its contrast measured against THAT EXACT
@@ -24,20 +45,21 @@
  * by construction — every value is printed OUTSIDE its column, on the ground, which is the side-step
  * the static sibling records — so `inkOnFill`, the repertoire's own implementation of the remedy, is
  * not reached for and is not claimed. Its REASON survives, and it was open: three things here are set
- * in the accent as TYPE (the eyebrow, whose register reads its ink from the accent; the subject's value
- * label; the subject's own name on the x-axis), and an accent is chosen to clear the 3:1 mark floor
- * while 11px type is held to 4.5:1. Nothing measured the difference. It is measured below, and
- * ASSERTED rather than adjusted — `adjustToContrast` walks a colour 2 % toward a pole even when it
- * already passes, so adjusting would darken three accents that are correct.
+ * in the accent as TYPE (the eyebrow, whose register reads its ink from the accent; a value label;
+ * a name on the x-axis), and an accent is chosen to clear the 3:1 mark floor while 11px type is held
+ * to 4.5:1. Nothing measured the difference. It is measured below, and ASSERTED rather than adjusted
+ * — `adjustToContrast` walks a colour 2 % toward a pole even when it already passes, so adjusting
+ * would darken three accents that are correct. The control makes that assertion carry FURTHER than
+ * it used to: under an option the accent sets a name and a value on whichever column the reader
+ * chose, so it is nine more places the same one measurement now covers.
  *
- * THE BRACKET IS HTML, NOT A PATH. Its clearance is a distance a READER sees, and this `<svg>` carries
- * `preserveAspectRatio="none"`, so a constant in `viewBox` units is not a constant in CSS pixels: the
- * 26 units this bracket used to sit above its tallest column are 42 px on a 682 px plot and 8.5 px on
- * the 137 px plot a 320 px window produces. The caption rides on the bracket and the value label it has
- * to clear is a fixed CSS height the direction decides, so the two collided at every width at or below
- * 480 px. Three borders on a positioned `div` in the overlay, at `direction.stroke.rule` width exactly
- * as the path was, anchored by `%` to the tallest spanned column's own top and lifted by that
- * direction's own `leadOf(value)` plus one gap — the same distance at 320 px and at 1600 px.
+ * WHERE THE COLOURS OF A WORD LIVE, AND WHY THEY MOVED OUT OF THE INLINE STYLE. They used to be
+ * written on each label as `color: code === subject ? accent : ink`. An inline style beats every
+ * selector there is, so the generated rules could not have stepped the default subject back when the
+ * reader chose another reference — the picture would have carried two accents, one of them stale.
+ * The default state is now expressed as two rules in this component's own stylesheet, at a
+ * specificity the option rules clear by an id, so "what the plate looks like untouched" and "what it
+ * looks like under an option" are the same mechanism reading the same custom properties.
  */
 
 import {
@@ -47,37 +69,30 @@ import {
   TEXT_CONTRAST_MIN,
   NON_TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
-import { registerOf, leadOf } from "#shared/design-base/register.mjs";
-import { webRegisters, figureVars, measurable, noteAnchor } from "#shared/design-base/web.mjs";
+import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
+import {
+  assertStackDeclaration,
+  stackCss,
+  stackChromeCss,
+  stackNotesForMarkup,
+  stackOptionsForMarkup,
+  type StackDeclaration,
+} from "../../skills/chart-web/assets/stack.ts";
 
 export const FRAME = { width: 900, height: 420, xAxisRowPx: 34 };
 
-/** The vertical padding the format's shared stylesheet gives `.note` and `.end-label`
- *  (`padding: 1px 4px`), top and bottom. Part of every label's real box height, so part of any
- *  arithmetic that decides whether two of them clear each other. */
-const LABEL_PADDING_Y_PX = 1;
+/** This format's own scope selector, and the id prefix the stack's radios take. The two arguments
+ *  `stack.ts` refuses to guess, for the reason `filter.ts` refuses to guess them. */
+const SCOPE = ".chart-figure";
+const STACK_ID_PREFIX = "chart-stack";
 
-/** One gap, in CSS pixels, stated once and used for both clearances the bracket needs: above the
- *  value label it has to clear, and between the bracket's own rule and its caption. */
-const GAP_PX = 8;
-
-/** How far the bracket's two end ticks hang below its rule, in CSS pixels. */
-const TICK_PX = 8;
-
-/** How far each value label stands off the top of its own column, in CSS pixels. Stated once here
- *  because the bracket's lift is measured from the TOP of that label, not from the bar. */
+/** How far each value label stands off the top of its own column, in CSS pixels. */
 const LABEL_OFFSET_PX = 4;
 
-/** The horizontal padding the format's shared stylesheet gives `.note` (`padding: 1px 4px`), both
- *  sides — part of the caption's real width, so part of the refusal below. */
-const LABEL_PADDING_X_PX = 4;
-
-/** The narrowest plot this format is verified at, in CSS pixels. Measured, not chosen: at a 320 px
- *  viewport the figure's own fixed 24 px inset each side leaves 272 px, and this beat's y-gutter is
- *  zero (it draws no value axis). It is the width the caption's ONE-LINE guard is held against,
- *  because a caption that fits every wider frame and runs off the narrowest one is a defect nobody
- *  sees on a laptop. */
-const NARROWEST_PLOT_PX = 272;
+/** How long a column takes to reach the tower. Honoured only under `prefers-reduced-motion:
+ *  no-preference` — `stack.ts` puts the whole transition inside the query rather than overriding it
+ *  back, so under `reduce` there is no transition to resolve at all. */
+const MOVE_MS = 420;
 
 export type Column = {
   code: string;
@@ -88,13 +103,20 @@ export type Column = {
   detail: string;
 };
 
+/** What the runner declares: the words and the arithmetic, with the run named by KEY. The geometry
+ *  — where each column goes — is this component's, because this component is what knows the scale. */
+export type StackPlan = {
+  label: string;
+  noneLabel: string;
+  options: { key: string; label: string; announce: string; note: string; onto: string[] }[];
+};
+
 const pct = (value: number, extent: number) => (value / extent) * 100;
 
 export function DirectedColumnsWeb({
   columns,
   subject,
-  measure,
-  bracket,
+  stackPlan,
   top,
   title,
   eyebrow,
@@ -103,7 +125,6 @@ export function DirectedColumnsWeb({
   alt,
   unit,
   reading,
-  bracketNote,
   direction,
   ground,
   accent,
@@ -113,13 +134,7 @@ export function DirectedColumnsWeb({
 }: {
   columns: Column[];
   subject: string;
-  /** `measureText`, handed in by `renderWeb` — one implementation of the text-measurement rule per
-   *  render, never a copy per beat. */
-  measure: (
-    text: string,
-    font: { fontSize: number; fontWeight?: number; fontFamily?: string },
-  ) => number;
-  bracket: { from: number; to: number; label: string };
+  stackPlan: StackPlan;
   top: number;
   title: string;
   eyebrow: string;
@@ -128,7 +143,6 @@ export function DirectedColumnsWeb({
   alt: string;
   unit: string;
   reading: string;
-  bracketNote: string;
   direction: any;
   ground: string;
   accent: string;
@@ -141,63 +155,97 @@ export function DirectedColumnsWeb({
     throw new Error(`the subject ${subject} is not among the columns drawn`);
 
   // THE TRAP'S REASON, CLOSED BY MEASUREMENT — see the header. The accent is not only a fill here: it
-  // sets the eyebrow, the subject's value and the subject's name on the axis. Type is held to 4.5:1,
-  // a mark to 3:1, and a direction that clears the second does not automatically clear the first.
+  // sets the eyebrow, a value label and a name on the axis. Type is held to 4.5:1, a mark to 3:1, and
+  // a direction that clears the second does not automatically clear the first.
   assertLegible(accent, ground, {
     role: "text",
     where: `${direction.id ?? "this direction"}'s accent, which this beat sets type in`,
   });
 
-  // The nine that are not the subject. One neutral, taken to the non-text floor against the ground
-  // so a column is never a shape the reader has to guess at.
+  // The columns that are not lit. One neutral, taken to the non-text floor against the ground so a
+  // column is never a shape the reader has to guess at.
   let neutral = mix(ground, ink, 0.42);
   neutral = adjustToContrast(neutral, ground, NON_TEXT_CONTRAST_MIN) ?? neutral;
   const baseline = mix(ground, ink, 0.75);
+  const labelInk = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
 
   const band = FRAME.width / columns.length;
   const barW = band * 0.62;
-  // HEADROOM for the printed value that sits on top of each column, and for the bracket above the
-  // second group. Measured, not chosen: the value register's own size plus the bracket's two rows.
+  // HEADROOM for the printed value that sits on top of each column, and for the tallest tower the
+  // control can build. Measured, not chosen — and the tower is what makes it load-bearing: China's
+  // run of six adds up to MORE than China, so the scale has to hold a column the plate never draws.
   const scaleTop = top * 1.22;
   const y = (gt: number) => FRAME.height - (gt / scaleTop) * FRAME.height;
+  const heightOf = (gt: number) => (gt / scaleTop) * FRAME.height;
   const cx = (i: number) => band * i + band / 2;
 
-  // The bracket hangs off the TALLEST column it spans — the only one of the five whose own value label
-  // it could ever collide with — and its lift is that label's real box plus one gap, in CSS pixels.
-  const spanned = columns.slice(bracket.from, bracket.to + 1);
-  const bracketAnchorY = Math.min(...spanned.map((c) => y(c.gt)));
-  const valueBoxPx =
-    leadOf(registerOf(direction, "value", { family: "chart" })) + LABEL_PADDING_Y_PX * 2;
-  const bracketLiftPx = valueBoxPx + LABEL_OFFSET_PX + GAP_PX;
-  const bracketLeft = cx(bracket.from) - barW / 2;
-  const bracketRight = cx(bracket.to) + barW / 2;
-  const rule = mix(ground, ink, 0.55);
-  const ruleWidth = direction.stroke?.rule ?? 0.8;
-  // THE CAPTION IS ANCHORED TO THE BRACKET'S OWN LEFT EDGE AND HELD TO ONE LINE. Centred over the
-  // bracket's middle, it wrapped: `noteAnchor` caps a label at `min(46%, 24em)` so it cannot run off
-  // the frame, which is right for a long note and wrong for this one. At 320 px the two-line box was
-  // taller than the room between the bracket and the top of the plot, so it climbed OUT of the plot
-  // and landed on the subject's own value label — measured at 4.2 x 20.0 px of overlap on crème, and
-  // on all three directions. A four-word caption broken across two lines is also worse composition
-  // than the same caption on one.
-  //
-  // The horizontal safety `noteAnchor`'s cap was providing is RE-ESTABLISHED as a refusal rather than
-  // dropped: the caption starts at the bracket's left end and has to fit, on one line, in what is left
-  // of the narrowest plot this format is verified at. Measured across the three filed directions the
-  // caption sets 182.5 px (crème, 13 px Merriweather), 144.5 px (nocturne, uppercase and tracked) and
-  // 148.9 px (rapport) against 240 px of room — so it fits with margin, and a direction that changed
-  // that stops the render instead of shipping a run of type off the frame.
-  const noteXPct = pct(bracketLeft, FRAME.width);
-  const noteAnchoring = noteAnchor(noteXPct);
-  const noteWidthPx = measure(bracketNote, measurable(direction, "annot")) + LABEL_PADDING_X_PX * 2;
-  const noteRoomPx = (1 - noteXPct / 100) * NARROWEST_PLOT_PX;
-  if (noteWidthPx > noteRoomPx)
-    throw new Error(
-      `"${bracketNote}" sets ${noteWidthPx.toFixed(0)}px on one line in this direction's annot ` +
-        `register, and the bracket it captions starts ${noteXPct.toFixed(1)} % into the plot — so it ` +
-        `has ${noteRoomPx.toFixed(0)}px of a ${NARROWEST_PLOT_PX}px plot to sit in and would run off ` +
-        "the frame, or wrap and climb out of the plot onto the subject's own value label",
-    );
+  // ── the stack's geometry, derived from this component's own scale ────────────────────────────
+  const indexOf = new Map(columns.map((c, i) => [c.code, i]));
+  const declaration: StackDeclaration = {
+    label: stackPlan.label,
+    noneLabel: stackPlan.noneLabel,
+    options: stackPlan.options.map((option) => {
+      const at = indexOf.get(option.key);
+      if (at === undefined)
+        throw new Error(`the stack option ${option.key} names a column this beat does not draw`);
+      // The tower stands in the band immediately to the right of the reference, so the two tops are
+      // side by side and "does it reach?" is a comparison the eye makes without a ruler. That band
+      // is the first follower's own, which is why the first member never moves.
+      const towerBand = at + 1;
+      if (towerBand >= columns.length)
+        throw new Error(
+          `${option.key} is the last column drawn, so there is no band beside it for a tower — ` +
+            "an option stacked against it would build its answer off the frame",
+        );
+      let cumulative = 0;
+      const onto = option.onto.map((code) => {
+        const from = indexOf.get(code);
+        if (from === undefined)
+          throw new Error(`the stack option ${option.key} stacks ${code}, which this beat does not draw`);
+        if (from <= at)
+          throw new Error(
+            `the stack option ${option.key} stacks ${code}, which ranks ABOVE it — the reading this ` +
+              "control gives is how many countries BELOW a rank add up to it, and a tower built out " +
+              "of the ones above would answer a question nobody asked",
+          );
+        const member = { key: code, dx: cx(towerBand) - cx(from), dy: -cumulative };
+        cumulative += heightOf(columns[from].gt);
+        return member;
+      });
+      if (cumulative > FRAME.height)
+        throw new Error(
+          `the tower stacked against ${option.key} is ${cumulative.toFixed(0)} units tall in a ` +
+            `${FRAME.height}-unit plot, so its top would be cut off by the viewBox — raise the ` +
+            "headroom this beat's scale carries, or stop offering the option",
+        );
+      return { key: option.key, label: option.label, announce: option.announce, note: option.note, onto };
+    }),
+  };
+  assertStackDeclaration(declaration, columns.map((c) => c.code));
+
+  const stackOptions = stackOptionsForMarkup(declaration, STACK_ID_PREFIX);
+  const stackNotes = stackNotesForMarkup(declaration);
+
+  // THE DEFAULT STATE AS TWO RULES, not as an inline style on every label — see the header. The
+  // option rules clear this specificity by an id, so choosing a reference steps the default subject
+  // back with everything else instead of leaving a second accent on the plate.
+  const { color: axisInk, fontWeight: axisWeight, ...axisRest } = regs.axis as any;
+  const { color: _valueInk, ...valueRest } = regs.value as any;
+  const css = [
+    `${SCOPE} .end-label { color: var(--label-ink); }`,
+    `${SCOPE} .end-label[data-value="${subject}"] { color: var(--accent); }`,
+    `${SCOPE} .axis-label.x { color: var(--axis-ink); font-weight: var(--axis-weight); }`,
+    `${SCOPE} .axis-label.x[data-axis="${subject}"] { color: var(--accent); font-weight: 700; }`,
+    stackChromeCss({ scope: SCOPE }),
+    stackCss(declaration, {
+      scope: SCOPE,
+      idPrefix: STACK_ID_PREFIX,
+      lit: { fill: "var(--accent)", ink: "var(--accent)" },
+      dim: { fill: "var(--col-neutral)", ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+      seam: "var(--ground)",
+      moveMs: MOVE_MS,
+    }),
+  ].join("\n\n");
 
   return (
     <figure
@@ -207,13 +255,59 @@ export function DirectedColumnsWeb({
         ["--accent" as string]: accent,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
+        ["--grid" as string]: grid,
+        ["--col-neutral" as string]: neutral,
+        ["--label-ink" as string]: labelInk,
+        ["--axis-ink" as string]: axisInk,
+        ["--axis-weight" as string]: String(axisWeight),
         ...figureVars(regs),
       }}
     >
+      {/* This beat's own stylesheet, carried inside the figure it styles. The format's shared
+          `buildCss` emits the chrome for a FILTER, which this beat does not declare and must not
+          (nothing leaves its picture); a stack is a second mechanism and pays its own way, exactly
+          as `filterChrome` does — an empty declaration would emit an empty string. */}
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
       <div className="chart-header">
         <p className="chart-eyebrow" style={{ ...regs.eyebrow, margin: "0 0 6px" }}>{eyebrow}</p>
         <h2 className="chart-title" style={{ ...regs.display, margin: "0 0 6px" }}>{title}</h2>
         <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>{caveat}</p>
+      </div>
+
+      {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>`: a radio group to the
+          keyboard and to a screen reader before this page's stylesheet does anything to it, and
+          `aria-label` carries the reading a reader who is not looking at the picture would otherwise
+          only get from it. Each accessible name CONTAINS its visible one — `assertStackDeclaration`
+          refuses the declaration otherwise, because a name that does not is the WCAG 2.5.3 failure
+          and puts the option out of reach of anyone speaking what they can see. */}
+      <fieldset className="chart-stack">
+        <legend>{stackPlan.label}</legend>
+        <div className="options">
+          {stackOptions.map((option) => (
+            <label key={option.id}>
+              <input
+                id={option.id}
+                type="radio"
+                name="chart-stack"
+                value={option.slug}
+                aria-label={option.announce}
+                defaultChecked={option.isNone}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* THE SENTENCE THE CONTROL OWES THE READER — the count and the running total, revealed by the
+          same `:checked` that moves the columns. Its row is reserved whether or not an option is
+          chosen, so the plot underneath never jumps. The untouched option reveals none, because it is
+          not a comparison: it is the claim the title states. */}
+      <div className="stack-notes" role="status">
+        {stackNotes.map((note) => (
+          <p data-stack-note={note.slug} key={note.slug}>{note.text}</p>
+        ))}
       </div>
 
       <div
@@ -236,14 +330,22 @@ export function DirectedColumnsWeb({
           <desc>{alt}</desc>
           <rect x={0} y={0} width={FRAME.width} height={FRAME.height} fill={ground} />
 
+          {/* `fill` stays a PRESENTATION ATTRIBUTE and never an inline style: a presentation
+              attribute sits below every author rule, which is what lets the generated option rules
+              repaint these ten without a single `!important`. `vector-effect` is what keeps the seam
+              between two stacked columns one CSS pixel at every width, under this `<svg>`'s own
+              `preserveAspectRatio="none"`. */}
           {columns.map((c, i) => (
             <rect
               key={c.code}
+              data-col={c.code}
               x={cx(i) - barW / 2}
               y={y(c.gt)}
               width={barW}
               height={FRAME.height - y(c.gt)}
               fill={c.code === subject ? accent : neutral}
+              stroke="none"
+              vectorEffect="non-scaling-stroke"
             />
           ))}
 
@@ -257,6 +359,16 @@ export function DirectedColumnsWeb({
             vectorEffect="non-scaling-stroke"
           />
 
+          {/* THE HIT POINTS DO NOT MOVE, and that was measured rather than assumed. They carried
+              `data-col` at first, so each one travelled onto the tower with its column — and driving
+              it showed the answer naming the wrong country, because `interaction.mjs` resolves a
+              pointer to the nearest mark BY X, off the `cx` attributes it reads once at init, which
+              a CSS transform never changes. A six-column tower stands in one band and answered
+              "États-Unis" over every segment of it. So the ten bands, the ten names printed under
+              them and the region each of them answers for stay exactly where they are — a filter
+              does not move the frame its marks were measured against, and neither does this. What a
+              reader hovers is a band; the band's own name is printed under it, in the accent when it
+              went onto the tower; and the answer is that band's country. */}
           {columns.map((c, i) => (
             <circle
               key={c.code}
@@ -280,9 +392,9 @@ export function DirectedColumnsWeb({
             <span
               key={c.code}
               className="end-label"
+              data-value={c.code}
               style={{
-                ...regs.value,
-                color: c.code === subject ? accent : adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink,
+                ...valueRest,
                 left: `${pct(cx(i), FRAME.width)}%`,
                 top: `${pct(y(c.gt), FRAME.height)}%`,
                 transform: `translate(-50%, -100%) translateY(-${LABEL_OFFSET_PX}px)`,
@@ -291,41 +403,6 @@ export function DirectedColumnsWeb({
               {c.label}
             </span>
           ))}
-          {/* THE BRACKET — the headline's own comparison, drawn where it is made. It spans the
-              columns it adds up and nothing else, so a reader can count the bars under it. Three
-              borders rather than four: the bottom edge is open, which is what makes it a bracket
-              over the group instead of a box around it. `top` is the tallest spanned column's own
-              height as a percentage of the plot, so it follows the geometry; the lift off it is in
-              CSS pixels, so it is the same clearance at every width in every direction. */}
-          <div
-            className="bracket"
-            style={{
-              position: "absolute",
-              left: `${pct(bracketLeft, FRAME.width)}%`,
-              width: `${pct(bracketRight - bracketLeft, FRAME.width)}%`,
-              top: `${pct(bracketAnchorY, FRAME.height)}%`,
-              height: `${TICK_PX}px`,
-              transform: `translateY(-${bracketLiftPx}px)`,
-              borderTop: `${ruleWidth}px solid ${rule}`,
-              borderLeft: `${ruleWidth}px solid ${rule}`,
-              borderRight: `${ruleWidth}px solid ${rule}`,
-            }}
-          />
-          <span
-            className="note"
-            style={{
-              ...regs.annot,
-              ...noteAnchoring,
-              whiteSpace: "nowrap",
-              maxWidth: "none",
-              top: `${pct(bracketAnchorY, FRAME.height)}%`,
-              transform:
-                `${noteAnchoring.transform} translateY(-100%) ` +
-                `translateY(-${bracketLiftPx + GAP_PX}px)`,
-            }}
-          >
-            {bracketNote}
-          </span>
         </div>
 
         <div className="x-axis">
@@ -333,12 +410,8 @@ export function DirectedColumnsWeb({
             <span
               key={c.code}
               className="axis-label x"
-              style={{
-                ...regs.axis,
-                left: `${pct(cx(i), FRAME.width)}%`,
-                color: c.code === subject ? accent : (regs.axis.color as string),
-                fontWeight: c.code === subject ? 700 : regs.axis.fontWeight,
-              }}
+              data-axis={c.code}
+              style={{ ...axisRest, left: `${pct(cx(i), FRAME.width)}%` }}
             >
               {c.name}
             </span>

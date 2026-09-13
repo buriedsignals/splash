@@ -56,6 +56,8 @@ import {
   defaultPrintedText,
   filterOptionSlugs,
   shippedControls,
+  stackNotes,
+  stackOptionSlugs,
   tableCells,
 } from "../../chart-web/assets/interaction-plan.ts";
 
@@ -126,8 +128,13 @@ describe("the census: what the committed web corpus does when a reader asks", ()
   });
 
   it("found each kind of control the corpus actually ships", () => {
+    // EXACT, like every other list in this file. `stack` arrived with
+    // `proof/web-bar-top-emitters-2024`, which replaced its fixed bracket with a radio group the
+    // reader stacks any column's followers against (`chart-web/assets/stack.ts`) — a kind this
+    // census could not see until `shippedControls` learned to measure it, which is the point of
+    // adding a kind here rather than letting a new control ship unmeasured.
     const kinds = new Set(CONTROLS.map((entry) => entry.control.kind));
-    expect([...kinds].sort()).toEqual(["ask", "filter", "table"]);
+    expect([...kinds].sort()).toEqual(["ask", "filter", "stack", "table"]);
   });
 
   it("names every control that changes nothing, exactly", () => {
@@ -221,6 +228,60 @@ describe("filterOptionSlugs — the options the page ships", () => {
 
   it("does not count the unfiltered option, which narrows nothing by definition", () => {
     expect(filterOptionSlugs(page('<input id="chart-filter-all" type="radio"/>'))).toEqual([]);
+  });
+});
+
+describe("stackOptionSlugs and stackNotes — the second control the format can generate", () => {
+  it("finds the options whichever order the attributes are written in", () => {
+    expect(stackOptionSlugs(page('<input id="chart-stack-chn" type="radio" name="chart-stack"/>'))).toEqual(["chn"]);
+    expect(stackOptionSlugs(page('<input type="radio" id="chart-stack-usa"/>'))).toEqual(["usa"]);
+  });
+
+  it("does not count the untouched option, which is the plate itself", () => {
+    expect(stackOptionSlugs(page('<input id="chart-stack-none" type="radio"/>'))).toEqual([]);
+  });
+
+  it("does not mistake a filter's radios for a stack's, or the other way round", () => {
+    const both = page(
+      '<input id="chart-filter-africa" type="radio"/><input id="chart-stack-chn" type="radio"/>',
+    );
+    expect(filterOptionSlugs(both)).toEqual(["africa"]);
+    expect(stackOptionSlugs(both)).toEqual(["chn"]);
+  });
+
+  it("reads the sentence each option reveals", () => {
+    expect(stackNotes(page('<p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>'))).toEqual([
+      { slug: "chn", text: "6 pays &middot; 12,45 Gt" },
+    ]);
+  });
+
+  it("does NOT count that sentence as printed — it is revealed by :checked, like a filter's note", () => {
+    const html = page('<p>Chine 12,29</p><p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>');
+    expect(defaultPrintedText(html)).toContain("Chine 12,29");
+    expect(defaultPrintedText(html)).not.toContain("12,45");
+  });
+
+  const stacked = (note: string, printed: string) =>
+    page(`<p>${printed}</p><input id="chart-stack-chn" type="radio"/><p data-stack-note="chn">${note}</p>`);
+
+  it("passes a stack whose sentence carries a reading the plate does not print", () => {
+    expect(() => assertControlsChangeSomething(stacked("6 pays &middot; 12,45 Gt", "Chine 12,29 Gt"))).not.toThrow();
+  });
+
+  it("refuses a stack whose every sentence is already printed", () => {
+    expect(() => assertControlsChangeSomething(stacked("Chine 12,29 Gt", "Chine 12,29 Gt"))).toThrow(
+      /changes nothing/,
+    );
+  });
+
+  it("refuses a stack that reveals no sentence at all — a hundred moved columns are not a reading", () => {
+    // The mutation this case was written from: strip every `data-stack-note` from the delivered
+    // page and leave the radios and all 62 transform rules in place. A guard that counted rules
+    // would stay green; this one reddens, because a reader who cannot read the count and the total
+    // has been shown a picture and told nothing.
+    expect(() =>
+      assertControlsChangeSomething(page('<p>Chine</p><input id="chart-stack-chn" type="radio"/>')),
+    ).toThrow(/changes nothing/);
   });
 });
 

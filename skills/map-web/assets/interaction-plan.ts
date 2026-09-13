@@ -122,7 +122,7 @@ export type InteractionPlan = {
 };
 
 /** The kinds of control this file can measure a state for, and the shape of each one's refusal. */
-export type ControlKind = "ask" | "table" | "filter";
+export type ControlKind = "ask" | "table" | "filter" | "stack";
 
 const DECODE: [RegExp, string][] = [
   [/&nbsp;/g, " "],
@@ -162,6 +162,11 @@ export function defaultPrintedText(html: string): string {
   );
   // A narrowing note is revealed by the same `:checked` that narrows the marks (`filter.ts`).
   text = text.replace(/<[^>]*data-filter-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
+  // A stack's sentence is revealed by the same `:checked` that moves the columns (`stack.ts`), and
+  // it is the whole reading that control gives a reader who is not looking at the picture. Counting
+  // it as printed would make the one channel its count and its running total are on look dead —
+  // the same mistake the choropleth's 41 native `<title>`s cost a round of, one control to the left.
+  text = text.replace(/<[^>]*data-stack-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
   return decodeText(text.replace(/<[^>]*>/g, " "));
 }
 
@@ -254,6 +259,34 @@ function filterTokenLists(html: string): string[][] {
   );
 }
 
+/**
+ * The stack options the page ships, by slug, the untouched one excluded.
+ *
+ * Read off the markup and never off the declaration, for the reason `filterOptionSlugs` gives, and
+ * with the same lesson applied: EVERY ATTRIBUTE IS LOOKED FOR INSIDE THE WHOLE TAG rather than in
+ * one order, because the first form of that function required `type="radio"` to precede `id=` and
+ * silently found four of the corpus's five filters.
+ */
+export function stackOptionSlugs(html: string): string[] {
+  const slugs: string[] = [];
+  for (const tag of String(html).matchAll(/<input\b[^>]*>/g)) {
+    if (!/\stype="radio"/.test(tag[0])) continue;
+    const id = tag[0].match(/\sid="(?:chart|mw)-stack-([a-z0-9-]+)"/);
+    if (id) slugs.push(id[1]);
+  }
+  return [...new Set(slugs)].filter((slug) => slug !== "none");
+}
+
+/** Every sentence the stack reveals, by the slug that reveals it. */
+export function stackNotes(html: string): { slug: string; text: string }[] {
+  const out = new Map<string, string>();
+  for (const block of String(html).matchAll(
+    /<[^>]*data-stack-note="([^"]*)"[^>]*>([\s\S]*?)<\/[a-z]+>/g,
+  ))
+    out.set(block[1], decodeText(block[2].replace(/<[^>]*>/g, " ")).trim());
+  return [...out].map(([slug, text]) => ({ slug, text }));
+}
+
 export type ShippedControl = {
   kind: ControlKind;
   /** What a message names it, and what a declaration's gesture is matched against. */
@@ -334,6 +367,34 @@ export function shippedControls(html: string): ShippedControl[] {
             `all ${slugs.length} option(s) narrow nothing — the chips are drawn over a picture they cannot reach`
           : `${inert.length} of ${slugs.length} option(s) keep every element the page drew ` +
             `(${inert.join(", ")}) — that is the unfiltered view under a second name`,
+    });
+  }
+
+  const stackSlugs = stackOptionSlugs(html);
+  if (stackSlugs.length) {
+    const notes = new Map(stackNotes(html).map((note) => [note.slug, note.text]));
+    // An option changes the picture when the sentence it reveals carries a reading the page does
+    // not already print. The MOVEMENT itself is deliberately not what is measured: a transform is
+    // not a reading, this file cannot see one, and a version that counted generated rules would go
+    // green on a hundred rules that moved nothing — the exact shape of the three guards on this
+    // branch that passed while their walk missed the files they were written to hold. An option
+    // whose sentence is missing is counted as inert for the same reason a filter whose options tag
+    // no element is: the reader gets no reading, whatever the picture did.
+    const adding = stackSlugs.filter((slug) => {
+      const note = notes.get(slug);
+      if (!note) return false;
+      return answerPieces(note).some((piece) => !printed.includes(piece));
+    });
+    out.push({
+      kind: "stack",
+      label: `the stack's ${stackSlugs.length} option(s)`,
+      gestures: ["toggle-a-comparison", "sort-or-reorder"],
+      changes: adding.length,
+      measured: stackSlugs.length,
+      why:
+        `all ${stackSlugs.length} option(s) reveal a sentence the page already prints, or reveal ` +
+        `none at all — a reader who works through every option is told nothing they could not read ` +
+        `at rest`,
     });
   }
 

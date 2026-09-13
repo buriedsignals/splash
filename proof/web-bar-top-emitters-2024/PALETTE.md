@@ -27,8 +27,11 @@ Measured on the three filed directions: **3.15 : 1** on crème (`#918f87` on `#F
 nocturne (`#787795` on `#111044`), **3.15 : 1** on rapport (`#919191` on `#FFFFFF`).
 
 **The accent is asked to be text, so it is measured against the text floor and not the mark floor.**
-Three things on this page are set in the accent: the eyebrow (crème's own `eyebrow` register reads
-its ink from the accent), the subject's value label, and the subject's own name on the x-axis. A
+Three things on this page are set in the accent at rest: the eyebrow (crème's own `eyebrow` register
+reads its ink from the accent), the subject's value label, and the subject's own name on the x-axis
+— and the reader's own control extends that to nine more places, because under a chosen option the
+accent sets a value label and a name on whichever column the reader picked and on each one stacked
+against it. One measurement covers all of them. A
 colour picked to be legible as a *fill* is not automatically legible as 11-px *type* — the gap
 between the two floors is 3 : 1 and 4.5 : 1 — so the component asserts it rather than assuming it.
 Measured against each direction's own ground: **6.64 : 1** (crème `#1757B6` on `#FFFCEE`),
@@ -38,10 +41,17 @@ accident of the three directions currently filed.
 
 **Colour is not allowed to carry the argument on its own.** The subject is also the tallest column,
 which is the one case `static-discipline.md`'s "One accent" rule warns about, and the static sibling
-records the same worry. So the comparison the headline makes is *drawn* — a bracket spanning exactly
-the five columns it adds up, captioned with their computed sum — and a reader who cannot separate the
-accent from the neutral still sees it.
+records the same worry. The still answers it with a bracket spanning exactly the five columns it adds
+up; this page used to draw the same bracket and no longer does, because the bracket was the reader's
+own comparison made for them. What answers the worry here is that the comparison is drawn as
+GEOMETRY and not as colour: the columns physically leave their bands and stand on each other beside
+the one they are being matched against, so a reader who cannot separate the accent from the neutral
+sees a tower next to a column and can compare two heights. The count and the running total are
+printed in words under the control, in the muted ink, for the same reason.
 
-Nothing else on the page is chromatic. The baseline, the bracket, the tooltip's border and every
-neutral step are computed from the direction's own ground and ink by `deriveFurniture` and `mix` at
-render time, and none of them is written here as a literal.
+Nothing else on the page is chromatic. The baseline, the seam between two stacked columns (which is
+the ground itself), the tooltip's border and every neutral step are computed from the direction's own
+ground and ink by `deriveFurniture` and `mix` at render time, and none of them is written here as a
+literal. The control's own checked pill inverts to ink-on-ground and never borrows the accent: the
+accent is what the argument is drawn in, and a control that took it would make the one colour that
+means something on this page also mean "you clicked here".
