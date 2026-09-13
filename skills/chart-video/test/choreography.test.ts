@@ -29,3 +29,26 @@ describe("assertEventStates", () => {
     expect(() => assertEventStates([{ fill: 0 }], events)).toThrow(/3 events/);
   });
 });
+
+describe("assertEventStates on a final hold", () => {
+  const holdEvents = ["reference", "reveal", "hold"];
+
+  it("should let a final hold's state equal the conclusion's — a hold plays no gesture by definition", () => {
+    const states = [{ fill: 0 }, { fill: 1 }, { fill: 1 }];
+    expect(assertEventStates(states, holdEvents)).toBe(states);
+  });
+
+  it("should refuse a final hold whose state differs from the one before it, naming the hold", () => {
+    const states = [{ fill: 0 }, { fill: 1 }, { fill: 2 }];
+    expect(() => assertEventStates(states, holdEvents)).toThrow(
+      /hold changes the picture/,
+    );
+  });
+
+  it("should still refuse a non-final event equal to its predecessor, even one named hold", () => {
+    const states = [{ fill: 0 }, { fill: 0 }, { fill: 1 }];
+    expect(() =>
+      assertEventStates(states, ["establish", "hold", "reveal"]),
+    ).toThrow(/hold changes nothing/);
+  });
+});

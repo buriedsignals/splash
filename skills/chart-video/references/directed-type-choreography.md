@@ -16,7 +16,10 @@ reproduire un static, c'est le même sujet rendu sur des formats différents ».
    `shared/chart-video/timing.ts`) it belongs to.
 2. **Every event changes the picture.** `assertEventStates` (`scripts/choreography.mjs`) refuses an
    event whose computed state equals the one before it. A shot that needs no gesture of its own
-   belongs in the event before it, not as a fifth one added to hit a count.
+   belongs in the event before it, not as a fifth one added to hit a count. The one exception is a
+   final `hold`: its state must EQUAL the one before it exactly, because a hold plays no gesture by
+   definition — a `hold` that is not last carries no such exemption and is held to the same rule as
+   any other event.
 3. **Motion follows the timing contract, not the clock.** Every gesture is interpolated from
    `progressOf(frame, event)`, never from a bare frame number. On a time axis the reveal is linear —
    easing it makes 1994 and 1995 occupy different amounts of screen time, which lies about the pace
