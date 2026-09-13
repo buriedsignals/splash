@@ -18,7 +18,10 @@ const BEAT_DIR = join(
   import.meta.dirname,
   "../../../proof/static-choropleth-europe-lowcarbon",
 );
-const DIRECTION_DIR = join(import.meta.dirname, "../../../docs/design-base/directions");
+const DIRECTION_DIR = join(
+  import.meta.dirname,
+  "../../../docs/design-base/directions",
+);
 
 /** A PNG's own header, not the runner's word for it: bytes 16-24 of the file are the IHDR's width
  *  and height, big-endian. The whole point of this task is that the plate is baked at the size the
@@ -32,13 +35,18 @@ function pngSize(path: string) {
  *  attributes; a `<path>` carries them in `d`, which for this beat is only ever `M x y L x y … Z`. */
 function markPoints(svg: string) {
   const out: Array<{ what: string; x: number; y: number }> = [];
-  for (const m of svg.matchAll(/<text[^>]*\sx="([-\d.]+)"[^>]*\sy="([-\d.]+)"/g))
+  for (const m of svg.matchAll(
+    /<text[^>]*\sx="([-\d.]+)"[^>]*\sy="([-\d.]+)"/g,
+  ))
     out.push({ what: "text", x: Number(m[1]), y: Number(m[2]) });
-  for (const m of svg.matchAll(/<circle[^>]*\scx="([-\d.]+)"[^>]*\scy="([-\d.]+)"/g))
+  for (const m of svg.matchAll(
+    /<circle[^>]*\scx="([-\d.]+)"[^>]*\scy="([-\d.]+)"/g,
+  ))
     out.push({ what: "circle", x: Number(m[1]), y: Number(m[2]) });
   for (const m of svg.matchAll(/<path[^>]*\sd="([^"]+)"/g)) {
     const nums = [...m[1].matchAll(/-?[\d.]+/g)].map((n) => Number(n[0]));
-    for (let i = 0; i + 1 < nums.length; i += 2) out.push({ what: "path", x: nums[i], y: nums[i + 1] });
+    for (let i = 0; i + 1 < nums.length; i += 2)
+      out.push({ what: "path", x: nums[i], y: nums[i + 1] });
   }
   return out;
 }
@@ -133,7 +141,8 @@ describe("the pilot choropleth on the plan", () => {
     async () => {
       const { geometry } = await runner();
       expect(Object.keys(geometry).length).toBeGreaterThan(0);
-      for (const g of Object.values(geometry)) expect(() => assertPlateMatchesMarks(g)).not.toThrow();
+      for (const g of Object.values(geometry))
+        expect(() => assertPlateMatchesMarks(g)).not.toThrow();
     },
     RUN_MS,
   );
@@ -144,10 +153,16 @@ describe("the pilot choropleth on the plan", () => {
       const { geometry } = await runner();
       expect(Object.keys(geometry).length).toBeGreaterThan(0);
       for (const [id, g] of Object.entries(geometry)) {
-        const svg = readFileSync(join(BEAT_DIR, "renders", `${id}.svg`), "utf8");
+        const svg = readFileSync(
+          join(BEAT_DIR, "renders", `${id}.svg`),
+          "utf8",
+        );
         const inside = markPoints(svg).filter(
           (p) =>
-            p.x >= g.mapX && p.x <= g.mapX + g.mapW && p.y >= g.mapY && p.y <= g.mapY + g.mapH,
+            p.x >= g.mapX &&
+            p.x <= g.mapX + g.mapW &&
+            p.y >= g.mapY &&
+            p.y <= g.mapY + g.mapH,
         );
         /** This is the one that proves the marks actually MOVED. Without it a render that still
          *  draws every class, border and word in SVG over a correct plate passes everything else
@@ -177,7 +192,8 @@ describe("the pilot choropleth on the plan", () => {
         for (const layer of plan.layers) {
           if (layer.type !== "symbol") continue;
           symbols++;
-          for (const face of layer.layout["text-font"]) expect(face).toMatch(FACE);
+          for (const face of layer.layout["text-font"])
+            expect(face).toMatch(FACE);
         }
       expect(symbols).toBeGreaterThan(0);
     },
@@ -201,14 +217,18 @@ describe("the pilot choropleth on the plan", () => {
     "should keep the same headline, in the same lines and the same panel, on every family its ladder can pick",
     async () => {
       const { copy } = await runner();
-      const directions = readdirSync(DIRECTION_DIR).filter((f) => f.endsWith(".md"));
+      const directions = readdirSync(DIRECTION_DIR).filter((f) =>
+        f.endsWith(".md"),
+      );
       expect(directions.length).toBeGreaterThanOrEqual(3);
       for (const file of directions) {
         const filed = resolveDirectionFamilies(
           readDirection(join(DIRECTION_DIR, file)),
           copy.textPerRegister,
         );
-        const role = filed.decisions.find((d: any) => d.register === "display").role;
+        const role = filed.decisions.find(
+          (d: any) => d.register === "display",
+        ).role;
         const ladder: string[] = LADDERS[role];
         expect(ladder.length).toBeGreaterThan(1);
         const layoutOn = (family: string) => {
@@ -267,14 +287,23 @@ describe("the pilot choropleth on the plan", () => {
     async () => {
       const { placements } = await runner();
       expect(Object.keys(placements).length).toBeGreaterThan(0);
-      for (const [id, { placement, geometry: g, registers }] of Object.entries(placements)) {
+      for (const [id, { placement, geometry: g, registers }] of Object.entries(
+        placements,
+      )) {
         const mapW = g.mapW;
+        /** MEASURED IN THE CUT THE PLATE REALLY DRAWS. The `water` register is italic, and this box
+         *  used to be built without a `fontStyle` — so a sea name was measured on the UPRIGHT file
+         *  while MapLibre set it in the italic one, and the overlap this test exists to catch could
+         *  not turn it red. Measured at this beat's axis size, the two faces differ by up to 7.15px
+         *  on `Mer Méditerranée`, and in Montserrat the italic is the WIDER of the two — which is
+         *  the direction that hides a real collision. */
         const boxOf = (text: string, x: number, y: number, reg: any) => {
           const half =
             (measureText(applyCase(text, reg.transform), {
               fontSize: reg.fontSize,
               fontWeight: reg.fontWeight,
               fontFamily: reg.fontFamily,
+              fontStyle: reg.fontStyle === "italic" ? "italic" : "normal",
             }) +
               Number(reg.letterSpacing ?? 0) * Math.max(0, text.length - 1)) /
             2;
@@ -288,9 +317,16 @@ describe("the pilot choropleth on the plan", () => {
         };
         const boxes = [
           ...placement.labels.map((l: any) =>
-            boxOf(l.text, l.x, l.y, l.klass === "feature" ? registers.feature : registers.area),
+            boxOf(
+              l.text,
+              l.x,
+              l.y,
+              l.klass === "feature" ? registers.feature : registers.area,
+            ),
           ),
-          ...placement.waters.map((w: any) => boxOf(w.text, w.x, w.y, registers.water)),
+          ...placement.waters.map((w: any) =>
+            boxOf(w.text, w.x, w.y, registers.water),
+          ),
         ];
         expect([id, boxes.length]).toEqual([
           id,
@@ -308,10 +344,11 @@ describe("the pilot choropleth on the plan", () => {
           for (let j = i + 1; j < boxes.length; j++) {
             const a = boxes[i];
             const b = boxes[j];
-            const apart = a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0;
-            expect(`${id} ${a.what} / ${b.what} ${apart ? "clear" : "OVERLAP"}`).toBe(
-              `${id} ${a.what} / ${b.what} clear`,
-            );
+            const apart =
+              a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0;
+            expect(
+              `${id} ${a.what} / ${b.what} ${apart ? "clear" : "OVERLAP"}`,
+            ).toBe(`${id} ${a.what} / ${b.what} clear`);
           }
 
         /** AND EVERY WORD IS WHOLLY INSIDE THE CROP — the bound that stopped `Mer Méditerranée`
@@ -376,7 +413,6 @@ describe("the pilot choropleth on the plan", () => {
             `${id} ${subject.text} ${clear ? "clear of its ring" : "ON its ring"}`,
           ).toBe(`${id} ${subject.text} clear of its ring`);
         }
-
       }
     },
     RUN_MS,
@@ -404,8 +440,16 @@ describe("the pilot choropleth on the plan", () => {
           for (const feature of layer.data.features) {
             words++;
             const { ink, onCell, name } = feature.properties;
-            expect(`${id} ${name} ink`).toBe(`${id} ${name} ink`);
-            expect(typeof ink).toBe("string");
+            /** THE THREE FACTS THE MEASUREMENT BELOW NEEDS, ASSERTED BEFORE IT IS TAKEN. `contrast`
+             *  answers for a pair of hexes; handed an absent `onCell` it does not refuse, so a word
+             *  whose cell the plan forgot to carry would be measured against nothing and reported
+             *  legible. Named per word, so the failure says WHICH word lost WHICH fact. */
+            const missing = ["name", "ink", "onCell"].filter(
+              (key) => typeof feature.properties[key] !== "string",
+            );
+            expect(
+              `${id} ${name} ${missing.length ? `has no ${missing.join(", ")}` : "is fully declared"}`,
+            ).toBe(`${id} ${name} is fully declared`);
             const measured = contrast(ink, onCell);
             expect(
               `${id} ${name} ${measured >= floor ? "legible" : `${measured.toFixed(2)}:1 on ${onCell}`}`,

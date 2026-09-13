@@ -89,14 +89,22 @@ export type Callout = {
  *  string and a register. */
 const set = (text: string, r: { transform: string }) =>
   applyCase(text, r.transform);
+/** THE FOUR FACTS A MEASUREMENT NEEDS, AND `fontStyle` IS THE FOURTH. The `water` register is the
+ *  axis register in ITALIC (`mapRegistersFor` below), and until 2026-09-13 this function dropped
+ *  that on the floor: every sea name was measured on the upright file and drawn from the italic one.
+ *  Measured at this beat's own axis size, `Mer Méditerranée` is 7.15px narrower in Open Sans Italic
+ *  than in the roman — 6.5% of the word — so the box the placement search kept clear was never the
+ *  box the plate draws. */
 const sizeOf = (r: {
   fontSize: number;
   fontWeight: number;
   fontFamily: string;
+  fontStyle?: string;
 }) => ({
   fontSize: r.fontSize,
   fontWeight: r.fontWeight,
   fontFamily: r.fontFamily,
+  fontStyle: r.fontStyle === "italic" ? "italic" : "normal",
 });
 const widthOf = (text: string, r: any) =>
   measureText(text, sizeOf(r)) +
@@ -821,7 +829,7 @@ export function placementsFor({
    *  seconds took three minutes. Widths are memoised by string and register. */
   const widthCache = new Map<string, number>();
   const widthOnce = (text: string, r: any) => {
-    const key = `${r.fontFamily}|${r.fontSize}|${r.fontWeight}|${r.letterSpacing}|${text}`;
+    const key = `${r.fontFamily}|${r.fontSize}|${r.fontWeight}|${r.fontStyle ?? "normal"}|${r.letterSpacing}|${text}`;
     let w = widthCache.get(key);
     if (w === undefined) {
       w = widthOf(text, r);

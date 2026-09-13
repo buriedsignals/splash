@@ -374,6 +374,47 @@ export function assertDrawnInActiveTypeface(svg, { where = "the element" } = {})
   return svg;
 }
 
+/**
+ * AN ITALIC RUN IS MEASURED ON THE ITALIC FILE — the repair of a defect that was carried as a
+ * deferral until 2026-09-13, and the reason both measuring functions take a `fontStyle`.
+ *
+ * THE DEFECT. Neither `measureText` nor `measureTextBand` used to take one, so the probe declared no
+ * `font-style` and `fontFilesFor` was asked for the upright face only. An italic register was
+ * measured in roman and drawn in italic, and every gutter sized from it was wrong by the difference
+ * between the two faces' advances. Measured on the choropleth's own sea labels at 13px:
+ * `Mer Méditerranée` is 7.15px narrower in Open Sans Italic than in the roman (−6.5%), 7.21px in
+ * Merriweather (−6.4%) — and 1.69px WIDER in Montserrat Italic (+1.5%). The sign is what makes it
+ * load-bearing: where the italic is wider, a box built from the roman measure UNDER-states the word
+ * and an overlap guard built on it cannot see a collision that is really there.
+ *
+ * WHY IT COULD BE REPAIRED NOW WITHOUT TOUCHING 350 CALL SITES. `fontStyle` is an OPTIONAL key on an
+ * options object that already existed, defaulting to `normal`, and the probe declares the attribute
+ * only when it is `italic` — so every existing call measures exactly the bytes it measured before.
+ * `fontFilesFor` has taken `styles` since the Google Fonts move; nothing new had to be fetched.
+ *
+ * It is validated rather than passed through: `oblique`, `Italic`, or a typo would otherwise reach
+ * `fontFilesFor` as a style with no face and be silently dropped back to the upright — which is the
+ * same silence, one layer down.
+ */
+function styleOf(value, who) {
+  if (value === undefined || value === null) return "normal";
+  if (value !== "normal" && value !== "italic")
+    throw new Error(
+      `${who}'s options.fontStyle must be "normal" or "italic", got ${JSON.stringify(value)} — an ` +
+        `unknown style resolves to no font file and is drawn upright with nothing to say so`,
+    );
+  return value;
+}
+
+/** BELT, WITH THE BRACES BESIDE IT — and stated as such rather than left to look load-bearing.
+ *  The face is really selected by `styles: [fontStyle]` in the `fontFilesFor` call below: with
+ *  `loadSystemFonts: false` the italic file is the ONLY one in resvg's database, so it would be
+ *  drawn even with no attribute (measured: removing this line alone changes no number today). What
+ *  the attribute buys is that the probe MATCHES that face instead of FALLING BACK to it, which is
+ *  the distinction this repository refuses to leave implicit anywhere else — and it is what keeps
+ *  the measurement right the day the file set carries both cuts. */
+const styleAttr = (fontStyle) => (fontStyle === "italic" ? ` font-style="italic"` : "");
+
 const measured = new Map();
 
 /**
@@ -381,8 +422,8 @@ const measured = new Map();
  * text out and reports the ink box. This is what a measured gutter is measured with; a fixed
  * constant here is the defect this function exists to remove.
  *
- * The second argument is an OPTIONS OBJECT, `{ fontSize, fontWeight?, fontFamily? }` — never a
- * bare number. A caller that passes a number, or omits `fontSize` from the object, does not error
+ * The second argument is an OPTIONS OBJECT, `{ fontSize, fontWeight?, fontFamily?, fontStyle? }` —
+ * never a bare number. A caller that passes a number, or omits `fontSize` from the object, does not error
  * at the call site: destructuring a missing key just yields `undefined`, which resvg's own SVG
  * parser then defaults away silently, laying the text out at whatever size resvg picks rather
  * than the one the caller meant. Measured, not assumed: `measureText("Solar 7.2 %", 40)` and
@@ -395,33 +436,25 @@ export function measureText(text, options) {
   if (!text) return 0;
   if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new Error(
-      `measureText's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily? }, got ${JSON.stringify(options)} (${typeof options})`,
+      `measureText's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily?, fontStyle? }, got ${JSON.stringify(options)} (${typeof options})`,
     );
   }
   const { fontSize, fontWeight = 400, fontFamily = FONT_FAMILY } = options;
+  const fontStyle = styleOf(options.fontStyle, "measureText");
   if (typeof fontSize !== "number" || !Number.isFinite(fontSize)) {
     throw new Error(
       `measureText's options.fontSize must be a finite number, got ${JSON.stringify(fontSize)} — a missing fontSize silently defaults to resvg's own size and under-measures`,
     );
   }
-  const key = `${fontFamily}|${fontWeight}|${fontSize}|${text}`;
+  const key = `${fontFamily}|${fontWeight}|${fontStyle}|${fontSize}|${text}`;
   if (measured.has(key)) return measured.get(key);
   const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const probe =
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="400">` +
-    `<text x="0" y="300" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
+    `<text x="0" y="300" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}"${styleAttr(fontStyle)}>${escaped}</text>` +
     `</svg>`;
-  // KNOWN AND DEFERRED — AN ITALIC RUN IS MEASURED ON THE UPRIGHT FILE. Neither `measureText` nor
-  // `measureTextBand` takes a `fontStyle`, so the probe below never declares one and `fontFilesFor`
-  // is asked for the upright face only. An italic register is therefore measured in roman and drawn
-  // in italic, and its gutters are wrong by the difference between the two faces' advances. It is
-  // PRE-EXISTING — the probe never declared `font-style` when system fonts were on either — and it
-  // is deferred rather than forgotten: the repair adds `fontStyle` to both functions' options and to
-  // every call site that sets an italic register, which is a signature change across many beats, and
-  // the italic runs in the choropleth are its sea labels, which a later task moves into MapLibre.
-  // Recorded here so it is found as a decision rather than rediscovered as a mystery.
   const box = new Resvg(probe, {
-    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
+    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight], styles: [fontStyle] }) },
   }).getBBox();
   const width = box ? box.x + box.width : 0;
   measured.set(key, width);
@@ -440,31 +473,33 @@ export function measureText(text, options) {
  * magic number standing where a measurement belongs: "0-4" and "100+" carry no descenders at all,
  * and a clearance sized for a hypothetical "g" is a gap nobody asked for.
  *
- * Same options object, same reasons, and the same throw on a bare number — see `measureText`.
+ * Same options object — `fontStyle` included, for the same reason — and the same throw on a bare
+ * number. See `measureText`.
  */
 export function measureTextBand(text, options) {
   if (!text) return { ascent: 0, descent: 0 };
   if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new Error(
-      `measureTextBand's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily? }, got ${JSON.stringify(options)} (${typeof options})`,
+      `measureTextBand's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily?, fontStyle? }, got ${JSON.stringify(options)} (${typeof options})`,
     );
   }
   const { fontSize, fontWeight = 400, fontFamily = FONT_FAMILY } = options;
+  const fontStyle = styleOf(options.fontStyle, "measureTextBand");
   if (typeof fontSize !== "number" || !Number.isFinite(fontSize)) {
     throw new Error(
       `measureTextBand's options.fontSize must be a finite number, got ${JSON.stringify(fontSize)} — a missing fontSize silently defaults to resvg's own size and under-measures`,
     );
   }
-  const key = `band|${fontFamily}|${fontWeight}|${fontSize}|${text}`;
+  const key = `band|${fontFamily}|${fontWeight}|${fontStyle}|${fontSize}|${text}`;
   if (measured.has(key)) return measured.get(key);
   const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const baseline = 300;
   const probe =
     `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="600">` +
-    `<text x="0" y="${baseline}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
+    `<text x="0" y="${baseline}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}"${styleAttr(fontStyle)}>${escaped}</text>` +
     `</svg>`;
   const box = new Resvg(probe, {
-    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight] }) },
+    font: { loadSystemFonts: false, fontFiles: fontFilesFor(fontFamily, { weights: [fontWeight], styles: [fontStyle] }) },
   }).getBBox();
   const band = box
     ? { ascent: baseline - box.y, descent: box.y + box.height - baseline }
