@@ -8,7 +8,12 @@
  * they part — Roboto 1.050 against 1.172 — and that face is the guard.
  */
 import { describe, it, expect } from "bun:test";
-import { naturalLineHeightOf } from "#shared/design-base/vertical-metrics.mjs";
+import { readFileSync } from "node:fs";
+import {
+  naturalLineHeightFromBytes,
+  naturalLineHeightOf,
+} from "#shared/design-base/vertical-metrics.mjs";
+import { typefaceFile } from "#shared/design-base/typefaces.mjs";
 
 describe("a face's natural line height", () => {
   it("should read the typo metrics of a face that sets USE_TYPO_METRICS", () => {
@@ -27,5 +32,29 @@ describe("a face's natural line height", () => {
 
   it("should refuse a family it has no file for", () => {
     expect(() => naturalLineHeightOf("No Such Family Anywhere", 400)).toThrow();
+  });
+});
+
+/** A cut download or a half-written cache file is a file too, and reading past its end used to
+ *  surface as a bare RangeError that named neither the face nor what was wrong with it. */
+describe("a face file that ends early", () => {
+  const bytes = readFileSync(typefaceFile("Merriweather", 400));
+  const where = "Merriweather 400";
+
+  it("should read the same line from the bytes as from the family", () => {
+    expect(naturalLineHeightFromBytes(bytes, where)).toBeCloseTo(1.257, 3);
+  });
+
+  it("should refuse a file shorter than its own table directory, naming the face", () => {
+    expect(() => naturalLineHeightFromBytes(bytes.subarray(0, 40), where)).toThrow(
+      /Merriweather 400 is truncated/,
+    );
+  });
+
+  it("should refuse a file whose tables lie past its end, naming the face", () => {
+    const directoryEnd = 12 + bytes.readUInt16BE(4) * 16;
+    expect(() =>
+      naturalLineHeightFromBytes(bytes.subarray(0, directoryEnd), where),
+    ).toThrow(/Merriweather 400 is truncated/);
   });
 });
