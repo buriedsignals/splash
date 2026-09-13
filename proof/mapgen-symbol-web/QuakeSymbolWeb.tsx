@@ -39,6 +39,7 @@ import {
   groupsOf,
   slugOf,
   en,
+  MARK_MAX_RADIUS_FRACTION,
   type ProjectedQuake,
 } from "./geo-symbol";
 
@@ -51,16 +52,18 @@ const UNIT = "M";
 // ==========================================
 
 // ===== Format mechanics =====
-/** The largest circle's radius as a FRACTION of the bake's own frame — not a pixel count. The SVG's
- *  viewBox is the frame and the whole SVG scales with the container, so a fraction of the frame stays
- *  the same fraction of the container at every width. 0.045 of a 1000px frame is a 45px radius: large
- *  enough to read as a mark, small enough that the six events of the Melanesian cluster stay
- *  separable rather than merging into one blob. */
-const MARK_MAX_RADIUS_FRACTION = 0.045;
-/** The legend's own reference-circle radius, in real CSS pixels — deliberately NOT derived from the
- *  frame. A legend is a fixed schematic scale, not a second copy of the map's own sizing, so it reads
- *  the same regardless of how large the map itself is drawn. */
-const LEGEND_MAX_RADIUS_PX = 16;
+/** `MARK_MAX_RADIUS_FRACTION` used to be declared here and a second literal `0.045` lived in
+ *  `render-web.mjs`'s `livePlan` under a comment pointing at this one. It is now stated once, in
+ *  `geo-symbol.ts` — the only module the component, the render script and the BAKE can all import.
+ *
+ *  There is no `LEGEND_MAX_RADIUS_PX` any more either, and its removal is the fix for this type's
+ *  own defect. It was a flat 16 CSS pixels, "deliberately NOT derived from the frame", so the legend
+ *  drew the M9.0 reference at 31.8px across at every window while the map drew the M9.1 event at
+ *  41.3px (1024x768), 53.4px (1600x900) and 56.5px on the live layer. The two circles a reader is
+ *  meant to hold against each other were the same FUNCTION at two different maxima. The swatches
+ *  below now carry the mark's own radius in frame units and are sized by the page against the map's
+ *  own drawn width (`legendSwatchRules` in `render-web.mjs`) and, live, against the camera scale the
+ *  marks are actually painted at (`live-map.mjs`'s `sizeLegend`). */
 /** The per-point hit target's FLOOR, in real CSS pixels — not its size. The target is an HTML
  *  `<button>` whose own extent is derived from the mark it sits on: `max(this floor, the circle's
  *  own drawn diameter)`, the diameter written as the same fraction of the frame the circle is drawn
@@ -71,6 +74,40 @@ const LEGEND_MAX_RADIUS_PX = 16;
  *  and the target was 28x28 on the same centre: a probe four pixels inside a circle's right edge
  *  got no answer, and the tooltip fired only on a small inner disc. */
 const HIT_TARGET_PX = 28;
+/**
+ * THE OUTLINE, IN FRAME UNITS, so it survives the plate-to-drawn-size reduction the same way the
+ * radius does. An absolute CSS pixel length does not: the plate is drawn between ~460 and ~930px
+ * wide inside a 1000px frame, so a 1px stroke stated in real pixels is 2.2x heavier relative to its
+ * own circle at the small end than at the large. The live layer had exactly that — a flat
+ * `circle-stroke-width: 1` against this SVG's frame-unit strokes — so the same circle was outlined
+ * at two different weights on the two sides of one swap.
+ *
+ * ONE WEIGHT FOR EVERY MARK, AND THAT IS THE FIX FOR A DEFECT IN THE BEAT'S OWN HEADLINE.
+ *
+ * The subject's outline used to be 0.0035 of the frame against every other mark's 0.0016 — 2.2x
+ * heavier, as a third channel identifying it beside the accent hue and the heavier fill. An outline
+ * is drawn OUTSIDE (MapLibre) or ASTRIDE (SVG) the radius, so a heavier outline makes a mark's
+ * PAINTED disc wider than the radius that encodes its value — and by more, for the one mark the
+ * comparison is about. Measured on this beat's own numbers, subject against second:
+ *
+ *     radii                      45.000 vs 43.746  →  +2.87%   ← what the title says
+ *     painted, fallback plate    46.750 vs 44.546  →  +4.95%
+ *     painted, live layer        48.500 vs 45.346  →  +6.95%
+ *
+ * The title of this beat is that number. A picture overstating it by 72% on the plate and by 142%
+ * live is the claim failing in the one channel it is made in. With one weight the painted difference
+ * is +2.81% on the plate and +2.76% live — inside a tenth of a point of the encoded radius.
+ *
+ * What identifies the subject is what this beat's own subject note already says identifies it: the
+ * ACCENT, plus the heavier fill below. `PALETTE.md` records that decision and spends the accent on
+ * exactly this one mark.
+ */
+export const MARK_STROKE_FRAME_UNITS = 0.0016;
+/** How much ink a circle puts on the basemap. Exported because the legend's reference circles have
+ *  to be the same MARK, not only the same size: at 16px a hollow ring read as a schematic swatch,
+ *  and at the mark's real size a hollow ring beside a filled disc is visibly a different object. */
+export const SUBJECT_FILL_OPACITY = 0.42;
+export const MARK_FILL_OPACITY = 0.26;
 // ===========================
 
 /** One event's own detail string: the ONE implementation the hit target's `aria-label`,
@@ -98,6 +135,7 @@ export function QuakeSymbolWeb({
   accent,
   ink,
   muted,
+  filterLegend,
 }: {
   geometry: {
     frame: { width: number; height: number };
@@ -116,6 +154,10 @@ export function QuakeSymbolWeb({
   /** Derived from `ground` by `deriveFurniture` in the node runner that calls this component. */
   ink: string;
   muted: string;
+  /** The filter fieldset's own legend, handed in by the render script — which also resolves the
+   *  eyebrow register against these very characters, so the face that sets it is chosen for what it
+   *  sets rather than for a string typed twice. */
+  filterLegend: string;
 }) {
   const { frame, points } = geometry;
   if (points.length < 2)
@@ -127,7 +169,6 @@ export function QuakeSymbolWeb({
 
   const maxMag = Math.max(...points.map((p) => p.mag));
   const radiusOf = radiusScale(maxMag, frame.width * MARK_MAX_RADIUS_FRACTION);
-  const legendRadiusOf = radiusScale(maxMag, LEGEND_MAX_RADIUS_PX);
   const drawn = drawOrder(points); // largest first, so smaller circles paint on top
   const targets = targetOrder(points); // smallest first, so the largest are never covered
   const groups = groupsOf(points);
@@ -170,7 +211,7 @@ export function QuakeSymbolWeb({
           script at all — sees every event the title counts. */}
       {groups.length > 1 && (
         <fieldset className="mw-filter">
-          <legend>Filter by arc</legend>
+          <legend>{filterLegend}</legend>
           <div className="mw-filter-options">
             <label className="mw-chip">
               <input
@@ -195,7 +236,15 @@ export function QuakeSymbolWeb({
         </fieldset>
       )}
 
-      <div className="mw-stage">
+      {/* THE MAP AND ITS READING, SIDE BY SIDE. The legend, the subject's line and the caveat used to
+          sit BELOW the map in one column, which took the height that made the stage short — and on
+          this type a short wide stage is not only a small map, it is the WRONG MAP: the live camera
+          is fitted to the study set at runtime, so a 1568x593 stage opened about 150 degrees of
+          longitude to hold 59 of latitude and half the live frame carried no mark at all.
+          `@media (max-aspect-ratio: 1/1)` puts the column back underneath when the room the window
+          leaves is vertical. */}
+      <div className="mw-body">
+        <div className="mw-stage">
         <div
           className="mw-viewport"
           style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
@@ -243,11 +292,13 @@ export function QuakeSymbolWeb({
                       cy={point.py}
                       r={radiusOf(point.mag)}
                       fill={isSubject ? accent : muted}
-                      fillOpacity={isSubject ? 0.42 : 0.26}
+                      fillOpacity={
+                        isSubject ? SUBJECT_FILL_OPACITY : MARK_FILL_OPACITY
+                      }
                       stroke={isSubject ? accent : muted}
                       strokeWidth={Math.max(
                         1,
-                        frame.width * (isSubject ? 0.0035 : 0.0016),
+                        frame.width * MARK_STROKE_FRAME_UNITS,
                       )}
                       // The filter has to reach the decorative mark too, or a narrowed view leaves
                       // every other arc's circle on the map with no hit target — an ambiguous ghost
@@ -338,29 +389,38 @@ export function QuakeSymbolWeb({
         </div>
       </div>
 
-      {/* The legend: entirely HTML, fixed-CSS-pixel swatches — a schematic reference scale that reads
-          the same size regardless of how large the map is drawn. The per-mark unit is short ("M9.0")
-          and the full sentence is spent once, in the caption above it. */}
-      <div className="mw-legend">
-        <p className="mw-legend-caption">{legendCaption}</p>
-        <div className="mw-legend-marks">
-          {[...legend].reverse().map((v) => {
-            const d = legendRadiusOf(v) * 2;
-            return (
+      {/* The reading column: the reference circles, the subject's own line and the caveat. */}
+      <div className="mw-reading">
+        {/* The legend: entirely HTML, and its circles are THE MAP'S CIRCLES at the map's own drawn
+            size — not a second, smaller schematic scale. `data-value` is what the generated rule in
+            `render-web.mjs` keys the width off (a fraction of `--map-w`, the map's drawn width) and
+            `data-r` is the mark's own radius in the bake's frame units, the same number `livePlan`
+            puts on the circle layer's features — so `live-map.mjs` can re-size these from the camera
+            scale the marks are actually painted at, exactly as it does the hit targets. One radius
+            scale, one number per circle, three places that draw it.
+            The per-mark unit is short ("M9.0") and the full sentence is spent once, in the caption
+            above it. */}
+        <div className="mw-legend">
+          <p className="mw-legend-caption">{legendCaption}</p>
+          <div className="mw-legend-marks">
+            {[...legend].reverse().map((v) => (
               <div key={v} className="mw-legend-item">
                 <span
                   className="mw-legend-swatch"
-                  style={{ width: `${d}px`, height: `${d}px` }}
+                  data-value={v}
+                  data-r={radiusOf(v)}
                 />
                 <span className="mw-legend-value">{`${UNIT}${en(v)}`}</span>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
 
-      <p className="mw-subject">{subjectNote}</p>
-      <p className="mw-caveat">{caveat}</p>
+        <p className="mw-subject">{subjectNote}</p>
+        <p className="mw-caveat">{caveat}</p>
+      </div>
+      {/* /.mw-body */}
+      </div>
     </div>
   );
 }

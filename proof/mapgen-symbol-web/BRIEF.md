@@ -85,12 +85,22 @@ centre, real clicks on every chip, real key presses, and a JavaScript-disabled p
   scrolls inside the visual. The table below it is normal document reading.
 - **Plate:** baked aspect 1.0000, drawn aspect 1.0000 at every viewport — Δ 0.00000. Never stretched.
 - **Type:** title 21 px and labels 12 px at all three widths; only the geometry scales.
-- **Hover:** 13/17, 11/17 and 9/17 events answered a real pointer at their own centre (1600 / 1024 /
-  375). Every tooltip matched the frozen csv; moving away always cleared it.
-- **The covered ones are always the smaller event.** `targetOrder` lays the hit targets down smallest
-  first, so where two collide the one on top is the larger — the M8.6 the claim is measured against
-  is reachable at every width, and the covered events keep their tab stop and their table row
-  (checked: the Sinabang M7.8, covered at every width, announces its own value from keyboard focus).
+- **Hover:** 10/17 events answer a real pointer at their own centre at 1600×900 and at 900×1400, in
+  the live layer AND on the fallback plate. Every tooltip matched the frozen csv; moving away always
+  cleared it. (Re-measured 2026-09-13, after the reading column gave the map back a third of its
+  width and every circle grew with it; the earlier reading was 13/17 at 1600×900.)
+- **The covered ones are always the smaller event — and now in BOTH layers.** `targetOrder` lays the
+  hit targets down smallest first, so where two collide the one on top is the larger — the M8.6 the
+  claim is measured against is reachable at every width, and the covered events keep their tab stop
+  and their table row (checked: the Sinabang M7.8, covered at every width, announces its own value
+  from keyboard focus).
+  The LIVE layer used to answer the other way round and nothing said so: MapLibre hands a hover
+  handler its features topmost-first, and the plan writes them largest-first so the small circles
+  paint last and stay visible — so `event.features[0]` was always the SMALLEST. Measured at 1600×900
+  and 900×1400: seven marks answered as another event live and the same seven answered as the OTHER
+  event on the plate, the subject included — a pointer on the middle of the M9.1 disc the title is
+  about was told *"M7.9 · 47 km E of Ōarai"* live and *"M9.1 · 2011 Great Tohoku"* on the same pixel
+  with the live layer off. `pointedAt` in `live-map.mjs` now applies this rule to the live layer too.
 - **Filter:** each chip is a 32 px target, a real click at its centre lands inside it, and each
   narrows the map, the circles AND the table to exactly its own arc (1 / 5 / 6 / 5). Clicking back to
   "All arcs" restores all seventeen.

@@ -123,6 +123,23 @@ export function yearWindow(rows: { time: string }[]): {
 }
 
 /**
+ * THE LARGEST CIRCLE'S RADIUS AS A FRACTION OF THE BAKE'S OWN FRAME — not a pixel count, and stated
+ * HERE rather than in the component because three files have to agree about it.
+ *
+ * The SVG fallback draws `radiusOf(mag)` in frame units; `livePlan` hands MapLibre the same number
+ * as each feature's `r`; and the bake has to know it to answer whether the camera's frame holds the
+ * DISCS rather than only the epicentres. It used to be a `const` in `QuakeSymbolWeb.tsx` and a
+ * second literal `0.045` in `render-web.mjs` with a comment pointing at the first — two numbers
+ * describing one circle, which is the defect class this format has already paid for three times.
+ * `geo-symbol.ts` is the one module all three import and the only one that is free of React, of the
+ * DOM and of the browser, so it is where a number every renderer needs belongs.
+ *
+ * 0.045 of a 1000px frame is a 45px radius: large enough to read as a mark, small enough that the
+ * six events of the Melanesian cluster stay separable rather than merging into one blob.
+ */
+export const MARK_MAX_RADIUS_FRACTION = 0.045;
+
+/**
  * The radius scale: rooted at zero, radius ∝ √magnitude — an equal-AREA encoding
  * (`map-beat/references/types/proportional-symbol.md`, "don't linear-scale the radius").
  * Magnitude is itself logarithmic, which this scale does NOT correct for: it draws circles

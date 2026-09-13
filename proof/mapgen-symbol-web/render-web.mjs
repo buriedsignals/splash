@@ -7,9 +7,14 @@
 // request once the plate is inlined as a data URI.
 //
 // This is this beat's OWN copy of `map-web/scripts/render-web.mjs`'s machinery, adapted to this
-// beat's component and its filter dimension. Nothing here imports out of a skill or across beats,
-// except `#shared/chart-beat/render-still.mjs` for `readPalette` — the one module in this tree
-// that reads a recorded colour answer, which every format draws from.
+// beat's component and its filter dimension. Nothing here imports out of a skill or across beats.
+// `#shared/chart-beat/render-still.mjs` is the ONE module both `readPalette` and `deriveFurniture`
+// come from: this beat used to carry a byte-identical COPY of that file beside itself and import
+// `deriveFurniture` from the copy while importing `readPalette` from the canonical four lines
+// later — two copies of one module in one file — and the copy imported a `./typefaces.mjs` sibling
+// the Google-Fonts move added to the canonical and never copied into any beat, so
+// `bun render-web.mjs` died with `Cannot find module './typefaces.mjs'` and this beat could not be
+// rendered at all.
 //
 // EVERY NUMBER A READER SEES IS COMPUTED HERE, from the frozen csv, and printed to the console
 // before the render. Nothing is typed: the event count, the year window, the magnitudes, the
@@ -27,9 +32,47 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { deriveFurniture } from "./render-still.mjs";
-import { QuakeSymbolWeb, QuakeTable, SUBJECT_KEY, quakeDetail } from "./QuakeSymbolWeb.tsx";
+import { deriveFurniture, measureText, readPalette } from "#shared/chart-beat/render-still.mjs";
+// THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES. This beat's CSS used to say
+// `font-family: Helvetica, Arial, sans-serif` and load nothing: Helvetica is a licensed face that
+// exists on the author's Mac and on no CI runner, no Android phone and no Linux desktop, so the
+// delivered page was set in whatever each reader happened to have. The design base moved to Google
+// Fonts (de112dff, b49a59b3) and the format's own `render-web.mjs` followed; this beat did not —
+// `grep -c '@font-face'` on the committed page answered 0. `assertFontsEmbedded` now refuses a page
+// that names a family it does not carry.
+import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "#shared/design-base/typefaces.mjs";
+// THE DIRECTION, AND WHY A MAP BEAT NOW READS ONE. `rapport` sets its display register in a SERIF
+// and its body in an italic serif; this page came out entirely in a hard-coded Helvetica stack, so
+// one direction had two typographic voices depending on the format. `figureVars` emits
+// `--title-family` and its siblings since the locator's pass (`shared/design-base/web.mjs`) and this
+// beat's stylesheet simply did not read them. Nothing here names a family: each register comes off
+// its own LADDER, chosen for the characters this beat actually sets.
+import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { figureVars, plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
+// THE TRUNK — the plan contract and the basemap's own two colours, reached through the `#shared/…`
+// alias a beat is allowed to use. `plan.mjs`, `style.mjs` and `mount.mjs` are also INLINED into the
+// delivered page (see `liveScript` below): the live layer runs the trunk's own source rather than
+// the byte-identical copy of it this beat's `live-map.mjs` used to carry.
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateLivePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
+import {
+  QuakeSymbolWeb,
+  QuakeTable,
+  SUBJECT_KEY,
+  quakeDetail,
+  MARK_STROKE_FRAME_UNITS,
+  SUBJECT_FILL_OPACITY,
+  MARK_FILL_OPACITY,
+} from "./QuakeSymbolWeb.tsx";
 import {
   quakesFromCsv,
   arcOf,
@@ -40,6 +83,8 @@ import {
   yearWindow,
   energyRatio,
   symbolClaimViolations,
+  halfMagnitudeReferenceValues,
+  MARK_MAX_RADIUS_FRACTION,
   en,
 } from "./geo-symbol.ts";
 
@@ -52,14 +97,39 @@ const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
+/**
+ * THE LIVE LAYER IS THE TRUNK PLUS THIS BEAT'S OWN PAGE MECHANICS, in one classic script.
+ *
+ * `live-map.mjs` used to carry `cameraScale`, `groundRadiusExpression`, `planLayers`, its own mount
+ * loop and a hand-written basemap sweep — one byte-identical copy per map × web beat, which is the
+ * drift `references/map-plan.md` opens by naming. Those live in `shared/map-beat/` and are read FROM
+ * THERE, resolved through the same subpath alias the imports above use.
+ *
+ * ORDER IS DEPENDENCY ORDER, not alphabetical: `live-map.mjs` calls into all three, and a `const`
+ * declared after its use is a temporal-dead-zone error at runtime rather than a hoisted function.
+ */
+const LIVE_MODULES = [
+  fileURLToPath(import.meta.resolve("#shared/map-beat/plan.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/mount.mjs")),
+  join(HERE, "live-map.mjs"),
+];
+
+async function liveScript() {
+  const parts = [];
+  for (const path of LIVE_MODULES) parts.push(inlineable(await readFile(path, "utf8")));
+  return parts.join("\n");
+}
+
 // ===== CONFIG — this beat's own story =====
 const BEAT = {
   source: "Source: USGS Earthquake Catalog (earthquake.usgs.gov), western Pacific",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
+  // The filed direction this beat is set in. A NAME, not a family: `directionFor` below resolves
+  // each register down its own ladder against the characters this page actually sets, and refuses
+  // rather than substitutes when no face on a ladder can set them.
+  direction: "rapport",
 };
-/** geo-discipline rule 7's water colour, applied to the LIVE style exactly as `bake.mjs` applies it
- *  to the baked one — read from the bake rather than typed twice. */
-const WATER_FILL = "#aac9e0";
 const PLATE_SIZE = 1000;
 // FROZEN BESIDE THE BEAT, for the same reason the csv is: a basemap living in `/tmp` cannot be
 // committed, so the delivered html could be neither reproduced nor audited — and MapTiler restyles,
@@ -103,27 +173,39 @@ export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
  * at the fit and then held constant in screen pixels as the reader zooms. A circle here encodes a
  * MAGNITUDE, and growing it with the zoom would make M9.1 mean two different sizes at two zooms.
  */
-export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
+export function livePlan({ geometry, subjectKey, accent, muted }) {
   const corners = geometry.frameCorners;
   if (!corners || !(geometry.degreesPerPixel > 0))
     throw new Error(
       "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
         "constrained to nor a ground scale to draw its marks at",
     );
+  /** …AND WHAT IT WAS PAINTED IN. The plate used to record no tints and the live layer carried a
+   *  hard-coded `#aac9e0` beside the bake's own hard-coded `#aac9e0`: two constants for one
+   *  cartography, neither measured, both over the trunk's `BASEMAP_MAX`. */
+  if (!geometry.tints?.water || !geometry.tints?.land)
+    throw new Error(
+      "this plate predates the MEASURED tints: re-bake it. Before `plateTints` reached this beat the " +
+        "bake and the live layer each carried their own `#aac9e0`, which is 1.730:1 against a white " +
+        "page — a basemap heavier than the circles drawn on it.",
+    );
   const lons = geometry.points.map((p) => p.lon);
   const lats = geometry.points.map((p) => p.lat);
   const maxMag = Math.max(...geometry.points.map((p) => p.mag));
-  // THE SAME radius scale the SVG draws from — `QuakeSymbolWeb`'s own
-  // `MARK_MAX_RADIUS_FRACTION` (0.045), so the fallback circle and the live circle can never be two
-  // sizes. A second constant here is exactly the "two numbers describing one circle" defect the live
-  // layer already paid for once.
-  const radiusOf = radiusScale(maxMag, geometry.frame.width * 0.045);
+  // THE SAME radius scale the SVG draws from, through the SAME constant — `MARK_MAX_RADIUS_FRACTION`
+  // now lives in `geo-symbol.ts` and the component, the bake and this file all import it. It used to
+  // be a literal `0.045` here with a comment pointing at a second literal in the component, which is
+  // exactly the "two numbers describing one circle" defect the live layer already paid for once.
+  const radiusOf = radiusScale(maxMag, geometry.frame.width * MARK_MAX_RADIUS_FRACTION);
   const anchors = {};
   for (const point of geometry.points) anchors[point.key] = [point.lon, point.lat];
   const studyLonSpan = Math.max(...lons) - Math.min(...lons);
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    styleName: geometry.style,
+    // Recorded by the bake, carried here, painted by the trunk's one sweep — so the live map and the
+    // plate under it are one cartography rather than two constants that agreed by habit.
+    tints: geometry.tints,
     frame: geometry.frame,
     degreesPerPixel: geometry.degreesPerPixel,
     metresPerPixel: geometry.metresPerPixel,
@@ -169,14 +251,25 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
               group: slugOf(point.arc),
               subject: point.key === subjectKey,
               r: radiusOf(point.mag),
+              // THE OUTLINE, IN THE SAME FRAME UNITS AS THE RADIUS, and the SAME weight for every
+              // mark — see `MARK_STROKE_FRAME_UNITS`'s own note for the measurement that forced
+              // both halves of that. It was a flat `circle-stroke-width: 1`, an absolute pixel
+              // length that does not follow the plate-to-drawn-size reduction the radius does.
+              // `applyMarkScale` multiplies this by the mark scale, so the live outline and the
+              // fallback's are one number at two sizes.
+              sw: geometry.frame.width * MARK_STROKE_FRAME_UNITS,
             },
           })),
         },
         paint: {
           "circle-color": ["case", ["get", "subject"], accent, muted],
-          "circle-opacity": ["case", ["get", "subject"], 0.42, 0.26],
+          "circle-opacity": ["case", ["get", "subject"], SUBJECT_FILL_OPACITY, MARK_FILL_OPACITY],
           "circle-stroke-color": ["case", ["get", "subject"], accent, muted],
-          "circle-stroke-width": 1,
+          // A placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is
+          // what sets the real number, exactly as it does for `circle-radius`. Written as the
+          // unscaled frame-unit value rather than as a constant, so even the one frame before the
+          // fit is this beat's own outline rather than somebody's 1.
+          "circle-stroke-width": ["get", "sw"],
         },
         radius: "camera",
         filterProperty: "group",
@@ -253,9 +346,77 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
+/**
+ * THE BEAT'S OWN DIRECTION, RESOLVED TO FACES THAT CAN SET ITS OWN WORDS.
+ *
+ * `resolveDirectionFamilies` walks each register's LADDER and takes the first family whose cmap
+ * covers the text that register will actually set on this page — so the serif here is whatever
+ * covers this title, these seventeen place names and this caveat, not something typed. A register
+ * whose text no family on its ladder can set REFUSES rather than substitutes, which is the whole
+ * reason the ladder exists.
+ *
+ * Every string passes through `plainSpaces` first: one U+202F or U+00A0 refuses every family and
+ * takes the render down with a message naming a code point rather than a word.
+ */
+function directionFor(props) {
+  const path = fileURLToPath(import.meta.resolve(`#shared/design-base/directions/${BEAT.direction}.md`));
+  const filed = readDirection(path);
+  // A direction records the ground it was measured against; `PALETTE.md` records the ground this
+  // beat draws on. Two grounds are two furniture ladders, and `deriveFurniture` only ever sees one
+  // of them — so they are compared rather than assumed to agree.
+  if (filed.ground.toUpperCase() !== String(props.ground).toUpperCase())
+    throw new Error(
+      `direction "${BEAT.direction}" is filed on ground ${filed.ground} and this beat's PALETTE.md ` +
+        `records ${props.ground}. A direction's registers are measured against its own ground; ` +
+        `pick the direction that matches the recorded palette, or re-record the palette.`,
+    );
+  const points = props.geometry.points;
+  const places = points.map((p) => p.place).join(" ");
+  const details = points.map((p) => quakeDetail(p)).join(" ");
+  const arcs = groupsOf(points).join(" ");
+  const magnitudes = points.map((p) => `M${en(p.mag)}`).join(" ");
+  const textPerRegister = {
+    display: props.title,
+    // The one tracked, uppercased run on this page: the filter fieldset's own legend.
+    eyebrow: FILTER_LEGEND,
+    body: `${props.caveat} ${props.source} ${props.basemapCredit} ${props.legendCaption} ${props.subjectNote}`,
+    // The legend's reference values and the table's magnitude column — numbers read off a scale.
+    axis: `${magnitudes} ${LEGEND_REFERENCE_TEXT(points)}`,
+    annot: `${magnitudes} ${arcs}`,
+    value: `${places} ${details} ${arcs}`,
+  };
+  for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plainSpaces(textPerRegister[key]);
+  return resolveDirectionFamilies(filed, textPerRegister);
+}
+
+/** The filter fieldset's own legend, in ONE place: the markup draws it and `directionFor` resolves
+ *  the eyebrow register against it, so the face that sets it is chosen for the characters it sets. */
+const FILTER_LEGEND = "Filter by arc";
+
+/** Every string the legend's reference circles are labelled with, from the same function the
+ *  component labels them with — so the register resolved against them is resolved against what the
+ *  page prints, not against a guess at it. */
+const LEGEND_REFERENCE_TEXT = (points) =>
+  halfMagnitudeReferenceValues(Math.max(...points.map((p) => p.mag)))
+    .map((v) => `M${en(v)}`)
+    .join(" ");
+
 async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
-  const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
+  // The registers, as CSS. `webRegisters` needs the three ink ROLES a register may ask for; it is
+  // handed this beat's OWN furniture and its OWN recorded accent, never the direction's colours —
+  // `PALETTE.md` is the colour authority here. Only the TYPE half of each register reaches the
+  // stylesheet below; the `color:` rules are unchanged.
+  const direction = directionFor(props);
+  const regs = webRegisters(direction, {
+    ink: { ink: furniture.ink, muted: furniture.muted, accent: props.accent },
+  });
+  const vars = figureVars(regs);
+  console.log(
+    `direction ${direction.name} (${BEAT.direction}) — ` +
+      direction.decisions.map((d) => `${d.register}:${d.family}`).join(", "),
+  );
+  const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture, filterLegend: FILTER_LEGEND }));
   const tableHtml = regionTable
     ? discloseTable(
         renderToStaticMarkup(createElement(table, { points: props.geometry.points, ...furniture })),
@@ -273,20 +434,57 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
     ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
       `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
       `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
-      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+      `<script>\n${await liveScript()}\n</script>`
     : "";
 
   const groups = groupsOf(props.geometry.points);
   assertDistinctSlugs(groups);
 
-  const html = `<!doctype html>
+  // THE PAGE'S OWN FAMILY, READ OFF WHAT THE COMPONENTS ACTUALLY ASKED FOR rather than typed into
+  // the stylesheet. `dominantFontStack` reads the markup; `embeddedWebFaces` fetches and SUBSETS
+  // each face to the characters this page can display; `assertFontsEmbedded` refuses a page naming a
+  // family it does not carry. The document is assembled twice from one template — once to be read
+  // for its font requests and its displayable text, once to be written with the faces in it.
+  const stack = dominantFontStack(mapHtml + tableHtml);
+  /** HOW WIDE THE PROSE UNDER THE LEGEND MAY SET, measured rather than typed.
+   *
+   *  The reading column beside the map takes whatever the map's square aspect leaves, which at
+   *  1920x1080 is over 800px. 800px of 11.5px type is about 145 characters a line, roughly twice any
+   *  measure. `rapport.md` records its own reference's text column: **78 characters**. This measures
+   *  78 characters OF THIS BEAT'S OWN CAVEAT, in the face and at the size the page actually sets it
+   *  — the string's own width divided by its own length — so the cap follows the direction's face
+   *  rather than a per-character constant somebody averaged once. */
+  const proseMeasureCh = 78;
+  const caveat = plainSpaces(props.caveat);
+  const proseWidthPx = Math.round(
+    (measureText(caveat, {
+      fontFamily: direction.registers.body.family,
+      fontSize: 11.5,
+      fontWeight: direction.registers.body.fontWeight,
+      italic: direction.registers.body.italic,
+    }) /
+      caveat.length) *
+      proseMeasureCh,
+  );
+
+  const baseCss = buildCss({
+    ...props,
+    ...furniture,
+    groups,
+    frame: props.geometry.frame,
+    fontStack: stack,
+    vars,
+    proseWidthPx,
+    legendSwatches: legendSwatchRules(props.geometry),
+  });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame })}
+${css}
 </style>
 </head>
 <body>
@@ -303,16 +501,28 @@ ${liveBlock}
 </html>
 `;
 
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
+
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
   return { outPath };
 }
 
-/** Strips the `export` keyword from each top-level declaration, so the module can also sit as a
- *  plain classic `<script>` — no bundler, no `type="module"`. */
+/** Strips the `export` keyword from each top-level declaration, and the `import` lines a trunk
+ *  module is reached by, so the module can also sit as a plain classic `<script>` — no bundler, no
+ *  `type="module"`.
+ *
+ *  The import lines go rather than being rewritten because `liveScript` above concatenates the
+ *  modules they name into the SAME script, in dependency order: once they are one script, every
+ *  imported name is already a top-level binding in scope. */
 function inlineable(moduleSource) {
-  return moduleSource.replace(/^export /gm, "");
+  return moduleSource
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']*["'];?[ \t]*\n/gm, "")
+    .replace(/^export /gm, "");
 }
 
 function escapeHtml(text) {
@@ -350,8 +560,55 @@ function assertDistinctSlugs(groups) {
  * string, once turned `&` into five literal characters that matched no element, and one filter left
  * a reader an empty map with nothing red anywhere.
  */
-function buildCss({ ground, accent, ink, muted, groups, frame }) {
+/**
+ * THE LEGEND'S CIRCLES ARE THE MAP'S CIRCLES, AT THE SIZE THE MAP DRAWS THEM — the rule, written
+ * once here and read by CSS, and re-read by `live-map.mjs` when the camera is what sizes a mark.
+ *
+ * THE DEFECT. The legend's radius scale and the map's were the same FUNCTION (`radiusScale`, √value)
+ * pointed at two different maxima: the map's largest circle is `MARK_MAX_RADIUS_FRACTION` of the
+ * plate's frame, scaled with the container; the legend's was a flat `LEGEND_MAX_RADIUS_PX = 16`,
+ * fixed in CSS pixels "because a legend is a fixed schematic scale". Measured on the committed page:
+ * the M9.0 swatch is **31.8px across at every window**, while the map's M9.1 disc is **41.3px at
+ * 1024x768, 53.4px at 1600x900 on the plate and 56.5px on the live layer** — a mismatch of 1.30x to
+ * 1.78x that CHANGES WITH THE WINDOW. A size legend a reader cannot hold against the map is not a
+ * legend; on a beat whose entire claim is a comparison of areas it is the one piece of furniture
+ * that has to be a ruler.
+ *
+ * The RATIOS between the three reference circles were right the whole time, which is why nothing
+ * looked broken and why the beat's own BRIEF could say "the three reference circles are visibly
+ * almost the same size — that is the argument". It still is. What is fixed is the absolute size.
+ *
+ * The swatch is emitted as a fraction of `--map-w`, the map's own drawn width, which `buildCss`
+ * defines once and both branches of the layout override. Nothing here is a second scale: the radius
+ * comes from the beat's own `radiusScale` over its own `MARK_MAX_RADIUS_FRACTION`, in frame units,
+ * divided by the frame — the same number `livePlan` puts on the circle layer's features.
+ */
+function legendSwatchRules(geometry) {
+  const maxMag = Math.max(...geometry.points.map((p) => p.mag));
+  const radiusOf = radiusScale(maxMag, geometry.frame.width * MARK_MAX_RADIUS_FRACTION);
+  return halfMagnitudeReferenceValues(maxMag)
+    .map((v) => {
+      const fraction = (radiusOf(v) * 2) / geometry.frame.width;
+      return (
+        `.mw-legend-swatch[data-value="${v}"] { width: calc(var(--map-w) * ${fraction.toFixed(6)}); }`
+      );
+    })
+    .join("\n");
+}
+
+function buildCss({ ground, accent, ink, muted, groups, frame, fontStack, vars, proseWidthPx, legendSwatches }) {
+  if (!fontStack)
+    throw new Error(
+      "buildCss was given no font stack. The family a page is set in is a decision, and a default " +
+        "here is how this beat came to ship set in a licensed Helvetica it never loaded.",
+    );
   const aspect = frame.width / frame.height;
+  /** The mark's fill opacity as the alpha byte of an 8-digit hex, because the swatch's fill and its
+   *  outline are two different opacities and a CSS `opacity` on the box would fade both. Derived
+   *  from the component's own constant, never typed a second time. */
+  const markFillAlphaHex = Math.round(MARK_FILL_OPACITY * 255)
+    .toString(16)
+    .padStart(2, "0");
   const filterRules = groups
     .map((g) => {
       const id = `mw-filter-${slugOf(g)}`;
@@ -377,6 +634,10 @@ function buildCss({ ground, accent, ink, muted, groups, frame }) {
   /* One number, used by the body's own padding AND by the height the beat has to fit inside, so the
      two can never disagree about how much room the page edge takes. */
   --page-pad: 16px;
+  /* The reading column's own floor, and the width the map's box subtracts. One number, two readers. */
+  --reading-w: 300px;
+  --body-gap: 20px;
+${Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join("\n")}
 }
 * { box-sizing: border-box; }
 body {
@@ -384,7 +645,10 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The family the components themselves asked for, carried as bytes by the @font-face block above.
+     This rule used to say "Helvetica, Arial, sans-serif" — a licensed face nothing loaded, present
+     on the author's Mac and on no CI runner, no Android phone and no Linux desktop. */
+  font-family: ${fontStack};
 }
 .map-web-page { width: 100%; }
 /* FIT THE WINDOW. The beat is a column exactly one window tall: every piece of furniture takes the
@@ -401,19 +665,62 @@ body {
   height: calc(100vh - var(--page-pad) * 2);
   height: calc(100svh - var(--page-pad) * 2);
 }
-/* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
-   'height', the stage's height stays INDEFINITE for container-query purposes and every 'cqh' inside
-   it resolves to zero — the map collapses to its border and nothing goes red. */
-.map-web > *:not(.mw-stage) { flex: 0 0 auto; }
-.mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
-.mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+/* Only the reading row gives up height. Measured, and not obvious: with 'min-height' here instead
+   of 'height', the stage's height stays INDEFINITE for container-query purposes and every 'cqh'
+   inside it resolves to zero — the map collapses to its border and nothing goes red. */
+.map-web > *:not(.mw-body) { flex: 0 0 auto; }
+/* THE MAP AND ITS READING, SIDE BY SIDE — and the reason is a measurement about this SUBJECT.
+   The locator on this branch answered 'the map does not fill the page' by baking a landscape plate
+   at the stage's own median aspect. That is right for a city, which has no aspect of its own. It is
+   wrong here, for the same reason it was wrong for the choropleth: the Mercator extent of the
+   seventeen epicentres this map draws measures 1.0601 to 1, so a landscape bake would add nothing
+   but Pacific.
+   Stacked, the legend, the subject note and the caveat sat BELOW the map and ate the very height
+   that made the stage short: measured on the committed page, the fallback plate filled 38-46% of
+   the stage's width at five of the six desktop shapes (1024x768 46%, 1280x800 40%, 1280x1200 72%,
+   1440x900 42%, 1600x900 38%, 1920x1080 42%).
+   And the LIVE camera paid for it twice over, which is this type's own version of the defect: the
+   camera is fitted to the study set at runtime, so a 1568x593 stage fits 59 degrees of latitude into
+   593px and then opens about 150 degrees of longitude across the width — half the live map at
+   1600x900 was India and Central Asia, carrying no mark at all. Put the reading in that room
+   instead and the stage comes back to the subject's own near-square shape. */
+.mw-body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--body-gap);
+  min-height: 0;
+  /* A SIZE CONTAINER, so the legend below can be sized against the MAP's own drawn width rather
+     than against a constant. '--map-w' is that width, stated once: the map is bounded by the room
+     the reading column leaves and by the row's height through the plate's aspect, whichever binds
+     first, which is exactly what '.mw-stage' resolves to. */
+  container-type: size;
+  --map-w: min(calc(100cqw - var(--reading-w) - var(--body-gap)), calc(100cqh * ${aspect}));
+}
+/* FAMILY AND WEIGHT FROM THE DIRECTION'S DISPLAY REGISTER, size from this beat. The weight used to
+   be a typed 700 that happened to equal this direction's; the family had no route here at all. */
+.mw-title {
+  font-size: 21px;
+  font-family: var(--title-family);
+  font-weight: var(--title-weight);
+  margin: 0 0 4px;
+}
+/* The BODY register — including its slope. This direction files an italic body, and a direction
+   whose prose is italic says so in every format or it is not one direction. */
+.mw-source {
+  font-size: 13px;
+  font-family: var(--source-family);
+  font-style: var(--subtitle-style);
+  color: var(--muted);
+  margin: 0 0 12px;
+}
 .mw-filter { border: 0; padding: 0; margin: 0 0 14px; min-width: 0; }
 .mw-filter legend {
   padding: 0;
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-family: var(--eyebrow-family);
+  font-weight: var(--eyebrow-weight);
+  letter-spacing: var(--eyebrow-tracking);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -467,8 +774,41 @@ body {
 }
 /* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport bound itself by the stage's HEIGHT as well as its width — CSS has
-   no other way to say "as wide as you like, never taller than the room left". */
-.mw-stage { flex: 1 1 auto; container-type: size; min-height: 180px; }
+   no other way to say "as wide as you like, never taller than the room left".
+   It takes the row's HEIGHT and derives its width from the plate's own aspect, so the map is as
+   large as the window allows and the row has no slack inside it to give away. 'flex: 0 1 auto' — it
+   never grows past its aspect, and it yields first when the reading column reaches its floor. */
+.mw-stage {
+  flex: 0 1 auto;
+  height: 100%;
+  aspect-ratio: ${frame.width} / ${frame.height};
+  container-type: size;
+  min-height: 180px;
+}
+/* The reading column: everything that reads the map — the reference circles, the subject's own
+   line and the caveat. It takes what the map's aspect leaves, down to the floor above; under that a
+   row of three reference circles and their labels stops fitting on one line, which is the one
+   comparison this legend exists to make. 'flex-shrink: 0' is the half that matters: with the
+   default 1, a tall window hands the column a fraction of its floor. */
+.mw-reading {
+  flex: 1 0 var(--reading-w);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+/* …AND WHEN THE ROOM THE WINDOW LEAVES IS VERTICAL, THE READING GOES BACK UNDERNEATH.
+   The row exists because a near-square map in a wide, short window leaves its room beside it. A
+   window taller than it is wide leaves the room below, and forcing the row there costs the map more
+   than the column gains. The condition is the window's own aspect, which is exactly the thing being
+   reasoned about. '--map-w' is restated for the branch: stacked, the map takes the body's width
+   unless the height left binds first. */
+@media (max-aspect-ratio: 1 / 1) {
+  .mw-body { flex-direction: column; --map-w: 100cqw; }
+  .mw-stage { flex: 1 1 auto; height: auto; width: 100%; aspect-ratio: auto; }
+  .mw-reading { flex: 0 0 auto; overflow-y: visible; }
+  .mw-legend { margin-top: 14px; }
+}
 /* The viewport: the bake's own aspect, exactly, at every size — bounded by the stage's width AND its
    height, whichever binds first. A plate stretched to fill a shape it was not baked for is a lie
    about distance and shape, so it is not one of the outcomes here; a smaller, correct map is. The
@@ -520,6 +860,7 @@ svg.map { display: block; width: 100%; height: 100%; }
 .point-label {
   position: absolute;
   font-size: 12px;
+  font-family: var(--label-family);
   font-weight: 600;
   color: var(--ink);
   background: var(--ground);
@@ -551,14 +892,51 @@ svg.map { display: block; width: 100%; height: 100%; }
 }
 .pt:hover, .pt:focus, .pt.pt-active { background: var(--muted); opacity: 0.28; outline: none; }
 .pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; opacity: 1; background: transparent; }
-.mw-legend { margin: 12px 0 4px; }
-.mw-legend-caption { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.mw-legend { margin: 0 0 4px; }
+.mw-legend-caption {
+  font-size: 12.5px;
+  font-family: var(--note-family);
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 8px;
+  max-width: ${proseWidthPx}px;
+}
 .mw-legend-marks { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .mw-legend-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.mw-legend-swatch { display: block; border-radius: 50%; border: 1px solid var(--muted); }
-.mw-legend-value { font-size: 12px; color: var(--muted); }
-.mw-subject { font-size: 12px; font-weight: 700; color: var(--accent); margin: 8px 0 4px; }
-.mw-caveat { font-size: 11.5px; color: var(--muted); margin: 0 0 12px; }
+/* THE SWATCH IS THE MAP'S OWN CIRCLE, AT THE MAP'S OWN SIZE — see 'legendSwatchRules'. The width is
+   a fraction of '--map-w' (the map's drawn width) rather than a fixed pixel count, and the height
+   comes from 'aspect-ratio', never from a second percentage: one number describes one circle.
+   Live, 'live-map.mjs' sets both axes in pixels from the camera scale the marks are actually drawn
+   at, because a live map's circles are sized by the camera and not by the container.
+   FILL AND OUTLINE ARE THE MARK'S TOO. A hollow ring reads as a schematic swatch at 16px and as a
+   DIFFERENT OBJECT beside a filled disc at 54px, which is the size these are now drawn at — so the
+   fill is the same muted at the same opacity the map paints, and the outline is the same frame-unit
+   weight, which makes it track the map's own stroke instead of staying a flat pixel. */
+.mw-legend-swatch {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: ${muted}${markFillAlphaHex};
+  border: max(1px, calc(var(--map-w) * ${MARK_STROKE_FRAME_UNITS})) solid var(--muted);
+}
+${legendSwatches}
+.mw-legend-value { font-size: 12px; font-family: var(--axis-family); color: var(--muted); }
+.mw-subject {
+  font-size: 12px;
+  font-family: var(--label-family);
+  font-weight: 700;
+  color: var(--accent);
+  margin: 12px 0 4px;
+  max-width: ${proseWidthPx}px;
+}
+.mw-caveat {
+  font-size: 11.5px;
+  font-family: var(--source-family);
+  font-style: var(--subtitle-style);
+  color: var(--muted);
+  margin: 0 0 12px;
+  max-width: ${proseWidthPx}px;
+}
 ${filterRules}
 #tooltip {
   position: fixed;
@@ -614,6 +992,19 @@ ${filterRules}
 }
 .mw-table-disclosure > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 `.trim();
+}
+
+/** The trunk's three refusals, run over the plan this render is about to serialise into the page.
+ *  Returns the plan so the call reads as one expression and there is no second variable for the
+ *  checked plan and the written one to come apart in. */
+function assertPlanIsRenderable(plan) {
+  // `assertNoDoubledBasemap` THROWS rather than returning a list — it is a refusal, not a survey —
+  // so it is called for its own error rather than spread into the complaints below.
+  assertNoDoubledBasemap(plan);
+  const complaints = [...validateLivePlan(plan), ...validateExpressions(plan)];
+  if (complaints.length)
+    throw new Error("this beat's live plan is not renderable:\n  - " + complaints.join("\n  - "));
+  return plan;
 }
 
 /** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. */
@@ -770,15 +1161,17 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     regionTable: true,
     // Ruling R1: this beat is a LIVE MapTiler map with the baked plate as its fallback layer.
     live: true,
-    plan: livePlan({
+    // THE PLAN IS CHECKED WHERE IT IS WRITTEN *AND* WHERE IT IS READ. `live-map.mjs` validates it
+    // again in the reader's browser, and that is not redundancy: a plan that only fails there is a
+    // defect that has already shipped. These three ask the questions MapLibre answers with silence —
+    // a duplicate layer id, a missing camera fact, a pair property assembled from two expressions,
+    // a layer that would draw a second basemap over the provider's.
+    plan: assertPlanIsRenderable(livePlan({
       geometry: { ...geometry, points },
       subjectKey: SUBJECT_KEY,
       accent: palette.accent,
       muted: deriveFurniture(palette.ground).muted,
-      // The SAME literal the bake writes into the plate (`bake.mjs`'s water override). If the live
-      // style and its own fallback disagree about the colour of water, the swap is visible.
-      waterFill: WATER_FILL,
-    }),
+    })),
   });
   // The one thing a reader is promised and a markup check cannot see: the detail string on the hit
   // target has to be the SAME string the table shows for that event.
@@ -803,4 +1196,4 @@ if (import.meta.main) {
   console.log(`symbol-web beat → ${outPath}  [${points} events]`);
 }
 
-export { render, renderMapWeb, ensurePlate, loadPlate, BEAT, WATER_FILL, PLATE_SIZE, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH };
+export { render, renderMapWeb, ensurePlate, loadPlate, BEAT, PLATE_SIZE, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH };
