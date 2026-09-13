@@ -545,7 +545,7 @@ put back.
 
 ### The class: one mark, two halves, two mechanisms
 
-This has now happened three times, so it is written as a rule rather than as three incidents. **The
+This has now happened four times, so it is written as a rule rather than as four incidents. **The
 live swap split every mark in two** — a MapLibre layer for the circle, an HTML overlay for its label
 and its hit target — and anything that governed the mark when both halves were SVG now has to govern
 them BOTH, through two different mechanisms. Where it does not, nothing goes red and the map quietly
@@ -556,6 +556,22 @@ disagrees with itself.
 | size | CSS + the SVG viewBox | `circle-radius`, from the camera | the owner: a 36px circle on cartography 1.57× bigger |
 | membership of a filter | CSS `:has()` + `:checked` | `map.setFilter` | the owner: 6 of 13 labels hidden, 13 of 13 circles painted |
 | the PAINTED HIGHLIGHT's own size | two inline percentages on `.pt` | nothing at all, until B6.20 | the owner: *"le rond du hover est trop large, c'est chelou"* |
+| WHICH RULE a radius follows (`camera` / `ground` / `fixed`) | `reposition` scaled the halo, the gutter and the offset by the camera, always | `circle-radius`, which DID honour the strategy | putting the radius strategies on the trunk: a 40px ring around a 12px PIN on `proof/mapgen-locator-web` |
+
+**The fourth instance, and what closed it.** The three radius strategies moved into
+`shared/map-beat/mount.mjs` with the rest of the plan contract, and the moment both halves could be
+read side by side the disagreement was obvious: the live layer painted a locator's markers at
+`["get", "r"]` — a pin, flat, at every zoom, which is correct — while `reposition` sized their halos,
+label gutters and baseline offsets at `r · cameraScale`, which is the rule a value-encoding circle
+follows. At that beat's own 2.88× that is 40px of ring around a 12px pin. `markScaleOf(plan, scale)`
+is now the one place the question is answered, and both halves read it.
+
+**And the guard had been SKIPPED on that beat all along**, which is the part worth remembering.
+`verify-live-map.mjs` reads `data-r` off each `.pt` to derive what the halo should be, and the
+locator's hit targets carried none — so `if (!(halo.frameRadius > 0)) continue` passed over every one
+of them. The halo could be neither right nor wrong; it was unmeasured, and a mutation putting the
+defect back stayed green. A beat that draws a mark states that mark's radius on the element that
+haloes it, or the halo guard does not exist for that beat.
 
 ### The painted highlight is a circle in SCREEN pixels — B6.20, 2026-08-10
 
