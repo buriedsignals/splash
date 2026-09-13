@@ -106,14 +106,19 @@ s'embarquent pas dans un bundle Remotion. Donc :
 6. les faces de **toutes** les familles × graisses des registres, embarquées en octets
    (`videoFaces`, étendu d'une pile unique à une liste de familles, toujours par
    `embeddedWebFaces`) ;
-7. `writeRenderProps` : les octets dans un fichier temporaire, le fichier de props commité sans
+7. **la mise en page** — retours à la ligne, gouttières, rectangle de la carte et sa taille
+   dessinée — mesurée ici, avec `measureText` / `measureTextBand` sur les mêmes fichiers de fonte,
+   exactement comme le statique la mesure. *Amendé le 2026-09-13 :* une carte doit connaître sa
+   taille dessinée avant que son plan soit écrit, et une seule mesure pour tous les exports est la
+   précision du statique reprise telle quelle ;
+8. `writeRenderProps` : les octets dans un fichier temporaire, le fichier de props commité sans
    base64.
 
 **Dans Chrome, la composition** écrite pour ce beat :
 
 - elle ne dessine rien avant ses faces (`useEmbeddedFaces`) et relit chaque frame contre elles ;
-- elle mesure ses retours à la ligne et ses gouttières avec `measureText` dans ces faces (mêmes
-  octets, donc même chasse que ce qui est peint) ;
+- elle dessine aux coordonnées reçues, et vérifie que la largeur que Chrome peint pour chaque ligne
+  mesurée tient dans la tolérance de la mesure Bun — sinon le rendu est annulé ;
 - elle ne tape **aucune** taille, graisse, interligne, écart de bloc ni couleur : tout vient des
   registres et de la direction reçus en props ;
 - ses fenêtres d'animation dérivent de son contrat de timing (`progressOf`, `checkTiming`).
@@ -139,6 +144,32 @@ une famille nue, qui revient en Noto Sans). Une caméra qui bouge n'est admise q
 cuite unique (`geo-discipline.md`). Si un besoin du format vidéo exige de toucher au tronc, il est
 annoncé aux autres sessions avant d'être commencé, avec les fichiers exacts, et toutes les copies
 portées sont mises à jour dans le même commit.
+
+**Le moteur de rendu : le plan monté en direct dans la composition** (décision du propriétaire,
+2026-09-13, sur la mesure de `.superpowers/sdd/2026-09-13-video-quality-pass-1-mechanism/task-4-report.md`).
+MapLibre est monté dans la composition Remotion avec le style MapTiler transformé et `mountPlan`,
+les propriétés de peinture changent à chaque frame, et chaque frame attend `idle` sous
+`delayRender`. Mesuré sur macOS arm64 : 0,039 s par frame, déterministe (frame et mp4 identiques
+d'un rendu à l'autre), 0 px de décalage, révélation pays par pays possible, et sous `--gl=swangle`
+la dernière frame est identique au pixel au still cuit. C'est le seul chemin où la caméra peut
+bouger.
+
+Ce que le choix impose :
+
+- **La clé MapTiler et le réseau sont requis à chaque rendu.** Remotion injecte dans la page tout
+  le `.env` de la racine sauf `--env-file` (constaté : les clés MapTiler, Datawrapper, Gemini et
+  Cloudflare de ce dépôt). Le moteur vidéo passe donc un `--env-file` qui ne contient **que** la
+  clé MapTiler, écrit dans un fichier temporaire hors du dépôt et supprimé après le rendu ; la clé
+  n'entre jamais dans un fichier de props, un log conservé ou un argument de commande. Une garde
+  fait échouer un appel `remotion` du moteur qui n'a pas son `--env-file`.
+- **`--gl=swangle`** pour que la vidéo tienne au still ; le GPU (`--gl=angle`) dérive
+  d'anti-crénelage sur ~0,03 % des pixels.
+- **Le fond vient des tuiles vivantes**, pas de la plaque gelée : un restyle MapTiler change la
+  vidéo sous un still inchangé. La preuve compare sa dernière frame au still avec tolérance.
+- **Point ouvert, nommé :** en production la clé n'est hydratée que dans l'opération de cuisson
+  scellée d'Engine (`README.md`, Credentials). Un rendu vidéo carte en direct demande une opération
+  Engine équivalente ; tant qu'elle n'existe pas, ce moteur est un moteur de développement.
+- Non mesuré : l'hôte de rendu d'Engine (Linux sans GPU probablement).
 
 ### 4.4 La preuve par type
 
