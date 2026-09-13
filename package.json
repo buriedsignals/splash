@@ -27,11 +27,13 @@
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
+    "fontverter": "2.0.0",
     "maplibre-gl": "4.7.1",
     "puppeteer-core": "24.43.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "remotion": "4.0.507",
+    "subset-font": "2.7.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

@@ -53,11 +53,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
 import {
   assertFontsEmbedded,
+  displayableTextOf,
   dominantFontStack,
   embeddedWebFaces,
   fontFaceCss,
   fontRequestsInHtml,
-  pageTextOf,
 } from "./typefaces.mjs";
 import {
   assertOneVocabulary,
@@ -175,6 +175,14 @@ async function renderWeb({ component, props, outDir, name }) {
   // weights, which characters — derived from what the component actually drew, never from a
   // default), and once to be written, with the faces in it. `assertFontsEmbedded` then refuses to
   // write a page that names a family it does not carry.
+  //
+  // AND EACH FACE IS CUT DOWN to the characters this page can display, which roughly halves what
+  // it costs. `displayableTextOf` is what "can display" means, and it is deliberately wider than
+  // the rendered words: the readable attributes a tooltip reads back, the strings inside a JSON
+  // payload (a live map hands one to its own tooltip), and anything a stylesheet generates. A
+  // glyph missing only on hover is in no screenshot, so what each cut face really carries is
+  // measured off its own cmap and the coverage guard is per family — `subsetWebFace` and
+  // `assertFontsEmbedded` in `typefaces.mjs`.
   const stack = dominantFontStack(markup);
   const baseCss = buildCss({
     ground: props.ground,
@@ -205,7 +213,7 @@ ${inlineScript}
 `;
 
   const draft = page(baseCss);
-  const faces = embeddedWebFaces(fontRequestsInHtml(draft).requests, pageTextOf(draft));
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
 

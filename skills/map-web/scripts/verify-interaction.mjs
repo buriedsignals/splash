@@ -48,7 +48,7 @@ import { join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
-import { probeTypefaces } from "./typefaces.mjs";
+import { probeRevealedText, probeTypefaces } from "./typefaces.mjs";
 
 /** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
@@ -489,6 +489,39 @@ try {
           `${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}" — ${delta.toFixed(1)}px apart`,
         );
       }
+    }
+  }
+
+  // ── 4c. THE TYPEFACE IS STILL THERE FOR THE WORDS A READER PROVOKES ──────────────────────────
+  // Each face is now cut down to a list of characters rather than carrying Google's whole latin
+  // subset, so the failure mode moved: a glyph can be missing ONLY in a tooltip, or only under one
+  // filter state, and it is in no screenshot. `probeRevealedText` drives the page through its own
+  // handlers — every filter chip clicked, every `.pt` focused, which is the same `show()` a pointer
+  // goes through — and measures what appeared against the stack it appeared in. Verified by
+  // mutation: with one character cut out of the page's own subset, this section names it and reddens.
+  {
+    const { uses, controls, targets, revealed, unshown } = await page.evaluate(probeRevealedText);
+    check(
+      `interaction: the page's own handler really showed a detail string`,
+      targets === 0 || revealed > 0,
+      `${revealed}/${targets} points put their string in the tooltip, across ${controls} filter control(s)` +
+        (unshown.length > 0 ? `; ${unshown.length} never did` : ""),
+    );
+    for (const use of uses) {
+      const who = `${use.family} ${use.weight} ${use.style}`;
+      check(
+        `interaction: ${use.family} sets all ${use.characters} characters this beat can reveal (${use.from.join(", ")})`,
+        use.uncovered.length === 0,
+        use.uncovered.length > 0
+          ? `the subset carried for it does not reach ${use.uncovered.join(", ")} — drawn by ${use.fallbackStack}, and only a reader who hovers sees it`
+          : "every revealed code point is inside the cut this page carries",
+      );
+      const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+      check(
+        `interaction: ${who} really DRAWS the words it reveals, not its fallback`,
+        delta > 0.5,
+        `${use.widthWithFirst.toFixed(1)}px against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}" — ${delta.toFixed(1)}px apart`,
+      );
     }
   }
 

@@ -40,6 +40,8 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import fontverter from "fontverter";
+import subsetFont from "subset-font";
 
 /** The seventeen families MapTiler Cloud serves that are also Google Fonts — so a beat set in one
  *  of these can share its face with the map with no glyph baking. Metropolis, MapTiler's own
@@ -519,13 +521,42 @@ export function rangesCover(ranges, cp) {
   return false;
 }
 
-/** The characters a page will actually SET, as code points — everything above the control range,
+/**
+ * A code point that carries no ink — every Unicode space separator and the format characters that
+ * travel with text. Excluded from "what this page sets" on both sides: the subset is not asked to
+ * carry them, and the coverage guard does not demand them.
+ *
+ * NOT a convenience. Google's own `unicode-range` for the `latin` subset claims `U+2000-206F`
+ * wholesale, and the file it serves does not have half of it — measured on the real bytes, Open
+ * Sans latin and Merriweather latin both carry U+00A0 and U+2009 and NEITHER carries U+202F, the
+ * narrow no-break space that `Intl.NumberFormat("fr-FR")` puts between a number's thousands. Once
+ * coverage is measured off the font's own cmap rather than off Google's claim, a French figure
+ * would fail a build that no upstream can fix. A space nobody has a glyph for draws nothing either
+ * way; a LETTER nobody has a glyph for is the defect this file exists to catch, and it is still
+ * caught. `probeTypefaces` in the browser already skips the same characters (`ch.trim()`), so the
+ * two sides measure one set.
+ */
+function inkless(cp) {
+  return (
+    cp < 0x21 ||
+    cp === 0x7f ||
+    cp === 0xa0 ||
+    cp === 0xad || // soft hyphen — drawn only where a line breaks, and never by a chosen face
+    (cp >= 0x2000 && cp <= 0x200f) || // the en/em space family, the zero-widths, the bidi marks
+    (cp >= 0x2028 && cp <= 0x202f) || // the separators and the bidi embedding controls
+    (cp >= 0x205f && cp <= 0x2064) ||
+    cp === 0x3000 ||
+    cp === 0xfeff
+  );
+}
+
+/** The characters a page will actually SET, as code points — everything that carries ink,
  *  deduplicated and ordered so a cache key built from them is stable. */
 export function codePointsOf(text) {
   const seen = new Set();
   for (const ch of String(text)) {
     const cp = ch.codePointAt(0);
-    if (cp < 0x21 || cp === 0x7f) continue;
+    if (inkless(cp)) continue;
     seen.add(cp);
   }
   return [...seen].sort((a, b) => a - b);
@@ -557,6 +588,181 @@ function woff2Bytes(url, path) {
     );
   writeCached(path, bytes);
   return bytes;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SUBSET, AND WHY ITS COVERAGE IS READ BACK OUT OF THE BYTES RATHER THAN CLAIMED.
+//
+// Embedding Google's whole `latin` subset costs a page 13 KB for Open Sans and 49 KB for
+// Merriweather, before base64 adds a third — for ~231 glyphs where a chart page sets eighty. So
+// each face is cut down to the characters the page can actually display, with `subset-font`
+// (harfbuzz's own `hb-subset`, compiled to wasm).
+//
+// The part that is not obvious: hb-subset SILENTLY DROPS a character the source font has no glyph
+// for. Ask Open Sans's latin file for `₂` and it hands back a font without it and says nothing —
+// which is exactly the shape of defect this whole file exists to end. And Google's declared
+// `unicode-range` cannot be used to tell, because it OVERCLAIMS: `latin` says `U+2000-206F` and
+// the file carries maybe a third of it (measured above, `inkless`).
+//
+// So the emitted `unicode-range` is a MEASUREMENT of the shipped bytes: the subset is converted
+// back to TrueType and its `cmap` is read. What the rule claims and what the file can set are then
+// the same thing by construction, which is what makes `assertFontsEmbedded`'s coverage check — and
+// the browser's own reading of `FontFace.unicodeRange` — worth anything at all.
+
+/**
+ * Every code point a font can set, read off its own `cmap`. Takes TrueType/OpenType bytes.
+ *
+ * Formats 4 and 12 only, and deliberately: those are the two a Google Fonts file and an hb-subset
+ * output actually carry. A subtable in any other format is skipped rather than guessed at, and a
+ * font with no readable subtable comes back empty — which fails the caller loudly rather than
+ * quietly claiming coverage.
+ */
+export function fontCodePoints(bytes) {
+  const buf = Buffer.from(bytes);
+  if (buf.length < 12) throw new Error(`not a font: ${describeBytes(buf)}`);
+  if (buf.readUInt32BE(0) === 0x74746366)
+    throw new Error("this is a font COLLECTION; one face at a time is the only thing embedded");
+  const count = buf.readUInt16BE(4);
+  let cmapOff = null;
+  for (let i = 0; i < count; i += 1) {
+    const rec = 12 + i * 16;
+    if (rec + 16 > buf.length) break;
+    if (buf.toString("latin1", rec, rec + 4) === "cmap") cmapOff = buf.readUInt32BE(rec + 8);
+  }
+  if (cmapOff === null || cmapOff + 4 > buf.length)
+    throw new Error("this font carries no cmap, so nothing can say which characters it sets");
+
+  const subtables = [];
+  const n = buf.readUInt16BE(cmapOff + 2);
+  for (let i = 0; i < n; i += 1) {
+    const rec = cmapOff + 4 + i * 8;
+    if (rec + 8 > buf.length) break;
+    subtables.push({
+      platform: buf.readUInt16BE(rec),
+      encoding: buf.readUInt16BE(rec + 2),
+      off: cmapOff + buf.readUInt32BE(rec + 4),
+    });
+  }
+  // A full-repertoire Unicode subtable first (3/10 or 0/4+), then the BMP one. Reading the MacRoman
+  // table by accident would report a hundred code points that are not the ones anybody asked for.
+  const rank = (s) =>
+    (s.platform === 3 && s.encoding === 10) || (s.platform === 0 && s.encoding >= 4)
+      ? 2
+      : (s.platform === 3 && s.encoding === 1) || s.platform === 0
+        ? 1
+        : 0;
+  subtables.sort((a, b) => rank(b) - rank(a));
+
+  const out = new Set();
+  for (const s of subtables) {
+    if (s.off + 4 > buf.length) continue;
+    const format = buf.readUInt16BE(s.off);
+    if (format === 4) {
+      const segX2 = buf.readUInt16BE(s.off + 6);
+      const segs = segX2 / 2;
+      const ends = s.off + 14;
+      const starts = ends + segX2 + 2;
+      const deltas = starts + segX2;
+      const rangeOffsets = deltas + segX2;
+      for (let i = 0; i < segs; i += 1) {
+        const end = buf.readUInt16BE(ends + i * 2);
+        const start = buf.readUInt16BE(starts + i * 2);
+        if (start > end) continue;
+        const delta = buf.readInt16BE(deltas + i * 2);
+        const ro = buf.readUInt16BE(rangeOffsets + i * 2);
+        for (let cp = start; cp <= end && cp !== 0x10000; cp += 1) {
+          let gid;
+          if (ro === 0) gid = (cp + delta) & 0xffff;
+          else {
+            const at = rangeOffsets + i * 2 + ro + (cp - start) * 2;
+            if (at + 2 > buf.length) continue;
+            gid = buf.readUInt16BE(at);
+            if (gid !== 0) gid = (gid + delta) & 0xffff;
+          }
+          if (gid !== 0) out.add(cp);
+        }
+      }
+      break;
+    }
+    if (format === 12) {
+      const groups = buf.readUInt32BE(s.off + 12);
+      for (let i = 0; i < groups; i += 1) {
+        const g = s.off + 16 + i * 12;
+        if (g + 12 > buf.length) break;
+        const start = buf.readUInt32BE(g);
+        const end = buf.readUInt32BE(g + 4);
+        if (buf.readUInt32BE(g + 8) === 0) continue;
+        for (let cp = start; cp <= end; cp += 1) out.add(cp);
+      }
+      break;
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+/** `[0x41, 0x42, 0x43, 0x2082]` as `U+41-43, U+2082` — consecutive runs collapsed, because a face
+ *  carrying two hundred characters would otherwise write two hundred separate tokens into every
+ *  page that embeds it. */
+export function rangeSpec(codePoints) {
+  const sorted = [...new Set(codePoints)].sort((a, b) => a - b);
+  const parts = [];
+  for (let i = 0; i < sorted.length; ) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j += 1;
+    parts.push(i === j ? hexOf(sorted[i]) : `${hexOf(sorted[i])}-${sorted[j].toString(16).toUpperCase()}`);
+    i = j + 1;
+  }
+  return parts.join(", ");
+}
+
+const hexOf = (cp) => `U+${cp.toString(16).toUpperCase()}`;
+
+/** Subsets already cut this run, and the ones an earlier run left on disk. Keyed by the source
+ *  bytes and the exact characters asked for, so two pages that set the same words share one cut. */
+const subsetsInMemory = new Map();
+
+/**
+ * ONE FACE, CUT DOWN TO THE CHARACTERS IT IS ASKED FOR, AND WHAT IT REALLY ENDED UP CARRYING.
+ *
+ * @param {Buffer} bytes  the woff2 Google served
+ * @param {number[]} codePoints  what to keep
+ * @returns {Promise<{bytes: Buffer, codePoints: number[]}>} `codePoints` is read back off the
+ *          result's own `cmap`, so it is what the file CAN set — never what was asked for.
+ */
+export async function subsetWebFace(bytes, codePoints) {
+  const wanted = [...new Set(codePoints)].sort((a, b) => a - b);
+  if (wanted.length === 0) return { bytes: Buffer.alloc(0), codePoints: [] };
+  const key = createHash("sha256")
+    .update(bytes)
+    .update("|")
+    .update(wanted.join(","))
+    .digest("hex")
+    .slice(0, 32);
+  const held = subsetsInMemory.get(key);
+  if (held) return held;
+
+  const path = join(typefaceCacheDir(), `subset-${key}.woff2`);
+  let cut = null;
+  if (existsSync(path) && statSync(path).size > 0) {
+    const cached = readFileSync(path);
+    if (isWoff2(cached)) cut = cached;
+    else unlinkSync(path); // a cache entry that is not a woff2 is a poisoned one
+  }
+  if (!cut) {
+    cut = Buffer.from(
+      await subsetFont(Buffer.from(bytes), wanted.map((cp) => String.fromCodePoint(cp)).join(""), {
+        targetFormat: "woff2",
+      }),
+    );
+    if (!isWoff2(cut))
+      throw new Error(`subsetting produced ${describeBytes(cut)} rather than a woff2. Nothing was cached.`);
+    writeCached(path, cut);
+  }
+  // READ BACK, not claimed. hb-subset drops a character the source has no glyph for and says
+  // nothing; converting the RESULT to TrueType and reading its cmap is the only thing that knows.
+  const answer = { bytes: cut, codePoints: fontCodePoints(await fontverter.convert(cut, "truetype")) };
+  subsetsInMemory.set(key, answer);
+  return answer;
 }
 
 const STYLES = new Set(["normal", "italic"]);
@@ -632,6 +838,9 @@ export function fetchWebFaces(family, { spec = AXIS, text = null, keep = () => t
       stretch: face.stretch,
       base64: bytes.toString("base64"),
       bytes: bytes.length,
+      // The raw file, for a caller that cuts it down before embedding it. `base64` above stays the
+      // WHOLE face, because the film embeds exactly what Google served.
+      buffer: bytes,
       url: face.url,
     });
   }
@@ -645,13 +854,26 @@ export function fetchWebFaces(family, { spec = AXIS, text = null, keep = () => t
  * weight RANGE, so a family that serves 400 and 700 and a page that asks for 500 and 600 embed one
  * file rather than two copies of it.
  *
+ * EACH FACE IS CUT DOWN TO THE CHARACTERS THE PAGE CAN DISPLAY. `text` is the whole displayable
+ * surface, not the words in the initial markup — see `displayableTextOf`, which is what the two
+ * renderers hand in. Every family gets every one of those characters rather than the ones the page
+ * happens to set in THAT family: a build-time scan cannot attribute a tooltip's words to a family
+ * (the tooltip is one element and its text arrives on hover), and the conservative direction here
+ * is carrying a glyph nobody reads, never omitting one somebody does.
+ *
  * @param {Array<{family: string, weight?: number, style?: "normal"|"italic"}>} wanted
  *        one entry per (family, weight, style) the page's own markup and stylesheet declare
- * @param {string} text  every character the page will set — the subsets are chosen against it
- * @returns {Array<{family, weight, weightTo, style, subset, unicodeRange, stretch, base64, bytes, served}>}
+ * @param {string} text  every character the page can display — the subsets are cut against it
+ * @returns {Promise<Array<{family, weight, weightTo, style, subset, unicodeRange, stretch, base64,
+ *          bytes, served, servedBytes}>>}
  */
-export function embeddedWebFaces(wanted, text) {
-  const points = codePointsOf(text);
+export async function embeddedWebFaces(wanted, text) {
+  // REQUIRED is what the page can be READ saying; DESIRED adds the digits and signs a value could
+  // be formatted with (`RUNTIME_NUMBER_CHARACTERS`). The two are separate because they fail
+  // differently: a required character no face can set stops the build, and a desired one the family
+  // simply does not have (`‰` in both house families' latin files) is dropped without a word.
+  const required = codePointsOf(text);
+  const points = codePointsOf(`${text}${RUNTIME_NUMBER_CHARACTERS}`);
 
   // Every requested weight, grouped by the face Google will actually serve for it.
   const groups = new Map();
@@ -695,19 +917,29 @@ export function embeddedWebFaces(wanted, text) {
     const from = Math.min(...group.weights);
     const to = Math.max(...group.weights);
     const spec = oneFace(served.weight, served.style);
-    const covered = [];
-    const carry = (face, subset) => {
-      covered.push(parseUnicodeRange(face.unicodeRange));
+    // What the faces carried so far CAN SET — read off each cut file's own cmap, never off the
+    // `unicode-range` Google declares for it, because that range overclaims (see `subsetWebFace`).
+    const settable = new Set();
+    const carry = async (face, subset) => {
+      const asked = points.filter((cp) => rangesCover(parseUnicodeRange(face.unicodeRange), cp));
+      if (asked.length === 0) return;
+      const cut = await subsetWebFace(face.buffer, asked);
+      // A face whose every asked-for character turned out not to be in it is not embedded at all.
+      // Declaring it would put an empty `unicode-range` and 800 bytes into the page for nothing.
+      if (cut.codePoints.length === 0) return;
+      for (const cp of cut.codePoints) settable.add(cp);
       out.push({
         family,
         weight: from,
         weightTo: to,
         style,
         subset,
-        unicodeRange: face.unicodeRange,
+        // THE MEASUREMENT, not the claim: exactly what this file's cmap holds.
+        unicodeRange: rangeSpec(cut.codePoints),
         stretch: face.stretch,
-        base64: face.base64,
-        bytes: face.bytes,
+        base64: cut.bytes.toString("base64"),
+        bytes: cut.bytes.length,
+        servedBytes: face.bytes,
         served: { weight: served.weight, style: served.style },
       });
     };
@@ -720,11 +952,13 @@ export function embeddedWebFaces(wanted, text) {
         BROAD_SUBSETS.has(f.subset) &&
         points.some((cp) => rangesCover(parseUnicodeRange(f.unicodeRange), cp)),
     }))
-      carry(face, face.subset);
+      await carry(face, face.subset);
 
     // WHAT THE TWO BROAD SUBSETS DO NOT REACH, asked for by name — so CO2 is set in one face rather
-    // than two: U+2082 lives in no Google subset of any family on these ladders.
-    const leftover = points.filter((cp) => !covered.some((ranges) => rangesCover(ranges, cp)));
+    // than two: U+2082 lives in no Google subset of any family on these ladders. "Do not reach" is
+    // now measured on the cut bytes, so a character Google's `latin` range CLAIMS and its latin file
+    // does not have (U+2191 is one) reaches this branch instead of shipping as a silent fallback.
+    const leftover = required.filter((cp) => !settable.has(cp));
     if (leftover.length > 0) {
       const chars = leftover.map((cp) => String.fromCodePoint(cp)).join("");
       const extras = fetchWebFaces(family, { spec, text: chars, keep: (f) => f.style === served.style });
@@ -735,8 +969,8 @@ export function embeddedWebFaces(wanted, text) {
             `to have.`,
         );
       const digest = createHash("sha256").update(leftover.join(",")).digest("hex").slice(0, 12);
-      for (const face of extras) carry(face, `extras-${digest}`);
-      const still = leftover.filter((cp) => !covered.some((ranges) => rangesCover(ranges, cp)));
+      for (const face of extras) await carry(face, `extras-${digest}`);
+      const still = leftover.filter((cp) => !settable.has(cp));
       if (still.length > 0)
         throw new Error(
           `"${family}" ${served.weight} ${served.style} still cannot set ` +
@@ -829,6 +1063,108 @@ export function pageTextOf(html) {
   const nodes = body.replace(/<[^>]*>/g, " ");
   return decodeEntities(`${nodes} ${attrs}`);
 }
+
+/**
+ * EVERY STRING INSIDE THIS PAGE'S JSON PAYLOADS — `<script type="application/json">` and nothing
+ * else, so the inlined MapLibre library (a `<script>` with no type) is not mistaken for text.
+ *
+ * A map-web beat carries its live plan in one of these, and `live-map.mjs` puts
+ * `properties.detail || properties.name` straight into the tooltip for a feature that has no button
+ * of its own. Those words are in NO text node and in no attribute: with the whole `latin` subset
+ * embedded they simply drew, and the moment a face is cut to the markup's own characters they are
+ * exactly the glyph that goes missing only when a reader hovers a hex bin.
+ *
+ * Keys are folded in with values. A key never reaches a reader, but it costs a handful of ASCII
+ * characters the page already sets, and telling them apart would mean knowing this plan's shape.
+ */
+export function jsonPayloadText(html) {
+  const out = [];
+  for (const m of String(html).matchAll(
+    /<script\b[^>]*\btype\s*=\s*["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  )) {
+    const raw = m[1].replace(/\\u003c/gi, "<");
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Not parseable here — then nothing can say which of its characters are text, so ALL of them
+      // are. Widening, in the one direction this file is ever allowed to be wrong in.
+      out.push(raw);
+      continue;
+    }
+    const walk = (node) => {
+      if (typeof node === "string") out.push(node);
+      else if (Array.isArray(node)) node.forEach(walk);
+      else if (node && typeof node === "object")
+        for (const [k, v] of Object.entries(node)) {
+          out.push(k);
+          walk(v);
+        }
+    };
+    walk(parsed);
+  }
+  return out.join(" ");
+}
+
+/** Text a stylesheet GENERATES — `content: "…"`. Nothing in either web format writes one today, and
+ *  that is exactly why it is read: `pageTextOf` throws `<style>` away, so the day someone adds a
+ *  `::after { content: "→" }` the arrow would be in no text node, in no attribute, and in no
+ *  subset. Counter and attr() forms are ignored on purpose — neither can name a character here. */
+export function cssContentText(html) {
+  const out = [];
+  for (const sheet of String(html).matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi))
+    for (const decl of sheet[1].matchAll(/content\s*:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g))
+      out.push(
+        decl[1]
+          .slice(1, -1)
+          .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_, h) => String.fromCodePoint(Number.parseInt(h, 16)))
+          .replace(/\\(.)/g, "$1"),
+      );
+  return out.join(" ");
+}
+
+/**
+ * EVERYTHING THIS PAGE CAN DISPLAY — the one set both the cutting and the guard are measured
+ * against.
+ *
+ * `pageTextOf` above is what the page says WHEN IT LOADS. That was enough while the whole `latin`
+ * subset travelled with every page, because anything a reader could ever provoke was Latin and the
+ * net was under it. It is not enough once a face is cut to a list of characters: a glyph missing
+ * only on hover looks perfect in every screenshot, which is the defect this function exists to
+ * prevent. So:
+ *
+ *   - the text nodes and the readable attributes — `pageTextOf`. Every word the interaction can put
+ *     on screen is ALREADY one of these: `interaction.mjs` in both formats does
+ *     `tooltip.textContent = el.getAttribute("data-detail")` and nothing else. Neither script
+ *     formats a number, concatenates a string or holds a template — measured by reading them, and
+ *     it is the reason a runtime formatter needs no separate scan here. The day one appears, its
+ *     output has to be written into this page before it can be read out of it.
+ *   - the JSON payloads — `jsonPayloadText`, the one runtime string source that is in no attribute.
+ *   - generated content — `cssContentText`.
+ *
+ * `RUNTIME_NUMBER_CHARACTERS` is deliberately NOT in here: this is the set the coverage guard
+ * REQUIRES, and those are carried on a best-effort basis. `embeddedWebFaces` adds them itself.
+ */
+export function displayableTextOf(html) {
+  return `${pageTextOf(html)} ${jsonPayloadText(html)} ${cssContentText(html)}`;
+}
+
+/**
+ * THE CHARACTERS A FORMATTED NUMBER IS MADE OF, carried whether this page happens to print them or
+ * not — and the only part of the cut that is not derived from the document.
+ *
+ * A beat's own words are fixed the moment it is rendered, and so are its `data-detail` strings. A
+ * DIGIT is the one thing that is not: a series whose readings all start with 1 and 2 types no `7`,
+ * and the cost of being wrong about that is a tooltip with a hole in it. Ten digits, the separators
+ * and signs a number can be written with, and the units that follow one — about thirty characters,
+ * almost all of which a chart page sets anyway.
+ *
+ * Best-effort, deliberately: a face that turns out not to have one of these (`‰` is missing from
+ * Google's own latin file for both house families) simply does not carry it. These are insurance
+ * against a character the page could print, not a claim that it does print it — so they are cut
+ * FOR and never REQUIRED, which is what keeps a missing per-mille from failing an honest build.
+ */
+export const RUNTIME_NUMBER_CHARACTERS = "0123456789.,'’·:/()+-−–—%‰°";
 
 /** The innermost declaration runs of a stylesheet — the only blocks that carry declarations, so
  *  `@media`/`@supports` wrappers fall out for free rather than having to be understood. */
@@ -992,8 +1328,9 @@ export function embeddedFacesInHtml(html) {
  *   - a family named and not embedded at all — the defect this whole section exists to end;
  *   - a weight or style named and not embedded, which a browser answers by faking a bold or
  *     leaving an italic upright;
- *   - a character the embedded faces' own `unicode-range`s do not reach, which falls through one
- *     glyph at a time and is the hardest of the three to see.
+ *   - a character the family's own cut does not reach, which falls through one glyph at a time and
+ *     is the hardest of the three to see — and the one this change made possible, since a face is
+ *     no longer a whole subset but a list of characters somebody derived.
  */
 export function assertFontsEmbedded(html) {
   const { requests, unresolved } = fontRequestsInHtml(html);
@@ -1033,15 +1370,32 @@ export function assertFontsEmbedded(html) {
       );
   }
 
+  // COVERAGE, PER FAMILY — and per family is the whole point since the faces became subsets.
+  //
+  // This used to pool every family's ranges into one set and ask whether SOMETHING reached each
+  // character. That was defensible while each face carried Google's whole `latin` subset, because
+  // every family carried the same 231 code points anyway. It is a hole the moment each face is cut
+  // to a list: a page whose serif title face was cut without `’` and whose sans was cut with it
+  // would pass, and the apostrophe in the title would be drawn by Georgia.
+  //
+  // So each family the page names must reach every character the page can display, on its own. That
+  // is what `embeddedWebFaces` cuts for, so the two agree by construction on a page it built — and
+  // disagree, loudly, on a page whose text moved after the cut or whose subset was tampered with.
   if (faces.length > 0) {
-    const ranges = faces.flatMap((f) => parseUnicodeRange(f.unicodeRange));
-    const uncovered = codePointsOf(pageTextOf(html)).filter((cp) => !rangesCover(ranges, cp));
-    if (uncovered.length > 0)
+    const points = codePointsOf(displayableTextOf(html));
+    for (const family of [...new Set(faces.map((f) => f.family))].sort()) {
+      const ranges = faces.filter((f) => f.family === family).flatMap((f) => parseUnicodeRange(f.unicodeRange));
+      const uncovered = points.filter((cp) => !rangesCover(ranges, cp));
+      if (uncovered.length === 0) continue;
       problems.push(
         `this page sets ${uncovered
           .map((cp) => `${hex(cp)} (${JSON.stringify(String.fromCodePoint(cp))})`)
-          .join(", ")} and no embedded face's unicode-range reaches ${uncovered.length === 1 ? "it" : "them"}.`,
+          .join(", ")} and the subset it carries for "${family}" does not reach ` +
+          `${uncovered.length === 1 ? "it" : "them"}. Each face is cut down to the characters this ` +
+          `page can display (embeddedWebFaces), so a character outside the cut is a glyph drawn by ` +
+          `the bridge — and one that can be invisible until a reader hovers.`,
       );
+    }
   }
 
   if (problems.length > 0)
@@ -1210,4 +1564,170 @@ export async function probeTypefaces() {
     status: f.status,
   }));
   return { uses: out, declared };
+}
+
+/**
+ * THE INTERACTIVE SURFACE, DRIVEN AND THEN MEASURED — the check the cut made necessary.
+ *
+ * `probeTypefaces` above walks the text nodes that are on the page WHEN IT LOADS. That was enough
+ * while every face carried Google's whole `latin` subset, because a tooltip's words were Latin and
+ * the subset was under them either way. Cut each face down to a list of characters and the failure
+ * becomes: a glyph that is missing only when a reader hovers. It is in no screenshot. Nothing in a
+ * build-time scan can see it, and `document.fonts.check()` answers `true` about it, because a
+ * character outside every declared range needs no custom font at all.
+ *
+ * So this DRIVES the page — focuses every element that carries a `data-detail`, which is the real
+ * handler in both formats' `interaction.mjs` (`tooltip.textContent = el.getAttribute("data-detail")`),
+ * and clicks every filter control there is — and after each step reads what is now on screen. Every
+ * character revealed that way is measured the same three ways the load-time probe uses, against the
+ * stack the element it appeared in actually computes to.
+ *
+ * Written to be handed to `page.evaluate`: it closes over nothing and calls nothing from this
+ * module. It MEASURES; the caller decides what is a failure.
+ */
+export async function probeRevealedText() {
+  const GENERIC = new Set([
+    "serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui",
+    "ui-serif", "ui-sans-serif", "ui-monospace", "ui-rounded", "math", "emoji", "fangsong",
+  ]);
+  const unquote = (s) => s.trim().replace(/^["']|["']$/g, "").trim();
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+  await document.fonts.ready;
+
+  // (stack, weight, style) -> the characters seen set in it, and where they came from.
+  const seen = new Map();
+  const note = (el, text, where) => {
+    if (!text || !text.trim()) return;
+    const style = getComputedStyle(el);
+    if (style.visibility === "hidden" || style.display === "none") return;
+    const stack = style.fontFamily;
+    const family = unquote(stack.split(",")[0]);
+    if (!family || GENERIC.has(family.toLowerCase())) return;
+    const key = `${stack}|${style.fontWeight}|${style.fontStyle}`;
+    const held = seen.get(key) ?? {
+      family, stack, weight: style.fontWeight, style: style.fontStyle, chars: new Set(), from: new Set(),
+    };
+    for (const ch of text) if (ch.trim()) held.chars.add(ch);
+    held.from.add(where);
+    seen.set(key, held);
+  };
+  const sweep = (where) => {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode())
+      if (n.parentElement) note(n.parentElement, n.nodeValue ?? "", where);
+  };
+
+  sweep("on load");
+
+  // EVERY FILTER STATE. A control that narrows the page can reveal a label, a count or a row that
+  // the unfiltered view never showed.
+  const controls = [...document.querySelectorAll("input[type=radio], input[type=checkbox], [role=tab], .mw-filter-chip")];
+  for (const control of controls) {
+    try {
+      control.click();
+    } catch {
+      continue;
+    }
+    await frame();
+    sweep("a filter state");
+  }
+  if (controls.length > 0) {
+    try {
+      controls[0].click();
+    } catch { /* back to the first state; a page with one control is already there */ }
+    await frame();
+  }
+
+  // EVERY HOVER STRING, through the page's own handler. `focus()` is the path both formats wire to
+  // the same `show()` that a pointer goes through, and it is deterministic — a synthesised pointer
+  // event at a guessed coordinate resolves to whichever mark is nearest, which is not every mark.
+  const tooltip = document.getElementById("tooltip");
+  const targets = [...document.querySelectorAll("[data-detail]")];
+  let revealed = 0;
+  const unshown = [];
+  for (const target of targets) {
+    const want = target.getAttribute("data-detail") ?? "";
+    if (typeof target.focus !== "function") continue;
+    target.focus();
+    await frame();
+    if (tooltip && !tooltip.hidden && (tooltip.textContent ?? "").trim()) {
+      note(tooltip, tooltip.textContent, "a tooltip");
+      revealed += 1;
+    } else if (want.trim()) {
+      // The string never reached the screen through the page's own handler. Measured anyway,
+      // against the tooltip's own stack, because it is still a thing this page can display.
+      if (tooltip) note(tooltip, want, "a data-detail the handler did not show");
+      unshown.push(want.slice(0, 40));
+    }
+    if (typeof target.blur === "function") target.blur();
+  }
+
+  // An `alt`, against the image that carries it — the one readable attribute a BROWSER draws in the
+  // page's own font, when the picture does not arrive. `aria-label` and `title` are deliberately
+  // not swept: the first is announced and never drawn, the second is painted by the operating
+  // system in a font the page has no say over. Sweeping them measured a `<button>`'s UA-default
+  // Arial and called a subset that reaches every letter of "Paris" incomplete — a check that fails
+  // on something no reader can see is worse than no check. Both are still CUT for at build time
+  // (`pageTextOf`'s own readable-attribute list), which is where they belong.
+  for (const el of document.querySelectorAll("img[alt]")) note(el, el.getAttribute("alt"), "an alt");
+
+  const rangesOf = (spec) => {
+    const out = [];
+    for (const part of String(spec ?? "U+0-10FFFF").split(",")) {
+      const token = part.trim().replace(/^[uU]\+/, "");
+      if (!token) continue;
+      if (token.includes("?")) {
+        out.push([parseInt(token.replace(/\?/g, "0"), 16), parseInt(token.replace(/\?/g, "F"), 16)]);
+        continue;
+      }
+      const dash = token.indexOf("-");
+      if (dash > 0) out.push([parseInt(token.slice(0, dash), 16), parseInt(token.slice(dash + 1), 16)]);
+      else out.push([parseInt(token, 16), parseInt(token, 16)]);
+    }
+    return out.filter(([lo, hi]) => Number.isFinite(lo) && Number.isFinite(hi));
+  };
+  const weightHolds = (declared, want) => {
+    const bounds = String(declared).trim().split(/\s+/).map(Number);
+    return Number.isFinite(want) && want >= bounds[0] && want <= (bounds.length > 1 ? bounds[1] : bounds[0]);
+  };
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const out = [];
+  for (const use of seen.values()) {
+    const chars = [...use.chars].join("");
+    const mine = [...document.fonts].filter(
+      (f) => unquote(f.family) === use.family && f.style === use.style && weightHolds(f.weight, Number(use.weight)),
+    );
+    const claimed = mine.flatMap((f) => rangesOf(f.unicodeRange));
+    const uncovered = [...use.chars].filter((ch) => {
+      const cp = ch.codePointAt(0);
+      return !claimed.some(([lo, hi]) => cp >= lo && cp <= hi);
+    });
+    // THE MEASUREMENT NO WAY OF LYING ABOUT A FONT SURVIVES: the same string in the element's own
+    // stack and in that stack with the intended family taken out.
+    const without = use.stack.split(",").slice(1).join(",").trim() || "serif";
+    const probe = chars.repeat(4).slice(0, 400) || "Hamburgefonstiv";
+    ctx.font = `${use.style} ${use.weight} 16px ${use.stack}`;
+    const widthWithFirst = ctx.measureText(probe).width;
+    ctx.font = `${use.style} ${use.weight} 16px ${without}`;
+    const widthWithoutFirst = ctx.measureText(probe).width;
+    out.push({
+      family: use.family,
+      stack: use.stack,
+      weight: use.weight,
+      style: use.style,
+      characters: use.chars.size,
+      from: [...use.from],
+      hasFace: mine.length > 0,
+      uncovered: uncovered.map(
+        (ch) => `U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")} ${JSON.stringify(ch)}`,
+      ),
+      widthWithFirst,
+      widthWithoutFirst,
+      fallbackStack: without,
+    });
+  }
+  return { uses: out, controls: controls.length, targets: targets.length, revealed, unshown };
 }
