@@ -37,7 +37,13 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
@@ -77,17 +83,10 @@ export function DirectedDivergingBar({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -151,17 +150,17 @@ export function DirectedDivergingBar({
   // ── header, and the ladder that pays for the rows ─────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
-    eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
   const limitsTop =
-    titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const plotBottom = sourceTop - body.fontSize * 1.8;
+  const plotBottom = sourceTop - gapOf(body, 1.2414);
 
   const falls = rows.filter((r) => r.change < 0).length;
   const note = `Moyenne des ${falls} baisses : ${signed(averageOfFalls)}`;
@@ -241,9 +240,7 @@ export function DirectedDivergingBar({
     const top =
       limitsTop +
       lines.length * bodyLead +
-      (spent.has("R2") || spent.has("R3")
-        ? annot.fontSize * 1.2
-        : annot.fontSize * 2.6);
+      gapOf(annot, spent.has("R2") || spent.has("R3") ? 0.8571 : 1.8571);
     return {
       lines,
       top,
@@ -465,12 +462,12 @@ export function DirectedDivergingBar({
         dropped.map((d) => `${d.id} [${d.why.slice(0, 40)}]`).join(", "),
     );
   const byId = new Map(placed.map((p) => [p.id, p]));
-  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string, fill?: string, weight?: number) => {
     const p = byId.get(id);
     if (!p) return null;
-    const r = registerOf.get(id)!;
+    const r = registerById.get(id)!;
     return (
       <text
         key={id}

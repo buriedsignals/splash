@@ -6,6 +6,7 @@
 - groundSource: measured
 - accent: #4FE0C0
 - accentSource: chosen
+- leadingSource: chosen
 - pad: 56
 - header: centre
 - headRule: false
@@ -28,14 +29,21 @@
 
 ## Registers
 
-| register | family | size | weight | italic | tracking | case | ink |
-| --- | --- | ---: | ---: | --- | ---: | --- | --- |
-| display | geometric sans | 32 | 400 | no | 3.4 | **uppercase** | ink |
-| eyebrow | geometric sans | 9.5 | 500 | no | 2.6 | uppercase | accent |
-| body | sans | 12.5 | 400 | no | 0 | none | muted |
-| axis | geometric sans | 10 | 400 | no | 1.2 | none | muted |
-| annot | geometric sans | 10 | 500 | no | 1.8 | uppercase | ink |
-| value | geometric sans | 14 | 600 | no | 0 | none | accent |
+| register | family | size | weight | italic | tracking | case | ink | leading |
+| --- | --- | ---: | ---: | --- | ---: | --- | --- | ---: |
+| display | geometric sans | 32 | 400 | no | 3.4 | **uppercase** | ink | 1.0008 |
+| eyebrow | geometric sans | 9.5 | 500 | no | 2.6 | uppercase | accent | 0.9844 |
+| body | sans | 12.5 | 400 | no | 0 | none | muted | 1.0648 |
+| axis | geometric sans | 10 | 400 | no | 1.2 | none | muted | 0.9844 |
+| annot | geometric sans | 10 | 500 | no | 1.8 | uppercase | ink | 1.1485 |
+| value | geometric sans | 14 | 600 | no | 0 | none | accent | 0.9844 |
+
+**The leading is CHOSEN, and calibrated rather than measured.** Nothing harvests a reference's line
+height yet — it would also need the reference's own face metrics. Each value is the multiplier every
+directed component used to type (`display 1.22`, `body 1.45`, `annot 1.4`, and `1.2` for the
+single-line registers) divided by the natural line height of the head of the register's role
+ladder, read out of its file. On the head face the page does not move; on any other face the line
+follows the face. See `docs/splash/2026-09-13-adaptive-leading-spec.md` §4.
 
 Style route on the reference: two families (National 2 Web, Poppins), **weights 300 / 500 / 700**,
 eleven case-transformed runs, display set light, uppercase and widely tracked. The light display

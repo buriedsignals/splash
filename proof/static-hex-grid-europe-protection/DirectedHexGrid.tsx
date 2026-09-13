@@ -38,7 +38,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -92,14 +98,10 @@ export function DirectedHexGrid({
 }) {
   const { width, height } = FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -169,9 +171,9 @@ export function DirectedHexGrid({
 
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
 
   /** THE HEXAGON HAS TO HOLD ITS OWN CODE, and the floor is measured on the cell that is DRAWN
    *  rather than on the pitch it sits on — the cartogram's correction 50, inherited deliberately.
@@ -187,12 +189,12 @@ export function DirectedHexGrid({
     const sourceLines = wrap(set(source, body), column, body);
     const originLines = wrap(set(originNote, axis), column, axis);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-    const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
+    const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
     const originLead = axisBand.ascent + axisBand.descent + 2;
-    const originTop = readingTop - annotBand.ascent - annot.fontSize * 0.7 - (originLines.length - 1) * originLead;
+    const originTop = readingTop - annotBand.ascent - gapOf(annot, 0.5) - (originLines.length - 1) * originLead;
     /** THE KEY IS TWO ROWS, NOT ONE: the swatches and, under them, the breaks. Budgeted as one, the
      *  breaks printed over the line that says what the pale cell is. */
     const keyTop = originTop - (axisBand.ascent + axisBand.descent) - axisBand.ascent - 14;

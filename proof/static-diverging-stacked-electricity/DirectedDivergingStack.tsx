@@ -27,7 +27,14 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix, contrast } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  READING_TO_SOURCE,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -125,14 +132,10 @@ export function DirectedDivergingStack({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -168,17 +171,20 @@ export function DirectedDivergingStack({
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
   const readingLines = wrap(set(reading, annot), column, annot);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+  const titleTop =
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+  const limitsTop =
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop = sourceTop - readingLines.length * bodyLead - annot.fontSize * 0.6;
+  const readingTop =
+    sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
 
   // ── the rows ──────────────────────────────────────────────────────────────
   const ramped = on("the-ramp-deepens-outward");
@@ -200,7 +206,8 @@ export function DirectedDivergingStack({
     ) + 12;
 
   const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 3.2;
-  const plotBottom = readingTop - annot.fontSize * 1.1 - axisBand.ascent - axisBand.descent - 8;
+  const plotBottom =
+    readingTop - gapOf(annot, 0.7857) - axisBand.ascent - axisBand.descent - 8;
   const plotLeft = PAD + nameRoom + totalRoom;
   const plotRight = width - PAD - totalRoom;
 
