@@ -22,4 +22,27 @@ describe("the geometry delta between two renders", () => {
     const after = `<svg><text y="20">A</text><text y="40">B</text></svg>`;
     expect(geometryDelta(before, after).structure).toBe(true);
   });
+
+  /** A base64 image in an SVG carries digit runs that are not numbers anyone drew: a 400-digit run
+   *  parses to Infinity, Infinity − Infinity is NaN, and a NaN maximum is never over the tolerance —
+   *  so a render that moved after that token used to read as `same`. */
+  const HUGE = "7".repeat(400);
+
+  it("should still see a move that follows a token too long to be a finite number", () => {
+    const before = `<svg><image href="data:image/png;base64,A${HUGE}B"/><text y="20">A</text></svg>`;
+    const after = `<svg><image href="data:image/png;base64,A${HUGE}B"/><text y="21">A</text></svg>`;
+    const { max } = geometryDelta(before, after);
+    expect([Number.isNaN(max), max > 0.25]).toEqual([false, true]);
+  });
+
+  it("should report no movement when that token and everything else are identical", () => {
+    const svg = `<svg><image href="data:image/png;base64,A${HUGE}B"/><text y="20">A</text></svg>`;
+    expect(geometryDelta(svg, svg)).toEqual({ structure: false, max: 0 });
+  });
+
+  it("should count a token that differs but is not a finite number as moved", () => {
+    const before = `<svg><image href="data:A${HUGE}B"/></svg>`;
+    const after = `<svg><image href="data:A${"8".repeat(400)}B"/></svg>`;
+    expect(geometryDelta(before, after).max).toBe(Infinity);
+  });
 });

@@ -22,7 +22,14 @@ export function geometryDelta(before, after) {
   const a = before.match(NUMBER) ?? [];
   const b = after.match(NUMBER) ?? [];
   let max = 0;
-  for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(Number(a[i]) - Number(b[i])));
+  for (let i = 0; i < a.length; i++) {
+    // A digit run inside a base64 image can overflow to Infinity; equal text is no move, and a
+    // difference that is not a finite number is counted as moved rather than poisoning `max` as NaN.
+    if (a[i] === b[i]) continue;
+    const delta = Math.abs(Number(a[i]) - Number(b[i]));
+    if (!Number.isFinite(delta)) return { structure: false, max: Infinity };
+    max = Math.max(max, delta);
+  }
   return { structure: false, max };
 }
 
