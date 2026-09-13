@@ -15,7 +15,8 @@
 
 import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
@@ -27,22 +28,28 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 import { readPalette, mix, contrast } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { resolveRegister } from "#shared/chart-beat/registers.mjs";
 import { makePlan, validatePlan } from "#shared/map-beat/plan.mjs";
 import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.mjs";
 import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { plateIsCurrent } from "./plate-cache.mjs";
+import { BEAT } from "./bake.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { matchConvention } from "../../skills/palette/scripts/palette.mjs";
-import { DirectedChoroplethMap, mapGeometryFor } from "./DirectedChoroplethMap.tsx";
+import { DirectedChoroplethMap, mapGeometryFor, placementsFor } from "./DirectedChoroplethMap.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+/** THE PLANS GO TO A TEMP DIRECTORY, not beside the beat. A plan is ~2 MB of study geometry per
+ *  direction — it is a bake INPUT, derived in full from the frozen data and shapes on every run, and
+ *  committing three copies of the same rings would be committing a build artifact. What is committed
+ *  is the plate the bake made from it, and the digest inside that plate's `geometry.json` is what
+ *  ties the two together. */
+const PLANS_DIR = await mkdtemp(join(tmpdir(), "choropleth-plans-"));
 const YEAR = 2024;
 const EYEBROW = "Énergie · Europe";
 const refused = [];
@@ -185,95 +192,55 @@ const span = Math.max(spanX, spanY);
  *  cartogram beat's area weighting does NOT, and it keeps measuring on the equal-area camera above
  *  while drawing on the plate. Where the two disagree, the number is the equal-area one and the
  *  picture is the plate's. */
-/** ONE PLATE PER FILED DIRECTION, baked in that direction's own tints — see `bake.mjs`'s own note.
- *  The three share a camera by construction (same bounds, same frame), and that is asserted below
- *  rather than assumed: three plates that disagreed about where 10°E is would put the same country
- *  in three different places and nothing would go red. */
-const PLATE_SIZE = "1000x760";
-const plateDir = (id) => join(HERE, "plate", id);
-/** THE CACHE IS KEYED ON WHAT THE PLATE IS, NOT ON WHETHER A FILE IS THERE. It used to be existence
- *  alone, and that is a cache that cannot be invalidated: re-tinting the basemap, or baking at
- *  another size, left the old plate in place and the whole change appeared to work while nothing
- *  moved. Every input the bake takes — the drawn size, the tints, the bounds and style `bake.mjs`
- *  itself defaults to, and the frozen shapes file — is compared against what the plate's own
- *  `geometry.json` recorded, in `plate-cache.mjs` beside this file. */
-const SHAPES_PATH = join(HERE, "shapes.geojson");
-async function ensurePlate(id, water, land) {
-  const dir = plateDir(id);
-  const [width, height] = PLATE_SIZE.split("x").map(Number);
-  if (await plateIsCurrent(dir, { width, height, water, land, countriesPath: SHAPES_PATH })) return;
-  console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
-  const result = spawnSync(
-    "bun",
-    [join(HERE, "bake.mjs"), "--size", PLATE_SIZE, "--countries", SHAPES_PATH,
-     "--water", water, "--land", land, "--out", dir],
-    { cwd: HERE, stdio: "inherit" },
+/** THE CAMERA IS PREDICTED, NOT READ BACK — and that is what breaks the circle this task walked
+ *  into. The plan the bake mounts carries the beat's own words in DEGREES, and where a word goes is
+ *  a SEARCH that reasons in pixels; so the search needs the camera BEFORE the plate exists, while
+ *  the plate used to be the only place the camera was ever recorded.
+ *
+ *  `cameraFor` is the fit `fitBounds` performs, in ten lines: Mercator-project the bounds, take the
+ *  scale that binds, centre the frame on the bounds' own centre. It is a SECOND implementation of
+ *  MapLibre's arithmetic, and the only thing that makes a second implementation safe is that the
+ *  first one checks it every run — `assertPlateShowsTheCamera` compares what the real camera
+ *  reported after the bake against what this predicted. Measured against the three plates already
+ *  committed at 1000x760: every corner agrees to 1e-12°.
+ *
+ *  ONE CAMERA, THREE PIXEL SCALES. The corners depend on the frame's ASPECT and not on its size,
+ *  and the layout keeps `mapW / mapH` at `CAMERA_ASPECT` by construction — but `drawnSizeOf` rounds
+ *  to whole pixels, so each plate's real aspect is a ten-thousandth off the nominal one and shows a
+ *  sliver more ground than the marks were measured in. `assertRoundingIsSubPixel` measures that
+ *  sliver in the plate's own pixels and refuses it if it ever reaches half of one. */
+const CAMERA_ASPECT = 1000 / 760;
+const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * RAD) / 2));
+const worldX = (lon) => (lon + 180) / 360;
+const worldY = (lat) => (1 - mercY(lat) / Math.PI) / 2;
+const lonOf = (x) => x * 360 - 180;
+const latOf = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) - Math.PI / 2) / RAD;
+function cameraFor({ width, height }) {
+  const [[west, south], [east, north]] = BEAT.bounds;
+  const worldPx = Math.min(
+    width / (worldX(east) - worldX(west)),
+    height / (worldY(south) - worldY(north)),
   );
-  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
+  const cx = (worldX(west) + worldX(east)) / 2;
+  const cy = (worldY(north) + worldY(south)) / 2;
+  const halfX = width / worldPx / 2;
+  const halfY = height / worldPx / 2;
+  return {
+    frame: { width, height },
+    corners: {
+      west: lonOf(cx - halfX),
+      east: lonOf(cx + halfX),
+      north: latOf(cy - halfY),
+      south: latOf(cy + halfY),
+    },
+  };
 }
 
-/** THE TWO TINTS A BASEMAP IS ALLOWED, AND THEY ARE THE TRUNK'S — `#shared/map-beat/tints.mjs`,
- *  the one definition, called by the bake and by the drawing alike.
- *
- *  The beat used to answer the question itself: the sea took a sixteenth of the ACCENT and the land
- *  a fourteenth of the ink, both fixed doses. Measured, that put sea against land at 1.089:1 on
- *  creme, 1.158 on nocturne and 1.092 on rapport — every one of them under the 1.22:1 the trunk
- *  measured as the contrast at which a coastline stops reading as a coastline, and a reader looking
- *  at the nocturne plate said exactly that: the sea and the countries cannot be told apart. The
- *  trunk takes the filed WATER hue instead of the accent, and hunts the smallest dose that reaches
- *  the floor while staying under `BASEMAP_MAX` against the page. */
-const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
-for (const file of DIRECTION_FILES) {
-  const id = file.replace(/\.md$/, "");
-  const direction = readDirection(join(DIRECTIONS, file));
-  const t = plateTints(direction);
-  console.log(
-    `${id}: sea ${t.water} on land ${t.land} — ${t.seaLandContrast.toFixed(3)}:1, ` +
-      `${contrast(t.water, direction.ground).toFixed(3)}:1 against the page`,
-  );
-  await ensurePlate(id, t.water, t.land);
-}
-const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
-const plateFacts = await factsOf(DIRECTION_FILES[0].replace(/\.md$/, ""));
-/** THE THREE PLATES MUST SHOW THE SAME GROUND — and that is a claim about DEGREES, not about
- *  pixels. It used to be both: the frame sizes had to match as well, which was true only while every
- *  plate was baked at one hard-coded size. The drawn size is a layout output now, so a direction
- *  whose panel is wider gets a smaller plate of the SAME camera, and demanding equal frames would
- *  refuse a correct bake. What may never differ is where a degree lands: `fitBounds` on the same
- *  bounds at the same aspect returns the same corners at any pixel scale, so the corners are
- *  compared and the sizes are not. */
-const CORNER_TOLERANCE = 1e-9;
-for (const file of DIRECTION_FILES.slice(1)) {
-  const id = file.replace(/\.md$/, "");
-  const other = await factsOf(id);
-  const apart = ["west", "east", "south", "north"].filter(
-    (edge) => Math.abs(other.frameCorners[edge] - plateFacts.frameCorners[edge]) > CORNER_TOLERANCE,
-  );
-  if (apart.length)
-    throw new Error(
-      `the ${id} plate was baked on a different camera than ${DIRECTION_FILES[0]} — its ` +
-        `${apart.join(", ")} edge${apart.length > 1 ? "s disagree" : " disagrees"} by more than ` +
-        `${CORNER_TOLERANCE}°: three plates that disagree about where a degree is would put the same ` +
-        `country in three places, and nothing else here would notice. Their pixel SIZES are allowed ` +
-        `to differ — the drawn size is the layout's output, one per direction.`,
-    );
-}
-const FRAME = plateFacts.frame;
-const CORNERS = plateFacts.frameCorners;
-if (!CORNERS || !(FRAME?.width > 0))
-  throw new Error("this plate predates the camera facts: re-bake it with bake.mjs");
-/** THE CAMERA'S ASPECT IS DECLARED, NOT DISCOVERED. It used to be read back from a plate already
- *  baked, which made the drawn size depend on the plate and the plate depend on the drawn size. The
- *  layout arithmetic makes `mapW / mapH` equal this aspect by construction, so a plate baked at the
- *  drawn size is the same camera at a different pixel scale — `fitBounds` on the same bounds at the
- *  same aspect returns the same corners.
- *
- *  IT IS READ OFF `PLATE_SIZE`, not typed again beside it. Two bare literals for one measurement is
- *  how the drawn size and the plate drifted apart in the first place; a re-bake at another size now
- *  moves the aspect with it instead of leaving the two silently disagreeing. */
-const [PLATE_W, PLATE_H] = PLATE_SIZE.split("x").map(Number);
-export const CAMERA_ASPECT = PLATE_W / PLATE_H;
-const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+/** THE CAMERA EVERY MARK IS MEASURED IN: the nominal aspect at a nominal size, because only the
+ *  aspect moves the corners. The window it shows is what `project` and `unproject` below speak. */
+const CAMERA = cameraFor({ width: 1000, height: 1000 / CAMERA_ASPECT });
+const FRAME = CAMERA.frame;
+const CORNERS = CAMERA.corners;
 const Y_NORTH = mercY(CORNERS.north);
 const Y_SOUTH = mercY(CORNERS.south);
 const project = ([lon, lat]) => {
@@ -282,20 +249,80 @@ const project = ([lon, lat]) => {
   return [px / FRAME.width, py / FRAME.width];
 };
 /** …AND BACK, exactly. The PLAN speaks degrees — a layer's data is geography, not a unit box — while
- *  everything this file measures (an anchor, a sea's placed name) is already in the camera's unit
- *  box. The two are the same camera, so the way back is the algebra above read in reverse rather
- *  than a second, approximate answer to the same question. */
+ *  everything this file measures (an anchor, a placed name) is already in the camera's unit box. The
+ *  two are the same camera, so the way back is the algebra above read in reverse rather than a
+ *  second, approximate answer to the same question. */
 const unproject = ([x, y]) => [
   CORNERS.west + x * (CORNERS.east - CORNERS.west),
   (Math.atan(Math.exp(Y_NORTH + ((y * FRAME.width) / FRAME.height) * (Y_SOUTH - Y_NORTH))) -
     Math.PI / 4) *
     (360 / Math.PI),
 ];
+
+/** THE PLATE MUST SHOW THE CAMERA IT WAS PREDICTED TO SHOW. This replaces the cross-plate identity
+ *  assertion, and it is strictly stronger: that one held three plates to each other, so three
+ *  plates baked wrong the same way passed. This holds each plate to the arithmetic the marks were
+ *  placed by. */
+const CORNER_TOLERANCE = 1e-6;
+function assertPlateShowsTheCamera(id, recorded, drawn) {
+  const predicted = cameraFor(drawn).corners;
+  const apart = ["west", "east", "south", "north"].filter(
+    (edge) => Math.abs(recorded[edge] - predicted[edge]) > CORNER_TOLERANCE,
+  );
+  if (apart.length)
+    throw new Error(
+      `the ${id} plate did not settle on the camera its marks were placed in — its ` +
+        `${apart.join(", ")} edge${apart.length > 1 ? "s disagree" : " disagrees"} with the ` +
+        `prediction by more than ${CORNER_TOLERANCE}° (${apart
+          .map((e) => `${e} ${recorded[e].toFixed(9)} vs ${predicted[e].toFixed(9)}`)
+          .join("; ")}). Every word in the plan is a coordinate: if the camera is not the one they ` +
+        `were searched in, each one lands somewhere the geography under it does not.`,
+    );
+}
+/** …AND THE COST OF ROUNDING THE DRAWN SIZE TO WHOLE PIXELS MUST STAY UNDER ONE. A 573.68px map is
+ *  baked in a 574px frame, whose aspect is not quite the camera's, so the plate shows a sliver more
+ *  ground on the bound axis. Stated in the plate's own pixels rather than in degrees, because
+ *  degrees are not the unit anybody can judge this in. */
+function assertRoundingIsSubPixel(id, drawn) {
+  const predicted = cameraFor(drawn).corners;
+  const span = CORNERS.east - CORNERS.west;
+  const off = Math.max(
+    ...["west", "east"].map((e) => (Math.abs(predicted[e] - CORNERS[e]) / span) * drawn.width),
+  );
+  if (off >= 0.5)
+    throw new Error(
+      `rounding ${id}'s drawn size to ${drawn.width}x${drawn.height} moves the frame's edge ` +
+        `${off.toFixed(2)}px away from the camera the marks were measured in. Under half a pixel is ` +
+        `a rounding cost; this is a different camera.`,
+    );
+  return off;
+}
+
+const plateDir = (id) => join(HERE, "plate", id);
+/** THE CACHE IS KEYED ON WHAT THE PLATE IS, NOT ON WHETHER A FILE IS THERE. It used to be existence
+ *  alone, and that is a cache that cannot be invalidated: re-tinting the basemap, or baking at
+ *  another size, left the old plate in place and the whole change appeared to work while nothing
+ *  moved. Every input the bake takes — the drawn size, the tints, the bounds and style `bake.mjs`
+ *  itself defaults to, and the PLAN it mounts — is compared against what the plate's own
+ *  `geometry.json` recorded, in `plate-cache.mjs` beside this file. */
+async function ensurePlate(id, { planPath, drawn, water, land }) {
+  const dir = plateDir(id);
+  if (await plateIsCurrent(dir, { ...drawn, water, land, planPath })) return;
+  console.log(`  baking the ${id} plate (MapTiler, ${drawn.width}x${drawn.height}, water ${water}, land ${land})…`);
+  const result = spawnSync(
+    "bun",
+    [join(HERE, "bake.mjs"), "--size", `${drawn.width}x${drawn.height}`, "--plan", planPath,
+     "--water", water, "--land", land, "--out", dir],
+    { cwd: HERE, stdio: "inherit" },
+  );
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
+}
+const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
+
 console.log(
-  `camera: MapTiler plate, ${FRAME.width}x${FRAME.height}, ` +
+  `camera: MapTiler ${BEAT.style}, ` +
     `${CORNERS.west.toFixed(2)}..${CORNERS.east.toFixed(2)}E ` +
-    `${CORNERS.south.toFixed(2)}..${CORNERS.north.toFixed(2)}N · aspect ${(FRAME.width / FRAME.height).toFixed(2)}:1 · ` +
-    `zoom ${plateFacts.zoom}\n`,
+    `${CORNERS.south.toFixed(2)}..${CORNERS.north.toFixed(2)}N · aspect ${CAMERA_ASPECT.toFixed(2)}:1\n`,
 );
 console.log(
   `measurement camera (unchanged): LAEA 52N 10E, window ${WINDOW.west}..${WINDOW.east}E ` +
@@ -515,14 +542,14 @@ const WATERS = [
 });
 
 const oddValue = value.get(ODD_ONE);
+/** The sentence in the panel. The RING that marks its subject on the map is a layer now, placed
+ *  from the shape's own seat, so the callout carries no position of its own any more. */
 const CALLOUT = {
   iso: ODD_ONE,
   lines: [
     `${french(ODD_ONE)}, ${one(oddValue.lowCarbon)} %, est le seul du groupe hors du nord-ouest. ` +
       `Ses ${neighbours.length} voisins sont tous sous ${NEIGHBOUR_CEILING} %.`,
   ],
-  toX: oddAnchor.x,
-  toY: oddAnchor.y,
 };
 
 const title = [
@@ -582,13 +609,15 @@ console.log("");
 // against the picture the beat already draws, so a plan that could not be rendered is caught before
 // anything depends on it.
 
-/** The bounds are the plate's own, read back from the bake rather than retyped — a plan that named
- *  a different window than the plate beside it would be a plan for a different map. */
-const BOUNDS = plateFacts.bounds;
-/** THE STYLE IS NAMED, NOT FETCHED. Fetching MapTiler's style document costs the key and a round
- *  trip, and nothing in 8a mounts the plan. What the plan carries is the style this beat's plates
- *  were ACTUALLY baked in, taken off the plate's own record. */
-const STYLE = { name: plateFacts.style };
+/** The bounds and the style are `bake.mjs`'s own `BEAT` — the bake's current defaults, not a second
+ *  copy typed here and not a value read back off a plate that does not exist yet. The plan is built
+ *  BEFORE the bake now, because the bake mounts it.
+ *
+ *  THE STYLE IS NAMED, NOT FETCHED. A style document is 42 layers and a URL carrying the key; the
+ *  plan has to be serialisable, committable and key-free. `bake.mjs` fetches the document from this
+ *  name, in the one place that already reads the key, and `transformStyle` rewrites it there. */
+const BOUNDS = BEAT.bounds;
+const STYLE = { name: BEAT.style };
 
 /** The study set as geography, in degrees — the same frozen rings the plate is drawn from, carrying
  *  the value each area is classed on and whether the source was supposed to report it at all. */
@@ -605,18 +634,12 @@ const studyAreas = {
     geometry: f.geometry,
   })),
 };
-/** THESE ARE THE DECLARED ANCHORS — THE SEAT OF EACH COUNTRY'S OWN LARGEST RING — AND THEY ARE NOT
- *  WHERE THE PICTURE PUTS THE WORDS. The plate places a country's name by SEARCH: inside the shape
+/** THE SEAT OF A COUNTRY'S OWN LARGEST RING — where the SEARCH starts, and where the subject's ring
+ *  is drawn. It is NOT where the words go: the picture places a country's name inside its shape only
  *  when the whole word fits inside it, and otherwise in the nearest open water on a leader, which is
- *  how six of the seven names are drawn today. The anchor is where the search STARTS.
- *
- *  8a carries the anchor because 8a lifts no placement — spec §5 keeps placement with the beat, and
- *  the search needs the drawn camera, the land grid and the labels already taken. 8B MUST CARRY THE
- *  SEARCHED POSITIONS INTO THE PLAN, not these. A plan that is baked from the declared anchors would
- *  put every country name somewhere the picture never put it — inside Norway rather than out in the
- *  Norwegian Sea — and nothing in the plan would notice, because an anchor is a perfectly valid
- *  coordinate. The sea layer below carries the same caveat about its forms. */
-const anchorPointOf = (iso) => {
+ *  how six of the seven names are drawn. `placementsFor` is what answers that, per direction, and
+ *  the plan carries ITS answer. */
+const seatOf = (iso) => {
   const shape = shapes.find((s) => s.iso === iso);
   if (!shape) throw new Error(`${FRENCH[iso] ?? iso} is named on the map but has no frozen shape`);
   /** An anchor is `null` when a shape has no ring big enough to seat one. The first version read
@@ -627,61 +650,78 @@ const anchorPointOf = (iso) => {
       `${shape.name} is named on the map but its frozen shape carries no anchor, so the beat has ` +
         `nowhere to put the word. Drop it from the named set or give the shape a ring to seat it in.`,
     );
-  return {
-    type: "Feature",
-    properties: {
-      iso,
-      name: shape.name.toUpperCase(),
-      // The cell the word sits on is what its ink and its halo are measured against, so the value
-      // that chooses that cell travels with the point.
-      value: shape.value,
-    },
-    geometry: { type: "Point", coordinates: unproject([shape.anchor.x, shape.anchor.y]) },
-  };
+  return shape.anchor;
 };
-const pointsFor = (isos) => ({
-  type: "FeatureCollection",
-  features: isos.filter((iso) => shapes.some((s) => s.iso === iso)).map(anchorPointOf),
-});
-const namedAreas = pointsFor(above.map((r) => r.iso));
-const contextAreas = pointsFor(ranked.slice(-3).map((r) => r.iso));
-const subjectArea = { type: "FeatureCollection", features: [anchorPointOf(ODD_ONE)] };
-const seaNames = {
-  type: "FeatureCollection",
-  features: WATERS.map((w) => ({
-    type: "Feature",
-    // The longest form is what the beat ASKS for; which form survives the camera is the drawing's
-    // measurement, and 8b is where the plan learns the answer.
-    properties: { name: w.forms[0], forms: w.forms },
-    geometry: { type: "Point", coordinates: [w.lon, w.lat] },
-  })),
+
+/** THE RAMP, AND THE COLOUR UNDER ANY POINT OF THE MAP — one construction, because the layer that
+ *  paints a class and the search that decides what ink a word over that class needs are asking the
+ *  same question. The component spends the same two poles for the KEY it still draws. */
+function rampFor(direction) {
+  const { ink } = deriveFurniture(direction.ground);
+  const low = mix(direction.accent, direction.ground, 0.88);
+  const high = mix(direction.accent, ink, 0.3);
+  const classCount = BREAKS.length + 1;
+  const classFill = (i) => mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
+  const classOf = (v) => BREAKS.filter((b) => v >= b).length;
+  const missingFill = mix(direction.ground, ink, 0.13);
+  return {
+    classFill,
+    classOf,
+    missingFill,
+    landNoValue: mix(direction.ground, ink, 0.05),
+    coast: mix(direction.ground, ink, 0.22),
+    cellUnder: (v) => (v === null ? missingFill : classFill(classOf(v))),
+  };
+}
+
+/** MAPTILER SERVES FACES, NOT FAMILIES — and a name it does not have comes back 200, as Noto Sans.
+ *
+ *  Measured on 2026-09-13 against the live endpoint: `Open Sans` — the bare family name, which is
+ *  what a register's `fontFamily` is and what the plan used to declare — is byte-identical to the
+ *  fallback, so the whole map would have been set in a typeface nobody chose with nothing to say so.
+ *  `Open Sans Regular`, `Open Sans Medium`, `Open Sans Bold`, `Open Sans Italic` and
+ *  `Open Sans Medium Italic` are real; `Open Sans SemiBold` is not. The naming is Google's own, which
+ *  MapTiler follows: the weight word, and "Regular" dropped when the face is italic.
+ *
+ *  `bake.mjs` proves each of these is really served before it takes the picture — this only decides
+ *  what to ask for. A weight with no face name is a refusal here rather than a silent substitution
+ *  there. */
+const FACE_WEIGHTS = { 400: "Regular", 500: "Medium", 700: "Bold" };
+const maptilerFace = (r) => {
+  const weight = FACE_WEIGHTS[Number(r.fontWeight)];
+  if (!weight)
+    throw new Error(
+      `no MapTiler face name for ${r.fontFamily} at weight ${r.fontWeight}: the served faces are ` +
+        `${Object.values(FACE_WEIGHTS).join(", ")} and their italics. Asking for a face MapTiler does ` +
+        `not have returns Noto Sans with a 200, so this refuses rather than letting the map say it.`,
+    );
+  const italic = r.fontStyle === "italic";
+  const parts = [r.fontFamily];
+  if (!(italic && weight === "Regular")) parts.push(weight);
+  if (italic) parts.push("Italic");
+  return parts.join(" ");
 };
 
 /** EVERY VALUE BELOW IS THE COMPONENT'S OWN, TRANSPORTED. Not one of them was chosen here: the ramp
  *  is the heatmap's construction between the direction's poles, the border is `deriveFurniture`'s
  *  `grid` step, the ring is the accent walked to the text floor, the labels are the axis register
- *  with the same tracking the plate sets them in. A number invented for the plan would be a second
- *  answer to a question the drawing has already measured. */
-function layersFor(direction, g) {
-  const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const low = mix(direction.accent, direction.ground, 0.88);
-  const high = mix(direction.accent, ink, 0.3);
-  const classCount = BREAKS.length + 1;
-  const classFill = (i) => mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
-  const landNoValue = mix(direction.ground, ink, 0.05);
-  const coast = mix(direction.ground, ink, 0.22);
-  const missingFill = mix(direction.ground, ink, 0.13);
+ *  with the same tracking the plate sets them in, and every POSITION is the one `placementsFor`
+ *  searched. A number invented for the plan would be a second answer to a question the drawing has
+ *  already measured. */
+function layersFor(direction, g, placement) {
+  const { muted, grid } = deriveFurniture(direction.ground);
+  const { classFill, missingFill, landNoValue, coast } = rampFor(direction);
   const waterHue = matchConvention("water").accent;
   /** The sea the plate is actually baked in — `plateTints`, the same call the bake makes — so the
    *  halo behind a sea's name is struck in the water the name sits in. */
   const seaTint = plateTints(direction).water;
   const waterInk = adjustToContrast(waterHue, seaTint, TEXT_CONTRAST_MIN);
   const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
+  const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
 
-  const axis = resolveRegister(direction, "axis");
-  const area = { ...axis, letterSpacing: Math.max(Number(axis.letterSpacing ?? 0), 0.8) };
-  const feature = { ...area, fontWeight: 700 };
-  const waterReg = { ...axis, fontStyle: "italic", letterSpacing: 0 };
+  /** The three registers the words are SET in are the three the search MEASURED them in —
+   *  `mapRegistersFor`, one definition, returned by the placement rather than rebuilt here. */
+  const { area, feature, water: waterReg } = placement.registers;
   /** A register's tracking is measured in PIXELS on the plate and declared in EMS on a map. Same
    *  measurement, the unit the reader of it expects. */
   const tracking = (r) => Number(r.letterSpacing ?? 0) / r.fontSize;
@@ -696,16 +736,38 @@ function layersFor(direction, g) {
    *  `max(2, ascent * 0.3)` where an area name takes `max(2.5, ascent * 0.34)`. Spending one value
    *  on both is how two measurements become one guess. */
   const WATER_HALO = haloOf(Math.max(2, g.axisBand.ascent * 0.3));
-  const words = (id, data, register, colour, haloColour, haloWidth) => ({
+
+  /** A SEARCHED POSITION IS A UNIT-BOX POINT; A LAYER IS GEOGRAPHY. The two are the same camera. */
+  const at = ([x, y]) => unproject([x, y]);
+  /** MAPLIBRE CENTRES A LABEL VERTICALLY ON ITS ANCHOR; SVG SETS IT ON A BASELINE. A country name is
+   *  drawn at `y·mapW + (ascent−descent)/2`, so its visual centre is exactly `y·mapW` and no offset
+   *  is needed. A sea name is drawn with its BASELINE at `y·mapW`, so its centre is
+   *  `(ascent−descent)/2` above that, and the layer has to say so — in ems, and as a literal pair of
+   *  numbers, because `text-offset` built out of two expressions draws nothing at all and reports
+   *  nothing (`validateExpressions` is what refuses it). */
+  const WATER_OFFSET_EM =
+    (g.axisBand.descent - g.axisBand.ascent) / (2 * waterReg.fontSize);
+
+  const words = (id, data, register, colour, haloColour, haloWidth, offset) => ({
     id,
     role: "place",
     type: "symbol",
     data,
     layout: {
       "text-field": ["get", "name"],
-      "text-font": [register.fontFamily],
+      "text-font": [maptilerFace(register)],
       "text-size": register.fontSize,
       "text-letter-spacing": tracking(register),
+      ...(offset ? { "text-offset": offset } : {}),
+      /** THE POSITIONS ARE ALREADY COLLISION-FREE BY CONSTRUCTION — the search kept a real gap
+       *  between every pair of boxes it placed. MapLibre's own collision pass does not know that and
+       *  would silently drop the loser of any pair it disagreed about, which is the same class of
+       *  defect as the duplicate id: a word simply absent, with no error. */
+      "text-allow-overlap": true,
+      /** …AND NO WRAPPING. MapLibre's default `text-max-width` is 10 ems, so `Mer Méditerranée`
+       *  would break onto a second line where the SVG measured it as one. The search measured a
+       *  single line; the layer draws a single line. */
+      "text-max-width": 100,
     },
     paint: { "text-color": colour, "text-halo-color": haloColour, "text-halo-width": haloWidth },
   });
@@ -717,32 +779,67 @@ function layersFor(direction, g) {
    *  cell, so whatever is behind the word the letters sit on a known colour and the ink is right
    *  once. And a FEATURE is taken to 7:1 rather than the 4.5 floor: the seven countries the headline
    *  is about should be the first thing read on the plate, not the last thing that technically
-   *  passes. The cell varies per country, so the two inks travel per feature rather than per layer.
+   *  passes.
    *
-   *  The cell is the one under the DECLARED ANCHOR — the country's own class — which is what the
-   *  component uses for a name that sits inside its shape. A name the search pushes out to sea takes
-   *  the water instead, and that is 8b's to carry, with the searched position. */
-  const classOf = (v) => BREAKS.filter((b) => v >= b).length;
-  const cellUnder = (v) => (v === null ? missingFill : classFill(classOf(v)));
-  const inked = (points, register) => ({
+   *  WHICH CELL is the search's answer, not a guess: a name that fits inside its country lands on
+   *  that country's own class, and a name pushed out to sea lands on the water. `placementsFor`
+   *  carries the colour it decided in `onCell`, so the ink is derived from the same value the halo
+   *  is struck in. */
+  const wordsOf = (labels) => ({
     type: "FeatureCollection",
-    features: points.features.map((f) => {
-      const onCell = cellUnder(f.properties.value ?? null);
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          onCell,
-          ink:
-            register === feature
-              ? adjustToContrast(direction.accent, onCell, 7)
-              : adjustToContrast(muted, onCell, TEXT_CONTRAST_MIN),
-        },
-      };
-    }),
+    features: labels.map((l) => ({
+      type: "Feature",
+      properties: {
+        iso: l.iso,
+        name: l.text,
+        onCell: l.onCell,
+        ink:
+          l.klass === "feature"
+            ? adjustToContrast(direction.accent, l.onCell, 7)
+            : adjustToContrast(muted, l.onCell, TEXT_CONTRAST_MIN),
+      },
+      geometry: { type: "Point", coordinates: at([l.x, l.y]) },
+    })),
   });
-  const areaWords = (id, points, register) =>
-    words(id, inked(points, register), register, ["get", "ink"], ["get", "onCell"], AREA_HALO);
+  const areaWords = (id, labels, register) =>
+    words(id, wordsOf(labels), register, ["get", "ink"], ["get", "onCell"], AREA_HALO);
+
+  /** A LEADER IS A LINE AND A DOT, drawn BEFORE the word it belongs to. A name in the sea beside its
+   *  country is how an atlas has always handled a country too small to hold one, and the leader is
+   *  what says which country it is. Its far end stops just under the word's descender, exactly where
+   *  the SVG stopped it. */
+  const led = placement.labels.filter((l) => l.from);
+  const leaderLines = {
+    type: "FeatureCollection",
+    features: led.map((l) => ({
+      type: "Feature",
+      properties: { iso: l.iso },
+      geometry: {
+        type: "LineString",
+        coordinates: [at([l.from.x, l.from.y]), at([l.x, l.y + (g.axisBand.descent + 1) / g.mapW])],
+      },
+    })),
+  };
+  const leaderDots = {
+    type: "FeatureCollection",
+    features: led.map((l) => ({
+      type: "Feature",
+      properties: { iso: l.iso },
+      geometry: { type: "Point", coordinates: at([l.from.x, l.from.y]) },
+    })),
+  };
+  /** THE FORM THE SEARCH COULD PLACE, not the longest one the beat asked for. The ladder is spent in
+   *  the search — `Mer Méditerranée`, `Méditerranée`, `Médit.` — and which rung survived this camera
+   *  is a measurement the plan now carries. */
+  const seaNames = {
+    type: "FeatureCollection",
+    features: placement.waters.map((w) => ({
+      type: "Feature",
+      properties: { name: w.text },
+      geometry: { type: "Point", coordinates: at([w.x, w.y]) },
+    })),
+  };
+  const seat = seatOf(ODD_ONE);
 
   const hasValue = ["!=", ["get", "value"], null];
   return [
@@ -775,33 +872,46 @@ function layersFor(direction, g) {
       },
     },
     {
+      id: "leaders",
+      role: "place",
+      type: "line",
+      data: leaderLines,
+      paint: { "line-color": coast, "line-width": direction.stroke.rule },
+    },
+    {
+      id: "leader-dots",
+      role: "place",
+      type: "circle",
+      data: leaderDots,
+      paint: { "circle-radius": 1.8, "circle-color": mutedInk },
+    },
+    areaWords("named-areas", placement.labels.filter((l) => l.klass === "feature"), feature),
+    areaWords("context-areas", placement.labels.filter((l) => l.klass === "area"), area),
+    {
+      ...words("sea-names", seaNames, waterReg, waterInk, seaTint, WATER_HALO, [0, WATER_OFFSET_EM]),
+      role: "water",
+    },
+    /** LAST, SO IT IS ON TOP — the SVG drew it outside the clipped group for the same reason. */
+    {
       id: "subject-ring",
       role: "subject",
       type: "circle",
-      data: subjectArea,
+      data: {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { iso: ODD_ONE },
+            geometry: { type: "Point", coordinates: at([seat.x, seat.y]) },
+          },
+        ],
+      },
       paint: {
-        "circle-radius": Math.max(
-          (Math.max(shapes.find((s) => s.iso === ODD_ONE).anchor.width,
-            shapes.find((s) => s.iso === ODD_ONE).anchor.height) * g.mapW) / 2 + 5,
-          7,
-        ),
+        "circle-radius": Math.max((Math.max(seat.width, seat.height) * g.mapW) / 2 + 5, 7),
         "circle-opacity": 0,
         "circle-stroke-color": accentInk,
         "circle-stroke-width": direction.stroke.rule * 1.6,
       },
-    },
-    areaWords("named-areas", namedAreas, feature),
-    areaWords("context-areas", contextAreas, area),
-    {
-      ...words(
-        "sea-names",
-        seaNames,
-        waterReg,
-        waterInk,
-        seaTint,
-        WATER_HALO,
-      ),
-      role: "water",
     },
   ];
 }
@@ -833,11 +943,45 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   });
   geometry[id] = { ...g, plate: { x: g.mapX, y: g.mapY, width: g.mapW, height: g.mapH } };
   assertPlateMatchesMarks(geometry[id]);
+  const drawn = drawnSizeOf(geometry[id]);
+  const off = assertRoundingIsSubPixel(id, drawn);
+
+  /** THE TWO TINTS A BASEMAP IS ALLOWED, AND THEY ARE THE TRUNK'S — `#shared/map-beat/tints.mjs`,
+   *  the one definition, called by the bake and by the words that sit in the sea alike. The beat
+   *  used to answer the question itself, at a fixed dose of the ACCENT, which put sea against land
+   *  at 1.089:1 on creme and 1.158 on nocturne — under the 1.22:1 the trunk measured as the contrast
+   *  at which a coastline stops reading as a coastline. */
+  const tints = plateTints(direction);
+  console.log(
+    `  basemap: sea ${tints.water} on land ${tints.land} — ${tints.seaLandContrast.toFixed(3)}:1, ` +
+      `${contrast(tints.water, direction.ground).toFixed(3)}:1 against the page`,
+  );
+
+  /** WHERE EVERY WORD ACTUALLY GOES — the search, run ONCE, here, and carried into the plan. The
+   *  layer used to declare each country's DECLARED ANCHOR while the picture placed six of the seven
+   *  names somewhere else entirely, out in open water on a leader. Nothing would have noticed: an
+   *  anchor is a perfectly valid coordinate. */
+  const placement = placementsFor({
+    shapes,
+    geometry: g,
+    aspect: CAMERA_ASPECT,
+    direction,
+    named: above.map((r) => r.iso),
+    // The other end of the ramp, named in the quiet administrative treatment: a reader gets both
+    // ends of the scale by name, and the plate actually draws the three classes of place the
+    // treatment claims rather than only two.
+    context: ranked.slice(-3).map((r) => r.iso),
+    waters: WATERS,
+    cellUnder: rampFor(direction).cellUnder,
+    waterTint: tints.water,
+    namesWater: offered.some((t) => t.id === "water-is-a-tint-not-a-grey"),
+    onNote: (note) => console.log(`  ${note}`),
+  });
 
   const plan = makePlan({
     style: STYLE,
-    camera: { bounds: BOUNDS, drawn: drawnSizeOf(geometry[id]) },
-    layers: layersFor(direction, g),
+    camera: { bounds: BOUNDS, drawn },
+    layers: layersFor(direction, g, placement),
   });
   const violations = [...validatePlan(plan), ...validateExpressions(plan)];
   if (violations.length)
@@ -846,23 +990,28 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   plans[id] = plan;
   console.log(
     `  plan: ${plan.layers.length} layers (${plan.layers.map((l) => l.id).join(", ")}) · ` +
-      `drawn ${plan.camera.drawn.width} x ${plan.camera.drawn.height}`,
+      `drawn ${drawn.width} x ${drawn.height} · rounding costs ${off.toFixed(2)}px of camera`,
   );
+
+  /** THE PLATE IS BAKED FROM THE PLAN, AT THE SIZE THE LAYOUT PUBLISHED. The plan goes to disk
+   *  because the bake is a separate process — it is the one place that reads the MapTiler key — and
+   *  its digest is what `plateIsCurrent` compares, so a plate whose marks have moved cannot survive
+   *  as a cache hit. */
+  const planPath = join(PLANS_DIR, `${id}.plan.json`);
+  await writeFile(planPath, JSON.stringify(plan));
+  await ensurePlate(id, { planPath, drawn, water: tints.water, land: tints.land });
+  const baked = await factsOf(id);
+  assertPlateShowsTheCamera(id, baked.frameCorners, drawn);
 
   try {
     await renderStill({
       element: createElement(DirectedChoroplethMap, {
-        shapes,
-        // The basemap is inlined as a data URI because the rasteriser has no network and no CWD: a
-        // plate referenced by path renders as a blank box and says nothing about it.
+        // The plate is inlined as a data URI because the rasteriser has no network and no CWD: a
+        // plate referenced by path renders as a blank box and says nothing about it. It is no longer
+        // only a basemap — the classes, the borders, the leaders, the ring and every placed word are
+        // MapLibre layers inside it, baked at exactly the size the component draws it at.
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,
         aspect: CAMERA_ASPECT,
-        named: above.map((r) => r.iso),
-        // The other end of the ramp, named in the quiet administrative treatment: a reader gets both
-        // ends of the scale by name, and the plate actually draws the three classes of place the
-        // treatment claims rather than only two.
-        context: ranked.slice(-3).map((r) => r.iso),
-        waters: WATERS,
         callout: CALLOUT,
         missingLabel: "donnée non rapportée",
         breaks: BREAKS,
