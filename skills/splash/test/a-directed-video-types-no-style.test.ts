@@ -181,10 +181,16 @@ const NAMED_COLOURS = [
 const COLOUR_KEYS = "(?:fill|stroke|color|backgroundColor|stopColor)";
 
 /** MapLibre paint/layout properties a directed composition may not type a literal into — the
- *  kebab-case vocabulary the style JSON takes, not the camelCase one React props take. */
+ *  kebab-case vocabulary the style JSON takes, not the camelCase one React props take. Every one
+ *  here carries a size, width, offset, colour, opacity, font, spacing or max-width literal when
+ *  typed; a key whose literal is an enum word instead (`text-anchor: "left"`, `text-justify`) is
+ *  deliberately left out — that word is a placement choice, not a drawn style. */
 const MAPLIBRE_KEYS =
-  "(?:text-size|fill-color|line-width|text-color|circle-radius|text-halo-color|" +
-  "text-letter-spacing|text-font)";
+  "(?:fill-color|fill-opacity|fill-outline-color|" +
+  "line-color|line-width|line-opacity|" +
+  "circle-color|circle-radius|circle-stroke-color|circle-stroke-width|circle-opacity|" +
+  "text-color|text-halo-color|text-halo-width|text-size|text-font|text-letter-spacing|" +
+  "text-offset|text-max-width|text-opacity)";
 
 /** MapLibre expression operators — when an array's first element is one of these string literals,
  *  the array is a data-driven expression (`["interpolate", …]`), not a typed literal, and is exempt
@@ -371,12 +377,26 @@ describe("the scanner", () => {
   it("should accept a MapLibre font array built from a register", () => {
     expect(typedStylesIn(`"text-font": [maptilerFace(r.axis)],`)).toEqual([]);
   });
-  it("should accept a MapLibre expression array", () => {
+  it("should accept a MapLibre expression array — the pilot's own fill-color case", () => {
     expect(
       typedStylesIn(
-        `"fill-opacity": ["interpolate", ["linear"], ["get", "t"], 0, 0, 1, 1],`,
+        `"fill-color": ["case", ["has", "value"], ["get", "fill"], ["get", "missing"]],`,
       ),
     ).toEqual([]);
+  });
+  it("should find a typed MapLibre text-max-width literal", () => {
+    expect(typedStylesIn(`"text-max-width": 100,`)).toEqual([
+      "a typed MapLibre property",
+    ]);
+  });
+  it("should find a typed MapLibre line-color literal", () => {
+    expect(typedStylesIn(`"line-color": "#123456",`)).toEqual([
+      "a typed colour",
+      "a typed MapLibre property",
+    ]);
+  });
+  it("should not find a register-driven MapLibre text-halo-width", () => {
+    expect(typedStylesIn(`"text-halo-width": r.axis.stroke,`)).toEqual([]);
   });
   it("should still find a MapLibre font array with a literal face", () => {
     expect(typedStylesIn(`"text-font": ["Open Sans Bold"],`)).toEqual([
