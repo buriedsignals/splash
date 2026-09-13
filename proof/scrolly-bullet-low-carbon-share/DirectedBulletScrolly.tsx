@@ -41,6 +41,9 @@ export function DirectedBulletScrolly({
   markerLabel,
   measureLabel,
   ticks,
+  zoomTicks,
+  zoomFrom,
+  orderBefore,
   alt,
   regs,
   pad,
@@ -57,6 +60,11 @@ export function DirectedBulletScrolly({
   markerLabel: string;
   measureLabel: string;
   ticks: { value: number; label: string }[];
+  /** The narrowed axis the fifth card opens, and where it starts. */
+  zoomTicks: { value: number; label: string }[];
+  zoomFrom: number;
+  /** Each row's position before the fourth card re-sorts it (this component renders the sorted order). */
+  orderBefore: number[];
   alt: string;
   regs: Record<
     "display" | "eyebrow" | "body" | "axis" | "annot" | "value",
@@ -91,6 +99,7 @@ export function DirectedBulletScrolly({
     <div
       role="img"
       aria-label={alt}
+      data-bullet={JSON.stringify({ ceiling, zoomFrom, orderBefore, rows: rows.map((r) => ({ marker: r.marker, measure: r.measure })) })}
       style={{
         position: "absolute",
         inset: 0,
@@ -145,6 +154,8 @@ export function DirectedBulletScrolly({
         return [
           <span
             key={`n${row.key}`}
+            data-row={i}
+            data-part="name"
             style={{
               ...regs.annot,
               gridColumn: 1,
@@ -160,6 +171,7 @@ export function DirectedBulletScrolly({
           </span>,
           <div
             key={`t${row.key}`}
+            data-row={i}
             style={{ gridColumn: 2, gridRow: i + 2, position: "relative" }}
           >
             <div
@@ -199,6 +211,8 @@ export function DirectedBulletScrolly({
           </div>,
           <span
             key={`v${row.key}`}
+            data-row={i}
+            data-amount={(row.measure - row.marker).toFixed(1)}
             data-part="verdict"
             style={{
               ...regs.value,
@@ -228,6 +242,8 @@ export function DirectedBulletScrolly({
         {ticks.map((t, i) => (
           <span
             key={`k${t.value}`}
+            data-tick={t.value}
+            data-set="full"
             style={abs({
               ...regs.axis,
               color: mutedInk,
@@ -241,6 +257,16 @@ export function DirectedBulletScrolly({
                     ? "translateX(-100%)"
                     : "translateX(-50%)",
             })}
+          >
+            {t.label}
+          </span>
+        ))}
+        {zoomTicks.map((t) => (
+          <span
+            key={`z${t.value}`}
+            data-tick={t.value}
+            data-set="zoom"
+            style={abs({ ...regs.axis, color: mutedInk, left: pct(t.value), top: "4px", whiteSpace: "nowrap", transform: "translateX(-50%)", opacity: 0 })}
           >
             {t.label}
           </span>

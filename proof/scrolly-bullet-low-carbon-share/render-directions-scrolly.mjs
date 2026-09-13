@@ -1,13 +1,16 @@
 // Low-carbon share of electricity, 2015 against 2024, rendered once per FILED DIRECTION into a
 // self-contained scrolly page. The `bullet` type in the scrolly format.
 //
-// THE SAME PLATE AS `static-bullet-low-carbon-share`, READ IN ORDER. The shares, the ranking by change,
-// both halves of the headline and the words are the static beat's own:
+// THE SUBJECT OF `static-bullet-low-carbon-share`, CHOREOGRAPHED. The shares, the ranking by change,
+// both halves of the headline and the colour rules are the static beat's own; the scroll tells them with
+// its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. what is measured — the tracks to 100 % and the thick pale 2015 bars;
-//   2. how far the subject moved — the thin saturated 2024 bars;
-//   3. how little the already-high moved — every row's change in points;
-//   4. the plate's own reading line.
+//   1. the tracks to 100 %, the rows in their 2015 order;
+//   2. the thick pale bars — 2015 — extending from zero;
+//   3. the thin saturated bars — 2024 — extending on from where 2015 ends;
+//   4. the rows re-sorting by their gain, Poland rising to the top, every gain counted;
+//   5. the axis closing onto 90–100 %, where the already-high countries' gains become visible;
+//   6. back to the full track.
 //
 // Usage:  bun proof/scrolly-bullet-low-carbon-share/render-directions-scrolly.mjs
 
@@ -77,14 +80,22 @@ const title = [
   `${french(moved.key)} : +${one(moved.measure - moved.marker)} points de bas-carbone depuis ${BEFORE}`,
   `${french(moved.key)} : +${one(moved.measure - moved.marker)} points depuis ${BEFORE}`,
 ];
+const NB = "\u00A0";
+const ZOOM_FROM = 90;
+/** The fifth card narrows the axis to show the gains the full track flattens; every country it names must
+ *  still be on that axis in 2015. */
+if (!alreadyHigh.every((r) => r.marker >= ZOOM_FROM)) throw new Error(`card 5 zooms onto ${ZOOM_FROM}–100 % and a country it names starts below it`);
+const orderByMarker = [...ranked].sort((a, b) => b.marker - a.marker);
+const orderBefore = ranked.map((r) => orderByMarker.indexOf(r));
 const prose = [
-  [`Part du bas-carbone — nucléaire et renouvelables — dans la production électrique de chaque pays, en ${BEFORE} et en ${AFTER}.`],
-  [`${french(moved.key)} passe de ${one(moved.marker)} % à ${one(moved.measure)} %.`],
-  [`Les ${SPELLED[alreadyHigh.length] ?? alreadyHigh.length} pays déjà au-dessus de ${SATURATED} % en ${BEFORE} gagnent moins d’un point chacun.`],
-  [
-    `Lecture : la barre épaisse et pâle est ${BEFORE}, la fine et saturée ${AFTER} — deux états d’une même mesure, donc une seule teinte à deux intensités. La piste va jusqu’à 100 %, si bien que ce qui reste à parcourir se lit aussi. Aucun objectif n’est dessiné ici : ${BEFORE} est une date, pas une cible.`,
-  ],
+  [`Part du bas-carbone — nucléaire et renouvelables — dans la production électrique de six pays européens. La piste va jusqu’à 100${NB}%.`],
+  [`La barre épaisse et pâle est ${BEFORE} : ${french(orderByMarker[0].key)} en tête, ${french(orderByMarker.at(-1).key)} en dernier, à ${one(orderByMarker.at(-1).marker)}${NB}%.`],
+  [`La fine et saturée est ${AFTER} : chacune prolonge la barre de ${BEFORE}.`],
+  [`Rangés par gain, ${french(moved.key)} passe en tête : de ${one(moved.marker)}${NB}% à ${one(moved.measure)}${NB}%, +${one(moved.measure - moved.marker)} points — et reste la seule des six sous la moitié.`],
+  [`Resserrée sur ${ZOOM_FROM}–100${NB}%, l’échelle montre ce que la piste entière écrase : les ${SPELLED[alreadyHigh.length] ?? alreadyHigh.length} pays déjà au-dessus de ${SATURATED}${NB}% en ${BEFORE} gagnent moins d’un point chacun.`],
+  [`Aucun objectif n’est dessiné ici : ${BEFORE} est une date, pas une cible. Deux états d’une même mesure, donc une seule teinte à deux intensités.`],
 ];
+const zoomTicks = [90, 95, 100].map((v) => ({ value: v, label: v === 100 ? `${format(v)}${NB}%` : format(v) }));
 const source = "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 const markerLabel = `${BEFORE} : ${format(moved.marker)} %`;
 const measureLabel = `${AFTER} : ${format(moved.measure)} %`;
@@ -96,19 +107,21 @@ const alt =
 
 /** One state per card; see `bullet-drive.mjs` for what each field paints. */
 const STATES = [
-  { marker: 1, measure: 0, verdict: 0 },
-  { marker: 1, measure: 1, verdict: 0 },
-  { marker: 1, measure: 1, verdict: 1 },
-  { marker: 1, measure: 1, verdict: 1 },
+  { marker: 0, measure: 0, reorder: 0, verdict: 0, zoom: 0 },
+  { marker: 1, measure: 0, reorder: 0, verdict: 0, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 0, verdict: 0, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 1 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 0 },
 ];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: ticks.map((t) => t.label).join(" "),
+  axis: `${ticks.map((t) => t.label).join(" ")} ${zoomTicks.map((t) => t.label).join(" ")}`,
   annot: `${rows.map((r) => r.label).join(" ")} ${markerLabel} ${measureLabel}`,
-  value: rows.map((r) => r.verdict).join(" "),
+  value: `${rows.map((r) => r.verdict).join(" ")} +0123456789, pts`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -128,7 +141,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["mesure", "pologne", "deja-hauts", "lecture"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["pistes", "2015", "2024", "gain", "zoom", "retour"][i], prose: p })),
       reveal: {
         element: createElement(DirectedBulletScrolly, {
           rows,
@@ -137,6 +150,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           markerLabel,
           measureLabel,
           ticks,
+          zoomTicks,
+          zoomFrom: ZOOM_FROM,
+          orderBefore,
           alt,
           regs,
           pad: direction.pad,
