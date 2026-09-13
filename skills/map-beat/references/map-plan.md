@@ -1,0 +1,191 @@
+# The map plan — the contract, its boundary, and its eight guards
+
+**Status, stated plainly.** The trunk (`shared/map-beat/plan.mjs`, `tints.mjs`, `geometry.mjs`,
+`glyphs.mjs`, `style.mjs`, `mount.mjs`, `bake.mjs`) is complete and reviewed. The pilot —
+`proof/static-choropleth-europe-lowcarbon/` — declares a validated plan and publishes its drawn
+size. Moving that beat's own marks (its classed regions, its labels, its legend) into the baked
+image, so the plate stops being a picture drawn under an SVG overlay and becomes a map with layers
+of its own, is work in progress and is not yet on `main`. Nothing below describes that move as
+done. The other five static map types — dot, symbol, flow, locator, contour — are not touched by
+this sub-project; neither are the map zones inside the components that host them. Both are
+out of scope here, by design, not by oversight.
+
+**The cardinal rule.** The wiring lives in `shared/map-beat/`. A beat declares a plan; it does not
+write a map. The September 2026 spike proved this the hard way: it converted six map types by hand
+and drifted on the same defect — a doubled basemap, a plate at the wrong scale, a size chosen
+before the layout knew it — six separate times, once per beat, because the wiring was recopied
+rather than shared. Whatever a beat needs from a map, it asks the trunk for; it never re-derives it.
+
+---
+
+## 1. The contract
+
+A beat does not draw a map. It produces **one plan**, and four renderers consume the same plan
+without disagreeing:
+
+```
+beat  →  plan
+           ├── style    : the MapTiler style document, with this beat's transformations
+           ├── camera   : bounds, zoom limits, and the DRAWN SIZE (§3 below)
+           └── layers[] : GeoJSON sources + fill · line · circle · symbol layers,
+                          painted from the beat's own direction
+plan  →  web     : mounted as a live map
+      →  still   : mounted, then captured once
+      →  video   : mounted, captured frame by frame
+      →  scrolly : mounted, camera animated
+```
+
+`makePlan({ style, camera, layers })` (`plan.mjs`) freezes all three — the top object, the camera,
+and every layer — because a renderer that could mutate the plan it was handed is a renderer that
+could disagree with the still standing beside it. `validatePlan(plan)` is the one function every
+renderer calls before it draws anything; it returns a list of strings, never throws, so a beat can
+decide whether an empty list is required or merely expected.
+
+Half of this already exists and is not being reinvented: `skills/map-web/assets/live-map.mjs`
+already reads this shape, with its three radius strategies — a value-encoding circle held fixed in
+screen pixels, a point whose ground footprint doubles per zoom level, a pin that does not move.
+The work is carrying that contract to the other three renderers, not designing a new one.
+
+## 2. What is in the map, and what stays outside
+
+| | where it lives | who decides it | who draws it |
+| --- | --- | --- | --- |
+| geography, coasts, seas, lakes | MapTiler | MapTiler | MapLibre |
+| the beat's own marks | the plan | the beat | MapLibre |
+| words placed **inside** the map | the plan | the beat | MapLibre |
+| title, standfirst, legend key, source, reading note | outside the map | the beat | React / SVG |
+
+The line is drawn once and does not move per beat: anything that is *of* the geography or *drawn
+on top of* it goes into a layer; anything that explains the graphic to a reader stays furniture,
+laid out in React or SVG exactly as every other beat's furniture is. The out-of-map furniture keeps
+the full family ladder — it is not subject to the eighteen-family ceiling in §5, because it never
+asks MapTiler to render anything.
+
+## 3. The three rules that make this generic
+
+A converted beat that only holds for one subject is a spike, not a tool. Three rules, each one a
+thing this reference can be checked against:
+
+1. **Nothing hard-coded that comes from the subject.** Camera bounds, name lists, thresholds, seat
+   counts, class breaks — all of it derives from the beat's own data. The spike broke this twice —
+   the flow map's subject (`"DEU"`) and the locator's label anchor, both hard-coded — and both are
+   decisions for the beat to make from its data, never for the plan to assume.
+2. **What is measured stays measured.** The density threshold, the texture radius, the water tint,
+   the body size that reaches a capital height, the family choice — the plan **calls** the
+   measurement each time; it does not carry forward yesterday's answer. A new subject produces
+   different numbers, on purpose.
+3. **A beat that cannot satisfy a rule refuses.** This is the trunk's doctrine already —
+   *"a silent stack has not chosen"* — extended to maps: no dose of water separates sea from land,
+   no threshold leaves a field readable, no room for the subject's name, a family that will not
+   resolve — the render stops and names what is missing. It never ships a map nobody chose.
+
+## 4. The eight guards, and the defect each one catches
+
+MapLibre complains about nothing (§6). Every one of these guards exists because something failed
+in silence during the spike, and each is written to turn that silence into a thrown error.
+
+**1. Two layers cannot share an id** — `validatePlan`, `plan.mjs`. MapLibre keeps the first layer
+and drops the second without a word. On the locator beat, the label layer was named after its
+circle layer and six cities stayed anonymous for a full render cycle.
+
+**2. A requested family must not be the fallback** — `assertNotFallback`, `glyphs.mjs`. MapTiler
+Cloud answers HTTP 200 for a family it does not have, and serves Noto Sans instead.
+`Futura Medium`, `Avenir Next`, `Georgia` and a fictitious name all come back as the same
+83 352-byte file, with nothing to say so. This guard compares the candidate's bytes against the
+fallback's and throws when they match — a map that asked for Futura and got Noto Sans would
+otherwise render correctly and lie about it.
+
+**3. Every character range the beat writes must be served** — `assertRangesServed` /
+`rangesNeededBy`, `bake.mjs`. A glyph range that is not served makes its characters vanish from
+the word with no error at all: "Mer d'Azov" printed as "Mer dAzov" for a full render cycle,
+because the typographic apostrophe is U+2019 and sits outside the Latin block
+(`DEFAULT_RANGES = ["0-255", "8192-8447"]` in `glyphs.mjs` covers both).
+
+**4. The plate is placed where the marks are** — `assertPlateMatchesMarks`, `geometry.mjs`. Three
+of the six converted components placed the plate on the layout BOX instead, with
+`preserveAspectRatio="none"`, which compressed the geography by a third while the marks kept
+drawing at the map's own scale. It stayed invisible as long as a second, coarser basemap was
+painted over it — the defect only became visible once the doubled basemap (guard 6) was removed.
+
+**5. The map is baked at the size the layout published** — `validatePlan`'s drawn-size check
+(`plan.mjs`) plus `drawnSizeOf` (`geometry.mjs`). The drawn size is a layout OUTPUT, not a setting
+chosen up front and scaled down later: a plate baked at 1000px and drawn into 574 renders every
+absolute length 1.74 times too thin — strokes, floor radii, outline widths. Radii expressed as a
+*fraction* of the plate width survived unscathed, which is exactly what made the defect invisible
+on large circles and fatal on small ones.
+
+**6. No beat layer redraws the basemap's own geography** — `assertNoDoubledBasemap`, `style.mjs`.
+Repainting land or a coastline from the beat's own shapefile lays a second geography over
+MapTiler's — two datasets that do not agree on a coastline, offset by a hair, with a halo around
+Iceland and Norway to show for it. A layer that means to mark "this belongs to the study" does it
+by tint, never by redrawing the ground; the guard throws on any layer whose `role` is
+`basemap-land` or `basemap-coast`.
+
+**7. Sea and land must clear a measured contrast floor** — `plateTints`, `tints.mjs`. A fixed dose
+of the water hue cannot work across three grounds: on `nocturne` it once rendered sea and land at
+1.014:1 — the same colour. Before the trunk existed, the pilot choropleth answered this question
+itself with fixed doses, and sat at 1.089:1 on creme, 1.158:1 on nocturne, 1.092:1 on rapport —
+every one of them under the 1.22:1 floor a reader needs to tell a coastline from a country, which is
+exactly what a reader looking at the nocturne plate reported: sea and land could not be told apart.
+`plateTints` searches doses from 0.06 to 0.7 and takes the smallest one that clears `SEA_LAND_MIN`
+(1.22:1 against land) while staying under `BASEMAP_MAX` (1.6:1 against the page) — the basemap
+stays as quiet as it can while a coastline still reads — and throws, naming the ground and the hue,
+when no dose in that range does both.
+
+**8. Every style expression is one the spec's shape actually allows** — `validateExpressions`,
+`mount.mjs`. `text-offset`, `icon-offset`, `text-translate` and `icon-translate` each take a
+literal pair of numbers, or ONE expression that evaluates to a pair — never an array assembled
+from two separate expressions. MapLibre treats that shape as invalid and draws the layer with
+nothing in it: no warning, no error, an empty layer that reads like a data problem for an hour.
+
+## 5. The eighteen families MapTiler actually serves
+
+Every other name, of any style or vendor, returns HTTP 200 and the same Noto Sans file — that
+silence is the defect guard 2 exists to catch.
+
+Seventeen of the eighteen are Google Fonts, fetched the same way the design base now fetches every
+other typeface — on demand, into a gitignored cache, never vendored and never installed. The
+eighteenth, Metropolis, is MapTiler's own and is not on Google Fonts at all.
+
+| family | source |
+| --- | --- |
+| Metropolis | MapTiler (not on Google Fonts) |
+| Open Sans | Google Fonts |
+| Roboto | Google Fonts |
+| Inter | Google Fonts |
+| Lato | Google Fonts |
+| Montserrat | Google Fonts |
+| Nunito | Google Fonts |
+| Rubik | Google Fonts |
+| Source Sans 3 | Google Fonts |
+| PT Sans | Google Fonts |
+| Ubuntu | Google Fonts |
+| Merriweather | Google Fonts |
+| PT Serif | Google Fonts |
+| Libre Baskerville | Google Fonts |
+| Noto Serif | Google Fonts |
+| Roboto Slab | Google Fonts |
+| Roboto Mono | Google Fonts |
+| Source Code Pro | Google Fonts |
+
+**One family, two names.** Google serves the ninth row as `Source Sans 3`; MapTiler still answers
+to its old name, `Source Sans Pro`. `glyphs.mjs`'s own `CANDIDATE_FAMILIES` spells it MapTiler's
+way because that list asks MapTiler's glyph endpoint; the design base's ladder spells it Google's
+way because that is what it fetches. This is the one place the two catalogues disagree on a name —
+worth knowing before assuming a family string travels unchanged between the two sides.
+
+**The consequence worth stating plainly.** Because the design base's ladders were built to head
+with families MapTiler also serves — serif → Merriweather, sans → Open Sans, geometric sans →
+Montserrat — a map label drawn in one of these seventeen needs no SDF glyph baking at all. The
+panel beside the map and the words on the map itself can be set from the exact same fetched file.
+`glyphs.mjs`'s `bakeGlyphs` and `assertNotFallback` stay in the trunk for the one case this does
+not cover: a beat that needs a family outside these seventeen, which still has to serve its own
+glyphs through `font-maker` rather than lean on MapTiler's endpoint.
+
+## 6. Why every guard above exists at all
+
+MapLibre refuses nothing. A duplicated layer id drops the second layer silently; an unserved
+glyph range drops a character from a word silently; a style with `text-offset` built as an array
+of two expressions draws an empty layer, also silently. None of these raise, log, or show up
+anywhere except in the rendered pixels — which is why §4's guards are assertions written after a
+defect was already found by looking at an image, not defences against a hypothetical.

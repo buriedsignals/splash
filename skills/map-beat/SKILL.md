@@ -255,6 +255,11 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   issue #41.
 
 - `references/types/` — six prose sheets, one per map type, harvested from the sibling parameterised engine and read before writing that type's beat; see its own `README.md` for what is covered and what is not.
+- `references/map-plan.md` — the map plan contract: the object a beat declares instead of drawing,
+  the boundary between what is in the map and what stays outside it, and the eight measured guards
+  that turn MapLibre's silent failures into thrown errors. **The wiring lives in
+  `shared/map-beat/`: a beat declares a plan, and does not write a map.** Read this before wiring
+  any beat to MapTiler.
 - `scripts/bake-plate.mjs` — the camera, the gate, the plate, the projection, the culling. Refuses a
   frame taller than its geography can fill BEFORE the capture (`assertStageServesGeography`), and
   records what the camera's scale implies into `geometry.json`'s `extent` key.
