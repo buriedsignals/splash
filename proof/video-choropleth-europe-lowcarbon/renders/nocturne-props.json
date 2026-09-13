@@ -1,0 +1,795 @@
+{
+  "layout": {
+    "frame": {
+      "width": 1920,
+      "height": 1080
+    },
+    "inset": 85,
+    "panel": {
+      "x": 85,
+      "width": 910,
+      "share": 0.52
+    },
+    "title": {
+      "form": 1,
+      "lines": 4,
+      "fontSize": 89.5,
+      "drawnFontSize": 101.05
+    },
+    "registers": {
+      "display": {
+        "fontFamily": "Montserrat",
+        "fontSize": 89.5,
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "letterSpacing": 9.509375,
+        "transform": "uppercase",
+        "lead": 109.18778040000001,
+        "fill": "#FFFFFF"
+      },
+      "eyebrow": {
+        "fontFamily": "Montserrat",
+        "fontSize": 30,
+        "fontWeight": 500,
+        "fontStyle": "normal",
+        "letterSpacing": 8.210526315789474,
+        "transform": "uppercase",
+        "lead": 35.999508000000006,
+        "fill": "#4FE0C0"
+      },
+      "body": {
+        "fontFamily": "Open Sans",
+        "fontSize": 39.47,
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "letterSpacing": 0,
+        "transform": "none",
+        "lead": 57.233951457031246,
+        "fill": "#a5a4b8"
+      },
+      "annot": {
+        "fontFamily": "Montserrat",
+        "fontSize": 31.58,
+        "fontWeight": 500,
+        "fontStyle": "normal",
+        "letterSpacing": 5.6844,
+        "transform": "uppercase",
+        "lead": 44.212678970000006,
+        "fill": "#FFFFFF"
+      },
+      "value": {
+        "fontFamily": "Montserrat",
+        "fontSize": 44.21,
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "letterSpacing": 0,
+        "transform": "none",
+        "lead": 53.05127495600001,
+        "fill": "#4FE0C0"
+      },
+      "axis": {
+        "fontFamily": "Montserrat",
+        "fontSize": 31.58,
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "letterSpacing": 3.789599999999999,
+        "transform": "none",
+        "lead": 37.895482088,
+        "fill": "#a5a4b8"
+      }
+    },
+    "blocks": [
+      {
+        "id": "eyebrow",
+        "register": "eyebrow",
+        "lines": [
+          {
+            "text": "ÉNERGIE · EUROPE",
+            "x": 85,
+            "y": 113.6099853515625,
+            "width": 416.8278836074628
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 87,
+          "width": 910,
+          "height": 33.329986572265625
+        }
+      },
+      {
+        "id": "title",
+        "register": "display",
+        "lines": [
+          {
+            "text": "LE",
+            "x": 85,
+            "y": 217.17924313574218,
+            "width": 116.73037281036378
+          },
+          {
+            "text": "BAS-CARBONE",
+            "x": 85,
+            "y": 326.3670235357422,
+            "width": 778.5157442092896
+          },
+          {
+            "text": "EUROPÉEN, ET",
+            "x": 85,
+            "y": 435.5548039357422,
+            "width": 784.3556245803833
+          },
+          {
+            "text": "SON EXCEPTION",
+            "x": 85,
+            "y": 544.7425843357422,
+            "width": 856.3359678268432
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 138.32974057226562,
+          "width": 910,
+          "height": 426.10284620488284
+        }
+      },
+      {
+        "id": "keyLabel",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "part bas-carbone de la production, 2024",
+            "x": 85,
+            "y": 646.8484679439454,
+            "width": 776.7417546890258
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 619.0264769771485,
+          "width": 910,
+          "height": 34.76959228515625
+        }
+      },
+      {
+        "id": "key",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "40 %",
+            "x": 188.63591264228205,
+            "y": 726.4930181354986,
+            "width": 86.27656181221008
+          },
+          {
+            "text": "55 %",
+            "x": 338.5049493696567,
+            "y": 726.4930181354986,
+            "width": 80.08687545423507
+          },
+          {
+            "text": "70 %",
+            "x": 483.6369785386855,
+            "y": 726.4930181354986,
+            "width": 83.37120421295165
+          },
+          {
+            "text": "85 %",
+            "x": 630.8375024150603,
+            "y": 726.4930181354986,
+            "width": 82.51854355697631
+          },
+          {
+            "text": "94 %",
+            "x": 776.5695561948469,
+            "y": 726.4930181354986,
+            "width": 84.60282309417724
+          },
+          {
+            "text": "donnée non rapportée",
+            "x": 241.2480640703871,
+            "y": 774.715512794033,
+            "width": 427.78268631210324
+          }
+        ],
+        "swatches": [
+          {
+            "x": 85,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 0
+          },
+          {
+            "x": 231.7741935483871,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 1
+          },
+          {
+            "x": 378.5483870967742,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 2
+          },
+          {
+            "x": 525.3225806451613,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 3
+          },
+          {
+            "x": 672.0967741935484,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 4
+          },
+          {
+            "x": 818.8709677419355,
+            "y": 665.1647138887048,
+            "width": 145.7741935483871,
+            "height": 27.821990966796875,
+            "class": 5
+          }
+        ],
+        "missingSwatch": {
+          "x": 85,
+          "y": 746.8935218272361,
+          "width": 145.7741935483871,
+          "height": 27.821990966796875
+        },
+        "box": {
+          "x": 85,
+          "y": 665.1647138887048,
+          "width": 910,
+          "height": 116.49840022368755
+        }
+      },
+      {
+        "id": "reference",
+        "register": "annot",
+        "lines": [
+          {
+            "text": "PLUS DE 94 %",
+            "x": 708.222014609909,
+            "y": 774.715512794033,
+            "width": 286.777985390091
+          }
+        ],
+        "box": {
+          "x": 708.222014609909,
+          "y": 746.704038184658,
+          "width": 286.777985390091,
+          "height": 35.08538818359375
+        }
+      },
+      {
+        "id": "conclusion",
+        "register": "body",
+        "lines": [
+          {
+            "text": "Sept pays dépassent 94 %. Les 3 voisins mesurés",
+            "x": 85,
+            "y": 862.026382880947,
+            "width": 893.7026245594025
+          },
+          {
+            "text": "de l’Albanie sont tous sous 60 %.",
+            "x": 85,
+            "y": 919.2603343379783,
+            "width": 594.285683631897
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 824.7148899610252,
+          "width": 910,
+          "height": 104.02750004101563
+        }
+      },
+      {
+        "id": "source",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "Source : Ember, Energy Institute (2025), via Our World in Data · fond MapTiler",
+            "x": 85,
+            "y": 986.0523986816406,
+            "width": 1496.2603887931823
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 958.2304077148438,
+          "width": 1750,
+          "height": 34.76959228515625
+        }
+      }
+    ],
+    "mapBox": {
+      "x": 1053,
+      "y": 136,
+      "width": 782,
+      "height": 743
+    },
+    "drawn": {
+      "width": 782,
+      "height": 743
+    },
+    "mapAspect": 1.0526315789473686,
+    "spare": 1.066406146802933
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 89.5,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 9.509375,
+      "transform": "uppercase",
+      "lead": 109.18778040000001,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 8.210526315789474,
+      "transform": "uppercase",
+      "lead": 35.999508000000006,
+      "fill": "#4FE0C0"
+    },
+    "body": {
+      "fontFamily": "Open Sans",
+      "fontSize": 39.47,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 57.233951457031246,
+      "fill": "#a5a4b8"
+    },
+    "annot": {
+      "fontFamily": "Montserrat",
+      "fontSize": 31.58,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 5.6844,
+      "transform": "uppercase",
+      "lead": 44.212678970000006,
+      "fill": "#FFFFFF"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 44.21,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 53.05127495600001,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 31.58,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 3.789599999999999,
+      "transform": "none",
+      "lead": 37.895482088,
+      "fill": "#a5a4b8"
+    }
+  },
+  "plan": {
+    "style": {
+      "name": "dataviz-light"
+    },
+    "camera": {
+      "bounds": [
+        [
+          -29.431335027958426,
+          27.817527929606662
+        ],
+        [
+          46.431335027958426,
+          70.54903736182068
+        ]
+      ],
+      "drawn": {
+        "width": 782,
+        "height": 743
+      }
+    },
+    "layers": [
+      {
+        "id": "classes",
+        "role": "study-area",
+        "type": "fill",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 64,
+          "sha256": "aa9fb33f3e5c7b5606a9c814026f444a58e4a00a628d729e06f0b79c499ccbda"
+        },
+        "paint": {
+          "fill-color": [
+            "case",
+            [
+              "!=",
+              [
+                "get",
+                "value"
+              ],
+              null
+            ],
+            [
+              "step",
+              [
+                "get",
+                "value"
+              ],
+              "#182953",
+              40,
+              "#2e4f6d",
+              55,
+              "#437686",
+              70,
+              "#599ca0",
+              85,
+              "#6ec3b9",
+              94,
+              "#84e9d3"
+            ],
+            [
+              "get",
+              "inStudySet"
+            ],
+            "#302f5c",
+            "#1d1c4d"
+          ]
+        }
+      },
+      {
+        "id": "borders",
+        "role": "study-border",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 64,
+          "sha256": "aa9fb33f3e5c7b5606a9c814026f444a58e4a00a628d729e06f0b79c499ccbda"
+        },
+        "paint": {
+          "line-color": [
+            "case",
+            [
+              "!=",
+              [
+                "get",
+                "value"
+              ],
+              null
+            ],
+            "#3c3b66",
+            "#45456d"
+          ],
+          "line-width": 0.48
+        }
+      },
+      {
+        "id": "leaders",
+        "role": "place",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "e36fef3dee20327f517e8d4fa4c33987501831ca453bffb4ff020fb261e4e361"
+        },
+        "paint": {
+          "line-color": "#45456d",
+          "line-width": 2,
+          "line-opacity": 0
+        }
+      },
+      {
+        "id": "subject-ring",
+        "role": "subject",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "f402fa227794dbf266012a693034fb2c8e860aec1a01751d6233bb3d585b33f7"
+        },
+        "layout": {
+          "line-join": "round"
+        },
+        "paint": {
+          "line-color": "#53e1c1",
+          "line-width": 3.2000000000000006,
+          "line-offset": 11.073870522,
+          "line-opacity": 0
+        }
+      },
+      {
+        "id": "reveal-names",
+        "role": "place",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 6,
+          "sha256": "23fe353d5d28cf49485b8f0b29bd5228af92f5d7620dd4acb8d394902962f6a7"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 31.58,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-line-height": 1.1999836000000002,
+          "text-max-width": 25,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 4.729738464355469,
+          "text-opacity": 0
+        }
+      },
+      {
+        "id": "neighbour-values",
+        "role": "place",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 4,
+          "sha256": "e5f5b617604bdcd96106a8a144fb5db11bdd09dd4c615a7fdd466bdcff611a93"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 31.58,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-line-height": 1.1999836000000002,
+          "text-max-width": 25,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 4.729738464355469,
+          "text-opacity": 0
+        }
+      },
+      {
+        "id": "subject-name",
+        "role": "subject",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "9824ce412300159878ae21fbce1e65046c2bfd5fc8692b020139e58b8c8c41c9"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 31.58,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-line-height": 1.1999836000000002,
+          "text-max-width": 25,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 4.729738464355469,
+          "text-opacity": 0
+        }
+      }
+    ]
+  },
+  "styleUrl": "http://127.0.0.1:56923/maptiler/maps/dataviz-light/style.json",
+  "tints": {
+    "water": "#152e67",
+    "land": "#1c1b4c"
+  },
+  "states": [
+    {
+      "furniture": 1,
+      "referenceMark": 0,
+      "classesRevealed": 0,
+      "namesShown": 0,
+      "zoom": 2.857559649255127,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 0,
+      "namesShown": 0,
+      "zoom": 2.857559649255127,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 6,
+      "zoom": 2.857559649255127,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 5.815584868181945,
+      "centerLon": 22.5,
+      "centerLat": 40.04232863238523,
+      "ring": 1,
+      "neighbourValues": 1,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 2.857559649255127,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 1,
+      "neighbourValues": 0,
+      "filterBelowFloor": 1,
+      "conclusion": 1
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 2.857559649255127,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 1,
+      "neighbourValues": 0,
+      "filterBelowFloor": 1,
+      "conclusion": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 360,
+    "establish": {
+      "start": 0,
+      "duration": 26
+    },
+    "reference": {
+      "start": 32,
+      "duration": 22
+    },
+    "reveal": {
+      "start": 72,
+      "duration": 84
+    },
+    "subject": {
+      "start": 156,
+      "duration": 72
+    },
+    "conclusion": {
+      "start": 228,
+      "duration": 60
+    },
+    "hold": {
+      "start": 288,
+      "duration": 72
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "accentInk": "#53e1c1",
+    "classFills": [
+      "#182953",
+      "#2e4f6d",
+      "#437686",
+      "#599ca0",
+      "#6ec3b9",
+      "#84e9d3"
+    ],
+    "classBreaks": [
+      40,
+      55,
+      70,
+      85,
+      94
+    ],
+    "missingFill": "#302f5c",
+    "landNoValue": "#1d1c4d",
+    "referenceStroke": 2
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

@@ -1,0 +1,802 @@
+{
+  "layout": {
+    "frame": {
+      "width": 1920,
+      "height": 1080
+    },
+    "inset": 85,
+    "panel": {
+      "x": 85,
+      "width": 770,
+      "share": 0.44
+    },
+    "title": {
+      "form": 0,
+      "lines": 4,
+      "fontSize": 81,
+      "drawnFontSize": 90
+    },
+    "registers": {
+      "display": {
+        "fontFamily": "Merriweather",
+        "fontSize": 81,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "letterSpacing": -0.54,
+        "transform": "none",
+        "lead": 98.82358020000001,
+        "fill": "#000000"
+      },
+      "eyebrow": {
+        "fontFamily": "Open Sans",
+        "fontSize": 30,
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "letterSpacing": 5.7,
+        "transform": "uppercase",
+        "lead": 36.000978515625,
+        "fill": "#1757B6"
+      },
+      "body": {
+        "fontFamily": "Open Sans",
+        "fontSize": 39,
+        "fontWeight": 400,
+        "fontStyle": "normal",
+        "letterSpacing": 0,
+        "transform": "none",
+        "lead": 56.552422265625,
+        "fill": "#61605a"
+      },
+      "annot": {
+        "fontFamily": "Merriweather",
+        "fontSize": 39,
+        "fontWeight": 400,
+        "fontStyle": "italic",
+        "letterSpacing": 0,
+        "transform": "none",
+        "lead": 54.601817399999995,
+        "fill": "#61605a"
+      },
+      "value": {
+        "fontFamily": "Open Sans",
+        "fontSize": 45,
+        "fontWeight": 600,
+        "fontStyle": "normal",
+        "letterSpacing": 0,
+        "transform": "none",
+        "lead": 54.0014677734375,
+        "fill": "#1757B6"
+      },
+      "axis": {
+        "fontFamily": "Open Sans",
+        "fontSize": 33,
+        "fontWeight": 500,
+        "fontStyle": "normal",
+        "letterSpacing": 1.2000000000000002,
+        "transform": "none",
+        "lead": 39.6010763671875,
+        "fill": "#61605a"
+      }
+    },
+    "blocks": [
+      {
+        "id": "eyebrow",
+        "register": "eyebrow",
+        "lines": [
+          {
+            "text": "ÉNERGIE · EUROPE",
+            "x": 85,
+            "y": 115.1982421875,
+            "width": 348.29296875
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 87,
+          "width": 770,
+          "height": 35.4052734375
+        }
+      },
+      {
+        "id": "title",
+        "register": "display",
+        "lines": [
+          {
+            "text": "Le bas-carbone",
+            "x": 85,
+            "y": 221.00076391601561,
+            "width": 602.9504351425171
+          },
+          {
+            "text": "européen est au",
+            "x": 85,
+            "y": 319.8243441160156,
+            "width": 618.245942773819
+          },
+          {
+            "text": "nord-ouest — et en",
+            "x": 85,
+            "y": 418.64792431601563,
+            "width": 761.6564710807801
+          },
+          {
+            "text": "Albanie",
+            "x": 85,
+            "y": 517.4715045160156,
+            "width": 299.86199880599975
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 140.4057626953125,
+          "width": 770,
+          "height": 398.9357369378906
+        }
+      },
+      {
+        "id": "keyLabel",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "part bas-carbone de la production, 2024",
+            "x": 85,
+            "y": 619.851922545703,
+            "width": 671.246484375
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 588.753289733203,
+          "width": 770,
+          "height": 39.0263671875
+        }
+      },
+      {
+        "id": "key",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "40 %",
+            "x": 171.03392924647176,
+            "y": 707.7974069109374,
+            "width": 76.31923828125
+          },
+          {
+            "text": "55 %",
+            "x": 295.2274776335685,
+            "y": 707.7974069109374,
+            "width": 76.31923828125
+          },
+          {
+            "text": "70 %",
+            "x": 419.4210260206653,
+            "y": 707.7974069109374,
+            "width": 76.31923828125
+          },
+          {
+            "text": "85 %",
+            "x": 543.6145744077621,
+            "y": 707.7974069109374,
+            "width": 76.31923828125
+          },
+          {
+            "text": "94 %",
+            "x": 667.808122794859,
+            "y": 707.7974069109374,
+            "width": 76.31923828125
+          },
+          {
+            "text": "donnée non rapportée",
+            "x": 219.09381747889364,
+            "y": 768.1565019011717,
+            "width": 375.7775390625
+          }
+        ],
+        "swatches": [
+          {
+            "x": 85,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 0
+          },
+          {
+            "x": 209.19354838709677,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 1
+          },
+          {
+            "x": 333.38709677419354,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 2
+          },
+          {
+            "x": 457.5806451612903,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 3
+          },
+          {
+            "x": 581.7741935483871,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 4
+          },
+          {
+            "x": 705.9677419354839,
+            "y": 639.6599798308592,
+            "width": 123.19354838709677,
+            "height": 31.0986328125,
+            "class": 5
+          }
+        ],
+        "missingSwatch": {
+          "x": 85,
+          "y": 737.0578690886717,
+          "width": 123.19354838709677,
+          "height": 31.0986328125
+        },
+        "box": {
+          "x": 85,
+          "y": 639.6599798308592,
+          "width": 770,
+          "height": 136.4242564453125
+        }
+      },
+      {
+        "id": "reference",
+        "register": "annot",
+        "lines": [
+          {
+            "text": "plus de 94 %",
+            "x": 635.7809936404228,
+            "y": 768.1565019011717,
+            "width": 219.21900635957718
+          }
+        ],
+        "box": {
+          "x": 635.7809936404228,
+          "y": 729.585518014453,
+          "width": 219.21900635957718,
+          "height": 48.55499267578125
+        }
+      },
+      {
+        "id": "conclusion",
+        "register": "body",
+        "lines": [
+          {
+            "text": "Sept pays dépassent 94 %. Les 3 voisins",
+            "x": 85,
+            "y": 857.422014889453,
+            "width": 715.99658203125
+          },
+          {
+            "text": "mesurés de l’Albanie sont tous sous 60 %.",
+            "x": 85,
+            "y": 913.9744371550779,
+            "width": 754.27294921875
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 820.554827389453,
+          "width": 770,
+          "height": 102.788750390625
+        }
+      },
+      {
+        "id": "source",
+        "register": "axis",
+        "lines": [
+          {
+            "text": "Source : Ember, Energy Institute (2025), via Our World in Data · fond MapTiler",
+            "x": 85,
+            "y": 985.072265625,
+            "width": 1294.59580078125
+          }
+        ],
+        "box": {
+          "x": 85,
+          "y": 953.9736328125,
+          "width": 1750,
+          "height": 39.0263671875
+        }
+      }
+    ],
+    "mapBox": {
+      "x": 912,
+      "y": 85,
+      "width": 923,
+      "height": 839
+    },
+    "drawn": {
+      "width": 923,
+      "height": 839
+    },
+    "mapAspect": 1.100294861975778,
+    "spare": 0.9292477570314759
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 81,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.54,
+      "transform": "none",
+      "lead": 98.82358020000001,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "body": {
+      "fontFamily": "Open Sans",
+      "fontSize": 39,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 56.552422265625,
+      "fill": "#61605a"
+    },
+    "annot": {
+      "fontFamily": "Merriweather",
+      "fontSize": 39,
+      "fontWeight": 400,
+      "fontStyle": "italic",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.601817399999995,
+      "fill": "#61605a"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    }
+  },
+  "plan": {
+    "style": {
+      "name": "dataviz-light"
+    },
+    "camera": {
+      "bounds": [
+        [
+          -29.431335027958426,
+          29.188674132470958
+        ],
+        [
+          46.431335027958426,
+          70.02272863854398
+        ]
+      ],
+      "drawn": {
+        "width": 923,
+        "height": 839
+      }
+    },
+    "layers": [
+      {
+        "id": "classes",
+        "role": "study-area",
+        "type": "fill",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 64,
+          "sha256": "aa9fb33f3e5c7b5606a9c814026f444a58e4a00a628d729e06f0b79c499ccbda"
+        },
+        "paint": {
+          "fill-color": [
+            "case",
+            [
+              "!=",
+              [
+                "get",
+                "value"
+              ],
+              null
+            ],
+            [
+              "step",
+              [
+                "get",
+                "value"
+              ],
+              "#e3e8e7",
+              40,
+              "#b9c6d2",
+              55,
+              "#8fa4bd",
+              70,
+              "#6481a9",
+              85,
+              "#3a5f94",
+              94,
+              "#103d7f"
+            ],
+            [
+              "get",
+              "inStudySet"
+            ],
+            "#dedbcf",
+            "#f2efe2"
+          ]
+        }
+      },
+      {
+        "id": "borders",
+        "role": "study-border",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 64,
+          "sha256": "aa9fb33f3e5c7b5606a9c814026f444a58e4a00a628d729e06f0b79c499ccbda"
+        },
+        "paint": {
+          "line-color": [
+            "case",
+            [
+              "!=",
+              [
+                "get",
+                "value"
+              ],
+              null
+            ],
+            "#d1cfc3",
+            "#c7c5ba"
+          ],
+          "line-width": 0.6
+        }
+      },
+      {
+        "id": "leaders",
+        "role": "place",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "4a449a7a28a61fb5b38dd40dcf9598a9e9e425c9aaf6f41f6461fc0dcde919c1"
+        },
+        "paint": {
+          "line-color": "#c7c5ba",
+          "line-width": 2.5,
+          "line-opacity": 0
+        }
+      },
+      {
+        "id": "subject-ring",
+        "role": "subject",
+        "type": "line",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "f402fa227794dbf266012a693034fb2c8e860aec1a01751d6233bb3d585b33f7"
+        },
+        "layout": {
+          "line-join": "round"
+        },
+        "paint": {
+          "line-color": "#1755b2",
+          "line-width": 4,
+          "line-offset": 11.900269091796876,
+          "line-opacity": 0
+        }
+      },
+      {
+        "id": "reveal-names",
+        "role": "place",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 6,
+          "sha256": "be08c8b6ddb21c1a0f39821a75ef483521c799342421577ea93433fe342d44d1"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Open Sans Medium"
+          ],
+          "text-size": 33,
+          "text-letter-spacing": 0.03636363636363637,
+          "text-line-height": 1.2000326171875,
+          "text-max-width": 28,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 5.2867675781250005,
+          "text-opacity": 0
+        }
+      },
+      {
+        "id": "neighbour-values",
+        "role": "place",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 4,
+          "sha256": "450929bf280bb1945b9fd3a2980b577a216f0c4bb56f40a857bf5a5c95fcd26d"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Open Sans Medium"
+          ],
+          "text-size": 33,
+          "text-letter-spacing": 0.03636363636363637,
+          "text-line-height": 1.2000326171875,
+          "text-max-width": 28,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 5.2867675781250005,
+          "text-opacity": 0
+        }
+      },
+      {
+        "id": "subject-name",
+        "role": "subject",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": 1,
+          "sha256": "660b55d30608f3f2bc14a4faa684c6fa7ebf53bffc4630dcb4d7516003fc4e84"
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "name"
+          ],
+          "text-font": [
+            "Open Sans Medium"
+          ],
+          "text-size": 33,
+          "text-letter-spacing": 0.03636363636363637,
+          "text-line-height": 1.2000326171875,
+          "text-max-width": 28,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": [
+            "get",
+            "ink"
+          ],
+          "text-halo-color": [
+            "get",
+            "halo"
+          ],
+          "text-halo-width": 5.2867675781250005,
+          "text-opacity": 0
+        }
+      }
+    ]
+  },
+  "styleUrl": "http://127.0.0.1:56738/maptiler/maps/dataviz-light/style.json",
+  "tints": {
+    "water": "#cedde1",
+    "land": "#f4f1e3"
+  },
+  "states": [
+    {
+      "furniture": 1,
+      "referenceMark": 0,
+      "classesRevealed": 0,
+      "namesShown": 0,
+      "zoom": 3.0967216895935494,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 0,
+      "namesShown": 0,
+      "zoom": 3.0967216895935494,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 6,
+      "zoom": 3.0967216895935494,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 0,
+      "neighbourValues": 0,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 5.990893468083173,
+      "centerLon": 22.5,
+      "centerLat": 40.04232863238523,
+      "ring": 1,
+      "neighbourValues": 1,
+      "filterBelowFloor": 0,
+      "conclusion": 0
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 3.0967216895935494,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 1,
+      "neighbourValues": 0,
+      "filterBelowFloor": 1,
+      "conclusion": 1
+    },
+    {
+      "furniture": 1,
+      "referenceMark": 1,
+      "classesRevealed": 6,
+      "namesShown": 7,
+      "zoom": 3.0967216895935494,
+      "centerLon": 8.5,
+      "centerLat": 54.35616149109982,
+      "ring": 1,
+      "neighbourValues": 0,
+      "filterBelowFloor": 1,
+      "conclusion": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 360,
+    "establish": {
+      "start": 0,
+      "duration": 26
+    },
+    "reference": {
+      "start": 32,
+      "duration": 22
+    },
+    "reveal": {
+      "start": 72,
+      "duration": 84
+    },
+    "subject": {
+      "start": 156,
+      "duration": 72
+    },
+    "conclusion": {
+      "start": 228,
+      "duration": 60
+    },
+    "hold": {
+      "start": 288,
+      "duration": 72
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "accentInk": "#1755b2",
+    "classFills": [
+      "#e3e8e7",
+      "#b9c6d2",
+      "#8fa4bd",
+      "#6481a9",
+      "#3a5f94",
+      "#103d7f"
+    ],
+    "classBreaks": [
+      40,
+      55,
+      70,
+      85,
+      94
+    ],
+    "missingFill": "#dedbcf",
+    "landNoValue": "#f2efe2",
+    "referenceStroke": 2.5
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Merriweather",
+      "style": "italic",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}
