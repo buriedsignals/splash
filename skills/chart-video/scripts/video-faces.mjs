@@ -24,6 +24,20 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { embeddedWebFaces, requestedFamily } from "./typefaces.mjs";
 
+/**
+ * THE LATIN-1 BLOCK, CARRIED WHOLE. A composition types words of its own — a unit, an axis title,
+ * "years" — that no scan of the props can see, and the first beat migrated after the seed drew a
+ * "g" no face carried. A web page cuts its faces to the letter because a reader downloads them; a
+ * video frame is rasterised here and its faces never leave this machine, so the conservative
+ * direction costs nothing a reader pays. Printable U+0021–U+007E and U+00A1–U+00FF: every house
+ * family on the ladders carries all of them. Anything beyond is still asked for by the props, and
+ * still caught in the browser by `face-coverage.ts` when a composition types it.
+ */
+const LATIN_1 = String.fromCodePoint(
+  ...Array.from({ length: 0x7e - 0x21 + 1 }, (_, i) => 0x21 + i),
+  ...Array.from({ length: 0xff - 0xa1 + 1 }, (_, i) => 0xa1 + i),
+);
+
 /** Every string anywhere in the props — the words a composition can be handed to draw. */
 function stringsOf(value, out = []) {
   if (typeof value === "string") out.push(value);
@@ -39,7 +53,7 @@ function stringsOf(value, out = []) {
 export async function videoFaces({ stack, weights, props }) {
   const family = requestedFamily(stack);
   const wanted = [...new Set(weights)].map((weight) => ({ family, weight }));
-  const faces = await embeddedWebFaces(wanted, stringsOf(props).join("\n"));
+  const faces = await embeddedWebFaces(wanted, [LATIN_1, ...stringsOf(props)].join("\n"));
   return {
     fontFamily: stack,
     faces: faces.map(({ family, style, weight, weightTo, unicodeRange, base64 }) => ({

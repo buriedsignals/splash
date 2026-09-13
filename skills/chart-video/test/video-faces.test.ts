@@ -53,6 +53,12 @@ describe("videoFaces", () => {
     expect(uncoveredText(runs, faces)).toEqual([]);
   });
 
+  it("should carry the Latin letters a composition types itself, which no prop contains", async () => {
+    const { faces } = await videoFaces({ stack: STACK, weights: [400], props: { title: "a" } });
+    const runs = [{ text: "Espérance de vie (âge) — Zürich, Ørsted & Ça", family: "Open Sans", weight: 400 }];
+    expect(uncoveredText(runs, faces)).toEqual([]);
+  });
+
   it("should not embed a weight nobody asked for", async () => {
     const { faces } = await videoFaces({
       stack: STACK,
