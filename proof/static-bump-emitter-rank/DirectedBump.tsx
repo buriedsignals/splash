@@ -218,7 +218,7 @@ export function DirectedBump({
               at: { x: x(first.year) - 10, y: y(first.rank)! },
               priority: isSubject ? 9 : 5,
               register: value,
-              anchor: "end" as const,
+              anchors: ["left"],
             },
           ]
         : [];
@@ -235,7 +235,9 @@ export function DirectedBump({
         at: { x: x(last.year) + 10, y: y(last.rank)! },
         priority: isSubject ? 9 : last.year === lastYear ? 6 : 3,
         register: value,
-        anchor: "start" as const,
+        // ONE honest position each. The arbiter's default is all four, `above` first, and a rank
+        // label set above its point sits on the row above — see `labels-sit-on-their-rank.test.ts`.
+        anchors: ["right"],
       },
     ];
     return [...left, ...right];
