@@ -14,7 +14,8 @@
 // Usage:  bun skills/chart-video/scripts/render-video.mjs [--still-only] [--data <csv>] [--out <dir>]
 
 import { spawnSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -83,10 +84,21 @@ export function readingsFromCsv(csv, firstYear) {
     .sort((a, b) => a.year - b.year);
 }
 
+// An EMPTY `--env-file` on every `remotion` spawn. Remotion otherwise injects the whole repository
+// `.env` into the page's `process.env` — including this repo's MapTiler, Datawrapper, Gemini and
+// Cloudflare keys (measured, task-4-report.md finding 1) — and a composition that never asks for a
+// key still receives every one of them. Created once per run, removed when the script is done.
+const envFileDir = await mkdtemp(join(tmpdir(), "video-env-"));
+const envFile = join(envFileDir, "empty.env");
+await writeFile(envFile, "");
+
 function remotion(args) {
   const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");
   const started = Date.now();
-  const result = spawnSync(binary, args, { cwd: PACKAGE_ROOT, stdio: "inherit" });
+  const result = spawnSync(binary, [...args, `--env-file=${envFile}`], {
+    cwd: PACKAGE_ROOT,
+    stdio: "inherit",
+  });
   if (result.status !== 0)
     throw new Error(`remotion ${args[0]} exited with ${result.status}`);
   return Math.round((Date.now() - started) / 1000);
@@ -132,7 +144,10 @@ const stillSeconds = remotion([
 ]);
 console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
 
-if (stillOnly) process.exit(0);
+if (stillOnly) {
+  await rm(envFileDir, { recursive: true, force: true });
+  process.exit(0);
+}
 
 // Rung 2b: the mp4. Concurrency 1 keeps the render deterministic and the machine usable.
 const videoPath = join(outDir, "co2.mp4");
@@ -146,3 +161,4 @@ const videoSeconds = remotion([
   "--timeout=120000",
 ]);
 console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+await rm(envFileDir, { recursive: true, force: true });

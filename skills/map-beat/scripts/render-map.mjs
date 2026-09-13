@@ -22,7 +22,8 @@
 //   bun skills/map-beat/scripts/render-map.mjs --video
 
 import { spawnSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
@@ -214,15 +215,25 @@ if (wantStill) {
 }
 
 // ── Rungs 2 and 3: the video ───────────────────────────────────────────────────────────────────
-function remotion(args) {
+// An EMPTY `--env-file` on every `remotion` spawn — Remotion otherwise injects the whole repository
+// `.env` (this repo's MapTiler, Datawrapper, Gemini and Cloudflare keys among them) into the page's
+// `process.env`. This render draws from a baked plate, not a live key, so nothing here needs any of
+// them — which is exactly why none may leak in unnoticed.
+function remotion(args, envFile) {
   const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");
   const started = Date.now();
-  const result = spawnSync(binary, args, { cwd: PACKAGE_ROOT, stdio: "inherit" });
+  const result = spawnSync(binary, [...args, `--env-file=${envFile}`], {
+    cwd: PACKAGE_ROOT,
+    stdio: "inherit",
+  });
   if (result.status !== 0) throw new Error(`remotion ${args[0]} exited with ${result.status}`);
   return Math.round((Date.now() - started) / 1000);
 }
 
 if (wantFinalFrame || wantVideo) {
+  const envFileDir = await mkdtemp(join(tmpdir(), "video-env-"));
+  const envFile = join(envFileDir, "empty.env");
+  await writeFile(envFile, "");
   const { geometry, plate } = await plateOf(videoPlate);
   const propsPath = join(outDir, "video-props.json");
   // `size` travels in the props because `calculateMetadata` is the only place Remotion will take a
@@ -230,30 +241,37 @@ if (wantFinalFrame || wantVideo) {
   await writeFile(propsPath, JSON.stringify({ ...shared, geometry, plate, size }));
 
   const framePath = join(outDir, "final-frame.png");
-  const stillSeconds = remotion([
-    "still",
-    ENTRY,
-    COMPOSITION,
-    framePath,
-    "--frame=-1",
-    `--props=${propsPath}`,
-    "--timeout=180000",
-  ]);
+  const stillSeconds = remotion(
+    [
+      "still",
+      ENTRY,
+      COMPOSITION,
+      framePath,
+      "--frame=-1",
+      `--props=${propsPath}`,
+      "--timeout=180000",
+    ],
+    envFile,
+  );
   console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s]`);
 
   if (wantVideo) {
     const videoPath = join(outDir, "map.mp4");
-    const videoSeconds = remotion([
-      "render",
-      ENTRY,
-      COMPOSITION,
-      videoPath,
-      `--props=${propsPath}`,
-      "--concurrency=1",
-      "--timeout=180000",
-    ]);
+    const videoSeconds = remotion(
+      [
+        "render",
+        ENTRY,
+        COMPOSITION,
+        videoPath,
+        `--props=${propsPath}`,
+        "--concurrency=1",
+        "--timeout=180000",
+      ],
+      envFile,
+    );
     console.log(`video → ${videoPath}  [${videoSeconds}s]`);
   }
+  await rm(envFileDir, { recursive: true, force: true });
 }
 
 if (!wantStill && !wantFinalFrame && !wantVideo)
