@@ -120,3 +120,31 @@ non posée est le meilleur moyen de la recopier de travers.
 Rémy valide **un type à la fois** au début de chaque genre, pour s'assurer que la production est
 correcte et faire remonter le moindre défaut. On n'accélère qu'une fois la confiance établie, et
 c'est lui qui le dit — pas nous.
+
+## Pour la session VIDÉO en particulier : la première ligne de base
+
+Mesuré par la session statique, sur un vrai paragraphe de 7 lignes, avec les mêmes octets de fonte,
+sur les trois têtes d'échelle. **Ce n'est pas une règle, c'est une mesure sur un seul moteur**
+(Chrome 151, macOS sans tête, DPR émulé) — non vérifiée sur Linux, sur un vrai écran Retina, ni sur
+Firefox ou Safari.
+
+1. **L'espacement entre lignes de base concorde** entre resvg et Chrome : `lineHeight × fontSize`
+   arrondi au 1/64 de pixel, dérive ≤ 0,04 px sur sept lignes. Donc `line-height` unitless se partage
+   tel quel.
+2. **Le placement de la PREMIÈRE ligne de base, non.** La formule naïve du demi-interligne est fausse
+   de 0,5 à 1 px : Chrome arrondit l'ascendante et la descendante au pixel entier AVANT de diviser.
+   Mesuré contre naïf : Open Sans 14,000 vs 14,469 · Merriweather 13,000 vs 14,046 · Montserrat
+   10,000 vs 10,585.
+3. Chrome peint les glyphes à la ligne de base arrondie au pixel CSS entier, à DPR 1, 2 et 8 ; resvg
+   dessine en sous-pixel anti-aliasé. Jusqu'à ±0,5 px d'encre par ligne. Consigné, aucune action.
+
+**Le point 2 ne concerne PAS le web** : un beat web ne dessine aucun `<text>`, tout son texte est du
+HTML en flux CSS, sans ligne de base explicite à faire coïncider avec quoi que ce soit.
+
+**Il vous concerne, vous, si un composant Remotion place ses lignes à la main** via la commodité en
+pixels `leadOf` — c'est exactement la situation « un bloc en flux CSS doit aligner sa première ligne
+de base sur une coordonnée explicite ». Dans ce cas : **mesurez un repère de ligne de base sur le
+moteur où vous livrez, ne compilez pas la formule.** Une règle d'arrondi propre à une version de
+navigateur, cuite dans du code partagé, est fausse en silence sur tous les moteurs non mesurés.
+
+Tables complètes dans la spec de `rerender/static-corpus`, §5.4.
