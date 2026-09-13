@@ -85,8 +85,11 @@ Add — **token flow (D4)**:
 - `POST /auth/token/start {email}` → sends the existing magic-link email and returns
   `{request_id, poll_interval, expires_at}`. The link carries the request id. Same send-rate protections as
   `/auth/send-link`.
-- `GET /auth/verify` for a token request marks the request as confirmed and renders a minimal HTML page
-  ("You're connected — you can close this tab") instead of redirecting to `/`, which no longer exists.
+- `GET /auth/token/confirm?token=…` (the emailed link, a single-use magic-link JWT of type
+  `token_request` carrying only the request id's hash) marks the request as confirmed and renders a
+  minimal HTML page ("You're connected — you can close this tab"). The cookie `/auth/verify` is untouched.
+- Pending requests are stored in a new `token_requests` table (migration `003_token_requests.sql`, RLS on,
+  no grant to `anon`/`authenticated` — it holds emails). Applying it to Supabase requires Rémy's go.
 - `GET /auth/token/poll?request_id=…` → `202 {status:"pending"}` until confirmed, then
   `200 {token, email, expires_at}` **exactly once** (the request is consumed), `410` when expired or consumed.
   Pending requests expire after 15 minutes.
@@ -94,8 +97,11 @@ Add — **token flow (D4)**:
 - `get_current_user` accepts `Authorization: Bearer <token>` (type `api`) in addition to the cookie; the
   signed-in quota keys on the email hash as today.
 - `GET /auth/status` answers for a Bearer token too (used as the credential probe, see Part 2).
-- CORS: confirm `Authorization` is admitted by the preflight from the Splash origin; list it explicitly if
-  the wildcard does not cover it.
+- A request carrying an invalid or expired Bearer gets `401 {"error":"invalid_token"}` from search and
+  `/auth/status` — never a silent anonymous downgrade, so the client knows to reconnect.
+- CORS: the live preflight already admits `authorization` from `https://buriedsignals.github.io`
+  (measured 2026-09-13, answered by the HF proxy). The app adds that origin to `allowed_origins` and exposes
+  the `X-RateLimit-*` headers itself, so the behaviour no longer depends on the proxy.
 
 Now-orphaned but left in place (no scope creep): cookie login routes, `/api/newsletter/subscribe`.
 
