@@ -39,7 +39,12 @@ import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { matchConvention } from "../../skills/palette/scripts/palette.mjs";
-import { DirectedChoroplethMap, mapGeometryFor, placementsFor } from "./DirectedChoroplethMap.tsx";
+import {
+  DirectedChoroplethMap,
+  mapGeometryFor,
+  placementsFor,
+  subjectRingOf,
+} from "./DirectedChoroplethMap.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -436,6 +441,10 @@ if (above.length !== 7)
 export const report = { above: above.map((r) => ({ iso: r.iso, lowCarbon: r.lowCarbon })) };
 export const plans = {};
 export const geometry = {};
+/** WHERE EVERY WORD ENDED UP, PER DIRECTION — published so a test can hold the placement to the
+ *  owner's own two rules (near its feature, never over another text label) against the run that
+ *  actually drew the picture, rather than against a synthetic camera that proves nothing. */
+export const placements = {};
 
 /** ALBANIA'S NEIGHBOURS ARE DERIVED FROM THE FROZEN SHAPES, not typed from memory. Two countries
  *  are neighbours when a vertex of one lands within a tenth of a degree of a vertex of the other.
@@ -584,6 +593,19 @@ const textPerRegister = {
   value: ranked.map((r) => format(r.lowCarbon)).join(" "),
 };
 
+/** THE PANEL'S COPY, PUBLISHED — every ladder rung the layout may spend, so a test can put the
+ *  SAME words through `mapGeometryFor` in a different face and compare. A test that declared its own
+ *  headline would be measuring a beat nobody ships. */
+export const copy = {
+  title,
+  limits,
+  reading,
+  source,
+  callout: CALLOUT,
+  aspect: CAMERA_ASPECT,
+  textPerRegister,
+};
+
 const filed = readdirSync(DIRECTIONS)
   .filter((f) => f.endsWith(".md"))
   .map((f) => readDirection(join(DIRECTIONS, f)));
@@ -655,22 +677,42 @@ const seatOf = (iso) => {
 
 /** THE RAMP, AND THE COLOUR UNDER ANY POINT OF THE MAP — one construction, because the layer that
  *  paints a class and the search that decides what ink a word over that class needs are asking the
- *  same question. The component spends the same two poles for the KEY it still draws. */
+ *  same question. The component spends the same two poles for the KEY it still draws.
+ *
+ *  `cellOf` ANSWERS FOR A SHAPE, NOT FOR A VALUE, and that is the change a word on land forced. The
+ *  fill a point takes is a three-way question the `classes` layer already asks in its own `case`
+ *  expression — has a value, is in the study set and has none, or is neither — and answering it from
+ *  a bare `value` collapsed the last two. A word may now land on Morocco, which is context land and
+ *  not a missing reading; the two are different colours on the plate and its ink has to be measured
+ *  against the one really under it.
+ *
+ *  `inkFor` is the ONE definition of what colour a word is drawn in. The search calls it to refuse a
+ *  cell no variant of the ink can be read on; `wordsOf` calls it to draw. Two copies is how a search
+ *  clears a placement the drawing then renders illegible. */
 function rampFor(direction) {
-  const { ink } = deriveFurniture(direction.ground);
+  const { ink, muted } = deriveFurniture(direction.ground);
   const low = mix(direction.accent, direction.ground, 0.88);
   const high = mix(direction.accent, ink, 0.3);
   const classCount = BREAKS.length + 1;
   const classFill = (i) => mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
   const classOf = (v) => BREAKS.filter((b) => v >= b).length;
   const missingFill = mix(direction.ground, ink, 0.13);
+  const landNoValue = mix(direction.ground, ink, 0.05);
   return {
     classFill,
     classOf,
     missingFill,
-    landNoValue: mix(direction.ground, ink, 0.05),
+    landNoValue,
     coast: mix(direction.ground, ink, 0.22),
-    cellUnder: (v) => (v === null ? missingFill : classFill(classOf(v))),
+    /** THE SEVEN THE HEADLINE IS ABOUT ARE TAKEN TO 7:1, not to the 4.5 floor: they should be the
+     *  first thing read on the plate, not the last thing that technically passes. `null` when no
+     *  variant of the colour reaches its floor on that cell — measured on 2026-09-13, that is
+     *  classes 3 and 4 of the ramp in all three directions, and it is a refusal in the search
+     *  rather than a `null` fill in the layer. */
+    inkFor: (klass, cell) =>
+      klass === "feature"
+        ? adjustToContrast(direction.accent, cell, 7)
+        : adjustToContrast(muted, cell, TEXT_CONTRAST_MIN),
   };
 }
 
@@ -781,10 +823,12 @@ function layersFor(direction, g, placement) {
    *  is about should be the first thing read on the plate, not the last thing that technically
    *  passes.
    *
-   *  WHICH CELL is the search's answer, not a guess: a name that fits inside its country lands on
-   *  that country's own class, and a name pushed out to sea lands on the water. `placementsFor`
-   *  carries the colour it decided in `onCell`, so the ink is derived from the same value the halo
-   *  is struck in. */
+   *  WHICH CELL is the search's answer, not a guess: it reads the area really under the word's own
+   *  centre out of the same grid it placed the word with, whether that is the country's own class, a
+   *  neighbour's, or open water. `placementsFor` carries the colour it decided in `onCell`, so the
+   *  ink is derived from the same value the halo is struck in — and from the same `inkFor` the
+   *  search refused an unreadable cell with. */
+  const { inkFor } = rampFor(direction);
   const wordsOf = (labels) => ({
     type: "FeatureCollection",
     features: labels.map((l) => ({
@@ -793,10 +837,7 @@ function layersFor(direction, g, placement) {
         iso: l.iso,
         name: l.text,
         onCell: l.onCell,
-        ink:
-          l.klass === "feature"
-            ? adjustToContrast(direction.accent, l.onCell, 7)
-            : adjustToContrast(muted, l.onCell, TEXT_CONTRAST_MIN),
+        ink: inkFor(l.klass, l.onCell),
       },
       geometry: { type: "Point", coordinates: at([l.x, l.y]) },
     })),
@@ -906,11 +947,13 @@ function layersFor(direction, g, placement) {
           },
         ],
       },
+      /** ONE DEFINITION OF THE CIRCLE — `subjectRingOf`, which the placement search also reads, so
+       *  the ring drawn here and the ground the subject's own word is kept off cannot drift. */
       paint: {
-        "circle-radius": Math.max((Math.max(seat.width, seat.height) * g.mapW) / 2 + 5, 7),
+        "circle-radius": subjectRingOf(seat, g.mapW, direction).radius,
         "circle-opacity": 0,
         "circle-stroke-color": accentInk,
-        "circle-stroke-width": direction.stroke.rule * 1.6,
+        "circle-stroke-width": subjectRingOf(seat, g.mapW, direction).stroke,
       },
     },
   ];
@@ -972,11 +1015,21 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     // treatment claims rather than only two.
     context: ranked.slice(-3).map((r) => r.iso),
     waters: WATERS,
-    cellUnder: rampFor(direction).cellUnder,
-    waterTint: tints.water,
+    /** THE COLOUR REALLY UNDER A POINT — the same three-way answer the `classes` layer paints, and
+     *  the sea the plate is really baked in for a point that is not on land at all. */
+    cellOf: (shape) => {
+      const ramp = rampFor(direction);
+      if (!shape) return tints.water;
+      if (shape.value !== null && shape.value !== undefined)
+        return ramp.classFill(ramp.classOf(shape.value));
+      return shape.inStudySet ? ramp.missingFill : ramp.landNoValue;
+    },
+    inkFor: rampFor(direction).inkFor,
+    subject: ODD_ONE,
     namesWater: offered.some((t) => t.id === "water-is-a-tint-not-a-grey"),
     onNote: (note) => console.log(`  ${note}`),
   });
+  placements[id] = { placement, geometry: geometry[id], registers: placement.registers };
 
   const plan = makePlan({
     style: STYLE,

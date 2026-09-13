@@ -41,10 +41,19 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  resolveRegister,
+  applyCase,
+  DERIVED_SIZE_RATIO,
+} from "#shared/chart-beat/registers.mjs";
+import { viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
+import { LADDERS } from "#shared/design-base/resolve-families.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
+/** The size this beat pins, named once: every floor below is stated in the CSS px a reader of THAT
+ *  frame actually sees, not in the SVG's own user units. */
+const PINNED_SIZE = "landscape";
 
 type RegisterName = "display" | "eyebrow" | "body" | "axis" | "annot" | "value";
 
@@ -94,16 +103,129 @@ const widthOf = (text: string, r: any) =>
   Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
 const BAND_PROBE = "Hxpg1,";
 const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
-/** A register, resolved against the direction and given the ink its own row names. */
-const registerOf = (direction: any, name: RegisterName) => {
+
+/**
+ * A FILED SIZE NAMES A CAP HEIGHT, NOT A POINT SIZE — AND THE CAP HEIGHT IS MEASURED FROM THE FILE
+ * THE RENDER WILL ACTUALLY DRAW WITH.
+ *
+ * THE DEFECT. A direction files `display: 32`. `resolve-families.mjs` turns the ROLE that row names
+ * into a concrete family by asking each candidate on the role's ladder whether it covers this beat's
+ * own text — so the family is a function of the COPY, and one missing code point moves it (Lato and
+ * Roboto Slab have no U+2082, so a headline carrying `CO₂` resolves further down). The size did not
+ * move with it. A `32` measured on the head of the ladder was spent unchanged on whatever face the
+ * coverage question happened to land on, and two faces at 32px are not the same size on the page:
+ * measured here on 2026-09-13, cap height per unit of nominal size runs from 0.693 (Ubuntu) to 0.770
+ * (Libre Baskerville) — 11 % of optical size, silently, with nothing anywhere going red.
+ *
+ * THE RULE. A register's filed size is read as the cap height it produces ON THE HEAD OF ITS OWN
+ * ROLE'S LADDER, and every other face is resolved to the size that reaches the same cap height. The
+ * ladder may change the family; it may not change the size on the page. The reference is measured,
+ * per weight, out of the `.ttf` `typefaces.mjs` fetched — never a table of per-family constants,
+ * which is the next thing to go stale the day a newsroom files a family nobody anticipated.
+ *
+ * This is the discipline `shared/map-beat/tints.mjs` already applies to colour: *a fixed dose cannot
+ * work across three grounds*, so the basemap targets a MEASURED gap and solves for the dose. A fixed
+ * point size cannot work across three faces, so a register targets a measured cap height and solves
+ * for the size.
+ *
+ * WHAT IT IS NOT. Cap height is the VERTICAL half only. At one cap height two faces still set at
+ * different widths — that is what makes them different typefaces and normalising it away would be
+ * wrong — so the horizontal half is `mapGeometryFor`'s size-for-lines ladder, below.
+ */
+const CAP_PROBE = "H";
+/** Measured large, then divided: resvg reports an integer-ish ink box, so a 200px probe carries
+ *  more significant figures than a 10px one. The ratio is linear in size and is asserted to be. */
+const CAP_PROBE_SIZE = 200;
+const capRatios = new Map<string, number>();
+export function capRatioOf(fontFamily: string, fontWeight: number) {
+  const key = `${fontFamily}|${fontWeight}`;
+  const held = capRatios.get(key);
+  if (held !== undefined) return held;
+  const ratio =
+    measureTextBand(CAP_PROBE, {
+      fontSize: CAP_PROBE_SIZE,
+      fontWeight,
+      fontFamily,
+    }).ascent / CAP_PROBE_SIZE;
+  if (!(ratio > 0.4 && ratio < 1))
+    throw new Error(
+      `the cap height of ${fontFamily} at weight ${fontWeight} measured ${ratio.toFixed(4)} of its ` +
+        `nominal size, which is not a cap height — a Latin face runs about 0.69 to 0.77. The face ` +
+        `was probably not handed to the rasteriser at all, in which case nothing was drawn and the ` +
+        `ink box is empty.`,
+    );
+  capRatios.set(key, ratio);
+  return ratio;
+}
+
+/** The face a register's role resolves to FIRST — the reference its filed size was read against.
+ *  `resolveDirectionFamilies` records the role beside the family it chose; a direction that never
+ *  went through it (a test handing a concrete family straight in) has no role to reference, and
+ *  then the face IS its own reference and the filed size stands. */
+const ladderHeadFor = (direction: any, name: RegisterName): string | null => {
+  const decision = direction?.decisions?.find((d: any) => d.register === name);
+  const ladder = decision
+    ? (LADDERS as Record<string, string[]>)[decision.role]
+    : null;
+  return ladder?.[0] ?? null;
+};
+
+/** A register, resolved against the direction, sized to its role's own cap height, and given the ink
+ *  its own row names.
+ *
+ *  `filedSize` travels beside `fontSize` because the two answer different questions and the layout
+ *  needs both: `fontSize` is what the glyphs are DRAWN at, `filedSize` is the direction's own
+ *  vertical rhythm — the leading, the gaps between blocks — which is a design decision about the
+ *  page and must not move when the face does. Tracking is filed in pixels at the filed size, which
+ *  is an em fact written in px, so it travels with the drawn size. */
+export const registerOf = (direction: any, name: RegisterName) => {
   const { ink, muted } = deriveFurniture(direction.ground);
   const r = resolveRegister(direction, name);
+  const head = ladderHeadFor(direction, name);
+  const scale = head
+    ? capRatioOf(head, r.fontWeight) / capRatioOf(r.fontFamily, r.fontWeight)
+    : 1;
+  const fontSize = Math.round(r.fontSize * scale * 100) / 100;
   return {
     ...r,
+    fontSize,
+    filedSize: r.fontSize,
+    referenceFamily: head ?? r.fontFamily,
+    letterSpacing: (Number(r.letterSpacing ?? 0) * fontSize) / r.fontSize,
     fill: ({ ink, muted, accent: direction.accent } as Record<string, string>)[
       r.ink
     ],
   };
+};
+
+/**
+ * HOW SMALL A HEADLINE MAY GET BEFORE IT HAS STOPPED BEING ONE. TWO FLOORS, AND THE HIGHER BINDS —
+ * because they answer two different questions and a ladder that honoured only one would pass the
+ * other.
+ *
+ * ONE STEP OF VOICE, AND NO MORE. `registers.mjs` files exactly one number for how far a register
+ * may move and still be that register: `DERIVED_SIZE_RATIO`, 0.88 — *how much smaller a derived
+ * apparatus register is than the core voice it comes from: quiet enough to recede, large enough to
+ * read.* One step of it is the distance between a core voice and the apparatus derived out of it, so
+ * a display that has given up a whole step has not become a smaller headline, it has become the
+ * register below. This is the floor that actually binds on all three directions today, and it is
+ * what makes the owner's *slightly* smaller slight: at most 12 %.
+ *
+ * AND NEVER OUT OF LARGE TEXT. `colour.mjs` names the second threshold in its own refusal: *large
+ * text is text at 24px, or 18.66px bold, or larger* (WCAG 2.2 SC 1.4.3, the large-text relaxation).
+ * Below it a run is held to the stricter contrast floor and stops being the thing a reader takes in
+ * first. A direction that filed a small display could reach it before it reached the voice step, and
+ * then this is the one that binds. The conversion is the repository's own: `viewedAtCssPx` says a
+ * landscape frame is read at 900 CSS px, so this beat's 960-unit SVG has one user unit to 0.9375 CSS
+ * px — 24 CSS px is 25.6 units, 18.66 bold is 19.9.
+ */
+const LARGE_TEXT_CSS_PX = 24;
+const LARGE_TEXT_BOLD_CSS_PX = 18.66;
+const displayFloorFor = (r: { fontWeight: number; fontSize: number }) => {
+  const unitsPerCssPx = FRAME.width / viewedAtCssPx(PINNED_SIZE);
+  const floorCssPx =
+    Number(r.fontWeight) >= 700 ? LARGE_TEXT_BOLD_CSS_PX : LARGE_TEXT_CSS_PX;
+  return Math.max(floorCssPx * unitsPerCssPx, r.fontSize * DERIVED_SIZE_RATIO);
 };
 
 /** THE DRAWN SIZE IS A LAYOUT OUTPUT, AND IT HAS EXACTLY ONE DEFINITION. The runner needs it before
@@ -178,9 +300,14 @@ export function mapGeometryFor({
   // So the text goes BESIDE the map, which is what both ProPublica map records do — a large map with
   // its own panel — and the map takes the full height of the plate. Same page, same registers, and
   // 2.4x the map.
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  /** EVERY LEAD AND EVERY GAP IS THE FILED SIZE'S, NEVER THE DRAWN ONE. The direction's vertical
+   *  rhythm is a decision about the PAGE; the face only decides how wide the words set. Once a
+   *  register is sized to a cap-height target, its filed size IS its cap height in disguise, so a
+   *  rhythm read off `filedSize` is the same rhythm on every face — and a headline the ladder has
+   *  shrunk keeps the block it was given rather than quietly reflowing everything under it. */
+  const titleLead = display.filedSize * 1.22;
+  const bodyLead = body.filedSize * 1.45;
+  const annotLead = annot.filedSize * 1.4;
   const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
 
   /** The panel is a SHARE of the plate rather than a fixed width, so a direction with a larger body
@@ -201,8 +328,14 @@ export function mapGeometryFor({
    *  relative to the reading line's top and let it grow upward — and when the ladder dropped the
    *  reading line, the callout grew straight through the key. A block whose position is derived from
    *  a block that may not exist is a block that will one day be drawn on top of something. */
-  const layoutFor = (panel: number, t: number, l: number, r: number) => {
-    const titleLines = wrap(set(title[t], display), panel, display);
+  const layoutFor = (
+    panel: number,
+    t: number,
+    l: number,
+    r: number,
+    dsp: typeof display = display,
+  ) => {
+    const titleLines = wrap(set(title[t], dsp), panel, dsp);
     const limitLines = wrap(set(limits[l], body), panel, body);
     const calloutLines = callout.lines.flatMap((c) =>
       wrap(set(c, annot), panel, annot),
@@ -211,15 +344,15 @@ export function mapGeometryFor({
       r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
     const sourceLines = wrap(set(source, body), panel, body);
 
-    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+    const eyebrowBaseline = PAD + eyebrowReg.filedSize;
     const titleTop =
-      eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+      eyebrowBaseline + eyebrowReg.filedSize * 0.9 + display.filedSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
+      titleTop + titleLines.length * titleLead + body.filedSize * 0.8;
     const calloutTop =
       limitsTop +
       limitLines.length * bodyLead +
-      annot.fontSize * 0.7 +
+      annot.filedSize * 0.7 +
       annotBand.ascent;
     const keyTop =
       calloutTop +
@@ -227,7 +360,7 @@ export function mapGeometryFor({
       axisBand.ascent * 0.8 +
       axisBand.ascent;
     const readingTop =
-      keyTop + keyRoom + annot.fontSize * 1.0 + annotBand.ascent;
+      keyTop + keyRoom + annot.filedSize * 1.0 + annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop =
       readingTop + Math.max(0, readingLines.length - 1) * annotLead;
@@ -249,24 +382,131 @@ export function mapGeometryFor({
     };
   };
 
-  /** THE LADDER NOW ANSWERS A DIFFERENT QUESTION. Stacked, it asked how much height was left for the
-   *  map; beside, the map's height is fixed and the ladder asks whether the PANEL's copy fits the
-   *  column it has. The rungs and their order are unchanged — reading line first, then the
-   *  standfirst, then the headline — because that is the order a desk cuts in whatever the shape of
-   *  the page. */
+  /**
+   * THE HEADLINE MAY TRADE SIZE FOR FORM, AND THAT IS THE HORIZONTAL HALF OF ADAPTING TO A FACE.
+   *
+   * Cap-height normalisation makes a filed size mean the same optical size on every face. It does
+   * not make a headline take the same number of LINES, because line count is a question about SET
+   * WIDTH, and set width is exactly what a typeface is: measured on 2026-09-13 at one cap height,
+   * this beat's own headline sets 8.6 % wider in Montserrat than in Merriweather, and 20 % wider in
+   * Montserrat than in PT Sans. The ladder used to hold the size fixed and shorten the COPY until it
+   * fit, which is why `nocturne` fell all the way to the stub headline and STILL took four lines in
+   * a panel it had widened to 37 % of the plate.
+   *
+   * So the headline's block is a LINE BUDGET, and the size is what adapts to reach it. The budget is
+   * counted on the head of the role's own ladder — the same reference the cap height is measured
+   * against — so the rung a direction is standing on does not move when coverage moves the family.
+   * Within a rung, the size is the LARGEST that reaches the budget, never smaller than it has to be,
+   * and never below `displayFloorFor`. A budget the floor cannot reach is not a rung at all.
+   *
+   * THE CUT ORDER IS THE DESK'S, UNCHANGED, with one thing inserted where the owner put it: cut the
+   * reading line, then the standfirst, THEN shrink the headline, then take a shorter headline, and
+   * only when there is nothing left does the panel take width from the map. *Prefer the fuller
+   * headline at a slightly smaller size over the stub headline at full size* — so the size rung sits
+   * above the form rung, and the copy is never shortened while type could have given way instead.
+   *
+   * The last rung of each form is `lines: null` — the filed size at whatever line count it lands on.
+   * It is the honest floor of the mechanism: a face so wide that even the smallest large-text size
+   * cannot reach the reference budget is drawn at its own size rather than refused.
+   */
+  const referenceDisplay = {
+    ...display,
+    fontFamily: display.referenceFamily,
+    fontSize: display.filedSize,
+    letterSpacing:
+      (display.letterSpacing * display.filedSize) / display.fontSize,
+  };
+  const DISPLAY_FLOOR = displayFloorFor(display);
+  /** BOTH ENDS OF THE BUDGET LADDER ARE THE REFERENCE FACE'S, not the drawn one's — the rung a
+   *  direction stands on is a property of the DIRECTION, and the face's job is to reach it.
+   *
+   *  Measured, because the first version only anchored the top end and it was not enough: on
+   *  `nocturne` at a 33 % panel, Montserrat cannot bring the stub headline to three lines without
+   *  breaking its floor, but Rubik, Nunito, Inter and Noto Serif all can. So four of the five
+   *  geometric-sans candidates reached a rung the reference face could not, fitted a narrower panel,
+   *  and came out with a SHORTER headline and a bigger map than the direction as filed. Coverage
+   *  moving the family is not supposed to re-edit the copy. The ladder now stops where the reference
+   *  face stops. */
+  const referenceFloor = {
+    ...referenceDisplay,
+    fontSize: displayFloorFor(referenceDisplay),
+    letterSpacing:
+      (referenceDisplay.letterSpacing * displayFloorFor(referenceDisplay)) /
+      referenceDisplay.fontSize,
+  };
+  /** A quarter of a user unit is half a delivered pixel at this beat's `scale: 2` — finer than the
+   *  rasteriser can draw the difference, so the ladder is continuous for every purpose but arithmetic. */
+  const DISPLAY_STEP = 0.25;
+  const displayAt = (fontSize: number) => ({
+    ...display,
+    fontSize,
+    letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
+  });
+  /** The largest size at or below the filed one whose headline reaches `budget` lines, or `null`
+   *  when the large-text floor is met first. */
+  const displayForLines = (t: number, panel: number, budget: number) => {
+    for (
+      let size = display.fontSize;
+      size >= DISPLAY_FLOOR - 1e-9;
+      size -= DISPLAY_STEP
+    ) {
+      const at = displayAt(Math.round(size * 100) / 100);
+      if (wrap(set(title[t], at), panel, at).length <= budget) return at;
+    }
+    return null;
+  };
   const rungs: Array<{
     share: number;
     title: number;
+    /** The line budget the headline was held to, counted on the ladder head; `null` for the
+     *  fallback rung that draws at the filed size and takes whatever it takes. */
+    lines: number | null;
+    display: typeof display;
     limit: number;
     reading: number;
   }> = [];
-  for (const share of SHARES)
-    for (let t = 0; t < title.length; t++)
-      for (let l = 0; l < limits.length; l++) {
-        for (let r = 0; r < reading.length; r++)
-          rungs.push({ share, title: t, limit: l, reading: r });
-        rungs.push({ share, title: t, limit: l, reading: -1 });
+  for (const share of SHARES) {
+    const panel = panelFor(share);
+    for (let t = 0; t < title.length; t++) {
+      const budgets: Array<number | null> = [];
+      const reference = wrap(
+        set(title[t], referenceDisplay),
+        panel,
+        referenceDisplay,
+      ).length;
+      const reachable = wrap(
+        set(title[t], referenceFloor),
+        panel,
+        referenceFloor,
+      ).length;
+      for (let budget = reference; budget >= reachable; budget--)
+        budgets.push(budget);
+      budgets.push(null);
+      for (const lines of budgets) {
+        const dsp = lines === null ? display : displayForLines(t, panel, lines);
+        if (!dsp) continue;
+        for (let l = 0; l < limits.length; l++) {
+          for (let r = 0; r < reading.length; r++)
+            rungs.push({
+              share,
+              title: t,
+              lines,
+              display: dsp,
+              limit: l,
+              reading: r,
+            });
+          rungs.push({
+            share,
+            title: t,
+            lines,
+            display: dsp,
+            limit: l,
+            reading: -1,
+          });
+        }
       }
+    }
+  }
   /** THE LADDER IS WALKED LAZILY, AND THAT IS NOT A MICRO-OPTIMISATION. Building every rung's
    *  layout eagerly and then taking the first that fits computed 144 of them to use one — and each
    *  layout wraps five blocks of copy, each wrap measures every growing prefix, and every prefix
@@ -284,6 +524,7 @@ export function mapGeometryFor({
       rung.title,
       rung.limit,
       rung.reading,
+      rung.display,
     );
     if (layout.spare >= 0) {
       fits = { rung, layout };
@@ -299,6 +540,7 @@ export function mapGeometryFor({
           rung.title,
           rung.limit,
           rung.reading,
+          rung.display,
         ),
       }))
       .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
@@ -344,6 +586,11 @@ export function mapGeometryFor({
     titleLead,
     bodyLead,
     annotLead,
+    /** THE HEADLINE IS DRAWN IN THE SIZE THE LADDER SOLVED, not in the one the direction filed. It
+     *  is returned rather than recomputed for the same reason the drawn map size is: the component
+     *  and the runner must not answer the same question twice. */
+    display: fits.rung.display,
+    displayFloor: DISPLAY_FLOOR,
   };
 }
 
@@ -365,7 +612,28 @@ export function mapRegistersFor(direction: any) {
     axis,
     area,
     feature: { ...area, fontWeight: 700 },
-    water: { ...axis, fontStyle: "italic", letterSpacing: 0, transform: "none" },
+    water: {
+      ...axis,
+      fontStyle: "italic",
+      letterSpacing: 0,
+      transform: "none",
+    },
+  };
+}
+
+/** THE RING AROUND THE SUBJECT, DEFINED ONCE. The runner draws it as a layer and the placement
+ *  search has to keep the subject's own word off it — two answers to "how big is the ring" is how a
+ *  word ends up struck through the mark that was supposed to single its country out. Returns the
+ *  radius MapLibre is given and the stroke it is given, so the outer edge is `radius + stroke / 2`
+ *  in both places. */
+export function subjectRingOf(
+  anchor: { width: number; height: number },
+  mapW: number,
+  direction: any,
+) {
+  return {
+    radius: Math.max((Math.max(anchor.width, anchor.height) * mapW) / 2 + 5, 7),
+    stroke: direction.stroke.rule * 1.6,
   };
 }
 
@@ -408,9 +676,36 @@ export type Placed = {
  * search living beside the first, which is the defect this whole sub-project exists to remove; a
  * renderer of another genre calls THIS.
  *
- * Everything below is the component's own machine, moved whole: the visible-crop bound, the
- * scanline land grid, `fitsAt`, the sea ladder with its gap and its leash, and the outward-leaning
- * spiral. Not one rule changed in the move.
+ * A COUNTRY'S NAME GOES NEAR ITS COUNTRY, AND OPEN WATER IS NO LONGER THE PRICE OF ADMISSION.
+ *
+ * The search used to REFUSE any position whose box touched a drawn coast, so a name that could not
+ * clear every coastline near its own country walked until it found sea — and it walked a long way:
+ * `ALBANIE` came out over the Black Sea and `SUISSE` was parked in the Mediterranean south of Italy
+ * on all three directions, both on leaders crossing most of a continent. Every candidate near the
+ * country was legible and none of them was allowed.
+ *
+ * Rémy relaxed the rule in his own words: *tu n'es pas obligé de mettre les labels sur des zones de
+ * mer seulement tant que ça ne chevauche pas un autre label text c'est bon.* So the constraints are
+ * now what they actually have to be:
+ *
+ *   HARD — no overlap with another TEXT label (the seas are placed first and are taken), the whole
+ *   word inside the visible crop, and an ink that reaches the beat's floor on the cell it lands on
+ *   (7:1 for one of the seven the headline is about, the text floor for the quiet ones). A word the
+ *   reader cannot read is not a placement, whatever ground it is on.
+ *
+ *   HARD, for the subject only — clear of its own RING. A word struck through the mark that singles
+ *   its country out defeats the mark.
+ *
+ *   OBJECTIVE — the shortest leader. The search scores every candidate by how far it sits from the
+ *   country's own seat and takes the nearest, which is what "près de sa zone" means as arithmetic.
+ *
+ *   TIEBREAK — open water, worth exactly one cap height of leader. A word will travel that much
+ *   further to sit in the sea and not one pixel more. Water was a gate; it is now a nudge.
+ *
+ * Everything else below is the component's own machine, moved whole and unchanged: the visible-crop
+ * bound, the scanline grid, the sea ladder with its gap and its leash, and the outward-leaning
+ * angle order — which is now the tie-break between candidates at equal score rather than the search
+ * itself.
  */
 export function placementsFor({
   shapes,
@@ -419,9 +714,10 @@ export function placementsFor({
   direction,
   named,
   context,
+  subject,
   waters,
-  cellUnder,
-  waterTint,
+  cellOf,
+  inkFor,
   namesWater,
   onNote,
 }: {
@@ -431,12 +727,19 @@ export function placementsFor({
   direction: any;
   named: string[];
   context: string[];
+  /** The one area the plate rings. Its own name is kept off that ring; `null` when nothing is
+   *  ringed. */
+  subject: string | null;
   waters: Water[];
-  /** The colour a word lands on, given the value of the area under it — the class fill, or the
-   *  missing fill. The ink and the halo are both measured against it. */
-  cellUnder: (value: number | null) => string;
-  /** The sea the plate is actually baked in: what a name pushed out of its country lands on. */
-  waterTint: string;
+  /** The colour of the cell a point lands on: the area under it, or `null` for open water. One
+   *  definition with the layer that PAINTS that cell — the ink and the halo are both measured
+   *  against what this returns. */
+  cellOf: (shape: Shape | null) => string;
+  /** The ink a word of this class takes on that cell, or `null` when no variant of it reaches the
+   *  floor. The runner's own function, passed in rather than rebuilt, because the layer that draws
+   *  the word spends the same one: a search that cleared a cell the drawing then failed on would be
+   *  measuring a different picture. */
+  inkFor: (klass: "feature" | "area", cell: string) => string | null;
   namesWater: boolean;
   onNote?: (note: string) => void;
 }) {
@@ -452,7 +755,7 @@ export function placementsFor({
     y1: (mapBox.y + mapBox.height - mapY) / mapW,
   };
 
-  /** IS THERE LAND HERE? — answered by a GRID FILLED ONCE, not by walking the coastlines.
+  /** WHAT IS UNDER THIS POINT? — answered by a GRID FILLED ONCE, not by walking the coastlines.
    *
    *  The label searches run hundreds of thousands of probes, and the first version answered each one
    *  by testing the point against every ring on the plate: about 1 500 rings, 9 000 vertices, per
@@ -465,43 +768,53 @@ export function placementsFor({
    *  where every edge crosses that row, sort the crossings, and fill the spans between them. The
    *  cost is rows x edges once — a couple of million steps — and every probe afterwards is one
    *  array lookup. The grid is fine enough that a cell is well under a pixel of the drawn map, so
-   *  no label can be placed on land the grid rounded away. */
+   *  no label can be placed on land the grid rounded away.
+   *
+   *  IT HOLDS WHICH AREA, NOT WHETHER THERE IS ONE. It was a bitmap of land while land was a
+   *  refusal; now that a word may sit on a country, the search has to know WHICH country, because
+   *  the cell under a word is what its ink and its halo are measured against — the whole reason the
+   *  labels are legible today. So the fill is run per shape and writes the shape's own index. The
+   *  work is the same order it always was; the answer is simply no longer thrown away. */
   const GRID_W = 900;
   const GRID_H = Math.ceil(GRID_W / aspect);
-  const land = new Uint8Array(GRID_W * GRID_H);
-  {
+  /** `0` is open water; anything else is `shapes` index + 1. Int32 because a beat may carry more
+   *  areas than a byte holds and a silent wrap would name the wrong country. */
+  const cells = new Int32Array(GRID_W * GRID_H);
+  for (let index = 0; index < shapes.length; index++) {
     const rows: number[][] = Array.from({ length: GRID_H }, () => []);
-    for (const sh of shapes)
-      for (const ring of sh.rings)
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-          const [xi, yi] = ring[i];
-          const [xj, yj] = ring[j];
-          if (yi === yj) continue;
-          const y0 = Math.min(yi, yj);
-          const y1 = Math.max(yi, yj);
-          const r0 = Math.max(0, Math.ceil(y0 * GRID_W - 0.5));
-          const r1 = Math.min(GRID_H - 1, Math.floor(y1 * GRID_W - 0.5));
-          for (let r = r0; r <= r1; r++) {
-            const y = (r + 0.5) / GRID_W;
-            if (y < y0 || y >= y1) continue;
-            rows[r].push(xi + ((y - yi) / (yj - yi)) * (xj - xi));
-          }
+    for (const ring of shapes[index].rings)
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i];
+        const [xj, yj] = ring[j];
+        if (yi === yj) continue;
+        const y0 = Math.min(yi, yj);
+        const y1 = Math.max(yi, yj);
+        const r0 = Math.max(0, Math.ceil(y0 * GRID_W - 0.5));
+        const r1 = Math.min(GRID_H - 1, Math.floor(y1 * GRID_W - 0.5));
+        for (let r = r0; r <= r1; r++) {
+          const y = (r + 0.5) / GRID_W;
+          if (y < y0 || y >= y1) continue;
+          rows[r].push(xi + ((y - yi) / (yj - yi)) * (xj - xi));
         }
+      }
     for (let r = 0; r < GRID_H; r++) {
       const xs = rows[r].sort((a, b) => a - b);
       for (let k = 0; k + 1 < xs.length; k += 2) {
         const c0 = Math.max(0, Math.ceil(xs[k] * GRID_W - 0.5));
         const c1 = Math.min(GRID_W - 1, Math.floor(xs[k + 1] * GRID_W - 0.5));
-        for (let c = c0; c <= c1; c++) land[r * GRID_W + c] = 1;
+        for (let c = c0; c <= c1; c++) cells[r * GRID_W + c] = index + 1;
       }
     }
   }
-  const onLand = (x: number, y: number) => {
+  /** The shape under a point, or `null` for open water and for anything off the grid. */
+  const shapeAt = (x: number, y: number): Shape | null => {
     const c = Math.round(x * GRID_W - 0.5);
     const r = Math.round(y * GRID_W - 0.5);
-    if (c < 0 || c >= GRID_W || r < 0 || r >= GRID_H) return false;
-    return land[r * GRID_W + c] === 1;
+    if (c < 0 || c >= GRID_W || r < 0 || r >= GRID_H) return null;
+    const held = cells[r * GRID_W + c];
+    return held === 0 ? null : shapes[held - 1];
   };
+  const onLand = (x: number, y: number) => shapeAt(x, y) !== null;
 
   /** A WORD IS MEASURED ONCE. `measureText` loads and walks a face; calling it inside the probe
    *  loop measured the same string tens of thousands of times, and a render that should take
@@ -521,27 +834,46 @@ export function placementsFor({
    *  whose water was narrower than the word is tall: the contrast guard then measured it at 1.80:1
    *  on Sweden's own fill. A word occupies a box, so the box is what gets tested — eleven columns by
    *  three rows of it, in the map's own units. */
-  const fitsAt = (text: string, x: number, y: number, r: any = waterReg) => {
-    const half = widthOnce(set(text, r), r) / 2 / mapW;
-    const up = axisBand.ascent / mapW;
-    const down = axisBand.descent / mapW;
-    /** AND INSIDE THE FRAME, which this test did not ask until the camera moved onto the MapTiler
-     *  plate. `visible` was already computed and already enforced — on the COUNTRY names, a few
-     *  hundred lines below. The sea names never met it, so nothing went red while `Mer Méditerranée`
-     *  had its baseline under the bottom edge and printed as half a word. A guard that holds one
-     *  class of mark and not the other is the shape most defects here take. */
-    if (x - half < 0.004 || x + half > visible.x1 - 0.004) return false;
-    if (y - up < visible.y0 + 0.004 || y + down > visible.y1 - 0.004)
-      return false;
-    /** ELEVEN COLUMNS, NOT FIVE. `ISLANDE` is wider than Iceland, and with five sample columns the
-     *  island slipped between two of them: every probe was open water and the drawn word still had
-     *  its first letters on the coast. A sample grid coarser than the smallest thing it has to find
-     *  will one day fail to find it. */
+  /** THE BOX A WORD OCCUPIES, in the map's own units, and the eleven-by-three grid every test below
+   *  samples it on. ELEVEN COLUMNS, NOT FIVE: `ISLANDE` is wider than Iceland, and with five sample
+   *  columns the island slipped between two of them — every probe was open water and the drawn word
+   *  still had its first letters on the coast. A sample grid coarser than the smallest thing it has
+   *  to find will one day fail to find it. */
+  const footprintOf = (text: string, r: any) => ({
+    half: widthOnce(set(text, r), r) / 2 / mapW,
+    up: axisBand.ascent / mapW,
+    down: axisBand.descent / mapW,
+  });
+  const samples = function* (x: number, y: number, box: ReturnType<typeof footprintOf>) {
     for (let i = 0; i <= 10; i++) {
-      const dx = -half + (i / 10) * half * 2;
-      for (const dy of [-up, (down - up) / 2, down])
-        if (onLand(x + dx, y + dy)) return false;
+      const dx = -box.half + (i / 10) * box.half * 2;
+      for (const dy of [-box.up, (box.down - box.up) / 2, box.down])
+        yield [x + dx, y + dy] as const;
     }
+  };
+  /** THE WHOLE WORD IS INSIDE THE CROP, NOT ITS CENTRE. Bounding the anchor let `CHYPRE` sit half
+   *  past the crop and come out as `CHYPR` — and no guard saw it, because the overlap and frame
+   *  guards measure the PLATE's frame and this label was well inside that; what it left was the
+   *  MAP's. A crop is a frame too. The margin is a parameter because the sea names have always been
+   *  held to a tighter one than the country names, and this is the same test either way. */
+  const insideCrop = (
+    text: string,
+    x: number,
+    y: number,
+    r: any,
+    margin: number,
+  ) => {
+    const { half, up, down } = footprintOf(text, r);
+    if (x - half < margin || x + half > visible.x1 - margin) return false;
+    return y - up >= visible.y0 + margin && y + down <= visible.y1 - margin;
+  };
+  /** IN FRAME AND IN OPEN WATER — the SEA names' test, unchanged. A sea name on a country is the one
+   *  thing `three-classes-of-place-three-treatments` cannot survive, so for the waters land is still
+   *  a refusal and not a preference. */
+  const fitsAt = (text: string, x: number, y: number, r: any = waterReg) => {
+    if (!insideCrop(text, x, y, r, 0.004)) return false;
+    const box = footprintOf(text, r);
+    for (const [sx, sy] of samples(x, y, box)) if (onLand(sx, sy)) return false;
     return true;
   };
 
@@ -641,25 +973,6 @@ export function placementsFor({
         : ""),
   );
 
-  /** A NAME GOES INSIDE A COUNTRY ONLY IF THE WHOLE WORD IS INSIDE IT. Testing the anchor alone —
-   *  the centre of the largest ring's box — put `FRANCE` in France with its last three letters in
-   *  Germany, and a label that names its neighbour is worse than a label in the sea. Both ends and
-   *  the middle are tested, against that same ring. */
-  const anchorIsInside = (sh: Shape) => {
-    if (!sh.anchor) return false;
-    const ring = sh.rings.reduce((a, b) => (b.length > a.length ? b : a));
-    const reg = named.includes(sh.iso) ? feature : area;
-    const half = widthOnce(set(sh.name, reg).toUpperCase(), reg) / 2 / mapW;
-    const { x, y } = sh.anchor;
-    return [0, -half / 2, half / 2, -half, half].every((dx) =>
-      inRing(ring, x + dx, y),
-    );
-  };
-  const insideFits = (sh: Shape) =>
-    sh.anchor !== null &&
-    anchorIsInside(sh) &&
-    axisBand.ascent + axisBand.descent <= sh.anchor.height * mapW - 2;
-
   const labelBox = (text: string, x: number, y: number, r: any) => {
     const half = widthOnce(set(text, r), r) / 2;
     return {
@@ -669,21 +982,58 @@ export function placementsFor({
       y1: y * mapW + axisBand.descent,
     };
   };
+
+  /** THE SUBJECT'S RING IS TAKEN GROUND. It is not a text label, so the owner's one hard rule does
+   *  not reach it — but a word struck through the ring that singles its own country out defeats the
+   *  ring, and `ALBANIE` is the word most likely to land there now that near is what the search
+   *  wants. `subjectRingOf` is the runner's own definition of the circle it draws, so the box kept
+   *  clear here and the circle drawn there cannot drift apart. */
+  const ringBoxes: any[] = [];
+  {
+    const sh = subject ? byIso.get(subject) : null;
+    if (sh?.anchor) {
+      const ring = subjectRingOf(sh.anchor, mapW, direction);
+      const reach = ring.radius + ring.stroke / 2;
+      ringBoxes.push({
+        x0: sh.anchor.x * mapW - reach,
+        x1: sh.anchor.x * mapW + reach,
+        y0: sh.anchor.y * mapW - reach,
+        y1: sh.anchor.y * mapW + reach,
+      });
+    }
+  }
+
+  /**
+   * THE NEAREST PLACE THE WORD IS ALLOWED, and "allowed" is now a much shorter list than it was.
+   *
+   * The search enumerates the same spiral it always did — nearest ring first, angles ordered away
+   * from the middle of the frame, which is where an atlas puts a label it cannot fit in place — but
+   * it now starts at the seat itself (radius 0) and it SCORES every candidate instead of taking the
+   * first one that clears open water. The score is the leader length the candidate would need, less
+   * one cap height if the word would sit in the sea. So the shortest leader wins, water breaks a
+   * tie, and the outward angle order breaks a tie within that.
+   *
+   * Refused, and only these: a box that leaves the crop, a box that touches another text label's
+   * box, a box over the subject's own ring, and a cell whose ink cannot reach the word's floor.
+   */
+  const WATER_BONUS = axisBand.ascent / mapW;
+  /** A LEADER THAT STARTS INSIDE THE WORD IT POINTS FROM IS NOT A LEADER. `MOLDAVIE` is four times
+   *  as wide as Moldova: the search put it straight on the seat, the word covered Ukraine, and the
+   *  line and dot that were supposed to say which country it names were drawn under its own halo,
+   *  where nobody can see them. So a word that does not sit WHOLLY inside its own shape has to leave
+   *  its own seat far enough for the line to emerge — the seat outside the word's box plus this gap,
+   *  which is a visible leader in every direction rather than a minimum distance that only works
+   *  vertically. */
+  const LEADER_GAP = 3;
   const placeNear = (
     text: string,
     sx: number,
     sy: number,
     taken: any[],
     reg: any,
+    klass: "feature" | "area",
+    ownRing: Array<[number, number]> | null,
   ) => {
-    const ok = (x: number, y: number) =>
-      fitsAt(text, x, y, reg) && clearOf(labelBox(text, x, y, reg), taken);
-    /** THE SEARCH LEANS OUTWARD. The spiral is nearest-first by radius, which is right, but within a
-     *  ring it used to try angles from east round to east, so ties broke toward the map's right-hand
-     *  side whatever the country's position — and `NORVÈGE` ended up in the Barents Sea with its
-     *  leader crossing `SUÈDE`'s and `FINLANDE`'s. Angles are ordered by how close they point AWAY
-     *  from the middle of the frame, which is where an atlas puts a label it cannot fit in place,
-     *  and which makes crossing leaders the exception rather than the tie-break. */
     const outward = Math.atan2(sy - visible.y1 / 2, sx - visible.x1 / 2);
     const angles = Array.from(
       { length: 32 },
@@ -694,25 +1044,57 @@ export function placementsFor({
       return d(p) - d(q);
     });
     const step = 0.012;
-    for (let r = 1; r <= 14; r++)
-      for (const t of angles) {
-        const x = sx + Math.cos(t) * r * step;
-        const y = sy + Math.sin(t) * r * step;
-        /** THE WHOLE LABEL HAS TO BE IN FRAME, NOT ITS CENTRE. Bounding the anchor let `CHYPRE`
-         *  sit half past the crop and come out as `CHYPR` — and no guard saw it, because the
-         *  overlap and frame guards measure the PLATE's frame and this label was well inside that;
-         *  what it left was the MAP's. A crop is a frame too. */
-        const halfW = widthOnce(text, reg) / 2 / mapW;
+    const box = footprintOf(text, reg);
+    let best:
+      | { x: number; y: number; cell: string; score: number; whole: boolean }
+      | null = null;
+    const consider = (x: number, y: number) => {
+      if (!insideCrop(text, x, y, reg, 0.01)) return;
+      if (y < visible.y0 + 0.02 || y > visible.y1 - 0.02) return;
+      const here = labelBox(text, x, y, reg);
+      if (!clearOf(here, taken) || !clearOf(here, ringBoxes)) return;
+      /** THE WHOLE WORD INSIDE ITS OWN SHAPE — both ends, both quarters and the middle, against the
+       *  shape's own largest ring. Passing it is what lets the leader be dropped; failing it is what
+       *  makes one necessary, and a necessary leader has to be visible. */
+      const whole = Boolean(
+        ownRing &&
+          [0, -box.half / 2, box.half / 2, -box.half, box.half].every((dx) =>
+            inRing(ownRing, x + dx, y),
+          ),
+      );
+      if (!whole) {
+        const seatX = sx * mapW;
+        const seatY = sy * mapW;
         if (
-          x - halfW < 0.01 ||
-          x + halfW > visible.x1 - 0.01 ||
-          y < visible.y0 + 0.02 ||
-          y > visible.y1 - 0.02
+          seatX > here.x0 - LEADER_GAP &&
+          seatX < here.x1 + LEADER_GAP &&
+          seatY > here.y0 - LEADER_GAP &&
+          seatY < here.y1 + LEADER_GAP
         )
-          continue;
-        if (ok(x, y)) return { x, y };
+          return;
       }
-    return null;
+      /** THE CELL THE WORD LANDS ON is the one under its own centre — the colour its halo is struck
+       *  in, and the colour its ink is walked to 7:1 against. A cell no variant of the ink can be
+       *  read on is not a placement at all, which is what keeps a feature name off the two middle
+       *  classes of the ramp: measured on 2026-09-13, no variant of any of the three accents reaches
+       *  7:1 on class 3 or class 4. */
+      const cell = cellOf(shapeAt(x, y));
+      if (!inkFor(klass, cell)) return;
+      const distance = Math.hypot(x - sx, y - sy);
+      let onWater = true;
+      for (const [px, py] of samples(x, y, box))
+        if (onLand(px, py)) {
+          onWater = false;
+          break;
+        }
+      const score = distance - (onWater ? WATER_BONUS : 0);
+      if (!best || score < best.score) best = { x, y, cell, score, whole };
+    };
+    consider(sx, sy);
+    for (let r = 1; r <= 14; r++)
+      for (const t of angles)
+        consider(sx + Math.cos(t) * r * step, sy + Math.sin(t) * r * step);
+    return best;
   };
 
   const wanted: Array<{ shape: Shape; klass: "feature" | "area" }> = [
@@ -734,43 +1116,38 @@ export function placementsFor({
     for (const { shape: sh, klass } of wanted) {
       const reg = klass === "feature" ? feature : area;
       const text = set(sh.name, reg).toUpperCase();
-      if (
-        insideFits(sh) &&
-        clearOf(labelBox(text, sh.anchor!.x, sh.anchor!.y, reg), taken)
-      ) {
-        taken.push(labelBox(text, sh.anchor!.x, sh.anchor!.y, reg));
-        labels.push({
-          iso: sh.iso,
-          text,
-          x: sh.anchor!.x,
-          y: sh.anchor!.y,
-          from: null,
-          onCell: cellUnder(sh.value),
-          klass,
-        });
-        continue;
-      }
-      const spot = sh.anchor
-        ? placeNear(text, sh.anchor.x, sh.anchor.y, taken, reg)
+      const ownRing = sh.rings.length
+        ? sh.rings.reduce((a, b) => (b.length > a.length ? b : a))
         : null;
-      if (spot) {
-        taken.push(labelBox(text, spot.x, spot.y, reg));
-        labels.push({
-          iso: sh.iso,
-          text,
-          x: spot.x,
-          y: spot.y,
-          from: { x: sh.anchor!.x, y: sh.anchor!.y },
-          /** A NAME PUSHED OUT OF ITS COUNTRY LANDS ON THE SEA, and its ink and halo are measured
-           *  against that rather than against the class it left behind. */
-          onCell: namesWater ? waterTint : direction.ground,
-          klass,
-        });
+      const spot = sh.anchor
+        ? placeNear(text, sh.anchor.x, sh.anchor.y, taken, reg, klass, ownRing)
+        : null;
+      if (!spot) {
+        notOnTheMap.push(sh.name);
         continue;
       }
-      notOnTheMap.push(sh.name);
+      taken.push(labelBox(text, spot.x, spot.y, reg));
+      labels.push({
+        iso: sh.iso,
+        text,
+        x: spot.x,
+        y: spot.y,
+        /** THE LEADER IS DROPPED ONLY WHEN THE WHOLE WORD STANDS ON ITS OWN COUNTRY, which the
+         *  search already had to answer to know whether the word was allowed where it is. */
+        from: spot.whole ? null : { x: sh.anchor!.x, y: sh.anchor!.y },
+        /** THE CELL THE SEARCH MEASURED, carried rather than re-derived. It used to be one of two
+         *  guesses — the country's own class for a word inside it, the water tint for a word pushed
+         *  out — and neither is right now that a word may land on a NEIGHBOUR. */
+        onCell: spot.cell,
+        klass,
+      });
     }
   }
+  /** HOW FAR EACH WORD ENDED UP FROM ITS OWN SEAT, in the plate's own pixels — the measurement the
+   *  owner's complaint was about (*je trouve que pour tous il est loin de sa zone*), reported on
+   *  every run rather than eyeballed off the picture once. */
+  const leaderPx = (l: Placed) =>
+    l.from ? Math.hypot(l.x - l.from.x, l.y - l.from.y) * mapW : 0;
   onNote?.(
     `places: ${labels.filter((l) => l.klass === "feature").length} feature, ` +
       `${labels.filter((l) => l.klass === "area").length} context, ` +
@@ -779,8 +1156,19 @@ export function placementsFor({
         ? ` · no room on the map, named in the standfirst only: ${notOnTheMap.join(", ")}`
         : ""),
   );
+  onNote?.(
+    `leaders: ${labels
+      .map((l) => `${l.text} ${leaderPx(l).toFixed(0)}px`)
+      .join(", ")}`,
+  );
 
-  return { registers: { area, feature, water: waterReg }, waters: placedWaters, unplacedWaters, labels, notOnTheMap };
+  return {
+    registers: { area, feature, water: waterReg },
+    waters: placedWaters,
+    unplacedWaters,
+    labels,
+    notOnTheMap,
+  };
 }
 
 export function DirectedChoroplethMap({
@@ -826,7 +1214,6 @@ export function DirectedChoroplethMap({
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const display = registerOf(direction, "display");
   const eyebrowReg = registerOf(direction, "eyebrow");
   const body = registerOf(direction, "body");
   const axis = registerOf(direction, "axis");
@@ -863,6 +1250,10 @@ export function DirectedChoroplethMap({
     titleLead,
     bodyLead,
     annotLead,
+    /** THE HEADLINE'S SIZE IS THE LADDER'S ANSWER, NOT THE DIRECTION'S ROW. It is destructured here
+     *  rather than resolved again, because the runner sized the plate against this same answer. */
+    display,
+    displayFloor,
   } = mapGeometryFor({
     aspect,
     callout,
@@ -887,7 +1278,9 @@ export function DirectedChoroplethMap({
   const border = grid;
 
   onLadder?.(
-    `ladder: headline ${rung.title + 1}, standfirst ${rung.limit + 1}, reading ` +
+    `ladder: headline ${rung.title + 1} in ${layout.titleLines.length} lines at ` +
+      `${display.fontSize}px (filed ${display.filedSize}, floor ${displayFloor.toFixed(1)}, ` +
+      `budget ${rung.lines ?? "none"}), standfirst ${rung.limit + 1}, reading ` +
       (rung.reading < 0 ? "dropped" : `form ${rung.reading + 1}`) +
       ` · panel ${(rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px spare` +
       ` · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)}`,

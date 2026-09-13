@@ -59,8 +59,14 @@ export const FAMILY_REGISTERS = Object.freeze({
 });
 
 /** How much smaller a derived apparatus register is than the core voice it comes from: quiet enough
- *  to recede, large enough to read. */
-const DERIVED_SIZE_RATIO = 0.88;
+ *  to recede, large enough to read.
+ *
+ *  EXPORTED because it is the base's only filed statement of how far a register may move and still
+ *  be a register — one step of it is what separates a core voice from the apparatus derived out of
+ *  it. A layout that has to shrink a register to fit a face (`proof/static-choropleth-europe-lowcarbon`,
+ *  whose headline trades size for form) needs exactly that quantum for its floor, and a second copy
+ *  of the number would be a second answer to the same question. */
+export const DERIVED_SIZE_RATIO = 0.88;
 
 /** Every register a beat of this family may write into: the core, plus the family's own. */
 export function registersFor(family = "chart") {
