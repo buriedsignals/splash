@@ -6,8 +6,15 @@
 // its role's ladder head, its line as a coefficient of the face's own declared line
 // (`registerOf`). What it resolves is a register for a 960×540 still read in an article column. A
 // video is watched: the size row's `typeScale` carries it to the frame, and `minTypePx` is the
-// floor no register may be drawn under (`sizes.mjs` states where 30 and 36 come from). A register
-// the scale leaves under the floor is lifted to it, and led on the size it is actually drawn at.
+// floor no register may be drawn under (`sizes.mjs` states where 30 and 36 come from).
+//
+// THE FLOOR LIFTS THE WHOLE LADDER, NOT THE SMALLEST RUNG. A register that scaled to under the
+// floor used to be clamped to it ON ITS OWN, which moved that one register relative to the other
+// five and could invert the hierarchy `registerOf` built (an eyebrow lifted past the body it sits
+// under). Instead ONE factor governs every register: `k = max(typeScale, minTypePx / the smallest
+// resolved size among the six)`. Every register's drawn size is `resolved.fontSize * k` — so a
+// direction whose smallest register would otherwise fall under the floor has its ENTIRE ladder
+// scaled up together, and the size order `registerOf` established survives intact.
 //
 // THE LEAD TRAVELS, IN PIXELS. `shared/design-base/web.mjs` turns a register into a style and
 // drops the leading without a word; a composition reading this object cannot, because `lead` is
@@ -28,10 +35,12 @@ import { sizeFor } from "./sizes.mjs";
  * @param {{fontFamily: string, fontSize: number, fontWeight: number, fontStyle: string,
  *          letterSpacing: number, transform: string, lineHeight: number, fill: string}} resolved
  *        a register as `registerOf` returns it — `lineHeight` is a multiple of the size
- * @param {{typeScale: number, minTypePx: number}} row  a row of the video size table
+ * @param {number} k  the one factor every register in this direction's ladder is scaled by —
+ *        `max(typeScale, minTypePx / the smallest resolved size)`, computed once by
+ *        `videoRegistersOf` across all six registers, never per register
  */
-export function scaleRegister(resolved, { typeScale, minTypePx }) {
-  const fontSize = Math.max(Math.round(resolved.fontSize * typeScale * 100) / 100, minTypePx);
+export function scaleRegister(resolved, k) {
+  const fontSize = Math.round(resolved.fontSize * k * 100) / 100;
   return {
     fontFamily: resolved.fontFamily,
     fontSize,
@@ -54,8 +63,10 @@ export function scaleRegister(resolved, { typeScale, minTypePx }) {
  * @param {string} sizeName  one of `sizeFor`'s three rows
  */
 export function videoRegistersOf(resolvedByName, sizeName) {
-  const row = sizeFor(sizeName);
+  const { typeScale, minTypePx } = sizeFor(sizeName);
+  const smallest = Math.min(...Object.values(resolvedByName).map((r) => r.fontSize));
+  const k = Math.max(typeScale, minTypePx / smallest);
   return Object.fromEntries(
-    Object.entries(resolvedByName).map(([name, resolved]) => [name, scaleRegister(resolved, row)]),
+    Object.entries(resolvedByName).map(([name, resolved]) => [name, scaleRegister(resolved, k)]),
   );
 }
