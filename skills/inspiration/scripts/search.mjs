@@ -12,35 +12,50 @@ export const MAX_QUERY_LENGTH = 1000;
 // Names the requester in the gallery's access log; some edge filters refuse anonymous clients.
 const USER_AGENT = "splash-inspiration/1 (+https://github.com/buriedsignals/splash)";
 
-function isHttpUrl(value) {
-  if (typeof value !== "string") return false;
-  try {
-    const { protocol } = new URL(value);
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
-  }
+// Collapses any run of whitespace — including line breaks and tabs, wherever gallery text carries
+// one — to a single space, after trimming the edges. Untrusted gallery text must never be able to
+// put a raw line break into the markdown list this becomes.
+function text(value) {
+  if (typeof value !== "string") return null;
+  const collapsed = value.trim().replace(/\s+/g, " ");
+  return collapsed ? collapsed : null;
 }
 
-function text(value) {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+// The normalised, percent-encoded form of an http(s) URL — never the raw string. `URL#href` strips
+// embedded line breaks and tabs, percent-encodes whitespace, and canonicalises the rest, so a
+// gallery-supplied URL can carry no whitespace or line break into the rendered list.
+function normaliseHref(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Keeps what a journalist can open: an item needs a title and an http(s) link; every other field
- * is optional and becomes null when absent or unusable.
+ * is optional and becomes null when absent or unusable. `url` and `image` are stored as their
+ * normalised `href`, never the raw gallery string.
  */
 export function normaliseItems(items) {
   if (!Array.isArray(items)) return [];
   return items
-    .filter((item) => item && text(item.title) && isHttpUrl(item.url))
-    .map((item) => ({
-      title: text(item.title),
-      source: text(item.source),
-      date: text(item.date),
-      url: item.url,
-      image: isHttpUrl(item.image) ? item.image : null,
-    }));
+    .map((item) => {
+      if (!item) return null;
+      const title = text(item.title);
+      const url = normaliseHref(item.url);
+      if (!title || !url) return null;
+      return {
+        title,
+        source: text(item.source),
+        date: text(item.date),
+        url,
+        image: normaliseHref(item.image),
+      };
+    })
+    .filter((item) => item !== null);
 }
 
 function readQuota(headers) {
@@ -108,7 +123,12 @@ export async function searchInspiration({
         },
       };
     }
-    if (!response.ok || body === null || typeof body !== "object") {
+    if (
+      !response.ok ||
+      body === null ||
+      typeof body !== "object" ||
+      !Array.isArray(body.items)
+    ) {
       return { ok: false, reason: "unexpected-response", status: response.status };
     }
     return { ok: true, query: subject, items: normaliseItems(body.items), quota };
@@ -117,15 +137,64 @@ export async function searchInspiration({
   try {
     return await withDeadline(exchange, controller, timeoutMs);
   } catch (error) {
-    return { ok: false, reason: "unreachable", detail: error.message };
+    return {
+      ok: false,
+      reason: "unreachable",
+      detail: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
+const STDIN_LIMIT_BYTES = 64 * 1024;
+
+/**
+ * Reads the CLI's own argv (never the subject) so an unknown flag is refused before anything runs.
+ * `--json` prints the structured result instead of markdown; `--stdin` reads the subject from
+ * standard input instead of a positional argument; anything else starting with `-` is an error.
+ * Positional arguments are joined with a space into `query`. Pure — no I/O, no process access.
+ */
+export function parseArgs(argv) {
+  let asJson = false;
+  let readStdin = false;
+  const positionals = [];
+  for (const arg of argv) {
+    if (arg === "--json") {
+      asJson = true;
+      continue;
+    }
+    if (arg === "--stdin") {
+      readStdin = true;
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      return { query: "", asJson, readStdin, error: `unknown option: ${arg}` };
+    }
+    positionals.push(arg);
+  }
+  return { query: positionals.join(" "), asJson, readStdin, error: null };
+}
+
+async function readStdinSubject(stream) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of stream) {
+    total += chunk.length;
+    chunks.push(chunk);
+    if (total >= STDIN_LIMIT_BYTES) break;
+  }
+  return Buffer.concat(chunks).subarray(0, STDIN_LIMIT_BYTES).toString("utf8").trim();
+}
+
 if (import.meta.main) {
-  const args = process.argv.slice(2);
-  const asJson = args.includes("--json");
-  const query = args.filter((arg) => arg !== "--json").join(" ");
+  const parsed = parseArgs(process.argv.slice(2));
+  if (parsed.error) {
+    console.error(
+      `Usage: search.mjs [--json] [--stdin] <subject>\n${parsed.error}`,
+    );
+    process.exit(2);
+  }
+  const query = parsed.readStdin ? await readStdinSubject(process.stdin) : parsed.query;
   const result = await searchInspiration({ query });
-  console.log(asJson ? JSON.stringify(result, null, 2) : formatInspiration(result));
+  console.log(parsed.asJson ? JSON.stringify(result, null, 2) : formatInspiration(result));
   if (!result.ok) process.exitCode = 1;
 }
