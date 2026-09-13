@@ -169,7 +169,7 @@ export function DirectedBoxplot({
   const plotTop =
     readingTop +
     readingLines.length * bodyLead +
-    annot.fontSize * (readingLines.length ? 1.4 : 2.4);
+    gapOf(annot, readingLines.length ? 1 : 1.7143);
   const nameLead = leadOf(annot);
   const plotBottom = sourceTop - gapOf(body, 1.1034) - nameLead;
 
