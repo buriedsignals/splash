@@ -1,14 +1,17 @@
 # The map plan — the contract, its boundary, and its eight guards
 
 **Status, stated plainly.** The trunk (`shared/map-beat/plan.mjs`, `tints.mjs`, `geometry.mjs`,
-`glyphs.mjs`, `style.mjs`, `mount.mjs`, `bake.mjs`) is complete and reviewed. The pilot —
-`proof/static-choropleth-europe-lowcarbon/` — declares a validated plan and publishes its drawn
-size. Moving that beat's own marks (its classed regions, its labels, its legend) into the baked
-image, so the plate stops being a picture drawn under an SVG overlay and becomes a map with layers
-of its own, is work in progress and is not yet on `main`. Nothing below describes that move as
-done. The other five static map types — dot, symbol, flow, locator, contour — are not touched by
-this sub-project; neither are the map zones inside the components that host them. Both are
-out of scope here, by design, not by oversight.
+`glyphs.mjs`, `style.mjs`, `mount.mjs`, `bake.mjs`) is complete and reviewed, and it is mirrored
+into `skills/splash/assets/root-template/shared/map-beat/` so an installed root carries the same
+wiring this repository renders with. The pilot — `proof/static-choropleth-europe-lowcarbon/` —
+declares a validated plan, publishes its drawn size, and THE MOVE IS DONE: its classed regions, its
+borders, its leaders and dots, its subject ring and every word it places are MapLibre layers inside
+the baked image, baked at `plan.camera.drawn`. `preserveAspectRatio="none"` is gone with them, and
+the component draws one `<image>` at the map's own rectangle plus the furniture around it. What
+stays outside the map is §2's line, unchanged: title, standfirst, legend key, source and reading
+note are still React and SVG. The other five static map types — dot, symbol, flow, locator, contour
+— are not touched by this sub-project; neither are the map zones inside the components that host
+them. Both are out of scope here, by design, not by oversight.
 
 **The cardinal rule.** The wiring lives in `shared/map-beat/`. A beat declares a plan; it does not
 write a map. The September 2026 spike proved this the hard way: it converted six map types by hand
@@ -40,6 +43,13 @@ and every layer — because a renderer that could mutate the plan it was handed 
 could disagree with the still standing beside it. `validatePlan(plan)` is the one function every
 renderer calls before it draws anything; it returns a list of strings, never throws, so a beat can
 decide whether an empty list is required or merely expected.
+
+**And the RENDERER runs it, not only the beat that wrote the plan.** The pilot's bake
+(`proof/static-choropleth-europe-lowcarbon/bake.mjs`, `assertPlanIsRenderable`) runs `validatePlan`,
+`validateExpressions` and `assertNoDoubledBasemap` on the plan it reads off disk, before it mounts
+anything. It used to trust the file, which holds only while the writer and the renderer are one run
+— a plan reaching a renderer from a second beat, from an older `--plan` file, or from a hand edit
+would have been mounted unchecked. A plan is a FILE; whoever draws from it validates it.
 
 Half of this already exists and is not being reinvented: `skills/map-web/assets/live-map.mjs`
 already reads this shape, with its three radius strategies — a value-encoding circle held fixed in
@@ -108,11 +118,18 @@ drawing at the map's own scale. It stayed invisible as long as a second, coarser
 painted over it — the defect only became visible once the doubled basemap (guard 6) was removed.
 
 **5. The map is baked at the size the layout published** — `validatePlan`'s drawn-size check
-(`plan.mjs`) plus `drawnSizeOf` (`geometry.mjs`). The drawn size is a layout OUTPUT, not a setting
-chosen up front and scaled down later: a plate baked at 1000px and drawn into 574 renders every
-absolute length 1.74 times too thin — strokes, floor radii, outline widths. Radii expressed as a
-*fraction* of the plate width survived unscathed, which is exactly what made the defect invisible
-on large circles and fatal on small ones.
+(`plan.mjs`) plus `drawnSizeOf` (`geometry.mjs`), and `drawnSizeFor` in the bake. The drawn size is
+a layout OUTPUT, not a setting chosen up front and scaled down later: a plate baked at 1000px and
+drawn into 574 renders every absolute length 1.74 times too thin — strokes, floor radii, outline
+widths. Radii expressed as a *fraction* of the plate width survived unscathed, which is exactly what
+made the defect invisible on large circles and fatal on small ones.
+
+The bake READS `plan.camera.drawn`; it does not take a size and overwrite the plan with it. That
+distinction is the guard: the pilot's bake used to build `drawn` from its own `--size` flag on the
+way into `bakePlan`, so this rule compared the caller's number against the caller's own number and
+could not fail — the two agreed only because the runner happened to pass the same value twice.
+`--size` survives as an ASSERTION rather than a setting: give it and it must equal what the layout
+published, or the bake refuses and names both numbers.
 
 **6. No beat layer redraws the basemap's own geography** — `assertNoDoubledBasemap`, `style.mjs`.
 Repainting land or a coastline from the beat's own shapefile lays a second geography over
@@ -177,10 +194,19 @@ worth knowing before assuming a family string travels unchanged between the two 
 **The consequence worth stating plainly.** Because the design base's ladders were built to head
 with families MapTiler also serves — serif → Merriweather, sans → Open Sans, geometric sans →
 Montserrat — a map label drawn in one of these seventeen needs no SDF glyph baking at all. The
-panel beside the map and the words on the map itself can be set from the exact same fetched file.
-`glyphs.mjs`'s `bakeGlyphs` and `assertNotFallback` stay in the trunk for the one case this does
-not cover: a beat that needs a family outside these seventeen, which still has to serve its own
-glyphs through `font-maker` rather than lean on MapTiler's endpoint.
+panel beside the map and the words on the map itself are set from the exact same fetched file.
+`assertNotFallback` stays live in the trunk, and the pilot's bake calls it on every face the plan
+names.
+
+**And SDF baking has no engine here, which is a measured state rather than a gap nobody noticed.**
+`glyphs.mjs`'s `bakeGlyphs` is kept and REFUSES, naming why. `@maplibre/font-maker` — the package
+the plan named — does not exist on npm; `maplibre-font-maker-node@0.5.0`, the only published
+wrapper, loads its WASM through `node:vm`, and Bun's `var` hoisting inside a vm script erases the
+sandbox's `Module` before emscripten's preamble reads it, so the process HANGS instead of throwing.
+It also declared no licence. It has been removed from `package.json`; nothing calls `bakeGlyphs`,
+and the path it stands for is only reached by a family OUTSIDE these seventeen. Ruling C12 in
+`.superpowers/sdd/2026-09-12-sp1-map-plan-contract/progress.md` carries the full measurement, and
+the refusal points there.
 
 ## 6. Why every guard above exists at all
 
