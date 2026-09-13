@@ -72,6 +72,27 @@ export function assertStates(states, steps) {
   return states;
 }
 
+/**
+ * THE VIEW OF A MAP THAT FILLS ITS STAGE. A map drawn with `preserveAspectRatio="meet"` stops at its own
+ * frame and leaves the stage's sides bare; a map is geography and runs to the edges. So the viewBox is
+ * chosen here: the box that must be seen (the camera's frame, or a close-up) is fitted inside the stage
+ * minus the insets its overlays take — a counter, a key — and the viewBox is then widened or heightened
+ * to the stage's own aspect, so the geography drawn past the box fills the rest. The beat has to draw
+ * that geography; this only decides what the reader sees of it.
+ *
+ * @returns {{x: number, y: number, w: number, h: number}} a viewBox with the stage's aspect
+ */
+export function fitViewBox(box, stage, insets) {
+  const innerW = Math.max(1, stage.width - insets.left - insets.right);
+  const innerH = Math.max(1, stage.height - insets.top - insets.bottom);
+  const scale = Math.min(innerW / box.w, innerH / box.h);
+  const w = stage.width / scale;
+  const h = stage.height / scale;
+  const x = box.x - (insets.left + (innerW - box.w * scale) / 2) / scale;
+  const y = box.y - (insets.top + (innerH - box.h * scale) / 2) / scale;
+  return { x, y, w, h };
+}
+
 /** The nearest ancestor publishing `data-progress` — the `.scrolly` root. */
 export function progressSourceOf(el) {
   let node = el;

@@ -323,3 +323,26 @@ describe("reveal — every card changes the picture", () => {
     ).rejects.toThrow("changes nothing");
   });
 });
+
+describe("fitViewBox — a map fills its stage and keeps its subject clear of the overlays", () => {
+  it("should match the stage's own aspect, so the geography runs edge to edge", async () => {
+    const { fitViewBox } = await import("../assets/reveal.mjs");
+    const vb = fitViewBox({ x: 0, y: 0, w: 1000, h: 760 }, { width: 1600, height: 700 }, { top: 0, right: 0, bottom: 0, left: 0 });
+    expect(vb.w / vb.h).toBeCloseTo(1600 / 700, 6);
+  });
+
+  it("should keep the whole box inside the stage minus its insets", async () => {
+    const { fitViewBox } = await import("../assets/reveal.mjs");
+    const stage = { width: 900, height: 800 };
+    const insets = { top: 60, right: 20, bottom: 90, left: 20 };
+    const box = { x: 100, y: 50, w: 1000, h: 760 };
+    const vb = fitViewBox(box, stage, insets);
+    const toPx = (x: number, y: number) => [((x - vb.x) / vb.w) * stage.width, ((y - vb.y) / vb.h) * stage.height];
+    const [l, t] = toPx(box.x, box.y);
+    const [r, b] = toPx(box.x + box.w, box.y + box.h);
+    expect(l).toBeGreaterThanOrEqual(insets.left - 1e-6);
+    expect(t).toBeGreaterThanOrEqual(insets.top - 1e-6);
+    expect(r).toBeLessThanOrEqual(stage.width - insets.right + 1e-6);
+    expect(b).toBeLessThanOrEqual(stage.height - insets.bottom + 1e-6);
+  });
+});
