@@ -3,6 +3,8 @@
 // once, under one deadline that covers the request and its body, and returns either the list or
 // the reason there is none. It never throws.
 
+import { formatInspiration } from "./format.mjs";
+
 export const INFOVIZ_API = "https://infoviz.design";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 export const MAX_QUERY_LENGTH = 1000;
@@ -117,4 +119,13 @@ export async function searchInspiration({
   } catch (error) {
     return { ok: false, reason: "unreachable", detail: error.message };
   }
+}
+
+if (import.meta.main) {
+  const args = process.argv.slice(2);
+  const asJson = args.includes("--json");
+  const query = args.filter((arg) => arg !== "--json").join(" ");
+  const result = await searchInspiration({ query });
+  console.log(asJson ? JSON.stringify(result, null, 2) : formatInspiration(result));
+  if (!result.ok) process.exitCode = 1;
 }
