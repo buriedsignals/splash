@@ -122,8 +122,9 @@ s'embarquent pas dans un bundle Remotion. Donc :
 
 `skills/chart-video/scripts/video-registers.mjs` (portée dans `map-beat` par copie `// twin/`) :
 un registre résolu devient `{ fontFamily, fontSize, fontWeight, fontStyle, letterSpacing,
-textTransform, lineHeight, fill }`. **`lineHeight` est porté** : c'est le défaut silencieux que la
-couture web `shared/design-base/web.mjs` a encore (le `leading` y est jeté). La couture passe par
+transform, lead, fill }`, où `lead` est la distance entre lignes de base en pixels du cadre, à la
+taille dessinée. **L'interligne est porté** : c'est le défaut silencieux que la couture web
+`shared/design-base/web.mjs` a encore (le `leading` y est jeté). La couture passe par
 `registerOf` et ne lit jamais `.leading` directement — la garde de la session statique fait échouer
 toute source qui le fait hors des trois modules autorisés.
 
