@@ -88,3 +88,35 @@ frames du mp4 ; un still de revue ne prouve jamais un mécanisme d'entrée.
 - Ne fusionne rien sans l'accord explicite de Rémy.
 - Vérifier par mutation est obligatoire : nommer la mutation qui fait rougir chaque garde, et la
   lancer. C'est la seule discipline qui a attrapé un vrai défaut à chaque tâche de cette branche.
+
+## L'interlignage adaptatif arrive chez vous — planifiez-le
+
+La session statique (`rerender/static-corpus`) remonte en ce moment dans `shared/design-base/` le
+mécanisme qui rendait une taille filée **adaptative à la fonte** : une taille est une hauteur de
+capitale, mesurée sur le fichier de fonte, et l'échelle de copie peut échanger taille contre forme.
+Elle y ajoute l'interlignage, avec `registerOf` / `leadOf` / `gapOf` dans un nouveau
+`shared/design-base/register.mjs`, et une 9e colonne `leading` **obligatoire** dans les enregistrements
+de direction.
+
+**Décision de Rémy : une fois posé côté statique, ça s'implémente pour les trois autres exports —
+web, vidéo, scrolly.** Ce n'est donc pas une curiosité du statique, c'est le prochain chantier
+commun. Deux conséquences immédiates :
+
+1. **Une couture existe déjà et elle est silencieuse.** `shared/design-base/web.mjs` transforme un
+   registre en objet de style React sans jamais poser de `lineHeight` : le `leading` que le tronc
+   portera sera donc **jeté sans bruit**, et statique et web divergeront sur le rythme vertical sans
+   que rien ne rougisse. La session web en est propriétaire et la fermera. Si vos émetteurs (vidéo,
+   scrolly) ont la même forme — et c'est probable — la vôtre est à vous.
+2. **La règle d'adoption est écrite** dans la spec de la session statique (§3.3) : passer par
+   `registerOf` / `leadOf`, ou refuser `null` au point d'usage exactement comme `registerOf` le fait.
+   Une garde parcourt tout le repo et fait échouer toute source qui lit `.leading` en dehors des trois
+   modules autorisés — donc si vous le lisez directement, vous le saurez.
+
+En attendant, ne préparez rien à l'avance : le tronc n'a pas encore atterri, et bâtir contre une API
+non posée est le meilleur moyen de la recopier de travers.
+
+## Cadence de validation
+
+Rémy valide **un type à la fois** au début de chaque genre, pour s'assurer que la production est
+correcte et faire remonter le moindre défaut. On n'accélère qu'une fois la confiance établie, et
+c'est lui qui le dit — pas nous.
