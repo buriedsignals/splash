@@ -222,6 +222,16 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
   beside this one (`proof/life-expectancy/LifeExpectancyVideo.tsx`,
   `proof/migration/MigrationVideo.tsx`) each carry their own copy, which is what
   duplicate-do-not-link requires of them.
+- `scripts/video-faces.mjs` — **the face reaches Chrome as bytes, or the frame is not drawn.**
+  `useTypeface` only puts a family in force in the node process; the frames are painted by headless
+  Chrome, which set this seed in Helvetica while it named Open Sans. The render script calls
+  `videoFaces` with the recorded stack and the composition's `FONT_WEIGHTS`, and passes
+  `fontFamily` and `faces` (woff2 cut to the props' words by the web beats' own
+  `embeddedWebFaces`) as props.
+- `assets/embedded-faces.ts` — `useEmbeddedFaces`: loads those bytes as `FontFace`s behind
+  `delayRender`, draws nothing until they are in, then reads back every text run the frame drew and
+  cancels the render if a character, a weight or a family is not covered, or if the named face
+  measures the same as a deliberate fallback. `assets/face-coverage.ts` is its pure comparison.
 - `assets/Root.tsx` — the Remotion root; registers the seed composition (`co2-suisse`), sized and
   timed from its own contract. `remotion still`/`remotion render` select a beat by composition id.
 - `assets/index.ts` — the one Remotion entry point (`registerRoot`).

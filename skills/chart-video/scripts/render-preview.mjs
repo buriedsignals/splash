@@ -9,8 +9,16 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture, readPalette, readTypeface, useTypeface } from "./render-still.mjs";
+import {
+  activeTypeface,
+  deriveFurniture,
+  readPalette,
+  readTypeface,
+  useTypeface,
+} from "./render-still.mjs";
+import { videoFaces } from "./video-faces.mjs";
 import { CO2_TIMING } from "../assets/timing.ts";
+import { FONT_WEIGHTS } from "../assets/EmissionsVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -73,6 +81,11 @@ const props = {
   referenceLabel: `${firstReading.year} level`,
   ...furniture,
 };
+// The face travels into Chrome as bytes, or the frame is set in whatever this machine has.
+Object.assign(
+  props,
+  await videoFaces({ stack: activeTypeface().family, weights: FONT_WEIGHTS, props }),
+);
 
 await mkdir(dirname(TARGET), { recursive: true });
 const propsPath = join(dirname(TARGET), "preview-props.json");

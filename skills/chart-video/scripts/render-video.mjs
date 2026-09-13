@@ -17,7 +17,15 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture, readPalette, readTypeface, useTypeface } from "./render-still.mjs";
+import {
+  activeTypeface,
+  deriveFurniture,
+  readPalette,
+  readTypeface,
+  useTypeface,
+} from "./render-still.mjs";
+import { videoFaces } from "./video-faces.mjs";
+import { FONT_WEIGHTS } from "../assets/EmissionsVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -101,6 +109,12 @@ if (data.length < 2) throw new Error(`need at least two readings, got ${data.len
 
 const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
 delete props.firstYear;
+// `useTypeface` above only puts the face in force in THIS process; Chrome draws the frames, so the
+// stack and its bytes are handed to the composition — see `video-faces.mjs`.
+Object.assign(
+  props,
+  await videoFaces({ stack: activeTypeface().family, weights: FONT_WEIGHTS, props }),
+);
 const propsPath = join(outDir, "props.json");
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 

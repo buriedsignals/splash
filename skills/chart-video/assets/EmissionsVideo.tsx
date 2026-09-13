@@ -37,6 +37,8 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
+import { useEmbeddedFaces } from "./embedded-faces";
+import type { EmbeddedFace } from "./face-coverage";
 import { CO2_TIMING, progressOf, type BeatTiming } from "./timing";
 
 const FRAME = { width: 1080, height: 1080 };
@@ -52,14 +54,17 @@ const X_TICK_DROP = 38;
 const X_AXIS_TO_SOURCE_GAP = 10;
 const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
-/** THE ONE FONT STACK, AND IT IS THE TRUNK'S `DEFAULT_FONT_FAMILY` SPELLED AGAIN. A composition
- *  cannot import `render-still.mjs` — it carries a native rasteriser no browser bundle can load —
- *  so the value is a literal here, and a literal is a thing that drifts. It must not: every render
- *  in this twin draws with `loadSystemFonts: false` from files `typefaces.mjs` fetches, and
- *  Helvetica is a licensed face there is no file for, so a stack that LEADS with it measures and
- *  draws nothing. Open Sans leads because it is redistributable, fetchable and served as map
- *  glyphs; Helvetica and Arial stay behind it for the browser, which does its own falling back. */
-export const FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
+/** THE FONT STACK IN FORCE, AND IT ARRIVES AS A PROP. It used to be a literal here naming Open Sans
+ *  while nothing loaded Open Sans, so Chrome drew every frame in Helvetica. The render script reads
+ *  `TYPEFACE.md` and hands in the stack and its bytes (`scripts/video-faces.mjs`); the composition
+ *  puts the stack in force before it measures anything, so `measureText` and the `<svg>` agree.
+ *  The value below is only what a bare import sees — no frame is drawn before it is replaced. */
+export let FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
+
+/** Every weight this composition sets, read off its own type specs — what the render must embed. */
+export const FONT_WEIGHTS = [
+  ...new Set([TITLE, SOURCE, AXIS, LABEL, NOTE].map((spec) => spec.fontWeight)),
+];
 
 // ===== CONFIG — edit for your story =====
 // Everything between here and the closing marker is this beat's own words and its own editorial
@@ -166,6 +171,8 @@ export type EmissionsVideoProps = {
   grid: string;
   reference: number;
   referenceLabel: string;
+  fontFamily: string;
+  faces: EmbeddedFace[];
   timing?: BeatTiming;
 };
 
@@ -246,11 +253,16 @@ export function EmissionsVideo({
   grid,
   reference,
   referenceLabel,
+  fontFamily,
+  faces,
   timing = CO2_TIMING,
 }: EmissionsVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { width, height } = FRAME;
+  const { ready, ref } = useEmbeddedFaces<SVGSVGElement>(faces);
+  FONT_FAMILY = fontFamily;
+  if (!ready) return null;
 
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
@@ -344,6 +356,7 @@ export function EmissionsVideo({
 
   return (
     <svg
+      ref={ref}
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}
