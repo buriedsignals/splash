@@ -6,7 +6,7 @@
  * `TITLE = { fontSize: 26, fontWeight: 700 }` and five siblings — constants copied from beat to
  * beat until the whole tree used one family, four weights, and zero italic, tracking or case across
  * 122 components — this one asks a DIRECTION what each register looks like, and never learns the
- * answer. `resolveRegister` returns the attributes; `applyCase` decides whether the direction
+ * answer. `registerOf` returns the attributes; `applyCase` decides whether the direction
  * shouts; `deriveFurniture` turns an ink ROLE into a colour against the real ground.
  *
  * Its treatment labels go through the ARBITER rather than being placed one by one. That is the
