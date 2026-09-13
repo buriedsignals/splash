@@ -838,12 +838,6 @@
   .mmsg.ok{color:var(--amber);opacity:1}
   .mmsg.ko{color:#e8846f;opacity:1}
 
-  /* The one honest line on this panel: today the session lands on
-     infoviz.design, because the cookie is posted SameSite=Lax and will not
-     travel to another origin. */
-  .mwarn{margin-top:14px;padding-top:13px;border-top:1px solid rgba(237,234,227,.12);
-         font-size:10.5px;letter-spacing:.09em;line-height:1.6;opacity:.4}
-
   .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
       clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
@@ -1093,6 +1087,10 @@
       <span id="qtext"></span>
       <button type="button" id="qsign" hidden>Sign in for more searches</button>
     </div>
+    <div class="quota" id="acct" hidden>
+      <span id="aemail"></span>
+      <button type="button" id="aout">Sign out</button>
+    </div>
     <a class="mcplink" href="#agent">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" aria-hidden="true">
@@ -1259,15 +1257,13 @@
              stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <p id="vsub">Enter your email to receive a sign-in link.</p>
+    <p id="vsub">Enter your email. Press Connect in the email we send, and this page signs in.</p>
     <form id="vform" autocomplete="off">
       <label class="sr" for="vmail">Email address</label>
       <input id="vmail" type="email" placeholder="your@email.com" required>
       <button class="btn" type="submit" id="vbtn">Send sign-in link</button>
     </form>
     <p class="mmsg" id="vmsg" hidden></p>
-    <p class="mwarn" id="vwarn" hidden>The link signs you in on infoviz.design. The
-    session cookie is issued SameSite=Lax, so it does not follow you back to this page yet.</p>
   </div>
 </div>
 
@@ -1285,36 +1281,28 @@
   /* ===================================================================== *
    * THE WIRING.
    *
-   * Every request goes to the live infoviz backend, cross-origin. Three
-   * things about that are not obvious and are the reason this file reads the
-   * way it does:
+   * Every request goes to the live infoviz backend, cross-origin, and none
+   * of them carries a cookie. Three things follow:
    *
-   * 1. THE CREDENTIALS MODE DECIDES WHETHER WE CAN READ THE QUOTA. The API
-   *    answers `Access-Control-Expose-Headers: *`, and a browser only honours
-   *    that wildcard when the request's credentials mode is NOT `include`.
-   *    Ask with credentials cross-origin and `X-RateLimit-*` become
-   *    unreadable — the gauge goes blind for a cookie that could never have
-   *    been sent anyway (see 2). So: `include` same-origin, `omit` elsewhere.
+   * 1. THE QUOTA IS READABLE. Requests go without credentials, so the
+   *    `X-RateLimit-*` headers the API exposes stay visible to this page.
    *
-   * 2. THE SESSION DOES NOT TRAVEL. The backend posts its session cookie
-   *    SameSite=Lax, so it is never attached to a cross-site fetch. Signed-in
-   *    quotas and `/auth/status` therefore only mean something when this page
-   *    is served from infoviz.design itself. The page says so rather than
-   *    pretending; one word in the backend (`samesite="none", secure=True`)
-   *    is what would change it.
+   * 2. THE ACCOUNT IS A BEARER TOKEN. Signing in emails a link; the reader
+   *    presses Connect there while this page polls `/auth/token/poll` until
+   *    the API hands the token over, once. It is kept in localStorage and
+   *    sent as `Authorization: Bearer`. A 401 means it expired or was
+   *    refused: the page forgets it and carries on anonymously.
    *
-   * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. The live site loads
-   *    `@supabase/supabase-js` for a single RPC call. One `fetch` with the
-   *    public anon key does the same thing, which is what keeps this page a
-   *    single file with no CDN.
+   * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. One `fetch` with the
+   *    public anon key calls `get_random_posts`. Its `Authorization` header
+   *    is that anon key, never the reader's token.
    * ===================================================================== */
 
   const API   = 'https://infoviz.design';
   const SB    = 'https://towumekminbldlabbyss.supabase.co';
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
-  const SAME = location.origin === API;
-  const CRED = SAME ? 'include' : 'omit';
+  const TOKEN_KEY = 'infoviz.token';
 
   const PER_PAGE = 10;
   /* SIX, NOT THREE. Three was the right number under a hero that took the
@@ -1333,6 +1321,33 @@
   let searched = false;  // featured, or a real result set
   let busy = false;
   let limit = 5, left = null;
+  let account = null;    // {token, email, expires_at} once signed in
+  let polling = 0;       // bumps on every sign-in, so a stale poll loop stops itself
+
+  /* ---------------------------------------------------------- the account */
+  /* The account lives in this browser only. Storage can be refused (private
+     windows, blocked site data); then the sign-in lasts as long as the page. */
+  const loadAccount = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
+      const live = saved && typeof saved.token === 'string' && saved.token
+        && !(saved.expires_at && Date.parse(saved.expires_at) <= Date.now());
+      account = live ? saved : null;
+    } catch { account = null; }
+  };
+  const saveAccount = (next) => {
+    account = next;
+    try {
+      if (next) localStorage.setItem(TOKEN_KEY, JSON.stringify(next));
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch { /* storage refused: nothing to do, `account` still holds it */ }
+    drawAccount();
+  };
+  const authHeaders = () => (account ? { 'Authorization': 'Bearer ' + account.token } : {});
+  const drawAccount = () => {
+    $('acct').hidden = !account;
+    $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
+  };
 
   /* ------------------------------------------------------------ the quota */
   const drawQuota = () => {
@@ -1345,7 +1360,7 @@
     if (left <= 0) {
       $('qtrack').hidden = true;
       $('qtext').textContent = 'Daily limit reached ·';
-      $('qsign').hidden = false;
+      $('qsign').hidden = Boolean(account);
       return;
     }
     $('qtrack').hidden = false;
@@ -1542,6 +1557,12 @@
   }, { passive: true });
 
   /* ---------------------------------------------------------- the search */
+  const ask = (q) => fetch(API + '/api/graphics/examples', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ query: q }),
+  });
+
   async function search(q) {
     if (busy) return;
     busy = true;
@@ -1554,18 +1575,25 @@
     loading('Searching the gallery');
 
     try {
-      const res = await fetch(API + '/api/graphics/examples', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: CRED,
-        body: JSON.stringify({ query: q }),
-      });
+      let res = await ask(q);
+      /* A refused token is forgotten, and the search happens anyway. */
+      if (res.status === 401 && account) {
+        saveAccount(null);
+        limit = 5;
+        res = await ask(q);
+      }
       readLimits(res);
 
       if (res.status === 429) {
         const d = await res.json().catch(() => ({}));
         limit = d.limit || limit; left = 0; drawQuota();
         all = [];
+        if (account) {
+          box('ink', 'Limit reached',
+              limit + ' searches a day, and that was the last.',
+              'The count resets at midnight UTC.');
+          return;
+        }
         box('ink', 'Limit reached',
             limit + ' searches a day, and that was the ' + (limit === 5 ? 'fifth' : 'last') + '.',
             'The count resets at midnight UTC. A free account raises it to '
@@ -1579,7 +1607,7 @@
       }
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.detail || 'The gallery did not answer.');
+        throw new Error(d.error || d.detail || 'The gallery did not answer.');
       }
 
       const data = await res.json();
@@ -1722,7 +1750,6 @@
     if (heading) $('vh').textContent = heading;
     if (subtitle) $('vsub').textContent = subtitle;
     veil.setAttribute('data-open', '');
-    $('vwarn').hidden = SAME;
     $('vmail').focus();
   };
 
@@ -1730,6 +1757,8 @@
     'Sign in for more searches',
     'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
 
+  /* Closing the panel does not stop a sign-in in progress: the reader may
+     close it, open the email, press Connect, and this page still signs in. */
   const closeModal = () => {
     veil.removeAttribute('data-open');
     $('vmsg').hidden = true;
@@ -1741,48 +1770,90 @@
     if (e.key === 'Escape' && veil.hasAttribute('data-open')) closeModal();
   });
 
+  const say = (kind, text) => {
+    const msg = $('vmsg');
+    msg.hidden = false;
+    msg.className = 'mmsg ' + kind;
+    msg.textContent = text;
+  };
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  async function waitForConnect(requestId, intervalSeconds, expiresAt, run) {
+    const deadline = Date.parse(expiresAt) || (Date.now() + 15 * 60 * 1000);
+    while (run === polling && Date.now() < deadline) {
+      await wait(Math.max(1, Number(intervalSeconds) || 3) * 1000);
+      if (run !== polling) return;
+      let res;
+      try {
+        res = await fetch(API + '/auth/token/poll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: requestId }),
+        });
+      } catch { continue; }   // a dropped connection mid-wait is not an answer; ask again
+      if (res.status === 202) continue;
+      if (res.ok) {
+        const d = await res.json();
+        saveAccount({ token: d.token, email: d.email, expires_at: d.expires_at });
+        say('ok', 'Connected as ' + d.email + '.');
+        await refreshAccount();
+        setTimeout(closeModal, 1500);
+        return;
+      }
+      break;   // 410 or anything else: this sign-in is over
+    }
+    if (run !== polling) return;
+    say('ko', 'The sign-in link expired. Send a new one.');
+    $('vform').hidden = false;
+  }
+
   $('vform').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const msg = $('vmsg'), btn = $('vbtn');
+    const btn = $('vbtn');
+    const run = ++polling;
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const res = await fetch(API + '/auth/send-link', {
+      const res = await fetch(API + '/auth/token/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: CRED,
         body: JSON.stringify({ email: $('vmail').value }),
       });
-      const json = await res.json().catch(() => ({}));
-      msg.hidden = false;
-      if (res.ok) {
-        msg.className = 'mmsg ok';
-        msg.textContent = json.message || 'Check your email for a sign-in link.';
-        $('vform').hidden = true;
-      } else {
-        msg.className = 'mmsg ko';
-        msg.textContent = json.error || json.detail || 'Something went wrong.';
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        say('ko', res.status === 422
+          ? 'That email address does not look right.'
+          : (d.error || 'Something went wrong.'));
+        return;
       }
+      $('vform').hidden = true;
+      say('ok', 'Check your email and press Connect. This page signs in on its own.');
+      waitForConnect(d.request_id, d.poll_interval, d.expires_at, run);
     } catch {
-      msg.hidden = false;
-      msg.className = 'mmsg ko';
-      msg.textContent = 'Network error. Please try again.';
+      say('ko', 'Network error. Please try again.');
     } finally {
       btn.disabled = false; btn.textContent = 'Send sign-in link';
     }
   });
 
+  $('aout').addEventListener('click', () => {
+    polling++;
+    saveAccount(null);
+    limit = 5; left = null; drawQuota();
+  });
+
   /* ------------------------------------------------------- the auth probe */
-  /* Only meaningful when the page is served by infoviz.design itself; anywhere
-     else the cookie cannot ride along and the answer is always anonymous. We
-     still ask, so a same-origin deployment needs no second version of the file. */
-  async function status() {
-    if (!SAME) return;
+  /* With a token, ask what it is worth today; a refused one is forgotten. */
+  async function refreshAccount() {
+    if (!account) return;
     try {
-      const res = await fetch(API + '/auth/status', { credentials: 'include' });
+      const res = await fetch(API + '/auth/status', { headers: authHeaders() });
+      if (res.status === 401) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
       if (!res.ok) return;
       const d = await res.json();
-      if (d.daily_limit) { limit = d.daily_limit; drawQuota(); }
-    } catch { /* the gauge simply stays on what the headers said */ }
+      if (d.daily_limit) limit = d.daily_limit;
+      if (typeof d.queries_remaining === 'number') left = d.queries_remaining;
+      drawQuota();
+    } catch { /* the gauge stays on what the last search said */ }
   }
 
   /* ------------------------------------------------------- the arrival */
@@ -1809,8 +1880,7 @@
   }, { rootMargin: '0px 0px -14% 0px', threshold: 0.08 });
   for (const el of document.querySelectorAll('.up')) io.observe(el);
 
-  featured();
-  status();
+  loadAccount(); drawAccount(); featured(); refreshAccount();
 })();
 </script>
 
