@@ -854,10 +854,6 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     measurable: false,
     probed: 3,
   },
-  "proof/webx-life-expectancy/life-expectancy.html": {
-    measurable: false,
-    probed: 3,
-  },
   "proof/webx-wind-vs-solar/wind-vs-solar.html": {
     measurable: false,
     probed: 3,

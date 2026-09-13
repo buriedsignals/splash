@@ -56,13 +56,36 @@ function declaredDirection(dir: string): string | null {
   return null;
 }
 
+/** Every direction on file, by id. */
+const FILED = existsSync(DIRECTIONS)
+  ? readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""))
+  : [];
+
+/**
+ * A BEAT THAT RENDERS EVERY FILED DIRECTION NAMES NONE OF THEM IN ITS SOURCE, and that is correct.
+ * `declaredDirection` above was written for a beat that renders ONE — the three `mapgen-*-web`
+ * pages, whose runner carries a literal `direction: "creme",`. A directed beat loops over
+ * `docs/design-base/directions` and writes `renders/<id>.html`, so its script names no direction and
+ * cannot: whichever literal such a scan found would be right for one of its three files and wrong
+ * for the other two. Measured the day this was widened: the guard's whole population was nine pages,
+ * and the three that carry a per-direction render loop — `web-line-swiss-co2`'s — were failing all
+ * four of its assertions on a premise that could never hold for them.
+ *
+ * A render written as `renders/creme.html` states its direction in its own name, which is the record
+ * this reads. The source literal stays the fallback, so nothing that passed before changes.
+ */
+function directionOf(dir: string, file: string): string {
+  const base = file.slice(file.lastIndexOf("/") + 1).replace(/\.html$/, "");
+  if (file.includes("/") && FILED.includes(base)) return base;
+  return declaredDirection(dir) ?? "";
+}
+
 function directedPages(): Page[] {
   if (!existsSync(PROOF)) return [];
   const out: Page[] = [];
   for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const dir = join(PROOF, entry.name);
-    const direction = declaredDirection(dir);
     /** A BEAT'S PAGE IS NOT ALWAYS AT ITS OWN ROOT. This walk read the beat directory only, and
      *  `proof/mapgen-choropleth-web` delivers into `render/` — so the second map type to be set in
      *  its direction's own face joined a population of one level and was measured by nothing. One
@@ -78,16 +101,28 @@ function directedPages(): Page[] {
     for (const file of files) {
       const html = readFileSync(join(dir, file), "utf8");
       if (!html.includes("--title-family")) continue;
-      out.push({ beat: entry.name, file, html, direction: direction ?? "" });
+      out.push({ beat: entry.name, file, html, direction: directionOf(dir, file) });
     }
   }
   return out;
 }
 
-/** What a custom property is set to, read out of the page's own stylesheet. */
+/** What a custom property is set to, read out of the page's own stylesheet — OR out of the inline
+ *  `style` attribute a component writes it on, where the quotes around a family name arrive HTML
+ *  ESCAPED. Without the unescaping this returned the literal string `&quot` for every `chart-web`
+ *  page, whose `figureVars` are written on the figure's own inline style rather than into a
+ *  stylesheet rule: the family was named, embedded and drawn, and this guard read six characters of
+ *  an entity and called it the wrong face. */
 function customProperty(html: string, name: string): string | null {
-  const hit = new RegExp(`${name}\\s*:\\s*([^;{}]+)`).exec(html);
+  const hit = new RegExp(`${name}\\s*:\\s*([^;{}]+)`).exec(unescapeHtml(html));
   return hit ? hit[1].trim() : null;
+}
+
+function unescapeHtml(text: string): string {
+  return text
+    .replace(/&quot;|&#34;/g, '"')
+    .replace(/&#x27;|&apos;|&#39;/g, "'")
+    .replace(/&amp;/g, "&");
 }
 
 /** The first family of a CSS stack, unquoted. */
@@ -128,7 +163,20 @@ describe("a page that declares a filed direction", () => {
 
     it(`should actually draw its title with it — ${where}`, () => {
       // A custom property nothing reads is a direction that reached the file and not the reader.
-      expect(page.html).toMatch(/font-family:\s*var\(--title-family\)/);
+      // TWO ROUTES, because the two genres deliver one differently and both reach the reader. A map
+      // page's stylesheet reads the property (`font-family: var(--title-family)`); a `chart-web`
+      // page's component writes the display register's whole declaration block onto the title's own
+      // inline style, so the family is ON the element rather than referenced from a rule. Requiring
+      // only the first reddened every directed chart × web page in the tree for setting its title in
+      // exactly the face the direction filed.
+      const family = head(customProperty(page.html, "--title-family")!);
+      const titleStyle = /class="chart-title"[^>]*style="([^"]*)"/.exec(page.html)?.[1] ?? "";
+      const drawnInline = new RegExp(`font-family:[^;]*${family}`).test(unescapeHtml(titleStyle));
+      expect(
+        /font-family:\s*var\(--title-family\)/.test(page.html) || drawnInline,
+        `${where} names ${family} and neither reads --title-family in a rule nor sets it on the ` +
+          `title itself`,
+      ).toBe(true);
     });
 
     it(`should carry the face it names, as bytes — ${where}`, () => {
