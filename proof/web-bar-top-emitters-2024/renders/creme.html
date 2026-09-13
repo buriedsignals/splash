@@ -390,7 +390,21 @@ function initChart(svg, tooltip) {
     const index = byCell
       ? nearestCell(cxs, cys, local.x, local.y)
       : nearestIndex(cxs, local.x);
-    show(points[index], evt.clientX, evt.clientY);
+    // THE ANSWER SITS ON THE MARK IT NAMES, NOT ON THE POINTER. The overlay resolves the NEAREST
+    // mark, so the pointer is routinely not over it — in the gap between two columns, or anywhere
+    // off a wide mark's centre. Anchoring the box to `evt.clientX` therefore drew an answer about
+    // one column on top of its neighbour, which reads as a confident wrong answer: the reader
+    // believes the box belongs to what it covers. Measured on the ten-column ranking, the box for
+    // India sat over the United States. The keyboard path never had this — it has always anchored
+    // on the mark's own rect — so this makes the pointer agree with the key.
+    anchorOn(points[index], evt.clientY);
+  }
+
+  /** Place the answer over the mark's own horizontal centre, keeping the pointer's height so the
+   *  box still rises from where the reader is looking. */
+  function anchorOn(point, clientY) {
+    const rect = point.getBoundingClientRect();
+    show(point, rect.left + rect.width / 2, clientY);
   }
 
   if (hitArea) {
