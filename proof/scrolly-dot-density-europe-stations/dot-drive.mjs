@@ -54,7 +54,7 @@ export function applyDotState(root, state, context) {
   // the stage allows, and every other the radius its capacity's area gives it.
   const fitPpu = SW / fitViewBox(c.europeBox, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 }).w;
   const grow = Math.sqrt(ppu / fitPpu);
-  const rCount = Math.max(1.1, Math.min(2.2, SW / 650)) * grow;
+  const rCount = Math.max(1, Math.min(1.8, SW / 750)) * grow;
   const rMax = Math.max(8, Math.min(20, SW / 60)) * grow;
   const w = ease(clamp(state.weight));
   const arrive = clamp(state.arrive);
@@ -89,7 +89,9 @@ export function applyDotState(root, state, context) {
       rings.push([px, py, r, shown]);
       continue;
     }
-    ctx.globalAlpha = shown * (1 - 0.85 * fade) * lerp(0.8, 0.5, w);
+    // Translucent at a count, so where stations crowd the field reads as a deeper shade rather than a solid mass
+    // the subject's rings disappear into.
+    ctx.globalAlpha = shown * (1 - 0.85 * fade) * lerp(0.5, 0.5, w);
     ctx.fillStyle = c.colours.dot;
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
@@ -105,7 +107,14 @@ export function applyDotState(root, state, context) {
     ctx.beginPath();
     ctx.arc(px, py, ringR, 0, Math.PI * 2);
     ctx.fill();
+    // A halo in the land's colour under each ring, so it cuts through the densest part of the field.
+    ctx.globalAlpha = shown * (1 - 0.6 * w);
+    ctx.strokeStyle = c.colours.land;
+    ctx.lineWidth = lerp(4.5, 3.5, w);
+    ctx.stroke();
     ctx.globalAlpha = shown;
+    ctx.strokeStyle = c.colours.subject;
+    ctx.lineWidth = lerp(1.6, 1.8, w);
     ctx.stroke();
     ctx.globalAlpha = shown * (1 - w);
     ctx.beginPath();
