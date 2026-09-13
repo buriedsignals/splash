@@ -118,7 +118,9 @@ export function registerOf(direction, name) {
 
 /** The distance from one baseline to the next, at the size THIS object is drawn at — a function,
  *  not a field, because a layout copies a register at another size (`{ ...display, fontSize }`) and
- *  a field computed at resolution would carry the old size into the copy. */
+ *  a field computed at resolution would carry the old size into the copy. The size, not the face: a
+ *  copy that changes `fontFamily` keeps the old face's `lineHeight` — changing the face means calling
+ *  `registerOf` again. */
 export const leadOf = (r) => r.lineHeight * r.fontSize;
 
 /** A gap between blocks, as a multiple of the lead of the register that carries it. */
