@@ -95,18 +95,43 @@ export function webRegisters(direction, ctx) {
  *
  * Every rule in `buildCss` that sizes a word reads one of these, so a direction that sets a 32px
  * display and a 10px axis produces a page whose proportions are the direction's, not the format's.
+ *
+ * AND WHICH FAMILY, which is the half that was missing and the reason a direction had two
+ * typographic voices depending on genre. Every web stylesheet in this tree sets `font-family`
+ * exactly once, on `body`, from `dominantFontStack` — the family that appears MOST OFTEN in the
+ * markup, which on any beat with an axis is the furniture sans. The display register's own family
+ * had no route to the page at all: `rapport` sets its display in a serif and its body in an italic
+ * serif, and the delivered web page came out entirely in the sans, while the same direction's
+ * STATIC plate set the title in Merriweather. Measured on `proof/mapgen-locator-web`, whose markup
+ * names no family whatsoever, so `dominantFontStack` returned its own `HOUSE_SANS_STACK` fallback
+ * and every word on the page — title included — was set in it.
+ *
+ * A register's family arrives here as a complete STACK (`fontStack`), not a bare family name, so a
+ * stylesheet rule reads one custom property and needs no fallback of its own. Adding these is
+ * additive: a stylesheet that does not read them is byte-unchanged.
  */
 export function figureVars(regs) {
   const px = (style) => style.fontSize;
+  const family = (style) => style.fontFamily;
   return {
     "--title-size": px(regs.display),
     "--title-weight": regs.display.fontWeight,
+    "--title-family": family(regs.display),
     "--subtitle-size": px(regs.body),
+    "--subtitle-family": family(regs.body),
+    "--subtitle-style": regs.body.fontStyle,
     "--source-size": px(regs.body),
+    "--source-family": family(regs.body),
     "--axis-size": px(regs.axis),
+    "--axis-family": family(regs.axis),
     "--label-size": px(regs.value),
     "--label-weight": regs.value.fontWeight,
+    "--label-family": family(regs.value),
     "--note-size": px(regs.annot),
+    "--note-family": family(regs.annot),
+    "--eyebrow-family": family(regs.eyebrow),
+    "--eyebrow-weight": regs.eyebrow.fontWeight,
+    "--eyebrow-tracking": regs.eyebrow.letterSpacing,
     "--filter-size": px(regs.body),
   };
 }

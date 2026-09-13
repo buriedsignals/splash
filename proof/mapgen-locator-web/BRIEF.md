@@ -1,10 +1,22 @@
 # Beat — eleven international organisations in and around Geneva (web)
 
 **Type:** locator. **Medium/format:** map / web. **Channel:** article web, one self-contained
-`locator.html`: a LIVE MapTiler map (ruling R1) over one 420 px baked plate
-(`bake-plate.mjs --size 420`) kept as the script-free fallback layer, one HTML overlay of names and
+`locator.html`: a LIVE MapTiler map (ruling R1) over one **840 x 371 px** baked plate
+(`bake-plate.mjs --size 840`) kept as the script-free fallback layer, one HTML overlay of names and
 hit targets, and an always-rendered table of all eleven organisations. One render, no second layout
 — the two SSR'd `WebLayout` frames this beat used to ship were removed with B5.1.
+
+*The plate was a 420 px SQUARE until 2026-09-13.* A page keeps a plate's aspect exactly (a raster
+stretched to a shape it was not baked for is a lie about distance and shape), so a square plate came
+out as a square bounded by the leftover HEIGHT while every other block on the page ran the full
+width — measured at 1280x1200, a 929 px square in a 1248 px stage. The frame is now the shape the
+map block itself measures across six desktop windows (median 2.263:1), and the camera is fitted to
+the eleven organisations' own extent rather than to a typed rectangle roughly twice their size.
+The delivered fallback fills 92-100% of the page's width at all six.
+
+*And it is set in its filed direction, `rapport`.* The title is the display register (Merriweather)
+and the source line the body register (Merriweather italic), the same faces the static choropleth on
+this ground renders — not the sans this page used to take from a helper's fallback constant.
 
 ## Claim
 

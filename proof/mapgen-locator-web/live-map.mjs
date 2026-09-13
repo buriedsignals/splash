@@ -389,6 +389,13 @@ export function applyFilter(map, doc, plan) {
 export function applyMarkScale(map, doc, plan) {
   const scale = cameraScale(plan, map);
   map.__mwScale = scale;
+  // AND THE MARK'S OWN SCALE BESIDE IT. `__mwScale` is the CAMERA's multiplier; a pin does not take
+  // it (`markScaleOf`). `interaction.mjs` reads a scale to place its label gutters with and had only
+  // this one to read, so the live declutter placed every name at `gap · cameraScale` while
+  // `reposition`, four lines below, placed the same name at `gap · markScale` — 45.1 px against
+  // 10 px on the delivered page at 1280x1200. Two numbers describing one gutter, which is the class
+  // of defect this function's own docblock says it exists to make impossible. Stored here, once.
+  map.__mwMarkScale = markScaleOf(plan, scale);
   const layers = planLayers(plan);
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
@@ -447,10 +454,19 @@ export function reposition(map, doc, plan, scale) {
     // numbers travel on the node itself rather than being recomputed here, so the live label and
     // the fallback label are the same placement seen at two sizes.
     const side = node.getAttribute("data-side");
+    // WHICH EDGE THE PLACEMENT WAS ANCHORED BY. This read `data-side` alone, so a label the plate
+    // placed CENTRED above its point was re-placed beside it the moment the live map arrived: one
+    // placement, two answers, and the word moved on the swap.
+    const anchor = node.getAttribute("data-anchor");
     const gap = Number(node.getAttribute("data-gap") || 0) * markScale;
     const dy = Number(node.getAttribute("data-dy") || 0) * markScale;
     node.style.top = at.y + dy + "px";
-    if (side === "left") {
+    if (anchor === "centre") {
+      // The node already carries `translate(-50%, -50%)` from the render that centred it, so its
+      // own centre is what is being positioned here.
+      node.style.right = "auto";
+      node.style.left = at.x + "px";
+    } else if (side === "left") {
       node.style.left = "auto";
       node.style.right = doc.getElementById("mw-map").clientWidth - (at.x - gap) + "px";
     } else {
