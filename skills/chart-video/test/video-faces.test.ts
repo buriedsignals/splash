@@ -54,8 +54,18 @@ describe("videoFaces", () => {
   });
 
   it("should carry the Latin letters a composition types itself, which no prop contains", async () => {
-    const { faces } = await videoFaces({ stack: STACK, weights: [400], props: { title: "a" } });
-    const runs = [{ text: "Espérance de vie (âge) — Zürich, Ørsted & Ça", family: "Open Sans", weight: 400 }];
+    const { faces } = await videoFaces({
+      stack: STACK,
+      weights: [400],
+      props: { title: "a" },
+    });
+    const runs = [
+      {
+        text: "Espérance de vie (âge) — Zürich, Ørsted & Ça",
+        family: "Open Sans",
+        weight: 400,
+      },
+    ];
     expect(uncoveredText(runs, faces)).toEqual([]);
   });
 
@@ -77,6 +87,28 @@ describe("videoFaces", () => {
       // Google answers a `text=` request for glyphs the family lacks with a URL that returns 400,
       // so the shared fetcher refuses with "cannot download" before its own "cannot set" is reached.
     ).rejects.toThrow(/cannot (set|download)/);
+  });
+
+  it("should embed every family and style a directed video asks for", async () => {
+    const { faces } = await videoFaces({
+      wanted: [
+        { family: "Merriweather", weight: 700 },
+        { family: "Open Sans", weight: 400 },
+        { family: "Open Sans", weight: 400, style: "italic" },
+      ],
+      props: { title: "Émissions de CO₂" },
+    });
+    const runs = [
+      { text: "Émissions de CO₂", family: "Merriweather", weight: 700 },
+      { text: "Émissions de CO₂", family: "Open Sans", weight: 400 },
+      {
+        text: "Émissions de CO₂",
+        family: "Open Sans",
+        weight: 400,
+        style: "italic" as const,
+      },
+    ];
+    expect(uncoveredText(runs, faces)).toEqual([]);
   });
 });
 

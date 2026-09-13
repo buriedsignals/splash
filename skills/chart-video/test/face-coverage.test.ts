@@ -82,4 +82,22 @@ describe("uncoveredText", () => {
     const runs = [{ text: "Ж", family: "Open Sans", weight: 400 }];
     expect(uncoveredText(runs, faces)).toEqual([]);
   });
+
+  it("should report an italic run when only the upright face was embedded", () => {
+    const faces = [openSans(400, "U+61")];
+    const runs = [
+      { text: "a", family: "Open Sans", weight: 400, style: "italic" as const },
+    ];
+    expect(uncoveredText(runs, faces)).toEqual([
+      { codePoint: 0x61, family: "Open Sans", weight: 400 },
+    ]);
+  });
+
+  it("should accept an italic run set in an embedded italic face", () => {
+    const faces = [{ ...openSans(400, "U+61"), style: "italic" as const }];
+    const runs = [
+      { text: "a", family: "Open Sans", weight: 400, style: "italic" as const },
+    ];
+    expect(uncoveredText(runs, faces)).toEqual([]);
+  });
 });

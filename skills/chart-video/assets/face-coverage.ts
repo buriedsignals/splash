@@ -24,7 +24,12 @@ export type EmbeddedFace = {
   base64: string;
 };
 
-export type DrawnRun = { text: string; family: string; weight: number };
+export type DrawnRun = {
+  text: string;
+  family: string;
+  weight: number;
+  style?: "normal" | "italic";
+};
 export type Uncovered = { codePoint: number; family: string; weight: number };
 
 /** `U+20-7E, U+2082, U+04??` as `[lo, hi]` pairs. A token this cannot read is refused: a range
@@ -41,7 +46,9 @@ export function parseRanges(spec: string): Array<[number, number]> {
           Number.parseInt(token.replace(/\?/g, "F"), 16),
         ];
     if (!Number.isFinite(lo) || !Number.isFinite(hi))
-      throw new Error(`unreadable unicode-range token ${JSON.stringify(part)} in ${JSON.stringify(spec)}`);
+      throw new Error(
+        `unreadable unicode-range token ${JSON.stringify(part)} in ${JSON.stringify(spec)}`,
+      );
     ranges.push([lo, hi]);
   }
   return ranges;
@@ -52,20 +59,27 @@ export function parseRanges(spec: string): Array<[number, number]> {
  *  thousand. The two sides must skip the same set, or a French figure fails a frame no face fixes. */
 const INKLESS = /[\s\u00AD\u200B-\u200F\u2028-\u202F\u205F-\u2064\uFEFF]/;
 
-export function uncoveredText(runs: DrawnRun[], faces: EmbeddedFace[]): Uncovered[] {
-  const parsed = faces.map((face) => ({ face, ranges: parseRanges(face.unicodeRange) }));
+export function uncoveredText(
+  runs: DrawnRun[],
+  faces: EmbeddedFace[],
+): Uncovered[] {
+  const parsed = faces.map((face) => ({
+    face,
+    ranges: parseRanges(face.unicodeRange),
+  }));
   const seen = new Set<string>();
   const out: Uncovered[] = [];
-  for (const { text, family, weight } of runs) {
+  for (const { text, family, weight, style = "normal" } of runs) {
     for (const ch of text) {
       if (INKLESS.test(ch)) continue;
       const codePoint = ch.codePointAt(0)!;
-      const key = `${family}|${weight}|${codePoint}`;
+      const key = `${family}|${weight}|${style}|${codePoint}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const covered = parsed.some(
         ({ face, ranges }) =>
           face.family === family &&
+          face.style === style &&
           weight >= face.weight &&
           weight <= face.weightTo &&
           ranges.some(([lo, hi]) => codePoint >= lo && codePoint <= hi),

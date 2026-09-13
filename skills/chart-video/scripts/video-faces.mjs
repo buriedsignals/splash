@@ -46,16 +46,17 @@ function stringsOf(value, out = []) {
 }
 
 /**
- * @param {{stack: string, weights: number[], props: object}} beat
- *        `stack` is the recorded TYPEFACE family; `weights` every weight the composition sets.
- * @returns {Promise<{fontFamily: string, faces: Array<{family, style, weight, weightTo, unicodeRange, base64}>}>}
+ * @param {{wanted?: Array<{family: string, weight?: number, style?: "normal"|"italic"}>,
+ *          stack?: string, weights?: number[], props: object}} beat
+ *        `wanted` is what a directed video passes — one entry per family × weight × style its
+ *        registers resolve to. `stack` + `weights` is the single-family form the seed uses.
  */
-export async function videoFaces({ stack, weights, props }) {
-  const family = requestedFamily(stack);
-  const wanted = [...new Set(weights)].map((weight) => ({ family, weight }));
-  const faces = await embeddedWebFaces(wanted, [LATIN_1, ...stringsOf(props)].join("\n"));
+export async function videoFaces({ wanted, stack, weights, props }) {
+  const requests =
+    wanted ?? [...new Set(weights)].map((weight) => ({ family: requestedFamily(stack), weight }));
+  const faces = await embeddedWebFaces(requests, [LATIN_1, ...stringsOf(props)].join("\n"));
   return {
-    fontFamily: stack,
+    fontFamily: stack ?? null,
     faces: faces.map(({ family, style, weight, weightTo, unicodeRange, base64 }) => ({
       family,
       style,
@@ -75,8 +76,8 @@ export async function videoFaces({ stack, weights, props }) {
  *
  * @returns {Promise<string>} the path to hand `remotion --props=`
  */
-export async function writeRenderProps({ props, stack, weights, auditPath }) {
-  const typeface = await videoFaces({ stack, weights, props });
+export async function writeRenderProps({ props, wanted, stack, weights, auditPath }) {
+  const typeface = await videoFaces({ wanted, stack, weights, props });
   const rendered = { ...props, ...typeface };
   const audit = { ...props, ...typeface, faces: typeface.faces.map(({ base64, ...face }) => face) };
   await writeFile(auditPath, JSON.stringify(audit, null, 2));

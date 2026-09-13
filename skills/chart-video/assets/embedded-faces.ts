@@ -46,6 +46,10 @@ function drawnRuns(root: Element): DrawnRun[] {
         .trim()
         .replace(/^["']|["']$/g, ""),
       weight: Number.parseInt(style.fontWeight, 10),
+      style:
+        style.fontStyle === "italic" || style.fontStyle.startsWith("oblique")
+          ? "italic"
+          : "normal",
     });
   }
   return runs;
