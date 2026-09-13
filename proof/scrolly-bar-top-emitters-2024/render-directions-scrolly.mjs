@@ -1,15 +1,15 @@
 // The ten largest CO₂ emitters of 2024, rendered once per FILED DIRECTION into a self-contained
 // scrolly page. The `bar and column` type in the scrolly format.
 //
-// THE SAME PLATE AS `static-bar-top-emitters-2024`, READ IN ORDER. The ranking, the search behind
-// "the next five put together", the French names and the words are the static beat's own; the scroll
-// only decides the order in which the reader is asked to see them:
+// THE SUBJECT OF `static-bar-top-emitters-2024`, CHOREOGRAPHED. The ranking, the search behind "the next
+// five put together", the French names and the colour rules are the static beat's own; the scroll tells
+// them with its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. what is measured, and what the ten weigh — the ten columns;
-//   2. how far the first stands from the second and the tenth — every column's own number;
-//   3. the headline's arithmetic — the rule at the subject's level drawn across the set, the bracket
-//      and its sum;
-//   4. the plate's own caveat on what territorial emissions count.
+//   1. what is measured — the ten names on an empty baseline;
+//   2. from the tenth to the second — the columns rise one by one, each counting its value;
+//   3. the first — China rises last, its value counting to 12,3;
+//   4. the headline's arithmetic — the next five slide onto the second slot and stack under China's level;
+//   5. what the ten weigh — back apart, and the ten's share of the world total.
 //
 // Usage:  bun proof/scrolly-bar-top-emitters-2024/render-directions-scrolly.mjs
 
@@ -99,17 +99,18 @@ const format = (v) => (v >= 1 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
 const title = [
   `${capital(named(subject.country))} a émis plus de CO2 en ${YEAR} que les ${SPELLED[beatenCount]} pays suivants réunis`,
   `${capital(named(subject.country))} a émis plus que les ${SPELLED[beatenCount]} pays suivants réunis`,
+  `${capital(named(subject.country))}, plus que les ${SPELLED[beatenCount]} suivants`,
 ];
 const comparisonNote = `Les ${SPELLED[beatenCount]} suivants réunis : ${format(combined)}`;
+const NB = "\u00A0";
+if (!(topShare > 0 && topShare < 1)) throw new Error(`the ten's share of the world total is ${topShare}, not a share`);
+const worldLabel = `Les ${SPELLED[TOP_N]} : ${(topShare * 100).toFixed(0)}${NB}% des émissions mondiales`;
 const prose = [
-  [
-    `CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes. Ces ${SPELLED[TOP_N]} pays représentent ${(topShare * 100).toFixed(0)} % du total mondial.`,
-  ],
-  [
-    `${capital(named(subject.country))} émet ${fr(ratioToSecond, 1)} fois plus que ${named(top[1].country)}, et le dixième, ${named(lastPlace.country)}, ${format(lastPlace.value)}.`,
-  ],
-  [`${comparisonNote} — moins que ${named(subject.country)} seule, ${format(subject.value)}.`],
-  [`Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`],
+  [`CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes : les ${SPELLED[TOP_N]} pays qui en ont le plus émis en ${YEAR}.`],
+  [`Du dixième, ${named(lastPlace.country)} (${format(lastPlace.value)}), au deuxième, ${named(top[1].country)} (${format(top[1].value)}).`],
+  [`Puis ${named(subject.country)} : ${format(subject.value)} — ${fr(ratioToSecond, 1)} fois ${named(top[1].country)}.`],
+  [`Les ${SPELLED[beatenCount]} suivants réunis : ${format(combined)} — moins que ${named(subject.country)} seule.`],
+  [`Ces ${SPELLED[TOP_N]} pays représentent ${(topShare * 100).toFixed(0)}${NB}% du total mondial. Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`],
 ];
 const source = `Source : Global Carbon Budget 2025, via Our World in Data · données ${YEAR}, extraites le 9 août 2026`;
 const rows = top.map((r) => ({ name: french(r.country), value: r.value, label: format(r.value) }));
@@ -122,10 +123,11 @@ const alt =
 
 /** One state per card; see `bar-drive.mjs` for what each field paints. */
 const STATES = [
-  { grow: 1, values: 0, rule: 0, set: 0 },
-  { grow: 1, values: 1, rule: 0, set: 0 },
-  { grow: 1, values: 1, rule: 1, set: 1 },
-  { grow: 1, values: 1, rule: 1, set: 1 },
+  { rise: 0, china: 0, stack: 0, rule: 0, world: 0 },
+  { rise: 1, china: 0, stack: 0, rule: 0, world: 0 },
+  { rise: 1, china: 1, stack: 0, rule: 0, world: 0 },
+  { rise: 1, china: 1, stack: 1, rule: 1, world: 0 },
+  { rise: 1, china: 1, stack: 0, rule: 0, world: 1 },
 ];
 
 const textPerRegister = {
@@ -133,8 +135,8 @@ const textPerRegister = {
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
   axis: "0",
-  annot: `${rows.map((r) => r.name).join(" ")} ${comparisonNote}`,
-  value: rows.map((r) => r.label).join(" "),
+  annot: `${rows.map((r) => r.name).join(" ")} ${comparisonNote} ${worldLabel}`,
+  value: `${rows.map((r) => r.label).join(" ")} ${format(combined)} 0123456789,`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -154,13 +156,16 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["mesure", "ecart", "somme", "perimetre"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["mesure", "montee", "chine", "pile", "monde"][i], prose: p })),
       reveal: {
         element: createElement(DirectedColumnsScrolly, {
           rows,
           subject: french(subject.country),
           comparison: beaten.map((r) => french(r.country)),
           comparisonNote,
+          stackLabel: format(combined),
+          worldShare: topShare,
+          worldLabel,
           alt,
           regs,
           pad: direction.pad,

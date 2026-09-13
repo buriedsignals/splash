@@ -24,6 +24,7 @@
 import type { CSSProperties } from "react";
 import {
   adjustToContrast,
+  mix,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
 
@@ -45,6 +46,9 @@ export function DirectedColumnsScrolly({
   subject,
   comparison,
   comparisonNote,
+  stackLabel,
+  worldShare,
+  worldLabel,
   alt,
   regs,
   pad,
@@ -58,6 +62,11 @@ export function DirectedColumnsScrolly({
   subject: string;
   comparison: string[];
   comparisonNote: string;
+  /** The set's own sum, printed at the top of the stack the fourth card builds. */
+  stackLabel: string;
+  /** The ten's share of the world total, 0..1, and the words that name it. */
+  worldShare: number;
+  worldLabel: string;
   alt: string;
   regs: Record<
     "display" | "eyebrow" | "body" | "axis" | "annot" | "value",
@@ -119,6 +128,7 @@ export function DirectedColumnsScrolly({
     <div
       role="img"
       aria-label={alt}
+      data-set-ranks={JSON.stringify(setIdx)}
       style={{
         position: "absolute",
         inset: 0,
@@ -148,6 +158,7 @@ export function DirectedColumnsScrolly({
             <div
               key={`c${r.name}`}
               data-part="bar"
+              data-rank={i}
               style={abs({
                 left: pct(b.start(i)),
                 width: pct(b.width),
@@ -162,6 +173,8 @@ export function DirectedColumnsScrolly({
             <span
               key={`v${r.name}`}
               data-part="value"
+              data-rank={i}
+              data-amount={r.value}
               style={abs({
                 ...valueStyle(i),
                 left: pct(b.start(i) + b.width / 2),
@@ -207,6 +220,15 @@ export function DirectedColumnsScrolly({
           >
             {comparisonNote}
           </span>
+          <span data-part="stack-label" style={abs({ ...valueStyle(1), color: accentInk, fontWeight: 700, left: 0, top: 0, opacity: 0 })}>
+            {stackLabel}
+          </span>
+          <div data-part="world" style={abs({ right: 0, top: 0, width: "44%" })}>
+            <div style={{ ...regs.annot, color: accentInk, marginBottom: "6px" }}>{worldLabel}</div>
+            <div style={{ position: "relative", height: "10px", background: mix(ground, ink, 0.1) }}>
+              <div style={abs({ left: 0, top: 0, bottom: 0, width: pct(worldShare), background: accent })} />
+            </div>
+          </div>
           <div
             style={abs({
               left: 0,
@@ -280,6 +302,7 @@ export function DirectedColumnsScrolly({
           >
             <div
               data-part="bar"
+              data-rank={i}
               style={abs({
                 left: 0,
                 top: "22%",
@@ -291,6 +314,8 @@ export function DirectedColumnsScrolly({
             />
             <span
               data-part="value"
+              data-rank={i}
+              data-amount={r.value}
               style={abs({
                 ...valueStyle(i),
                 left: `calc(${pct(share(r.value) * 0.78)} + 6px)`,
@@ -364,6 +389,15 @@ export function DirectedColumnsScrolly({
         >
           {comparisonNote}
         </span>
+        <span data-part="stack-label" style={{ ...valueStyle(1), color: accentInk, fontWeight: 700, position: "absolute", left: 0, top: 0, opacity: 0 }}>
+          {stackLabel}
+        </span>
+        <div data-part="world" style={{ position: "absolute", right: 0, top: "56%", width: "38%" }}>
+          <div style={{ ...regs.annot, color: accentInk, marginBottom: "6px" }}>{worldLabel}</div>
+          <div style={{ position: "relative", height: "10px", background: mix(ground, ink, 0.1) }}>
+            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pct(worldShare), background: accent }} />
+          </div>
+        </div>
       </div>
     </div>
   );
