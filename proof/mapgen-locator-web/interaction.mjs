@@ -132,7 +132,13 @@ export function relabel(labels) {
   // The ONE scale the live layer computed and stored (`live-map.mjs`'s `applyMarkScale`: "there is
   // one place the scale is computed and one place it is stored"). Read rather than recovered, and
   // that is a fix rather than a shortcut — see `labelGeometry`.
-  const scale = frame && window.__mwMap ? window.__mwMap.__mwScale : 1;
+  //
+  // AND IT IS THE MARK'S SCALE, NOT THE CAMERA'S. This read `__mwScale`, which is what the CAMERA
+  // multiplies by; a pin does not take it. So this pass placed every name at `gap · 4.51` while
+  // `reposition` placed the same name at `gap · 1` — measured on the delivered page at 1280x1200:
+  // 45.1 px of gutter against 10 px, for the same label, on the same render. `__mwMarkScale` is the
+  // number the marks are actually drawn against, stored beside it for exactly this reader.
+  const scale = frame && window.__mwMap ? window.__mwMap.__mwMarkScale : 1;
   // Every marker a label must not be printed across, and how big each one is drawn — measured, not
   // assumed: live, the pin's own radius travels in the plan the page carries; on the plate it is
   // whatever the SVG circle is currently drawn at, which scales with the container. The `.pt` centre
@@ -284,24 +290,35 @@ export function labelGeometry(label, frame, scale) {
 }
 
 /** Writes one candidate placement. `top` is the label's own CENTRE, because the SSR'd
- *  `translateY(-50%)` is still on the node and `live-map.mjs` positions against it too. */
+ *  `translateY(-50%)` is still on the node and `live-map.mjs` positions against it too.
+ *
+ *  EVERY BRANCH WRITES THE TRANSFORM, and that is not tidiness. A centred placement is anchored on
+ *  the label's own CENTRE (`LocatorWeb.tsx` says why: a percentage left edge against a fixed-pixel
+ *  box drifts by half the difference, and it put one name 81.5 px off its own dot). This pass moves
+ *  a label between the two anchorings at every camera move, so a branch that left the previous
+ *  mode's transform in place would offset the name it just positioned by half its width. */
 export function placeLabel(label, geometry, mode) {
   if (mode === "left") {
+    label.style.transform = "translateY(-50%)";
     label.style.left = "auto";
     label.style.right = geometry.frameWidth - (geometry.x - geometry.gap) + "px";
     label.style.top = geometry.y + "px";
     return;
   }
   if (mode === "right") {
+    label.style.transform = "translateY(-50%)";
     label.style.right = "auto";
     label.style.left = geometry.x + geometry.gap + "px";
     label.style.top = geometry.y + "px";
     return;
   }
+  // Clamped on the CENTRE, by half the name's width, so a name centred against the frame's own edge
+  // stays inside it — the same clamp, restated in the units this anchoring works in.
   const centred = Math.min(
-    Math.max(geometry.x - geometry.width / 2, 0),
-    Math.max(geometry.frameWidth - geometry.width, 0),
+    Math.max(geometry.x, geometry.width / 2),
+    Math.max(geometry.frameWidth - geometry.width / 2, geometry.width / 2),
   );
+  label.style.transform = "translate(-50%, -50%)";
   label.style.right = "auto";
   label.style.left = centred + "px";
   label.style.top =
