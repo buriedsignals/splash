@@ -11,6 +11,11 @@
  * that reads `.leading` outside the three modules that own it (and their carried copies, recognised
  * by their `// twin/` first line). A new consumer under a directory nobody anticipated is found the
  * same way as one under `proof/`. Tests are exempt: they read the value to assert on it.
+ *
+ * A read is any of the three shapes JavaScript has for it: a member (`r.leading`, `r?.leading`), a
+ * computed key (`r["leading"]`), and a destructured binding (`const { leading } = r`,
+ * `({ fontSize, leading }) =>`). The bare word is not the pattern: "leading" is also an English word
+ * in comments and a local name for unrelated things, and a guard that fires on prose gets exempted.
  */
 import { describe, it, expect } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
@@ -27,7 +32,8 @@ const OWNERS = new Set([
   "shared/design-base/read-direction.mjs",
   "shared/chart-beat/registers.mjs",
 ]);
-const READS_LEADING = /\.leading\b/;
+const READS_LEADING =
+  /\.leading\b|\[\s*["'`]leading["'`]\s*\]|[{,]\s*leading\s*[,}:=]/;
 
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -53,9 +59,33 @@ const sources = [...walk(ROOT)].map((path) => {
 describe("a register's leading", () => {
   it("should walk the repository and find the modules that own the leading (premise)", () => {
     expect(sources.length).toBeGreaterThan(500);
-    expect(
-      sources.filter((s) => OWNERS.has(s.canonical) && s.reads).length,
-    ).toBeGreaterThanOrEqual(3);
+    const found = [...OWNERS].map((owner) => [
+      owner,
+      sources.some((s) => s.own === owner && s.reads),
+    ]);
+    expect(found).toEqual([...OWNERS].map((owner) => [owner, true]));
+  });
+
+  it("should recognise every shape a read of the leading takes (premise)", () => {
+    const shapes = [
+      "const lead = r.leading * size;",
+      "const lead = r?.leading;",
+      'const lead = r["leading"];',
+      "const { leading } = resolveRegister(direction, name);",
+      "const {\n  fontSize,\n  leading,\n} = r;",
+      "export const probe = ({ leading }) => leading;",
+      "const { leading: coefficient = 1.2 } = r;",
+    ];
+    expect(shapes.filter((shape) => !READS_LEADING.test(shape))).toEqual([]);
+  });
+
+  it("should not take the English word for a read (premise)", () => {
+    const prose = [
+      "// the middle sheet's leading edge",
+      "// A trailing or leading unit is READ",
+      " * Everything a beat's `sp()` touches is a gap BETWEEN WORDS: leading, the air under the header",
+    ];
+    expect(prose.filter((line) => READS_LEADING.test(line))).toEqual([]);
   });
 
   it("should be read nowhere but in the modules that own it", () => {
