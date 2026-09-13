@@ -94,6 +94,13 @@ export const FRAME: WebFrame = {
  *  in a screenshot. */
 const POINT_INSET = 6;
 
+/** The viewport width at or below which the crossing note flips under its own point. Not a device
+ *  and not a guess: the collision it clears was measured on the rendered file at five widths, and
+ *  the last one that overlaps is 375. 479 sits above every width that overlapped and below the
+ *  first that cleared with room (480, where the gap is 11 px), so the switch happens where the
+ *  measurement says it must and not at a round number somebody liked. */
+const NARROW_MAX_PX = 479;
+
 /** `value / total` as a percentage to one decimal — the arithmetic that lets an HTML label land on
  *  the exact spot in the `<svg>` it annotates, expressed as a fraction of the SAME grid cell, so it
  *  tracks the geometry's continuous stretch for free. */
@@ -128,7 +135,12 @@ export function LifeExpectancyWeb({
   measure,
   frame,
 }: {
-  data: Reading[];
+  /** Every reading, each carrying the ANSWER IT GIVES — built in the runner from the frozen file
+   *  (`readingsWithDetail`), asserted there, and only read back here. Nothing about a reading is
+   *  derived in this component: the browser never formats a number and neither does the drawing
+   *  layer, so there is one implementation of "what does 1985 say" for the page and the brief to
+   *  agree on (`chart-web/references/directed-interaction.md`, rule 4). */
+  data: (Reading & { detail: string })[];
   title: string;
   caveat: string;
   source: string;
@@ -157,6 +169,7 @@ export function LifeExpectancyWeb({
 
   const last = data[data.length - 1];
   const endLabel = `${subject} ${formatNumber(last.value)} (${last.year})`;
+  const detailByYear = new Map(data.map((d) => [d.year, d.detail]));
 
   const referenceReading = data.find((d) => d.year === referenceYear);
   if (!referenceReading)
@@ -200,6 +213,9 @@ export function LifeExpectancyWeb({
     10 + Math.max(...tickLabels.map((l) => measure(l, frame.axis)));
 
   const crossingPoint = points.find((p) => p.year === crossingYear);
+  const crossingAnchor = crossingPoint
+    ? anchorAt(crossingPoint.x / frame.width)
+    : "translateX(-50%)";
   const end = points[points.length - 1];
   const xTicks = xTickValues(
     data.map((d) => d.year),
@@ -224,6 +240,31 @@ export function LifeExpectancyWeb({
         ["--note-size" as string]: `${frame.note.fontSize}px`,
       }}
     >
+      {/* THE ONE PLACEMENT THIS COMPONENT CANNOT DECIDE AT BUILD TIME, so it is handed to the one
+          layer that can. `references/types/line.md`'s named trap is two series' end-labels
+          colliding, and its remedy is the part that transfers here: *nudge the labels apart — up
+          and down, not sideways off the endpoint*. This beat draws one series, and it still has two
+          direct labels stacked in the same band — the crossing note at 80.3 and the end label at
+          84.0, 22.4 % of the plot's height apart. That fraction is constant; the labels' heights are
+          FIXED px, so the gap closes as the plot shrinks. Measured on the rendered file: clear from
+          414 px up (4 px at 414, 11 px at 480), and overlapping by 1 px at 375, 3 px at 360 and 8 px
+          at 320 — the standing defect recorded against this beat in
+          `splash/test/web-annotation-clears-its-marks.test.ts`.
+          A build-time nudge cannot fix it: the component knows the canonical box and never the
+          rendered height, so any px it chose would be right at one width. The media query knows.
+          Below the switch the note hangs BELOW its own point instead of above it, which is the empty
+          half of that neighbourhood — the stroke reaches 80 only at the crossing, so everything
+          under the note's row and left of the point is ground. Both placements stay ON the point;
+          neither is a slide sideways off the mark it annotates. */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            `.crossing-note{transform:${crossingAnchor} translateY(-100%) translateY(-8px)}` +
+            `@media (max-width:${NARROW_MAX_PX}px){` +
+            `.crossing-note{transform:${crossingAnchor} translateY(8px)}}`,
+        }}
+      />
+
       <div className="chart-header">
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{caveat}</p>
@@ -327,22 +368,33 @@ export function LifeExpectancyWeb({
               `aria-label`/`data-detail` baked in at build time — reachable with the script absent
               entirely. `assets/interaction.mjs` (the skill's own, unmodified) wires hover/tap/
               keyboard via nearest-x resolution over the shared `.hit-area`. */}
-          {points.map((p) => (
-            <circle
-              key={p.year}
-              className="pt"
-              cx={p.x}
-              cy={p.y}
-              r={5}
-              fill="transparent"
-              stroke="none"
-              tabIndex={0}
-              role="img"
-              aria-label={`${p.year}: ${formatNumber(p.value)} years`}
-              data-year={p.year}
-              data-detail={`${p.year} · ${formatNumber(p.value)} years`}
-            />
-          ))}
+          {points.map((p) => {
+            // Looked up BY YEAR, never by index. The geometry is built from the same array in the
+            // same order, so an index would work today and go on working silently the day
+            // something filters or sorts one of the two — which is how a chart ends up confidently
+            // answering with the wrong year's reading.
+            const detail = detailByYear.get(p.year);
+            if (detail === undefined)
+              throw new Error(`no answer was built for ${p.year}`);
+            return (
+              <circle
+                key={p.year}
+                className="pt"
+                cx={p.x}
+                cy={p.y}
+                r={5}
+                fill="transparent"
+                stroke="none"
+                tabIndex={0}
+                role="img"
+                // The same reading a pointer gets, spoken. A keyboard reader who never sees the
+                // tooltip is not given the thinner half of the answer.
+                aria-label={detail.replace(/ · /g, ", ")}
+                data-year={p.year}
+                data-detail={detail}
+              />
+            );
+          })}
           <rect
             className="hit-area"
             x={0}
@@ -377,15 +429,14 @@ export function LifeExpectancyWeb({
           </span>
           {crossingPoint && (
             <span
-              className="note"
+              className="note crossing-note"
               style={{
                 left: `${pct(crossingPoint.x, frame.width)}%`,
                 top: `${pct(crossingPoint.y, frame.height)}%`,
-                transform: `${anchorAt(crossingPoint.x / frame.width)} translateY(-100%) translateY(-8px)`,
                 color: muted,
               }}
             >
-              first year past 80
+              past 80 in {crossingYear}
             </span>
           )}
           <span

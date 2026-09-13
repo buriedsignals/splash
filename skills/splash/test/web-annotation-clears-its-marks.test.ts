@@ -47,8 +47,12 @@
  *      are pinned rather than re-rendered here. The three known cases:
  *        - `webx-world-population` — "passed 1 billion in 1805" grazes the `#0B7A75` area's own
  *          edge, **1 of 25 sample points**, at 375, 768 and 1400. A real notch in the line, small.
- *        - `webx-life-expectancy` — "first year past 80" is printed **over** "Switzerland 84.0
- *          (2023)" at 375. Two runs of type on the same pixels, in a beat nobody reported.
+ *        - `webx-life-expectancy` — FIXED and struck (2026-09-13). "first year past 80" was
+ *          printed **over** "Switzerland 84.0 (2023)" at 375: two direct labels 22,4 % of the
+ *          plot's height apart, with fixed-px heights that close that gap as the plot shrinks.
+ *          Measured across five widths (8 px of overlap at 320, 3 at 360, 1 at 375, clear from
+ *          414), so the note now flips under its own point below 480 px, which is the empty half
+ *          of that neighbourhood. The pin is gone from `ACCEPTED` below.
  *        - `webz-diverging-bar-eu-per-capita` — "the only rise since 1990" sits inside the `#e2efee`
  *          row band, which is the wash case above and is deliberate (it is below the floor, so it
  *          does not even reach the report).
@@ -219,7 +223,6 @@ const READ_ANNOTATIONS = (floor: number) => `(() => {
  * Remove a line when its page is fixed; never add one for a new page (fix the page instead).
  */
 const ACCEPTED = new Set([
-  'proof/webx-life-expectancy/life-expectancy.html @ 375: "first year past 80" is printed over "Switzerland 84.0 (2023)"',
   'proof/webx-world-population/world-population.html @ 375: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
   'proof/webx-world-population/world-population.html @ 768: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
   'proof/webx-world-population/world-population.html @ 1400: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
