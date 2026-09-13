@@ -34,7 +34,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -91,13 +97,9 @@ export function DirectedFlowMap({
 }) {
   const { width, height } = FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -157,9 +159,9 @@ export function DirectedFlowMap({
   const nodeInk = adjustToContrast(ink, direction.ground, TEXT_CONTRAST_MIN);
 
   // ── the ladder ────────────────────────────────────────────────────────────
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
-  const annotLead = annot.fontSize * 1.4;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
+  const annotLead = leadOf(annot);
   const SHARES = [0.3, 0.34, 0.38, 0.42, 0.46];
   const DOTTED_ROWS = 4;
   const GUTTER = 24;
@@ -176,15 +178,22 @@ export function DirectedFlowMap({
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
     const sourceLines = wrap(set(source, body), panel, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-    const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.8;
-    const keyTop = limitsTop + limitLines.length * bodyLead + annot.fontSize * 1.2 + annotBand.ascent;
+    const titleTop =
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+    const keyTop =
+      limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.8571) + annotBand.ascent;
     const keyRows = 3;
     const dottedTop =
       keyTop + keyRows * (annotBand.ascent + annotBand.descent + 6) + axisBand.ascent;
     const dottedLead = axisBand.ascent + axisBand.descent + 2;
     const readingTop =
-      dottedTop + Math.max(0, dottedLines - 1) * dottedLead + axisBand.descent + annot.fontSize * 1.4 + annotBand.ascent;
+      dottedTop +
+      Math.max(0, dottedLines - 1) * dottedLead +
+      axisBand.descent +
+      gapOf(annot, 1) +
+      annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop = readingTop + Math.max(0, readingLines.length - 1) * annotLead;
     return {

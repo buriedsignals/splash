@@ -21,8 +21,9 @@ import { join, relative } from "node:path";
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
 
-/** MAY ONLY GO DOWN. Measured 2026-09-13 before the migration: 244; lot 1 of 4 brings it to 187. */
-const LITERAL_LEADING_ALLOWED = 187;
+/** MAY ONLY GO DOWN. Measured 2026-09-13 before the migration: 244; lot 1 of 4 brings it to 187,
+ *  lot 2 to 127. */
+const LITERAL_LEADING_ALLOWED = 127;
 
 const PATTERNS = [
   {
