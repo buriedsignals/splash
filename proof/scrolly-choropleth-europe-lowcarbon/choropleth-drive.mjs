@@ -72,9 +72,7 @@ export function applyChoroplethState(root, state, context) {
   const count = c.topCount;
   const text = count.dataset.template.replace("{n}", String(Math.round(Number(count.dataset.value) * clamp(state.filter * 2))));
   if (count.textContent !== text) count.textContent = text;
-  count.style.opacity = "1";
-  // The panel fades with its counter: an empty panel of the ground reads as a hole in the map.
-  count.parentElement.style.opacity = String(state.filter);
+  count.style.opacity = String(state.filter);
 }
 
 /** Two names that would touch: the later one steps down under the earlier one. */
@@ -103,20 +101,10 @@ function mix(a, b, t) {
 function seat(root, carrier) {
   const data = JSON.parse(carrier.getAttribute("data-choropleth"));
   const field = root.querySelector('[data-part="field"]');
-  const stageBox = root.querySelector('[data-part="stage"]').getBoundingClientRect();
-  const key = root.querySelector('[data-part="key"]').getBoundingClientRect();
-  const count = root.querySelector('[data-part="count-panel"]').getBoundingClientRect();
-  const side = Math.min(24, stageBox.width * 0.04);
   root.__choro = {
     ...data,
     field,
-    // What the overlays take from the stage; the map's frame is fitted inside what is left.
-    insets: {
-      top: count.bottom - stageBox.top + 6,
-      bottom: stageBox.bottom - key.top + 6,
-      left: side,
-      right: side,
-    },
+    insets: { top: 0, right: 0, bottom: 0, left: 0 },
     stage: root.querySelector('[data-part="stage"]'),
     shapes: data.shapes.map((s) => ({ ...s, el: field.querySelector(`[data-shape="${s.iso}"]`) })),
     names: Array.from(root.querySelectorAll("[data-name]")),

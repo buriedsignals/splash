@@ -94,11 +94,26 @@ export function DirectedChoroplethScrolly({
         fills: { classes: Array.from({ length: classCount }, (_, i) => classFill(i)), missing: missingFill, land: water.land },
         top: names.filter((n) => n.role === "top" || n.role === "odd").map((n) => n.iso),
       })}
-      style={{ position: "absolute", inset: 0, background: water.water, overflow: "hidden" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: ground,
+        display: "grid",
+        gridTemplateRows: "auto minmax(0, 1fr) auto",
+        rowGap: "10px",
+        // The page's own side gutter — the header's — so the map's edges line up with the title's.
+        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+      }}
     >
-      {/* THE MAP IS FULL-BLEED: the stage is the whole graphic, and the counter and the key sit over it in
-          its corners, on panels of the ground. `choropleth-drive.mjs` fits the camera between them. */}
-      <div data-part="stage" style={{ position: "absolute", inset: 0 }}>
+      <div data-part="count-panel" style={{ display: "flex", justifyContent: "flex-end", minHeight: "1.4em" }}>
+        <span data-part="top-count" data-template={topCount.template} data-value={topCount.value} style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}>
+          {topCount.template.replace("{n}", String(topCount.value))}
+        </span>
+      </div>
+
+      {/* THE MAP FILLS ITS ROW, gutter to gutter: `choropleth-drive.mjs` fits the camera's frame inside the
+          stage and widens the view to the stage's own aspect, so no side of the row is left bare. */}
+      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden", background: water.water }}>
         <svg
           data-part="field"
           xmlns="http://www.w3.org/2000/svg"
@@ -164,23 +179,8 @@ export function DirectedChoroplethScrolly({
       </div>
 
       <div
-        data-part="count-panel"
-        style={{ position: "absolute", top: `clamp(10px, 2.5vh, ${pad * 0.5}px)`, right: `clamp(12px, 4vw, ${pad}px)`, background: ground, padding: "4px 8px" }}
-      >
-        <span data-part="top-count" data-template={topCount.template} data-value={topCount.value} style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}>
-          {topCount.template.replace("{n}", String(topCount.value))}
-        </span>
-      </div>
-
-      <div
         data-part="key"
         style={{
-          position: "absolute",
-          left: `clamp(12px, 4vw, ${pad}px)`,
-          bottom: `clamp(10px, 2.5vh, ${pad * 0.5}px)`,
-          maxWidth: "calc(100% - 24px)",
-          background: ground,
-          padding: "8px 10px 2px",
           display: "flex",
           flexWrap: "wrap",
           alignItems: "flex-start",

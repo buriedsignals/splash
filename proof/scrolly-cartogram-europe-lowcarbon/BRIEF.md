@@ -39,10 +39,11 @@ scroll shows exactly that: the reader watches the map become the cartogram.
 - **The static plate's floors**: the lowest class and the neutral floored against the ground; the missing
   country hollow with a dashed edge.
 
-- **Full-bleed.** The map fills the whole graphic at every width: the counters and the key sit over it on
-  panels of the ground, the frame is fitted between them and widened to the stage's own aspect
-  (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), and the geography is drawn far enough past the frame
-  to fill a stage two and a half times wider than tall.
+- **The map fills its own row, from gutter to gutter.** The counter sits in a row above it and the key in a
+  row below it — never over the map. The page's own side gutter (the header's, `--prose-gutter`) bounds the
+  map, so its edges line up with the title; inside that box the frame is fitted and the view widened to the
+  box's aspect (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), with geography drawn far enough past the
+  frame that no side of the row is left bare.
 
 ## Directions
 

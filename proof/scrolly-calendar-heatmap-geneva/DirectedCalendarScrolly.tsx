@@ -142,7 +142,7 @@ export function DirectedCalendarScrolly({
         position: "absolute",
         inset: 0,
         background: ground,
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) clamp(16px, 5vw, ${pad}px)`,
+        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
         display: "grid",
         gridTemplateRows: "minmax(0, 1fr) auto",
         rowGap: "12px",

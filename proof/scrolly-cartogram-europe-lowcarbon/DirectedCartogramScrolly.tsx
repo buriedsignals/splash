@@ -138,17 +138,20 @@ export function DirectedCartogramScrolly({
         },
         ink: { dark: inkOnGround, light: ground },
       })}
-      style={{ position: "absolute", inset: 0, background: ground, overflow: "hidden" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: ground,
+        display: "grid",
+        gridTemplateRows: "auto minmax(0, 1fr) auto",
+        rowGap: "10px",
+        // The page's own side gutter — the header's — so the map's edges line up with the title's.
+        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+      }}
     >
-      {/* FULL-BLEED: the stage is the whole graphic, the counters and the key sit over it on panels of the
-          ground, and `cartogram-drive.mjs` fits the frame between them. */}
       <div
         data-part="count-panel"
         style={{
-          position: "absolute",
-          top: `clamp(10px, 2.5vh, ${pad * 0.5}px)`,
-          right: `clamp(12px, 4vw, ${pad}px)`,
-          zIndex: 2,
           display: "flex",
           flexWrap: "wrap",
           gap: "4px 24px",
@@ -168,9 +171,7 @@ export function DirectedCartogramScrolly({
               ...regs.value,
               color: part === "by-country" ? accentInk : inkOnGround,
               whiteSpace: "nowrap",
-              // Each counter carries its own chip, so a counter not yet shown leaves no empty panel behind.
-              background: ground,
-              padding: "4px 8px",
+
             }}
           >
             {counter.template.replace(
@@ -181,7 +182,8 @@ export function DirectedCartogramScrolly({
         ))}
       </div>
 
-      <div data-part="stage" style={{ position: "absolute", inset: 0 }}>
+      {/* THE MAP FILLS ITS ROW, gutter to gutter (`cartogram-drive.mjs`, `fitViewBox`). */}
+      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden" }}>
         <svg
           data-part="field"
           xmlns="http://www.w3.org/2000/svg"
@@ -300,13 +302,6 @@ export function DirectedCartogramScrolly({
       <div
         data-part="key"
         style={{
-          position: "absolute",
-          left: `clamp(12px, 4vw, ${pad}px)`,
-          bottom: `clamp(10px, 2.5vh, ${pad * 0.5}px)`,
-          maxWidth: "calc(100% - 24px)",
-          zIndex: 2,
-          background: ground,
-          padding: "8px 10px 2px",
           display: "flex",
           flexWrap: "wrap",
           alignItems: "flex-start",

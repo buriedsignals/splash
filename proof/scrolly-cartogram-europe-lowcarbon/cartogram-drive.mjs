@@ -136,13 +136,9 @@ function seatCartogram(root, carrier) {
       nameHeight: name.offsetHeight,
     };
   });
-  const stageBox = stage.getBoundingClientRect();
-  const key = root.querySelector('[data-part="key"]').getBoundingClientRect();
-  const counts = root.querySelector('[data-part="count-panel"]').getBoundingClientRect();
-  const side = Math.min(24, stageBox.width * 0.04);
   root.__carto = {
     ...data,
-    insets: { top: counts.bottom - stageBox.top + 6, bottom: stageBox.bottom - key.top + 6, left: side, right: side },
+    insets: { top: 0, right: 0, bottom: 0, left: 0 },
     stage,
     field,
     countries,

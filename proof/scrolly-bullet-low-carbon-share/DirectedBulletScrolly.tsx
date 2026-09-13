@@ -104,7 +104,7 @@ export function DirectedBulletScrolly({
         position: "absolute",
         inset: 0,
         background: ground,
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) clamp(16px, 5vw, ${pad}px)`,
+        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
         display: "grid",
         gridTemplateColumns: "max-content minmax(0, 1fr) max-content",
         gridTemplateRows: `auto repeat(${rows.length}, minmax(0, 56px)) auto`,
