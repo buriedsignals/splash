@@ -6,9 +6,10 @@
  * a component is the same number on every face, and it was typed forty times.
  *
  * ── THE RATCHET ────────────────────────────────────────────────────────────────────────────────
- * The migration runs in four lots. `LITERAL_LEADING_ALLOWED` is the count still standing, lowered
- * in the commit that migrates a lot, and it may only go down. When it reaches zero the count is
- * replaced by the list itself, empty.
+ * The migration ran in four lots. A count of the literals still standing was lowered in the commit
+ * that migrated each lot — 244 before the first, then 187, 127, 63 — and it only went down. The last
+ * lot brought it to zero, and the count was replaced by the list itself: it is empty, and it stays
+ * empty.
  *
  * What it reads: every `Directed*.tsx` beside a `render-directions.mjs` under `proof/`, whitespace
  * normalised so a gap split across lines is still one expression. It is a floor — the geometry
@@ -20,10 +21,6 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
-
-/** MAY ONLY GO DOWN. Measured 2026-09-13 before the migration: 244; lot 1 of 4 brings it to 187,
- *  lot 2 to 127, lot 3 to 63. */
-const LITERAL_LEADING_ALLOWED = 63;
 
 const PATTERNS = [
   {
@@ -66,10 +63,7 @@ describe("a directed layout's leading", () => {
     expect(directed.length).toBeGreaterThanOrEqual(40);
   });
 
-  it("should type no more literal leading than the ratchet allows", () => {
-    expect([
-      offences.length <= LITERAL_LEADING_ALLOWED,
-      offences.length,
-    ]).toEqual([true, LITERAL_LEADING_ALLOWED]);
+  it("should type no leading and no block gap as a multiple of a size", () => {
+    expect(offences).toEqual([]);
   });
 });

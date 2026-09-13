@@ -37,7 +37,13 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080, read from `BRIEF.md`. */
@@ -77,17 +83,10 @@ export function DirectedPyramid({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<
-    string,
-    string
-  >;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -152,16 +151,16 @@ export function DirectedPyramid({
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
+  const titleLead = leadOf(display);
   const limitLines = wrap(set(limits, body), column, body);
-  const bodyLead = body.fontSize * 1.45;
+  const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
-    eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
   const limitsTop =
-    titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   // The centre channel is measured off the widest band label the ANNOT register actually sets,
@@ -173,8 +172,8 @@ export function DirectedPyramid({
   const plot = {
     left: PAD,
     right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + annot.fontSize * 2.2,
-    bottom: sourceTop - body.fontSize * 1.4 - axis.fontSize * 2,
+    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.5714),
+    bottom: sourceTop - gapOf(body, 0.9655) - axis.fontSize * 2,
   };
   const centre = (plot.left + plot.right) / 2;
   const halfWidth = (plot.right - plot.left - gutter) / 2;
@@ -332,12 +331,12 @@ export function DirectedPyramid({
         dropped.map((d) => `${d.id} (${d.why})`).join("; "),
     );
   const byId = new Map(placed.map((p) => [p.id, p]));
-  const registerOf = new Map(requests.map((r) => [r.id, r.register]));
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string, fill?: string) => {
     const p = byId.get(id);
     if (!p) return null;
-    const r = registerOf.get(id)!;
+    const r = registerById.get(id)!;
     /** EVERY ARBITRATED LABEL BREAKS THE LINES IT CROSSES. The arbiter keeps a label off other
      *  labels and off the marks; it knows nothing about the rules, connectors and leaders that run
      *  across the plate, and a stroke through a word is not an overlap of two boxes, so no guard
