@@ -33,6 +33,14 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
+import {
+  assertFontsEmbedded,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+  pageTextOf,
+} from "./typefaces.mjs";
 import { toDataUri } from "./inline-asset.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { groupsOf, markLayers, maxZoomForStudySet, radiusScale, slugOf } from "../assets/geo-symbol.ts";
@@ -327,14 +335,22 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
   const groups = groupsOf(props.geometry.points);
   assertDistinctSlugs(groups);
 
-  const html = `<!doctype html>
+  // THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES — see the same block in
+  // `chart-web/scripts/render-web.mjs`, and `shared/design-base/typefaces.mjs` for the whole
+  // reasoning. A map beat had exactly the same hole: `font-family` naming a Google family and
+  // nothing anywhere loading it. The document is assembled twice from one template, once to be
+  // read and once to be written, and `assertFontsEmbedded` refuses a page naming a family it does
+  // not carry.
+  const stack = dominantFontStack(mapHtml + tableHtml);
+  const baseCss = buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame, fontStack: stack });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame })}
+${css}
 </style>
 </head>
 <body>
@@ -350,6 +366,11 @@ ${liveBlock}
 </body>
 </html>
 `;
+
+  const draft = page(baseCss);
+  const faces = embeddedWebFaces(fontRequestsInHtml(draft).requests, pageTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -407,7 +428,7 @@ function assertDistinctSlugs(groups) {
  * view still renders complete" on anything older, which is exactly the guarantee this format already
  * makes for JavaScript being off.
  */
-function buildCss({ ground, accent, ink, muted, groups, frame }) {
+function buildCss({ ground, accent, ink, muted, groups, frame, fontStack = "sans-serif" }) {
   // The plate's own aspect, the one number both the stage's width bound and the viewport's
   // `aspect-ratio` are computed from, so the box can never be asked to be two shapes at once.
   const aspect = frame.width / frame.height;
@@ -454,7 +475,10 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The beat's OWN face, read off the markup it just drew (dominantFontStack) — not a literal.
+     This rule used to say "Helvetica, Arial, sans-serif", which set every word the components do
+     not style themselves, the tooltip above all, in a typeface nobody chose and nothing embedded. */
+  font-family: ${fontStack};
 }
 /* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
    window tall: every piece of furniture takes the height it needs, and .mw-stage is handed

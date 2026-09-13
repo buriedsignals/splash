@@ -48,6 +48,7 @@ import { join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
 import { render, DEFAULT_PLATE_DIR, DEFAULT_DATA_PATH } from "./render-web.mjs";
 import { drawOrder, groupsOf, slugOf, fr } from "../assets/geo-symbol.ts";
+import { probeTypefaces } from "./typefaces.mjs";
 
 /** The four widths this format's own proof covers, each paired with a plausible window HEIGHT —
  *  height is half the question now that the beat is required to fit the window, and a width with no
@@ -450,6 +451,46 @@ try {
       ? `focused ${focusedDetail}, tooltip ${JSON.stringify(focusTip.text)}`
       : "never focused a point in 24 presses",
   );
+
+  // ── 4b. THE TYPEFACE IS REALLY THERE ─────────────────────────────────────────────────────────
+  // A map beat named a Google family in its CSS and loaded nothing — no link, no @font-face, no
+  // bytes — so every reader was shown the bridge behind it. `probeTypefaces` (in this skill's own
+  // carried `./typefaces.mjs`) measures three independent things per family, weight and style the
+  // page actually sets; the decisive one is the width differential, since a family the TEST machine
+  // happens to have installed satisfies everything else. Verified by mutation: with the @font-face
+  // block stripped out of a rendered page, this section goes red.
+  {
+    const { uses } = await page.evaluate(probeTypefaces);
+    if (uses.length === 0) {
+      check("typeface: this beat sets no text in a named family", true, "every word is in a generic stack");
+    } else {
+      for (const use of uses) {
+        const who = `${use.family} ${use.weight} ${use.style}`;
+        check(
+          `typeface: the page CARRIES ${who}`,
+          use.hasFace && use.hasExactFace,
+          use.hasFace
+            ? `${use.nodes} text node(s) ask for it`
+            : `document.fonts holds NONE — the reader sees ${use.fallbackStack}`,
+        );
+        check(
+          `typeface: ${use.family} covers all ${use.characters} characters set in it`,
+          use.covers,
+          use.uncovered.length > 0
+            ? `no embedded unicode-range reaches ${use.uncovered.join(", ")}`
+            : use.loaded
+              ? "every code point is inside an embedded unicode-range"
+              : "the faces never loaded — the embedded bytes are not a font this browser can read",
+        );
+        const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+        check(
+          `typeface: ${who} really DRAWS, not its fallback`,
+          delta > 0.5,
+          `${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}" — ${delta.toFixed(1)}px apart`,
+        );
+      }
+    }
+  }
 
   // ── 5. NO JAVASCRIPT: the filter is CSS, so it must still narrow the map ──────────────────────
   await page.setJavaScriptEnabled(false);

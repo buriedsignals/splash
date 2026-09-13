@@ -51,6 +51,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { render } from "./render-web.mjs";
+import { probeTypefaces } from "./typefaces.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -880,6 +881,74 @@ async function checkControlAffordance(page, vp) {
   );
 }
 
+/** ITEM: the words on the page are set in the typeface the page asked for, and not in the bridge
+ *  behind it.
+ *
+ *  This is the one check that can see the defect this format shipped for its whole life: a
+ *  `font-family` naming a Google family that the page never carried, so every reader saw Georgia or
+ *  Helvetica and nothing anywhere said so. It is deliberately three measurements rather than one —
+ *  `probeTypefaces` in `./typefaces.mjs` documents why each is needed — and the decisive one is the
+ *  width differential, because a family the TEST MACHINE happens to have installed satisfies
+ *  everything except that.
+ *
+ *  Verified by mutation on 2026-09-13: with the `@font-face` block stripped out of the rendered
+ *  page, this section goes from 18 green to 12 red. */
+async function checkTypefaces(page) {
+  const { uses, declared } = await page.evaluate(probeTypefaces);
+
+  if (uses.length === 0) {
+    skip(`typeface`, `this beat sets no text in a named family — every word is in a generic stack`);
+    return;
+  }
+
+  for (const use of uses) {
+    const who = `${use.family} ${use.weight} ${use.style}`;
+    check(
+      use.hasFace,
+      `typeface: the page CARRIES ${use.family}`,
+      `${use.nodes} text node${use.nodes === 1 ? "" : "s"} ask for it; document.fonts ${
+        use.hasFace ? "holds a face for it" : "holds NONE — nothing was embedded, so the reader sees " + use.fallbackStack
+      }`,
+    );
+    if (!use.hasFace) continue;
+    check(use.hasExactFace, `typeface: ${who} is carried at that weight and style`);
+    check(
+      use.covers,
+      `typeface: ${use.family} covers all ${use.characters} characters this beat sets in it`,
+      use.uncovered.length > 0
+        ? `no embedded unicode-range reaches ${use.uncovered.join(", ")} — ${use.uncovered.length === 1 ? "that glyph is" : "those glyphs are"} drawn by the fallback`
+        : use.loaded
+          ? undefined
+          : `the faces for it never loaded — the embedded bytes are not a font this browser can read`,
+    );
+    // THE MEASUREMENT THAT CANNOT BE FAKED. Same string, same size, same weight: once in the
+    // element's own stack, once in that stack with the intended family taken out. Equal means the
+    // browser is already drawing the fallback.
+    const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+    check(
+      delta > 0.5,
+      `typeface: ${who} really DRAWS, not its fallback`,
+      `${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}" — ${delta.toFixed(1)}px apart`,
+    );
+  }
+
+  // Not a failure, but never silent: a face the page carries and no word uses is dead weight in a
+  // file a newsroom ships, and the static scan that chose it is conservative on purpose.
+  const used = new Set(uses.map((u) => `${u.family}|${u.weight}|${u.style}`));
+  const announced = new Set();
+  for (const face of declared)
+    if (
+      face.status === "unloaded" &&
+      !used.has(`${face.family}|${face.weight}|${face.style}`) &&
+      !announced.has(`${face.family}|${face.weight}|${face.style}`) &&
+      announced.add(`${face.family}|${face.weight}|${face.style}`)
+    )
+      skip(
+        `typeface: ${face.family} ${face.weight} ${face.style} is carried and never used`,
+        `dead weight — the build-time scan attributes a font-weight declared with no family of its own to the page's body family`,
+      );
+}
+
 // ===== the run =====
 
 const argv = process.argv.slice(2);
@@ -916,6 +985,14 @@ try {
         await page.screenshot({ path: shot });
       }
     }
+    await page.close();
+  }
+
+  console.log(`\nTYPEFACE — the face the page asked for is the face the reader is shown`);
+  {
+    const page = await browser.newPage();
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    await checkTypefaces(page);
     await page.close();
   }
 

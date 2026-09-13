@@ -52,6 +52,14 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
 import {
+  assertFontsEmbedded,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+  pageTextOf,
+} from "./typefaces.mjs";
+import {
   assertOneVocabulary,
   buildFilterIndex,
   filterCss,
@@ -153,14 +161,37 @@ async function renderWeb({ component, props, outDir, name }) {
   );
   const inlineScript = inlineable(interactionSource);
 
-  const html = `<!doctype html>
+  // THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES.
+  //
+  // Until this was added, a web beat emitted `font-family: "Merriweather", Georgia, serif` and
+  // loaded nothing: no link, no `@font-face`, no bytes. Every reader fell through to the bridge or
+  // to their own machine's default, which is the silent substitution `loadSystemFonts: false` had
+  // just finished ending on the static side. `shared/design-base/typefaces.mjs` (carried here as
+  // `./typefaces.mjs`) fetches the woff2 subsets the page's own words need and returns them
+  // base64'd; nothing is linked, so the page makes no third-party request at read time — which is
+  // both a privacy exposure a newsroom should not have to accept and something a CSP may block.
+  //
+  // The document is assembled TWICE from one template: once to be read (which families, which
+  // weights, which characters — derived from what the component actually drew, never from a
+  // default), and once to be written, with the faces in it. `assertFontsEmbedded` then refuses to
+  // write a page that names a family it does not carry.
+  const stack = dominantFontStack(markup);
+  const baseCss = buildCss({
+    ground: props.ground,
+    accent: props.accent,
+    ...furniture,
+    filter: props.filter ?? null,
+    entrance: declaresEntrance,
+    fontStack: stack,
+  });
+  const page = (css) => `<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: props.filter ?? null, entrance: declaresEntrance })}
+${css}
 </style>
 </head>
 <body>
@@ -172,6 +203,11 @@ ${inlineScript}
 </body>
 </html>
 `;
+
+  const draft = page(baseCss);
+  const faces = embeddedWebFaces(fontRequestsInHtml(draft).requests, pageTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -428,7 +464,7 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = false }) {
+function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = false, fontStack = "sans-serif" }) {
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -456,7 +492,10 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The beat's OWN face, read off the markup it just drew (dominantFontStack) — not a literal.
+     This rule used to say "Helvetica, Arial, sans-serif", which set every word the components do
+     not style themselves, the tooltip above all, in a typeface nobody chose and nothing embedded. */
+  font-family: ${fontStack};
 }
 
 /* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
