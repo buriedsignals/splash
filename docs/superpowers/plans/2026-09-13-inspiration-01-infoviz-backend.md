@@ -1525,6 +1525,8 @@ Nothing in this task runs without Rémy saying so in the conversation. Present t
 1. **When to deploy.** Deploying removes the infoviz.design front-end immediately. The Splash page (Part 4) still signs in with the cookie until Part 4 lands, and `vizualisation-skill`'s curator loses its MCP path (it falls back to HTTP). Recommendation: deploy after Part 4 is ready, or with Tom's agreement.
 2. **Migration 003.** Apply `backend/app/db/migrations/003_token_requests.sql` in the Supabase SQL editor of the project behind `SUPABASE_CONNECTION` (Tom's project). It is additive only.
 3. **Push target.** `git push origin feat/api-only-token-sign-in:main` deploys the Space `tomvaillant/infoviz` (Tom's). Confirm Tom has agreed.
+4. **Space settings.** The emailed link is built from `BASE_URL` (default `http://localhost:5173`) and the dev bypass keys on `ENVIRONMENT`. Confirm on the Space (names only, `hf` or the settings page): `BASE_URL=https://infoviz.design`, `ENVIRONMENT=production`, `RESEND_API_KEY` set, `JWT_SECRET` set (≥ 32 chars). `MCP_ENABLED` and `PUBLIC_SUPABASE_ANON_KEY` become unused and can be removed later.
+5. **First image build.** The local `docker build` could not complete (OS killed it for memory while installing torch); the first build of the new Dockerfile happens on HF. Watch the Space build log after the push.
 
 After the go, and only then:
 
@@ -1539,14 +1541,14 @@ curl -s -A "$UA" https://infoviz.design/api/ready; echo
 curl -s -o /dev/null -w "root %{http_code}\n" -A "$UA" https://infoviz.design/
 START=$(EMAIL="$EMAIL" python3 -c 'import json,os; print(json.dumps({"email": os.environ["EMAIL"]}))' \
   | curl -s -A "$UA" -X POST https://infoviz.design/auth/token/start -H "Content-Type: application/json" --data-binary @-)
-RID=$(printf '%s' "$START" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])')
-curl -s -A "$UA" --get --data-urlencode "request_id=$RID" https://infoviz.design/auth/token/poll; echo   # expect {"status":"pending"}
+POLL_BODY=$(printf '%s' "$START" | python3 -c 'import json,sys; print(json.dumps({"request_id": json.load(sys.stdin)["request_id"]}))')
+printf '%s' "$POLL_BODY" | curl -s -A "$UA" -X POST https://infoviz.design/auth/token/poll -H "Content-Type: application/json" --data-binary @-; echo   # expect {"status":"pending"}
 ```
 
-Rémy clicks the emailed link, then:
+Rémy opens the emailed link (a "Connect this app?" page must appear and nothing is confirmed yet), presses **Connect**, then:
 
 ```bash
-TOKEN=$(curl -s -A "$UA" --get --data-urlencode "request_id=$RID" https://infoviz.design/auth/token/poll \
+TOKEN=$(printf '%s' "$POLL_BODY" | curl -s -A "$UA" -X POST https://infoviz.design/auth/token/poll -H "Content-Type: application/json" --data-binary @- \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
 curl -s -A "$UA" -D - -o /dev/null -X POST https://infoviz.design/api/graphics/examples \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"query":"floods"}' | grep -i x-ratelimit-limit

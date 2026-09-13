@@ -85,14 +85,25 @@ Add — **token flow (D4)**:
 - `POST /auth/token/start {email}` → sends the existing magic-link email and returns
   `{request_id, poll_interval, expires_at}`. The link carries the request id. Same send-rate protections as
   `/auth/send-link`.
-- `GET /auth/token/confirm?token=…` (the emailed link, a single-use magic-link JWT of type
-  `token_request` carrying only the request id's hash) marks the request as confirmed and renders a
-  minimal HTML page ("You're connected — you can close this tab"). The cookie `/auth/verify` is untouched.
+- The emailed link (`GET /auth/token/confirm?token=…`, a single-use magic-link JWT of type
+  `token_request` carrying only the request id's hash) only renders a "Connect this app?" page with a
+  **Connect** button; it confirms nothing, because mail scanners prefetch links and a GET that confirms
+  would hand the token to whoever started the request. `POST /auth/token/confirm` (the button) consumes
+  the link and marks the request confirmed, then shows "You're connected — you can close this tab".
+  The email has its own wording ("an app asked to connect… ignore if this wasn't you"). The cookie
+  `/auth/verify` is untouched.
 - Pending requests are stored in a new `token_requests` table (migration `003_token_requests.sql`, RLS on,
   no grant to `anon`/`authenticated` — it holds emails). Applying it to Supabase requires Rémy's go.
-- `GET /auth/token/poll?request_id=…` → `202 {status:"pending"}` until confirmed, then
-  `200 {token, email, expires_at}` **exactly once** (the request is consumed), `410` when expired or consumed.
-  Pending requests expire after 15 minutes.
+- `POST /auth/token/poll {request_id}` → `202 {status:"pending"}` until confirmed, then
+  `200 {token, email, expires_at}` **exactly once** (the request is consumed), `410 {error:"expired_or_used"}`
+  when expired or consumed, `422` for an id outside 16–128 characters. POST, not GET: the request id is a
+  credential and must not appear in access logs. Pending requests expire after 15 minutes.
+- Query strings of `/auth/` paths are redacted from the access log (the confirm link carries a JWT with the email).
+- No revocation: signing out only forgets the token client-side; it stays valid until it expires (90 days).
+  Rotating `JWT_SECRET` is the only revocation and also ends every cookie session. Accepted for a credential
+  that only lifts the quota from 5 to 10 searches a day.
+- Other bodies clients must handle: `/auth/token/start` answers `429 {error:"<sentence>"}` (send limits),
+  `500 {error}` (email not sent), `422 {detail:[…]}` (invalid email).
 - The token is a JWT signed with `JWT_SECRET`, `type: "api"`, 90-day expiry, carrying only the email.
 - `get_current_user` accepts `Authorization: Bearer <token>` (type `api`) in addition to the cookie; the
   signed-in quota keys on the email hash as today.
@@ -112,6 +123,8 @@ already falls back to the HTTP API.
 
 - New credential ID `INFOVIZ_TOKEN`, policy `authenticated-account-request` + `validate-before-atomic-replacement`,
   validated by `GET https://infoviz.design/auth/status` with the Bearer (the Datawrapper `/v3/me` pattern).
+  The validator must require `200` **and** `authenticated === true`: `/auth/status` without a Bearer also
+  answers 200 (anonymous), and an invalid Bearer answers `401 {error:"invalid_token"}`.
 - Bump the Splash contract version as Engine requires.
 - The actual file layout is read on `origin` during planning — the local clone (`rd-dev`, 0.1.3) is far
   behind `origin` (0.1.34).
@@ -129,7 +142,8 @@ already falls back to the HTTP API.
   - Empty list → said honestly; no automatic retry with other words.
   - 401 on a Bearer (expired or revoked) → falls back to one anonymous call and says the account needs
     reconnecting.
-- `scripts/connect.mjs` — runs the D4 flow in its own process (asks for the email, calls `start`, polls),
+- `scripts/connect.mjs` — runs the D4 flow in its own process (asks for the email, calls `start`, polls with
+  `POST /auth/token/poll`, tells the journalist to press **Connect** in the email),
   then hands the token to the Engine bridge's `replace` (`installer/setup/engine-bridge.mjs:553`). The token
   never enters the chat. Without Engine, it says so and the skill stays anonymous.
 
@@ -149,7 +163,7 @@ Splash wiring:
   install snippets (`:1765` onward); replace them with an invitation to use the inspiration journey in the
   Splash agent.
 - Replace cookie sign-in (`/auth/send-link`, `/auth/status` with `credentials:'include'`) by the D4 flow:
-  email → tab polls → token kept in `localStorage` (read and written inside try/catch) → sent as Bearer;
+  email → "press Connect in the email" → tab polls (`POST /auth/token/poll`) → token kept in `localStorage` (read and written inside try/catch) → sent as Bearer;
   sign-out clears it. No credentialed cross-origin request remains, so the quota gauge stays readable.
 - Rewrite the "THE WIRING" comment to describe the new wiring.
 - Search call and the Supabase `get_random_posts` featured row are unchanged.
