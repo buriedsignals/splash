@@ -120,6 +120,16 @@ for (const id of DIRECTIONS) {
       }
     });
 
+    it("should keep every other close-up name off Albania's box at the end of subject", () => {
+      const scene = sceneAt(props, last("subject"));
+      const a = toStage(scene.viewBox, props.stage, { x: props.subjectBox.x, y: props.subjectBox.y });
+      const b = toStage(scene.viewBox, props.stage, { x: props.subjectBox.x + props.subjectBox.w, y: props.subjectBox.y + props.subjectBox.h });
+      for (const n of props.names.filter((n: any) => scene.names[n.key] > 0.01 && n.key !== "close:ALB")) {
+        const clear = n.x + n.width <= a.x || b.x <= n.x || n.y + n.height <= a.y || b.y <= n.y;
+        expect([n.key, clear]).toEqual([n.key, true]);
+      }
+    });
+
     it("should set Albania at the centre of its close-up", () => {
       const scene = sceneAt(props, last("subject"));
       const at = toStage(scene.viewBox, props.stage, {

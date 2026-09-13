@@ -243,6 +243,12 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       return total ? covered / total : 0;
     };
   };
+  /** Albania's own box, in stage pixels under a camera. */
+  const subjectBoxAt = (vb) => {
+    const a = toStage(vb, stage, { x: odd.box.x, y: odd.box.y });
+    const b = toStage(vb, stage, { x: odd.box.x + odd.box.w, y: odd.box.y + odd.box.h });
+    return { x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y };
+  };
   const placed = {};
   for (const camera of ["overview", "closeUp"]) {
     const items = pills
@@ -254,7 +260,9 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       .sort((a, b) => ROLE_PRIORITY.indexOf(a.role) - ROLE_PRIORITY.indexOf(b.role) || b.reach - a.reach)
       .map((p) => {
         const at = toStage(cameras[camera], stage, p.seatAt);
-        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height };
+        // At the close-up no other country's name may sit on Albania: the shot is there to show it.
+        const avoid = camera === "closeUp" && p.role !== "odd" ? [subjectBoxAt(cameras.closeUp)] : [];
+        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid };
       });
     // At the overview the ring is smaller than Albania's own pill: a pill centred on the seat would hide the
     // ring entirely, so the ring is kept clear and the name steps beside it. At the close-up the ring
@@ -315,6 +323,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     seaBox: { x: -CLIP_MARGIN.x, y: -CLIP_MARGIN.y, w: FRAME.width + 2 * CLIP_MARGIN.x, h: FRAME.height + 2 * CLIP_MARGIN.y },
     shapes,
     ring: { cx: odd.seat.x, cy: odd.seat.y, r: ringRadius },
+    subjectBox: odd.box,
     names,
     waters: waters.map(({ box, ...w }) => w),
     cameras,

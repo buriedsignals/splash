@@ -124,6 +124,8 @@ const hits = (a, b, gap) => a.x < b.x + b.width + gap && b.x < a.x + a.width + g
  * A position is clear when it is inside the stage by `gap`, touches no placed pill or obstacle by `gap`, and
  * keeps the seat within one pill height of the pill — a name stays against its country. When no clear
  * position keeps that promise, the nearest clear position anywhere is taken; when there is none, it throws.
+ * An item's own `avoid` boxes are ones only that item may not touch (Albania's land, for every close-up
+ * name but Albania's).
  * Items come in priority order. Returns top-left corners in stage pixels.
  *
  * @param {{ obstacles?: Array<{x:number,y:number,width:number,height:number}>,
@@ -144,9 +146,10 @@ export function placePills(items, stage, gap, { obstacles = [], cover = () => 0 
     const w = item.width;
     const h = item.height;
     const origin = pull({ x: item.cx - w / 2, y: item.cy - h / 2, width: w, height: h });
-    const ys = [...[-1, -0.5, 0, 0.5, 1].map((k) => origin.y + k * h), ...placed.flatMap((p) => [p.y + p.height + gap + eps, p.y - gap - h - eps])];
-    const xs = [...[-0.5, -0.25, 0, 0.25, 0.5].map((k) => origin.x + k * w), ...placed.flatMap((p) => [p.x + p.width + gap + eps, p.x - gap - w - eps])];
-    const clear = xs.flatMap((x) => ys.map((y) => ({ x, y, width: w, height: h }))).filter((b) => inside(b) && !placed.some((p) => hits(b, p, gap)));
+    const edges = [...placed, ...(item.avoid ?? [])];
+    const ys = [...[-1, -0.5, 0, 0.5, 1].map((k) => origin.y + k * h), ...edges.flatMap((p) => [p.y + p.height + gap + eps, p.y - gap - h - eps])];
+    const xs = [...[-0.5, -0.25, 0, 0.25, 0.5].map((k) => origin.x + k * w), ...edges.flatMap((p) => [p.x + p.width + gap + eps, p.x - gap - w - eps])];
+    const clear = xs.flatMap((x) => ys.map((y) => ({ x, y, width: w, height: h }))).filter((b) => inside(b) && !placed.some((p) => hits(b, p, gap)) && !(item.avoid ?? []).some((a) => hits(b, a, gap)));
     const reach = (b) => Math.hypot(Math.max(b.x - item.cx, 0, item.cx - b.x - w), Math.max(b.y - item.cy, 0, item.cy - b.y - h));
     const moved = (b) => Math.hypot((b.x - origin.x) / (w / 2), (b.y - origin.y) / h);
     const near = clear.filter((b) => reach(b) <= h);
