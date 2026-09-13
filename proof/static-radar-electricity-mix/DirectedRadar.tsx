@@ -38,7 +38,13 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -82,14 +88,10 @@ export function DirectedRadar({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -130,23 +132,23 @@ export function DirectedRadar({
    *  wheel takes the height of the whole body, and its radius roughly doubles. */
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const captioned = on("the-benchmark-is-captioned");
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
+  const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
 
   const leftWidth = Math.round(column * 0.34);
   const limitLines = wrap(set(limits, body), leftWidth, body);
   const sourceTopFor = (lines: string[]) =>
-    height - PAD - (lines.length - 1) * bodyLead - body.fontSize * 1.4;
+    height - PAD - (lines.length - 1) * bodyLead - gapOf(body, 0.9655);
   const readingTopFor = () =>
     titleTop +
     titleLines.length * titleLead +
-    body.fontSize * 1.2 +
+    gapOf(body, 0.8276) +
     limitLines.length * bodyLead +
-    annot.fontSize * 3.2;
+    gapOf(annot, 2.2857);
   /** THE READING LINE HAS RUNGS, because one direction sets this register in tracked capitals and a
    *  sentence that is three lines in `creme` is seven in `nocturne` — measured: it ran through the
    *  source line and off the bottom of the frame. The beat supplies the sentence and its short
@@ -165,16 +167,16 @@ export function DirectedRadar({
   })();
   const sourceLines = wrap(set(source, body), column, body);
 
-  const bodyTop = titleTop + titleLines.length * titleLead + body.fontSize * 1.2;
+  const bodyTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.8276);
   /** The key is one line in the two inks the plate uses for the two countries' numbers. Nothing
    *  else on the plate carries those inks, so it is a key without a block. */
-  const keyTop = bodyTop + limitLines.length * bodyLead + annot.fontSize * 1.2;
-  const readingTop = keyTop + annot.fontSize * 2;
+  const keyTop = bodyTop + limitLines.length * bodyLead + gapOf(annot, 0.8571);
+  const readingTop = keyTop + gapOf(annot, 1.4286);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   // ── the wheel ─────────────────────────────────────────────────────────────
   const plotTop = bodyTop - body.fontSize;
-  const plotBottom = sourceTop - body.fontSize * 1.8;
+  const plotBottom = sourceTop - gapOf(body, 1.2414);
   const wheelLeft = PAD + leftWidth + 28;
   const wheelWidth = width - PAD - wheelLeft;
   const centre = { x: wheelLeft + wheelWidth / 2, y: (plotTop + plotBottom) / 2 };
