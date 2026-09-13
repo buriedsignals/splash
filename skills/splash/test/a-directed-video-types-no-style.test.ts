@@ -13,7 +13,9 @@
  * this scanner carries (an unusual name such as `"rebeccapurple"`'s neighbours it does not know, if
  * any exist); a MapLibre kebab-case property this scanner does not name explicitly; `fill="url(#…)"`
  * and other non-colour string values on a colour-bearing attribute, which are legitimate and stay
- * unflagged. It reads source text.
+ * unflagged; a MapLibre expression array that opens on an exempt operator can still carry a typed
+ * literal colour or number further in (e.g. `["match", …, "#fff"]`) — caught only by the colour rule
+ * when the literal is a hex or a named colour, not by this rule. It reads source text.
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -184,6 +186,13 @@ const MAPLIBRE_KEYS =
   "(?:text-size|fill-color|line-width|text-color|circle-radius|text-halo-color|" +
   "text-letter-spacing|text-font)";
 
+/** MapLibre expression operators — when an array's first element is one of these string literals,
+ *  the array is a data-driven expression (`["interpolate", …]`), not a typed literal, and is exempt
+ *  even though it opens on a string. */
+const MAPLIBRE_EXPR_OPERATORS =
+  "(?:interpolate|step|match|case|coalesce|get|literal|linear|exponential|feature-state|zoom|" +
+  "\\*|\\+|-|/|min|max|to-color|rgb|rgba)";
+
 const RULES: Array<[string, RegExp]> = [
   ["a typed font size", /fontSize\s*[:=]\s*\{?\s*(?:\d|["'`]\s*\d)/],
   [
@@ -206,7 +215,9 @@ const RULES: Array<[string, RegExp]> = [
   ],
   [
     "a typed MapLibre property",
-    new RegExp(`["'\`]${MAPLIBRE_KEYS}["'\`]\\s*:\\s*(?:-?\\d|["'\`]|\\[)`),
+    new RegExp(
+      `["'\`]${MAPLIBRE_KEYS}["'\`]\\s*:\\s*(?:-?\\d|["'\`]|\\[\\s*["'\`](?!${MAPLIBRE_EXPR_OPERATORS}["'\`]))`,
+    ),
   ],
 ];
 
@@ -356,6 +367,26 @@ describe("the scanner", () => {
         `// it used to say fontSize: 38\n<text fontSize={r.body.fontSize}>`,
       ),
     ).toEqual([]);
+  });
+  it("should accept a MapLibre font array built from a register", () => {
+    expect(typedStylesIn(`"text-font": [maptilerFace(r.axis)],`)).toEqual([]);
+  });
+  it("should accept a MapLibre expression array", () => {
+    expect(
+      typedStylesIn(
+        `"fill-opacity": ["interpolate", ["linear"], ["get", "t"], 0, 0, 1, 1],`,
+      ),
+    ).toEqual([]);
+  });
+  it("should still find a MapLibre font array with a literal face", () => {
+    expect(typedStylesIn(`"text-font": ["Open Sans Bold"],`)).toEqual([
+      "a typed MapLibre property",
+    ]);
+  });
+  it("should still find a MapLibre property with a literal number", () => {
+    expect(typedStylesIn(`"text-size": 14,`)).toEqual([
+      "a typed MapLibre property",
+    ]);
   });
 });
 
