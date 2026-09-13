@@ -76,46 +76,34 @@
     },
     "counter": [
       {
-        "text": "0 pays au-dessus de 94 %",
+        "text": "40 pays",
         "x": 1835,
         "y": 94.189453125,
-        "width": 544.1748046875
+        "width": 161.38916015625
       },
       {
-        "text": "1 pays au-dessus de 94 %",
+        "text": "32 pays au-dessus de 40 %",
         "x": 1835,
         "y": 94.189453125,
-        "width": 544.1748046875
+        "width": 569.90478515625
       },
       {
-        "text": "2 pays au-dessus de 94 %",
+        "text": "26 pays au-dessus de 55 %",
         "x": 1835,
         "y": 94.189453125,
-        "width": 544.1748046875
+        "width": 569.90478515625
       },
       {
-        "text": "3 pays au-dessus de 94 %",
+        "text": "20 pays au-dessus de 70 %",
         "x": 1835,
         "y": 94.189453125,
-        "width": 544.1748046875
+        "width": 569.90478515625
       },
       {
-        "text": "4 pays au-dessus de 94 %",
+        "text": "12 pays au-dessus de 85 %",
         "x": 1835,
         "y": 94.189453125,
-        "width": 544.1748046875
-      },
-      {
-        "text": "5 pays au-dessus de 94 %",
-        "x": 1835,
-        "y": 94.189453125,
-        "width": 544.1748046875
-      },
-      {
-        "text": "6 pays au-dessus de 94 %",
-        "x": 1835,
-        "y": 94.189453125,
-        "width": 544.1748046875
+        "width": 569.90478515625
       },
       {
         "text": "7 pays au-dessus de 94 %",
@@ -1035,6 +1023,7 @@
       "furniture": 1,
       "classes": 0,
       "filter": 0,
+      "floor": 0,
       "count": 0,
       "top": 0,
       "zoom": 0,
@@ -1046,6 +1035,7 @@
       "furniture": 1,
       "classes": 1,
       "filter": 0,
+      "floor": 0,
       "count": 0,
       "top": 0,
       "zoom": 0,
@@ -1057,6 +1047,7 @@
       "furniture": 1,
       "classes": 1,
       "filter": 1,
+      "floor": 1,
       "count": 1,
       "top": 1,
       "zoom": 0,
@@ -1068,6 +1059,7 @@
       "furniture": 1,
       "classes": 1,
       "filter": 0,
+      "floor": 1,
       "count": 1,
       "top": 0,
       "zoom": 1,
@@ -1079,6 +1071,7 @@
       "furniture": 1,
       "classes": 1,
       "filter": 0,
+      "floor": 1,
       "count": 1,
       "top": 1,
       "zoom": 0,
@@ -1090,6 +1083,7 @@
       "furniture": 1,
       "classes": 1,
       "filter": 0,
+      "floor": 1,
       "count": 1,
       "top": 1,
       "zoom": 0,
@@ -1100,7 +1094,7 @@
   ],
   "timing": {
     "fps": 30,
-    "total": 510,
+    "total": 580,
     "establish": {
       "start": 0,
       "duration": 30
@@ -1111,22 +1105,21 @@
     },
     "reveal": {
       "start": 132,
-      "duration": 90
+      "duration": 160
     },
     "subject": {
-      "start": 234,
+      "start": 304,
       "duration": 96
     },
     "conclusion": {
-      "start": 342,
+      "start": 412,
       "duration": 84
     },
     "hold": {
-      "start": 432,
+      "start": 502,
       "duration": 78
     }
   },
-  "countTo": 7,
   "fontFamily": null,
   "faces": [
     {
