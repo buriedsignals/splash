@@ -25,6 +25,10 @@ describe("the shipped choropleth video timing", () => {
     expect(T.reference.duration / 6).toBeGreaterThanOrEqual(10);
   });
 
+  it("should give each of the five floor steps at least twenty frames of the reveal event", () => {
+    expect((T.reveal.duration * 0.7) / 5).toBeGreaterThanOrEqual(20);
+  });
+
   it("should not let the camera start closing on the Balkans before the six names have landed", () => {
     expect(T.subject.start).toBeGreaterThanOrEqual(endOf(T.reveal));
   });

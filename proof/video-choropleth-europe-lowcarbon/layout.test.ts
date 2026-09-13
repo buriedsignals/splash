@@ -160,8 +160,8 @@ for (const id of DIRECTIONS) {
       ).toBeLessThan(0.01);
       expect(
         Math.abs(
-          lines.counter[7].width -
-            measured(lines.counter[7].text, registers.value),
+          lines.counter.at(-1).width -
+            measured(lines.counter.at(-1).text, registers.value),
         ),
       ).toBeLessThan(0.01);
     });

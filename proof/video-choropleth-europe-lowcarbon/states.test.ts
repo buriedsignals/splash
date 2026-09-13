@@ -32,6 +32,7 @@ describe("statesFor", () => {
       furniture: 1,
       classes: 0,
       filter: 0,
+      floor: 0,
       count: 0,
       top: 0,
       zoom: 0,
@@ -45,8 +46,8 @@ describe("statesFor", () => {
     expect(reference).toEqual({ ...establish, classes: 1 });
   });
 
-  it("should filter, count and name the six at reveal (cards 3 and 4 together)", () => {
-    expect(reveal).toEqual({ ...reference, filter: 1, count: 1, top: 1 });
+  it("should raise the floor through every borne, count and name the six at reveal (cards 3 and 4 together)", () => {
+    expect(reveal).toEqual({ ...reference, filter: 1, floor: 1, count: 1, top: 1 });
   });
 
   it("should zoom, lift the filter, drop the six and name Albania and its neighbours at subject (card 5)", () => {

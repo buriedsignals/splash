@@ -172,10 +172,32 @@ for (const id of DIRECTIONS) {
       }
     });
 
-    it("should count to seven by the end of reveal and keep the count to the last frame", () => {
-      expect(sceneAt(props, T.reveal.start).counter.n).toBe(0);
-      expect(sceneAt(props, last("reveal")).counter.n).toBe(7);
-      expect(sceneAt(props, T.total - 1).counter).toEqual({ n: 7, opacity: 1 });
+    it("should step the counter down the floor — 40, 32, 26, 20, 12, then 7 above 94 % — and keep it to the last frame", () => {
+      expect(props.lines.counter.map((l: any) => Number.parseInt(l.text, 10))).toEqual([40, 32, 26, 20, 12, 7]);
+      expect(props.lines.counter.at(-1).text).toContain("94");
+      const steps = new Set<number>();
+      for (let f = T.reveal.start; f <= last("reveal"); f++) steps.add(sceneAt(props, f).counter.step);
+      expect([...steps].sort()).toEqual([0, 1, 2, 3, 4, 5]);
+      expect(sceneAt(props, T.total - 1).counter).toEqual({ step: 5, opacity: 1 });
+    });
+
+    it("should step each class back only once the floor's cursor has passed its borne, the lowest class first", () => {
+      for (let f = T.reveal.start; f <= last("reveal"); f += 2) {
+        const scene = sceneAt(props, f);
+        for (const s of props.shapes.filter((x: any) => x.classIndex !== null && !x.kept)) {
+          if (scene.cursor.at < s.classIndex) expect([f, s.key, scene.fills[s.key]]).toEqual([f, s.key, props.colours.classFills[s.classIndex]]);
+          if (scene.cursor.at >= s.classIndex + 1) expect([f, s.key, scene.fills[s.key]]).toEqual([f, s.key, props.colours.land]);
+        }
+      }
+    });
+
+    it("should count Albania's and its neighbours' shares up from zero once the close-up has settled, and land on their values", () => {
+      const settled = sceneAt(props, last("subject"));
+      expect(settled.countUp).toEqual({ odd: 1, neighbour: 1 });
+      const early = T.subject.start + Math.round(T.subject.duration * 0.8);
+      const mid = sceneAt(props, early).countUp;
+      expect(mid.neighbour).toBeGreaterThan(0);
+      expect(mid.neighbour).toBeLessThan(1);
     });
 
     it("should step the 33 back and keep the seven at the end of reveal", () => {

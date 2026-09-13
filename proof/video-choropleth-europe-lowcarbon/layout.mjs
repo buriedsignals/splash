@@ -144,7 +144,7 @@ export function pillOf(text, r) {
 
 /**
  * @param {{ registers: Record<string, any>, copy: {
- *   eyebrow: string, title: string[], counter: string, countTo: number, breaks: string[], unit: string,
+ *   eyebrow: string, title: string[], counterSteps: string[], breaks: string[], unit: string,
  *   missingLabel: string, source: string[] }, size: "landscape" }} input
  *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
  */
@@ -167,7 +167,7 @@ export function layoutFor({ registers, copy, size }) {
   const gutter = GUTTER * axis.lead;
 
   // ── TOP-DOWN: the header, and the counter where it fits ─────────────────────────────────────────────────
-  const counterTexts = Array.from({ length: copy.countTo + 1 }, (_, n) => applyCase(copy.counter.replace("{n}", String(n)), value.transform));
+  const counterTexts = copy.counterSteps.map((text) => applyCase(text, value.transform));
   const counterWidths = counterTexts.map((t) => widthOf(t, value));
   const counterWidest = Math.max(...counterWidths);
   const counterBand = counterTexts.map((t) => bandOf(t, value)).reduce((a, b) => ({ ascent: Math.max(a.ascent, b.ascent), descent: Math.max(a.descent, b.descent) }));

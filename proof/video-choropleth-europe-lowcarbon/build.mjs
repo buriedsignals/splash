@@ -68,8 +68,12 @@ export function copyOf(subject) {
       `Le bas-carbone européen est au nord-ouest — et en Albanie`,
       `Le bas-carbone européen, et son exception`,
     ],
-    counter: `{n} pays au-dessus de ${FLOOR}${NB}%`,
-    countTo: above.length,
+    /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the
+     *  counter the cursor steps through (BRIEF.md). The last one is the claim. */
+    counterSteps: [
+      `${value.size} pays`,
+      ...BREAKS.map((b) => `${[...value.values()].filter((v) => v.lowCarbon >= b).length} pays au-dessus de ${b}${NB}%`),
+    ],
     breaks: BREAKS.map((b) => `${b}${NB}%`),
     unit: "part bas-carbone de la production",
     missingLabel: "donnée non rapportée",
@@ -103,7 +107,7 @@ export function textPerRegisterOf(copy) {
     eyebrow: copy.eyebrow,
     body: copy.source.join(" "),
     annot: copy.waters.map((w) => w.text).join(" "),
-    value: `${copy.counter.replace("{n}", "0123456789")} ${bySlot("oddName").join(" ")}`,
+    value: `${copy.counterSteps.join(" ")} 0123456789 ${bySlot("oddName").join(" ")}`,
     axis: [...bySlot("name"), ...copy.breaks, copy.unit, copy.missingLabel, ...copy.source].join(" "),
   };
 }
@@ -329,7 +333,6 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     cameras,
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
-    countTo: copy.countTo,
   };
   return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.title.form, titleSize: layout.title.fontSize, sourceForm: layout.source.form, stage, droppedWaters: copy.waters.length - waters.length } };
 }

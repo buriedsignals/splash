@@ -24,7 +24,7 @@ import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 export const WINDOWS = Object.freeze({
   establish: { furniture: [0, 1] },
   reference: { classes: [0, 1] },
-  reveal: { filter: [0, 0.45], count: [0, 0.45], top: [0.55, 0.8] },
+  reveal: { count: [0, 0.03], filter: [0.03, 0.73], floor: [0.03, 0.73], top: [0.8, 0.95] },
   subject: { top: [0, 0.12], filter: [0.1, 0.45], zoom: [0.1, 0.6], odd: [0.66, 0.78], neighbours: [0.74, 0.9] },
   conclusion: { neighbours: [0, 0.12], zoom: [0.14, 0.64], top: [0.7, 0.85], missing: [0.72, 0.88] },
 });
@@ -38,6 +38,13 @@ export const GATES = Object.freeze({
 
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
 
+/** The fields that travel a scale — the classes arriving, the floor rising — move linearly; each class or
+ *  step eases its own arrival in `sceneAt`. */
+const LINEAR = new Set(["classes", "filter", "floor"]);
+
+/** When the close-up's shares count up from zero: after the camera has settled, each over its own window. */
+export const COUNT_UP = Object.freeze({ odd: ["subject", 0.66, 0.9], neighbour: ["subject", 0.74, 0.97] });
+
 /** A field's value at `frame`: nothing before `establish`, then every event's change run through its window.
  *  The class reveal is linear across the classes (each class eases its own arrival, below); everything
  *  else eases. */
@@ -48,7 +55,7 @@ export function fieldAt(field, frame, states, timing) {
     const delta = states[i][field] - before;
     if (delta === 0) return;
     const t = windowed(frame, timing, event, WINDOWS[event]?.[field] ?? [0, 1]);
-    value += delta * (field === "classes" ? t : ease(t));
+    value += delta * (LINEAR.has(field) ? t : ease(t));
   });
   return value;
 }
@@ -179,12 +186,12 @@ export function blend(a, b, t) {
  *
  * @param {{ states: Record<string, number>[], timing: any, stage: {width:number,height:number},
  *   cameras: { overview: any, closeUp: any }, shapes: Array<{ key: string, classIndex: number|null, kept: boolean }>,
- *   colours: { land: string, classFills: string[], missingFill: string }, countTo: number,
+ *   colours: { land: string, classFills: string[], missingFill: string },
  *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"missing", camera: "overview"|"closeUp" }>,
  *   waters: Array<{ key: string }> }} props
  */
 export function sceneAt(props, frame) {
-  const { states, timing, cameras, colours, countTo } = props;
+  const { states, timing, cameras, colours } = props;
   const at = (field) => fieldAt(field, frame, states, timing);
   const classes = at("classes");
   const filter = at("filter");
@@ -195,7 +202,8 @@ export function sceneAt(props, frame) {
   for (const shape of props.shapes) {
     if (shape.classIndex === null) continue;
     const reached = ease(clamp01(classes * n - shape.classIndex));
-    const kept = shape.kept ? 1 : 1 - filter;
+    // THE FLOOR: a class steps back once the cursor has passed its upper borne, the lowest class first.
+    const kept = shape.kept ? 1 : 1 - ease(clamp01(filter * (n - 1) - shape.classIndex));
     fills[shape.key] = blend(colours.land, colours.classFills[shape.classIndex], reached * kept);
   }
 
@@ -203,11 +211,17 @@ export function sceneAt(props, frame) {
   const names = {};
   for (const name of props.names) names[name.key] = clamp01(role[name.role] * gates[name.camera]);
   const count = at("count");
+  const cursor = at("floor") * (n - 1);
+  const countUp = Object.fromEntries(Object.entries(COUNT_UP).map(([role, [event, a, b]]) => [role, ease(windowed(frame, timing, event, [a, b]))]));
 
   return {
     furniture: at("furniture"),
     swatches: Array.from({ length: n }, (_, i) => ease(clamp01(classes * n - i))),
-    counter: { n: Math.round(countTo * clamp01(count)), opacity: clamp01(count * countTo) },
+    /** How far each class's swatch has stepped back with the floor — the key follows the map. */
+    swatchesBack: Array.from({ length: n }, (_, i) => (i === n - 1 ? 0 : ease(clamp01(filter * (n - 1) - i)))),
+    counter: { step: Math.min(n - 1, Math.floor(cursor + 1e-9)), opacity: clamp01(count) },
+    cursor: { at: cursor, opacity: clamp01(count) },
+    countUp,
     viewBox: viewBoxAt(cameras.overview, cameras.closeUp, at("zoom")),
     fills,
     names,

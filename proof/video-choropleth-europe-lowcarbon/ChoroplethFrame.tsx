@@ -98,8 +98,10 @@ export type ChoroplethFrameProps = {
   cameras: { overview: Box; closeUp: Box };
   states: Record<string, number>[];
   timing: unknown;
-  countTo: number;
 };
+
+/** A class the floor has passed keeps a trace of itself in the key, not its full ink. */
+const STEPPED_BACK_FADE = 0.7;
 
 function Word({
   line,
@@ -107,12 +109,15 @@ function Word({
   fill,
   opacity,
   anchor,
+  measured = true,
 }: {
   line: Line;
   register: Register;
   fill: string;
   opacity: number;
   anchor?: "start" | "middle" | "end";
+  /** false while a number is still counting: the width Bun measured is the final text's. */
+  measured?: boolean;
 }) {
   return (
     <text
@@ -126,7 +131,7 @@ function Word({
       letterSpacing={register.letterSpacing}
       fill={fill}
       opacity={opacity}
-      data-width={line.width}
+      data-width={measured ? line.width : undefined}
     >
       {line.text}
     </text>
@@ -139,7 +144,20 @@ export function ChoroplethFrame(
   const { frame, stage, registers: r, lines, colours, strokes } = props;
   const scene = sceneAt(props as never, props.at);
   const vb = scene.viewBox;
-  const counter = lines.counter[scene.counter.n];
+  const counter = lines.counter[scene.counter.step];
+  // The floor's cursor, on the key: between the left edges of the swatches either side of its position.
+  const at = Math.min(scene.cursor.at, props.swatches.length - 1);
+  const lower = props.swatches[Math.floor(at)];
+  const upper = props.swatches[Math.min(Math.floor(at) + 1, props.swatches.length - 1)];
+  const cursorX = lower.x + (upper.x - lower.x) * (at - Math.floor(at));
+  /** A share counting up from zero to the value its name states. */
+  const counted = (n: { role: string; text: string }) => {
+    const t = (scene.countUp as Record<string, number>)[n.role];
+    const match = /(\d+)(\s*%)$/.exec(n.text);
+    // Before its window the name is not shown yet, and after it the value stands: both draw the final text.
+    if (t === undefined || !match || t <= 0 || t >= 1) return { text: n.text, final: true };
+    return { text: n.text.slice(0, match.index) + String(Math.round(Number(match[1]) * t)) + match[2], final: false };
+  };
 
   return (
     <svg
@@ -227,7 +245,9 @@ export function ChoroplethFrame(
           opacity={scene.waters}
         />
       ))}
-      {props.names.map((n) => (
+      {props.names.map((n) => {
+        const shown = counted(n);
+        return (
         <g key={n.key} opacity={scene.names[n.key]}>
           <rect
             x={stage.x + n.x}
@@ -238,7 +258,7 @@ export function ChoroplethFrame(
           />
           <Word
             line={{
-              text: n.text,
+              text: shown.text,
               x: stage.x + n.x + n.textX,
               y: stage.y + n.y + n.baseline,
               width: n.textWidth,
@@ -246,9 +266,11 @@ export function ChoroplethFrame(
             register={r[n.register]}
             fill={n.accent ? colours.text.nameAccent : colours.text.nameInk}
             opacity={1}
+            measured={shown.final}
           />
         </g>
-      ))}
+        );
+      })}
 
       {/* The key: the frame of it with the furniture, each class's swatch and borne with its class. */}
       {props.swatches.map((s, i) => (
@@ -259,7 +281,7 @@ export function ChoroplethFrame(
           width={s.width}
           height={s.height}
           fill={colours.classFills[i]}
-          opacity={scene.swatches[i]}
+          opacity={scene.swatches[i] * (1 - STEPPED_BACK_FADE * scene.swatchesBack[i])}
         />
       ))}
       {lines.bornes.map((line, i) => (
@@ -271,6 +293,14 @@ export function ChoroplethFrame(
           opacity={scene.swatches[i]}
         />
       ))}
+      <rect
+        x={cursorX - 1.5 * strokes.ring}
+        y={props.swatches[0].y - props.swatches[0].height / 2}
+        width={3 * strokes.ring}
+        height={2 * props.swatches[0].height}
+        fill={colours.text.counter}
+        opacity={scene.cursor.opacity}
+      />
       <Word
         line={lines.unit}
         register={r.axis}

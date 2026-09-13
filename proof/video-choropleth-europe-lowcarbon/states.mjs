@@ -10,7 +10,8 @@
 //   missing     the reporting country with no reading named                                0..1
 // and three the video adds, because the scrolly derives them from its cards:
 //   furniture   the eyebrow, title, key frame and source, up once at `establish`            0..1
-//   count       the counter counting up to seven — it stays once counted (BRIEF.md)         0..1
+//   floor       the floor's cursor travelling the key, borne by borne, 0 → 94 %; it stays     0..1
+//   count       the counter, stepping down with the floor — it stays once counted (BRIEF.md)  0..1
 //   neighbours  Albania's neighbours named with their shares, and Kosovo « hors données »    0..1
 //
 // A state is the picture at the END of its event. The order INSIDE an event — the names only after the
@@ -68,10 +69,10 @@ export function assertDerivedValues(subject, geometry) {
 /** One state per event in `EVENT_ORDER`, the hold restating the conclusion exactly. */
 export function statesFor(subject, geometry) {
   assertDerivedValues(subject, geometry);
-  const blank = { furniture: 0, classes: 0, filter: 0, count: 0, top: 0, zoom: 0, odd: 0, neighbours: 0, missing: 0 };
+  const blank = { furniture: 0, classes: 0, filter: 0, floor: 0, count: 0, top: 0, zoom: 0, odd: 0, neighbours: 0, missing: 0 };
   const establish = { ...blank, furniture: 1 };
   const reference = { ...establish, classes: 1 };
-  const reveal = { ...reference, filter: 1, count: 1, top: 1 };
+  const reveal = { ...reference, filter: 1, floor: 1, count: 1, top: 1 };
   const subjectState = { ...reveal, filter: 0, top: 0, zoom: 1, odd: 1, neighbours: 1 };
   const conclusion = { ...subjectState, zoom: 0, neighbours: 0, top: 1, missing: 1 };
   const byEvent = { establish, reference, reveal, subject: subjectState, conclusion, hold: { ...conclusion } };

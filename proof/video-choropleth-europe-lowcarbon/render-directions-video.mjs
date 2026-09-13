@@ -107,6 +107,8 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "mid-reference", frame: Math.round(T.reference.start + T.reference.duration / 2) },
         { name: "mid-reveal-filter", frame: mid("reveal", WINDOWS.reveal.filter) },
+        ...[0.3, 0.6].map((k) => ({ name: `reveal-floor-${k}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.filter[0] + k * (WINDOWS.reveal.filter[1] - WINDOWS.reveal.filter[0]))) })),
+        { name: "subject-counting", frame: Math.round(T.subject.start + T.subject.duration * 0.82) },
         { name: "mid-subject-camera", frame: mid("subject", WINDOWS.subject.zoom) },
         { name: "mid-conclusion-camera", frame: mid("conclusion", WINDOWS.conclusion.zoom) },
         { name: "first", frame: 0 },
