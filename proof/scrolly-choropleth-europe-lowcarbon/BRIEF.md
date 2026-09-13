@@ -38,6 +38,11 @@ Each direction keeps its own palette and faces.
 - **Names are seated at each country's most interior point** (never on its coast), placed through the
   SVG's screen matrix, and a name that would touch another steps down.
 
+- **Full-bleed.** The map fills the whole graphic at every width: the counters and the key sit over it on
+  panels of the ground, the frame is fitted between them and widened to the stage's own aspect
+  (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), and the geography is drawn far enough past the frame
+  to fill a stage two and a half times wider than tall.
+
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs`.

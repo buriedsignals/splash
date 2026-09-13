@@ -39,6 +39,11 @@ scroll shows exactly that: the reader watches the map become the cartogram.
 - **The static plate's floors**: the lowest class and the neutral floored against the ground; the missing
   country hollow with a dashed edge.
 
+- **Full-bleed.** The map fills the whole graphic at every width: the counters and the key sit over it on
+  panels of the ground, the frame is fitted between them and widened to the stage's own aspect
+  (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), and the geography is drawn far enough past the frame
+  to fill a stage two and a half times wider than tall.
+
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs`.

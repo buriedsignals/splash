@@ -24,6 +24,10 @@ export function applyCartogramState(root, state, context) {
   const m = ease(clamp(state.morph));
   const shapeOut = clamp((m - 0.62) / 0.3);
   const n = c.fills.classes.length;
+  // The frame fitted between the overlays and widened to the stage: the map runs edge to edge.
+  const vb = fitViewBox({ x: 0, y: 0, w: c.width, h: c.height }, { width: c.stage.clientWidth, height: c.stage.clientHeight }, c.insets);
+  c.field.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  c.field.setAttribute("preserveAspectRatio", "none");
   const stage = c.stage.getBoundingClientRect();
   const matrix = c.field.getScreenCTM();
 
@@ -68,6 +72,7 @@ export function applyCartogramState(root, state, context) {
     }
   }
   c.context.style.opacity = String(1 - m);
+  c.sea.style.opacity = String(1 - m);
   for (const swatch of c.swatches) {
     const i = Number(swatch.dataset.classSwatch);
     swatch.style.opacity = String(m > 0.5 ? clamp(state.classes * n - i) : 1);
@@ -82,6 +87,8 @@ export function applyCartogramState(root, state, context) {
     if (node.textContent !== text) node.textContent = text;
     node.style.opacity = String(value);
   }
+  // The panel is as visible as the most visible counter in it: an empty panel reads as a hole in the map.
+
 
   // Notes seated beside their country, inside the stage.
   const seatNote = (note, iso, value) => {
@@ -91,8 +98,9 @@ export function applyCartogramState(root, state, context) {
     const r = country.group.getBoundingClientRect();
     let left = r.left - stage.left + r.width / 2 - note.offsetWidth / 2;
     let top = r.top - stage.top + r.height / 2 - note.offsetHeight / 2;
-    left = Math.min(Math.max(left, 0), stage.width - note.offsetWidth);
-    top = Math.min(Math.max(top, 0), stage.height - note.offsetHeight);
+    // Inside the band the overlays leave free, never under the counters or the key.
+    left = Math.min(Math.max(left, c.insets.left), stage.width - c.insets.right - note.offsetWidth);
+    top = Math.min(Math.max(top, c.insets.top), stage.height - c.insets.bottom - note.offsetHeight);
     note.style.left = `${left}px`;
     note.style.top = `${top}px`;
   };
@@ -128,12 +136,18 @@ function seatCartogram(root, carrier) {
       nameHeight: name.offsetHeight,
     };
   });
+  const stageBox = stage.getBoundingClientRect();
+  const key = root.querySelector('[data-part="key"]').getBoundingClientRect();
+  const counts = root.querySelector('[data-part="count-panel"]').getBoundingClientRect();
+  const side = Math.min(24, stageBox.width * 0.04);
   root.__carto = {
     ...data,
+    insets: { top: counts.bottom - stageBox.top + 6, bottom: stageBox.bottom - key.top + 6, left: side, right: side },
     stage,
     field,
     countries,
     context: field.querySelector('[data-part="context"]'),
+    sea: field.querySelector('[data-part="sea"]'),
     byArea: root.querySelector('[data-part="by-area"]'),
     byCountry: root.querySelector('[data-part="by-country"]'),
     subjectNote: root.querySelector('[data-part="subject-note"]'),

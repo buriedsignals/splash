@@ -94,23 +94,11 @@ export function DirectedChoroplethScrolly({
         fills: { classes: Array.from({ length: classCount }, (_, i) => classFill(i)), missing: missingFill, land: water.land },
         top: names.filter((n) => n.role === "top" || n.role === "odd").map((n) => n.iso),
       })}
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: ground,
-        display: "grid",
-        gridTemplateRows: "auto minmax(0, 1fr) auto",
-        rowGap: "10px",
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) clamp(16px, 5vw, ${pad}px)`,
-      }}
+      style={{ position: "absolute", inset: 0, background: water.water, overflow: "hidden" }}
     >
-      <div style={{ display: "flex", justifyContent: "flex-end", minHeight: "1.4em" }}>
-        <span data-part="top-count" data-template={topCount.template} data-value={topCount.value} style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}>
-          {topCount.template.replace("{n}", String(topCount.value))}
-        </span>
-      </div>
-
-      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden" }}>
+      {/* THE MAP IS FULL-BLEED: the stage is the whole graphic, and the counter and the key sit over it in
+          its corners, on panels of the ground. `choropleth-drive.mjs` fits the camera between them. */}
+      <div data-part="stage" style={{ position: "absolute", inset: 0 }}>
         <svg
           data-part="field"
           xmlns="http://www.w3.org/2000/svg"
@@ -118,16 +106,16 @@ export function DirectedChoroplethScrolly({
           preserveAspectRatio="xMidYMid meet"
           style={abs({ inset: 0, width: "100%", height: "100%" })}
         >
-          {/* The geography is drawn 280 units past the frame on every side (`choropleth-geometry.mjs`), so the
+          {/* The geography is drawn 900 × 500 units past the frame (`choropleth-geometry.mjs`), so the
               stage is clipped to that margin, not to the frame: a wider stage and a low close-up show land
               and sea, never a cut coastline. */}
           <defs>
             <clipPath id="choropleth-frame">
-              <rect x={-270} y={-270} width={width + 540} height={height + 540} />
+              <rect x={-890} y={-490} width={width + 1780} height={height + 980} />
             </clipPath>
           </defs>
           <g clipPath="url(#choropleth-frame)">
-          <rect data-part="sea" x={-270} y={-270} width={width + 540} height={height + 540} fill={water.water} />
+          <rect data-part="sea" x={-890} y={-490} width={width + 1780} height={height + 980} fill={water.water} />
           {shapes.map((s) => (
             <path
               key={s.iso}
@@ -175,7 +163,30 @@ export function DirectedChoroplethScrolly({
         ))}
       </div>
 
-      <div data-part="key" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "6px 16px" }}>
+      <div
+        data-part="count-panel"
+        style={{ position: "absolute", top: `clamp(10px, 2.5vh, ${pad * 0.5}px)`, right: `clamp(12px, 4vw, ${pad}px)`, background: ground, padding: "4px 8px" }}
+      >
+        <span data-part="top-count" data-template={topCount.template} data-value={topCount.value} style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}>
+          {topCount.template.replace("{n}", String(topCount.value))}
+        </span>
+      </div>
+
+      <div
+        data-part="key"
+        style={{
+          position: "absolute",
+          left: `clamp(12px, 4vw, ${pad}px)`,
+          bottom: `clamp(10px, 2.5vh, ${pad * 0.5}px)`,
+          maxWidth: "calc(100% - 24px)",
+          background: ground,
+          padding: "8px 10px 2px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-start",
+          gap: "6px 16px",
+        }}
+      >
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${classCount}, 34px)`, gap: "2px", paddingBottom: "1.5em" }}>
           {Array.from({ length: classCount }, (_, i) => (
             <div key={`c${i}`} data-class-swatch={i} style={{ position: "relative", height: "12px", background: classFill(i) }}>

@@ -69,8 +69,10 @@ export function cartogramGeometry(geo, placed, { cols, rows, width, height, wind
   const offY = (height - (maxY - minY) * scale) / 2;
   const toFrame = ([x, y]) => [offX + (x - minX) * scale, offY + (y - minY) * scale];
 
-  const MARGIN = 30;
-  const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN), width + MARGIN), Math.min(Math.max(y, -MARGIN), height + MARGIN)];
+  /** Shapes are kept this far past the frame: the map fills a stage of any aspect (`fitViewBox`). */
+  const MARGIN_X = 900;
+  const MARGIN_Y = 500;
+  const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN_X), width + MARGIN_X), Math.min(Math.max(y, -MARGIN_Y), height + MARGIN_Y)];
   const r1 = (v) => Math.round(v * 10) / 10;
 
   const byIso = new Map();
@@ -92,7 +94,7 @@ export function cartogramGeometry(geo, placed, { cols, rows, width, height, wind
         }
         if (kept.length < 3) continue;
         // A ring flattened onto the clamp line is all edge and no land.
-        if (kept.every((p) => p[0] <= -MARGIN || p[0] >= width + MARGIN || p[1] <= -MARGIN || p[1] >= height + MARGIN)) continue;
+        if (kept.every((p) => p[0] <= -MARGIN_X || p[0] >= width + MARGIN_X || p[1] <= -MARGIN_Y || p[1] >= height + MARGIN_Y)) continue;
         rings.push(kept);
       }
     const held = byIso.get(iso) ?? { iso, rings: [], area: 0 };

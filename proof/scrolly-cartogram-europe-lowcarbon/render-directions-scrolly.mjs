@@ -27,6 +27,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { cartogramGeometry } from "./cartogram-geometry.mjs";
 import { DirectedCartogramScrolly } from "./DirectedCartogramScrolly.tsx";
@@ -172,6 +173,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         element: createElement(DirectedCartogramScrolly, {
           countries,
           context: geometry.context,
+          seaFill: plateTints(direction).water,
           ...FRAME,
           breaks: BREAKS.map((b) => `${b}${NB}%`),
           unit: "part bas-carbone de la production",

@@ -36,12 +36,14 @@ export function choroplethGeometry(geo, { bounds, width, height, keep }) {
   const yN = mercY(corners.north);
   const yS = mercY(corners.south);
   const project = ([lon, lat]) => [((lon - corners.west) / (corners.east - corners.west)) * width, ((mercY(lat) - yN) / (yS - yN)) * height];
-/** Shapes are kept this far past the frame: a stage wider than the frame, and a close-up that sits low in
-   *  it, both show real geography there rather than the cut edge of a clamped coastline. */
-  const MARGIN = 280;
-  const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN), width + MARGIN), Math.min(Math.max(y, -MARGIN), height + MARGIN)];
+/** Shapes are kept this far past the frame: the map fills a stage of any aspect (`fitViewBox`), and a stage
+   *  two and a half times wider than tall shows ~870 units of geography past each side of the frame. */
+  const MARGIN_X = 900;
+  const MARGIN_Y = 500;
+  const MARGIN = Math.max(MARGIN_X, MARGIN_Y);
+  const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN_X), width + MARGIN_X), Math.min(Math.max(y, -MARGIN_Y), height + MARGIN_Y)];
   const r1 = (v) => Math.round(v * 10) / 10;
-  const outside = (p) => p[0] <= -MARGIN || p[0] >= width + MARGIN || p[1] <= -MARGIN || p[1] >= height + MARGIN;
+  const outside = (p) => p[0] <= -MARGIN_X || p[0] >= width + MARGIN_X || p[1] <= -MARGIN_Y || p[1] >= height + MARGIN_Y;
 
   const byIso = new Map();
   for (const f of geo.features) {
