@@ -118,15 +118,16 @@ export function DirectedChoroplethScrolly({
           preserveAspectRatio="xMidYMid meet"
           style={abs({ inset: 0, width: "100%", height: "100%" })}
         >
-          {/* THE FRAME IS THE CAMERA'S. Land is clamped at the frame's edge, so what lies past it on a wider
-              stage is not geography; it is cut to the frame and the ground shows there, as around the plate. */}
+          {/* The geography is drawn 280 units past the frame on every side (`choropleth-geometry.mjs`), so the
+              stage is clipped to that margin, not to the frame: a wider stage and a low close-up show land
+              and sea, never a cut coastline. */}
           <defs>
             <clipPath id="choropleth-frame">
-              <rect x={0} y={0} width={width} height={height} />
+              <rect x={-270} y={-270} width={width + 540} height={height + 540} />
             </clipPath>
           </defs>
           <g clipPath="url(#choropleth-frame)">
-          <rect data-part="sea" x={0} y={0} width={width} height={height} fill={water.water} />
+          <rect data-part="sea" x={-270} y={-270} width={width + 540} height={height + 540} fill={water.water} />
           {shapes.map((s) => (
             <path
               key={s.iso}

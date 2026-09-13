@@ -5,8 +5,8 @@
 // lines. The same arithmetic is used here, so a country sits where it sits on the plate: Web Mercator,
 // longitude linear in x, latitude through the inverse Mercator formula.
 //
-// SHAPES. The frozen Natural Earth rings, projected, clamped to a margin around the frame (invisible under
-// the clip, and it shortens Russia to the frame's edge), rings too small to see dropped — but never a
+// SHAPES. The frozen Natural Earth rings, projected, clamped to a wide margin around the frame (it shortens
+// Russia and Africa to that margin), rings too small to see dropped — but never a
 // study country's only ring: Malta is 27 km across and a map that loses it has lost a country — and
 // consecutive points closer than a unit merged.
 //
@@ -36,7 +36,9 @@ export function choroplethGeometry(geo, { bounds, width, height, keep }) {
   const yN = mercY(corners.north);
   const yS = mercY(corners.south);
   const project = ([lon, lat]) => [((lon - corners.west) / (corners.east - corners.west)) * width, ((mercY(lat) - yN) / (yS - yN)) * height];
-  const MARGIN = 40;
+/** Shapes are kept this far past the frame: a stage wider than the frame, and a close-up that sits low in
+   *  it, both show real geography there rather than the cut edge of a clamped coastline. */
+  const MARGIN = 280;
   const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN), width + MARGIN), Math.min(Math.max(y, -MARGIN), height + MARGIN)];
   const r1 = (v) => Math.round(v * 10) / 10;
   const outside = (p) => p[0] <= -MARGIN || p[0] >= width + MARGIN || p[1] <= -MARGIN || p[1] >= height + MARGIN;

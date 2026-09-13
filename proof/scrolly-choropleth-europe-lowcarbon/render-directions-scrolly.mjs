@@ -124,12 +124,15 @@ else zh = zw / aspect;
 /** Albania is placed in the upper third of the close-up rather than at its centre: the card that narrates
  *  it rests on the middle of the frame, and a subject under its own caption is not shown. */
 const zoomBox = {
-  x: Math.min(Math.max((bx0 + bx1) / 2 - zw / 2, 0), FRAME.width - zw),
-  // Kept inside the frame: past its edge there is no geography, only the ground.
-  y: Math.min(Math.max((by0 + by1) / 2 - zh * 0.32, 0), FRAME.height - zh),
+  x: (bx0 + bx1) / 2 - zw / 2,
+  // Within the 280-unit margin the geometry carries past the frame; asserted below.
+  y: (by0 + by1) / 2 - zh * 0.32,
   w: zw,
   h: zh,
 };
+
+if (zoomBox.x < -260 || zoomBox.y < -260 || zoomBox.x + zoomBox.w > FRAME.width + 260 || zoomBox.y + zoomBox.h > FRAME.height + 260)
+  throw new Error("the close-up reaches past the margin the geometry is drawn in");
 
 // ── the words ──────────────────────────────────────────────────────────────────────────────────
 const title = [

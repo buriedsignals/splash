@@ -31,8 +31,10 @@ Each direction keeps its own palette and faces.
 - **Vectors, not the MapTiler raster**: each country takes its own fill as the scroll moves, and the zoom
   is a camera move. Relief and the basemap's own labels are what is given up; the source line names the
   Natural Earth shapes. Sea and land keep the plate's tints (`plateTints`).
-- **The zoom is the viewBox travelling**, kept inside the frame, Albania placed in the upper third so the
-  card resting on the middle does not cover it. Close-up names appear only once the camera has arrived.
+- **The zoom is the viewBox travelling**, Albania placed in the upper third so the card resting on the
+  middle does not cover it. The geography is drawn 280 units past the frame on every side, so a stage
+  wider than the frame and a close-up that sits low both show land and sea rather than a cut coastline.
+  Close-up names appear only once the camera has arrived.
 - **Names are seated at each country's most interior point** (never on its coast), placed through the
   SVG's screen matrix, and a name that would touch another steps down.
 
