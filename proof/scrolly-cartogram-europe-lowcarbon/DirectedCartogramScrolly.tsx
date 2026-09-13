@@ -146,7 +146,7 @@ export function DirectedCartogramScrolly({
         gridTemplateRows: "auto minmax(0, 1fr) auto",
         rowGap: "10px",
         // The page's own side gutter — the header's — so the map's edges line up with the title's.
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
       <div

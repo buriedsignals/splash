@@ -61,13 +61,27 @@ export function packSwarm(marks, x, maxRadius, uniform = null) {
  * @param {{marks, xMax, width, bandHeight, cards: {code, width}[], ticks: {value, width}[], nameWidth}} input
  */
 export function layoutSwarm({ marks, xMax, width, bandHeight, cards, ticks, nameWidth }) {
-  const x = swarmScale(xMax, width);
+  let x = swarmScale(xMax, width);
   let pack = null;
   let maxRadius = MAX_RADII[MAX_RADII.length - 1];
-  for (const rung of MAX_RADII) {
-    const trial = packSwarm(marks, x, rung);
+  // The static plate's ladder is measured on a plot about 900px wide; a wider plot earns proportionally larger
+  // circles — and two rungs above the plate's own, so a tall frame is filled rather than holding a thin band.
+  const grow = Math.max(1, width / 900);
+  for (const base of [44, 36, ...MAX_RADII]) {
+    const rung = Math.round(base * grow * 10) / 10;
+    // The axis is inset by the radius of the widest circle at either end of it, so those circles stay
+    // inside the gutters without leaving a band of bare ground when the ends are small countries.
+    const biggest = Math.max(...marks.map((m) => m.people));
+    const radius = (m) => Math.max(MIN_RADIUS, Math.sqrt(m.people / biggest) * rung);
+    const lo = Math.min(...marks.map((m) => m.tonnes));
+    const hi = Math.max(...marks.map((m) => m.tonnes));
+    const edgeRadius = Math.max(...marks.filter((m) => m.tonnes - lo < xMax * 0.02 || hi - m.tonnes < xMax * 0.02).map(radius));
+    const inset = 2 + edgeRadius;
+    const trialX = (value) => inset + (value / (xMax * 1.02)) * (width - inset * 2);
+    const trial = packSwarm(marks, trialX, rung);
     pack = trial;
     maxRadius = rung;
+    x = trialX;
     if (trial.extent * 2 <= bandHeight) break;
   }
   const fits = pack.extent * 2 <= bandHeight;

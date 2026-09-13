@@ -143,6 +143,10 @@ export function chooseOrientation(root) {
   const boxes = values.map((v) => v.getBoundingClientRect());
   for (let i = 1; i < boxes.length; i++) if (boxes[i].left < boxes[i - 1].right + 4) fits = false;
 
+  // The names row is as tall as its tallest name, not a fixed two lines: a row sized for two lines under
+  // names that all fit on one left a band of bare ground under the chart.
+  const namesRow = columns.querySelector('[data-part="names-row"]');
+  if (namesRow) namesRow.style.height = `${Math.max(...Array.from(columns.querySelectorAll('[data-part="name"]')).map((n) => n.offsetHeight))}px`;
   columns.style.display = fits ? "grid" : "none";
   rows.style.display = fits ? "none" : "grid";
   root.dataset.orientation = fits ? "columns" : "rows";

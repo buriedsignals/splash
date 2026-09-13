@@ -64,11 +64,16 @@ function measureCalendar(root) {
   const tick = calendar.querySelector('[data-part="tick"]');
   const gap = Number.parseFloat(getComputedStyle(calendar).rowGap) || 0;
   const available = calendar.clientHeight - (tick ? tick.offsetHeight : 0) - gap * 12;
-  const base = Math.max(0, Math.min(40, available / 12));
-  const zoomRow = Math.max(base, Math.min(available / 2 - gap, 160));
+  const base = Math.max(0, Math.min(84, available / 12));
+  // The two focused months share the whole height the calendar has; capped, they floated in a band.
+  const zoomRow = Math.max(base, available / 2 - gap);
   const focus = new Set(months.filter((m) => m.hasAttribute("data-focus")).map((m) => Number(m.dataset.month)));
   const width = calendar.clientWidth;
-  const meansWidth = Math.min(110, width * 0.14);
+  // The means column is as wide as its words need, never less: at a phone's width 14 % of the calendar is
+  // 44px and "10,0" and the column's own heading ran past the page gutter.
+  const meanNodes = Array.from(calendar.querySelectorAll('[data-part="mean"]'));
+  const widestValue = Math.max(0, ...meanNodes.map((n) => (n.lastElementChild ? n.lastElementChild.scrollWidth : n.scrollWidth)));
+  const meansWidth = Math.max(Math.min(110, width * 0.14), widestValue + 8 + 4 + 18);
 
   // Does a value fit its cell at full zoom? The column width does not change with the zoom.
   const label = months[0];

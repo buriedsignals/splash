@@ -110,27 +110,23 @@ const classOf = (v) => BREAKS.filter((b) => v >= b).length;
 const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const pct0 = (v) => `${Math.round(v)}${NB}%`;
 
-/** The zoom box: Albania and its neighbours, padded, fitted to the frame's own aspect. */
-const boxes = [ODD_ONE, ...neighbours].map((iso) => geometry.shapes.find((s) => s.iso === iso).box);
-const bx0 = Math.min(...boxes.map((b) => b.x));
-const by0 = Math.min(...boxes.map((b) => b.y));
-const bx1 = Math.max(...boxes.map((b) => b.x + b.w));
-const by1 = Math.max(...boxes.map((b) => b.y + b.h));
+/** The zoom box: CENTRED ON ALBANIA, both axes, and wide enough that every neighbour is inside it. Centring on
+ *  the group's own box put Albania off to the west (Greece and its islands pull the group east) and, with
+ *  the card's room kept, high in the frame. `fitViewBox` keeps that centre when it widens the view to the
+ *  stage, so Albania stays at the middle of the map at every width. */
+const oddSeat = geometry.shapes.find((s) => s.iso === ODD_ONE).seat;
+/** Reach measured to each neighbour's own seat, not its box: Greece's box runs out to Crete and Rhodes, and a
+ *  frame built on it made Albania a speck. The padding keeps the neighbours' names inside the frame. */
+const oddBox = geometry.shapes.find((s) => s.iso === ODD_ONE).box;
+const seats = neighbours.map((iso) => geometry.shapes.find((s) => s.iso === iso).seat);
+const reachX = Math.max(oddBox.w / 2, ...seats.map((p) => Math.abs(p.x - oddSeat.x)));
+const reachY = Math.max(oddBox.h / 2, ...seats.map((p) => Math.abs(p.y - oddSeat.y)));
 const aspect = FRAME.width / FRAME.height;
-let zw = (bx1 - bx0) * 1.5;
-let zh = (by1 - by0) * 1.5;
+let zw = reachX * 2 * 2.2;
+let zh = reachY * 2 * 2.2;
 if (zw / zh < aspect) zw = zh * aspect;
 else zh = zw / aspect;
-/** Albania is placed in the upper third of the close-up rather than at its centre: the card that narrates
- *  it rests on the middle of the frame, and a subject under its own caption is not shown. */
-const zoomBox = {
-  x: (bx0 + bx1) / 2 - zw / 2,
-  // Within the 280-unit margin the geometry carries past the frame; asserted below.
-  y: (by0 + by1) / 2 - zh * 0.32,
-  w: zw,
-  h: zh,
-};
-
+const zoomBox = { x: oddSeat.x - zw / 2, y: oddSeat.y - zh / 2, w: zw, h: zh };
 if (zoomBox.x < -260 || zoomBox.y < -260 || zoomBox.x + zoomBox.w > FRAME.width + 260 || zoomBox.y + zoomBox.h > FRAME.height + 260)
   throw new Error("the close-up reaches past the margin the geometry is drawn in");
 

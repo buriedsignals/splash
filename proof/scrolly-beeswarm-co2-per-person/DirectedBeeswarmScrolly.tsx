@@ -137,7 +137,7 @@ export function DirectedBeeswarmScrolly({
         background: ground,
         display: "grid",
         gridTemplateRows: "minmax(0, 1fr) auto",
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
       <div data-part="plot" style={{ position: "relative", minHeight: 0 }}>

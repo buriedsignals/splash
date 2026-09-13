@@ -133,7 +133,7 @@ export function DirectedColumnsScrolly({
         position: "absolute",
         inset: 0,
         background: ground,
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
       {/* ── COLUMNS ─────────────────────────────────────────────────────────────────────────── */}
@@ -141,7 +141,7 @@ export function DirectedColumnsScrolly({
         data-orient="columns"
         style={{
           position: "absolute",
-          inset: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+          inset: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
           display: "grid",
           gridTemplateRows: "minmax(0, 1fr) auto",
         }}
@@ -238,7 +238,7 @@ export function DirectedColumnsScrolly({
             })}
           />
         </div>
-        <div style={{ position: "relative", height: "3em", marginTop: "8px" }}>
+        <div data-part="names-row" style={{ position: "relative", height: "3em", marginTop: "8px" }}>
           {rows.map((r, i) => (
             <span
               key={`n${r.name}`}
@@ -262,13 +262,13 @@ export function DirectedColumnsScrolly({
         data-orient="rows"
         style={{
           position: "absolute",
-          inset: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+          inset: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
           // Not `hidden`: an inline `display` beats the attribute's own rule. The driver sets it.
           display: "none",
           gridTemplateColumns: "max-content minmax(0, 1fr)",
           columnGap: "10px",
           // Ten rows at most 52px each, centred: tall enough for the name, never stretched into slabs.
-          gridTemplateRows: `repeat(${rows.length}, minmax(0, 52px))`,
+          gridTemplateRows: `repeat(${rows.length}, minmax(0, 72px))`,
           alignContent: "center",
           rowGap: "0",
         }}

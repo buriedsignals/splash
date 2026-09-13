@@ -102,10 +102,10 @@ export function DirectedChoroplethScrolly({
         gridTemplateRows: "auto minmax(0, 1fr) auto",
         rowGap: "10px",
         // The page's own side gutter — the header's — so the map's edges line up with the title's.
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
-      <div data-part="count-panel" style={{ display: "flex", justifyContent: "flex-end", minHeight: "1.4em" }}>
+      <div data-part="count-panel" style={{ display: "flex", justifyContent: "flex-end" }}>
         <span data-part="top-count" data-template={topCount.template} data-value={topCount.value} style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}>
           {topCount.template.replace("{n}", String(topCount.value))}
         </span>

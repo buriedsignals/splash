@@ -163,7 +163,7 @@ export function DirectedAreaScrolly({
         background: ground,
         display: "grid",
         gridTemplateRows: "auto minmax(0, 1fr) auto",
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
       <div

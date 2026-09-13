@@ -92,8 +92,8 @@ export function DirectedBulletScrolly({
     position: "absolute",
     ...extra,
   });
-  /** The thick bar is at most 26px and at most 56 % of its row; the thin one is 46 % of the thick. */
-  const thick = "min(26px, 56%)";
+  /** The thick bar is at most 34px and at most 42 % of its row; the thin one is 46 % of the thick. */
+  const thick = "min(34px, 42%)";
 
   return (
     <div
@@ -104,10 +104,12 @@ export function DirectedBulletScrolly({
         position: "absolute",
         inset: 0,
         background: ground,
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
         display: "grid",
         gridTemplateColumns: "max-content minmax(0, 1fr) max-content",
-        gridTemplateRows: `auto repeat(${rows.length}, minmax(0, 56px)) auto`,
+        // Rows grow with the frame up to a pitch of 96px: capped at 56px they left 200px of bare ground above
+        // and below six rows on a desktop.
+        gridTemplateRows: `auto repeat(${rows.length}, minmax(0, 130px)) auto`,
         alignContent: "center",
         columnGap: "clamp(8px, 1.5vw, 16px)",
       }}

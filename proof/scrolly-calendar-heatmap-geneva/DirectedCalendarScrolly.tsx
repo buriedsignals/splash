@@ -142,7 +142,7 @@ export function DirectedCalendarScrolly({
         position: "absolute",
         inset: 0,
         background: ground,
-        padding: `clamp(12px, 3vh, ${pad * 0.6}px) var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
         display: "grid",
         gridTemplateRows: "minmax(0, 1fr) auto",
         rowGap: "12px",
@@ -153,7 +153,7 @@ export function DirectedCalendarScrolly({
         style={{
           display: "grid",
           gridTemplateColumns: `max-content repeat(31, minmax(0, 1fr)) min(110px, 14%)`,
-          gridTemplateRows: `auto repeat(12, minmax(0, 40px))`,
+          gridTemplateRows: `auto repeat(12, minmax(0, 84px))`,
           gap,
           alignContent: "center",
           minHeight: 0,
@@ -181,9 +181,10 @@ export function DirectedCalendarScrolly({
             ...axisStyle,
             gridColumn: lastCol,
             gridRow: 1,
-            justifySelf: "start",
+            justifySelf: "end",
             paddingLeft: "8px",
             overflow: "hidden",
+            maxWidth: "100%",
           }}
         >
           {meansLabel}
