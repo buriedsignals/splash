@@ -12,7 +12,7 @@
 // Usage:  bun proof/web-bar-top-emitters-2024/render-directions-web.mjs
 
 import { readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
@@ -101,6 +101,14 @@ console.log(
 
 const columns = chosen.map((c, i) => {
   const { n } = followersNeeded(ranked.indexOf(c));
+  // `followersNeeded` returns null when the whole tail below a country still does not reach it. That
+  // cannot happen at these ranks and it is not left to chance: the answer this page exists to give
+  // would otherwise print the word "null" beside a country's name.
+  if (n === null)
+    throw new Error(
+      `no run of countries below ${c.entity} in this file adds up to its own ${c.tonnes} t, so the ` +
+        "reading this page's interaction promises has no answer for it",
+    );
   const share = (c.tonnes / world.tonnes) * 100;
   return {
     code: c.code,
@@ -155,15 +163,78 @@ const BEAT_FACTS = { evidenceLevels: 2 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
+/**
+ * THE INTERACTION, WRITTEN BEFORE THE CODE — `chart-web/references/directed-interaction.md`, rule 1,
+ * and `BRIEF.md` carries the same thing in prose, including the three readings this beat considered
+ * and declined and the measurement behind each. `renderWeb` checks this declaration against the
+ * markup it is about to write, so the brief's promise and the page cannot drift apart.
+ */
+const interaction = {
+  earns:
+    `A still of this ranking prints ten numbers and a sum. It cannot say what any one of those ` +
+    `columns is worth AGAINST THE WORLD — the plate draws only the ten, which are ` +
+    `${fr(topShare, 1)} % of the total, so a column's height is silent about the other ` +
+    `${fr(100 - topShare, 1)} % — and it cannot run the headline's own arithmetic on anything but ` +
+    `the subject. This page answers both, for all ${HOW_MANY}, from the full ` +
+    `${countries.length}-country ranking the plate only shows the head of.`,
+  controls: [
+    {
+      question:
+        "Cette colonne, elle pèse combien dans le total mondial — et combien de pays faut-il " +
+        "additionner, plus bas dans le classement, pour l'égaler ?",
+      gesture: "ask-a-mark",
+      changes:
+        `The column's own mark lights and the answer box prints two readings the plate holds ` +
+        `nowhere: that country's share of the WORLD total (${columns[1].detail.split(" · ")[0]} for ` +
+        `${columns[1].name}, against ${columns[0].detail.split(" · ")[0]} for ${columns[0].name}), ` +
+        `and how many countries below it in the full ${countries.length}-country ranking must be ` +
+        `added together before they match it — the headline's own arithmetic asked of every rank ` +
+        `instead of only of the subject.`,
+    },
+  ],
+};
+
+// THE TAP THE READING LINE PROMISES. `interaction.mjs` clears the answer on `pointerleave`, and
+// Chrome fires that event up the whole chain when a TOUCH pointer is destroyed — the instant the
+// finger lifts. Measured on the committed file with a real CDP touch sequence (touchStart → 150 ms →
+// touchEnd → 500 ms) at 390x844: the answer appeared and then vanished inside one gesture, while this
+// page's own reading line says « survolez, touchez ou tabulez ». Same defect and same remedy as
+// `proof/webx-life-expectancy` and `proof/weby-small-multiples-co2-per-capita`: clear on
+// `pointerleave` for MOUSE AND PEN ONLY. A touch reader's answer is cleared instead by the
+// document-level `pointerdown` the format already installs, so it holds until they tap elsewhere.
+//
+// Patched into the emitted HTML rather than into the format's shared `chart-web/assets/
+// interaction.mjs`, which is outside this beat's scope. An ANCHORED replacement, not a vendored copy:
+// a copy would drift silently the moment the format's script changed, whereas this throws by name if
+// the line it expects is no longer there.
+const LEAVE_LINE = '    hitArea.addEventListener("pointerleave", clear);';
+const LEAVE_GUARDED = `    hitArea.addEventListener("pointerleave", function (evt) {
+      // Mouse and pen only — see this beat's render-directions-web.mjs for the measurement.
+      if (evt.pointerType === "touch") return;
+      clear();
+    });`;
+
+async function repairTouch(outPath) {
+  const html = await readFile(outPath, "utf8");
+  if (html.split(LEAVE_LINE).length !== 2)
+    throw new Error(
+      `expected exactly one ${JSON.stringify(LEAVE_LINE.trim())} in the inlined interaction script ` +
+        "to guard against a touch pointer's own leave — the format's script may already guard it, in " +
+        "which case delete this patch rather than widening it",
+    );
+  await writeFile(outPath, html.replace(LEAVE_LINE, LEAVE_GUARDED));
+}
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   try {
-    await renderWeb({
+    const { outPath } = await renderWeb({
       component: DirectedColumnsWeb,
       props: {
         columns,
+        interaction,
         subject: SUBJECT,
         bracket: { from: 1, to: nextN, label: bracketNote },
         top: columns[0].gt,
@@ -186,6 +257,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       outDir: OUT,
       name: `${id}.html`,
     });
+    await repairTouch(outPath);
     console.log(`${id} -> renders/${id}.html`);
   } catch (error) {
     refused.push({ id, why: error.message });
