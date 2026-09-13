@@ -106,6 +106,13 @@ La ligne de registre passe de 8 à 9 cellules : `… | case | ink | leading |`. 
 hérite du `leading` de sa source, comme il hérite de sa famille. L'ajout d'un champ ne change rien
 pour les consommateurs existants, web compris.
 
+**`leading: null` reste légal ici**, pour une direction construite en code sans passer par le parser
+— même forme que `derivedFrom: null`. `resolveRegister` a 52 appelants, dont la plupart ne lisent
+jamais d'interligne ; refuser à cet endroit les ferait tous échouer pour une valeur qu'ils ignorent.
+Le refus vit chez **le consommateur qui calcule** : `registerOf` lève, en nommant la direction et le
+registre. Règle : un code qui fait de l'arithmétique avec un interligne passe par
+`registerOf` / `leadOf`, ou refuse `null` au point d'usage. Une garde le tient (§5.2).
+
 ### 3.4 `shared/design-base/register.mjs` (nouveau)
 
 `registerOf(direction, name)` et `capRatioOf(family, weight)` quittent `DirectedChoroplethMap.tsx`.
@@ -197,6 +204,10 @@ hauteur naturelle desserrerait ces listes. Ils restent tels quels.
   (hhea, pas typo 1.050) ; une famille absente lève.
 - **`read-direction`** — une ligne à 8 cellules lève ; les trois directions déposées portent
   `leading` sur chaque registre.
+- **Garde du consommateur** — un parcours de tout le code source du dépôt (hors `node_modules`,
+  `.git`, `.superpowers`, et hors tests) ne trouve aucune lecture de `.leading` en dehors de
+  `register.mjs`, `read-direction.mjs`, `registers.mjs` et de leurs copies portées. La population est
+  dérivée du parcours, sans liste de sites connus et sans racines codées en dur.
 - **`register.test.ts`** — `leadOf(r) = hauteurNaturelle × leading × fontSize` ; une copie à 90 %
   de la taille donne un interligne à 90 % ; sur chaque face de tête, `leadOf` reproduit le
   multiplicateur hérité à 0,01 px près ; un registre dérivé hérite du `leading` de sa source.
@@ -237,6 +248,11 @@ capitale.
 
 - **Genres web, vidéo, scrolly.** Ils héritent du champ `leading` de `resolveRegister`, sans
   l'utiliser. Leur migration revient à la session qui les porte.
+- **Écart connu, côté web.** `shared/design-base/web.mjs` (`webRegister`, `measurable`) transforme
+  `resolveRegister` en style CSS et ne pose aucun `line-height` : après ce chantier, le tronc porte un
+  interligne que toute page web ignore, et les rythmes verticaux statique et web divergent sans que
+  rien ne rougisse. Refermé par la passe web quand elle atteint le rythme vertical — pas ici, parce
+  qu'il faut régénérer les beats web un par un.
 - **Mesure de l'interligne sur les références.** Le harvester ne relève pas le `line-height` ; il
   faudrait aussi les métriques des faces de référence (Tiempos, Graphik…). Chantier à part ; en
   attendant, les valeurs sont `chosen`.
