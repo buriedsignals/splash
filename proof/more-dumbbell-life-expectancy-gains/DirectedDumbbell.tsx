@@ -33,7 +33,14 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { resolveRegister, applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import {
+  EYEBROW_TO_DISPLAY,
+  READING_TO_SOURCE,
+  gapOf,
+  leadOf,
+  registerOf,
+} from "#shared/design-base/register.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
 const FRAME = { width: 960, height: 540 };
@@ -77,14 +84,10 @@ export function DirectedDumbbell({
 }) {
   const { width, height } = FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const inkOf = { ink, muted, accent: direction.accent } as Record<string, string>;
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
 
-  const reg = (name: RegisterName) => {
-    const r = resolveRegister(direction, name);
-    return { ...r, fill: inkOf[r.ink] };
-  };
+  const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
   const eyebrowReg = reg("eyebrow");
   const body = reg("body");
@@ -120,15 +123,17 @@ export function DirectedDumbbell({
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
-  const titleLead = display.fontSize * 1.22;
-  const bodyLead = body.fontSize * 1.45;
+  const titleLead = leadOf(display);
+  const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
   const limitChoices = (Array.isArray(limits) ? limits : [limits]).filter(Boolean);
   const readingChoices = (Array.isArray(reading) ? reading : [reading]).filter(Boolean);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9 + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.6;
+  const titleTop =
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+  const limitsTop =
+    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   /** THE ROW PITCH IS A FLOOR, AND THE WORDS PAY FOR IT. Ten rows each carry a printed gain, and in
@@ -145,12 +150,14 @@ export function DirectedDumbbell({
         const limitLines = wrap(set(limitText, body), column, body);
         const readingLines = readingText ? wrap(set(readingText, annot), column, annot) : [];
         const readingTop =
-          sourceTop - readingLines.length * bodyLead - (readingLines.length ? annot.fontSize * 0.6 : 0);
+          sourceTop -
+          readingLines.length * bodyLead -
+          (readingLines.length ? gapOf(annot, READING_TO_SOURCE) : 0);
         const top =
           limitsTop + limitLines.length * bodyLead + measureTextBand("Hxpg1,", sizeOf(annot)).ascent * 2.8;
         const bottom =
           readingTop -
-          annot.fontSize * 1.1 -
+          gapOf(annot, 0.7857) -
           measureTextBand("Hxpg1,", sizeOf(axis)).ascent -
           measureTextBand("Hxpg1,", sizeOf(axis)).descent -
           8;
