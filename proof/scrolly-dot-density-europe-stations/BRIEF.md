@@ -29,6 +29,11 @@ them one after the other, on the same dots (`skills/scrolly/references/directed-
 
 - **Vectors, not the MapTiler plate**: Natural Earth land in the equal-area projection the static plate's
   window was sized in, clipped to a margin past the frame. The source line says so.
+- **The lightest land and sea that still separate** (`plateTints`, the sibling map beats' measured tints). The
+  first pass took the static plate's darker land and the accent field lost its contrast against it.
+- **The subject in the ink, as rings**: at a count a ring round a dot; at a weight the ring is the capacity's
+  outline over a faint fill, so the field under the large sites stays readable. The size key is drawn as
+  rings too.
 - **One canvas** redrawn in the reader's pixels: the land as one path, dots largest first so a small station
   is never buried, the nuclear rings last.
 - **The whole-map view is the box the stations fill** (1st–99th percentile each way), not the window whose

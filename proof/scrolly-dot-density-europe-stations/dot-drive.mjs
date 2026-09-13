@@ -55,7 +55,7 @@ export function applyDotState(root, state, context) {
   const fitPpu = SW / fitViewBox(c.europeBox, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 }).w;
   const grow = Math.sqrt(ppu / fitPpu);
   const rCount = Math.max(1.1, Math.min(2.2, SW / 650)) * grow;
-  const rMax = Math.max(9, Math.min(26, SW / 48)) * grow;
+  const rMax = Math.max(8, Math.min(20, SW / 60)) * grow;
   const w = ease(clamp(state.weight));
   const arrive = clamp(state.arrive);
   const subjectOn = clamp(state.subject);
@@ -83,22 +83,34 @@ export function applyDotState(root, state, context) {
     const py = toY(y);
     const r = lerp(rCount, Math.max(0.6 * grow, rMax * Math.sqrt(mw / c.maxMw)), w);
     if (px < -r - 4 || py < -r - 4 || px > SW + r + 4 || py > SH + r + 4) continue;
-    const alpha = shown * (isSubject ? 1 : 1 - 0.75 * fade) * lerp(0.9, 0.55, w);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = isSubject ? c.colours.subject : c.colours.dot;
+    if (isSubject) {
+      // The subject is drawn after the field, as a ring: at a count a ring round a dot, at a weight the ring IS
+      // the capacity's outline over a faint fill, so the field under it stays readable.
+      rings.push([px, py, r, shown]);
+      continue;
+    }
+    ctx.globalAlpha = shown * (1 - 0.85 * fade) * lerp(0.8, 0.5, w);
+    ctx.fillStyle = c.colours.dot;
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
-    if (isSubject) rings.push([px, py, r, shown]);
   }
   // The subject's rings over everything, so none of its sites is lost under a neighbour.
   ctx.strokeStyle = c.colours.subject;
-  ctx.lineWidth = 1.2;
+  ctx.fillStyle = c.colours.subject;
+  ctx.lineWidth = lerp(1.6, 1.8, w);
   for (const [px, py, r, shown] of rings) {
-    ctx.globalAlpha = shown;
+    const ringR = lerp(5, r, w);
+    ctx.globalAlpha = shown * lerp(0, 0.12, w);
     ctx.beginPath();
-    ctx.arc(px, py, r + 2.5, 0, Math.PI * 2);
+    ctx.arc(px, py, ringR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = shown;
     ctx.stroke();
+    ctx.globalAlpha = shown * (1 - w);
+    ctx.beginPath();
+    ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
 

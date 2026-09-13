@@ -26,6 +26,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { dotGeometry } from "./dot-geometry.mjs";
 import { DirectedDotDensityScrolly } from "./DirectedDotDensityScrolly.tsx";
@@ -199,6 +200,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           zoomBox,
           europeBox,
           sizes,
+          tints: plateTints(direction),
           words,
           alt,
           regs,

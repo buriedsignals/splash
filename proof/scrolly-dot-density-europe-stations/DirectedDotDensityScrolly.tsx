@@ -35,6 +35,7 @@ export function DirectedDotDensityScrolly({
   zoomBox,
   europeBox,
   sizes,
+  tints,
   words,
   alt,
   regs,
@@ -53,6 +54,7 @@ export function DirectedDotDensityScrolly({
   subjectFuel: number;
   zoomBox: { x: number; y: number; w: number; h: number };
   europeBox: { x: number; y: number; w: number; h: number };
+  tints: { water: string; land: string };
   sizes: { mw: number; label: string }[];
   words: {
     unit: string;
@@ -75,16 +77,13 @@ export function DirectedDotDensityScrolly({
   ink: string;
   muted: string;
 }) {
-  /** The static render's own plate tints: the land a step toward the ink, the water a trace of the accent — the
-   *  marks all sit on land, so the land reads as figure and the sea as ground. */
-  const water = mix(ground, accent, 0.09);
-  const landFill = mix(ground, ink, 0.16);
-  const coast = mix(ground, ink, 0.26);
-  const dot =
-    adjustToContrast(accent, landFill, NON_TEXT_CONTRAST_MIN) ?? accent;
-  const subject =
-    adjustToContrast(mix(accent, ink, 0.35), landFill, NON_TEXT_CONTRAST_MIN) ??
-    ink;
+  /** The sibling map beats' measured tints (`plateTints`): the lightest land and sea that still separate by
+   *  `SEA_LAND_MIN`. A darker land put 8,900 accent dots on a mid-grey and the field lost its contrast. */
+  const { water, land: landFill } = tints;
+  const coast = mix(landFill, ink, 0.12);
+  const dot = adjustToContrast(accent, landFill, NON_TEXT_CONTRAST_MIN) ?? accent;
+  /** The subject is ringed in the ink, not in a second hue: a dark ring reads against the accent field. */
+  const subject = adjustToContrast(ink, landFill, TEXT_CONTRAST_MIN) ?? ink;
   const accentInk =
     adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
   const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
@@ -286,8 +285,7 @@ export function DirectedDotDensityScrolly({
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    background: dot,
-                    opacity: 0.6,
+                    boxShadow: `inset 0 0 0 1.5px ${subject}`,
                   }}
                 />
                 {s.label}
