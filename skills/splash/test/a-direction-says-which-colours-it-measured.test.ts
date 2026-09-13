@@ -93,9 +93,7 @@ describe("every filed direction", () => {
       if (direction.groundSource !== "measured") continue;
       const reference = known.get(direction.measuredFrom);
       if (!reference) {
-        findings.push(
-          `${file} cites ${direction.measuredFrom}, which is not in the corpus`,
-        );
+        findings.push(`${file} cites ${direction.measuredFrom}, which is not in the corpus`);
         continue;
       }
       if (reference.ground !== String(direction.ground).toUpperCase())
@@ -115,9 +113,7 @@ describe("every filed direction", () => {
       if (direction.accentSource !== "measured") continue;
       const reference = known.get(direction.measuredFrom);
       if (!reference) {
-        findings.push(
-          `${file} cites ${direction.measuredFrom}, which is not in the corpus`,
-        );
+        findings.push(`${file} cites ${direction.measuredFrom}, which is not in the corpus`);
         continue;
       }
       if (!reference.colours.has(String(direction.accent).toUpperCase()))
@@ -181,10 +177,7 @@ describe("a direction that says nothing about where its colours came from", () =
 
   it("should still read an explicit source when one is given", () => {
     const direction = readDirectionFromMarkdown(
-      SILENT.replace(
-        "- accent: #123456",
-        "- accent: #123456\n- accentSource: chosen",
-      ),
+      SILENT.replace("- accent: #123456", "- accent: #123456\n- accentSource: chosen"),
       "quiet",
     );
     expect(direction.groundSource).toBe("measured");
