@@ -125,39 +125,57 @@ already falls back to the HTTP API.
   validated by `GET https://infoviz.design/auth/status` with the Bearer (the Datawrapper `/v3/me` pattern).
   The validator must require `200` **and** `authenticated === true`: `/auth/status` without a Bearer also
   answers 200 (anonymous), and an invalid Bearer answers `401 {error:"invalid_token"}`.
-- Bump the Splash contract version as Engine requires.
-- The actual file layout is read on `origin` during planning — the local clone (`rd-dev`, 0.1.3) is far
-  behind `origin` (0.1.34).
+- Engine side (measured on `origin/main` 52fed4f): registry entry in `bsig/internal/keys/registry.go`, a
+  `ValidateInfovizRecord` in `validators.go` (pattern: `ValidateNavigator` / `providerGET`), the pinned ID lists
+  in `keys_test.go` and `keys_verb_test.go`, the desktop lists (`desktop/src/shared/contracts.ts`
+  `RECORD_KEY_IDS`, `renderer-journalist.ts` `SPLASH_KEY_IDS`), and a Splash operation that receives the
+  token (`run/splash.go` `splashOperations`, `validateSplashOperationRequest`, `execpolicy/policy.go`).
+  Precedent for the change set: commit `28e2c3e`. Reaching journalists needs a signed Indicator Labs release.
+- Splash side, landing only once Engine knows the ID: `INFOVIZ_TOKEN` in `CREDENTIAL_IDS`, `CREDENTIAL_POLICIES`,
+  `self-managed.mjs` `PROVIDERS`, `legacy-env.mjs`, their tests; an `inspiration-search` operation in
+  `run-operation.mjs` so the agent's search runs through `bsig run splash` with the token; the account
+  connection flow (email → Connect → poll → `replace`) living in `installer/` or `apps/goose/`, not in the skill;
+  the preflight `inspiration` capability; the 401 → "reconnect" path in the skill.
+- Engine already runs an email-confirmation flow for Navigator (`bsig auth login`, `internal/auth/devicecode.go`):
+  Part 2's plan decides whether the infoviz connection reuses that shape inside Engine instead.
 - **Nothing is pushed to `buriedsignals/engine` without Rémy's explicit go** (and likely Tom's).
 
-### Part 3 — `inspiration` skill (Splash)
+### Part 3 — `inspiration` skill (Splash), anonymous
+
+Measured during planning (2026-09-13), and binding on the split between Part 3 and Part 2:
+- Engine hands credentials only to `bsig run splash <op>` operations, each with its own allowlist
+  (`bsig/internal/run/splash.go`); agent and MCP modes receive none. A skill script run by the agent
+  cannot read `INFOVIZ_TOKEN` from its environment.
+- Adding `INFOVIZ_TOKEN` to Splash's `CREDENTIAL_IDS` before Engine registers it makes the bridge report
+  `engine-outdated` for **every** credential (`engine-bridge.mjs` `normalizedListContract`).
+- `no-cross-skill-imports.test.ts` forbids a skill script from importing `installer/` or another skill, so a
+  `connect.mjs` inside the skill cannot reach the Engine bridge.
+
+So Part 3 ships the **anonymous** journey only; everything account-related in the agent moves to Part 2.
 
 `skills/inspiration/`
 - `SKILL.md` — when to use (the journalist wants to see what has been done on a subject, with or without
   intent to produce), what it returns, what it never does (no story dir, no reformulation loop, no gate).
-- `scripts/search.mjs` — one `POST /api/graphics/examples {query}`; injectable `fetchFn`, timeout, explicit
-  User-Agent (Cloudflare refuses default UAs); adds `Authorization: Bearer` when `INFOVIZ_TOKEN` resolves.
-  Returns `{items, quota:{limit, remaining, resetsAt, authenticated}}`.
-  - 429 → a plain message with the reset time, and "connect your infoviz account for 10/day" when anonymous.
+- `scripts/search.mjs` — one `POST /api/graphics/examples {query}`; injectable `fetchFn`, one deadline over
+  request and body, explicit User-Agent. Returns a never-throwing result:
+  `{ok:true, query, items:[{title, source, date, url, image}], quota:{limit, remaining, resetsAt}}` or
+  `{ok:false, reason, …}` with `reason` in `empty-query | query-too-long | limit-reached | unexpected-response | unreachable`.
+  - 429 → `limit-reached` with the reset time.
   - Empty list → said honestly; no automatic retry with other words.
-  - 401 on a Bearer (expired or revoked) → falls back to one anonymous call and says the account needs
-    reconnecting.
-- `scripts/connect.mjs` — runs the D4 flow in its own process (asks for the email, calls `start`, polls with
-  `POST /auth/token/poll`, tells the journalist to press **Connect** in the email),
-  then hands the token to the Engine bridge's `replace` (`installer/setup/engine-bridge.mjs:553`). The token
-  never enters the chat. Without Engine, it says so and the skill stays anonymous.
-
-Splash wiring:
-- `INFOVIZ_TOKEN` added to `CREDENTIAL_IDS` (`apps/goose/contract.mjs`), `CREDENTIAL_POLICIES`
-  (`installer/setup/engine-bridge.mjs`) and `KEY_ALIASES` (`skills/splash/scripts/keys.mjs`), plus a
-  `probeInfoviz` next to `probeDatawrapper`.
-- Preflight: an `inspiration` capability, always open, reporting `anonymous · 5/day` or `account · 10/day`.
-  A missing token never blocks.
+- `scripts/format.mjs` — the words the journalist reads: a numbered list (title linked, newsroom, date), the
+  quota left, or the plain reason it could not search.
 - Routing: one line in `## When to use` of `skills/splash/SKILL.md` sends "what has already been done on X"
   to `inspiration` without creating a story.
-- Hand-kept lists: `.agents/skills/inspiration` symlink, `README.md` skill table, `llms.txt`.
+- Hand-kept lists and counts: `.agents/skills/inspiration` symlink, `README.md` (table and the two "16 skills"
+  counts), `llms.txt`, `llms_full.txt` (inventory and count), `tests/journalist-install-cta-check.sh` (the
+  pinned count), `landing/docs/index.html` (the skills grid and "sixteen skills").
 
 ### Part 4 — web page (`landing/inspiration.html`)
+
+- Served in production from `https://splash.buriedsignals.com/inspiration.html` (Pages `CNAME`); that origin
+  is added to the back-end's `allowed_origins` next to `https://buriedsignals.github.io`.
+- The featured row's request already sends `Authorization: Bearer <Supabase anon key>`; the reader's token
+  must never be sent there.
 
 - Remove the MCP section (`#mcp`, lines 1169-1198), the header `.mcplink`, the `MCP` constant and the
   install snippets (`:1765` onward); replace them with an invitation to use the inspiration journey in the
@@ -196,10 +214,11 @@ Splash wiring:
 
 One plan per part:
 
-1. infoviz back-end — unblocks 3 and 4.
-2. Engine credential — unblocks the account half of 3.
-3. `inspiration` skill — its anonymous half can land before 2.
-4. Web page.
+1. infoviz back-end — unblocks 3 and 4. (Executed; deploy gated.)
+2. Engine credential + agent account — Engine repo and the Splash account wiring described in Part 2.
+3. `inspiration` skill, anonymous — works against the live API today.
+4. Web page — its sign-in needs the deployed back-end; merge `feat-inspiration` to `main` (which publishes
+   Pages) only after Part 1 is deployed.
 
 ## Risks
 
