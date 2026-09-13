@@ -43,20 +43,117 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import {
   CO2_2023_STUDY,
-  WATER_FILL,
   keepRing,
   simplifyRing,
 } from "./geo-choropleth.ts";
+// THE TRUNK, REACHED THROUGH THE `#shared/…` SUBPATH ALIAS. A beat is a story, not a skill, so it
+// may reach out where a skill may not — and what it reaches for is the wiring
+// `references/map-plan.md` exists to stop it re-deriving. `plateTints` is guard 7 and
+// `applyLiveStyle` is the sweep both this bake and the live page now run.
+import { plateTints } from "#shared/map-beat/tints.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const TRUNK_STYLE = fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs"));
 
-/** The beat's camera and its anchors — the same near-square European box
- *  `map-beat/scripts/bake-plate.mjs` uses for the near-identical study set (rule 12). */
+/**
+ * THE TWO COLOURS OF THE BASEMAP, MEASURED RATHER THAN TYPED — guard 7 of `references/map-plan.md`.
+ *
+ * Rule 7 of `geo-discipline.md` used to reach this file as `geo-choropleth.ts`'s `WATER_FILL`,
+ * `"#AAC9E0"` — a constant carried byte-identically by every map × web beat and by the format's own
+ * seed, and never measured against anything. Measured now, on this beat's own white ground:
+ * `#AAC9E0` sits at **1.730:1 against the page**, over the trunk's `BASEMAP_MAX` of 1.6:1 — a
+ * basemap carrying more weight against the page than the classes drawn on it, which is what
+ * `the-basemap-gives-up-its-contrast` forbids. And it answered for WATER only: the provider's own
+ * land went untouched here and in the live page both, so the ONE thing a choropleth's shading is
+ * read against was whatever `dataviz-light` happened to ship.
+ *
+ * `plateTints` searches for the SMALLEST dose of the filed water hue that still separates sea from
+ * land by `SEA_LAND_MIN` (1.22:1) while staying under `BASEMAP_MAX` against the page, and answers
+ * both colours together.
+ *
+ * It is a CALL, not a recorded answer (rule 2: what is measured stays measured). A beat on another
+ * ground gets different numbers, on purpose, and a ground where no dose works at all is refused
+ * here rather than shown as a flat map.
+ */
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+const TINTS = plateTints({ ground: PALETTE.ground });
+
+/**
+ * THE CAMERA IS READ OFF THE STUDY SET, NOT TYPED — and the derivation is the choropleth's own,
+ * because the locator's is wrong here.
+ *
+ * This was `[[-26, 36], [33, 67]]`, a box somebody typed, carried over from
+ * `map-beat/scripts/bake-plate.mjs`. Measured on the plate it produced: **five of the 41 countries
+ * the title counts were cut by the frame** — Norway lost 43.5% of its drawn points, Ukraine 36.2%,
+ * Finland 22.4%, Sweden 7.8%. Nothing was red and structurally could not be:
+ * `assertCameraReachesBounds` below compares the measured frame against the TYPED box, so a box
+ * that is too small passes by construction, exactly as a box that is too big does.
+ *
+ * And a naive union of the study set is worse than the typed box, which is why somebody typed one:
+ * France reaches Réunion at 55.8°E and −21.4°S, the Netherlands reaches Curaçao at −68.4°W, Norway
+ * reaches Svalbard at 80.5°N and Portugal the Azores at −31.3°W. A camera fitted to that draws the
+ * Atlantic with Europe as a stamp in the corner.
+ *
+ * So the rule is **each country's own LARGEST PART**, and it is a measurement rather than a list of
+ * exceptions: the part with the largest bounding box is the mainland for every country in this study
+ * set, and the overseas départements, the Caribbean municipalities, Svalbard and the Azores fall out
+ * without being named. The union of those 41 boxes is
+ * −24.48…40.13°E, 35.82…71.09°N — Iceland west, Ukraine east, Malta south, Nordkapp north — and its
+ * Mercator aspect is **1.0075**, which is why this plate is square and a landscape bake would only
+ * add ocean (`map-web-discipline.md`, "Fit the window", says the same about the format's own seed).
+ *
+ * The room around the subject is the LIVE camera's own rule transported rather than re-derived —
+ * `live-map.mjs`'s `fitPadding`: 9% of the shorter side capped at 48px, which is 45px on this
+ * frame. Plate and live map fit one box by one rule.
+ */
+function studyBoundsOf(collection, keys) {
+  const byKey = new Map();
+  for (const feature of collection.features) byKey.set(feature.properties.ADM0_A3, feature);
+  let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+  for (const key of keys) {
+    const feature = byKey.get(key);
+    if (!feature) throw new Error(`no shape for ${key}: the camera cannot be read off a study set with a hole in it`);
+    const parts =
+      feature.geometry.type === "MultiPolygon" ? feature.geometry.coordinates : [feature.geometry.coordinates];
+    let best = null;
+    let bestArea = -Infinity;
+    for (const part of parts) {
+      let w = Infinity, e = -Infinity, s = Infinity, n = -Infinity;
+      for (const [lon, lat] of part[0]) {
+        if (lon < w) w = lon;
+        if (lon > e) e = lon;
+        if (lat < s) s = lat;
+        if (lat > n) n = lat;
+      }
+      const area = (e - w) * (n - s);
+      if (area > bestArea) {
+        bestArea = area;
+        best = [w, e, s, n];
+      }
+    }
+    west = Math.min(west, best[0]);
+    east = Math.max(east, best[1]);
+    south = Math.min(south, best[2]);
+    north = Math.max(north, best[3]);
+  }
+  return [
+    [west, south],
+    [east, north],
+  ];
+}
+
+/** `live-map.mjs`'s own rule, transported: 9% of the shorter side, capped at the ceiling that file
+ *  states. Not re-derived — a second derivation of one number is how the plate and the live camera
+ *  come to frame two different Europes. */
+const MAX_FIT_PADDING_PX = 48;
+function fitPaddingFor(width, height) {
+  return Math.min(MAX_FIT_PADDING_PX, Math.round(Math.min(width, height) * 0.09));
+}
+
+/** The beat's anchors and its basemap style. `bounds` is filled in below, from the shapes. */
 const BEAT = {
-  bounds: [
-    [-26, 36],
-    [33, 67],
-  ],
+  bounds: null,
   style: "dataviz-light",
   anchors: {
     // Faroe Islands (the subject) and Albania (the comparison) — where each one's own direct label
@@ -185,6 +282,54 @@ function assertCameraReachesBounds(frameCorners, bounds, width) {
   );
 }
 
+/**
+ * …AND EVERY COUNTRY THE TITLE COUNTS IS ON THE MAP. The choropleth's own version of
+ * `proof/mapgen-locator-web`'s `assertFrameHoldsItsSubject`, and it asks the opposite question,
+ * because a choropleth's subject is not a cloud of points that can be too small inside its frame —
+ * it is a set of SHAPES that can be sliced by it.
+ *
+ * `assertCameraReachesBounds` above cannot see this: it compares the measured frame against the box
+ * that was ASKED for, so a box too small for the study set passes by construction. Measured on the
+ * plate this beat shipped before the camera was read off the shapes: **Norway 43.5% of its drawn
+ * points outside the frame, Ukraine 36.2%, Finland 22.4%, Sweden 7.8%** — under a title that says
+ * "the 41 countries on this map".
+ *
+ * It measures only the rings the frame actually DRAWS — a ring with at least one point inside it.
+ * `keepRing` discards a ring entirely outside the frame, but with a 40px margin, so a part that sits
+ * just beyond the edge survives the cull and is then clipped away by the viewport. Measured: the
+ * Canary Islands are 17.6% of Spain's retained outline and are drawn nowhere, because the camera is
+ * fitted to Spain's LARGEST part. Counting them as a cut would be counting an exclusion the
+ * derivation already made on purpose. A ring that is half in and half out is the real thing here,
+ * and that is what a reader sees as a country sliced by the edge.
+ *
+ * The floor is 2%: a coastline antialiases across the frame edge, and nothing under a fortieth of a
+ * country's drawn outline reads as a cut.
+ */
+function assertFrameHoldsEveryRegion(shapes, frame, maxOutsideFraction = 0.02) {
+  const inFrame = ([x, y]) => x >= 0 && x <= frame.width && y >= 0 && y <= frame.height;
+  const cut = [];
+  for (const shape of shapes) {
+    let outside = 0;
+    let total = 0;
+    for (const ring of shape.rings) {
+      if (!ring.some(inFrame)) continue;
+      for (const point of ring) {
+        total += 1;
+        if (!inFrame(point)) outside += 1;
+      }
+    }
+    if (total > 0 && outside / total > maxOutsideFraction)
+      cut.push(`${shape.name} (${shape.key}) ${((outside / total) * 100).toFixed(1)}%`);
+  }
+  if (cut.length === 0) return;
+  throw new Error(
+    `this frame cuts ${cut.length} of the ${shapes.length} countries the map counts, by more than ` +
+      `${(maxOutsideFraction * 100).toFixed(0)}% of their own outline: ${cut.join(", ")}. The camera ` +
+      `is read off the study set (\`studyBoundsOf\`) — a shortfall here means a country's largest ` +
+      `part is not what the frame was fitted to.`,
+  );
+}
+
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
 if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
@@ -196,6 +341,9 @@ for (const feature of collection.features) byKey.set(feature.properties.ADM0_A3,
 const missingShapes = CO2_2023_STUDY.filter((code) => !byKey.has(code));
 if (missingShapes.length > 0)
   throw new Error(`${missingShapes.length} declared countries have no shape: ${missingShapes.join(", ")}`);
+
+// The camera, read off the shapes this beat actually draws — see `studyBoundsOf` above.
+BEAT.bounds = studyBoundsOf(collection, CO2_2023_STUDY);
 
 /**
  * MultiPolygon and Polygon both become a flat list of rings; holes are rings too. Flattens across a
@@ -241,8 +389,18 @@ await page.setContent(
 );
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
+// THE TRUNK'S SWEEP, INJECTED INTO THE CAPTURE PAGE. `page.evaluate` ships a function body with no
+// closure, which is precisely how this sweep came to be written twice — once here and once in
+// `live-map.mjs`. One file, read from `shared/map-beat/style.mjs`, is what makes the plate and the
+// live map one cartography.
+await page.addScriptTag({
+  content:
+    (await readFile(TRUNK_STYLE, "utf8")).replace(/^export /gm, "") +
+    "\nwindow.__applyLiveStyle = applyLiveStyle;\nwindow.__assertLiveStyleAnswered = assertLiveStyleAnswered;\n",
+});
+
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs, waterFill, width, height }) => {
+  async ({ key, style, bounds, fitPadding, settleMs, tints, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -251,23 +409,21 @@ const gate = await page.evaluate(
       fadeDuration: 0,
       preserveDrawingBuffer: true, // rule 6: empty canvas at screenshot time without this
       bounds,
-      fitBoundsOptions: { padding: 0, animate: false },
+      // THE ROOM AROUND THE SUBJECT IS THE LIVE CAMERA'S OWN RULE. It was `padding: 0`, which is
+      // why the typed box had to carry its margin in degrees — and a margin in degrees is a number
+      // nobody can check against a picture.
+      fitBoundsOptions: { padding: fitPadding, animate: false },
     });
     window.__map = map;
     await new Promise((resolve) => map.once("style.load", resolve));
 
-    // Rule 7: water is a blue tint, never grey — `dataviz-light` paints it near-grey by default.
-    for (const id of ["Water", "Water shadow"])
-      if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", waterFill);
-
-    // Rule 9: quiet the plate — every place label, road label and boundary line the provider ships
-    // competes with the one label this beat draws itself.
-    const hidden = [];
-    for (const layer of map.getStyle().layers)
-      if (layer.type === "symbol" || /border|boundary|admin/i.test(layer.id)) {
-        map.setLayoutProperty(layer.id, "visibility", "none");
-        hidden.push(layer.id);
-      }
+    // Rules 7 and 9 in ONE CALL, and it is the trunk's — `shared/map-beat/style.mjs`, injected into
+    // this page above. Quiet the plate (every place label, road label and boundary line the provider
+    // ships is a layer doing none of the jobs here) and paint the water AND the land the beat
+    // measured. What it replaced was two hand-written loops, and the live page carried its own copy
+    // of both; the two agreed only for as long as MapTiler kept those ids and nobody edited one of
+    // the lists.
+    const swept = window.__assertLiveStyleAnswered(window.__applyLiveStyle(map, { tints }), style);
 
     // Rule 1: idle OR a bounded settle, and say which — `idle` alone never fires when one tile
     // never resolves, and the capture then hangs forever rather than slowly.
@@ -286,14 +442,24 @@ const gate = await page.evaluate(
     return {
       how,
       ms: Date.now() - started,
-      hidden: hidden.length,
+      hidden: swept.hidden,
+      tinted: swept.tinted,
       zoom: map.getZoom(),
       center: map.getCenter(),
       topLeft: map.unproject([0, 0]),
       bottomRight: map.unproject([width, height]),
     };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, waterFill: WATER_FILL, width: size, height: size },
+  {
+    key,
+    style: BEAT.style,
+    bounds: BEAT.bounds,
+    fitPadding: fitPaddingFor(size, size),
+    settleMs,
+    tints: TINTS,
+    width: size,
+    height: size,
+  },
 );
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
@@ -357,10 +523,15 @@ const empty = shapes.filter((s) => s.rings.length === 0).map((s) => s.key);
 if (empty.length > 0)
   throw new Error(`${empty.length} declared shapes had every ring culled out of frame: ${empty.join(", ")}`);
 
+assertFrameHoldsEveryRegion(shapes, frame);
+
 const geometry = {
   frame,
   bounds: BEAT.bounds,
   style: BEAT.style,
+  // WHAT THE PLATE WAS ACTUALLY PAINTED IN, carried so the live layer paints the same two colours
+  // rather than re-deriving them — the same reason `frameCorners` and `degreesPerPixel` are here.
+  tints: TINTS,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
   frameCorners,
@@ -374,7 +545,11 @@ const geometryPath = join(outDir, "geometry.json");
 await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
-  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+  `bounds   → read off the study set's largest parts: ` +
+    `${BEAT.bounds[0][0].toFixed(2)}..${BEAT.bounds[1][0].toFixed(2)}°E, ` +
+    `${BEAT.bounds[0][1].toFixed(2)}..${BEAT.bounds[1][1].toFixed(2)}°N, padded ${fitPaddingFor(size, size)}px\n` +
+  `tints    → water ${TINTS.water}, land ${TINTS.land}, sea/land ${TINTS.seaLandContrast.toFixed(3)}:1 (measured)\n` +
+  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden}, re-tinted ${gate.tinted} basemap layers · zoom ${geometry.zoom}\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${ringsOut}/${ringsIn} rings, ${pointsOut}/${pointsIn} points\n` +
     `off-frame entirely: ${empty.length ? empty.join(", ") : "none"}`,

@@ -63,6 +63,7 @@ import {
   pathFromRings,
   scalePosition,
   assertRampReads,
+  contrastOf,
   dataRampEnd,
   sequentialRamp,
   NO_DATA_FILL,
@@ -131,22 +132,55 @@ export function regionDetail(region: {
  *  ground and the ink — grey, whatever the newsroom recorded, with one accent outline on top
  *  (`AUDIT-W2-palette-credits.md` H3). `dataRampEnd` walks the accent toward the pole the ground is
  *  not; `assertRampReads` measures the finished classes before anything is painted. Both call sites
- *  come through here, so they cannot disagree about it. */
+ *  come through here, so they cannot disagree about it.
+ *
+ *  AND THE LOW END IS MEASURED AGAINST THE LAND UNDER IT, which is the defect this argument closes.
+ *
+ *  `sequentialRamp`'s low end was the literal `0.1`, and `geo-choropleth.ts`'s own doc-comment says
+ *  why a choropleth's is higher than a hex field's: *"a choropleth has a no-data colour to stay
+ *  clear of"*. It states the right rule and then hard-codes one beat's answer to it — and the colour
+ *  a country in the lowest class actually has to stay clear of on THIS map is not the no-data grey
+ *  (nothing here is no-data) but the BASEMAP LAND, every country the study does not carry. Measured
+ *  on the delivered page: class 1 `#f0e7e8` against the trunk's land tint `#f4f4f4` is **1.1036:1**
+ *  — under `SEA_LAND_MIN`, the floor the trunk sets for a COASTLINE, so Albania at the bottom of the
+ *  scale separated from Turkey, Russia and Libya less than the sea separates from the shore. On a
+ *  map whose title counts its own countries, that is the "it fell into no data" failure wearing the
+ *  other face.
+ *
+ *  So the low end is SEARCHED, the same shape `plateTints` searches for a water dose: the smallest
+ *  end that still clears the floor, so the ramp stays as quiet as it can while its lowest class
+ *  still reads as a country in the study. It answers 0.15 on this beat's white ground (`#e9dbdd`,
+ *  1.2207:1). `landTint` is the plate's own recorded land, never a second constant.
+ *
+ *  The floor is `SEA_LAND_MIN` transported, not a new number: two flat fills meeting along a
+ *  coastline is exactly the perceptual job the trunk measured that value for. */
+export const RAMP_TOP_END = 0.78;
+/** The trunk's `SEA_LAND_MIN`, duplicated across the copy boundary the way this repository
+ *  duplicates every helper that crosses one — a `.tsx` geometry core imports nothing. */
+export const CLASS_LAND_MIN = 1.22;
+
 export function choroplethRamp(
   ground: string,
   accent: string,
   breaks: number[],
+  landTint: string,
 ): string[] {
-  return assertRampReads(
-    sequentialRamp(
-      ground,
-      dataRampEnd(accent, ground),
-      breaks.length + 1,
-      0.1,
-      0.78,
-    ),
-    ground,
-    "the per-capita CO2 choropleth ramp",
+  if (!landTint)
+    throw new Error(
+      "choroplethRamp was given no land tint. The ramp's lowest class is read against the basemap " +
+        "land beside it — every country this study does not carry — so a ramp derived without it is " +
+        "a scale whose bottom may be indistinguishable from `no data`.",
+    );
+  const end = dataRampEnd(accent, ground);
+  for (let from = 0.06; from <= 0.5; from += 0.01) {
+    const ramp = sequentialRamp(ground, end, breaks.length + 1, from, RAMP_TOP_END);
+    if (contrastOf(ramp[0]!, landTint) < CLASS_LAND_MIN) continue;
+    return assertRampReads(ramp, ground, "the per-capita CO2 choropleth ramp");
+  }
+  throw new Error(
+    `no low end under ${RAMP_TOP_END} separates this ramp's lowest class from the basemap land ` +
+      `${landTint} by ${CLASS_LAND_MIN}:1 on ground ${ground}. The lowest class would read as a ` +
+      `country with no data; record an accent with more room against this ground, or a quieter land.`,
   );
 }
 
@@ -208,6 +242,7 @@ export function ChoroplethWeb({
   alt,
   ground,
   accent,
+  landTint,
   ink,
   muted,
 }: {
@@ -225,6 +260,9 @@ export function ChoroplethWeb({
   alt: string;
   ground: string;
   accent: string;
+  /** The colour the plate's own basemap land was painted, recorded by `bake-plate.mjs` from the
+   *  trunk's `plateTints`. The ramp's lowest class is measured against it — see `choroplethRamp`. */
+  landTint: string;
   /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component. */
   ink: string;
   muted: string;
@@ -235,7 +273,7 @@ export function ChoroplethWeb({
       `a choropleth needs at least two shapes, got ${shapes.length}`,
     );
 
-  const ramp = choroplethRamp(ground, accent, breaks);
+  const ramp = choroplethRamp(ground, accent, breaks, landTint);
   const anyNoData = shapes.some((r) => r.value === null);
 
   const subject = shapes.find((r) => r.key === SUBJECT_KEY);
@@ -267,6 +305,10 @@ export function ChoroplethWeb({
           distance and shape (`geo-discipline.md`). Once the LIVE map is in, that constraint is
           released by the format's own `html.mw-live` rule: a live camera has no plate aspect to
           preserve, so it takes the whole stage. */}
+      {/* THE READING ROW: the map and the furniture that reads it, side by side when the room the
+          window leaves over is HORIZONTAL — which on every desktop shape this beat was measured at
+          is what it leaves. See `render-web.mjs`'s `.mw-body` for the measurements. */}
+      <div className="mw-body">
       <div className="mw-stage">
         <div
           className="mw-viewport"
@@ -375,6 +417,44 @@ export function ChoroplethWeb({
               `map.project()` on every camera move, which is what the live map needs — off the SAME
               anchor, unprojected into lon/lat by `livePlan`. */}
           <div className="mw-overlay">
+            {/* THE CLAIM'S TWO REGIONS, RINGED — and the ring is the hit target, drawn.
+                The subject of this map's title is an archipelago **10.4 x 19.8 px** at the size the
+                page draws the plate on a 1600x900 desktop, and its islands are 3-5px each. The
+                claim outline it carries — a 2px accent line over a 4.2px ground halo — is WIDER
+                than the islands it is meant to outline, so the one country the headline names reads
+                as a red speck a reader cannot find, and cannot tell from a rendering artefact.
+                That is the same defect the static pass filed as "a subject ring that could not be
+                told apart from the dots around it", in the form this type takes it.
+                WHETHER it gets one is not a new judgement: `needsPointerTarget` already says which
+                regions are too small to be landed on by their own shape, and a region too small to
+                be pointed at is too small to be found. WHAT SIZE is not a new number either:
+                `HIT_TARGET_PX` is the circle this beat already puts over exactly these regions for
+                a pointer — invisible until now. The ring makes that circle visible.
+                ONLY THE SUBJECT, and that is an editorial call with a measurement under it. The
+                comparison qualifies too — Albania is 24.8 frame units on its longer side, just
+                inside the same threshold — and it was ringed in a first pass. Looked at: the ring
+                lands INSIDE Albania's own black claim outline, which at this camera is already the
+                heaviest mark on the map, and reads as a smudge around it rather than as a pointer.
+                The title sends a reader to the Faroe Islands; that is the place that has to be
+                findable.
+                `aria-hidden`, because the button underneath it already carries the region's name
+                and its reading: a ring is the same fact drawn, not a second one. */}
+            {[{ region: subject, colour: accent }]
+              .filter(({ region }) => needsPointerTarget(boxOf(region.rings)))
+              .map(({ region, colour }) => (
+                <span
+                  key={`ring-${region.key}`}
+                  className="pt mw-ring"
+                  aria-hidden="true"
+                  data-key={region.key}
+                  style={{
+                    left: `${(region.anchor[0] / frame.width) * 100}%`,
+                    top: `${(region.anchor[1] / frame.height) * 100}%`,
+                    width: `${HIT_TARGET_PX}px`,
+                    color: colour,
+                  }}
+                />
+              ))}
             {drawn.map((region) => {
               const detail = regionDetail(region);
               const [ax, ay] = region.anchor;
@@ -404,6 +484,7 @@ export function ChoroplethWeb({
         </div>
       </div>
 
+      <div className="mw-reading">
       {/* The legend: one horizontal class bar with the bin boundaries printed as numbers underneath —
           the type's own accessibility trap (`types/choropleth.md`): colour alone is never the only
           channel a value travels through. Entirely HTML, at fixed CSS pixel sizes, so the numbers
@@ -468,6 +549,8 @@ export function ChoroplethWeb({
         {`${comparison.name} — lowest of the ${shapes.length}, ${en(comparison.value)} ${UNIT_WORD}`}
       </p>
       <p className="mw-caveat">{caveat}</p>
+      </div>
+      </div>
     </div>
   );
 }

@@ -25,10 +25,18 @@
 // spending limit (documented), so the failure mode is every published article's map going blank at
 // once. Layer 1 is what stands between that and an article with a hole in it.
 //
-// ONE FILE, FIVE MAP TYPES. This is a byte-identical copy in every map × web beat (the twin
-// duplicates helpers rather than importing across skills), so it may not know what a beat draws.
-// Everything type-specific travels in the PLAN the renderer writes into the page — a list of
-// LAYERS, each declaring how its own marks answer three questions this file cannot answer for them:
+// ONE FILE, FIVE MAP TYPES — AND SINCE THE TRUNK, THE PART THAT IS NOT THIS BEAT'S LIVES IN
+// `shared/map-beat/`. The plan contract (`plan.mjs`), the basemap sweep (`style.mjs`) and the layer
+// mounting with its radius strategies (`mount.mjs`) are CONCATENATED ahead of this file by
+// `render-web.mjs`'s `liveScript`, so the live layer runs the trunk's own source rather than a copy
+// of it. This file used to carry `cameraScale`, `groundRadiusExpression` and `planLayers` verbatim,
+// and a hand-written sweep that named `["Water", "Water shadow"]` and painted them a hard-coded
+// blue — which agreed with the bake only for as long as MapTiler kept those ids and nobody edited
+// one of the two lists.
+//
+// What stays here is this beat's own page mechanics. Everything type-specific travels in the PLAN
+// the renderer writes into the page — a list of LAYERS, each declaring how its own marks answer
+// three questions neither this file nor the trunk can answer for them:
 //
 //   - `radius: "camera"` — a circle whose size encodes a VALUE (proportional symbol). Derived from
 //     the camera at the fit, then held constant in screen pixels as the reader zooms, because the
@@ -72,106 +80,11 @@ export function planIsUnkeyed(plan) {
   return !plan || !plan.styleUrl || plan.styleUrl.indexOf(sentinel) >= 0;
 }
 
-/**
- * THE MARK'S SCALE COMES FROM THE CAMERA, NOT FROM THE BOX. This is the fix for a defect the owner
- * found by looking at the live map, and it is worth the paragraph because the wrong answer looked
- * right in code.
- *
- * The marks carry their radius in the bake's own FRAME units — the same number the fallback SVG
- * draws. The first version turned those into CSS pixels with `Math.min(w / frameW, h / frameH)`,
- * which is the "fit, never stretch" arithmetic a RASTER PLATE needs: a plate must not be distorted,
- * so it fits by its tighter axis.
- *
- * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
- * this format's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
- * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
- * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
- * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
- * `Math.min` gave 0.583 — drawing Paris at 36px on cartography that had grown by 1.57x. A small dark
- * circle sitting in the middle of the country it is supposed to cover.
- *
- * The honest quantity is GROUND: a mark covers the same piece of the world it covered when baked.
- * `degreesPerPixel` is recorded in `geometry.json` by the bake (and only has been since the camera
- * facts landed), so this is a ratio of two measured facts rather than another constant:
- *
- *     scale = bake degrees-per-pixel ÷ live degrees-per-pixel
- *
- * which is exactly `2 ** (liveZoom − bakeZoom)`, since `degreesPerPixel = 360 / (512 · 2**zoom)`.
- * A camera zoomed one level further in than the plate's draws its marks twice as wide, and the
- * symbols keep their relationship to the coastlines under them at every container shape.
- */
-export function cameraScale(plan, map) {
-  const liveDegreesPerPixel = 360 / (512 * Math.pow(2, map.getZoom()));
-  if (!(plan.degreesPerPixel > 0))
-    throw new Error("this plate predates the camera facts: re-bake it, or a mark has no scale to be drawn at");
-  return plan.degreesPerPixel / liveDegreesPerPixel;
-}
+/* `cameraScale`, `groundRadiusExpression`, `planLayers`, `radiusPaintOf` and `mountPlan` were all
+   declared here, byte-identically with four sibling beats. They are the PLAN CONTRACT — the still
+   and the video ask the same question of the same plan — so they now live in
+   `shared/map-beat/mount.mjs` and are concatenated ahead of this file. See this file's own header. */
 
-/**
- * The radius expression for a layer whose marks stand for a fixed piece of GROUND — a dot-density
- * dot. Its screen radius has to double for every zoom level the reader comes in, or the field
- * visibly thins out and a reader watching it reads a change in density that did not happen.
- *
- * `["exponential", 2]` between two stops one on each side of the bake's own zoom is exactly
- * `r · 2 ** (zoom − bakeZoom)`, so at the baked camera a dot is drawn at the size the plate drew it.
- * Written as an interpolation rather than computed per frame because it has to be true DURING a
- * zoom gesture, not only after it settles.
- */
-export function groundRadiusExpression(bakeZoom, options) {
-  const span = 6;
-  const floorPx = options && options.floorPx > 0 ? options.floorPx : 0;
-  if (!floorPx)
-    return [
-      "interpolate",
-      ["exponential", 2],
-      ["zoom"],
-      bakeZoom - span,
-      ["/", ["get", "r"], Math.pow(2, span)],
-      bakeZoom + span,
-      ["*", ["get", "r"], Math.pow(2, span)],
-    ];
-  // THE FLOOR, and why it cannot be written the obvious way.
-  //
-  // Measured on `proof/mapgen-dot-web` at 375x812: the live field deposited **6% of the ink the
-  // baked plate deposits over the same ground** — 0.0119 against 0.1856 — because the ground rule
-  // had shrunk every dot to 0.50px. The page still said "2,996 dots drawn for 596,770,599 people"
-  // over a map with no dots on it. Below some radius a circle stops being drawn and the encoding is
-  // simply gone, so the ground rule needs a bottom.
-  //
-  // `["max", <the expression above>, floorPx]` is the obvious way and MapLibre SILENTLY REJECTS IT:
-  // a `["zoom"]` expression may not be nested inside another expression, `setPaintProperty` becomes
-  // a no-op, and five different floors render identically. Found by rendering all five and
-  // comparing the pictures, not by an error. So the floor has to be expressed as STOPS of one
-  // top-level interpolation — which needs the zoom at which the ground rule crosses the floor, and
-  // that zoom depends on the radius, so it exists only if every mark in the layer shares one.
-  const uniform = options.uniformRadius;
-  if (!(uniform > 0))
-    throw new Error(
-      "a ground-scaled layer asked for a radius floor of " +
-        floorPx +
-        "px but declared no `uniformRadius`. The floor is a zoom breakpoint (`bakeZoom + log2(floor / r)`) " +
-        "and MapLibre refuses a zoom expression nested inside a `max`, so the breakpoint has to be a " +
-        "number — which exists only when every mark in the layer is drawn at one radius. A layer whose " +
-        "marks differ in size cannot take a floor this way.",
-    );
-  const breakZoom = bakeZoom + Math.log2(floorPx / uniform);
-  return [
-    "interpolate",
-    ["exponential", 2],
-    ["zoom"],
-    breakZoom - span,
-    floorPx,
-    breakZoom,
-    floorPx,
-    breakZoom + span,
-    floorPx * Math.pow(2, span),
-  ];
-}
-
-/** Every layer the plan declares, defaulted so a beat only says what is true of its own marks. */
-export function planLayers(plan) {
-  return (plan && plan.layers) || [];
-}
 
 /**
  * Boots the live map and swaps it in. Everything that could fail — no MapLibre on the page, no
@@ -184,6 +97,16 @@ export function initLiveMap(win) {
   const plan = readLivePlan(doc);
   if (planIsUnkeyed(plan)) return null;
   if (!win.maplibregl) return null;
+
+  /** THE RENDERER VALIDATES THE PLAN IT WAS HANDED, not the one somebody wrote. A plan reaches this
+   *  file as JSON in a `<script>` tag, from a render that ran on another machine on another day —
+   *  `Object.freeze` does not survive that and neither does anything the writer checked. A duplicate
+   *  layer id, a missing camera fact, a truncated plan: MapLibre reports none of them, it just draws
+   *  a map that is quietly wrong. This THROWS rather than falling back, because a malformed plan is
+   *  a build defect and hiding it behind the fallback plate is how it ships. */
+  const complaints = validateLivePlan(plan);
+  if (complaints.length)
+    throw new Error("this page's live plan is not renderable:\n  - " + complaints.join("\n  - "));
   const container = doc.getElementById("mw-map");
   const fallback = doc.getElementById("mw-fallback");
   if (!container || !fallback) return null;
@@ -222,37 +145,25 @@ export function initLiveMap(win) {
   map.addControl(new win.maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   map.on("style.load", function () {
-    // geo-discipline rule 7, re-applied to the LIVE style exactly as the bake applies it to the
-    // baked one. If the live map and its own fallback disagree about the colour of water, the swap
-    // is visible and the beat is broken — this is the one line that keeps them the same cartography.
-    const ids = ["Water", "Water shadow"];
-    for (let i = 0; i < ids.length; i++)
-      if (map.getLayer(ids[i])) map.setPaintProperty(ids[i], "fill-color", plan.waterFill);
-    // Rule 9: the beat draws the only labels. The provider's place names compete with the labels
-    // this beat positions itself, so they go, live exactly as baked.
-    const layers = map.getStyle().layers;
-    for (let i = 0; i < layers.length; i++)
-      if (layers[i].type === "symbol" || /border|boundary|admin/i.test(layers[i].id))
-        map.setLayoutProperty(layers[i].id, "visibility", "none");
+    // THE TRUNK'S OWN RULE, APPLIED TO THE LIVE STYLE. `applyLiveStyle` is the same decision
+    // `transformStyle` takes on the style DOCUMENT the plate is baked from — the same water regex,
+    // the same label and texture sweep, the same tints — so the live map and the fallback under it
+    // cannot be two cartographies. What it replaced named `["Water", "Water shadow"]` by hand and
+    // painted them a hard-coded `#AAC9E0`, which measures 1.730:1 against this beat's white page:
+    // over the trunk's `BASEMAP_MAX` of 1.6:1, a basemap carrying more weight against the page than
+    // the classes drawn on it. And the old sweep left the provider's LAND alone, so the plate and
+    // the live map differed by a whole colour nobody had measured either.
+    //
+    // It is ASSERTED rather than assumed: a sweep that re-tinted nothing did not find the style it
+    // was written against, and the reader would keep the provider's own near-grey water under a
+    // tinted plate with nothing to say so.
+    assertLiveStyleAnswered(
+      applyLiveStyle(map, { tints: plan.tints }),
+      plan.styleName || plan.styleUrl,
+    );
 
-    const declared = planLayers(plan);
-    for (let i = 0; i < declared.length; i++) {
-      const layer = declared[i];
-      map.addSource(layer.id, { type: "geojson", data: layer.data });
-      const paint = {};
-      for (const key in layer.paint) paint[key] = layer.paint[key];
-      // Placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is what
-      // sets the real number. Adding a circle layer with no radius at all would draw MapLibre's own
-      // default 5px for one frame, which is a visible flash of the wrong circle.
-      if (layer.radius === "camera") paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
-      else if (layer.radius === "ground")
-        paint["circle-radius"] = groundRadiusExpression(plan.bakeZoom, {
-          floorPx: layer.radiusFloorPx,
-          uniformRadius: layer.uniformRadius,
-        });
-      else if (layer.radius === "fixed") paint["circle-radius"] = ["get", "r"];
-      map.addLayer({ id: layer.id, type: layer.type, source: layer.id, paint: paint });
-    }
+    // The beat's own layers, mounted by the same `mountPlan` the bake mounts them with.
+    mountPlan(map, plan);
   });
 
   map.on("load", function () {

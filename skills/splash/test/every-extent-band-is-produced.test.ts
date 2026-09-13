@@ -126,7 +126,11 @@ const CAMERA_CENSUS: Record<
     km: 4152,
     bias: 5.1,
   },
-  "mapgen-choropleth-web": { band: "hemisphere", km: 4152, bias: 5.1 },
+  // Re-read 2026-09-13: this beat's camera stopped being a typed box and is now fitted to its own
+  // study set (`bake-plate.mjs`'s `studyBoundsOf`) with the live camera's padding rule. The frame
+  // grew to hold Norway's north, Finland, Sweden and Ukraine's east, which the typed box cut — same
+  // rung, wider frame, and a higher area bias because it now reaches 73°N.
+  "mapgen-choropleth-web": { band: "hemisphere", km: 5469, bias: 9.2 },
   "mapvid-dot-population": { band: "hemisphere", km: 4126, bias: 4.3 },
   "mapmore-dot-population": { band: "hemisphere", km: 4125, bias: 4.3 },
   "mapgen-flowmap-video": { band: "continent", km: 1873, bias: 1.3 },

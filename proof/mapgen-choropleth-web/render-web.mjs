@@ -31,10 +31,42 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture } from "./render-still.mjs";
-// `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
-// story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/chart-beat/render-still.mjs";
+// `deriveFurniture` and `readPalette` come from the SHARED copy through the `#shared/…` subpath
+// alias — a beat is a story, not a skill, so it may reach out where a skill may not. This file used
+// to import `deriveFurniture` from a LOCAL copy of `render-still.mjs` four lines above this one, so
+// one module was present twice in one file; that copy predated the Google-Fonts move and imported a
+// `./typefaces.mjs` sibling nobody ever copied, which made this beat unrunnable.
+import { deriveFurniture, measureText, readPalette } from "#shared/chart-beat/render-still.mjs";
+// THE TYPEFACE TRAVELS WITH THE PAGE, AS BYTES — the same repair `proof/mapgen-locator-web` had.
+// This beat's CSS said `font-family: Helvetica, Arial, sans-serif` and loaded nothing: a licensed
+// face present on the author's Mac and on no CI runner, no Android phone, no Linux desktop, so the
+// delivered page was set in whatever each reader happened to have. Measured on the committed file
+// before this change: `.mw-title` computed to `Helvetica, Arial, sans-serif` in Chrome, and the
+// page carried not one `@font-face`.
+import {
+  assertFontsEmbedded,
+  displayableTextOf,
+  dominantFontStack,
+  embeddedWebFaces,
+  fontFaceCss,
+  fontRequestsInHtml,
+} from "#shared/design-base/typefaces.mjs";
+// THE DIRECTION, AND WHY A MAP BEAT READS ONE. `rapport` sets its display register in a SERIF and
+// its body in an italic serif. The static choropleth on the same ground and the same data renders
+// its title in Merriweather; this page came out entirely in a sans, so one direction had two
+// typographic voices depending on the genre. `figureVars` emits `--title-family` and its siblings
+// and `buildCss` below reads them. Nothing here names Merriweather: the family comes off the serif
+// LADDER, chosen for the characters this beat actually sets.
+import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { figureVars, plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
+// THE TRUNK — the plan contract and the basemap's own two colours, reached through the `#shared/…`
+// alias a beat is allowed to use. `plateTints` is what replaces this beat's typed `WATER_FILL`:
+// see `basemapTints` below.
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateLivePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
+import { BASEMAP_MAX, SEA_LAND_MIN, plateTints } from "#shared/map-beat/tints.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
@@ -46,7 +78,6 @@ import {
 import {
   CO2_2023_STUDY,
   CO2_BREAKS,
-  WATER_FILL,
   bboxCenter,
   boundingBoxOf,
   joinShapes,
@@ -64,6 +95,31 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
 const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
+
+/**
+ * THE LIVE LAYER IS THE TRUNK PLUS THIS BEAT'S OWN PAGE MECHANICS, in one classic script.
+ *
+ * `live-map.mjs` used to carry the radius strategies, the layer mounting and the style's water and
+ * labels as a byte-identical copy in every map × web beat — exactly the drift
+ * `references/map-plan.md` opens by naming. Those three live in `shared/map-beat/` and are read FROM
+ * THERE, resolved through the same subpath alias the imports above use rather than by a relative
+ * climb out of this beat.
+ *
+ * ORDER IS DEPENDENCY ORDER, not alphabetical: `live-map.mjs` calls into all three, and a `const`
+ * declared after its use is a temporal-dead-zone error at runtime rather than a hoisted function.
+ */
+const LIVE_MODULES = [
+  fileURLToPath(import.meta.resolve("#shared/map-beat/plan.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs")),
+  fileURLToPath(import.meta.resolve("#shared/map-beat/mount.mjs")),
+  join(HERE, "live-map.mjs"),
+];
+
+async function liveScript() {
+  const parts = [];
+  for (const path of LIVE_MODULES) parts.push(inlineable(await readFile(path, "utf8")));
+  return parts.join("\n");
+}
 
 // ===== CONFIG — this beat's own words, data and claim =====
 // The title and the alt text are NOT here: both state how many countries the map carries, and the
@@ -83,6 +139,10 @@ console.log(
 const SEED = {
   ground: PALETTE.ground,
   accent: PALETTE.accent,
+  // The filed direction this beat is set in. A NAME, not a family: `directionFor` below resolves
+  // each register down its own ladder against the characters this page actually sets, and refuses
+  // rather than substitutes when no face on a ladder can set them.
+  direction: "rapport",
   source: "Global Carbon Budget 2025, via Our World in Data — 2023 data",
   basemapCredit: "shapes: Natural Earth 1:50m Admin 0 Countries · basemap © MapTiler, © OpenStreetMap",
   caveat:
@@ -347,9 +407,20 @@ export function liveRings(collection, keys, geometry) {
  * beat's own minimum pointer target, `HIT_TARGET_PX`. Derived from the plate's own geometry, so a
  * beat with no tiny region gets a correspondingly shorter leash.
  */
-export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent, waterFill }) {
+export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent }) {
   const camera = cameraOf(geometry);
-  const ramp = choroplethRamp(ground, accent, breaks);
+  /** THE TINTS ARE THE PLATE'S OWN, READ BACK — never a second constant in this file. `bake-plate.mjs`
+   *  records what it actually painted, from the trunk's `plateTints`; a plate baked before that was
+   *  recorded has no answer here and is refused rather than guessed at, because the live layer would
+   *  then paint one basemap and the plate under it another. */
+  if (!geometry.tints?.water || !geometry.tints?.land)
+    throw new Error(
+      "this plate predates the MEASURED tints: re-bake it. Before `plateTints` reached this beat the " +
+        "basemap was a typed `#AAC9E0` for water and the provider's own colour for land — 1.730:1 " +
+        "against this white page, over the trunk's BASEMAP_MAX of " +
+        `${BASEMAP_MAX}:1, and a sea/land floor of ${SEA_LAND_MIN}:1 nobody had measured against.`,
+    );
+  const ramp = choroplethRamp(ground, accent, breaks, geometry.tints.land);
 
   const features = [];
   const anchors = {};
@@ -398,18 +469,39 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
     );
   }
 
-  // …CLAMPED to what the plate actually showed. Ukraine reaches 40.1°E and Iceland −28.8°W, both
-  // past a frame that stops at 33°/−26°: a ring is kept when it INTERSECTS the frame, so its own
-  // coordinates can run beyond it. Left unclamped, the live camera would open on a wider Europe
-  // than the plate, the title and the picture would stop agreeing, and the leash would be set on a
-  // view the beat never claimed.
-  const shown = geometry.frameCorners;
-  const studyBounds = {
-    west: Math.max(west, shown.west),
-    east: Math.min(east, shown.east),
-    south: Math.max(south, shown.south),
-    north: Math.min(north, shown.north),
-  };
+  /**
+   * THE LIVE CAMERA FITS THE BOX THE PLATE'S CAMERA WAS FITTED TO — `bake-plate.mjs`'s
+   * `studyBoundsOf`, recorded in `geometry.json`, transported rather than re-derived here.
+   *
+   * This used to be the union of the drawn rings CLAMPED to the plate's `frameCorners`, and both
+   * halves of that were wrong once the camera stopped being a typed box. The union is not the study
+   * set: `keepRing` keeps a ring that INTERSECTS the frame with a 40px margin, so Portugal's Azores
+   * survive the cull, and the union then reached −31.28°E — measured, the live camera opened on
+   * 71.4° of longitude against the plate's 66.3° and drew the mid-Atlantic the plate does not show.
+   * And the clamp is the plate's own frame, which already carries the bake's padding, so the live
+   * camera was padding a padded box.
+   *
+   * One box, one rule: the plate pads it by `fitPadding` at the plate's own size, the live map pads
+   * the SAME box by `fitPadding` at the reader's container size. That is why they frame one Europe.
+   *
+   * `west`/`east`/`south`/`north` above are still computed, and still used — for `smallestDrawn` and
+   * for the refusal below: a plan whose recorded bounds hold none of the drawn shapes is a plate and
+   * a geometry from two different bakes.
+   */
+  const asked = geometry.bounds;
+  if (!Array.isArray(asked) || asked.length !== 2)
+    throw new Error(
+      "this plate records no `bounds`: it predates the camera being read off the study set, so the " +
+        "live map has no box to fit that the plate was also fitted to. Re-bake it.",
+    );
+  const studyBounds = { west: asked[0][0], south: asked[0][1], east: asked[1][0], north: asked[1][1] };
+  if (!(west < studyBounds.east && east > studyBounds.west && south < studyBounds.north && north > studyBounds.south))
+    throw new Error(
+      `the recorded camera box (${studyBounds.west}..${studyBounds.east}°E, ` +
+        `${studyBounds.south}..${studyBounds.north}°N) does not meet the drawn shapes ` +
+        `(${west.toFixed(2)}..${east.toFixed(2)}°E, ${south.toFixed(2)}..${north.toFixed(2)}°N): ` +
+        `the plate and this geometry came from two different bakes`,
+    );
 
   const outline = (key, colour) => {
     const region = regions.find((r) => r.key === key);
@@ -427,7 +519,11 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
 
   return {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
-    waterFill,
+    /** The style's NAME as well as its URL: the URL carries the key placeholder, and a refusal that
+     *  prints it would print a key on a delivered page. */
+    styleName: geometry.style,
+    // The two colours the plate was actually painted in, so `applyLiveStyle` paints the same ones.
+    tints: geometry.tints,
     frame: geometry.frame,
     degreesPerPixel: geometry.degreesPerPixel,
     metresPerPixel: geometry.metresPerPixel,
@@ -537,8 +633,60 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
+/**
+ * THE BEAT'S OWN DIRECTION, RESOLVED TO FACES THAT CAN SET ITS OWN WORDS.
+ *
+ * `resolveDirectionFamilies` walks each register's LADDER and takes the first family whose cmap
+ * covers the text that register will actually set on this page — so the serif here is whatever
+ * covers these 41 country names, this caveat and these class boundaries, not something typed.
+ * A register whose text no family on its ladder can set REFUSES rather than substitutes, which is
+ * the whole reason the ladder exists.
+ *
+ * Every string passes through `plainSpaces` first: one U+202F or U+00A0 refuses every family and
+ * takes the render down with a message naming a code point rather than a word.
+ */
+function directionFor(props) {
+  const path = fileURLToPath(import.meta.resolve(`#shared/design-base/directions/${SEED.direction}.md`));
+  const filed = readDirection(path);
+  // A direction records the ground it was measured against; `PALETTE.md` records the ground this
+  // beat draws on. Two grounds are two furniture ladders, and `deriveFurniture` only ever sees one
+  // of them — so they are compared rather than assumed to agree.
+  if (filed.ground.toUpperCase() !== String(props.ground).toUpperCase())
+    throw new Error(
+      `direction "${SEED.direction}" is filed on ground ${filed.ground} and this beat's PALETTE.md ` +
+        `records ${props.ground}. A direction's registers are measured against its own ground; ` +
+        `pick the direction that matches the recorded palette, or re-record the palette.`,
+    );
+  const names = props.rows.map((r) => r.name).join(" ");
+  const values = props.rows.map((r) => regionDetail(r)).join(" ");
+  const ticks = [0, ...props.breaks].map((t) => `${t}`).join(" ");
+  const textPerRegister = {
+    display: props.title,
+    eyebrow: props.legendCaption,
+    body: `${props.caveat} ${props.source} ${props.basemapCredit}`,
+    axis: ticks,
+    annot: `${names} ${values}`,
+    value: `${names} ${values}`,
+  };
+  for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plainSpaces(textPerRegister[key]);
+  return resolveDirectionFamilies(filed, textPerRegister);
+}
+
 async function renderMapWeb({ component, table, props, outDir, name, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
+  // The registers, as CSS. `webRegisters` needs the three ink ROLES a register may ask for; it is
+  // handed this beat's OWN furniture and its OWN recorded accent, never the direction's colours —
+  // `PALETTE.md` is the colour authority here. Only the TYPE half of each register reaches the
+  // stylesheet below; the `color:` rules are unchanged.
+  const direction = directionFor(props);
+  const regs = webRegisters(direction, {
+    ink: { ink: furniture.ink, muted: furniture.muted, accent: props.accent },
+  });
+  const vars = figureVars(regs);
+  console.log(
+    `direction ${direction.name} (${SEED.direction}) — ` +
+      direction.decisions.map((d) => `${d.register}:${d.family}`).join(", "),
+  );
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = discloseTable(
     renderToStaticMarkup(createElement(table, { rows: props.rows, ...furniture })),
@@ -557,17 +705,52 @@ async function renderMapWeb({ component, table, props, outDir, name, live = fals
     ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
       `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
       `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
-      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+      `<script>\n${await liveScript()}\n</script>`
     : "";
 
-  const html = `<!doctype html>
+  // THE PAGE'S OWN FAMILY, READ OFF WHAT THE COMPONENTS ACTUALLY ASKED FOR rather than typed into
+  // the stylesheet. `dominantFontStack` reads the markup; `embeddedWebFaces` fetches and SUBSETS
+  // each face to the characters this page can display; `assertFontsEmbedded` refuses a page naming a
+  // family it does not carry. The document is assembled twice from one template — once to be read
+  // for its font requests and its displayable text, once to be written with the faces in it.
+  const stack = dominantFontStack(mapHtml + tableHtml);
+  /** HOW WIDE THE PROSE IN THE READING COLUMN MAY SET, measured rather than typed.
+   *
+   *  The column beside the map takes whatever the map's aspect leaves, which at 1920x1080 is 880px.
+   *  The legend is a GRAPHIC and is better for the room — six classes and their boundaries read
+   *  further apart. The caveat is PROSE, and 880px of 11.5px type is about 160 characters a line,
+   *  roughly twice any measure. `rapport.md` records its own reference's text column: **78
+   *  characters**. This measures 78 characters OF THIS BEAT'S OWN CAVEAT, in the face and at the
+   *  size the page actually sets it — the string's own width divided by its own length — so the cap
+   *  follows the direction's face rather than a per-character constant somebody averaged once. */
+  const proseMeasureCh = 78;
+  const caveat = plainSpaces(props.caveat);
+  const proseWidthPx = Math.round(
+    (measureText(caveat, {
+      fontFamily: direction.registers.body.family,
+      fontSize: 11.5,
+      fontWeight: direction.registers.body.fontWeight,
+      italic: direction.registers.body.italic,
+    }) /
+      caveat.length) *
+      proseMeasureCh,
+  );
+  const baseCss = buildCss({
+    ...props,
+    ...furniture,
+    fontStack: stack,
+    vars,
+    proseWidthPx,
+    frame: props.geometry.frame,
+  });
+  const page = (css) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, frame: props.geometry.frame })}
+${css}
 </style>
 </head>
 <body>
@@ -584,23 +767,41 @@ ${liveBlock}
 </html>
 `;
 
+  const draft = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(html);
+
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
   return { outPath };
 }
 
-/** Strips the `export` keyword from each top-level declaration — see `interaction.mjs`'s own
- *  header note for why. */
+/** Strips the `export` keyword from each top-level declaration, and the `import` lines a trunk
+ *  module is reached by — see `interaction.mjs`'s own header note for why the page gets a classic
+ *  script rather than a module.
+ *
+ *  The import lines go rather than being rewritten because `liveScript` above concatenates the
+ *  modules they name into the SAME script, in dependency order: once they are one script, every
+ *  imported name is already a top-level binding in scope. */
 function inlineable(moduleSource) {
-  return moduleSource.replace(/^export /gm, "");
+  return moduleSource
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']*["'];?[ \t]*\n/gm, "")
+    .replace(/^export /gm, "");
 }
 
 function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function buildCss({ ground, accent, ink, muted, frame }) {
+function buildCss({ ground, accent, ink, muted, frame, fontStack, vars, proseWidthPx }) {
+  if (!fontStack)
+    throw new Error(
+      "buildCss was given no font stack. This used to default to '\"sans-serif\"', which is not a " +
+        "typographic decision anybody took — the caller reads the families the components asked for " +
+        "('dominantFontStack') and the page carries them as bytes.",
+    );
   // The plate's own aspect, the one number both the stage's width bound and the viewport's
   // aspect-ratio are computed from, so the box can never be asked to be two shapes at once.
   const aspect = frame.width / frame.height;
@@ -613,6 +814,14 @@ function buildCss({ ground, accent, ink, muted, frame }) {
   /* One number, used by the body's own padding AND by the height the beat is asked to fit inside,
      so the two can never disagree about how much room the page edge takes. */
   --page-pad: 16px;
+  /* THE FILED DIRECTION, AS CUSTOM PROPERTIES — 'figureVars' over this beat's own resolved
+     registers. Every rule below that sets a family reads one of these, so the page's typographic
+     voice is the direction's and not this stylesheet's. The SIZES this beat draws are its own and
+     are left alone on purpose: a direction's sizes were measured for a 960 x 540 static plate. What
+     a genre may not change is which FACE a register speaks in — and before this, the static
+     choropleth of the same data on the same ground set its title in a serif while this page set
+     everything in whatever 'dominantFontStack' fell through to. */
+${Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join("\n")}
 }
 * { box-sizing: border-box; }
 body {
@@ -620,7 +829,10 @@ body {
   padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
-  font-family: Helvetica, Arial, sans-serif;
+  /* The family the components themselves asked for, carried as bytes by the @font-face block above.
+     This rule used to say "Helvetica, Arial, sans-serif" — a licensed face nothing loaded, present
+     on the author's Mac and on no CI runner, no Android phone and no Linux desktop. */
+  font-family: ${fontStack};
 }
 .map-web-page { width: 100%; }
 /* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
@@ -642,20 +854,86 @@ body {
   height: calc(100vh - var(--page-pad) * 2);
   height: calc(100svh - var(--page-pad) * 2);
 }
-/* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
-   'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
+/* Only the reading row gives up height. Measured, and not obvious: with 'min-height' here instead
+   of 'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
    inside it resolves to zero — the map collapses to its border and nothing is red. A definite
    height is what makes the stage a real size container. */
-.map-web > *:not(.mw-stage) { flex: 0 0 auto; }
-.mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; line-height: 1.25; }
-.mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.map-web > *:not(.mw-body) { flex: 0 0 auto; }
+/* THE MAP AND ITS READING, SIDE BY SIDE — and the reason is a measurement about this SUBJECT.
+   The locator on this branch answered 'the map does not fill the page' by baking a landscape plate
+   at the stage's own median aspect. That is right for a city, which has no aspect of its own. It is
+   wrong here: the Mercator extent of the 41 countries this map draws measures 1.0075 to 1, so a
+   landscape bake would add nothing but ocean — which is what map-web-discipline.md already says in
+   writing about the format's own European seed.
+   So the page is what changes. Stacked, the furniture below the map ate the very height that made
+   the stage short, and the square map then filled 42-50% of the stage's width at five of the six
+   desktop shapes it was measured at (1024x768 50%, 1280x800 42%, 1280x1200 74%, 1440x900 44%,
+   1600x900 42%, 1920x1080 44%) — 700px of empty page beside a map that could not grow into it.
+   Put the legend, the two direct notes and the caveat in that room instead and the map gets the
+   height back AND the row fills. */
+.mw-body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 20px;
+  min-height: 0;
+}
+/* FAMILY AND WEIGHT FROM THE DIRECTION'S DISPLAY REGISTER, size and line from this beat. The weight
+   used to be a typed 700 that happened to equal this direction's; the family had no route here at
+   all. The 'line-height' stays literal and is NOT the register's: 'figureVars' emits no line var,
+   and this title wraps to two lines at every desktop width, so its leading is a block-height
+   decision this page takes rather than the text rhythm of a paragraph. */
+.mw-title {
+  font-size: 21px;
+  font-family: var(--title-family);
+  font-weight: var(--title-weight);
+  margin: 0 0 4px;
+  line-height: 1.25;
+}
+/* The BODY register — including its slope. This direction files an italic body, and a direction
+   whose prose is italic says so in every genre or it is not one direction. */
+.mw-source {
+  font-size: 13px;
+  font-family: var(--source-family);
+  font-style: var(--subtitle-style);
+  color: var(--muted);
+  margin: 0 0 12px;
+}
 /* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
    CSS has no other way to say "as wide as you like, but never taller than the room left". */
+/* The stage takes the row's HEIGHT and derives its width from the plate's own aspect, so the map is
+   as large as the window allows and the row has no slack inside it to give away. 'flex: 0 1 auto' —
+   it never grows past its aspect, and it yields first when the reading column reaches its floor. */
 .mw-stage {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  height: 100%;
+  aspect-ratio: ${frame.width} / ${frame.height};
   container-type: size;
   min-height: 180px;
+}
+/* The reading column: everything that reads the map. It takes what the map's aspect leaves, down to
+   a 300px floor — under that a class bar with six boundaries printed under it stops being readable
+   as a scale, which is the one thing on this page colour is not the only channel for. */
+.mw-reading {
+  /* Grows into whatever the map's aspect leaves; NEVER shrinks under 300px. 'flex-shrink: 0' is
+     the half that matters: with the default 1, a tall window handed the column 162px at 900x1400 —
+     a class bar with six boundaries printed under it, in 162px. */
+  flex: 1 0 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+/* …AND WHEN THE ROOM THE WINDOW LEAVES IS VERTICAL, THE READING GOES BACK UNDERNEATH.
+   The row exists because a square map in a wide, short window leaves its room beside it. A window
+   taller than it is wide leaves the room below, and forcing the row there costs the map more than
+   the column gains: measured at 900x1400, side by side gives a 548px map, stacked gives 868px.
+   The condition is the window's own aspect, which is exactly the thing being reasoned about. */
+@media (max-aspect-ratio: 1 / 1) {
+  .mw-body { flex-direction: column; }
+  .mw-stage { flex: 1 1 auto; height: auto; width: 100%; aspect-ratio: auto; }
+  .mw-reading { flex: 0 0 auto; overflow-y: visible; }
+  .mw-legend { margin-top: 14px; }
 }
 /* The viewport: the bake's own aspect, exactly, at every size — bounded by the stage's width AND
    its height, whichever binds first. A plate stretched to fill a shape it was not baked for is a
@@ -695,6 +973,16 @@ body {
    pointer-active button; every other button stays in the DOM for keyboard reach and for its
    aria-label, with its pointer-events off. */
 .mw-overlay .pt { pointer-events: none; }
+/* THE RING: the hit target this beat already places over its two smallest claim regions, made
+   visible. 'currentColor' — the accent for the subject, ink for the comparison — over a ground-
+   coloured outer ring, so it separates from whatever class its neighbours landed in, exactly the
+   way the claim outline under it does. It is drawn in the overlay, so it is a fixed CSS size at
+   every container width and follows the live camera with every other '.pt'. */
+.mw-ring {
+  border: 1.6px solid currentColor;
+  box-shadow: 0 0 0 1.4px var(--ground);
+  background: transparent;
+}
 .mw-overlay .pt-small { pointer-events: auto; }
 /* Live, the canvas is what a pointer talks to: queryRenderedFeatures makes the hit area the
    RENDERED MARK at every size and every zoom, which is what B6.14a asked for and what a 28px button
@@ -744,8 +1032,18 @@ svg.map { display: block; width: 100%; height: 100%; }
    of the same six cells, each printing its own class's lower boundary at its left edge — the same
    numbers the SVG legend printed, in the same places (types/choropleth.md: colour is never the only
    channel a value travels through). */
-.mw-legend { margin: 14px 0 6px; }
-.mw-legend-caption { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+/* Flush with the map's own top edge now that it sits beside it rather than under it. */
+.mw-legend { margin: 0 0 6px; }
+/* The EYEBROW register: a short label over a scale is exactly what this caption is, so its family,
+   weight and tracking come from the direction rather than from a typed 600 that matched nothing. */
+.mw-legend-caption {
+  font-size: 12.5px;
+  font-family: var(--eyebrow-family);
+  font-weight: var(--eyebrow-weight);
+  letter-spacing: var(--eyebrow-tracking);
+  color: var(--muted);
+  margin: 0 0 8px;
+}
 .mw-legend-bar { position: relative; display: flex; width: 100%; height: 22px; }
 .mw-legend-class { flex: 1 1 0; }
 /* Where the subject and the comparison sit on the SAME continuous scale the class bar only shows in
@@ -762,7 +1060,8 @@ svg.map { display: block; width: 100%; height: 100%; }
   border-bottom: 7px solid currentColor;
 }
 .mw-legend-ticks { display: flex; width: 100%; margin-top: 4px; }
-.mw-legend-tick { flex: 1 1 0; position: relative; font-size: 11px; color: var(--muted); }
+/* The AXIS register: these are the class boundaries, which is what an axis is on this type. */
+.mw-legend-tick { flex: 1 1 0; position: relative; font-size: 11px; font-family: var(--axis-family); color: var(--muted); }
 .mw-legend-tick span { position: absolute; left: 0; transform: translateX(-50%); white-space: nowrap; }
 .mw-legend-tick:first-child span { transform: none; }
 .mw-legend-nodata {
@@ -774,9 +1073,37 @@ svg.map { display: block; width: 100%; height: 100%; }
   margin: 22px 0 0;
 }
 .mw-legend-swatch { display: block; width: 18px; height: 13px; border: 0.5px solid var(--muted); }
-.mw-subject { font-size: 12.5px; font-weight: 700; color: var(--accent); margin: 22px 0 2px; }
-.mw-comparison { font-size: 12.5px; font-weight: 700; color: var(--ink); margin: 0 0 8px; }
-.mw-caveat { font-size: 11.5px; color: var(--muted); margin: 0 0 4px; line-height: 1.35; }
+/* The two direct notes: the VALUE register, which is what a named reading beside its own number is.
+   Its weight comes from the register too — the typed 700 that used to be here is the direction's,
+   but by coincidence rather than by route. */
+.mw-subject {
+  font-size: 12.5px;
+  font-family: var(--label-family);
+  font-weight: var(--label-weight);
+  color: var(--accent);
+  margin: 20px 0 2px;
+}
+.mw-comparison {
+  font-size: 12.5px;
+  font-family: var(--label-family);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+/* The BODY register, slope included — this is prose, and it is the one thing in the reading column
+   that is capped. The column takes the room the map's aspect leaves (880px at 1920x1080); the class
+   bar above is a graphic and is better for it, but prose set that wide runs about 160 characters a
+   line. The cap is 78 characters of this beat's own caveat, measured in this face at this size —
+   see 'proseWidthPx' in this file, and 'rapport.md' for where 78 comes from. */
+.mw-caveat {
+  font-size: 11.5px;
+  font-family: var(--subtitle-family);
+  font-style: var(--subtitle-style);
+  color: var(--muted);
+  margin: 0;
+  max-width: ${proseWidthPx}px;
+  line-height: 1.35;
+}
 #tooltip {
   position: fixed;
   max-width: 240px;
@@ -932,9 +1259,19 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
         ground: SEED.ground,
         ink: furniture.ink,
         accent: SEED.accent,
-        waterFill: WATER_FILL,
       })
     : null;
+
+  /** THE PLAN IS CHECKED WHERE IT IS WRITTEN, not only where it is read. `live-map.mjs` validates
+   *  the plan it finds in the page, which is the right place for a file that arrives from another
+   *  machine — but a plan that only fails in the reader's browser is a defect that ships. These three
+   *  are the trunk's, so the build and the page ask the same questions of the same object. */
+  if (plan) {
+    assertNoDoubledBasemap(plan);
+    const complaints = [...validateLivePlan(plan), ...validateExpressions(plan)];
+    if (complaints.length)
+      throw new Error("this beat's live plan is not renderable:\n  - " + complaints.join("\n  - "));
+  }
 
   const { outPath } = await renderMapWeb({
     component: ChoroplethWeb,
@@ -952,6 +1289,8 @@ async function render({ valuesPath, shapesPath, plateDir, outDir, name = OUTPUT_
       alt,
       ground: SEED.ground,
       accent: SEED.accent,
+      // The plate's own basemap land, read back: the ramp's lowest class is measured against it.
+      landTint: geometry.tints?.land,
     },
     outDir,
     name,

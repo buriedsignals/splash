@@ -63,7 +63,19 @@ function directedPages(): Page[] {
     if (!entry.isDirectory()) continue;
     const dir = join(PROOF, entry.name);
     const direction = declaredDirection(dir);
-    for (const file of readdirSync(dir).filter((f) => f.endsWith(".html"))) {
+    /** A BEAT'S PAGE IS NOT ALWAYS AT ITS OWN ROOT. This walk read the beat directory only, and
+     *  `proof/mapgen-choropleth-web` delivers into `render/` — so the second map type to be set in
+     *  its direction's own face joined a population of one level and was measured by nothing. One
+     *  level down as well, which covers `render/` and `renders/` without naming either: a page joins
+     *  by DECLARING `--title-family`, so widening the walk cannot pull an un-migrated beat in. */
+    const files: string[] = [];
+    for (const file of readdirSync(dir, { withFileTypes: true })) {
+      if (file.isFile() && file.name.endsWith(".html")) files.push(file.name);
+      if (!file.isDirectory()) continue;
+      for (const nested of readdirSync(join(dir, file.name)))
+        if (nested.endsWith(".html")) files.push(join(file.name, nested));
+    }
+    for (const file of files) {
       const html = readFileSync(join(dir, file), "utf8");
       if (!html.includes("--title-family")) continue;
       out.push({ beat: entry.name, file, html, direction: direction ?? "" });
