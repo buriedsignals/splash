@@ -138,7 +138,7 @@ const CAMERA_CENSUS: Record<
   "mapmore-scrolly-danube": { band: "continent", km: 1821, bias: 1.3 },
   "mapvid-locator-geneva": { band: "city", km: 13, bias: 1.0 },
   "map-geneva-locator": { band: "city", km: 11, bias: 1.0 },
-  "mapgen-locator-web": { band: "city", km: 11, bias: 1.0 },
+  "mapgen-locator-web": { band: "city", km: 13, bias: 1.0 },
 };
 
 /**
