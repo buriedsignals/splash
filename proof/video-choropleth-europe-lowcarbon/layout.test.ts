@@ -219,6 +219,12 @@ describe.each(files)("the video frame laid out for %s", (file) => {
     expect(Math.min(...sizes)).toBeGreaterThanOrEqual(30);
   });
 
+  it("should keep the display larger than every other register it draws", () => {
+    const { display, ...others } = drawnRegisters;
+    const largestOther = Math.max(...Object.values(others).map((r: any) => r.fontSize));
+    expect(display.fontSize).toBeGreaterThan(largestOther);
+  });
+
   it("should let no text block overlap another", () => {
     const rects = layout.blocks.map((b: any) => ({
       id: b.id,
@@ -293,5 +299,28 @@ describe.each(files)("the video frame laid out for %s", (file) => {
       size: "landscape",
     });
     expect(stepped.title.form).toBe(1);
+  });
+});
+
+describe("the display's size step, against a register close under it", () => {
+  const registers = videoRegistersFor("creme.md");
+  const copy = caseCopy(rawCopy, registers);
+  /** creme steps its display 90 -> 81 px to keep the fuller title; a value register at 83.33 px,
+   *  display / 1.08, sits inside that step. */
+  const close = {
+    ...registers,
+    value: { ...registers.value, fontSize: Math.round((registers.display.fontSize / 1.08) * 100) / 100 },
+  };
+
+  it("should never step the display down to or under the value register", () => {
+    const layout = videoLayoutFor({ registers: close, copy, aspect: CAMERA_ASPECT, size: "landscape" });
+    expect(layout.registers.display.fontSize).toBeGreaterThan(close.value.fontSize);
+  });
+
+  it("should refuse a display that is not the largest register to begin with, naming the sizes", () => {
+    const inverted = { ...registers, value: { ...registers.value, fontSize: registers.display.fontSize } };
+    expect(() =>
+      videoLayoutFor({ registers: inverted, copy, aspect: CAMERA_ASPECT, size: "landscape" }),
+    ).toThrow(/not larger than the value register at 90px .*display 90px/);
   });
 });

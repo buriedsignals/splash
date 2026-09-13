@@ -219,6 +219,7 @@ function keyBlocks({ registers, copy, x, width, top }) {
 function textAt({ registers, copy, frame, inset, panel, form }) {
   const x = inset;
   const { eyebrow: eyebrowR, display, axis, body } = registers;
+  // EDGE_SAFETY is vertical by design: Chrome's first-baseline offset is vertical; horizontal edges use the inset.
   const eyebrow = stack("eyebrow", eyebrowR, wrap(copy.eyebrow, panel, eyebrowR), x, panel, inset + EDGE_SAFETY);
   const title = stack(
     "title",
@@ -322,7 +323,27 @@ export function videoLayoutFor({ registers, copy, aspect, size }) {
       throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor at ${size}`);
 
   const drawnDisplay = registers.display;
+  /** THE DISPLAY STAYS THE LARGEST REGISTER. A step down is a slightly smaller headline, never a
+   *  headline smaller than the voice below it: the step stops strictly above the largest other
+   *  register, and a display that is not the largest to begin with is refused outright. */
+  const others = Object.entries(registers).filter(([name]) => name !== "display");
+  const [largestName, largest] = others.reduce((a, b) => (b[1].fontSize > a[1].fontSize ? b : a));
+  const hierarchy = () =>
+    Object.entries(registers)
+      .map(([name, r]) => `${name} ${r.fontSize}px`)
+      .join(", ");
+  const assertDisplayLargest = (fontSize) => {
+    if (!(fontSize > largest.fontSize))
+      throw new Error(
+        `the display register would be drawn at ${fontSize}px, not larger than the ${largestName} ` +
+          `register at ${largest.fontSize}px — the headline would stop being the largest voice ` +
+          `(${hierarchy()})`,
+      );
+  };
+  assertDisplayLargest(drawnDisplay.fontSize);
   const floor = Math.max(row.minTypePx, drawnDisplay.fontSize * DERIVED_SIZE_RATIO);
+  /** The smallest quarter-pixel the step may reach: over the floor, and strictly over `largest`. */
+  const lowestQuarter = Math.max(Math.ceil(floor * 4), Math.floor(largest.fontSize * 4) + 1);
   const gutter = GUTTER * registers.body.lead;
   const content = frame.width - inset * 2;
   let closest = null;
@@ -343,7 +364,7 @@ export function videoLayoutFor({ registers, copy, aspect, size }) {
       if (!chosen) {
         // Whether a form fits is monotone in size (a smaller headline never takes more lines or more
         // height), so the largest fitting quarter-pixel is found by bisection.
-        let lo = Math.ceil(floor * 4);
+        let lo = lowestQuarter;
         let hi = Math.floor(drawnDisplay.fontSize * 4) - 1;
         if (lo <= hi && attempt(panel, form, lo / 4)) {
           while (lo < hi) {
@@ -355,6 +376,7 @@ export function videoLayoutFor({ registers, copy, aspect, size }) {
         }
       }
       if (!chosen) continue;
+      assertDisplayLargest(chosen.fontSize);
       const { mapBox, drawn, mapAspect } = mapBoxFor({ frame, inset, panel, gutter, footTop: chosen.footTop, aspect });
       const title = chosen.blocks.find((b) => b.id === "title");
       return {
