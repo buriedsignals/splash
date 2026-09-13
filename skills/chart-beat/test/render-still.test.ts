@@ -8,6 +8,7 @@ import {
   contrast,
   deriveFurniture,
   measureText,
+  measureTextBand,
   renderStill,
 } from "../scripts/render-still.mjs";
 import { ChartSeed, lineGeometry, yTickValues } from "../assets/ChartSeed.tsx";
@@ -173,6 +174,67 @@ describe("measureText — malformed calls throw rather than under-measure", () =
     const ratio = large / small;
     expect(ratio).toBeGreaterThan(1.7);
     expect(ratio).toBeLessThan(2.3);
+  });
+});
+
+/**
+ * AN ITALIC RUN IS MEASURED ON THE ITALIC FILE — the repair of the deferral this file's own
+ * `measureText` carried until 2026-09-13, and the only thing that makes an overlap guard over
+ * italic text able to fail.
+ *
+ * The defect had no symptom a test could see, because there was nothing to compare against: with
+ * no `fontStyle` the probe declared none, `fontFilesFor` was handed the upright face, and the roman
+ * width came back looking perfectly plausible. What follows measures BOTH faces and asserts they
+ * differ — and asserts the direction on a family where the italic is the WIDER of the two, which is
+ * the case where a box built from the roman measure under-states the word and hides a collision.
+ *
+ * MUTATION: drop `styleAttr(fontStyle)` from the probe, or `styles: [fontStyle]` from the
+ * `fontFilesFor` call — every case below goes red, because both widths collapse onto the roman one.
+ */
+describe("measureText and measureTextBand set an italic run in the italic face", () => {
+  const AT = { fontSize: 13, fontWeight: 400 };
+
+  it("should measure a narrower italic where the italic face is narrower (Open Sans)", () => {
+    const roman = measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans" });
+    const italic = measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans", fontStyle: "italic" });
+    expect(roman).toBeGreaterThan(0);
+    expect(italic).not.toBe(roman);
+    expect(italic).toBeLessThan(roman);
+  });
+
+  /** THE DIRECTION THAT HIDES A COLLISION. Montserrat's italic is wider than its roman, so a box
+   *  measured in roman is SMALLER than the word really drawn — and two words that genuinely touch
+   *  read as clear. This is the case the deferral was silently accepting. */
+  it("should measure a wider italic where the italic face is wider (Montserrat)", () => {
+    const roman = measureText("Mer Méditerranée", { ...AT, fontFamily: "Montserrat" });
+    const italic = measureText("Mer Méditerranée", { ...AT, fontFamily: "Montserrat", fontStyle: "italic" });
+    expect(italic).toBeGreaterThan(roman);
+  });
+
+  /** THE VERTICAL AXIS MOVES TOO, and `f` is the clearest case in the whole catalogue: Open Sans's
+   *  ROMAN `f` sits entirely on the baseline (descent 0) while its ITALIC `f` descends 9.6px at
+   *  40px. A gutter cleared for the roman band would have that descender written through it. */
+  it("should measure the vertical band on the italic face too", () => {
+    const roman = measureTextBand("f", { ...AT, fontSize: 40, fontFamily: "Open Sans" });
+    const italic = measureTextBand("f", { ...AT, fontSize: 40, fontFamily: "Open Sans", fontStyle: "italic" });
+    expect(roman.ascent).toBeGreaterThan(0);
+    expect(roman.descent).toBe(0);
+    expect(italic.descent).toBeGreaterThan(5);
+  });
+
+  /** AND THE DEFAULT DID NOT MOVE. Every one of the ~350 existing call sites passes no `fontStyle`;
+   *  they must measure exactly the bytes they measured before this key existed. */
+  it("should treat an absent fontStyle as normal, to the pixel", () => {
+    expect(measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans", fontStyle: "normal" })).toBe(
+      measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans" }),
+    );
+  });
+
+  /** A STYLE WITH NO FACE IS A SILENT UPRIGHT. `oblique` resolves to no file and would be drawn
+   *  roman with nothing to say so — the same silence, one layer down. */
+  it("should refuse a fontStyle that is neither normal nor italic", () => {
+    expect(() => measureText("x", { ...AT, fontStyle: "oblique" })).toThrow(/fontStyle/);
+    expect(() => measureTextBand("x", { ...AT, fontStyle: "Italic" })).toThrow(/fontStyle/);
   });
 });
 
