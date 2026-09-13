@@ -65,8 +65,8 @@ No prose card, no conclusion sentence, no side panel. The counter and the key ar
 | key | 40 % · 55 % · 70 % · 85 % · 94 % · part bas-carbone de la production · donnée non rapportée | axis |
 | names, north-west | Islande · Suède · Norvège · Finlande · France · Suisse | axis |
 | names, close-up | Albanie · 100 % · Monténégro · 59 % · Macédoine du Nord · 39 % · Grèce · 49 % · Kosovo, hors données | value (Albania), axis |
-| names, pull back | the six · Albanie · 100 % · Ukraine · donnée non rapportée | value (Albania), axis |
-| seas | Mer du Nord · Méditerranée · Baltique (at the overview only; a sea name a country name would touch is not drawn) | annot |
+| names, pull back | the six · Albanie · 100 % · Ukraine · donnée non rapportée | axis — Albania in the figures voice only in its close-up, where it is the whole shot; at the overview a 45 px pill pushed France and Switzerland off their countries |
+| seas | Mer du Nord · Méditerranée · Baltique — drawn at the overview only, and only where the whole word lies over sea and touches no name. At 39 px the scrolly's three sea names, at the scrolly's centres, all run onto land (Denmark, Sweden, Sicily), so none is drawn in any direction | annot |
 | source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », shortened to the longest of its forms that holds one line | axis |
 
 ## The choreography — the scrolly's six cards as time
@@ -102,7 +102,10 @@ Rules the composition keeps:
   held to `assertTypeFloor`.
 - Names are short pills at each country's seat (its most interior point), kept apart, and kept
   inside the stage; the pills for one camera are placed once, in Bun, for the full set that camera
-  ever shows, so no name moves when another arrives.
+  ever shows, so no name moves when another arrives. A pill that would touch another steps to the
+  nearest clear position that keeps it against its country, preferring sea and its own land over a
+  neighbour's (Albania's own land counted four times, so the close-up's names sit around it). At the
+  overview Albania's ring is kept clear, so its name sits beside the ring rather than over it.
 - The first frame is not empty; the hold is at least 60 frames; the whole is at least 12 s.
 - Remotion directly: the still at `--frame=-1` first, then the mp4; `--concurrency=1`; an empty
   `--env-file` on every spawn.

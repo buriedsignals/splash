@@ -1,91 +1,53 @@
-// twin/proof/video-choropleth-europe-lowcarbon/layout.mjs
+// THE VIDEO FRAME IN ROWS, MEASURED IN BUN — the scrolly's picture at 1920 × 1080.
 //
-// THE VIDEO FRAME, LAID OUT IN BUN — every word the six events show, placed once, measured on the
-// same font files the still measures with, and the map given the rectangle the text leaves.
+// Top to bottom, between `frameInsetFor("landscape")` on every side: the HEADER (eyebrow, the title on one
+// line), the COUNTER row (right-aligned, its room reserved from frame 0), the MAP STAGE (all the height
+// that is left, the whole content width), the KEY row (six swatches with their bornes beneath, the unit
+// and the « donnée non rapportée » swatch beside them — the scrolly's key grid), the SOURCE row (one line).
+// Nothing sits over the map.
 //
-// Runs in Bun only: `measureText` / `measureTextBand` rasterise through resvg. The composition in
-// Chrome receives the result as props and draws at these coordinates; the only thing it measures is
-// the width agreement (spec §4.1), against the `width` every line carries.
+// Every width is `measureText` on the face the composition embeds, plus the register's tracking; every
+// baseline sits at its row's top plus the ink ascent resvg measures; every gap is a multiple of the lead
+// of the register named beside it. The composition draws at these coordinates and only checks the widths
+// back (spec §4.1).
 //
-// EVERY BLOCK IS RESERVED FROM FRAME 0. The reference mark lands at `reference` and the conclusion at
-// `conclusion`, but their space is in the layout from the start, so nothing shifts when they arrive
-// (motion grammar). A block that appears later is laid out exactly like one that is always there.
-//
-// THE COMPOSITION: a text panel on the LEFT — eyebrow, title, key label, key with its reference mark,
-// the conclusion slot — the map to its right, and the source as one footer line under both. The
-// panel is read before the map, in reading order, as in the still. The source spans the frame
-// because the map is bound by its WIDTH, not its height: a footer under it costs the map almost
-// nothing, where the same line in the panel wraps to two or three and pushes the panel wider.
-//
-// THE MAP BOX IS THE VIDEO'S OWN. The still's camera is `CAMERA_ASPECT` (1000/760), but the video
-// zooms, so the map takes the largest rectangle the panel leaves, its aspect clamped to 0.8–1.6 of
-// the still's, and the aspect it chose travels out as `mapAspect`. Nothing here reads the still's
-// unit-box positions (`shapes[].rings`, `anchor`, `seatOf`, `waters[].x/y`): the map places its own
-// words, as MapLibre symbol layers.
+// Runs in Bun only (resvg).
 
 import { measureText, measureTextBand } from "#shared/chart-beat/render-still.mjs";
-import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
 import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
-import { YEAR, copyOf } from "../static-choropleth-europe-lowcarbon/beat.mjs";
+import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
 
-/** The register each block is set in. The key's break labels and its « non rapportée » label are
- *  one block; the reference mark is an annotation set under the top class. */
-export const BLOCK_REGISTERS = Object.freeze({
+/** The register each slot is set in. */
+export const SLOT_REGISTERS = Object.freeze({
   eyebrow: "eyebrow",
   title: "display",
-  keyLabel: "axis",
+  counter: "value",
   key: "axis",
-  reference: "annot",
-  conclusion: "body",
   source: "axis",
+  name: "axis",
+  oddName: "value",
+  water: "annot",
 });
 
-const FRENCH_COUNT = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"];
-const capitalise = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-/**
- * The still's copy, rewritten for the video (BRIEF.md, « The copy »): two title forms, the key label
- * with its year, the key's printed breaks, the reference mark, the conclusion sentence and a short
- * source. Not cased — `caseCopy` applies each block's register.
- */
-export function videoCopyOf(subject) {
-  const { BREAKS, FLOOR, ODD_ONE, NEIGHBOUR_CEILING, above, neighbours, format, french } = subject;
-  const still = copyOf(subject);
-  const count = FRENCH_COUNT[above.length];
-  if (!count) throw new Error(`no French word for a count of ${above.length} countries above the floor`);
-  const odd = french(ODD_ONE);
-  if (!/^[AEIOUYÉÈÊH]/i.test(odd))
-    throw new Error(`the conclusion elides « de l’ » before ${odd}, which does not open on a vowel`);
-  return {
-    eyebrow: still.eyebrow,
-    title: [still.title[1], still.title[2]],
-    keyLabel: `part bas-carbone de la production, ${YEAR}`,
-    breaks: BREAKS.map(format),
-    missingLabel: "donnée non rapportée",
-    reference: `plus de ${FLOOR} %`,
-    conclusion:
-      `${capitalise(count)} pays dépassent ${FLOOR} %. ` +
-      `Les ${neighbours.length} voisins mesurés de l’${odd} sont tous sous ${NEIGHBOUR_CEILING} %.`,
-    source: "Source : Ember, Energy Institute (2025), via Our World in Data · fond MapTiler",
-  };
-}
-
-/** Every string of `copy`, cased by the register its block is drawn in. */
-export function caseCopy(copy, registers) {
-  const as = (slot, text) => applyCase(text, registers[BLOCK_REGISTERS[slot]].transform);
-  return {
-    eyebrow: as("eyebrow", copy.eyebrow),
-    title: copy.title.map((t) => as("title", t)),
-    keyLabel: as("keyLabel", copy.keyLabel),
-    breaks: copy.breaks.map((b) => as("key", b)),
-    missingLabel: as("key", copy.missingLabel),
-    reference: as("reference", copy.reference),
-    conclusion: as("conclusion", copy.conclusion),
-    source: as("source", copy.source),
-  };
-}
-
-// ── measurement: the still's own, on the video's drawn registers ────────────────────────────────
+// ── the rhythm: every gap a multiple of the lead of the register named beside it ───────────────────────
+const ROW_GAP = 0.5; // × axis lead: title → counter row, stage → key row, key row → source
+const COUNTER_GAP = 0.25; // × axis lead: counter row → stage (the counter belongs to the map)
+const SWATCH_HEIGHT = 0.5; // × axis lead
+const SWATCH_AIR = 0.5; // × axis lead: a swatch is its widest borne plus this
+const SWATCH_JOIN = 0.05; // × axis lead: the hairline of ground between two swatches
+const KEY_COLUMN_GAP = 1; // × axis lead: swatch strip → unit column
+const MISSING_GAP = 0.25; // × axis lead: « non rapportée » swatch → its label
+/** A pill's padding around its word, as shares of the register's size (the scrolly's 5 px × 1 px at 13 px). */
+const PILL_PAD_X = 0.3;
+const PILL_PAD_Y = 0.12;
+/** THE ONE-LINE BUDGET KEEPS THE WIDTH AGREEMENT'S ROOM. Bun measures the static TrueType face, Chrome draws
+ *  the web woff2, and the render accepts Chrome up to 2 % wider (spec §4.1; Merriweather Italic measured
+ *  1.2–1.6 % wider). A line fitted to the last Bun pixel of the content width is drawn past the inset by
+ *  that much, so a one-line slot is fitted to the content width less that share. */
+export const DRAWN_WIDER = 0.02;
+/** The band every pill of one register shares, so pills of one role are one height. */
+const BAND_PROBE = "ÉÀÇHxpgjq1,’";
 
 const faceOf = (r) => ({
   fontSize: r.fontSize,
@@ -94,207 +56,13 @@ const faceOf = (r) => ({
   fontStyle: r.fontStyle === "italic" ? "italic" : "normal",
 });
 
-/** A line's width as the composition's width-agreement check reads it (spec §4.1). */
+/** A line's width as the composition's width agreement reads it (spec §4.1). */
 export function widthOf(text, r) {
   return measureText(text, faceOf(r)) + Number(r.letterSpacing ?? 0) * Math.max(0, [...text].length - 1);
 }
+const bandOf = (text, r) => measureTextBand(text, faceOf(r));
 
-/** The ink band a register can reach: accented capitals above, cedilla and descenders below. A
- *  block's first baseline sits at its top plus this ascent, never at a half-leading guess. */
-const BAND_PROBE = "ÉÀÇHxpgjq1,’";
-export const bandOf = (r) => measureTextBand(BAND_PROBE, faceOf(r));
-
-const wrapped = new Map();
-function wrap(text, maxWidth, r) {
-  const key = `${r.fontFamily}|${r.fontSize}|${r.fontWeight}|${r.fontStyle}|${r.letterSpacing}|${maxWidth}|${text}`;
-  const held = wrapped.get(key);
-  if (held) return held;
-  const lines = [];
-  let current = "";
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    const trial = current ? `${current} ${word}` : word;
-    if (current && widthOf(trial, r) > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else current = trial;
-  }
-  if (current) lines.push(current);
-  wrapped.set(key, lines);
-  return lines;
-}
-
-// ── the rhythm: every gap a multiple of the lead of the register named beside it ─────────────────
-
-const EYEBROW_GAP = 0.5; // × eyebrow lead: eyebrow → title
-const TITLE_GAP = 0.5; // × display lead: title → key label
-const KEY_LABEL_GAP = 0.3; // × axis lead: key label → swatches
-const STRIP_GAP = 0.15; // × axis lead: swatches → break labels
-const ROW_GAP = 0.35; // × axis lead: break labels → « non rapportée » row, and on to a reference row
-const KEY_GAP = 0.75; // × body lead: key → conclusion
-const SOURCE_GAP = 0.75; // × axis lead: conclusion and map → source
-const GUTTER = 1; // × body lead: panel → map
-/** Chrome sets a first baseline 0.5–1 px off the naive formula (adaptive-leading spec §5.4), so the
- *  text never touches the inset's top or foot. */
-const EDGE_SAFETY = 2;
-/** Panel widths as shares of the frame inside its insets, the narrowest first: the biggest map is
- *  what the beat wants, and a wider panel is spent only when the copy will not fit. */
-const SHARES = [0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56];
-/** The map box's aspect stays within this band of the still's camera. */
-export const MAP_ASPECT_BAND = Object.freeze([0.8, 1.6]);
-
-/** A stack of lines from `top`: first baseline at `top + ascent`, each next one `lead` below. */
-function stack(id, r, texts, x, width, top, align = "start") {
-  const band = bandOf(r);
-  const lines = texts.map((text, i) => {
-    const w = widthOf(text, r);
-    return { text, x: align === "end" ? x + width - w : x, y: top + band.ascent + i * r.lead, width: w };
-  });
-  const height = band.ascent + (texts.length - 1) * r.lead + band.descent;
-  return { id, register: BLOCK_REGISTERS[id], lines, box: { x, y: top, width, height } };
-}
-
-const bottomOf = (block) => block.box.y + block.box.height;
-
-/**
- * The key and the reference mark. Six swatches across the panel, the five breaks printed centred on
- * the edges they open, the « non rapportée » swatch and label on a row beneath. « plus de 94 % » is
- * set under the top class, right-aligned to the key's end: on the « non rapportée » row when a full
- * axis lead of air separates the two, on a row of its own when it does not.
- */
-function keyBlocks({ registers, copy, x, width, top }) {
-  const { axis, annot } = registers;
-  const axisBand = bandOf(axis);
-  const annotBand = bandOf(annot);
-  const classCount = copy.breaks.length + 1;
-  const swatchW = width / (classCount + 0.2);
-  const swatchH = axisBand.ascent;
-  const swatches = Array.from({ length: classCount }, (_, i) => ({
-    x: x + i * swatchW,
-    y: top,
-    width: swatchW - 1,
-    height: swatchH,
-    class: i,
-  }));
-  const labelsBaseline = top + swatchH + STRIP_GAP * axis.lead + axisBand.ascent;
-  const labels = copy.breaks.map((text, i) => {
-    const w = widthOf(text, axis);
-    return { text, x: x + (i + 1) * swatchW - w / 2, y: labelsBaseline, width: w };
-  });
-
-  const rowTop = labelsBaseline + axisBand.descent + ROW_GAP * axis.lead;
-  const missingX = x + swatchW + 0.25 * axis.lead;
-  const missingW = widthOf(copy.missingLabel, axis);
-  const referenceW = widthOf(copy.reference, annot);
-  const sharesRow = x + width - referenceW - (missingX + missingW) >= axis.lead;
-  const rowBaseline = rowTop + (sharesRow ? Math.max(axisBand.ascent, annotBand.ascent) : axisBand.ascent);
-  const missing = { text: copy.missingLabel, x: missingX, y: rowBaseline, width: missingW };
-  const missingSwatch = { x, y: rowBaseline - swatchH, width: swatchW - 1, height: swatchH };
-  const keyBottom = rowBaseline + axisBand.descent;
-  const key = {
-    id: "key",
-    register: BLOCK_REGISTERS.key,
-    lines: [...labels, missing],
-    swatches,
-    missingSwatch,
-    box: { x, y: top, width, height: keyBottom - top },
-  };
-
-  const reference = sharesRow
-    ? {
-        id: "reference",
-        register: BLOCK_REGISTERS.reference,
-        lines: [{ text: copy.reference, x: x + width - referenceW, y: rowBaseline, width: referenceW }],
-        box: {
-          x: x + width - referenceW,
-          y: rowBaseline - annotBand.ascent,
-          width: referenceW,
-          height: annotBand.ascent + annotBand.descent,
-        },
-      }
-    : stack("reference", annot, [copy.reference], x, width, keyBottom + ROW_GAP * axis.lead, "end");
-  return { key, reference, bottom: Math.max(keyBottom, bottomOf(reference)) };
-}
-
-/** The whole frame's text at one panel width, one title form and one display size. */
-function textAt({ registers, copy, frame, inset, panel, form }) {
-  const x = inset;
-  const { eyebrow: eyebrowR, display, axis, body } = registers;
-  // EDGE_SAFETY is vertical by design: Chrome's first-baseline offset is vertical; horizontal edges use the inset.
-  const eyebrow = stack("eyebrow", eyebrowR, wrap(copy.eyebrow, panel, eyebrowR), x, panel, inset + EDGE_SAFETY);
-  const title = stack(
-    "title",
-    display,
-    wrap(copy.title[form], panel, display),
-    x,
-    panel,
-    bottomOf(eyebrow) + EYEBROW_GAP * eyebrowR.lead,
-  );
-  const keyLabel = stack(
-    "keyLabel",
-    axis,
-    wrap(copy.keyLabel, panel, axis),
-    x,
-    panel,
-    bottomOf(title) + TITLE_GAP * display.lead,
-  );
-  const { key, reference, bottom: keyBottom } = keyBlocks({
-    registers,
-    copy,
-    x,
-    width: panel,
-    top: bottomOf(keyLabel) + KEY_LABEL_GAP * axis.lead,
-  });
-  const conclusion = stack(
-    "conclusion",
-    body,
-    wrap(copy.conclusion, panel, body),
-    x,
-    panel,
-    keyBottom + KEY_GAP * body.lead,
-  );
-
-  const sourceWidth = frame.width - inset * 2;
-  const sourceLines = wrap(copy.source, sourceWidth, axis);
-  const sourceBand = bandOf(axis);
-  const sourceTop =
-    frame.height -
-    inset -
-    EDGE_SAFETY -
-    (sourceBand.ascent + (sourceLines.length - 1) * axis.lead + sourceBand.descent);
-  const source = stack("source", axis, sourceLines, x, sourceWidth, sourceTop);
-
-  const blocks = [eyebrow, title, keyLabel, key, reference, conclusion, source];
-  // A break label wider than its swatch runs into the next one: that panel is too narrow as well.
-  const labels = key.lines.slice(0, copy.breaks.length);
-  const crowded = labels.some((l, i) => i > 0 && labels[i - 1].x + labels[i - 1].width + 0.25 * axis.lead > l.x);
-  const tooWide =
-    crowded || blocks.some((b) => b.lines.some((l) => l.x < b.box.x || l.x + l.width > b.box.x + b.box.width));
-  const footTop = sourceTop - SOURCE_GAP * axis.lead;
-  return { blocks, spare: footTop - bottomOf(conclusion), tooWide, footTop };
-}
-
-/** The largest map box right of the panel and above the source, its aspect clamped to the band. */
-function mapBoxFor({ frame, inset, panel, gutter, footTop, aspect }) {
-  const left = inset + panel + gutter;
-  const availW = frame.width - inset - left;
-  const availH = footTop - inset;
-  const [lo, hi] = MAP_ASPECT_BAND.map((k) => k * aspect);
-  let width = availW;
-  let height = availH;
-  if (width / height < lo) height = width / lo;
-  if (width / height > hi) width = height * hi;
-  const drawn = { width: Math.floor(width), height: Math.floor(height) };
-  const mapBox = {
-    x: Math.ceil(left + (availW - drawn.width) / 2),
-    y: Math.ceil(inset + (availH - drawn.height) / 2),
-    ...drawn,
-  };
-  if (mapBox.x + mapBox.width > frame.width - inset) mapBox.x = frame.width - inset - mapBox.width;
-  if (mapBox.y + mapBox.height > footTop) mapBox.y = Math.floor(footTop - mapBox.height);
-  return { mapBox, drawn, mapAspect: width / height };
-}
-
-/** The display register at another size — its tracking and its lead scaled with it. */
+/** The display register at another size, its tracking and lead scaled with it. */
 const displayAt = (display, fontSize) => ({
   ...display,
   fontSize,
@@ -303,108 +71,159 @@ const displayAt = (display, fontSize) => ({
 });
 
 /**
- * THE LADDER, the still's own idea measured at the video's drawn size. For each panel width, the
- * narrowest first: the first title form at its drawn size; the same form at the largest size down to
- * one voice step (`DERIVED_SIZE_RATIO`) and never under the floor; then the next form, the same way.
- * Only when no form fits does the panel take width from the map. *Prefer the fuller headline at a
- * slightly smaller size over the stub headline at full size*, as in `mapGeometryFor`.
- *
- * @param {{ registers: Record<string, any>, copy: ReturnType<typeof caseCopy>, aspect: number,
- *           size: "landscape" }} input  `registers` from `videoRegistersOf`, `copy` from `caseCopy`
+ * THE TITLE LADDER. The longest form that holds ONE line across the content width; a form may step its
+ * size down by quarter pixels, but never to or under the largest other register — a headline smaller
+ * than the voice under it has stopped being the headline — and never under the floor.
  */
-export function videoLayoutFor({ registers, copy, aspect, size }) {
-  if (size !== "landscape")
-    throw new Error(`the choropleth video lays out at landscape only, not ${JSON.stringify(size)}`);
+export function titleFor(forms, registers, { content, minTypePx }) {
+  const drawn = registers.display;
+  const others = Object.entries(registers).filter(([name]) => name !== "display");
+  const largest = Math.max(...others.map(([, r]) => r.fontSize));
+  if (!(drawn.fontSize > largest))
+    throw new Error(`the display register is ${drawn.fontSize}px, not larger than every other register (${largest}px)`);
+  const lowestQuarter = Math.max(Math.ceil(minTypePx * 4), Math.floor(largest * 4) + 1);
+  const tried = [];
+  for (let form = 0; form < forms.length; form++) {
+    const text = applyCase(forms[form], drawn.transform);
+    const full = widthOf(text, drawn);
+    let quarter = Math.min(Math.floor(drawn.fontSize * 4), Math.floor(((drawn.fontSize * content) / full) * 4));
+    while (quarter >= lowestQuarter) {
+      const r = quarter === Math.floor(drawn.fontSize * 4) && quarter / 4 === drawn.fontSize ? drawn : displayAt(drawn, quarter / 4);
+      const width = widthOf(text, r);
+      if (width <= content) return { form, text, register: r, width };
+      quarter -= 1;
+    }
+    tried.push(`form ${form + 1} needs ${((drawn.fontSize * content) / full).toFixed(1)}px`);
+  }
+  throw new Error(
+    `no title form holds one line of ${content}px above ${lowestQuarter / 4}px in ${drawn.fontFamily}: ${tried.join("; ")}`,
+  );
+}
+
+/** The longest source form that holds one line. */
+function sourceFor(forms, r, content) {
+  for (let form = 0; form < forms.length; form++) {
+    const text = applyCase(forms[form], r.transform);
+    const width = widthOf(text, r);
+    if (width <= content) return { form, text, width };
+  }
+  throw new Error(`no source form holds one line of ${content}px in ${r.fontFamily} ${r.fontSize}px`);
+}
+
+/** A name set as a pill: the word, its padding, one height per register. */
+export function pillOf(text, r) {
+  const cased = applyCase(text, r.transform);
+  const textWidth = widthOf(cased, r);
+  const band = bandOf(BAND_PROBE, r);
+  const padX = PILL_PAD_X * r.fontSize;
+  const padY = PILL_PAD_Y * r.fontSize;
+  return {
+    text: cased,
+    textWidth,
+    width: textWidth + 2 * padX,
+    height: band.ascent + band.descent + 2 * padY,
+    /** From the pill's left edge and top edge to the text's start and baseline. */
+    textX: padX,
+    baseline: padY + band.ascent,
+  };
+}
+
+/**
+ * @param {{ registers: Record<string, any>, copy: {
+ *   eyebrow: string, title: string[], counter: string, countTo: number, breaks: string[], unit: string,
+ *   missingLabel: string, source: string[] }, size: "landscape" }} input
+ *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
+ */
+export function layoutFor({ registers, copy, size }) {
+  if (size !== "landscape") throw new Error(`the choropleth video lays out at landscape only, not ${JSON.stringify(size)}`);
   const row = sizeFor(size);
   const frame = { width: row.width, height: row.height };
   const inset = frameInsetFor(size);
+  const content = frame.width - 2 * inset;
   for (const [name, r] of Object.entries(registers))
-    if (!(r.fontSize >= row.minTypePx))
-      throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor at ${size}`);
+    if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
 
-  const drawnDisplay = registers.display;
-  /** THE DISPLAY STAYS THE LARGEST REGISTER. A step down is a slightly smaller headline, never a
-   *  headline smaller than the voice below it: the step stops strictly above the largest other
-   *  register, and a display that is not the largest to begin with is refused outright. */
-  const others = Object.entries(registers).filter(([name]) => name !== "display");
-  const [largestName, largest] = others.reduce((a, b) => (b[1].fontSize > a[1].fontSize ? b : a));
-  const hierarchy = () =>
-    Object.entries(registers)
-      .map(([name, r]) => `${name} ${r.fontSize}px`)
-      .join(", ");
-  const assertDisplayLargest = (fontSize) => {
-    if (!(fontSize > largest.fontSize))
-      throw new Error(
-        `the display register would be drawn at ${fontSize}px, not larger than the ${largestName} ` +
-          `register at ${largest.fontSize}px — the headline would stop being the largest voice ` +
-          `(${hierarchy()})`,
-      );
+  const budget = content / (1 + DRAWN_WIDER);
+  const title = titleFor(copy.title, registers, { content: budget, minTypePx: row.minTypePx });
+  const drawn = { ...registers, display: title.register };
+  const { eyebrow: eyebrowR, display, value, axis } = drawn;
+  const line = (text, r, x, y, width = widthOf(text, r)) => ({ text, x, y, width });
+
+  // ── header ──────────────────────────────────────────────────────────────────────────────────────────
+  const eyebrowText = applyCase(copy.eyebrow, eyebrowR.transform);
+  const eyebrowBand = bandOf(eyebrowText, eyebrowR);
+  const eyebrow = line(eyebrowText, eyebrowR, inset, inset + eyebrowBand.ascent);
+  const titleBand = bandOf(title.text, display);
+  const titleBaseline = eyebrow.y + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent;
+  const titleLine = line(title.text, display, inset, titleBaseline, title.width);
+  const headerBottom = titleBaseline + titleBand.descent;
+
+  // ── counter row: every count it will show, right-aligned, one band for all ─────────────────────────────
+  const counterTop = headerBottom + ROW_GAP * axis.lead;
+  const counterTexts = Array.from({ length: copy.countTo + 1 }, (_, n) => applyCase(copy.counter.replace("{n}", String(n)), value.transform));
+  const counterBand = counterTexts.map((t) => bandOf(t, value)).reduce((a, b) => ({ ascent: Math.max(a.ascent, b.ascent), descent: Math.max(a.descent, b.descent) }));
+  const counterBaseline = counterTop + counterBand.ascent;
+  const counter = counterTexts.map((text) => {
+    const width = widthOf(text, value);
+    // Anchored at its END in the composition, so a count drawn wider in Chrome grows leftward, never past
+    // the inset; `x` is the right edge.
+    return line(text, value, inset + content, counterBaseline, width);
+  });
+  const counterBottom = counterBaseline + counterBand.descent;
+
+  // ── source row, from the foot ───────────────────────────────────────────────────────────────────────
+  const src = sourceFor(copy.source, axis, budget);
+  const sourceBand = bandOf(src.text, axis);
+  const source = line(src.text, axis, inset, frame.height - inset - sourceBand.descent, src.width);
+  const sourceTop = source.y - sourceBand.ascent;
+
+  // ── key row, above the source ───────────────────────────────────────────────────────────────────────
+  const keyBand = bandOf(BAND_PROBE, axis);
+  const keyBottom = sourceTop - ROW_GAP * axis.lead;
+  const keyTop = keyBottom - (keyBand.ascent + axis.lead + keyBand.descent);
+  const unitBaseline = keyTop + keyBand.ascent;
+  const lowerBaseline = unitBaseline + axis.lead;
+  const breaks = copy.breaks.map((b) => applyCase(b, axis.transform));
+  const breakWidths = breaks.map((b) => widthOf(b, axis));
+  const swatchW = Math.max(...breakWidths) + SWATCH_AIR * axis.lead;
+  const swatchH = SWATCH_HEIGHT * axis.lead;
+  const join = SWATCH_JOIN * axis.lead;
+  const classCount = breaks.length + 1;
+  const swatches = Array.from({ length: classCount }, (_, i) => ({
+    x: inset + i * swatchW,
+    y: unitBaseline - swatchH,
+    width: swatchW - join,
+    height: swatchH,
+  }));
+  const bornes = breaks.map((text, i) => line(text, axis, inset + (i + 1) * swatchW - breakWidths[i] / 2, lowerBaseline, breakWidths[i]));
+  const columnX = inset + classCount * swatchW + KEY_COLUMN_GAP * axis.lead;
+  const unit = line(applyCase(copy.unit, axis.transform), axis, columnX, unitBaseline);
+  const missingSwatch = { x: columnX, y: lowerBaseline - swatchH, width: swatchW - join, height: swatchH };
+  const missingLabel = line(applyCase(copy.missingLabel, axis.transform), axis, columnX + swatchW + MISSING_GAP * axis.lead, lowerBaseline);
+
+  // ── the stage: everything that is left ─────────────────────────────────────────────────────────────
+  const stageTop = counterBottom + COUNTER_GAP * axis.lead;
+  const stageBottom = keyTop - ROW_GAP * axis.lead;
+  const stage = { x: inset, y: Math.ceil(stageTop), width: content, height: Math.floor(stageBottom) - Math.ceil(stageTop) };
+  if (!(stage.height > 0)) throw new Error(`the rows leave the map no height (${stage.height}px)`);
+
+  return {
+    frame,
+    inset,
+    content,
+    registers: drawn,
+    title: { form: title.form, fontSize: display.fontSize, drawnFontSize: registers.display.fontSize },
+    source: { form: src.form },
+    lines: { eyebrow, title: titleLine, counter, bornes, unit, missingLabel, source },
+    swatches,
+    missingSwatch,
+    stage,
+    rows: {
+      header: { top: inset, bottom: headerBottom },
+      counter: { top: counterTop, bottom: counterBottom },
+      stage: { top: stage.y, bottom: stage.y + stage.height },
+      key: { top: keyTop, bottom: keyBottom },
+      source: { top: sourceTop, bottom: source.y + sourceBand.descent },
+    },
   };
-  assertDisplayLargest(drawnDisplay.fontSize);
-  const floor = Math.max(row.minTypePx, drawnDisplay.fontSize * DERIVED_SIZE_RATIO);
-  /** The smallest quarter-pixel the step may reach: over the floor, and strictly over `largest`. */
-  const lowestQuarter = Math.max(Math.ceil(floor * 4), Math.floor(largest.fontSize * 4) + 1);
-  const gutter = GUTTER * registers.body.lead;
-  const content = frame.width - inset * 2;
-  let closest = null;
-
-  const attempt = (panel, form, fontSize) => {
-    const at = { ...registers, display: fontSize === drawnDisplay.fontSize ? drawnDisplay : displayAt(drawnDisplay, fontSize) };
-    const text = textAt({ registers: at, copy, frame, inset, panel, form });
-    const fits = !text.tooWide && text.spare >= 0;
-    if (!text.tooWide && (!closest || text.spare > closest.spare))
-      closest = { spare: text.spare, panel, form, fontSize };
-    return fits ? { ...text, registers: at, fontSize } : null;
-  };
-
-  for (const share of SHARES) {
-    const panel = Math.round(content * share);
-    for (let form = 0; form < copy.title.length; form++) {
-      let chosen = attempt(panel, form, drawnDisplay.fontSize);
-      if (!chosen) {
-        // Whether a form fits is monotone in size (a smaller headline never takes more lines or more
-        // height), so the largest fitting quarter-pixel is found by bisection.
-        let lo = lowestQuarter;
-        let hi = Math.floor(drawnDisplay.fontSize * 4) - 1;
-        if (lo <= hi && attempt(panel, form, lo / 4)) {
-          while (lo < hi) {
-            const mid = Math.ceil((lo + hi + 1) / 2);
-            if (attempt(panel, form, mid / 4)) lo = mid;
-            else hi = mid - 1;
-          }
-          chosen = attempt(panel, form, lo / 4);
-        }
-      }
-      if (!chosen) continue;
-      assertDisplayLargest(chosen.fontSize);
-      const { mapBox, drawn, mapAspect } = mapBoxFor({ frame, inset, panel, gutter, footTop: chosen.footTop, aspect });
-      const title = chosen.blocks.find((b) => b.id === "title");
-      return {
-        frame,
-        inset,
-        panel: { x: inset, width: panel, share },
-        title: {
-          form,
-          lines: title.lines.length,
-          fontSize: chosen.fontSize,
-          drawnFontSize: drawnDisplay.fontSize,
-        },
-        registers: chosen.registers,
-        blocks: chosen.blocks,
-        mapBox,
-        drawn,
-        mapAspect,
-        spare: chosen.spare,
-      };
-    }
-  }
-  throw new Error(
-    `the video panel's copy does not fit ${frame.width}x${frame.height} in ` +
-      `${drawnDisplay.fontFamily} ${drawnDisplay.fontSize}px: ` +
-      (closest
-        ? `the closest rung (panel ${closest.panel}px, title form ${closest.form + 1} at ` +
-          `${closest.fontSize}px) overruns the source by ${(-closest.spare).toFixed(0)}px`
-        : `no rung sets every word inside the panel`) +
-      `. Give the beat a shorter title form — do not shrink the map, which is the subject.`,
-  );
 }
