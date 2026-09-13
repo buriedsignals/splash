@@ -64,6 +64,36 @@ export function assertNotFallback(candidate, fallback, name) {
     );
 }
 
+/** MAPTILER SERVES FACES, NOT FAMILIES — and a name it does not have comes back 200, as Noto Sans.
+ *
+ *  Measured on 2026-09-13 against the live endpoint: `Open Sans` — the bare family name, which is
+ *  what a register's `fontFamily` is and what the plan used to declare — is byte-identical to the
+ *  fallback, so the whole map would have been set in a typeface nobody chose with nothing to say so.
+ *  `Open Sans Regular`, `Open Sans Medium`, `Open Sans Bold`, `Open Sans Italic` and
+ *  `Open Sans Medium Italic` are real; `Open Sans SemiBold` is not. The naming is Google's own, which
+ *  MapTiler follows: the weight word, and "Regular" dropped when the face is italic.
+ *
+ *  `bake.mjs` proves each of these is really served before it takes the picture — this only decides
+ *  what to ask for. A weight with no face name is a refusal here rather than a silent substitution
+ *  there. This is why every text face asked of MapTiler goes through this name and
+ *  `assertNotFallback`: a bare family is served as Noto Sans with a 200, and neither MapTiler nor
+ *  MapLibre says so. */
+export const FACE_WEIGHTS = { 400: "Regular", 500: "Medium", 700: "Bold" };
+export function maptilerFace(r) {
+  const weight = FACE_WEIGHTS[Number(r.fontWeight)];
+  if (!weight)
+    throw new Error(
+      `no MapTiler face name for ${r.fontFamily} at weight ${r.fontWeight}: the served faces are ` +
+        `${Object.values(FACE_WEIGHTS).join(", ")} and their italics. Asking for a face MapTiler does ` +
+        `not have returns Noto Sans with a 200, so this refuses rather than letting the map say it.`,
+    );
+  const italic = r.fontStyle === "italic";
+  const parts = [r.fontFamily];
+  if (!(italic && weight === "Regular")) parts.push(weight);
+  if (italic) parts.push("Italic");
+  return parts.join(" ");
+}
+
 /** THE TRUNK DOES NOT REACH INTO `skills/`. `shared/` is vendored on its own into a newsroom's root
  *  (`skills/splash/assets/root-template/shared/`), where no `skills/` directory sits beside it — so
  *  an import climbing out of `shared/` resolves here and fails there, which is the worst shape a
