@@ -61,6 +61,13 @@ export function assertStates(states, steps) {
     for (const [k, v] of Object.entries(state))
       if (typeof v !== "number" || !Number.isFinite(v))
         throw new Error(`state ${i}.${k} is ${JSON.stringify(v)}; every field of a state must be a finite number`);
+    // EVERY CARD CHANGES THE PICTURE. A scrolly is not a static plate with cards laid over it: a card
+    // whose state equals the one before it is a card the reader scrolls through while nothing moves.
+    if (i > 0 && Object.keys(state).every((k) => state[k] === states[i - 1][k]))
+      throw new Error(
+        `card ${i + 1} changes nothing: its state is card ${i}'s. Give it a reading of its own — reveal, ` +
+          `filter, zoom, reorder, count, compare — or fold its words into the card before (references/directed-type-choreography.md)`,
+      );
   });
   return states;
 }

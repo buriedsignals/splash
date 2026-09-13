@@ -305,3 +305,21 @@ describe("renderScrolly — a title ladder, like the static plate's", () => {
     await expect(page({ type: TYPE, title: [] }, "ladder-empty.html")).rejects.toThrow("title");
   });
 });
+
+describe("reveal — every card changes the picture", () => {
+  it("should refuse two consecutive cards that leave the visual in the same state", async () => {
+    await expect(
+      page(
+        {
+          reveal: {
+            element: visual,
+            states: [{ shown: 1 }, { shown: 1 }],
+            driver: DRIVER,
+            apply: "applyTest",
+          },
+        },
+        "same-state.html",
+      ),
+    ).rejects.toThrow("changes nothing");
+  });
+});
