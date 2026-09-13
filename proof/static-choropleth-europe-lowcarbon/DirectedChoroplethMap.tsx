@@ -505,6 +505,15 @@ export function mapGeometryFor({
     fits.rung.display,
     "drawn",
   );
+  /** The ladder chose on the filed rhythm; a drawn face with a taller natural line than its ladder
+   *  head can then overrun the source margin (spec §8). Said out loud, not corrected: the fix is a
+   *  layout decision left to the owner. */
+  if (layout.spare < 0)
+    console.warn(
+      `direction ${direction?.id ?? "(unnamed)"}: drawn layout overruns the source margin by ` +
+        `${(-layout.spare).toFixed(1)} px on ${fits.rung.display.fontFamily} — the ladder chose on ` +
+        `the filed rhythm (spec §8)`,
+    );
   const mapBox = {
     x: PAD + panel + GUTTER,
     y: PAD,
@@ -1235,7 +1244,7 @@ export function DirectedChoroplethMap({
       `${display.fontSize}px (filed ${display.filedSize}, floor ${displayFloor.toFixed(1)}, ` +
       `budget ${rung.lines ?? "none"}), standfirst ${rung.limit + 1}, reading ` +
       (rung.reading < 0 ? "dropped" : `form ${rung.reading + 1}`) +
-      ` · panel ${(rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px spare` +
+      ` · panel ${(rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px drawn spare` +
       ` · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)}`,
   );
 
