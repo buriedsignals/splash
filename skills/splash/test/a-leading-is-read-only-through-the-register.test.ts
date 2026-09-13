@@ -59,10 +59,12 @@ describe("a register's leading", () => {
   });
 
   it("should be read nowhere but in the modules that own it", () => {
+    const offenders = sources
+      .filter((s) => s.reads && !OWNERS.has(s.canonical))
+      .map((s) => s.own);
     expect(
-      sources
-        .filter((s) => s.reads && !OWNERS.has(s.canonical))
-        .map((s) => s.own),
+      offenders,
+      "these sources read `.leading` directly. Route the read through `registerOf` / `leadOf` in #shared/design-base/register.mjs (it refuses a direction that files no leading), or refuse null at the point of use — see docs/splash/2026-09-13-adaptive-leading-spec.md §3.3",
     ).toEqual([]);
   });
 });

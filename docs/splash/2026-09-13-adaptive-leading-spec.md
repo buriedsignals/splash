@@ -1,6 +1,6 @@
 # L'interligne suit la police et la taille dessinées
 
-**Statut :** conception approuvée en séance le 2026-09-13, spec à relire. Non planifiée, non implémentée.
+**Statut :** implémentée sur `rerender/static-corpus` (plan `docs/superpowers/plans/2026-09-13-adaptive-leading.md`). Non fusionnée.
 **Branche :** `rerender/static-corpus`.
 **Décisions du propriétaire enregistrées ici :** l'invariant est la hauteur naturelle de la police
 (§2.1) ; le coefficient vit dans chaque direction (§2.2) ; il est calibré sur l'existant (§4) ; les
@@ -138,6 +138,14 @@ Constantes exportées : `EYEBROW_TO_DISPLAY` (0.75 interligne d'eyebrow) et `REA
 `registerOf` n'est **pas** réexporté par `index.mjs` : il importe resvg, et `index.mjs` est lu par
 des tests de la voie rapide.
 
+**Quatre consommateurs.** Le propriétaire a décidé (2026-09-13) que web, vidéo et scrolly adoptent
+aussi l'interligne adaptatif. `lineHeight` est un multiplicateur SANS UNITÉ : exactement la valeur
+d'un `line-height` CSS sans unité (le navigateur le multiplie par la taille de l'élément, il s'hérite
+comme un ratio) ; `naturalLineHeight` est lu par la règle des navigateurs, donc égal à
+`line-height: normal` pour le même fichier ; `leadOf` est la commodité en px pour un layout qui pose
+ses lignes lui-même (resvg, Remotion à la main). `registerOf` mesure la capitale par resvg : l'appeler
+en node au moment d'émettre, jamais dans la page.
+
 ### 3.5 Les copies portées
 
 Les deux nouveaux modules, `read-direction.mjs` et `registers.mjs` sont portés dans
@@ -266,3 +274,8 @@ capitale.
   actuelles ; à revoir si une direction tombe sur une face aux métriques extrêmes.
 - **Tronc partagé.** L'autre session touche `shared/`. Elle est prévenue avant le premier commit :
   deux fichiers ajoutés, `read-direction.mjs` et `registers.mjs` modifiés.
+- **Une face plus haute que la tête de ladder peut déborder la marge de la source (choroplèthe).**
+  Le ladder décide sur le rythme déposé de la face de référence (Ruling 10) ; le dessin suit la face
+  dessinée. Mesuré : Noto Serif, PT Serif, Roboto Slab, Nunito débordent de 0,2 à 5,9 px ; aucune
+  direction livrée n'y résout. Correctif possible (retomber sur le rythme dessiné quand le choix
+  déposé déborde) = décision de composition, laissée au propriétaire.
