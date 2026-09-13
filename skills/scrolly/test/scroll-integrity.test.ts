@@ -217,17 +217,20 @@ const PROOF = join(SKILL, "..", "..", "proof");
  *  scrolly drops out on its own. */
 function scrolliesOnDisk(): string[] {
   const out: string[] = [];
-  for (const beat of readdirSync(PROOF).sort()) {
-    const dir = join(PROOF, beat, "render");
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir).sort()) {
-      if (!file.endsWith(".html")) continue;
-      const path = join(dir, file);
-      const html = readFileSync(path, "utf8");
-      if (html.includes('class="scrolly"') && html.includes("scrolly-track"))
-        out.push(path);
+  // `renders/`, plural, is where a DIRECTED beat writes one page per filed direction; a guard that
+  // read only `render/` let every directed scrolly ship undriven.
+  for (const beat of readdirSync(PROOF).sort())
+    for (const sub of ["render", "renders"]) {
+      const dir = join(PROOF, beat, sub);
+      if (!existsSync(dir)) continue;
+      for (const file of readdirSync(dir).sort()) {
+        if (!file.endsWith(".html")) continue;
+        const path = join(dir, file);
+        const html = readFileSync(path, "utf8");
+        if (html.includes('class="scrolly"') && html.includes("scrolly-track"))
+          out.push(path);
+      }
     }
-  }
   return out;
 }
 

@@ -390,11 +390,19 @@ function contrastOfCss(a, b) {
  * `failures` are assertion breaches; `notes` are measured facts a person should read.
  */
 export async function verifyOne(page, file, { w, h }) {
+  // ANY UNCAUGHT ERROR IN THE PAGE IS A FAILURE. A beat's own script that throws on every paint
+  // leaves its visual in whatever state it was rendered in, and every assertion below — which read
+  // the scaffold, not the beat — stays green. Measured on the first directed type beat, whose label
+  // seating threw on each frame while the whole contract passed.
+  const thrown = [];
+  const onError = (error) => thrown.push(String(error?.message ?? error).split("\n")[0]);
+  page.on("pageerror", onError);
   await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
   await page.goto(`file://${file}`, { waitUntil: "load" });
   await new Promise((r) => setTimeout(r, 300));
   await page.evaluate(recorder);
   await scrollThrough(page, FRAMES_PER_STEP);
+  page.off("pageerror", onError);
 
   const rec = await page.evaluate(() => window.__rec);
   const shape = await page.evaluate(() => {
@@ -425,6 +433,31 @@ export async function verifyOne(page, file, { w, h }) {
   const notes = [];
   if (rec.length < 20)
     failures.push(`${where}: only ${rec.length} animation frames recorded`);
+  // T2 — A TITLE LADDER STEPS DOWN UNTIL THE HEADER FITS. The header never scrolls away, so a title
+  // that runs to seven lines on a phone takes that height from the graphic for the whole read.
+  const ladder = await page.evaluate(() => {
+    const heading = document.querySelector(".scrolly-header h2[data-title-forms]");
+    if (!heading) return null;
+    const forms = JSON.parse(heading.getAttribute("data-title-forms"));
+    return {
+      share: document.querySelector(".scrolly-header").offsetHeight / document.querySelector(".scrolly").clientHeight,
+      form: forms.indexOf(heading.textContent),
+      forms: forms.length,
+    };
+  });
+  if (ladder && ladder.form < 0)
+    failures.push(`${where}: the title reads a form that is not on its own ladder`);
+  if (ladder && ladder.form >= 0 && ladder.share > 0.22 + 0.005 && ladder.form < ladder.forms - 1)
+    failures.push(
+      `${where}: the header takes ${(ladder.share * 100).toFixed(0)}% of the frame with title form ${ladder.form + 1} of ` +
+        `${ladder.forms} — a shorter form was available and was not taken`,
+    );
+  if (ladder) notes.push(`${where}: title form ${ladder.form + 1} of ${ladder.forms}, header ${(ladder.share * 100).toFixed(0)}% of the frame`);
+  if (thrown.length > 0)
+    failures.push(
+      `${where}: the page threw ${thrown.length} uncaught error${thrown.length === 1 ? "" : "s"} during the pass — ` +
+        [...new Set(thrown)].slice(0, 3).join(" | "),
+    );
 
   // A — the page does not scroll.
   if (shape.docScrollable > 1)
