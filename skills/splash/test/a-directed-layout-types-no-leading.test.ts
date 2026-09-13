@@ -22,17 +22,22 @@ import { join, relative } from "node:path";
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
 
+/** Each pattern carries one expression it must catch, from the corpus before the migration — so a
+ *  regex that stops matching anything cannot keep the empty list below green on its own. */
 const PATTERNS = [
   {
     what: "a lead typed as a multiple of a size",
     re: /const \w*[Ll]ead\s*=\s*\w+\.(?:fontSize|filedSize)\s*\*\s*[\d.]+/g,
+    offending: "const titleLead = display.fontSize * 1.22;",
   },
   {
     what: "the eyebrow gap typed as a multiple of a size",
     re: /eyebrowReg\.(?:fontSize|filedSize)\s*\*/g,
+    offending: "const titleTop = eyebrowBaseline + eyebrowReg.fontSize * 0.9;",
   },
   {
     what: "a gap after a text block typed as a multiple of a size",
+    offending: "const limitsTop = titleTop + titleLines.length * titleLead + body.fontSize * 0.6;",
     re: /(?:Lines\.length\s*\*\s*\w*[Ll]ead\s*[+-]|(?:readingTop|sourceTop)\s*-|annotBand\.ascent\s*-)\s*\(?\s*(?:display|body|annot)\.(?:fontSize|filedSize)\s*\*\s*[\d.]+/g,
   },
 ];
@@ -61,6 +66,13 @@ const offences = directed.flatMap((file) => {
 describe("a directed layout's leading", () => {
   it("should find the directed components (premise)", () => {
     expect(directed.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it("should catch the expression each pattern is written for (premise)", () => {
+    const missed = PATTERNS.filter(
+      ({ re, offending }) => [...offending.matchAll(re)].length === 0,
+    ).map(({ what }) => what);
+    expect(missed).toEqual([]);
   });
 
   it("should type no leading and no block gap as a multiple of a size", () => {
