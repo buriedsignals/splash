@@ -352,8 +352,14 @@ export function DirectedColumnsScrolly({
             gridRow: `${first + 1} / ${last + 2}`,
             alignSelf: "center",
             marginLeft: `calc(${share(rows[first].value) * 78 + 12}% + 14px)`,
-            // Between the bracket and the rule at the subject's length, never across that rule.
-            maxWidth: `calc(${78 - (share(rows[first].value) * 78 + 12)}% - 22px)`,
+            // A CHIP OF THE GROUND, so the rule at the subject's length passes BEHIND the note rather
+            // than through its words — squeezed between bracket and rule it came out one word a line.
+            // It never runs past the track's own right edge.
+            maxWidth: `min(12em, calc(${100 - (share(rows[first].value) * 78 + 12)}% - 18px))`,
+            background: ground,
+            padding: "2px 4px",
+            position: "relative",
+            zIndex: 1,
             pointerEvents: "none",
           }}
         >
