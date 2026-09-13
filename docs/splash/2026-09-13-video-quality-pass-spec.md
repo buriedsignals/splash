@@ -158,10 +158,13 @@ Ce que le choix impose :
 
 - **La clé MapTiler et le réseau sont requis à chaque rendu.** Remotion injecte dans la page tout
   le `.env` de la racine sauf `--env-file` (constaté : les clés MapTiler, Datawrapper, Gemini et
-  Cloudflare de ce dépôt). Le moteur vidéo passe donc un `--env-file` qui ne contient **que** la
-  clé MapTiler, écrit dans un fichier temporaire hors du dépôt et supprimé après le rendu ; la clé
-  n'entre jamais dans un fichier de props, un log conservé ou un argument de commande. Une garde
-  fait échouer un appel `remotion` du moteur qui n'a pas son `--env-file`.
+  Cloudflare de ce dépôt). **La clé n'entre donc jamais dans la page** : le script de rendu la lit
+  et la garde dans son propre process, où un proxy local sur un port éphémère relaie vers
+  `api.maptiler.com` seulement, ajoute la clé en amont et la retire de chaque corps JSON rendu
+  (style, TileJSON) ; la page ne voit que des URL `localhost` sans clé, et reçoit un `--env-file`
+  vide. La clé n'entre jamais dans un fichier de props, un log conservé ou un argument de commande
+  (mesuré par la vérification : origines de la page = le serveur Remotion et le proxy). Une garde
+  fait échouer un appel `remotion` du moteur qui n'a pas son `--env-file` vide.
 - **`--gl=swangle`** pour que la vidéo tienne au still ; le GPU (`--gl=angle`) dérive
   d'anti-crénelage sur ~0,03 % des pixels.
 - **Le fond vient des tuiles vivantes**, pas de la plaque gelée : un restyle MapTiler change la
