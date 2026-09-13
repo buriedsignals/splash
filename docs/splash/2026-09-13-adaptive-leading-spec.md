@@ -51,7 +51,9 @@ La hauteur naturelle est lue dans le `.ttf` que rend `typefaceFile()`, selon **l
 navigateurs** : `OS/2 sTypoAscender − sTypoDescender + sTypoLineGap` si le bit 7 de `fsSelection`
 (`USE_TYPO_METRICS`) est posé, `hhea ascender − descender + lineGap` sinon. C'est ce que produit
 `line-height: normal` en CSS, donc le genre web s'alignera sans conversion le jour où il adopte ce
-mécanisme.
+mécanisme. Cela vaut pour les moteurs mesurés, sous macOS et Linux ; un navigateur sous Windows peut
+lire les métriques `win` quand `USE_TYPO_METRICS` n'est pas posé (Roboto, Ubuntu) — non vérifié. Le
+`lineHeight` sans unité tendu au CSS n'en dépend pas.
 
 Mesuré sur les 17 familles du cache : partout où le bit est posé, typo et hhea sont égaux ; `win`
 diverge souvent (Merriweather 1.257 contre 1.732) et n'est jamais lu. Là où le bit n'est pas posé,
@@ -275,6 +277,10 @@ Le choroplèthe importe `registerOf` du tronc et perd sa copie locale. Les compo
 n'utilisent pas encore `registerOf` y passent, et héritent du même coup de la résolution par
 capitale.
 
+Seul le choroplèthe décide son ladder sur le rythme déposé de la face de référence (Ruling 10) ; les
+autres ladders de carte (Contour, DotDensity, FlowMap, Locator, ProportionalSymbol) décident sur le
+rythme dessiné, selon §2.1 — les deux sont voulus.
+
 ## 7. Hors périmètre
 
 - **Genres web, vidéo, scrolly.** Ils héritent du champ `leading` de `resolveRegister`, sans
@@ -289,6 +295,9 @@ capitale.
   attendant, les valeurs sont `chosen`.
 - **Espaces insécables** entre un nombre et son unité : défaut distinct, relevé au re-rendu du
   corpus.
+- **Lire `lineHeight` sans resvg.** Il n'existe pas encore de moyen de lire le seul `lineHeight` sans
+  passer par resvg : un consommateur côté navigateur appelle `registerOf` en node au moment d'émettre.
+  Un `lineHeightOf` plus léger s'ajoute quand un consommateur en a besoin.
 
 ## 8. Risques
 
