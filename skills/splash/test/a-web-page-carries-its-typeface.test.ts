@@ -41,15 +41,21 @@ import { join } from "node:path";
 import {
   assertFontsEmbedded,
   codePointsOf,
+  cssContentText,
+  displayableTextOf,
   dominantFontStack,
   embeddedWebFaces,
+  fontCodePoints,
   fontFaceCss,
   fontRequestsInHtml,
   isWoff2,
+  jsonPayloadText,
   pageTextOf,
   parseUnicodeRange,
   parseWebFaces,
+  rangeSpec,
   rangesCover,
+  subsetWebFace,
   typefaceCacheDir,
 } from "../../../shared/design-base/typefaces.mjs";
 
@@ -177,9 +183,9 @@ describe("the bytes, fetched and checked", () => {
     unicodeRange: string;
   }>;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // The exact case the corpus produces: French copy, a CO2 subscript, one family, two weights.
-    faces = embeddedWebFaces(
+    faces = await embeddedWebFaces(
       [
         { family: "Open Sans", weight: 400, style: "normal" },
         { family: "Open Sans", weight: 700, style: "normal" },
@@ -196,7 +202,9 @@ describe("the bytes, fetched and checked", () => {
 
   it("should keep the files in the SAME cache the resvg path uses, one per family, weight and subset", () => {
     expect(typefaceCacheDir()).toBe(cache);
-    const held = readdirSync(cache).filter((n) => n.endsWith(".woff2"));
+    const held = readdirSync(cache).filter(
+      (n) => n.endsWith(".woff2") && !n.startsWith("subset-"),
+    );
     expect(held.length).toBe(faces.length);
     expect(held.some((n) => n.startsWith("Open-Sans-400-latin"))).toBe(true);
   });
@@ -218,14 +226,14 @@ describe("the bytes, fetched and checked", () => {
       );
   });
 
-  it("should drop a poisoned cache entry rather than embed it", () => {
+  it("should drop a poisoned cache entry rather than embed it", async () => {
     const poisoned = join(cache, "Open-Sans-400-latin.woff2");
     expect(existsSync(poisoned)).toBe(true);
     writeFileSync(
       poisoned,
       "<!doctype html><title>429 Too Many Requests</title>",
     );
-    const again = embeddedWebFaces(
+    const again = await embeddedWebFaces(
       [{ family: "Open Sans", weight: 400, style: "normal" }],
       "abc",
     );
@@ -244,12 +252,15 @@ describe("the bytes, fetched and checked", () => {
 });
 
 describe("the guard — a page that names a face it does not carry is not written", () => {
-  const carried = fontFaceCss(
-    embeddedWebFaces(
-      [{ family: "Open Sans", weight: 400, style: "normal" }],
-      "Le CO₂ baisse",
-    ),
-  );
+  let carried: string;
+  beforeAll(async () => {
+    carried = fontFaceCss(
+      await embeddedWebFaces(
+        [{ family: "Open Sans", weight: 400, style: "normal" }],
+        "Le CO₂ baisse",
+      ),
+    );
+  });
   const page = (style: string, body: string) =>
     `<!doctype html><html><head><style>\n${style}\n</style></head><body>${body}</body></html>`;
 
@@ -303,3 +314,161 @@ describe("the guard — a page that names a face it does not carry is not writte
     ).not.toThrow();
   });
 });
+
+/**
+ * THE CUT — each face reduced to the characters the page can display, and the guard that makes
+ * "can display" mean more than "says on load".
+ *
+ * The mechanism above embedded Google's whole `latin` subset: 231 glyphs, 13 KB for Open Sans and
+ * 49 KB for Merriweather, so that anything a script might compose at run time had a net under it.
+ * Cutting the face removes that net, and the failure it removes it into is the nastiest one this
+ * format has: a glyph that is missing ONLY ON HOVER looks perfect in every screenshot.
+ *
+ * So three properties, in the order they can break:
+ *
+ *   1. THE CUT REPORTS WHAT IT REALLY KEPT. hb-subset silently drops a character the source font
+ *      has no glyph for, and Google's own `unicode-range` overclaims what its files contain, so the
+ *      emitted range is read back off the cut font's `cmap`.
+ *   2. THE SET IS EVERYTHING THE PAGE CAN DISPLAY, not the words in the initial markup — the
+ *      readable attributes a tooltip reads back, the strings inside a JSON payload a live map hands
+ *      to one, and any text a stylesheet generates.
+ *   3. THE GUARD REFUSES, PER FAMILY. A character outside one family's cut fails even when another
+ *      family on the same page reaches it.
+ */
+describe("the cut — a face carries the characters this page can display, and says so truthfully", () => {
+  const FULL_LATIN_DECLARED = 0x2000; // anything inside Google's `latin` claim of U+2000-206F
+
+  it("should read a face's real repertoire off its own cmap, not off what Google claims", async () => {
+    const [face] = await embeddedWebFaces(
+      [{ family: "Open Sans", weight: 400, style: "normal" }],
+      "abc",
+    );
+    const declared = parseUnicodeRange(face.unicodeRange);
+    // The cut is a LIST, not a claim over a block: the range it writes reaches `a` and does not
+    // reach a code point nothing on the page sets.
+    expect(rangesCover(declared, "a".codePointAt(0)!)).toBe(true);
+    expect(rangesCover(declared, "ж".codePointAt(0)!)).toBe(false);
+    expect(face.bytes).toBeLessThan(face.servedBytes);
+  });
+
+  it("should NOT report a character the source font has no glyph for", async () => {
+    // Google's `latin` range claims U+2000-206F wholesale. Its Open Sans file does not carry
+    // U+202F, the narrow no-break space `Intl.NumberFormat("fr-FR")` puts inside a thousand — so a
+    // cut that trusted the claim would write a range no glyph answers.
+    const held = readFileSync(
+      join(cache, readdirSync(cache).find((n) => n.startsWith("Open-Sans-400-latin."))!),
+    );
+    const source = fontCodePoints(await bytesAsTrueType(held));
+    expect(source).toContain(0x00a0);
+    expect(source).not.toContain(0x202f);
+
+    const cut = await subsetWebFace(held, [0x41, 0x202f, 0x2082]);
+    expect(cut.codePoints).toEqual([0x41]);
+    expect(cut.bytes.length).toBeLessThan(held.length);
+  });
+
+  it("should write a range a browser can read, with consecutive code points collapsed", () => {
+    expect(rangeSpec([0x41, 0x42, 0x43, 0x61, 0x2082])).toBe("U+41-43, U+61, U+2082");
+    expect(rangeSpec([])).toBe("");
+  });
+
+  it("should read the strings inside a JSON payload and leave a plain script alone", () => {
+    const html =
+      `<script>var hidden = "Ẑ";</script>` +
+      `<script type="application/json" id="mw-live-plan">` +
+      JSON.stringify({ features: [{ properties: { name: "Zürich", detail: "1 289 000 hab." } }] }) +
+      `</script>`;
+    const text = jsonPayloadText(html);
+    expect(text).toContain("Zürich");
+    expect(text).toContain("1 289 000 hab.");
+    expect(text).not.toContain("Ẑ"); // a plain <script> is code, not words
+    // and the whole set the cut is measured against carries it, while `pageTextOf` alone does not
+    expect(codePointsOf(pageTextOf(html))).not.toContain("ü".codePointAt(0));
+    expect(codePointsOf(displayableTextOf(html))).toContain("ü".codePointAt(0));
+  });
+
+  it("should read text a stylesheet generates, quoted or escaped", () => {
+    const html = `<style>.a::after { content: "→"; } .b::before { content: '\\2190 '; }</style><p>x</p>`;
+    expect(cssContentText(html)).toContain("→");
+    expect(cssContentText(html)).toContain("←");
+    expect(codePointsOf(displayableTextOf(html))).toContain(0x2192);
+  });
+
+  it("should carry a character that only ever appears in a hover string", async () => {
+    // `data-detail` is the one thing both formats' interaction scripts put on screen, and it is in
+    // no text node. Before the cut it was free — the whole latin subset was there. Now it has to be
+    // asked for by name or the tooltip has a hole in it.
+    const html = `<p>plain</p><circle class="pt" data-detail="Zürich · 1 289 hab."></circle>`;
+    const faces = await embeddedWebFaces(
+      [{ family: "Open Sans", weight: 400, style: "normal" }],
+      displayableTextOf(html),
+    );
+    const ranges = faces.flatMap((f) => parseUnicodeRange(f.unicodeRange));
+    for (const ch of "Zürich·1289hab.") expect(rangesCover(ranges, ch.codePointAt(0)!)).toBe(true);
+  });
+
+  it("should carry the digits and signs a formatted value is made of, printed or not", async () => {
+    // A series whose readings all start with 1 and 2 types no `7`, and a beat's own numbers are
+    // fixed the moment it renders — so the ten digits and the separators travel whether this page
+    // happens to print them or not.
+    const faces = await embeddedWebFaces(
+      [{ family: "Open Sans", weight: 400, style: "normal" }],
+      "one two three",
+    );
+    const ranges = faces.flatMap((f) => parseUnicodeRange(f.unicodeRange));
+    for (const ch of "0123456789.,%+−–—’") expect(rangesCover(ranges, ch.codePointAt(0)!)).toBe(true);
+  });
+
+  it("should refuse a page whose own words fall outside the cut it carries — naming the character and the family", async () => {
+    const faces = await embeddedWebFaces(
+      [{ family: "Open Sans", weight: 400, style: "normal" }],
+      "Le CO₂ baisse",
+    );
+    const page = (css: string, body: string) =>
+      `<!doctype html><html><head><style>\n${css}\nbody { font-family: "Open Sans", Helvetica, sans-serif; }\n</style></head><body>${body}</body></html>`;
+
+    expect(() => assertFontsEmbedded(page(fontFaceCss(faces), "Le CO₂ baisse"))).not.toThrow();
+
+    // THE MUTATION, in code: one real character taken out of the cut it declares. This is the
+    // failure the cut introduces — a subset that no longer reaches a word the page says — and it is
+    // the one the whole-subset mechanism could not have.
+    const holed = faces.map((f) => ({
+      ...f,
+      unicodeRange: rangeSpec(
+        parseUnicodeRange(f.unicodeRange)
+          .flatMap(([lo, hi]) => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i))
+          .filter((cp) => cp !== "é".codePointAt(0) && cp !== 0x2082),
+      ),
+    }));
+    expect(() => assertFontsEmbedded(page(fontFaceCss(holed), "Le CO₂ baissé"))).toThrow(
+      /U\+2082.*Open Sans|Open Sans.*U\+2082/s,
+    );
+  });
+
+  it("should refuse per FAMILY, not because something on the page reaches the character", async () => {
+    // The hole the pooled check had: with each face cut to a list rather than carrying the whole
+    // latin subset, two families on one page no longer carry the same repertoire.
+    const sans = await embeddedWebFaces(
+      [{ family: "Open Sans", weight: 400, style: "normal" }],
+      "Le CO₂ baissé",
+    );
+    const serif = await embeddedWebFaces(
+      [{ family: "Merriweather", weight: 400, style: "normal" }],
+      "Le CO2 baisse", // no é, no subscript — this family's cut is narrower
+    );
+    const html =
+      `<!doctype html><html><head><style>\n${fontFaceCss([...sans, ...serif])}\n` +
+      `body { font-family: "Open Sans", Helvetica, sans-serif; }\n` +
+      `.chart-title { font-family: "Merriweather", Georgia, serif; }\n` +
+      `</style></head><body><h1 class="chart-title">Le CO₂ baissé</h1></body></html>`;
+    expect(() => assertFontsEmbedded(html)).toThrow(/Merriweather/);
+  });
+});
+
+/** woff2 → TrueType, so `fontCodePoints` can be pointed at a file Google served. The production
+ *  path does the same thing inside `subsetWebFace`; here it is only a test's way of reading a
+ *  source face's repertoire. */
+async function bytesAsTrueType(bytes: Buffer): Promise<Buffer> {
+  const fontverter = (await import("fontverter")).default;
+  return Buffer.from(await fontverter.convert(bytes, "truetype"));
+}

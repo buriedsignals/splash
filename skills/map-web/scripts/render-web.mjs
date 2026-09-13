@@ -35,11 +35,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
 import {
   assertFontsEmbedded,
+  displayableTextOf,
   dominantFontStack,
   embeddedWebFaces,
   fontFaceCss,
   fontRequestsInHtml,
-  pageTextOf,
 } from "./typefaces.mjs";
 import { toDataUri } from "./inline-asset.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
@@ -341,6 +341,14 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
   // nothing anywhere loading it. The document is assembled twice from one template, once to be
   // read and once to be written, and `assertFontsEmbedded` refuses a page naming a family it does
   // not carry.
+  //
+  // AND EACH FACE IS CUT DOWN to the characters this page can display, which roughly halves what
+  // it costs. `displayableTextOf` is what "can display" means, and it is deliberately wider than
+  // the rendered words: the readable attributes a tooltip reads back, the strings inside a JSON
+  // payload (a live map hands one to its own tooltip), and anything a stylesheet generates. A
+  // glyph missing only on hover is in no screenshot, so what each cut face really carries is
+  // measured off its own cmap and the coverage guard is per family — `subsetWebFace` and
+  // `assertFontsEmbedded` in `typefaces.mjs`.
   const stack = dominantFontStack(mapHtml + tableHtml);
   const baseCss = buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame, fontStack: stack });
   const page = (css) => `<!doctype html>
@@ -368,7 +376,7 @@ ${liveBlock}
 `;
 
   const draft = page(baseCss);
-  const faces = embeddedWebFaces(fontRequestsInHtml(draft).requests, pageTextOf(draft));
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
 

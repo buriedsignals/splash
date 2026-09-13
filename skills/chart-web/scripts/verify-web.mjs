@@ -51,7 +51,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { render } from "./render-web.mjs";
-import { probeTypefaces } from "./typefaces.mjs";
+import { probeRevealedText, probeTypefaces } from "./typefaces.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -949,6 +949,52 @@ async function checkTypefaces(page) {
       );
 }
 
+/** ITEM: the words a reader PROVOKES are set in the typeface the page asked for too.
+ *
+ *  The defect the cut introduces and `checkTypefaces` above cannot see: each face now carries a
+ *  LIST of characters rather than Google's whole latin subset, and a character outside that list is
+ *  drawn by the bridge. On the initial page that is loud. In a tooltip it is invisible until a
+ *  reader hovers — and `document.fonts.check()` answers `true` about it, because a character
+ *  outside every declared range needs no custom font at all.
+ *
+ *  So `probeRevealedText` DRIVES the page through its own handlers — every filter control clicked,
+ *  every `[data-detail]` focused, which is the same `show()` a pointer goes through — and measures
+ *  what appeared, against the stack it appeared in.
+ *
+ *  Verified by mutation on 2026-09-13: with one character cut out of the page's own subset, this
+ *  section names it and goes red; with the @font-face block stripped, the width differential reads
+ *  0.0px apart. */
+async function checkRevealedTypefaces(page) {
+  const { uses, controls, targets, revealed, unshown } = await page.evaluate(probeRevealedText);
+  check(
+    targets === 0 || revealed > 0,
+    `interaction: the page's own handler really showed a detail string`,
+    `${revealed}/${targets} of this beat's [data-detail] marks put their string in the tooltip` +
+      (unshown.length > 0 ? `; ${unshown.length} never did — ${JSON.stringify(unshown.slice(0, 3))}` : "") +
+      `, across ${controls} filter control${controls === 1 ? "" : "s"}`,
+  );
+  if (uses.length === 0) {
+    skip(`interaction`, `nothing this beat reveals is set in a named family`);
+    return;
+  }
+  for (const use of uses) {
+    const who = `${use.family} ${use.weight} ${use.style}`;
+    check(
+      use.uncovered.length === 0,
+      `interaction: ${use.family} sets all ${use.characters} characters this beat can reveal (${use.from.join(", ")})`,
+      use.uncovered.length > 0
+        ? `the subset carried for it does not reach ${use.uncovered.join(", ")} — ${use.uncovered.length === 1 ? "that glyph is" : "those glyphs are"} drawn by ${use.fallbackStack}, and only a reader who hovers sees it`
+        : undefined,
+    );
+    const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+    check(
+      delta > 0.5,
+      `interaction: ${who} really DRAWS the words it reveals, not its fallback`,
+      `${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}" — ${delta.toFixed(1)}px apart`,
+    );
+  }
+}
+
 // ===== the run =====
 
 const argv = process.argv.slice(2);
@@ -993,6 +1039,14 @@ try {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
     await checkTypefaces(page);
+    await page.close();
+  }
+
+  console.log(`\nTYPEFACE UNDER INTERACTION — every word a reader can provoke, in the face that was chosen`);
+  {
+    const page = await browser.newPage();
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    await checkRevealedTypefaces(page);
     await page.close();
   }
 
