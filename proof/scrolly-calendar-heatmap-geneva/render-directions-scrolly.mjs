@@ -1,13 +1,16 @@
 // Geneva's 2024, one cell per day, rendered once per FILED DIRECTION into a self-contained scrolly
 // page. The `calendar heatmap` type in the scrolly format.
 //
-// THE SAME PLATE AS `static-calendar-heatmap-geneva`, READ IN ORDER. The streak search, the extremes,
-// the warmest month, the quantile bins, the assertions and the words are the static beat's own:
+// THE SUBJECT OF `static-calendar-heatmap-geneva`, CHOREOGRAPHED. The streak search, the extremes, the
+// warmest month, the quantile bins, the assertions and the colour rules are the static beat's own; the
+// scroll tells them with its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. what a cell is — the calendar and its key;
-//   2. the longest run above the threshold — its outline, drawn in the order of its days;
-//   3. the warmest month and the two extremes;
-//   4. the plate's own reading line.
+//   1. one cell a day — the year fills, day by day;
+//   2. the six bins — the key arrives under the full year;
+//   3. how many days passed 20 °C — the others step back to a neutral;
+//   4. the longest run — July and August open, print their values, the outline traces and counts to 31;
+//   5. August, not July — back to the year, every month's mean beside its row;
+//   6. the two extremes — ringed and named.
 //
 // Usage:  bun proof/scrolly-calendar-heatmap-geneva/render-directions-scrolly.mjs
 
@@ -33,6 +36,8 @@ const YEAR = 2024;
 const UNIT = "°C";
 const THRESHOLD = 20;
 const EYEBROW = "Climat · Genève";
+/** A number and its unit never part at a line end: "20 °C", not "20 / °C" (measured on a phone title). */
+const NB = "\u00A0";
 const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
 // ── the days, and the static beat's own assertions ─────────────────────────────────────────────
@@ -41,11 +46,14 @@ const days = (await readFile(join(HERE, "data.csv"), "utf8"))
   .split(/\r?\n/)
   .slice(1)
   .map((l) => l.split(","))
-  .map(([date, mean]) => {
+  .map(([date, mean], index) => {
     const [y, m, d] = date.split("-").map(Number);
     if (y !== YEAR) throw new Error(`the frozen file carries ${y}, not ${YEAR}`);
-    return { date, month: m - 1, day: d, value: Number(mean) };
+    return { date, index, month: m - 1, day: d, value: Number(mean) };
   });
+for (let i = 1; i < days.length; i++)
+  if (days[i].month * 40 + days[i].day <= days[i - 1].month * 40 + days[i - 1].day)
+    throw new Error(`the frozen file is not in calendar order at ${days[i].date}; the year fills day by day in file order`);
 const daysInMonth = (month) => new Date(YEAR, month + 1, 0).getDate();
 const expected = MONTHS.reduce((sum, _, m) => sum + daysInMonth(m), 0);
 if (days.length !== expected) throw new Error(`expected ${expected} days in ${YEAR}, got ${days.length}`);
@@ -78,6 +86,10 @@ const quantile = (p) => sorted[Math.floor(p * (sorted.length - 1))];
 const breaks = [0.166, 0.333, 0.5, 0.666, 0.833].map((p) => Math.round(quantile(p)));
 if (new Set(breaks).size !== breaks.length) throw new Error(`two bins share a break after rounding: ${breaks.join(", ")}`);
 
+/** A count the third card states and the filter draws. */
+const warmDays = days.filter((d) => d.value >= THRESHOLD).length;
+if (!(warmDays > best.length)) throw new Error(`the streak is part of the warm days; ${warmDays} warm days against a run of ${best.length}`);
+
 /** One box per month the streak crosses. */
 const runs = [];
 for (let month = best.from.month; month <= best.to.month; month++)
@@ -89,39 +101,51 @@ const asDay = (day) => `${day.day} ${MONTHS[day.month].toLowerCase()}`;
 
 // ── the words: the static beat's, one reading per card ─────────────────────────────────────────
 const title = [
-  `Genève a tenu ${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} en ${YEAR}`,
-  `${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} à Genève`,
-  `${best.length} jours au-dessus de ${THRESHOLD} ${UNIT}`,
+  `Genève a tenu ${best.length} jours d’affilée au-dessus de ${THRESHOLD}${NB}${UNIT} en ${YEAR}`,
+  `${best.length} jours d’affilée au-dessus de ${THRESHOLD}${NB}${UNIT} à Genève`,
+  `${best.length} jours au-dessus de ${THRESHOLD}${NB}${UNIT}`,
 ];
 const prose = [
-  [`Température moyenne de chaque jour de ${YEAR} à Genève, une case par jour.`],
-  [`La série la plus longue au-dessus de ${THRESHOLD} ${UNIT} court du ${asDay(best.from)} au ${asDay(best.to)}.`],
+  [`Température moyenne de chaque jour de ${YEAR} à Genève, une case par jour, une ligne par mois.`],
+  [`Six classes, qui contiennent à peu près autant de jours chacune ; leur borne est écrite en ${UNIT}.`],
+  [`${warmDays} jours de ${YEAR} ont dépassé ${THRESHOLD}${NB}${UNIT} en moyenne.`],
+  [`La série la plus longue court du ${asDay(best.from)} au ${asDay(best.to)} : ${best.length} jours d’affilée.`],
+  [`Le mois le plus chaud est ${warmestMonth.name.toLowerCase()} (${one(warmestMonth.mean)}), et non juillet (${one(july.mean)}).`],
   [
-    `Le mois le plus chaud est ${warmestMonth.name.toLowerCase()} (${one(warmestMonth.mean)}) et non juillet (${one(july.mean)}) ; le jour le plus chaud est le ${asDay(hottest)} (${one(hottest.value)}), le plus froid le ${asDay(coldest)} (${one(coldest.value)}).`,
-  ],
-  [
-    `Lecture : une ligne par mois, une colonne par quantième. Les six classes contiennent à peu près autant de jours chacune et leur borne est écrite en ${UNIT}. Le trait entoure la série du titre ; les cases pâles sans valeur sont des dates qui n’existent pas.`,
+    `Le jour le plus chaud est le ${asDay(hottest)} (${one(hottest.value)}), le plus froid le ${asDay(coldest)} (${one(coldest.value)}). Les cases pâles sans valeur sont des dates qui n’existent pas.`,
   ],
 ];
+const counterSuffix = `jours au-dessus de ${THRESHOLD}${NB}${UNIT}`;
+const meansLabel = "moyenne";
+const means = monthlyMean.map((m) => ({ value: m.mean, label: one(m.mean) }));
+const hotText = `${asDay(hottest)} · ${one(hottest.value)}${NB}${UNIT}`;
+const coldText = `${asDay(coldest)} · ${one(coldest.value)}${NB}${UNIT}`;
 const source = `Source : Open-Meteo (réanalyse ERA5), moyenne journalière à 2 m, Genève · données ${YEAR}, gelées le 9 septembre 2026`;
 const keyLabel = `moyenne du jour, en ${UNIT}`;
 const missingLabel = "date qui n’existe pas";
 const alt =
   `Calendrier en couleurs : la température moyenne de chacun des ${days.length} jours de ${YEAR} à Genève, une ligne par ` +
   `mois et une colonne par quantième. Le bloc entouré court du ${asDay(best.from)} au ${asDay(best.to)}, ${best.length} jours ` +
-  `consécutifs au-dessus de ${THRESHOLD} ${UNIT}. Le jour le plus chaud est le ${asDay(hottest)} (${one(hottest.value)}) et le ` +
+  `consécutifs au-dessus de ${THRESHOLD}${NB}${UNIT}. Le jour le plus chaud est le ${asDay(hottest)} (${one(hottest.value)}) et le ` +
   `plus froid le ${asDay(coldest)} (${one(coldest.value)}).`;
 
 /** One state per card; see `calendar-drive.mjs`. */
-const STATES = [{ streak: 0 }, { streak: 1 }, { streak: 1 }, { streak: 1 }];
+const STATES = [
+  { fill: 0, key: 0, filter: 0, zoom: 0, outline: 0, means: 0, extremes: 0 },
+  { fill: 1, key: 1, filter: 0, zoom: 0, outline: 0, means: 0, extremes: 0 },
+  { fill: 1, key: 1, filter: 1, zoom: 0, outline: 0, means: 0, extremes: 0 },
+  { fill: 1, key: 1, filter: 1, zoom: 1, outline: 1, means: 0, extremes: 0 },
+  { fill: 1, key: 1, filter: 0, zoom: 0, outline: 1, means: 1, extremes: 0 },
+  { fill: 1, key: 1, filter: 0, zoom: 0, outline: 1, means: 1, extremes: 1 },
+];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: `${MONTHS.join(" ")} 1 5 10 15 20 25 31 ${breaks.map(format).join(" ")} ${keyLabel} ${missingLabel}`,
-  annot: "",
-  value: "",
+  axis: `${MONTHS.join(" ")} 1 5 10 15 20 25 31 ${breaks.map(format).join(" ")} ${keyLabel} ${missingLabel} ${meansLabel} ${days.map((d) => one(d.value)).join(" ")}`,
+  annot: `${hotText} ${coldText}`,
+  value: `${best.length} ${counterSuffix} ${means.map((m) => m.label).join(" ")}`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -141,13 +165,21 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["calendrier", "serie", "extremes", "lecture"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["calendrier", "classes", "chauds", "serie", "mois", "extremes"][i], prose: p })),
       reveal: {
         element: createElement(DirectedCalendarScrolly, {
-          days: days.map(({ month, day, value }) => ({ month, day, value })),
+          days: days.map(({ index, month, day, value }) => ({ index, month, day, value, label: one(value) })),
           months: MONTHS,
           breaks,
+          threshold: THRESHOLD,
           runs,
+          counterSuffix,
+          streakLength: best.length,
+          means,
+          meansLabel,
+          warmest: warmestMonth.month,
+          hot: { month: hottest.month, day: hottest.day, text: hotText },
+          cold: { month: coldest.month, day: coldest.day, text: coldText },
           keyLabel,
           missingLabel,
           format,

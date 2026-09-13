@@ -12,25 +12,35 @@ The `calendar heatmap` type in the scrolly format, drawn once per filed directio
 streak search, extremes, warmest month, quantile bins, assertions and words as
 `static-calendar-heatmap-geneva`.
 
-## The same plate, read in order
+## The choreography
 
-| card | what the card says (the static plate's own words) | what the picture shows |
-| --- | --- | --- |
-| 1 | the mean temperature of each day of 2024 in Geneva, one cell a day | the calendar and its key |
-| 2 | the longest run above 20 °C, 18 July to 17 August | the run's outline, drawn in the order of its days |
-| 3 | the warmest month is August, not July; the hottest and coldest days | the complete plate |
-| 4 | the plate's reading line | the complete plate |
+The static plate is the floor — data, streak search, extremes, warmest month, quantile bins, assertions,
+colour rules. The scroll tells the subject with its own gestures
+(`skills/scrolly/references/directed-type-choreography.md`):
 
-## The static plate's rules, and what the fluid frame asks of them
+| card | what the card says | gesture | what the reader sees move |
+| --- | --- | --- | --- |
+| 1 | one cell a day, one row a month | — | the empty calendar |
+| 2 | six bins of roughly equal count, breaks in °C | **reveal in order** | the year fills day by day, 1 January to 31 December, the key arrives |
+| 3 | 59 days passed 20 °C | **filter** | every day under 20 °C steps back to a neutral |
+| 4 | the longest run, 18 July to 17 August: 31 days | **zoom + trace + count** | July and August open to fill the frame and print their values; the outline traces the run day by day while a counter climbs to 31 |
+| 5 | August (22,2), not July (20,9) | **pull back + compare** | the year returns in full colour; every month's mean is drawn beside its row, August in the accent |
+| 6 | the hottest and coldest days; missing dates | **name** | 30 July and 12 January ringed and labelled |
 
-- **One hue cluster, six bins of roughly equal count**, each printing its break in °C.
-- **The impossible dates are drawn as missing**, in a neutral outside the ramp.
-- **The streak is outlined in the ink, in the gutter, over a halo of the ground**, one box per month it
-  crosses — never in the accent, where it vanished into the warmest bins.
-- **The calendar is a CSS grid**: month names, then 31 columns sharing whatever width is left. On a
-  phone a cell is narrow and tall; no label is rotated or cut.
-- **The outline draws itself day by day** as the reader crosses from card 1 to card 2 — a clip, not a
-  scale, so its borders keep their width while it grows.
+The warm-day count is derived and asserted in the runner; the monthly means are the static beat's own.
+
+## Precision
+
+- **The zoom is row heights, not a transform.** The calendar is a grid; zooming interpolates its row
+  tracks, so every word stays at its register's size. Values print inside a focused cell only where the
+  cell, at full zoom, is wider and taller than the value — on a phone they do not, and the counter
+  carries the number.
+- **Everything is placed on the grid**: the counter, the outlines, the two names and the means column
+  are grid items on the lines of the cells they belong to; a name or the counter that would hang
+  outside the frame slides back in.
+- **Values on a filtered day are set in the ink**, not the ground: white on the neutral measured
+  unreadable.
+- **A number never parts from its unit** at a line end (`20 °C` with a no-break space).
 - **The title steps down a ladder of three forms** until the fixed header fits its share of the frame.
 
 ## Directions
