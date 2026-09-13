@@ -89,10 +89,17 @@ export const READING_TO_SOURCE = 0.4286;
  * what the direction filed, and a layout that counts a line budget on the reference face needs both.
  * The LINE is the drawn one's — `leadOf` reads `fontSize` — so a headline the ladder shrinks
  * tightens its own leading instead of keeping the block it was given.
+ *
+ * `ctx` is `resolveRegister`'s, and it carries the FAMILY — which apparatus registers exist beside
+ * the five core voices, not which font ladder a role walks. A chart derives `axis` out of `body`; a
+ * map derives `place` out of `annot`; the ladders are per ROLE and `ladderHeadFor` reads them off
+ * the direction's own decisions by register name, so nothing about a face needs threading here. A
+ * caller that asks for a map's `place` without saying so is refused by `resolveRegister` — "no such
+ * register for a chart" — rather than answered wrongly, which is why the default is safe.
  */
-export function registerOf(direction, name) {
+export function registerOf(direction, name, ctx = {}) {
   const { ink, muted } = deriveFurniture(direction.ground);
-  const r = resolveRegister(direction, name);
+  const r = resolveRegister(direction, name, ctx);
   if (typeof r.leading !== "number")
     throw new Error(
       `direction ${direction?.id ?? "(unnamed)"} files no leading for its ${name} register, and a ` +
