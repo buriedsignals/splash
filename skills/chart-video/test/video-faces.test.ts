@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { uncoveredText } from "../assets/face-coverage";
-import { videoFaces } from "../scripts/video-faces.mjs";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { videoFaces, writeRenderProps } from "../scripts/video-faces.mjs";
 
 /**
  * The node-side half: the faces a video render hands its composition, as bytes, cut from the
@@ -68,5 +71,30 @@ describe("videoFaces", () => {
       // Google answers a `text=` request for glyphs the family lacks with a URL that returns 400,
       // so the shared fetcher refuses with "cannot download" before its own "cannot set" is reached.
     ).rejects.toThrow(/cannot (set|download)/);
+  });
+});
+
+describe("writeRenderProps", () => {
+  it("should hand the render the bytes and keep them out of the committed audit file", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "video-faces-"));
+    const auditPath = join(dir, "beat-props.json");
+    const renderPath = await writeRenderProps({
+      props: { title: "Pluie" },
+      stack: STACK,
+      weights: [400],
+      auditPath,
+    });
+    const rendered = JSON.parse(readFileSync(renderPath, "utf8"));
+    const audit = JSON.parse(readFileSync(auditPath, "utf8"));
+    expect([
+      rendered.title,
+      rendered.fontFamily,
+      rendered.faces.every((f: { base64: string }) => f.base64.length > 0),
+      audit.title,
+      audit.fontFamily,
+      audit.faces.length === rendered.faces.length,
+      audit.faces.some((f: object) => "base64" in f),
+      renderPath === auditPath,
+    ]).toEqual(["Pluie", STACK, true, "Pluie", STACK, true, false, false]);
   });
 });

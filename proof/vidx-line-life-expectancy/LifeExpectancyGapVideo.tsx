@@ -45,6 +45,8 @@ import {
   assertPlotAspect,
   formForSize,
 } from "#shared/chart-beat/type-at-size.mjs";
+import { useEmbeddedFaces } from "../../skills/chart-video/assets/embedded-faces";
+import type { EmbeddedFace } from "../../skills/chart-video/assets/face-coverage";
 import { LINE_TIMING } from "./timing-contract";
 
 /** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
@@ -144,7 +146,15 @@ function fontSizesIn(node: unknown, out: number[] = []): number[] {
   fontSizesIn(props.children, out);
   return out;
 }
-export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+/** The stack in force. `render.mjs` reads `TYPEFACE.md` and hands the stack and its bytes in as props
+ *  (`skills/chart-video/scripts/video-faces.mjs`); it replaces this before anything is measured.
+ *  It used to be a Helvetica literal nothing loaded, which Chrome drew in whatever the machine had. */
+export let FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
+
+/** Every weight this beat sets, read off its own type specs — what the render must embed. */
+export const FONT_WEIGHTS = [
+  ...new Set([BASE.TITLE, BASE.SOURCE, BASE.AXIS, BASE.LABEL, BASE.NOTE].map((spec) => spec.fontWeight)),
+];
 
 const UNIT = "years";
 /**
@@ -323,6 +333,8 @@ export type LifeExpectancyGapVideoProps = {
   referenceLabel: string;
   /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
   size: string;
+  fontFamily: string;
+  faces: EmbeddedFace[];
   timing?: BeatTiming;
 };
 
@@ -339,10 +351,15 @@ export function LifeExpectancyGapVideo({
   reference,
   referenceLabel,
   size,
+  fontFamily,
+  faces,
   timing = LINE_TIMING,
 }: LifeExpectancyGapVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const { ready, ref } = useEmbeddedFaces<SVGSVGElement>(faces);
+  FONT_FAMILY = fontFamily;
+  if (!ready) return null;
   // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
   const { width, height, typeScale } = sizeFor(size);
   const PAD = frameInsetFor(size);
@@ -486,6 +503,7 @@ export function LifeExpectancyGapVideo({
 
   const drawing = (
     <svg
+      ref={ref}
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}

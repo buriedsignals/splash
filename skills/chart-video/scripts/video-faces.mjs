@@ -19,6 +19,9 @@
 // formatted with. Text a composition composes that this cannot foresee is caught on the other side,
 // by `assets/face-coverage.ts`, against what the frame actually drew.
 
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { embeddedWebFaces, requestedFamily } from "./typefaces.mjs";
 
 /** Every string anywhere in the props — the words a composition can be handed to draw. */
@@ -48,4 +51,22 @@ export async function videoFaces({ stack, weights, props }) {
       base64,
     })),
   };
+}
+
+/**
+ * The props a render is driven by, written TWICE: with the bytes into a temporary file the
+ * renderer reads, and without them into `auditPath`, the props file a beat commits beside its mp4.
+ * A committed audit file carrying ~100 KB of base64 per render is a diff nobody reads; what it
+ * keeps — the stack, and each face's family, weight and measured range — is what an audit asks.
+ *
+ * @returns {Promise<string>} the path to hand `remotion --props=`
+ */
+export async function writeRenderProps({ props, stack, weights, auditPath }) {
+  const typeface = await videoFaces({ stack, weights, props });
+  const rendered = { ...props, ...typeface };
+  const audit = { ...props, ...typeface, faces: typeface.faces.map(({ base64, ...face }) => face) };
+  await writeFile(auditPath, JSON.stringify(audit, null, 2));
+  const renderPath = join(await mkdtemp(join(tmpdir(), "video-props-")), "props.json");
+  await writeFile(renderPath, JSON.stringify(rendered));
+  return renderPath;
 }
