@@ -701,9 +701,8 @@
   /* ===================================================================
      THE AGENT — ink.
 
-     On the live site this is a popover pinned beside the search box. Here it
-     is a section, because it is the page's second argument and a popover
-     cannot carry an argument.
+     The page's second argument: the same search, run from inside the
+     journalist's own agent by Splash's inspiration skill.
      =================================================================== */
   .mcp{padding:var(--vs) var(--gut)}
   .mstage{max-width:var(--max);margin:0 auto;
@@ -712,31 +711,8 @@
   .mcp h2{margin:clamp(18px,2.6vh,30px) 0 0;font-size:clamp(28px,4.2vw,62px);max-width:15ch}
   .mcp p.mlede{margin:clamp(16px,2.4vh,26px) 0 0;max-width:46ch;
                font-size:clamp(13.5px,1.2vw,16px);line-height:1.6;opacity:.58}
-  .mtabs{display:flex;gap:4px;padding:4px;border-radius:var(--rad-s);
-         background:rgba(237,234,227,.07);width:fit-content}
-  .mtabs button{border:0;cursor:pointer;background:transparent;color:var(--paper);
-                padding:8px 16px;border-radius:4px;opacity:.5;
-                font-family:var(--C);font-size:11px;font-weight:500;
-                letter-spacing:.13em;text-transform:uppercase;
-                transition:background .2s ease,color .2s ease,opacity .2s ease}
-  .mtabs button[aria-selected="true"]{background:var(--amber);color:var(--ink);opacity:1}
-  .mbox{position:relative;margin-top:16px;border-radius:var(--rad);
-        background:#11121a;border:1px solid rgba(237,234,227,.13)}
-  .mbox pre{margin:0;padding:18px 54px 18px 18px;overflow-x:auto;
-            font:500 12px/1.7 ui-monospace,Menlo,Consolas,monospace;
-            color:var(--paper);white-space:pre-wrap;word-break:break-all}
-  .mcopy{position:absolute;top:11px;right:11px;width:32px;height:32px;padding:0;
-         display:grid;place-items:center;cursor:pointer;border-radius:5px;
-         background:rgba(237,234,227,.08);border:0;color:var(--paper);
-         transition:background .2s ease,color .2s ease}
-  .mcopy:hover{background:var(--amber);color:var(--ink)}
-  .mcopy svg{width:14px;height:14px}
   .mhint{margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.5}
-  .mhint a{color:var(--amber)}
-  .mhint code{font:500 11.5px/1 ui-monospace,Menlo,Consolas,monospace;
-              padding:2px 5px;border-radius:4px;background:rgba(237,234,227,.08)}
-  .masauth{background:none;border:0;padding:0;cursor:pointer;color:var(--amber);
-           font:inherit;text-decoration:underline;text-underline-offset:3px}
+  .mcp .btn{margin-top:clamp(17px,2.4vh,25px)}
   @media (max-width:900px){ .mstage{grid-template-columns:1fr} }
 
 
@@ -912,8 +888,6 @@
        are a set, and each is a whole thumb wide. */
     .flinks{flex-direction:column;align-items:stretch}
     .flinks a{width:100%}
-    /* The command is the one place a long unbroken token exists. */
-    .mbox pre{font-size:11.5px;padding:16px 48px 16px 16px}
   }
 
   /* ---- WHAT A FINGER NEEDS ------------------------------------------
@@ -922,8 +896,6 @@
      and the touch screen gets ones that can actually be pressed. The type
      never changes size — only the box around it does. */
   @media (hover:none){
-    .mtabs button{min-height:44px;padding:8px 18px}
-    .mcopy{width:40px;height:40px}
     .flinks a{padding:17px 21px}
     .btn{padding:15px 20px}
     .rsrc a{padding:15px 4px;margin:-15px -4px}
@@ -1060,7 +1032,7 @@
     /* la source et la date sous chaque vignette, et le pied */
     .rlink em,.rlink em u{font-size:11px}
     .rsrc a,.fmeta span{font-size:11px}
-    .mhint,.masauth{font-size:12.5px}
+    .mhint{font-size:12.5px}
     /* et le bloc de l'offre, repris de la landing, où ces mêmes capitales
        espacées sont relevées de la même façon */
     .offer ul li,.onl,.odisc,.okick{font-size:11px}
@@ -1121,12 +1093,12 @@
       <span id="qtext"></span>
       <button type="button" id="qsign" hidden>Sign in for more searches</button>
     </div>
-    <a class="mcplink" href="#mcp">
+    <a class="mcplink" href="#agent">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" aria-hidden="true">
         <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
       </svg>
-      Use as MCP
+      Use in Splash
     </a>
   </div>
 </section>
@@ -1166,33 +1138,19 @@
 </div><!-- /.top -->
 
 <!-- ===================== THE AGENT ===================== -->
-<section class="mcp on-ink arm" id="mcp">
+<section class="mcp on-ink arm" id="agent">
   <div class="mstage">
     <div class="up">
-      <div class="eye"><i></i>Use as MCP</div>
-      <h2>Query the gallery from inside your agent</h2>
-      <p class="mlede">The same search, exposed as an MCP server. Your assistant can
-      look for precedent while it is building — so the form it proposes is one a
-      newsroom has already published, not one it invented.</p>
+      <div class="eye"><i></i>In Splash</div>
+      <h2>Ask your agent what newsrooms already made</h2>
+      <p class="mlede">Splash's inspiration skill runs this same search from inside
+      your agent. Name a subject and it brings back what newsrooms have published on
+      it — no story to open, nothing to produce.</p>
     </div>
     <div class="up">
-      <div class="mtabs" role="tablist" aria-label="Client">
-        <button type="button" role="tab" data-tool="claude" aria-selected="true">Claude Code</button>
-        <button type="button" role="tab" data-tool="codex" aria-selected="false">Codex</button>
-      </div>
-      <div class="mbox">
-        <pre id="mcmd"></pre>
-        <button class="mcopy" type="button" id="mcopy" aria-label="Copy command">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2"/>
-            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-          </svg>
-        </button>
-      </div>
-      <p class="mhint" id="mhint"></p>
-      <p class="mhint" style="margin-top:9px">The server is rate-limited per account —
-      <button type="button" class="masauth" id="msign">sign in to use it</button>.</p>
+      <p class="mhint">Install Splash, then ask your agent for inspiration on a subject.
+      Each search counts against the same daily allowance as this page.</p>
+      <a class="btn" href="docs/">How Splash works</a>
     </div>
   </div>
 </section>
@@ -1352,7 +1310,6 @@
    * ===================================================================== */
 
   const API   = 'https://infoviz.design';
-  const MCP   = API + '/mcp/';
   const SB    = 'https://towumekminbldlabbyss.supabase.co';
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
@@ -1759,46 +1716,6 @@
 
   $('more').addEventListener('click', () => { page += 1; render(); });
 
-  /* -------------------------------------------------------------- the MCP */
-  const CMDS = {
-    claude: {
-      cmd: 'claude mcp add-json infoviz \'{"type":"http","url":"' + MCP + '"}\'',
-      hint: 'Paste in your terminal. You’ll authenticate via your browser.',
-    },
-    codex: {
-      cmd: '[mcp_servers.infoviz]\nurl = "' + MCP + '"',
-      hint: 'Add to <code>~/.codex/config.toml</code>, then restart Codex.',
-    },
-  };
-  let tool = 'claude';
-  const drawCmd = () => {
-    $('mcmd').textContent = CMDS[tool].cmd;
-    $('mhint').innerHTML = CMDS[tool].hint;
-    for (const b of document.querySelectorAll('.mtabs button'))
-      b.setAttribute('aria-selected', String(b.dataset.tool === tool));
-  };
-  for (const b of document.querySelectorAll('.mtabs button'))
-    b.addEventListener('click', () => { tool = b.dataset.tool; drawCmd(); });
-  drawCmd();
-
-  $('mcopy').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(CMDS[tool].cmd);
-      const b = $('mcopy');
-      b.dataset.done = '1';
-      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-        + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-        + '<path d="M20 6L9 17l-5-5"/></svg>';
-      setTimeout(() => {
-        delete b.dataset.done;
-        b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-          + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-          + '<rect x="9" y="9" width="13" height="13" rx="2"/>'
-          + '<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
-      }, 2000);
-    } catch { /* the clipboard API is refused in some contexts; nothing to say */ }
-  });
-
   /* ------------------------------------------------------------ the modal */
   const veil = $('veil');
   const openModal = (heading, subtitle) => {
@@ -1813,9 +1730,6 @@
     'Sign in for more searches',
     'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
 
-  $('msign').addEventListener('click', () => openModal(
-    'Sign in to use MCP',
-    'Enter your email to authenticate with Claude Code or Codex.'));
   const closeModal = () => {
     veil.removeAttribute('data-open');
     $('vmsg').hidden = true;
