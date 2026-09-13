@@ -8,7 +8,8 @@ beats (§2) ; trois mp4 par type, un par direction (§4.4) ; tous les types du c
 (§2) ; même identité et même précision que le statique, mais tailles, texte et composition refaits
 sous contraintes vidéo (§3) ; pilote choroplèthe (§6) ; on attend la fusion de
 `rerender/static-corpus` avant de produire (§8) ; validation un type à la fois, en ouvrant seulement
-les mp4 (§5).
+les mp4 (§5) ; moteur carte en direct derrière un proxy qui garde la clé (§4.3) ; chorégraphie écrite
+avant le code et motion grammar amendée pour le zoom qui révèle une preuve (§3).
 
 ---
 
@@ -88,10 +89,31 @@ l'être en vidéo.
   hiérarchie de registres (eyebrow, display, body, axis, annot, value).
 - **La composition** est recomposée pour le cadre vidéo, zones sûres comprises. Ce n'est pas le
   layout statique animé.
-- **La narration** est l'ordre du contrat de timing — `establish`, `reference`, `reveal`, `subject`,
-  `conclusion`, `hold` — écrit à partir du message confirmé, sous `motion-grammar.md`. La doctrine
-  n'est pas modifiée par avance ; si une validation montre qu'elle bride un type, l'amendement est
-  décidé avec le propriétaire et écrit dans la doctrine avant d'être appliqué.
+- **La narration est une chorégraphie, pas un rejeu du statique.** *Amendée le 2026-09-13, décision
+  du propriétaire, sur la démarche validée côté scrolly (`skills/scrolly/references/directed-type-choreography.md`
+  sur `quality/scrolly`) et ses mots : « ça ne s'arrête pas à juste reproduire un static, c'est le même
+  sujet rendu sur des formats différents ».* Le plan statique est le plancher — données, affirmation,
+  mots, règles de couleur, traitements — jamais le plafond. Donc :
+  1. **La chorégraphie s'écrit avant le code**, plan par plan, dans le `BRIEF.md` du beat : ce que dit
+     le plan, le geste que fait l'image, ce que le spectateur voit bouger, et à quel événement du
+     contrat de timing il appartient.
+  2. **Chaque événement change l'image.** Un événement dont l'état égale celui d'avant est refusé par
+     une garde.
+  3. **Le répertoire** : révéler dans l'ordre, filtrer, zoomer / cadrer, réordonner, changer
+     d'échelle, compter, comparer, tracer, nommer, revenir au tout. Un beat en prend rarement plus de
+     quatre.
+  4. **Une valeur dérivée** (cumul, moyenne, rang, écart) est calculée des données gelées dans le
+     runner et y est refusée quand les données cessent de la soutenir, comme les affirmations du
+     statique.
+  5. **Le mouvement suit le temps**, pas le scroll : chaque geste est interpolé du contrat de timing,
+     et la tenue finale reste lisible.
+  `skills/doctrine/references/motion-grammar.md` est amendé en conséquence : ses règles tiennent
+  (ordre chronologique ou argumentatif, la base avant la preuve, le sujet comme événement propre, la
+  conclusion après sa preuve, pas de mouvement sans donnée nouvelle, la tenue), sauf « le cadre ne
+  zoome pas », qui devient : **un zoom, un changement d'échelle ou un recadrage est admis quand il
+  fait apparaître une preuve** ; jamais pour l'énergie.
+  Le répertoire vit dans `skills/chart-video/references/directed-type-choreography.md`, porté dans
+  `map-beat`.
 
 ## 4. Architecture
 
@@ -218,8 +240,9 @@ Ce que le choix impose :
 ### 4.4 La preuve par type
 
 ```
-proof/video-<type>/
-  BRIEF.md                 type, sujet, message confirmé, format video, size landscape
+proof/video-<slug du beat statique>/     ex. proof/video-choropleth-europe-lowcarbon
+  BRIEF.md                 type, sujet, message confirmé, format video, size landscape,
+                           et la chorégraphie plan par plan (§3)
   PALETTE.md
   data.csv                 les données du beat statique dirigé du même type
   Directed<Type>Video.tsx  la composition
@@ -252,14 +275,15 @@ Quand un type est validé, son ancienne vidéo est retirée de `proof/` et la co
 ## 5. Le cycle de validation, par type
 
 1. Lire le beat statique dirigé du type, sa fiche, et la fiche vidéo si elle existe.
-2. Produire `proof/video-<type>/` en suivant le skill.
-3. Rendre la dernière frame de chaque direction, la regarder ; puis les trois mp4.
-4. Extraire au moins quatre frames par mp4 (pendant la base, pendant la révélation, à l'arrivée du
+2. Écrire la chorégraphie dans le `BRIEF.md` (§3), avant le code.
+3. Produire `proof/video-<slug>/` en suivant le skill.
+4. Rendre la dernière frame de chaque direction, la regarder ; puis les trois mp4.
+5. Extraire au moins quatre frames par mp4 (pendant la base, pendant la révélation, à l'arrivée du
    sujet, la tenue) et les regarder : fonte, planchers, rien de rogné, l'accent jamais avant sa
    preuve, la tenue lisible.
-5. Ouvrir **seulement** les trois mp4 pour le propriétaire.
-6. Il valide, ou le défaut est corrigé **dans le skill** puis le type est re-rendu.
-7. Commit à pathspec explicite ; catalogue et matrice à jour ; ancienne vidéo retirée.
+6. Ouvrir **seulement** les trois mp4 pour le propriétaire.
+7. Il valide, ou le défaut est corrigé **dans le skill** puis le type est re-rendu.
+8. Commit à pathspec explicite ; catalogue et matrice à jour ; ancienne vidéo retirée.
 
 Un type à la fois. On n'accélère que quand le propriétaire le dit.
 
@@ -291,6 +315,7 @@ Un type à la fois. On n'accélère que quand le propriétaire le dit.
   `skills/splash/test/a-directed-video-types-no-style.test.ts` — étendue à `fontStyle`,
   `textTransform` (interdit sous toute forme, §4.1), une couleur nommée ou fonctionnelle sur un
   attribut porteur de couleur, et les propriétés MapLibre kebab-case (`text-size`, `fill-color`…).
+- Garde nouvelle attendue (plan 2) : un événement du contrat de timing dont l’état de l’image égale celui de l’événement précédent est refusé — le pendant vidéo de `assertStates` du scrolly (§3).
 - Garde nouvelle livrée cette passe : `skills/splash/test/a-video-render-hides-the-env.test.ts` —
   voir §4.3, l'`--env-file` vide n'est pas propre au moteur carte.
 - Une étiquette de carte peinte sur un `<canvas>` échappe au contrôle DOM de `face-coverage.ts` ;
