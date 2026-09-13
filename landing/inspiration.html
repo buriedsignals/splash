@@ -306,6 +306,12 @@
   .quota button{background:none;border:0;padding:0;cursor:pointer;color:var(--amber);
                 font:inherit;font-size:11px;letter-spacing:.1em;text-decoration:underline;
                 text-underline-offset:3px}
+  /* `#acct` reuses `.quota` (max-width 360px) and its email can run long, so
+     the button must not shrink and the email must ellipsize instead of
+     wrapping onto it. Both are id selectors so they outrank `.quota span`
+     (flex:0 0 auto; white-space:nowrap) by specificity. */
+  #aout{flex:0 0 auto;white-space:nowrap}
+  #aemail{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
   /* Pushed right by its own margin and not by `space-between`: the gauge only
      exists once a search has been run, and before that the lone pill fell back
      to the left. The way into the agent does not move when a search lands. */
@@ -714,6 +720,8 @@
   .mhint{margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.5}
   .mcp .btn{margin-top:clamp(17px,2.4vh,25px)}
   @media (max-width:900px){ .mstage{grid-template-columns:1fr} }
+  #agent .mstage{grid-template-columns:1fr}
+  #agent .mhint{max-width:46ch}
 
 
   /* ===================================================================
@@ -1144,10 +1152,8 @@
       <p class="mlede">Splash's inspiration skill runs this same search from inside
       your agent. Name a subject and it brings back what newsrooms have published on
       it — no story to open, nothing to produce.</p>
-    </div>
-    <div class="up">
       <p class="mhint">Install Splash, then ask your agent for inspiration on a subject.
-      Each search counts against the same daily allowance as this page.</p>
+      Searches from the agent are limited too: five a day per address, without an account.</p>
       <a class="btn" href="docs/">How Splash works</a>
     </div>
   </div>
@@ -1257,13 +1263,13 @@
              stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <p id="vsub">Enter your email. Press Connect in the email we send, and this page signs in.</p>
+    <p id="vsub">We&rsquo;ll email you a Connect link from Infoviz, the service behind this gallery. Press Connect in it, and this page signs in.</p>
     <form id="vform" autocomplete="off">
       <label class="sr" for="vmail">Email address</label>
       <input id="vmail" type="email" placeholder="your@email.com" required>
       <button class="btn" type="submit" id="vbtn">Send sign-in link</button>
     </form>
-    <p class="mmsg" id="vmsg" hidden></p>
+    <p class="mmsg" id="vmsg" role="status" hidden></p>
   </div>
 </div>
 
@@ -1348,6 +1354,7 @@
   const drawAccount = () => {
     $('acct').hidden = !account;
     $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
+    $('aemail').title = account ? account.email : '';
   };
 
   /* ------------------------------------------------------------ the quota */
@@ -1360,7 +1367,7 @@
        way out. The track goes, the offer takes its place. */
     if (left <= 0) {
       $('qtrack').hidden = true;
-      $('qtext').textContent = 'Daily limit reached ·';
+      $('qtext').textContent = account ? 'Daily limit reached' : 'Daily limit reached ·';
       $('qsign').hidden = Boolean(account);
       return;
     }
@@ -1577,10 +1584,11 @@
     loading('Searching the gallery');
 
     try {
+      const had = account;
       let res = await ask(q);
       /* A refused token is forgotten, and the search happens anyway. */
-      if (res.status === 401 && account) {
-        saveAccount(null);
+      if (res.status === 401 && had) {
+        if (account) saveAccount(null);
         limit = 5; left = null;
         res = await ask(q);
       }
@@ -1604,7 +1612,8 @@
         const s = $('signin');
         if (s) s.addEventListener('click', () => openModal(
           'Sign in for more searches',
-          'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
+          'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account. '
+          + 'We\'ll email you a Connect link from Infoviz, the service behind this gallery.'));
         return;
       }
       if (!res.ok) {
@@ -1757,7 +1766,8 @@
 
   $('qsign').addEventListener('click', () => openModal(
     'Sign in for more searches',
-    'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account.'));
+    'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account. '
+    + 'We\'ll email you a Connect link from Infoviz, the service behind this gallery.'));
 
   /* Closing the panel does not stop a sign-in in progress: the reader may
      close it, open the email, press Connect, and this page still signs in. */
@@ -1780,8 +1790,11 @@
   };
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  async function waitForConnect(requestId, intervalSeconds, expiresAt, run) {
-    const deadline = Date.parse(expiresAt) || (Date.now() + 15 * 60 * 1000);
+  async function waitForConnect(requestId, intervalSeconds, run) {
+    /* The server's 410 is authoritative on when a sign-in is over; a deadline
+       computed from `expiresAt` only protects against a browser clock that
+       runs fast, which would otherwise give up on a link that is still good. */
+    const deadline = Date.now() + 16 * 60 * 1000;
     while (run === polling && Date.now() < deadline) {
       await wait(Math.max(1, Number(intervalSeconds) || 3) * 1000);
       if (run !== polling) return;
@@ -1813,6 +1826,10 @@
         saveAccount({ token: d.token, email: d.email, expires_at: d.expires_at });
         say('ok', 'Connected as ' + d.email + '.');
         await refreshAccount();
+        /* The anonymous 429 box may still be on screen behind the modal; a
+           reader who just signed in should not come back to a box that still
+           says the day is over. */
+        if ($('signin')) box('ink', 'Signed in', limit + ' searches a day now.', 'Search again to continue.');
         setTimeout(closeModal, 1500);
         return;
       }
@@ -1847,7 +1864,7 @@
       const run = ++polling;
       $('vform').hidden = true;
       say('ok', 'Check your email and press Connect. This page signs in on its own.');
-      waitForConnect(d.request_id, d.poll_interval, d.expires_at, run);
+      waitForConnect(d.request_id, d.poll_interval, run);
     } catch {
       say('ko', 'Network error. Please try again.');
     } finally {
@@ -1870,7 +1887,8 @@
       if (res.status === 401) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
       if (!res.ok) return;
       const d = await res.json();
-      if (d.daily_limit) limit = d.daily_limit;
+      if (d.authenticated !== true) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
+      limit = Number(d.daily_limit) || limit;
       if (typeof d.queries_remaining === 'number') left = d.queries_remaining;
       drawQuota();
     } catch { /* the gauge stays on what the last search said */ }
