@@ -1,6 +1,7 @@
 # La vidéo au niveau du statique : chaque type du catalogue, dirigé, sur n'importe quel sujet
 
-**Statut :** design approuvé en conversation le 2026-09-13. Ni planifié ni implémenté.
+**Statut :** design approuvé en conversation le 2026-09-13 ; plan 1 (le mécanisme) implémenté sur
+`quality/video` ; plan 2 (les preuves par type) pas encore écrit.
 **Branche :** `quality/video` (worktree `video/`), partie de `b49a59b3`.
 **Décisions du propriétaire enregistrées ici :** le livrable est le skill, pas une collection de
 beats (§2) ; trois mp4 par type, un par direction (§4.4) ; tous les types du catalogue, sans refus
@@ -74,9 +75,14 @@ l'être en vidéo.
 
 - **Les tailles** partent du tableau vidéo (`shared/chart-video/sizes.mjs`), pas du cadre 960×540
   lu dans une colonne d'article : plancher 30 px en paysage, 36 px en carré et portrait, bande sûre
-  en portrait. Règle initiale : taille dessinée = taille résolue par `registerOf` × `typeScale` de la
-  ligne ; `assertTypeFloor` mesure le rendu et refuse sous le plancher. Cette règle est vérifiée sur
-  le pilote et corrigée là si elle ne tient pas.
+  en portrait. *Amendée le 2026-09-13, sur `quality/video` :* un seul facteur `k` porte les six
+  registres résolus d'une direction ensemble — `k = max(typeScale, plancher / la plus petite taille
+  résolue parmi les six)` — et chaque taille dessinée est `taille résolue × k`, arrondie à deux
+  décimales ; `assertTypeFloor` mesure le rendu et refuse sous le plancher. La règle initiale
+  relevait au plancher le seul registre qui y tombait, ce qui pouvait inverser la hiérarchie que
+  `registerOf` avait construite (un eyebrow relevé au-delà du body sous lequel il se tient) ; un
+  facteur unique fait monter toute l'échelle ensemble, et l'ordre des six tailles survit. Le pilote
+  valide le résultat à l'œil.
 - **Le texte** est réécrit pour être lu dans le temps : titre court, pas de paragraphe de limites,
   source courte ; le volume est borné par le temps de lecture de la tenue. Chaque direction garde sa
   hiérarchie de registres (eyebrow, display, body, axis, annot, value).
@@ -114,22 +120,48 @@ s'embarquent pas dans un bundle Remotion. Donc :
 8. `writeRenderProps` : les octets dans un fichier temporaire, le fichier de props commité sans
    base64.
 
+*Amendé le 2026-09-13 (le texte remis est déjà casé) :* la composition reçoit un texte déjà casé —
+`applyCase(text, register.transform)`, appliqué en Bun avant que le texte n'entre dans les props, et
+c'est sur ce texte casé que le sous-ensemble de glyphes (étape 6) est découpé. `text-transform` CSS
+est interdit dans une composition dirigée, sous toute forme, même pilotée par un registre : la garde
+`a-directed-video-types-no-style` le refuse, parce qu'ici la casse n'est plus une propriété CSS mais
+une transformation de la chaîne elle-même, faite avant que Chrome ne la voie.
+
 **Dans Chrome, la composition** écrite pour ce beat :
 
 - elle ne dessine rien avant ses faces (`useEmbeddedFaces`) et relit chaque frame contre elles ;
-- elle dessine aux coordonnées reçues, et vérifie que la largeur que Chrome peint pour chaque ligne
-  mesurée tient dans la tolérance de la mesure Bun — sinon le rendu est annulé ;
+- elle dessine aux coordonnées reçues, et vérifie **l'accord de largeur**, défini ainsi : Bun mesure
+  chaque ligne mise en page comme `measureText(texte casé, { fontSize, fontWeight, fontFamily,
+  fontStyle }) + letterSpacing × (nombre de caractères − 1)` ; Chrome relit la même ligne avec
+  `SVGTextElement.getComputedTextLength()` ; le rendu est annulé quand `|chrome − bun| > max(1 px,
+  1 % de bun)`. Cette tolérance est le défaut ; elle est recalibrée sur les trois directions du
+  pilote, et le maximum mesuré remplacera cette phrase une fois le pilote rendu ;
 - elle ne tape **aucune** taille, graisse, interligne, écart de bloc ni couleur : tout vient des
   registres et de la direction reçus en props ;
 - ses fenêtres d'animation dérivent de son contrat de timing (`progressOf`, `checkTiming`).
 
+*Amendé le 2026-09-13 (une étiquette de carte échappe au contrôle DOM) :* le contrôle de couverture
+(`face-coverage.ts`) relit les nœuds `<text>` du DOM — une étiquette de carte que MapLibre peint sur
+un `<canvas>` n'en est pas un, et reste invisible à ce contrôle quel que soit le moteur de rendu. Le
+moteur en direct (§4.3) réutilise `rangesNeededBy` / `assertRangesServed` du tronc `shared/map-beat/`
+pour les mots de la carte à la place — la même vérification que le bake fait déjà pour les glyphes
+qu'il sert, plutôt qu'une relecture DOM qui ne verrait rien.
+
 ### 4.2 La couture registre → dessin
 
-`skills/chart-video/scripts/video-registers.mjs` (portée dans `map-beat` par copie `// twin/`) :
-un registre résolu devient `{ fontFamily, fontSize, fontWeight, fontStyle, letterSpacing,
-transform, lead, fill }`, où `lead` est la distance entre lignes de base en pixels du cadre, à la
-taille dessinée. **L'interligne est porté** : c'est le défaut silencieux que la couture web
-`shared/design-base/web.mjs` a encore (le `leading` y est jeté). La couture passe par
+**Les fichiers du mécanisme vivent dans `skills/chart-video/`** (portés dans `map-beat` par copie
+`// twin/`, byte pour byte) ; un beat sous `proof/` les importe par chemin relatif DEPUIS LE SKILL —
+précédent déjà établi, pas une exception : `proof/vidx-line-life-expectancy/render.mjs` importe
+`../../skills/chart-video/scripts/render-still.mjs` de la même façon.
+
+`skills/chart-video/scripts/video-registers.mjs` **prend les six registres déjà résolus par le beat
+lui-même** : `videoRegistersOf(resolvedByName, sizeName)`, où `resolvedByName` est
+`{ display, eyebrow, body, annot, value, axis }`, chacun un résultat de `registerOf(direction, name)`
+appelé par le beat — jamais par ce module, qui n'importe aucun `#shared/*`. Un registre résolu
+devient `{ fontFamily, fontSize, fontWeight, fontStyle, letterSpacing, transform, lead, fill }`, où
+`lead` est la distance entre lignes de base en pixels du cadre, à la taille dessinée (le facteur `k`
+de §3 porte les six ensemble). **L'interligne est porté** : c'est le défaut silencieux que la
+couture web `shared/design-base/web.mjs` a encore (le `leading` y est jeté). La couture passe par
 `registerOf` et ne lit jamais `.leading` directement — la garde de la session statique fait échouer
 toute source qui le fait hors des trois modules autorisés.
 
@@ -138,33 +170,42 @@ Elle vit dans le skill, pas dans `shared/` : rien à annoncer aux autres session
 ### 4.3 Les cartes
 
 Le format vidéo de `map-beat` passe par le tronc `shared/map-beat/`, relu et figé : plan validé
-(`plan.mjs`), teintes mesurées (`plateTints`), style transformé et appliqué (`style.mjs`), marques
-cuites en couches à la taille dessinée, noms de faces MapTiler par suffixe (`maptilerFace`, jamais
-une famille nue, qui revient en Noto Sans). Une caméra qui bouge n'est admise que sur une plaque
-cuite unique (`geo-discipline.md`). Si un besoin du format vidéo exige de toucher au tronc, il est
-annoncé aux autres sessions avant d'être commencé, avec les fichiers exacts, et toutes les copies
-portées sont mises à jour dans le même commit.
+(`plan.mjs`), teintes mesurées (`plateTints`), style transformé et appliqué (`style.mjs`), noms de
+faces MapTiler par suffixe (`maptilerFace`, jamais une famille nue, qui revient en Noto Sans). Si un
+besoin du format vidéo exige de toucher au tronc, il est annoncé aux autres sessions avant d'être
+commencé, avec les fichiers exacts, et toutes les copies portées sont mises à jour dans le même
+commit.
 
-**Le moteur de rendu : le plan monté en direct dans la composition** (décision du propriétaire,
-2026-09-13, sur la mesure de `.superpowers/sdd/2026-09-13-video-quality-pass-1-mechanism/task-4-report.md`).
-MapLibre est monté dans la composition Remotion avec le style MapTiler transformé et `mountPlan`,
-les propriétés de peinture changent à chaque frame, et chaque frame attend `idle` sous
-`delayRender`. Mesuré sur macOS arm64 : 0,039 s par frame, déterministe (frame et mp4 identiques
-d'un rendu à l'autre), 0 px de décalage, révélation pays par pays possible, et sous `--gl=swangle`
-la dernière frame est identique au pixel au still cuit. C'est le seul chemin où la caméra peut
-bouger.
+**Le moteur de rendu (renderer A) : les marques montées en direct, comme des couches du plan, sur
+des tuiles vivantes, dans la composition** (décision du propriétaire, 2026-09-13, sur la mesure de
+`.superpowers/sdd/2026-09-13-video-quality-pass-1-mechanism/task-4-report.md`). MapLibre est monté
+dans la composition Remotion avec le style MapTiler transformé et `mountPlan` ; les propriétés de
+peinture changent à chaque frame, et chaque frame attend `idle` sous `delayRender`. Mesuré sur macOS
+arm64 : sous `--gl=swangle` — le drapeau retenu, le seul qui tient au still cuit au pixel près —
+**0,066 s par frame en régime établi** (au-delà de la première frame, qui boot le réseau) ; sous
+`--gl=angle` (GPU), 0,039 s par frame en régime établi, gardé pour référence seulement, avec une
+dérive d'anti-crénelage sur ~0,03 % des pixels que `--gl=swangle` n'a pas. Déterministe (frame et
+mp4 identiques d'un rendu à l'autre), 0 px de décalage, révélation pays par pays possible. **C'est le
+seul chemin où la caméra peut bouger** : les marques ne sont pas cuites en couches, elles sont
+montées en direct sur des tuiles qui peuvent, elles, changer de cadrage frame par frame.
 
 Ce que le choix impose :
 
 - **La clé MapTiler et le réseau sont requis à chaque rendu.** Remotion injecte dans la page tout
   le `.env` de la racine sauf `--env-file` (constaté : les clés MapTiler, Datawrapper, Gemini et
   Cloudflare de ce dépôt). **La clé n'entre donc jamais dans la page** : le script de rendu la lit
-  et la garde dans son propre process, où un proxy local sur un port éphémère relaie vers
-  `api.maptiler.com` seulement, ajoute la clé en amont et la retire de chaque corps JSON rendu
-  (style, TileJSON) ; la page ne voit que des URL `localhost` sans clé, et reçoit un `--env-file`
-  vide. La clé n'entre jamais dans un fichier de props, un log conservé ou un argument de commande
-  (mesuré par la vérification : origines de la page = le serveur Remotion et le proxy). Une garde
-  fait échouer un appel `remotion` du moteur qui n'a pas son `--env-file` vide.
+  et la garde dans son propre process, où un proxy local — lié à `127.0.0.1` seulement, jamais à
+  une interface réseau — relaie vers `api.maptiler.com` uniquement, ajoute la clé en amont et la
+  retire de chaque corps JSON rendu (style, TileJSON) ; la page ne voit que des URL `localhost` sans
+  clé, et reçoit un `--env-file` vide. La clé n'entre jamais dans un fichier de props, un log
+  conservé ou un argument de commande (mesuré par la vérification : origines de la page = le
+  serveur Remotion et le proxy).
+- **L'`--env-file` vide n'est pas propre au moteur carte.** *Amendé le 2026-09-13 :* la garde
+  `skills/splash/test/a-video-render-hides-the-env.test.ts` fait échouer tout appel `remotion` sous
+  `skills/`, et dans tout beat vidéo dirigé sous `proof/*/` (un dossier portant
+  `render-directions-video.mjs`), qui n'a pas son `--env-file` vide — pas seulement le moteur carte.
+  Les beats `proof/` antérieurs à cette passe restent hors périmètre (décision du propriétaire) :
+  leurs clés fuyaient déjà avant cette session et ne sont pas corrigées ici.
 - **`--gl=swangle`** pour que la vidéo tienne au still ; le GPU (`--gl=angle`) dérive
   d'anti-crénelage sur ~0,03 % des pixels.
 - **Le fond vient des tuiles vivantes**, pas de la plaque gelée : un restyle MapTiler change la
@@ -246,7 +287,15 @@ Un type à la fois. On n'accélère que quand le propriétaire le dit.
   `video-first-frame-not-empty`, `video-handover-is-a-cut`, `video-helper-parity`,
   `carried-copies`, `no-cross-skill-imports`.
 - Garde nouvelle attendue : une composition dirigée ne tape ni taille, ni graisse, ni interligne, ni
-  couleur (le pendant vidéo de `a-directed-layout-types-no-leading`).
+  couleur (le pendant vidéo de `a-directed-layout-types-no-leading`). *Livrée le 2026-09-13* :
+  `skills/splash/test/a-directed-video-types-no-style.test.ts` — étendue à `fontStyle`,
+  `textTransform` (interdit sous toute forme, §4.1), une couleur nommée ou fonctionnelle sur un
+  attribut porteur de couleur, et les propriétés MapLibre kebab-case (`text-size`, `fill-color`…).
+- Garde nouvelle livrée cette passe : `skills/splash/test/a-video-render-hides-the-env.test.ts` —
+  voir §4.3, l'`--env-file` vide n'est pas propre au moteur carte.
+- Une étiquette de carte peinte sur un `<canvas>` échappe au contrôle DOM de `face-coverage.ts` ;
+  le moteur en direct réutilise `rangesNeededBy` / `assertRangesServed` du tronc pour les mots de la
+  carte à la place (§4.1).
 - Tests ciblés uniquement ; jamais `bun run test` complet sauf demande (consigne de coût de
   `KNOWN-STATE.md`).
 - **Une suite verte ne valide rien** : la validation est le regard sur les frames puis celui du
@@ -254,8 +303,13 @@ Un type à la fois. On n'accélère que quand le propriétaire le dit.
 
 ## 8. Dépendances et coordination
 
-- **Fusion de `rerender/static-corpus` dans `main`**, puis rebase de `quality/video`, avant de
-  produire le pilote. Rien n'est construit contre `registerOf` avant qu'il ait atterri.
+- **`rerender/static-corpus` a été FUSIONNÉ dans `quality/video`** — commit `0f7e6c2d`, une fusion
+  à deux parents, pas un rebase (`27be5a5b` et `28b29b98` en parents). *Amendé le 2026-09-13 :*
+  fusionner `main` dans `quality/video` plus tard n'est un no-op que si la branche statique atteint
+  `main` sans avoir été rebasée ni squashée entre-temps — un rebase ou un squash en amont réécrirait
+  ses commits, et la fusion déjà faite ici ne les reconnaîtrait plus comme les mêmes, rejouant le
+  même contenu en conflit ou en double. Rien n'est construit contre `registerOf` avant qu'il ait
+  atterri, et il a atterri.
 - **`shared/` n'est à personne** : tout changement du tronc est annoncé avant d'être commencé, avec
   les fichiers exacts, et ses copies portées sont mises à jour dans le même commit.
 - Territoire de cette session : `skills/chart-video`, le format vidéo de `map-beat` (assets vidéo,
