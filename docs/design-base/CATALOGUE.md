@@ -34,7 +34,7 @@ other export yet.
 | 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ◦ |
 | 16 | Histogram | 6 | ✅ | ◦ | ◦ | ◦ |
 | 17 | Line | 2 | ✅ | ◦ | ✅ | ◦ |
-| 18 | Lollipop | 1 | ✅ | ◦ | ◦ | ◦ |
+| 18 | Lollipop | 1 | ✅ | ◦ | ✅ | ◦ |
 | 19 | Marimekko | 7 | ✅ | ◦ | ◦ | ◦ |
 | 20 | Parallel coordinates | 1 | ✅ | ◦ | ◦ | ◦ |
 | 21 | Pictogram | 4 | ✅ | ◦ | ◦ | ◦ |
@@ -97,6 +97,7 @@ other export yet.
 | Line | static | `proof/co2-suisse` |
 | Line | video | `proof/video-line-swiss-co2` — validated by the owner 2026-09-14 |
 | Lollipop | static | `proof/static-lollipop-co2-per-person` |
+| Lollipop | video | `proof/video-lollipop-co2-per-person` — validated by the owner 2026-09-14 |
 | Marimekko | static | `proof/static-marimekko-electricity-mix` |
 | Pie and donut | static | `proof/static-donut-world-co2-share` |
 | Population pyramid | static | `proof/static-swiss-age-pyramid` |
