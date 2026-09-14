@@ -1,13 +1,15 @@
 # Slope — in video
 
-Worked example: `proof/video-slope-europe-lowcarbon` (validated 2026-09-14), from `proof/static-slope-europe-lowcarbon`.
+Worked example: `proof/video-slope-europe-lowcarbon` (validated 2026-09-15, recut as an argument), from
+`proof/static-slope-europe-lowcarbon`.
 
-- **The gesture only a video has is making the change happen**: every line travels from its first rail to its second
-  together, eased (two dates and nothing between them — this is an arrival, not the traversal of a time axis), each end
-  value landing as its line arrives.
-- **The video frame holds more lines than the still**: draw them all if every rail's labels fit at a legible pitch (the
-  still's two-pass spread — down from the top, up from the foot — pushed, never dropped, never reordered, a hairline back to
-  the rail), so a claim about all of them is shown rather than asserted on a subset.
-- The subject is filtered: the rest steps back, the pair the claim is about goes to the accent, and their crossing — derived,
-  never believed on sight — is ringed. Lines ending close together are named on the second rail as well.
-- No value axis: the rails print every end value they draw.
+- **Draw every line the frame holds**: all of them if every rail's labels fit at a legible pitch (the two-pass spread,
+  pushed, never dropped, never reordered, a hairline back to the rail).
+- **Count the claim as it lands**: the lines are drawn to the second rail one after another (two dates: each eased), and a
+  count of the ones that rose climbs as they land.
+- **Run the test the title makes**: the line to beat takes the accent; the lines that could beat it (those that started
+  under it) are tried one after another, lowest finish first — each lights up and falls back under it, until the one that
+  ends above is tried last, takes the accent and has its crossing (derived, never believed on sight) ringed; a count of
+  passes stops at its value. Lines out of the test step back as it begins.
+- **End on the whole chart**: every line back, the pair in the accent, the crossing ringed; the credit on one line. About
+  19 s. A move's landing is tested at 1 − ε: floating point leaves the last staggered move a hair short of 1.
