@@ -134,44 +134,34 @@
       }
     ]
   },
-  "endCard": {
-    "form": 0,
-    "register": {
-      "fontFamily": "Montserrat",
-      "fontSize": 79,
-      "fontWeight": 400,
-      "fontStyle": "normal",
-      "letterSpacing": 8.39375,
-      "transform": "uppercase",
-      "lead": 96.3780408,
-      "fill": "#FFFFFF"
-    },
-    "claim": [
+  "source": {
+    "form": 2,
+    "lines": [
       {
-        "text": "SEPT PAYS DÉPASSENT 94",
-        "x": 85,
-        "y": 472.5989990234375,
-        "width": 1229.2598262310028
+        "text": "Source : Ember, Energy",
+        "x": 4.729738464355469,
+        "y": 28.16211151123047,
+        "width": 446.9201691642761
       },
       {
-        "text": "% : SIX AU NORD-OUEST,",
-        "x": 85,
-        "y": 568.9770398234375,
-        "width": 1151.2867622852325
+        "text": "Institute, via Our World in",
+        "x": 4.729738464355469,
+        "y": 66.05759359923047,
+        "width": 497.98503622970577
       },
       {
-        "text": "ET L’ALBANIE.",
-        "x": 85,
-        "y": 665.3550806234375,
-        "width": 650.0910469055176
+        "text": "Data · Natural Earth",
+        "x": 4.729738464355469,
+        "y": 103.95307568723047,
+        "width": 381.0442620109558
       }
     ],
-    "source": {
-      "text": "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
+    "halo": 9.459476928710938,
+    "width": 518,
+    "height": 115,
+    "at": {
       "x": 85,
-      "y": 1013.715576171875,
-      "width": 1360.6244241447448,
-      "form": 2
+      "y": 905
     }
   },
   "panel": {
@@ -1369,7 +1359,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1383,7 +1373,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1397,7 +1387,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1411,7 +1401,7 @@
       "zoom": 1,
       "odd": 1,
       "neighbours": 1,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1425,7 +1415,7 @@
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
-      "end": 1
+      "source": 1
     },
     {
       "title": 0,
@@ -1439,34 +1429,34 @@
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
-      "end": 1
+      "source": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 735,
+    "total": 705,
     "establish": {
       "start": 0,
-      "duration": 75
+      "duration": 45
     },
     "reference": {
-      "start": 75,
+      "start": 45,
       "duration": 100
     },
     "reveal": {
-      "start": 181,
+      "start": 151,
       "duration": 160
     },
     "subject": {
-      "start": 353,
+      "start": 323,
       "duration": 160
     },
     "conclusion": {
-      "start": 525,
+      "start": 495,
       "duration": 120
     },
     "hold": {
-      "start": 645,
+      "start": 615,
       "duration": 90
     }
   },

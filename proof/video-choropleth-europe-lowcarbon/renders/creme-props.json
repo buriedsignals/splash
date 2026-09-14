@@ -134,44 +134,34 @@
       }
     ]
   },
-  "endCard": {
-    "form": 0,
-    "register": {
-      "fontFamily": "Merriweather",
-      "fontSize": 90,
-      "fontWeight": 700,
-      "fontStyle": "normal",
-      "letterSpacing": -0.6,
-      "transform": "none",
-      "lead": 109.803978,
-      "fill": "#000000"
-    },
-    "claim": [
+  "source": {
+    "form": 2,
+    "lines": [
       {
-        "text": "Sept pays dépassent 94 % :",
-        "x": 85,
-        "y": 459.14500427246094,
-        "width": 1169.9399709701538
+        "text": "Source : Ember, Energy",
+        "x": 5.2867675781250005,
+        "y": 30.359033203125,
+        "width": 385.170703125
       },
       {
-        "text": "six au nord-ouest, et",
-        "x": 85,
-        "y": 568.948982272461,
-        "width": 894.4350609779358
+        "text": "Institute, via Our World in",
+        "x": 5.2867675781250005,
+        "y": 69.96010957031251,
+        "width": 431.17998046875
       },
       {
-        "text": "l’Albanie.",
-        "x": 85,
-        "y": 678.752960272461,
-        "width": 395.46001110076907
+        "text": "Data · Natural Earth",
+        "x": 5.2867675781250005,
+        "y": 109.5611859375,
+        "width": 331.14375
       }
     ],
-    "source": {
-      "text": "Source : Ember, Energy Institute (2025), via Our World in Data · contours Natural Earth 50 m",
+    "halo": 10.573535156250001,
+    "width": 451,
+    "height": 123,
+    "at": {
       "x": 85,
-      "y": 1012.05615234375,
-      "width": 1535.49931640625,
-      "form": 1
+      "y": 897
     }
   },
   "panel": {
@@ -1369,7 +1359,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1383,7 +1373,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1397,7 +1387,7 @@
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1411,7 +1401,7 @@
       "zoom": 1,
       "odd": 1,
       "neighbours": 1,
-      "end": 0
+      "source": 0
     },
     {
       "title": 0,
@@ -1425,7 +1415,7 @@
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
-      "end": 1
+      "source": 1
     },
     {
       "title": 0,
@@ -1439,34 +1429,34 @@
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
-      "end": 1
+      "source": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 735,
+    "total": 705,
     "establish": {
       "start": 0,
-      "duration": 75
+      "duration": 45
     },
     "reference": {
-      "start": 75,
+      "start": 45,
       "duration": 100
     },
     "reveal": {
-      "start": 181,
+      "start": 151,
       "duration": 160
     },
     "subject": {
-      "start": 353,
+      "start": 323,
       "duration": 160
     },
     "conclusion": {
-      "start": 525,
+      "start": 495,
       "duration": 120
     },
     "hold": {
-      "start": 645,
+      "start": 615,
       "duration": 90
     }
   },
