@@ -92,7 +92,7 @@ const lines = base.map((d) => ({
   fromText: pct(d.from),
   toText: pct(d.to),
   subject: d.key === SUBJECT,
-  roomText: d.key === SUBJECT || d === highest ? `${FRENCH[d.key][0]}${NB}: ${Math.round(100 - d.from)}${NB}pts` : "",
+  roomText: `${Math.round(100 - d.from)}${NB}pts`,
 }));
 const partsOut = parts.map((p) => ({ key: p.key, label: p.label, value: p.value, text: `${signed(p.value)}${NB}pts` }));
 const find = (k) => parts.find((p) => p.key === k);

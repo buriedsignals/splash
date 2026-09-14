@@ -4,7 +4,8 @@
 //   right    the slopes growing from the first rail to the second, whose values are written as they land  0..1
 //   subject  every line but the subject's stepping back                                                   0..1
 //   parts    the slope giving way to the subject's change taken apart source by source, in points          0..1
-//   room     the room each country had left to climb in the first year, a bar from its dot up to 100 %    0..1
+//   room     the slope giving way to one bar a country, 0 to 100 %: its first-year share filled, the room it had
+//            left to climb dashed and numbered                                                          0..1
 //   note     which header note is read                                                                    0..5
 //
 // EVERYTHING IS LAID OUT IN THE READER'S PIXELS on each paint: the rails at the stage's edges less their labels' room,
@@ -27,7 +28,7 @@ export function applyShiftState(root, state, context) {
   const subject = clamp(state.subject);
   const parts = ease(clamp(state.parts));
   const room = clamp(state.room);
-  const slopeOn = 1 - parts;
+  const slopeOn = 1 - Math.max(parts, ease(room));
 
   // A phone names each country once: at the first rail while it stands alone, at the second once it is drawn.
   const narrow = SW < 560;
@@ -53,7 +54,6 @@ export function applyShiftState(root, state, context) {
   };
   const leftSeats = seats("from");
   const rightSeats = seats("to");
-  const roomW = Math.max(4, Math.min(10, (x1 - x0) / 40));
 
   c.lines.forEach((l, i) => {
     const kept = (l.subject ? 1 : 1 - 0.75 * subject) * slopeOn;
@@ -66,12 +66,6 @@ export function applyShiftState(root, state, context) {
     set(l.toDot, { cx: xb, cy: yb, fill: colour, opacity: kept * (right > 0.02 ? 1 : 0) });
     Object.assign(l.left.style, { left: `${x0 - 10 - l.left.offsetWidth}px`, top: `${leftSeats.get(l.key)}px`, transform: "translateY(-50%)", opacity: String(kept) });
     Object.assign(l.right.style, { left: `${x1 + 10}px`, top: `${rightSeats.get(l.key)}px`, transform: "translateY(-50%)", opacity: String(kept * clamp((state.right - 0.8) / 0.2)) });
-    // The room left in the first year: a thin bar from the dot up to 100 %, beside the first rail.
-    const rx = x0 + 8 + i * (roomW + 3);
-    const labelled = l.roomLabel.textContent.trim() !== "";
-    set(l.roomBar, { x: rx, y: Y(100), width: roomW, height: Math.max(1, ya - Y(100)), fill: l.subject ? c.colours.room : c.colours.roomRest, opacity: room * slopeOn * (labelled ? 1 : 0.45) });
-    // Named just above its own dot, right of the bars: at mid-bar the label lay across the other lines.
-    Object.assign(l.roomLabel.style, { left: `${x0 + 8 + c.lines.length * (roomW + 3) + 4}px`, top: `${ya - 6}px`, transform: "translateY(-100%)", opacity: String(labelled ? room * slopeOn : 0) });
   });
 
   // ── the subject's change, source by source, as bars either side of zero ──
@@ -100,6 +94,28 @@ export function applyShiftState(root, state, context) {
     Object.assign(p.valueNode.style, { left: `${vx}px`, top: `${cy}px`, transform: p.value >= 0 ? "translateY(-50%)" : "translate(-100%, -50%)", opacity: String(clamp((parts - 0.6) / 0.4)) });
   });
 
+  // ── the room each country had left in the first year: its share filled, the rest of the way to 100 % dashed ──
+  const roomOn = ease(room);
+  const rNameW = Math.max(...c.lines.map((l) => l.roomName.offsetWidth));
+  const rx0 = rNameW + 12;
+  const rx1 = SW - Math.max(...c.lines.map((l) => l.roomLabel.offsetWidth)) - 14;
+  const RX = (v) => rx0 + (v / 100) * (rx1 - rx0);
+  const order = [...c.lines].sort((a, b) => a.from - b.from);
+  const rRow = Math.min(56, (bottom - top) / order.length);
+  const rBar = rRow * 0.5;
+  order.forEach((l, i) => {
+    const cy = top + (i + 0.5) * rRow;
+    const held = RX(l.from * roomOn);
+    set(l.roomRow, { opacity: roomOn });
+    set(l.held, { x: rx0, y: cy - rBar / 2, width: Math.max(0, held - rx0), height: rBar });
+    set(l.roomBar, { x: held, y: cy - rBar / 2, width: Math.max(0, RX(100) - held), height: rBar });
+    Object.assign(l.roomName.style, { left: `${rx0 - 10 - l.roomName.offsetWidth}px`, top: `${cy}px`, transform: "translateY(-50%)", opacity: String(roomOn) });
+    // The room's number sits inside its dashed stretch when it fits there, and just past 100 % when it does not.
+    const w = l.roomLabel.offsetWidth;
+    const inside = RX(100) - held > w + 12;
+    Object.assign(l.roomLabel.style, { left: `${inside ? (held + RX(100)) / 2 : RX(100) + 8}px`, top: `${cy}px`, transform: inside ? "translate(-50%, -50%)" : "translateY(-50%)", opacity: String(clamp((roomOn - 0.6) / 0.4)) });
+  });
+
   c.notes.forEach((node, k) => {
     node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
@@ -122,7 +138,10 @@ function seatShift(root, carrier) {
       toDot: g.querySelector('[data-part="to"]'),
       left: q(`[data-left="${l.key}"]`),
       right: q(`[data-right="${l.key}"]`),
+      roomRow: q(`[data-room-row="${l.key}"]`),
+      held: q(`[data-held="${l.key}"]`),
       roomBar: q(`[data-room="${l.key}"]`),
+      roomName: q(`[data-room-name="${l.key}"]`),
       roomLabel: q(`[data-room-label="${l.key}"]`),
     };
   });

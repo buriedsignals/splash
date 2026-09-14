@@ -105,8 +105,6 @@ export function DirectedShiftScrolly({
         colours: {
           accent,
           rest,
-          room: mix(accent, ground, 0.35),
-          roomRest: mix(muted, ground, 0.35),
         },
         series,
         notes: NOTES,
@@ -168,7 +166,10 @@ export function DirectedShiftScrolly({
             />
           ))}
           {lines.map((l) => (
-            <rect key={`r${l.key}`} data-room={l.key} opacity={0} />
+            <g key={`r${l.key}`} opacity={0} data-room-row={l.key}>
+              <rect data-held={l.key} fill={l.subject ? accent : muted} />
+              <rect data-room={l.key} fill="none" stroke={l.subject ? accentInk : mutedInk} strokeWidth={1.2} strokeDasharray="4 3" />
+            </g>
           ))}
           {lines.map((l) => (
             <g key={l.key} data-line={l.key}>
@@ -245,6 +246,12 @@ export function DirectedShiftScrolly({
               >
                 {l.label}
               </span>
+            </span>
+            <span
+              data-room-name={l.key}
+              style={abs({ ...regs.annot, color: l.subject ? accentInk : inkOnGround, fontWeight: l.subject ? 700 : regs.annot.fontWeight, opacity: 0 })}
+            >
+              {l.label}
             </span>
             <span
               data-room-label={l.key}
