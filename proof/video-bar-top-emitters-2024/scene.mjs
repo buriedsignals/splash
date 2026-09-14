@@ -8,6 +8,7 @@
 //     frame; every count stands past its bar's end.
 //   - STACK: the next five leave their rows one after another and line up end to end under the first, their sum counting.
 //   - TENTH: the tenth slides into the gap between the five's end and the first's — and fits.
+//   - BACK: every bar returns to its own row — the whole ranking as the last picture — the five bracketed with their sum.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
@@ -17,7 +18,7 @@ export const WINDOWS = Object.freeze({
   reference: { title: [0, 0.15], furniture: [0.1, 0.4], world: [0.2, 0.9] },
   reveal: { drop: [0, 0.62], camera: [0.7, 0.98] },
   subject: { stack: [0.05, 0.9] },
-  conclusion: { tenth: [0.08, 0.6], source: [0.55, 0.85] },
+  conclusion: { tenth: [0.04, 0.34], back: [0.5, 0.8], source: [0.78, 0.95] },
 });
 const LINEAR = new Set(["drop", "stack"]);
 /** Of the drop, and of the stack, the share one bar's own move takes. */
@@ -58,6 +59,7 @@ export function sceneAt(props, frame) {
   const camera = at("camera");
   const stack = at("stack");
   const tenth = at("tenth");
+  const back = at("back");
   const unit = props.units.world * (props.units.ten / props.units.world) ** camera;
   const n = props.bars.length;
   const piled = props.bars.filter((b) => b.stacked !== null).length;
@@ -87,8 +89,13 @@ export function sceneAt(props, frame) {
       x = lerp(x, props.left + combined * unit, slide);
       y = lerp(y, props.gapY, slide);
     }
-    const seam = b.stacked ? props.seam * move : slide > 0 ? props.seam * slide : 0;
-    return { x: x + seam, y, w: Math.max(0, b.value * unit * (fall > 0 ? 1 : grown) - seam), fall, landed: fall >= 1 ? 1 : 0, move, slide };
+    // Back to its own row: the pile and the gap undone, the length kept.
+    if (b.stacked !== null || b.tenth) {
+      x = lerp(x, props.left, back);
+      y = lerp(y, b.y, back);
+    }
+    const seam = (b.stacked ? props.seam * move : slide > 0 ? props.seam * slide : 0) * (1 - back);
+    return { x: x + seam, y, w: Math.max(0, b.value * unit * (fall > 0 ? 1 : grown) - seam), fall, landed: fall >= 1 ? 1 : 0, move: move * (1 - back), slide: slide * (1 - back) };
   });
   const tenSum = props.bars.reduce((s, b) => s + b.value, 0);
   return {
@@ -103,7 +110,9 @@ export function sceneAt(props, frame) {
     sum,
     stacking: clamp01(stack / 0.05),
     sumShown: 1 - ease(clamp01(tenth * 4)),
-    tenth,
+    tenth: tenth * (1 - back),
+    back,
+    bracket: clamp01((back - 0.8) / 0.2),
     source: at("source"),
   };
 }

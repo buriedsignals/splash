@@ -32,6 +32,7 @@ export type BarFrameProps = {
   bars: Array<{ value: number; y: number; inWorld: number; stacked: number | null; before: number; tenth: boolean; name: Line }>;
   pileNames: Array<Line & { leader: { x1: number; y1: number; x2: number; y2: number } | null }>;
   tenthName: Line;
+  bracket: { x: number; y1: number; y2: number; tick: number };
   rows: { first: number; pile: number };
   combined: number;
   countWidths: Record<string, number>;
@@ -80,8 +81,9 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
         <Text line={props.worldName} register={r.axis} fill={colours.text.name} opacity={worldGoing} />
         {props.bars.map((b, i) => {
           const s = scene.bars[i];
-          const out = s.tenth ? 0 : s.move;
-          return <Text key={`name${i}`} line={b.name} register={r.axis} fill={after(i) && !b.tenth ? blend(colours.text.name, colours.text.axis, scene.stepBack) : colours.text.name} opacity={s.landed * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
+          const out = b.tenth ? 0 : s.move;
+          const faded = (after(i) && !b.tenth) || (b.tenth && scene.back > 0) ? scene.stepBack : 0;
+          return <Text key={`name${i}`} line={b.name} register={r.axis} fill={blend(colours.text.name, colours.text.axis, faded)} opacity={s.landed * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
         })}
       </g>
 
@@ -102,16 +104,16 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
         const s = scene.bars[i];
         if (!(s.landed && scene.camera > 0)) return null;
         const text = withUnit(valueText(b.value));
-        const opacity = scene.camera * (b.stacked !== null ? Math.max(0, 1 - s.move * 4) : b.tenth ? (1 - 0.6 * scene.stepBack) * Math.max(0, 1 - s.slide * 4) : after(i) ? 1 - 0.6 * scene.stepBack : 1);
+        const opacity = scene.camera * (b.stacked !== null ? Math.max(0, 1 - s.move * 4) : b.tenth ? (1 - 0.6 * scene.stepBack) * Math.max(0, 1 - s.slide * 4) * (scene.tenth > 0 && scene.back === 0 ? 0 : 1) : after(i) ? 1 - 0.6 * scene.stepBack : 1);
         return opacity > 0 ? <Text key={`count${i}`} line={count(text, s.x + s.w + props.countGap, b.y + props.barH / 2 + props.valueShift)} register={r.value} fill={i === 0 ? colours.text.first : colours.text.count} opacity={opacity} halo={valueHalo} /> : null;
       })}
 
-      <line x1={firstEnd} x2={firstEnd} y1={props.rows.first} y2={props.rows.pile} stroke={colours.rule} strokeWidth={props.strokes.rule} strokeDasharray={props.dash.join(" ")} opacity={scene.stacking} />
+      <line x1={firstEnd} x2={firstEnd} y1={props.rows.first} y2={props.rows.pile} stroke={colours.rule} strokeWidth={props.strokes.rule} strokeDasharray={props.dash.join(" ")} opacity={scene.stacking * (1 - scene.back)} />
       {props.pileNames.map((p, j) => {
         const i = props.bars.findIndex((b) => b.stacked === j);
         const opacity = Math.max(0, scene.bars[i].move * 4 - 3);
         return (
-          <g key={`pile${j}`} opacity={opacity}>
+          <g key={`pile${j}`} opacity={opacity * (1 - Math.min(1, scene.back * 4))}>
             {p.leader ? <line x1={p.leader.x1} y1={p.leader.y1} x2={p.leader.x2} y2={p.leader.y2} stroke={colours.text.axis} strokeWidth={props.strokes.grid} /> : null}
             <Text line={p} register={r.axis} fill={colours.text.name} halo={axisHalo} />
           </g>
@@ -119,6 +121,10 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
       })}
       {scene.landed > 0 && scene.sumShown > 0 ? <Text line={count(sumText, pileFront + props.countGap, props.pileY + props.barH / 2 + props.valueShift)} register={r.value} fill={colours.text.count} opacity={scene.sumShown} halo={valueHalo} /> : null}
       <Text line={props.tenthName} register={r.axis} fill={colours.text.name} opacity={Math.max(0, scene.tenth * 4 - 3)} halo={axisHalo} />
+      <g opacity={scene.bracket}>
+        <path d={`M${props.bracket.x} ${props.bracket.y1}h${props.bracket.tick}V${props.bracket.y2}h${-props.bracket.tick}`} fill="none" stroke={colours.text.count} strokeWidth={props.strokes.grid * 1.6} transform={`translate(${-props.bracket.tick} 0)`} />
+        <Text line={count(withUnit(valueText(props.combined)), props.bracket.x + props.countGap, (props.bracket.y1 + props.bracket.y2) / 2 + props.valueShift)} register={r.value} fill={colours.text.count} halo={valueHalo} />
+      </g>
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (

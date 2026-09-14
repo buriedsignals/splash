@@ -135,6 +135,13 @@ export function buildDirection(id, { subject, states, copy }) {
   const tenthWord = widthOf(applyCase(tenthRow.name, axis.transform), axis);
   const tenthName = { text: applyCase(tenthRow.name, axis.transform), width: tenthWord, x: left + subject.top[0].value * unit + gap, y: pileY + barH / 2 + shift };
   if (!(tenthName.x + tenthWord * (1 + DRAWN_WIDER) <= stage.width - inset)) throw new Error("the tenth's name runs past the frame");
+  // THE LAST PICTURE's bracket: past the longest of the five and its count, from the second row to the sixth, their sum
+  // beside it.
+  const longest = Math.max(...piled.map((r) => r.value));
+  const bracketX = left + longest * unit + gap + countOf(longest) + gap;
+  const sumWidth = countOf(subject.combined);
+  if (!(bracketX + gap + sumWidth <= stage.width - inset)) throw new Error("the five's bracket and its sum run past the frame");
+  const bracket = { x: bracketX, y1: rowY(2), y2: rowY(1 + subject.beaten) + barH, tick: gap / 2 };
 
   const counts = [...countTexts(subject.top[0].value), valueText(subject.world)];
   const measured = (texts, r) => Object.fromEntries(texts.map((t) => [t, widthOf(applyCase(t, r.transform), r)]));
@@ -201,6 +208,7 @@ export function buildDirection(id, { subject, states, copy }) {
     })(),
     pileNames,
     tenthName,
+    bracket,
     rows: { first: r1(rowY(1)), pile: r1(pileY) },
     combined: subject.combined,
     countWidths,

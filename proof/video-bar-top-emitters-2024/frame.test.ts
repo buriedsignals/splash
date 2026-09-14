@@ -59,7 +59,8 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     });
 
     it("should line the five up exactly to their sum and slide the tenth into the gap before the first's end", () => {
-      const s = sceneAt(props, props.timing.total - 1);
+      const { start, duration } = props.timing.conclusion;
+      const s = sceneAt(props, Math.round(start + duration * 0.42));
       const unit = props.units.ten;
       const five = props.bars.map((b: any, i: number) => ({ b, s: s.bars[i] })).filter(({ b }: any) => b.stacked !== null);
       expect(Math.max(...five.map(({ s }: any) => s.x + s.w))).toBeCloseTo(props.left + props.combined * unit, 6);
@@ -67,6 +68,15 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(tenth.y).toBeCloseTo(props.gapY, 6);
       expect(tenth.x).toBeGreaterThanOrEqual(props.left + props.combined * unit);
       expect(tenth.x + tenth.w).toBeLessThan(props.left + props.bars[0].value * unit);
+    });
+
+    it("should end on the whole ranking, every bar back in its row at its length, the five bracketed", () => {
+      const s = sceneAt(props, props.timing.total - 1);
+      props.bars.forEach((b: any, i: number) => {
+        expect([i, s.bars[i].x, s.bars[i].y]).toEqual([i, expect.closeTo(props.left, 6), expect.closeTo(b.y, 6)] as any);
+        expect(s.bars[i].w).toBeCloseTo(b.value * props.units.ten, 6);
+      });
+      expect(s.bracket).toBeCloseTo(1, 9);
     });
 
     it("should set the credit on one line", () => {
