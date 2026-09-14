@@ -1185,12 +1185,8 @@ function applyBridgeState(root, state, context) {
   const runText = c.running.dataset.template.replace("{v}", format(running));
   if (c.running.textContent !== runText) c.running.textContent = runText;
   const notes = { renNote: clamp(state.ren) * (1 - clamp(state.nuc)), nucNote: clamp(state.nuc) * (1 - clamp(state.fos)), fosNote: clamp(state.unfold * 2 - 1), netNote: net * clamp(state.focus) };
-  let noteOn = 0;
-  for (const [key, node] of Object.entries(c.notes)) {
-    node.style.opacity = String(notes[key]);
-    noteOn = Math.max(noteOn, notes[key]);
-  }
-  c.running.style.opacity = String(1 - noteOn);
+  const noteOn = Math.max(...Object.values(notes));
+  showOneNote([...Object.entries(c.notes).map(([key, node]) => [node, notes[key]]), [c.running, 1 - noteOn]]);
 }
 
 function seatBridge(root, carrier) {
@@ -1236,6 +1232,19 @@ function seatBridge(root, carrier) {
     running: root.querySelector('[data-part="running"]'),
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }
 
 initReveal(document.querySelector('[data-reveal="visual"]'), [{"opening":1,"ren":0,"nuc":0,"fos":0,"unfold":0,"closing":0,"net":0,"focus":0},{"opening":1,"ren":1,"nuc":0,"fos":0,"unfold":0,"closing":0,"net":0,"focus":0},{"opening":1,"ren":1,"nuc":1,"fos":0,"unfold":0,"closing":0,"net":0,"focus":0},{"opening":1,"ren":1,"nuc":1,"fos":1,"unfold":1,"closing":0,"net":0,"focus":0},{"opening":1,"ren":1,"nuc":1,"fos":1,"unfold":0,"closing":1,"net":1,"focus":1},{"opening":1,"ren":1,"nuc":1,"fos":1,"unfold":0,"closing":1,"net":1,"focus":0}], applyBridgeState);

@@ -122,7 +122,7 @@ export function applyTreemapState(root, state, context) {
   c.inside.forEach((f, i) => place(f, subRects[i], clamp((open - 0.5) * 2)));
 
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 }
 

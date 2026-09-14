@@ -128,9 +128,7 @@ export function applyDivergingStackState(root, state, context) {
     tick.style.left = `${lean ? axisX + t * kLean : plotX0 + t * kStack}px`;
     tick.style.opacity = (lean ? centre >= 0.5 : centre < 0.5) ? "1" : "0";
   }
-  c.leftNote.style.opacity = String(clamp(state.left));
-  c.rightNote.style.opacity = String(clamp(state.right));
-  c.compareNote.style.opacity = String(clamp(state.compare));
+  showOneNote([[c.leftNote, clamp(state.left)], [c.rightNote, clamp(state.right)], [c.compareNote, clamp(state.compare)]]);
 }
 
 function seatDivergingStack(root, carrier) {
@@ -174,4 +172,17 @@ function seatDivergingStack(root, carrier) {
     rightNote: root.querySelector('[data-part="right-note"]'),
     compareNote: root.querySelector('[data-part="compare-note"]'),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

@@ -91,7 +91,7 @@ export function applyHexState(root, state, context) {
   }
 
   const notes = { countNote: fill * (1 - rate), rateNote: rate * (1 - rankE) * (1 - pair), rankNote: rankE, pairNote: pair };
-  for (const [key, node] of Object.entries(c.notes)) node.style.opacity = String(notes[key]);
+  showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key]]));
   c.countKey.style.opacity = String(fill * (1 - rate));
   c.rateKey.style.opacity = String(rate);
 }
@@ -145,4 +145,17 @@ function seatHex(root, carrier) {
     countKey: root.querySelector('[data-part="count-key"]'),
     rateKey: root.querySelector('[data-part="rate-key"]'),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

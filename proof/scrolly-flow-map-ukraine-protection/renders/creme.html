@@ -1141,9 +1141,7 @@ function applyFlowState(root, state, context) {
   const text = c.count.dataset.template.replace("{p}", share.toFixed(1).replace(".", ","));
   if (c.count.textContent !== text) c.count.textContent = text;
   const tracing = clamp(state.bands);
-  c.count.style.opacity = String(tracing * (1 - clamp(state.others)));
-  c.totalNote.style.opacity = String(1 - tracing);
-  c.othersNote.style.opacity = String(clamp(state.others) * (1 - clamp(state.key)));
+  showOneNote([[c.count, tracing * (1 - clamp(state.others))], [c.totalNote, 1 - tracing], [c.othersNote, clamp(state.others) * (1 - clamp(state.key))]]);
   c.key.style.opacity = String(Math.max(clamp(state.key), tracing));
   for (const swatch of c.swatches) swatch.style.height = `${Math.max(1, (wMax * Number(swatch.dataset.people)) / maxPeople)}px`;
 }
@@ -1187,6 +1185,19 @@ function seatFlow(root, carrier) {
     swatches: Array.from(root.querySelectorAll("[data-people]")),
   };
   root.__flow.originName = root.__flow.nodeLabel.textContent;
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }
 
 initReveal(document.querySelector('[data-reveal="visual"]'), [{"bands":0,"others":0,"pair":0,"key":0},{"bands":1,"others":0,"pair":0,"key":0},{"bands":2,"others":0,"pair":1,"key":0},{"bands":10,"others":0,"pair":0,"key":0},{"bands":10,"others":1,"pair":0,"key":0},{"bands":10,"others":1,"pair":1,"key":1}], applyFlowState);

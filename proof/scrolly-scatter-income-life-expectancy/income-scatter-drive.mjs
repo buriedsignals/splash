@@ -107,7 +107,7 @@ export function applyIncomeState(root, state, context) {
   }
 
   const notes = { logNote: logE * (1 - brk), breakNote: brk * (1 - Math.max(below, above, all)), belowNote: below, aboveNote: above };
-  for (const [key, node] of Object.entries(c.notes)) node.style.opacity = String(notes[key]);
+  showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key]]));
 }
 
 function seatIncome(root, carrier) {
@@ -142,4 +142,17 @@ function seatIncome(root, carrier) {
     extremes: data.extremes.map((e) => ({ ...e, point: byCode[e.code], ring: svg.querySelector(`[data-ring="${e.code}"]`), label: stage.querySelector(`[data-extreme="${e.code}"]`) })),
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

@@ -155,7 +155,7 @@ export function applyPictogramState(root, state, context) {
   c.middleNames.style.opacity = String(middle * clamp((mode - 0.6) / 0.4));
 
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 }
 

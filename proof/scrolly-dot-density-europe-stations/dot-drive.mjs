@@ -125,12 +125,8 @@ export function applyDotState(root, state, context) {
 
   const countText = c.count.dataset.template.replace("{n}", c.format(counted));
   if (c.count.textContent !== countText) c.count.textContent = countText;
-  c.count.style.opacity = String(clamp(arrive * 4) * (1 - subjectOn));
-  c.subjectNote.style.opacity = String(subjectOn * (1 - w));
-  c.weightNote.style.opacity = String(w * (1 - z));
-  c.zoomNote.style.opacity = String(z);
-  c.keyCount.style.opacity = String(1 - w);
-  c.keyWeight.style.opacity = String(w);
+  showOneNote([[c.count, clamp(arrive * 4) * (1 - subjectOn)], [c.subjectNote, subjectOn * (1 - w)], [c.weightNote, w * (1 - z)], [c.zoomNote, z]]);
+  showOneNote([[c.keyCount, 1 - w], [c.keyWeight, w]]);
   for (const swatch of c.sizeSwatches) {
     const d = 2 * rMax * Math.sqrt(Number(swatch.dataset.mw) / c.maxMw) / grow;
     swatch.style.width = `${d}px`;
@@ -166,4 +162,17 @@ function seatDots(root, carrier) {
     keyWeight: root.querySelector('[data-part="key-weight"]'),
     sizeSwatches: Array.from(root.querySelectorAll("[data-mw]")),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

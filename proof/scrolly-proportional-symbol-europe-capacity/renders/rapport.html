@@ -1173,9 +1173,7 @@ function applySymbolState(root, state, context) {
     .replace("{mw}", c.percent(c.cumulative[k - 1]));
   if (c.counter.textContent !== text) c.counter.textContent = text;
   const cut = clamp(state.cut);
-  c.counter.style.opacity = String((1 - subject) * (1 - cut));
-  c.subjectNote.style.opacity = String(subject);
-  c.cutNote.style.opacity = String(cut);
+  showOneNote([[c.counter, (1 - subject) * (1 - cut)], [c.subjectNote, subject], [c.cutNote, cut]]);
   c.cut.style.opacity = String(cut);
   for (const swatch of c.sizeSwatches) {
     const d = 2 * rMax * Math.sqrt(Number(swatch.dataset.mw) / c.maxMw);
@@ -1210,6 +1208,19 @@ function seatSymbols(root, carrier) {
     cut: root.querySelector('[data-part="cut"]'),
     sizeSwatches: Array.from(root.querySelectorAll("[data-mw]")),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }
 
 initReveal(document.querySelector('[data-reveal="visual"]'), [{"level":0,"largest":1,"subject":0,"zoom":0,"cut":0},{"level":1,"largest":1,"subject":0,"zoom":0,"cut":0},{"level":2,"largest":0,"subject":0,"zoom":0,"cut":0},{"level":2,"largest":0,"subject":1,"zoom":1,"cut":0},{"level":3.949390006644913,"largest":0,"subject":0,"zoom":0,"cut":0},{"level":2.285557309007774,"largest":0,"subject":0,"zoom":0,"cut":1}], applySymbolState);

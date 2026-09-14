@@ -78,7 +78,7 @@ export function applyMixState(root, state, context) {
     node.style.opacity = String(Math.max(0.35, grows[i]));
   });
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

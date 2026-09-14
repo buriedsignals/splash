@@ -104,8 +104,7 @@ export function applyDivergingState(root, state, context) {
   const fellText = c.fell.dataset.template.replace("{n}", String(Math.round(Number(c.fell.dataset.value) * clamp(state.fell * 2))));
   if (c.fell.textContent !== fellText) c.fell.textContent = fellText;
   c.fell.style.opacity = String(clamp(state.fell));
-  c.note.style.opacity = String(clamp(state.note));
-  c.meanNote.style.opacity = String(clamp(state.mean) * (1 - z));
+  showOneNote([[c.note, clamp(state.note)], [c.meanNote, clamp(state.mean) * (1 - z)]]);
 }
 
 function seatDiverging(root, carrier) {
@@ -154,4 +153,17 @@ function seatDiverging(root, carrier) {
     note: root.querySelector('[data-part="note"]'),
     meanNote: root.querySelector('[data-part="mean-note"]'),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

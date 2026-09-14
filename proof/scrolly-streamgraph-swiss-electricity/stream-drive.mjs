@@ -112,7 +112,7 @@ export function applyStreamState(root, state, context) {
   const drawText = c.drawNote.dataset.template.replace("{year}", String(Math.round(year)));
   if (c.drawNote.textContent !== drawText) c.drawNote.textContent = drawText;
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

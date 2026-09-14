@@ -120,7 +120,7 @@ export function applySankeyState(root, state, context) {
   });
 
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

@@ -89,7 +89,7 @@ export function applyStackedState(root, state, context) {
 
   c.levelKey.style.opacity = String(1 - detach);
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 }
 

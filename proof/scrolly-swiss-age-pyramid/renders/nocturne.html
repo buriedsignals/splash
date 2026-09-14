@@ -1145,7 +1145,7 @@ function applyPyramidState(root, state, context) {
   Object.assign(c.crossLabel.style, { left: `${Math.min(SW - lw, rightEdge + halfW * 0.35)}px`, top: `${ruleY + 4}px`, opacity: String(cross * (1 - old)) });
 
   c.notes.forEach((node, k) => {
-    if (node) node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    if (node) node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

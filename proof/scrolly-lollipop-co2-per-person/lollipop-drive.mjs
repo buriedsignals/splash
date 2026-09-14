@@ -116,7 +116,7 @@ export function applyLollipopState(root, state, context) {
   }
 
   const notes = { pairNote: ratio * pair * (1 - change), changeNote: change * (1 - clamp(state.share)), shareNote: clamp(state.share) };
-  for (const [key, node] of Object.entries(c.notes)) node.style.opacity = String(notes[key]);
+  showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key]]));
 }
 
 function set(node, attrs) {
@@ -169,4 +169,17 @@ function seatLollipops(root, carrier) {
     minSlot: (years.yearA.getBoundingClientRect().width + 6) * 2.6,
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

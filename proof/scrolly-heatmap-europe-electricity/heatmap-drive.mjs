@@ -116,7 +116,7 @@ export function applyHeatmapState(root, state, context) {
   Object.assign(c.focusBox.style, { left: `${gridX0 + c.focusColumn * colW - 1}px`, top: `${fy - 1}px`, width: `${colW + 2}px`, height: `${rowH + 2}px`, opacity: String(focus) });
 
   const notes = { sortNote: sortE * (1 - groupE), routeNote: groupE * (1 - focus), focusNote: focus };
-  for (const [key, node] of Object.entries(c.notes)) node.style.opacity = String(notes[key] * clamp(state.notes));
+  showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key] * clamp(state.notes)]));
 }
 
 function mixHex(a, b, t) {
@@ -168,4 +168,17 @@ function seatHeatmap(root, carrier) {
     focusBox: stage.querySelector('[data-part="focus"]'),
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

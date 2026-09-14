@@ -127,7 +127,7 @@ export function applyMarimekkoState(root, state, context) {
   Object.assign(c.stackLabel.style, { left: `${stackLabelX}px`, top: `${plotTop}px`, transform: "translate(-50%, -100%)", opacity: String(stack) });
 
   const notes = { grandNote: widthE * (1 - tracked), trackedNote: tracked * (1 - stack), stackNote: stack };
-  for (const [key, node] of Object.entries(c.notes)) node.style.opacity = String(notes[key]);
+  showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key]]));
 }
 
 function seatMarimekko(root, carrier) {
@@ -170,4 +170,17 @@ function seatMarimekko(root, carrier) {
     groundRgb: getComputedStyle(root.querySelector("[data-marimekko]")).backgroundColor,
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

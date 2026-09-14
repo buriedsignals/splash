@@ -83,7 +83,7 @@ export function applyWindSolarState(root, state, context) {
   c.solarKey.style.opacity = String(Math.max(0.25, 1 - gap * 0.75));
 
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

@@ -110,7 +110,7 @@ export function applySolarState(root, state, context) {
   const yearText = c.yearNote.dataset.template.replace("{year}", String(Math.round(year)));
   if (c.yearNote.textContent !== yearText) c.yearNote.textContent = yearText;
   c.notes.forEach((node, k) => {
-    node.style.opacity = String(clamp(1 - Math.abs(state.note - k)));
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
   });
 
   function set(el, attrs) {

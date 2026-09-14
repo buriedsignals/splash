@@ -168,9 +168,7 @@ export function applyDonutState(root, state, context) {
     m.lineAfter.setAttribute("y", String(best.r + 8 + c.annotPx * 1.35 + c.axisPx * 2.5));
   });
 
-  c.worldNote.style.opacity = String(clamp(state.grow) * (1 - russia) * (1 - split));
-  c.trapNote.style.opacity = String(russia * (1 - split));
-  c.splitNote.style.opacity = String(split);
+  showOneNote([[c.worldNote, clamp(state.grow) * (1 - russia) * (1 - split)], [c.trapNote, russia * (1 - split)], [c.splitNote, split]]);
 }
 
 /** An annular sector from `a0` to `a1` degrees clockwise from twelve o'clock, with `pad` degrees of ground
@@ -274,4 +272,17 @@ function buildDonut(root, carrier) {
     trapNote: root.querySelector('[data-part="trap-note"]'),
     splitNote: root.querySelector('[data-part="split-note"]'),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }

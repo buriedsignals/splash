@@ -77,9 +77,7 @@ export function applyGanttState(root, state, context) {
   const year = Math.max(c.first, Math.min(c.last, Math.floor(head - 0.001)));
   const yearText = c.yearNote.dataset.template.replace("{y}", String(year));
   if (c.yearNote.textContent !== yearText) c.yearNote.textContent = yearText;
-  c.yearNote.style.opacity = String((1 - six) * (1 - gaps) * (1 - dates));
-  c.sixNote.style.opacity = String(six);
-  c.gapNote.style.opacity = String(gaps);
+  showOneNote([[c.yearNote, (1 - six) * (1 - gaps) * (1 - dates)], [c.sixNote, six], [c.gapNote, gaps]]);
 }
 
 function seatGantt(root, carrier) {
@@ -119,4 +117,17 @@ function seatGantt(root, carrier) {
     sixNote: root.querySelector('[data-part="six-note"]'),
     gapNote: root.querySelector('[data-part="gap-note"]'),
   };
+}
+
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
+// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+function showOneNote(entries) {
+  const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
+  const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
+  let shown = false;
+  for (const [node, v] of entries) {
+    const top = !shown && v === ranked[0];
+    if (top) shown = true;
+    node.style.opacity = String(top ? lead : 0);
+  }
 }
