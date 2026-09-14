@@ -17,7 +17,7 @@ other export yet.
 
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
-| 01 | Area | 1 | ✅ | ◦ | ◦ | ◦ |
+| 01 | Area | 1 | ✅ | ◦ | ✅ | ◦ |
 | 02 | Bar and column | 2 | ✅ | ◦ | ◦ | ◦ |
 | 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Box plot | 1 | ✅ | ◦ | ◦ | ◦ |
@@ -72,6 +72,7 @@ other export yet.
 | form | export | beat |
 | --- | --- | --- |
 | Area | static | `proof/static-area-swiss-co2` |
+| Area | video | `proof/video-area-swiss-co2` — validated by the owner 2026-09-14 |
 | Bar and column | static | `proof/static-bar-top-emitters-2024` |
 | Beeswarm | static | `proof/static-beeswarm-co2-per-person` |
 | Box plot | static | `proof/more-boxplot-france-co2-decades` |
