@@ -73,6 +73,30 @@ colour-vision deficiency simulation, not just distinguishable from white or
 grey, or the two directions of the story (better than the reference vs. worse
 than it) collapse into the same colour for a meaningful fraction of readers.
 
+## In video
+
+Worked example: `proof/video-choropleth-europe-lowcarbon` (validated 2026-09-14). What the type keeps,
+drops and changes when it is watched rather than read:
+
+- **The basemap is vector**, Natural Earth projected in Bun and drawn in SVG, the camera a viewBox — the
+  MapTiler plate stays the still's. The still's **anatomy is redrawn** on it: names in capitals, the claim's
+  areas at 700, haloed in the colour of the country under the word (and the halo follows that colour as
+  classes step back); an ink measured against every cell the word's line crosses, in every state it is
+  seen in; a word wholly inside its country or led to it by a line and a dot; the lowest values named as
+  context; seas in italic, searched in open water near their own centre, never abbreviated.
+- **The ramp arrives class by class**, lowest first, and **the floor rises**: a cursor travels the key's
+  bornes while every class it passes steps back to bare land and the count steps down with it. This is
+  the filter as time — the one gesture a still cannot make.
+- **The exception gets a close-up**: the camera travels onto it, framed on the subject's ring and the
+  neighbours' names, and their shares **count up** once the camera has settled. No callout: the counted
+  shares say it.
+- **Pull back to the whole**, the claim's areas named again, and **end on the map** with the source as a
+  credit in a sea corner. No end card.
+- What broke at validation: the first frame was the map (the title's window opened at frame 0); the title
+  stayed four seconds; the key was a plated block with a unit line that hid Iceland; the close-up centred
+  Albania with half the shot on the Adriatic; an end card repeated the title; the source was set at the
+  axis size. A QuickTime window left open on a replaced mp4 plays black — close it before re-opening.
+
 ## The worked example in this tree
 
 `proof/static-choropleth-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a

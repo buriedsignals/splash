@@ -43,7 +43,7 @@ test suite and direct review of the rendered artifacts.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
-| **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | mapscrolly-one-map-europe-carbon |
+| **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | video-choropleth-europe-lowcarbon | mapscrolly-one-map-europe-carbon |
 | **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | mapscrolly-quakes-three-ways |
 | **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
 | **hex grid** | map-quake-density<br>mapvid-hexgrid-quakes | mapgen-hexgrid-web | mapvid-hexgrid-quakes | — |

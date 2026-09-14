@@ -48,6 +48,31 @@ Pick what serves the claim; a beat rarely needs more than four.
 | **Name** | a mark is ringed and labelled at the moment its event lands | a single datum carries the sentence |
 | **Pull back** | the frame returns to the whole with what the viewer learned still marked | the `conclusion` or `hold` event restates the claim on the full picture |
 
+## The shots, and how little to write
+
+Settled on the choropleth pilot (`proof/video-choropleth-europe-lowcarbon`, validated 2026-09-14),
+and binding on every type after it. The owner's words: « le layout vidéo ne doit pas être comme les
+autres, genre premier plan le titre en premier puis ensuite tout un storytelling »; « l'objectif dans
+les vidéos c'est de réussir à faire comprendre en écrivant le moins possible de texte explicatif »;
+« la vue finale doit être la map et pas le titre à nouveau ».
+
+1. **A video is shots, not a page.** No header over a chart over a key.
+2. **The title card is frame 0, and it is brief.** The eyebrow and a short title (a dozen words, at most
+   three lines), alone on the direction's ground from the very first frame — its opacity window must
+   close before frame 0, or frame 0 is the chart — held a second and a half (`establish` = 45 frames at
+   30 fps), then the story. No standfirst.
+3. **The story takes the whole frame.** What it needs to be read — the count, the key — sits in one
+   panel with no plate, its words haloed on the ground they stand on, seated by measurement where it
+   covers the least of the picture and none of the marks the claim is about.
+4. **Write as little as the picture allows.** No callout sentence, no unit line, no restated claim. A
+   counter is the count alone (« 7 pays ») when the key's cursor already says above what. Labels are
+   names and values, never sentences. What a sentence would say, a gesture shows.
+5. **A close-up frames what it shows** — the subject and the words it adds, centred on their drawn
+   extent, with a margin of air — not the subject dead centre with half the shot empty.
+6. **The video ends on the picture, never on a card.** The last frame is the full chart with what was
+   learned still marked; the source is a credit at the type floor, in a corner of the picture that
+   holds it without touching a word.
+
 ## Precision still applies
 
 Every gesture lands on a composition measured in the reader's own pixels, at the same standard the

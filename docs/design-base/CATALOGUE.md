@@ -57,7 +57,7 @@ other export yet.
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
 | 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
-| 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ◦ |
+| 02 | Choropleth | 1 | ✅ | ◦ | ✅ | ◦ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
@@ -104,6 +104,7 @@ other export yet.
 | Parallel coordinates | static | `proof/static-parallel-coordinates-electricity-mix` |
 | Pictogram | static | `proof/static-pictogram-europe-lowcarbon` |
 | Choropleth | static | `proof/static-choropleth-europe-lowcarbon` |
+| Choropleth | video | `proof/video-choropleth-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Dot density | static | `proof/static-dot-density-europe-stations` |
 | Flow map | static | `proof/static-flow-map-ukraine-protection` |
 | Hex grid | static | `proof/static-hex-grid-europe-protection` |
