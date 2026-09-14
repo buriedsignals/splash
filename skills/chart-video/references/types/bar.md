@@ -1,16 +1,16 @@
 # Bar and column — in video
 
-Worked example: `proof/video-bar-top-emitters-2024` (validated 2026-09-14), from `proof/static-bar-top-emitters-2024`.
+Worked example: `proof/video-bar-top-emitters-2024` (validated 2026-09-14, recut as an argument), from
+`proof/static-bar-top-emitters-2024`.
 
-- **Columns only when every name holds in two lines of its slot; rows otherwise** — the scrolly's own rule, measured. A
-  name that cannot wrap (« États-Unis ») decides it.
-- **The gesture only a video has is doing the arithmetic**: the bars grow one after another in rank order, the subject
-  last, each eased (an arrival) and counting its value; then the entities the claim adds up leave their rows and line up
-  end to end along one row, each block landing after the one before, their sum counting the blocks landed. The subject's
-  end is dropped as a dashed line that stops above the pile, so the pile is seen stopping short.
-- **A seam of the ground between blocks is taken out of the block, never added**: the pile ends exactly at the sum.
-- **Every count carries the unit** (« 12,3 Gt »); every text a count passes through is measured in Bun — including the
-  rounding edge where two decimals turn into one (0,995 → « 1,0 »).
-- The pile's names sit under their blocks in the emptied row, spread left to right, a hairline leader where one had to
-  move; the sum stands past the pile's front, a block about to land included. The bars the claim does not use step back as
-  the first block leaves.
+- **Columns only when every name holds in two lines of its slot; rows otherwise** — the scrolly's own rule, measured.
+- **Start from the whole the ranking is cut from**: the total as one bar on the first row, the ranked members marked inside
+  it end to end, the first already in place; the others fall out into the rows below keeping their lengths, then the camera
+  closes the scale (geometrically) until the first fills the row and the rest of the whole runs out of the frame. No row is
+  spent on the whole alone.
+- **Do the arithmetic with the bars**: the members the claim adds up line up end to end under the first, their sum
+  counting; the first's end dropped as a dashed line that stops above them. A seam of the ground is taken out of a block,
+  never added. A derived comparison can be shown the same way — the next member slid into the gap, and fitting.
+- **End on the whole chart**: every bar back in its row at its length, what was learned still marked (the members bracketed
+  with their sum), the rest stepped back; the credit on one line.
+- Every count carries the unit; every text a count passes through is measured in Bun, rounding edges included.
