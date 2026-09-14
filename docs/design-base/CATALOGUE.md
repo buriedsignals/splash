@@ -46,7 +46,7 @@ other export yet.
 | 27 | Slope | 3 | ✅ | ◦ | ◦ | ◦ |
 | 28 | Small multiples | 4 | ✅ | ◦ | ◦ | ◦ |
 | 29 | Stacked bar | 5 | ✅ | ◦ | ◦ | ◦ |
-| 30 | Streamgraph | 5 | ✅ | ◦ | ◦ | ◦ |
+| 30 | Streamgraph | 5 | ✅ | ◦ | ✅ | ◦ |
 | 31 | Treemap | 1 | ✅ | ◦ | ◦ | ◦ |
 | 32 | Waterfall | 12 | ✅ | ◦ | ◦ | ◦ |
 
@@ -98,6 +98,7 @@ other export yet.
 | Sankey | static | `proof/static-sankey-electricity-sources` |
 | Scatter | static | `proof/static-income-life-expectancy` |
 | Streamgraph | static | `proof/static-streamgraph-swiss-electricity` |
+| Streamgraph | video | `proof/video-streamgraph-swiss-electricity` — validated by the owner 2026-09-14 |
 | Treemap | static | `proof/static-treemap-europe-capacity` |
 | Waterfall | static | `proof/static-germany-electricity-bridge` |
 | Slope | static | `proof/static-slope-europe-lowcarbon` |
