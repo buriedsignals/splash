@@ -47,14 +47,14 @@ export function applyCalendarState(root, state, context) {
   const text = `${n} ${c.counter.dataset.suffix}`;
   if (c.counter.textContent !== text) c.counter.textContent = text;
   c.counter.style.opacity = String(state.outline > 0 ? state.zoom : 0);
-  if (state.outline > 0 && state.zoom > 0) keepInside(c.calendar, [c.counter]);
+  if (state.outline > 0 && state.zoom > 0) keepInside(c.calendar, [c.counter], 0, 0);
 
   // Means: the column opens, then the bars draw.
   c.calendar.style.gridTemplateColumns = `max-content repeat(31, minmax(0, 1fr)) ${(c.meansWidth * state.means).toFixed(2)}px`;
   for (const node of c.means) node.style.opacity = String(state.means);
 
   for (const node of c.extremes) node.style.opacity = String(state.extremes);
-  if (state.extremes > 0) keepInside(c.calendar, c.labels);
+  if (state.extremes > 0) keepInside(c.calendar, c.labels, c.meansWidth, c.cells[0].getBoundingClientRect().left - c.calendar.getBoundingClientRect().left);
 }
 
 function measureCalendar(root) {
@@ -107,13 +107,16 @@ function measureCalendar(root) {
   root.dataset.valuesFit = valuesFit ? "1" : "0";
 }
 
-/** A name or the counter anchored near the frame's edge would hang outside it; it slides back in. */
-function keepInside(calendar, labels) {
+/** A name anchored near the grid's edge would hang outside it; it slides back in — on the right, short of the
+ *  means column, where on a phone the hottest day's name covered June's mean; on the left, clear of the month names. */
+function keepInside(calendar, labels, meansWidth, namesWidth) {
   const frame = calendar.getBoundingClientRect();
+  const right = frame.right - meansWidth;
+  const left = frame.left + namesWidth;
   for (const label of labels) {
     label.style.marginLeft = "0px";
     const box = label.getBoundingClientRect();
-    if (box.right > frame.right) label.style.marginLeft = `${frame.right - box.right}px`;
-    else if (box.left < frame.left) label.style.marginLeft = `${frame.left - box.left}px`;
+    if (box.right > right) label.style.marginLeft = `${right - box.right}px`;
+    else if (box.left < left) label.style.marginLeft = `${left - box.left}px`;
   }
 }

@@ -95,7 +95,8 @@ const runs = [];
 for (let month = best.from.month; month <= best.to.month; month++)
   runs.push({ month, from: month === best.from.month ? best.from.day : 1, to: month === best.to.month ? best.to.day : daysInMonth(month) });
 
-const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+/** A negative reading takes the minus sign, not the hyphen `toLocaleString` writes. */
+const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })).replace(/^-/, "\u2212");
 const format = (v) => plainSpaces(v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }));
 const asDay = (day) => `${day.day} ${MONTHS[day.month].toLowerCase()}`;
 
