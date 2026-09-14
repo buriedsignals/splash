@@ -69,7 +69,9 @@ les vidéos c'est de réussir à faire comprendre en écrivant le moins possible
    names and values, never sentences. What a sentence would say, a gesture shows.
 5. **A close-up frames what it shows** — the subject and the words it adds, centred on their drawn
    extent, with a margin of air — not the subject dead centre with half the shot empty.
-6. **The video ends on the picture, never on a card.** The last frame is the full chart with what was
+6. **A camera that focuses on a country shows its regions' borders** — admin-1 lines, secondary to the national border,
+   drawn as the camera closes in.
+7. **The video ends on the picture, never on a card.** The last frame is the full chart with what was
    learned still marked; the source is a credit at the type floor, in a corner of the picture that
    holds it without touching a word.
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { contrast } from "#shared/chart-beat/colour.mjs";
 import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { buildDirection, loadBeat } from "./build.mjs";
@@ -35,6 +36,14 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(sceneAt(props as any, last("reference")).viewBox).toEqual(props.cameras.overview);
       const reveal = sceneAt(props as any, last("reveal"));
       expect([reveal.viewBox, reveal.names]).toEqual([props.cameras.closeUp, 1]);
+    });
+
+    it("should draw the focus country's regional borders at the close-up, and not on the continent", () => {
+      expect(props.regions.d.length).toBeGreaterThan(1000);
+      expect(sceneAt(props as any, last("reference")).regions).toBe(0);
+      expect(sceneAt(props as any, last("reveal")).regions).toBe(1);
+      expect(markupAt(props.timing.total - 1)).toContain(props.regions.d.slice(0, 40));
+      expect(contrast(props.colours.region, props.colours.story)).toBeGreaterThanOrEqual(1.6 - 0.01);
     });
 
     it("should name nothing of the close-up while the camera travels", () => {

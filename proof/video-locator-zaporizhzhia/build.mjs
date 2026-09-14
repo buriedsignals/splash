@@ -140,6 +140,14 @@ export function buildDirection(id, { subject, states, copy }) {
       }
     if (rings.length) shapes.push({ iso: f.properties.iso, rings, d: rings.map((ring) => `M${ring.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}Z`).join("") });
   }
+  // THE FOCUS COUNTRY'S REGIONS (the owner, 2026-09-14: « si tu focus sur un pays il faut montrer les frontières des
+  // régions »): its admin-1 lines, clipped like the land, drawn once the camera closes in.
+  const regionParts = [];
+  for (const f of subject.regions.features)
+    for (const line of f.geometry.coordinates) {
+      const pts = line.map(project);
+      if (pts.length >= 2) regionParts.push(`M${pts.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}`);
+    }
   const ukraine = shapes.find((s) => s.iso === "UKR");
   if (!ukraine) throw new Error("Ukraine has no shape in the Europe file");
 
@@ -162,6 +170,8 @@ export function buildDirection(id, { subject, states, copy }) {
     land,
     story,
     border: grid,
+    // A region's border reads on its country's fill at 1.6:1 — a secondary line, below the non-text floor a mark takes.
+    region: adjustToContrast(grid, story, 1.6) ?? grid,
     ring: walked(accent, [land, story], NON_TEXT_CONTRAST_MIN, "the ring"),
     text: {
       eyebrow: walked(registers.eyebrow.fill ?? accent, ground, TEXT_CONTRAST_MIN, "the eyebrow"),
@@ -285,6 +295,7 @@ export function buildDirection(id, { subject, states, copy }) {
     strokes: { border: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k * 1.6 },
     seaBox: { x: clip.x0, y: clip.y0, w: clip.x1 - clip.x0, h: clip.y1 - clip.y0 },
     shapes: shapes.map(({ rings, ...s }) => s),
+    regions: { d: regionParts.join("") },
     cameras,
     project: { station: project([biggest.lon, biggest.lat]), places: places.map((p) => project([p.lon, p.lat])) },
     overviewName,

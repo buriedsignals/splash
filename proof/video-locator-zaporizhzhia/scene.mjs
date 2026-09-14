@@ -11,7 +11,7 @@ import { viewBoxAt } from "../video-choropleth-europe-lowcarbon/scene.mjs";
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
   reference: { title: [0, 0.2], country: [0.25, 0.6] },
-  reveal: { zoom: [0.02, 0.6], names: [0.66, 0.9] },
+  reveal: { zoom: [0.02, 0.6], regions: [0.45, 0.65], names: [0.66, 0.9] },
   subject: { subject: [0, 0.7] },
   conclusion: { source: [0, 0.4] },
 });
@@ -40,6 +40,7 @@ export function sceneAt(props, frame) {
     zoom,
     viewBox: viewBoxAt(props.cameras.overview, props.cameras.closeUp, zoom),
     names: at("names"),
+    regions: at("regions"),
     subject,
     /** The capacity, stepped to the hundred while it climbs — the composition picks the text Bun measured for it. */
     capacity: counted >= 1 ? props.capacity : Math.floor((props.capacity * counted) / 100) * 100,

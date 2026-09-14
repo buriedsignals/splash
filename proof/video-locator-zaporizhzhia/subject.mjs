@@ -43,5 +43,8 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
     .slice(0, PLACES);
   for (const p of places) if (!FRENCH_PLACE[p.name]) throw new Error(`no French name recorded for ${p.name}`);
   const closeWindow = { west: biggest.lon - 9, east: biggest.lon + 9, south: biggest.lat - 5.2, north: biggest.lat + 5.2 };
-  return { biggest, places, closeWindow, geo: JSON.parse(readFileSync(EUROPE_SHAPES, "utf8")) };
+  /** The focus country's regional borders — Natural Earth 10 m admin-1 lines, Ukraine's only, frozen beside this beat. */
+  const regions = JSON.parse(readFileSync(join(HERE, "regions.geojson"), "utf8"));
+  if (!regions.features.length || regions.features.some((f) => f.properties.adm0 !== "UKR")) throw new Error("regions.geojson should hold Ukraine's admin-1 lines and nothing else");
+  return { biggest, places, closeWindow, regions, geo: JSON.parse(readFileSync(EUROPE_SHAPES, "utf8")) };
 }

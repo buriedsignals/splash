@@ -29,10 +29,18 @@ place is ringed on it, and the camera closes in until the names that let a reade
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
 | `reference` | Europe, and a point in Ukraine | **name** | the continent; Ukraine takes its tint and its name; the station's ring lands | largest station in UKR |
-| `reveal` | here | **zoom** | the camera travels from Europe to the still's window, eased; once it has settled, the neighbours' names (capitals), the six largest settlements (a dot and a name) and the waters (italic) land | the naming rules |
+| `reveal` | here | **zoom** | the camera travels from Europe to the still's window, eased; its regions' borders are drawn as it closes in; once it has settled, the neighbours' names (capitals), the six largest settlements (a dot and a name) and the waters (italic) land | the naming rules |
 | `subject` | Zaporijjia, 6 000 MW installed | **name + count up** | the ring closes on the station; « Zaporijjia » lands and « MW installés » counts up to 6 000 | capacity ≥ 6 000 MW |
 | `conclusion` | — | — | the credit | — |
 | `hold` | the located station | — | nothing | hold = conclusion |
+
+## The focus country's regions
+
+The owner (2026-09-14): « si tu focus sur un pays il faut montrer les frontières des régions ». Once the camera closes on
+Ukraine, its oblasts' borders are drawn — thinner and paler than a national border, landing as the camera settles and
+absent from the continental shot. Source: Natural Earth 10 m admin-1 boundary lines, fetched 2026-09-14
+(`curl -sSL https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces_lines.geojson`,
+10 179 features, sha256 `1a1f30cc…c75b6`), filtered to Ukraine's 57 lines and rounded to three decimals: `regions.geojson`.
 
 ## Write as little as the picture allows
 

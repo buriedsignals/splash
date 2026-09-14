@@ -19,10 +19,11 @@ export type LocatorFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; haloColour: string; lines: Line[] };
-  colours: { ground: string; sea: string; land: string; story: string; border: string; ring: string; text: Record<"eyebrow" | "title" | "area" | "settlement" | "water" | "station" | "source", string> };
+  colours: { ground: string; sea: string; land: string; story: string; border: string; region: string; ring: string; text: Record<"eyebrow" | "title" | "area" | "settlement" | "water" | "station" | "source", string> };
   strokes: { border: number; ring: number };
   seaBox: Box;
   shapes: Array<{ iso: string; d: string }>;
+  regions: { d: string };
   cameras: { overview: Box; closeUp: Box };
   project: { station: number[]; places: number[][] };
   overviewName: Line & { halo: number };
@@ -64,6 +65,8 @@ export function LocatorFrame(props: LocatorFrameProps & { at: number; svgRef?: R
           .map((sh) => (
             <path key="story" d={sh.d} fill={colours.story} stroke={colours.border} strokeWidth={strokes.border} vectorEffect="non-scaling-stroke" opacity={scene.country} />
           ))}
+        {/* The focus country's regions: thinner than a national border, drawn as the camera closes in. */}
+        <path d={props.regions.d} fill="none" stroke={colours.region} strokeWidth={strokes.border} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={scene.regions} />
       </svg>
 
       {/* ── THE CONTINENT'S NAME, gone as the camera leaves. ── */}
