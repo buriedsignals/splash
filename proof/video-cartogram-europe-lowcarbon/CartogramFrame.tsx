@@ -8,7 +8,7 @@
  */
 
 import type { Ref } from "react";
-import { countText, sceneAt } from "./scene.mjs";
+import { sceneAt } from "./scene.mjs";
 
 type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
 type Line = { text: string; x: number; y: number; width: number };
@@ -23,13 +23,29 @@ export type CartogramFrameProps = {
     at: { x: number; y: number };
     halo: number;
     valueHalo: number;
-    counts: Array<{ template: string; value: number; line: Line }>;
+    width: number;
+    height: number;
     swatches: Rect[];
     bornes: Line[];
     missingSwatch: Rect;
     missingLabel: Line;
   };
-  credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
+  credit: { at: { x: number; y: number }; halo: number; lines: Line[]; width: number; height: number };
+  /** The balance: a 0–100 % beam, its bins, the columns' full height, the pivots' texts. */
+  beam: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    binWidth: number;
+    pivotSize: number;
+    block: { x: number; y: number; width: number; height: number };
+    areaValue: number;
+    areaText: { text: string; width: number; baseline: number };
+    liveTemplate: string;
+    liveTexts: Record<string, number>;
+    liveBaseline: number;
+  };
   widest: string;
   widestName: { text: string; textWidth: number; textX: number; baseline: number; x: number; y: number; ink: string; halo: number; haloColour: string };
   colours: {
@@ -81,10 +97,9 @@ function Word({ line, register, fill, opacity = 1, anchor, halo, measured = true
 }
 
 export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard } = props;
+  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard, beam } = props;
   const scene = sceneAt(props as never, props.at);
   const dash = strokes.missingDash.join(" ");
-  const counts = [scene.area, scene.country];
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -121,24 +136,31 @@ export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef
         halo={{ colour: props.widestName.haloColour, width: props.widestName.halo }}
       />
 
-      {/* ── THE KEY: the two counts over the class key, standing on the sea, then on the ground. ── */}
-      <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
-        {key.counts.map((count, i) => {
-          const t = counts[i];
-          // Before its climb the count is not shown yet, and after it the value stands: both draw the final text.
-          const final = t <= 0 || t >= 1;
-          return (
-            <Word
-              key={`count${i}`}
-              line={{ ...count.line, text: final ? count.line.text : countText(count.template, count.value, t) }}
-              register={r.value}
-              fill={colours.text.count}
-              opacity={Math.min(1, t * 4)}
-              measured={final}
-              halo={{ colour: scene.keyGround, width: key.valueHalo }}
-            />
-          );
+      {/* ── THE BALANCE: every country a column at its share, its height its weight; the pivots under the means. ── */}
+      <g opacity={scene.furniture}>
+        {props.countries.map((c) => {
+          const col = scene.columns[c.iso];
+          if (!col || c.classIndex === null) return null;
+          const s = scene.countries[c.iso];
+          return <rect key={`column-${c.iso}`} x={col.x} y={col.y} width={Math.max(0, col.w - strokes.border)} height={col.h} fill={s.fill ?? colours.neutral} opacity={s.opacity * scene.swatches[c.classIndex]} />;
         })}
+        <line x1={beam.x} x2={beam.x + beam.width} y1={beam.y} y2={beam.y} stroke={colours.text.key} strokeWidth={strokes.border} />
+      </g>
+      {[
+        { pivot: scene.pivots.area, fill: colours.text.key, text: beam.areaText.text, width: beam.areaText.width, baseline: beam.areaText.baseline },
+        { pivot: scene.pivots.live, fill: colours.text.count, text: scene.pivots.live.text, width: beam.liveTexts[scene.pivots.live.text] ?? 0, baseline: beam.liveBaseline },
+      ].map(({ pivot, fill, text, width, baseline }, i) => {
+        const x = Math.min(Math.max(pivot.x - width / 2, beam.block.x), beam.block.x + beam.block.width - width);
+        return (
+          <g key={`pivot${i}`} opacity={pivot.opacity}>
+            <path d={`M${pivot.x} ${beam.y}L${pivot.x - beam.pivotSize / 2} ${beam.y + beam.pivotSize}L${pivot.x + beam.pivotSize / 2} ${beam.y + beam.pivotSize}Z`} fill={fill} />
+            <Word line={{ text, x, y: baseline, width }} register={r.value} fill={fill} halo={{ colour: scene.keyGround, width: key.valueHalo }} />
+          </g>
+        );
+      })}
+
+      {/* ── THE KEY: the class key, standing on the sea, then on the ground. ── */}
+      <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
         {key.swatches.map((s, i) => (
           <rect key={`swatch${i}`} x={s.x} y={s.y} width={s.width} height={s.height} fill={colours.classFills[i]} opacity={scene.swatches[i]} />
         ))}

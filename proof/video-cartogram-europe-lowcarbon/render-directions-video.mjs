@@ -99,9 +99,9 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
         { name: "mid-reference", frame: mid("reference", WINDOWS.reference.classes) },
-        { name: "reveal-counting", frame: mid("reveal", WINDOWS.reveal.area) },
+        { name: "reveal-pivot", frame: mid("reveal", WINDOWS.reveal.area) },
         ...[0.3, 0.55, 0.8].map((t) => ({ name: `morph-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.morph[0] + t * (WINDOWS.subject.morph[1] - WINDOWS.subject.morph[0]))) })),
-        { name: "conclusion-counting", frame: mid("conclusion", WINDOWS.conclusion.country) },
+        { name: "conclusion-credit", frame: mid("conclusion", WINDOWS.conclusion.source) },
       ];
       for (const { name, frame } of frames) {
         const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {

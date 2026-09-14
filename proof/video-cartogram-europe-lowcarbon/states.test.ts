@@ -14,23 +14,23 @@ describe("statesFor", () => {
   });
 
   it("should open on the title card alone", () => {
-    expect(establish).toEqual({ title: 1, furniture: 0, classes: 0, focus: 0, widest: 0, area: 0, morph: 0, codes: 0, country: 0, source: 0 });
+    expect(establish).toEqual({ title: 1, furniture: 0, classes: 0, focus: 0, widest: 0, area: 0, morph: 0, codes: 0, source: 0 });
   });
 
   it("should give the title way to the map, bring the key up and reveal the classes at reference", () => {
     expect(reference).toEqual({ ...establish, title: 0, furniture: 1, classes: 1 });
   });
 
-  it("should step every country back but the widest, name it and count the area mean at reveal", () => {
+  it("should step every country back but the widest, name it and set the balance's pivot at the area mean at reveal", () => {
     expect(reveal).toEqual({ ...reference, focus: 1, widest: 1, area: 1 });
   });
 
-  it("should bring the others back, morph into tiles and set their codes at subject", () => {
+  it("should bring the others back, morph into tiles — the weights and the pivot with them — and set their codes at subject", () => {
     expect(subject).toEqual({ ...reveal, focus: 0, widest: 0, morph: 1, codes: 1 });
   });
 
-  it("should count the country mean and set the credit at conclusion, and hold it exactly", () => {
-    expect(conclusion).toEqual({ ...subject, country: 1, source: 1 });
+  it("should set the credit at conclusion, and hold it exactly", () => {
+    expect(conclusion).toEqual({ ...subject, source: 1 });
     expect(hold).toEqual(conclusion);
   });
 

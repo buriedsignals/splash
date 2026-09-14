@@ -21,45 +21,38 @@ the gap exceeds 15 points, and the country taking the most room is below the cou
 
 ## The picture — shots, not a page (1920 × 1080)
 
-The shot rules every type follows (`skills/chart-video/references/directed-type-choreography.md`, « The shots,
-and how little to write »):
-
 1. **The title card** (`establish`, from frame 0, 1.5 s) — the eyebrow and a short title.
 2. **The story** — the map on the whole frame, Lambert azimuthal equal-area (so the ink a country takes IS its
-   territory), then the same countries as equal tiles. The KEY — the two counts over the class key — stands on
-   the Atlantic at the left, in no plate; the tile grid is laid out to its right, so the key never moves and never
-   covers a tile.
-3. **No end card** — the video ends on the cartogram, the source a credit in a free corner.
+   territory), then the same countries as equal tiles. At the left, on the Atlantic, in no plate: the class key at
+   the top, and under it **the balance** — a 0–100 % beam on which every country is a column at its share, its
+   height its weight; the tile grid is laid out to its right, so neither moves nor covers a tile.
+3. **No end card** — the video ends on the cartogram, the balance struck at both means, the credit on one line in
+   the bottom-left corner the tiles leave.
 
-## The choreography — the scrolly's six cards, told with what only a video has
+## The choreography
 
-The scrolly's picture (`proof/scrolly-cartogram-europe-lowcarbon`): the reader watches the map become the
-cartogram. What only time can do here is **the morph** — every country shrinking or swelling into one equal tile,
-Russia melting while Malta swells — and **the counts climbing** as the reading they belong to arrives.
+The claim is that the same data gives two means depending on what counts as one. A number cannot show why; a
+balance can. Every country stands on the beam at its low-carbon share, **weighed by its territory**: Russia's
+column is nearly three quarters of all the weight, at 36 %, and the pivot sits under 44,9 %. Then **the morph** —
+every country travels into one equal tile, and in the same motion every column takes the same one-in-forty weight:
+Russia's column melts, the small countries' grow, and a live pivot **slides** from 44,9 to 65,1 %, the first pivot
+left where it stood. The same eased `m` carries the map and the weights, so the pivot is always under the balance
+the columns strike (tested frame by frame).
 
-| event | card | what the shot says | gesture | what the viewer sees move, in order inside the event | derived value asserted |
-| --- | --- | --- | --- | --- | --- |
-| `establish` | — | the question | — | the title card, alone on the ground from frame 0 | — |
-| `reference` | 1 + 5 | a map of Europe's low-carbon shares, each country the size of its territory | **reveal in order** | the title gives way to the map; the key comes up; the five classes take their fill one after another, lowest first; Ukraine hollow | class counts low → high; one unreported country |
-| `reveal` | 2 | Russia is most of this map, and it is low: by km², 44,9 % | **focus + count up** | every country but Russia steps back; RUSSIE is named with its share; « au km² » counts up to 44,9 % | Russia = the widest country, 73 % of the territory, below the country mean |
-| `subject` | 3 | give every country the same room | **morph** | the others return; every country travels from its territory into its equal tile, Russia shrinking, Malta swelling; the sea and the context land fade; once the tiles have landed, every tile's code is set on it | 41 tiles, the grid and the data agreeing both ways |
-| `conclusion` | 4 | one tile, one vote: 65,1 % | **count up + compare** | « par pays » counts up to 65,1 % under « au km² 44,9 % »; the credit is set in a free corner | gap > 15 points |
-| `hold` | — | the cartogram, readable | — (stillness) | nothing | hold state = conclusion state |
-
-Rules the composition keeps:
-
-- **A name appears only once its gesture has landed**: RUSSIE once the others have stepped back, the tile codes
-  once the tiles have landed. Nothing is named while the countries travel.
-- **The counts stay once counted** — they are the claim.
-- **The morph is eased per country, the class reveal is linear across the classes**, each class easing its own
-  arrival; the camera does not move.
-- **Every event but the hold changes the state** (`assertEventStates`).
+| event | what the shot says | gesture | what the viewer sees move, in order inside the event | derived value asserted |
+| --- | --- | --- | --- | --- |
+| `establish` | the question | — | the title card, alone on the ground from frame 0 | — |
+| `reference` | a map of Europe's low-carbon shares, each country the size of its territory, each weighed by it | **reveal in order** | the title gives way to the map; the key and the beam come up; the five classes take their fill one after another, lowest first, each country's column rising on the beam with its class; Ukraine hollow, with no column | class counts low → high; one unreported country; the columns fill the beam's height |
+| `reveal` | Russia is most of this map, and it is low: by km², 44,9 % | **focus + name + measure** | every country but Russia steps back, on the map and on the beam; RUSSIE is named with its share; the pivot is set under the area mean, « au km² 44,9 % » | Russia = the widest country, 73 % of the weight, below the country mean; pivot = the weighted mean |
+| `subject` | give every country the same room: 65,1 % | **morph + rebalance** | the others return; every country travels into its equal tile while its column takes one in forty of the weight; a live pivot slides under the moving balance, « par pays {n} % », to 65,1 %; the codes land on the tiles | 41 tiles; the pivot equals the columns' balance at every frame; gap > 15 points |
+| `conclusion` | — | — | the credit | — |
+| `hold` | the cartogram, readable | — (stillness) | nothing | hold state = conclusion state |
 
 ## Write as little as the picture allows
 
-No standfirst, no reading line (« la disposition est dessinée »), no note. The counts are a label and a number
-(« au km² 44,9 % », « par pays 65,1 % »); the key is the bornes and « sans donnée »; RUSSIE's share is its only
-note; the tile codes are the still's.
+No standfirst, no reading line, no note. The two pivots are a label and a number each (« au km² 44,9 % »,
+« par pays 65,1 % »); the key is the bornes and « sans donnée »; RUSSIE's share is its only note; the beam has no
+ticks — the pivots say where it stands.
 
 ## The copy (French)
 
@@ -67,11 +60,11 @@ note; the tile codes are the still's.
 | --- | --- | --- |
 | eyebrow | Énergie · Europe | eyebrow |
 | title | « Par pays, 65,1 % de bas-carbone ; au km², 44,9 % » · « Une tuile par pays » | display |
-| counts | « au km² 44,9 % » · « par pays 65,1 % », each counting up from 0 | value |
+| pivots | « au km² 44,9 % » · « par pays {n} % », every tenth between them measured | value |
 | key | 40 % · 60 % · 75 % · 94 % · sans donnée | axis |
 | subject | RUSSIE · 36 % | area (the still's map treatment) |
 | tiles | the 41 codes, ISL … CYP | tile: the axis voice, as large as the tiles hold, never under 30 px |
-| credit | the source's shortest form that holds three lines | axis at the type floor |
+| credit | the longest one-line form that holds the bottom-left corner, down to « Source : Ember, via Our World in Data » | axis at the type floor |
 
 ## Video constraints
 

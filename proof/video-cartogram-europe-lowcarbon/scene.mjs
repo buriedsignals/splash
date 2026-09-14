@@ -7,7 +7,11 @@
 //     Malta swelling into two tiles of one size. Strokes do not scale.
 //   - FILL = CLASS × REVEAL: before its class arrives a country is the neutral; then its class, lowest first.
 //   - FOCUS: every country but the widest steps back to 30 %.
-//   - A COUNT counts up from zero to its value, one decimal, over its window, and stays.
+//   - THE BALANCE: every country a column standing on a 0–100 % beam at its share, its height its weight — its
+//     territory's share on the map, one in forty on the tiles, carried with the morph — so the columns' heights
+//     always sum to the beam's height. The pivot stands under the mean those weights strike: the area mean first,
+//     then, as the weights travel, a live pivot sliding to the country mean. The same `m` moves the map and the
+//     weights, so what the picture shows and what the pivot says cannot drift apart.
 //
 // Browser-safe: no Node module, no `#shared/chart-beat` import.
 
@@ -20,8 +24,8 @@ export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
   reference: { title: [0, 0.1], furniture: [0.08, 0.2], classes: [0.2, 1] },
   reveal: { focus: [0, 0.25], widest: [0.22, 0.32], area: [0.3, 0.62] },
-  subject: { focus: [0, 0.1], widest: [0, 0.08], morph: [0.1, 0.75], codes: [0.8, 0.94] },
-  conclusion: { country: [0, 0.4], source: [0.55, 0.7] },
+  subject: { focus: [0, 0.1], widest: [0, 0.08], morph: [0.08, 0.72], codes: [0.78, 0.94] },
+  conclusion: { source: [0.3, 0.7] },
 });
 
 /** The fields that travel a scale move linearly; each class eases its own arrival in `sceneAt`. */
@@ -62,9 +66,9 @@ export function morphOf(box, tile, m) {
   return { x, y, sx, sy, transform: `translate(${x - box.x * sx} ${y - box.y * sy}) scale(${sx} ${sy})` };
 }
 
-/** A count's text at `t` of its climb: the template's `{n}` from 0 to `value`, one decimal, a French comma. */
-export function countText(template, value, t) {
-  return template.replace("{n}", (value * clamp01(t)).toFixed(1).replace(".", ","));
+/** A mean's text: the template's `{n}` at one decimal, a French comma. */
+export function meanText(template, value) {
+  return template.replace("{n}", value.toFixed(1).replace(".", ","));
 }
 
 /**
@@ -96,9 +100,33 @@ export function sceneAt(props, frame) {
       opacity: c.iso === props.widest ? 1 : 1 - (1 - STEPPED_BACK) * focus,
     };
   }
+  // ── the balance ─────────────────────────────────────────────────────────────────────────────────────
+  const { beam } = props;
+  const weighed = props.countries.filter((c) => c.weight !== null);
+  const weightOf = (c) => (1 - m) * c.weight + m / weighed.length;
+  const columns = {};
+  const stacked = new Map();
+  let mean = 0;
+  for (const c of [...weighed].sort((a, b) => a.value - b.value || a.iso.localeCompare(b.iso))) {
+    const w = weightOf(c);
+    mean += w * c.value;
+    const below = stacked.get(c.bin) ?? 0;
+    const h = w * beam.height;
+    columns[c.iso] = { x: beam.x + c.bin * beam.binWidth, y: beam.y - below - h, w: beam.binWidth, h };
+    stacked.set(c.bin, below + h);
+  }
+  const xOf = (v) => beam.x + (beam.width * v) / 100;
+  const live = meanText(beam.liveTemplate, mean);
+  const pivots = {
+    area: { x: xOf(beam.areaValue), opacity: at("area") },
+    live: { x: xOf(mean), value: mean, text: live, opacity: m > 0 ? Math.min(1, m * 8) : 0 },
+  };
+
   return {
     title: at("title"),
     furniture: at("furniture"),
+    columns,
+    pivots,
     swatches: Array.from({ length: n }, (_, i) => ease(clamp01(classes * n - i))),
     countries,
     morph: m,
@@ -109,7 +137,6 @@ export function sceneAt(props, frame) {
     widest: at("widest"),
     area: at("area"),
     codes: at("codes"),
-    country: at("country"),
     source: at("source"),
   };
 }

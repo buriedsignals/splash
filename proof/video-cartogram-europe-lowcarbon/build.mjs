@@ -14,7 +14,8 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
-import { haloOf, keyFor, pillOf, registerAt, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf, bandOf, BAND_PROBE, DRAWN_WIDER } from "../../skills/map-beat/scripts/shots.mjs";
+import { haloOf, keyFor, pillOf, registerAt, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf, bandOf, BAND_PROBE, CREDIT_ONE_LINE, DRAWN_WIDER } from "../../skills/map-beat/scripts/shots.mjs";
+import { meanText } from "./scene.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { cartogramGeometry, loadSubject, YEAR } from "./subject.mjs";
@@ -36,6 +37,12 @@ const LAND_CELL = 12;
 const CODE_BREATH = 0.15;
 /** Between the key and the grid, × the axis lead. */
 const KEY_GUTTER = 1;
+/** The credit's one line holds in the corner the tiles leave at the bottom left: this share of the content width. */
+const CREDIT_MEASURE = 0.55;
+/** The balance's bins: forty, each 2,5 points of share wide. */
+const BINS = 40;
+/** The key stands in the top quarter of the frame, where the map is sea; the balance takes the height under it. */
+const KEY_ZONE = 0.25;
 
 // ── the subject and its words ─────────────────────────────────────────────────────────────────────────────
 
@@ -53,17 +60,16 @@ export function copyOf(subject) {
   return {
     eyebrow: "Énergie · Europe",
     title: [`Par pays, ${one(byCountry)}${NB}% de bas-carbone ; au km², ${one(byArea)}${NB}%`, `Une tuile par pays`],
-    /** The two counts, each a label and a number — the value the template's `{n}` climbs to. */
-    counts: {
-      area: { template: `au km² {n}${NB}%`, value: Number(byArea.toFixed(1)) },
-      country: { template: `par pays {n}${NB}%`, value: Number(byCountry.toFixed(1)) },
-    },
+    /** The balance's two pivots, each a label and a mean — the area mean's fixed, the live one's `{n}` sliding. */
+    means: { area: `au km² {n}${NB}%`, country: `par pays {n}${NB}%` },
     breaks: BREAKS.map((b) => `${b}${NB}%`),
     missingLabel: "sans donnée",
     widestName: `${NAMES[widest]} · ${Math.round(share.get(widest))}${NB}%`.toUpperCase(),
     source: [
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · fonds Natural Earth 50 m",
       "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
+      "Source : Ember, via Our World in Data · Natural Earth",
+      "Source : Ember, via Our World in Data",
     ].map((form) => form.replace(" · ", `${NB}· `)),
     codes: subject.placed.map((p) => p.iso),
   };
@@ -71,13 +77,12 @@ export function copyOf(subject) {
 
 /** The words each register sets — the families are resolved on these. */
 export function textPerRegisterOf(copy) {
-  const final = (c) => c.template.replace("{n}", String(c.value).replace(".", ","));
   return {
     display: copy.title.join(" "),
     eyebrow: copy.eyebrow,
     body: copy.source.join(" "),
     annot: copy.widestName,
-    value: `${final(copy.counts.area)} ${final(copy.counts.country)} 0123456789,`,
+    value: `${copy.means.area} ${copy.means.country} 0123456789,`,
     axis: [...copy.codes, ...copy.breaks, copy.missingLabel, copy.widestName, ...copy.source].join(" "),
   };
 }
@@ -114,9 +119,9 @@ export function buildDirection(id, { subject, states, copy }) {
 
   // ── the shots every type shares: the title card, the key, the credit ──────────────────────────────────────
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const finalCount = (c) => c.template.replace("{n}", String(c.value).replace(".", ","));
-  const key = keyFor({ registers, k, counters: [[finalCount(copy.counts.area)], [finalCount(copy.counts.country)]], breaks: copy.breaks, missingLabel: copy.missingLabel });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  // The key is the classes alone: the two means are the balance's, under it.
+  const key = keyFor({ registers, k, counters: [], breaks: copy.breaks, missingLabel: copy.missingLabel });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE, measure: CREDIT_MEASURE });
 
   // ── the map and the tiles ────────────────────────────────────────────────────────────────────────────────
   // The window is fitted to the frame's content box and the map runs past it to the frame's edges. The grid is
@@ -176,6 +181,8 @@ export function buildDirection(id, { subject, states, copy }) {
   if (!fitsTile()) throw new Error(`a ${tile.w}×${tile.h}px tile cannot hold its code at the ${row.minTypePx}px floor`);
   const codeBand = bandOf(BAND_PROBE, codeR);
 
+  /** The territory every country with a share takes, together — the map's weights are shares of it. */
+  const areaSum = [...subject.share].filter(([, v]) => v !== null).reduce((s, [iso]) => s + (subject.area[iso] ?? 0), 0);
   const countries = geometry.countries.map((c) => {
     const value = subject.share.get(c.iso);
     const classIndex = subject.classOf(value);
@@ -188,6 +195,9 @@ export function buildDirection(id, { subject, states, copy }) {
       path: c.path,
       box: c.box,
       tile: c.tile,
+      value: value ?? null,
+      weight: value == null ? null : subject.area[c.iso] / areaSum,
+      bin: value == null ? null : Math.min(BINS - 1, Math.floor((value / 100) * BINS)),
       classIndex,
       code: { text, width: widthOf(text, codeR), x: c.tile.x + c.tile.w / 2, y: c.tile.y + c.tile.h / 2 + (codeBand.ascent - codeBand.descent) / 2, ink: codeInk },
     };
@@ -207,7 +217,7 @@ export function buildDirection(id, { subject, states, copy }) {
     return total ? covered / total : 0;
   };
   let keyAt = null;
-  for (let y = vInset; y + key.height <= stage.height - vInset; y += SEAT_STEP) {
+  for (let y = vInset; y <= vInset + KEY_ZONE * stage.height; y += SEAT_STEP) {
     const share = landShare({ x: inset, y, width: key.width, height: key.height });
     if (!keyAt || share < keyAt.share - 1e-9) keyAt = { x: inset, y, share };
   }
@@ -247,6 +257,40 @@ export function buildDirection(id, { subject, states, copy }) {
     }
   if (!creditAt) throw new Error(`a ${credit.width}×${credit.height} credit finds no free corner of the cartogram`);
 
+  // ── the balance: under the key, above the credit, as wide as the key ─────────────────────────────────────
+  // Every country with a share is a column on a 0–100 % beam, in the bin of its share; its height is its weight —
+  // its territory's share on the map, one in forty on the tiles — so the columns always fill the beam's height once
+  // stacked. Under the beam, the two pivots: the area mean « au km² », and the live mean the morph slides.
+  const valueBand = bandOf(BAND_PROBE, registers.value);
+  const block = { x: keyBox.x, y: keyBox.y + keyBox.height + gutter, width: keyBox.width, height: 0 };
+  block.height = creditAt.y - gap - block.y;
+  const liveBaseline = block.y + block.height - valueBand.descent;
+  const areaBaseline = liveBaseline - registers.value.lead;
+  const pivotSize = 0.45 * registers.axis.lead;
+  const beamY = areaBaseline - valueBand.ascent - gap - pivotSize;
+  const beamHeight = beamY - block.y - gap;
+  if (!(beamHeight >= 4 * registers.axis.lead)) throw new Error(`the balance has ${beamHeight.toFixed(0)}px of height between the key and the credit`);
+  const valueTexts = (template, values) => Object.fromEntries(values.map((v) => meanText(template, v)).map((t) => [t, widthOf(applyCase(t, registers.value.transform), registers.value)]));
+  const tenths = [];
+  for (let t = Math.floor(subject.byArea * 10) - 1; t <= Math.ceil(subject.byCountry * 10) + 1; t++) tenths.push(t / 10);
+  const beam = {
+    x: block.x,
+    y: beamY,
+    width: block.width,
+    height: beamHeight,
+    binWidth: block.width / BINS,
+    pivotSize,
+    block,
+    areaValue: subject.byArea,
+    areaText: (() => {
+      const text = meanText(copy.means.area, subject.byArea);
+      return { text, width: widthOf(applyCase(text, registers.value.transform), registers.value), baseline: areaBaseline };
+    })(),
+    liveTemplate: copy.means.country,
+    liveTexts: valueTexts(copy.means.country, tenths),
+    liveBaseline,
+  };
+
   const drawn = { display: titleCard.register, eyebrow: registers.eyebrow, value: registers.value, axis: registers.axis, area, code: codeR, source: sourceRegister };
   const props = {
     frame: { width: stage.width, height: stage.height },
@@ -254,7 +298,8 @@ export function buildDirection(id, { subject, states, copy }) {
     registers: drawn,
     titleCard,
     // `legend`, not `key`: React keeps `key` for itself and never hands it to the component.
-    legend: { ...key, counters: undefined, at: { x: keyBox.x, y: keyBox.y }, counts: [{ ...copy.counts.area, line: key.counters[0][0] }, { ...copy.counts.country, line: key.counters[1][0] }] },
+    legend: { ...key, counters: undefined, at: { x: keyBox.x, y: keyBox.y } },
+    beam,
     credit: { ...credit, at: creditAt },
     widest: subject.widest,
     widestName: { ...name, x: nameAt.x, y: nameAt.y, ink: widestInk, halo: haloOf(area, k), haloColour: widestFill },
