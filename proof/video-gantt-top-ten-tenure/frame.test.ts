@@ -22,7 +22,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
   const atYear = (year: number) => {
     const { start, duration } = props.timing.reveal;
     const [a, b] = WINDOWS.reveal.clock;
-    return Math.ceil(start + duration * (a + ((year - props.first) / (props.last + 1 - props.first)) * (b - a))) + 1;
+    return Math.floor(start + duration * (a + ((year - props.first) / (props.last + 1 - props.first)) * (b - a)));
   };
 
   describe(`${id}'s gantt video`, () => {
@@ -57,6 +57,19 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     it("should leave exactly the six who never left counted at the end of the clock", () => {
       const scene = sceneAt(props, last("reveal"));
       expect(props.rows.filter((r: any, i: number) => scene.out[i] < 1).map((r: any) => r.key)).toEqual(props.rows.filter((r: any) => r.throughout).map((r: any) => r.key));
+    });
+
+    it("should mark exactly ten seats on the year cursor at every year the clock crosses", () => {
+      for (let year = 1990; year <= 2024; year += 3) {
+        const scene = sceneAt(props, atYear(year + 0.5));
+        expect([year, scene.cursor.year, scene.seated.filter(Boolean).length]).toEqual([year, year, 10]);
+      }
+    });
+
+    it("should end on the whole chart: nothing stepped back, the six kept in the accent, no cursor, the credit on one line", () => {
+      const end = sceneAt(props, props.timing.total - 1);
+      expect([end.focus, end.kept, end.cursor.shown]).toEqual([0, 1, 0]);
+      expect(props.credit.lines.length).toBe(1);
     });
 
     it("should not pick out the six before the subject", () => {

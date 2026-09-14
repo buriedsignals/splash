@@ -10,10 +10,10 @@ import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.2], furniture: [0.25, 0.75] },
-  reveal: { clock: [0.02, 0.9] },
-  subject: { focus: [0, 0.5] },
-  conclusion: { source: [0, 0.6] },
+  reference: { title: [0, 0.2], furniture: [0.15, 0.7] },
+  reveal: { clock: [0.02, 0.96] },
+  subject: { focus: [0, 0.6] },
+  conclusion: { release: [0, 0.6], source: [0.2, 0.7] },
 });
 const LINEAR = new Set(["clock"]);
 
@@ -51,7 +51,11 @@ export function sceneAt(props, frame) {
     out: props.rows.map((row) => (!row.member ? 1 : row.leftAt === null ? 0 : clamp01(reach - row.leftAt))),
     neverLeft: props.neverLeft[Math.max(0, Math.min(props.neverLeft.length - 1, crossed - 1))],
     counting: clock > 0 ? 1 : 0,
-    focus: at("focus"),
+    /** THE YEAR CURSOR sweeps with the clock; on it, the ten seats of the year it stands at. It goes once the clock ends. */
+    cursor: { x: reach, shown: clock > 0 ? 1 - clamp01((clock - 0.98) / 0.02) : 0, year: Math.min(props.last, Math.floor(reach + 1e-9)) },
+    seated: props.rows.map((row) => row.runs.some((run) => Math.min(props.last, Math.floor(reach + 1e-9)) >= run.from && Math.min(props.last, Math.floor(reach + 1e-9)) <= run.to)),
+    focus: clamp01(at("focus") - at("release")),
+    kept: at("focus"),
     source: at("source"),
   };
 }

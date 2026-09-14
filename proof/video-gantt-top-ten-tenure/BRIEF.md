@@ -19,7 +19,7 @@ runs from 10 to 6.
 
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — sixteen rows, their names at the left, the years under them; the count over the rows, no plate.
-3. **No end card** — the video ends on every bar whole, the six picked out; the credit.
+3. **No end card** — the video ends on the whole chart, the six in the accent; the credit on one line. About 18 s.
 
 ## The choreography
 
@@ -30,9 +30,9 @@ stopping, and the count of the 1990 ten who never left falls at the very moment 
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
 | `reference` | who was in the ten in 1990 | — (furniture) | sixteen empty rows; the ten names of 1990 in ink, the six later entrants muted | the 1990 ten |
-| `reveal` | 35 years of membership | **trace + count** | the bars grow 1990 → 2024; « {n} pays jamais sortis » falls 10 → 9 → 8 → 7 → 6, each drop muting the name of the country that left | 10 to 6 |
+| `reveal` | 35 years of membership | **sweep + trace + count** | a year cursor sweeps 1990 → 2024, the year riding it under the rows and the ten seats of that year marked on it — the seats change hands as it moves; the bars grow behind it; « {n} pays jamais sortis » falls 10 → 9 → 8 → 7 → 6, each drop muting the name of the country that left | 10 to 6; ten seats a year |
 | `subject` | these six never left | **filter** | the six rows take the accent, the ten others step back | the six |
-| `conclusion` | — | — | the credit | — |
+| `conclusion` | the whole tenure | **release** | the ten others come back — the whole chart — the six kept in the accent; the credit on one line | — |
 | `hold` | the tenure | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows

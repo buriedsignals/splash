@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { FIRST, LAST, loadSubject, SLOTS } from "./subject.mjs";
@@ -75,7 +75,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const shift = (band.ascent - band.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   // THE COUNT over the rows, at the left; the year ticks under them, the credit under the ticks.
@@ -149,6 +149,8 @@ export function buildDirection(id, { subject, states, copy }) {
       name: { ...names[i], x: plot.left - gap - names[i].width * (1 + DRAWN_WIDER), y: yOf(i) + pitch / 2 + shift },
     })),
     ticks,
+    yearTexts: Object.fromEntries(subject.years.map((y) => [String(y), measure(String(y), axis)])),
+    tickY: tickBaseline,
     neverLeft: subject.neverLeft,
     counts,
     countAt: { x: inset, y: countBaseline },

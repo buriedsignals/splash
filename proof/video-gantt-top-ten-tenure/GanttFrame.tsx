@@ -26,6 +26,8 @@ export type GanttFrameProps = {
   yearWidth: number;
   rows: Array<{ key: string; throughout: boolean; member: boolean; leftAt: number | null; runs: Array<{ from: number; to: number }>; y: number; h: number; trackY: number; trackH: number; name: Line }>;
   ticks: Line[];
+  yearTexts: Record<string, Word>;
+  tickY: number;
   neverLeft: number[];
   counts: Record<string, Word>;
   countAt: { x: number; y: number };
@@ -48,8 +50,10 @@ export function GanttFrame(props: GanttFrameProps & { at: number; svgRef?: Ref<S
   const scene = sceneAt(props as never, props.at);
   const xOf = (year: number) => plot.left + (year - props.first) * props.yearWidth;
   const count = props.counts[String(scene.neverLeft)];
-  const barOf = (kept: boolean) => (kept ? blend(colours.bar, colours.kept, scene.focus) : blend(colours.bar, colours.faded, scene.focus));
-  const nameOf = (kept: boolean, out: number) => (kept ? blend(colours.text.name, colours.text.kept, scene.focus) : blend(colours.text.name, colours.text.axis, Math.max(out, scene.focus)));
+  const barOf = (kept: boolean) => (kept ? blend(colours.bar, colours.kept, scene.kept) : blend(colours.bar, colours.faded, scene.focus));
+  const nameOf = (kept: boolean, out: number) => (kept ? blend(colours.text.name, colours.text.kept, scene.kept) : blend(colours.text.name, colours.text.axis, Math.max(out, scene.focus)));
+  const cursorX = xOf(scene.cursor.x);
+  const cursorYear = props.yearTexts[String(scene.cursor.year)];
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -60,7 +64,7 @@ export function GanttFrame(props: GanttFrameProps & { at: number; svgRef?: Ref<S
         ))}
         <line x1={plot.left} x2={plot.right} y1={plot.bottom} y2={plot.bottom} stroke={colours.grid} strokeWidth={props.strokes.grid} />
         {props.ticks.map((t, i) => (
-          <Text key={`tick${i}`} line={t} register={r.axis} fill={colours.text.axis} />
+          <Text key={`tick${i}`} line={t} register={r.axis} fill={colours.text.axis} opacity={1 - scene.cursor.shown} />
         ))}
         {props.rows.map((row, i) => (
           <Text key={`name-${row.key}`} line={row.name} register={r.axis} fill={nameOf(row.throughout, scene.out[i])} opacity={row.throughout ? 1 : 1 - 0.4 * scene.focus} />
@@ -71,6 +75,15 @@ export function GanttFrame(props: GanttFrameProps & { at: number; svgRef?: Ref<S
         scene.bars[i].map((b, j) => <rect key={`bar-${row.key}-${j}`} x={xOf(b.from)} y={row.y} width={(b.to - b.from) * props.yearWidth} height={row.h} fill={barOf(row.throughout)} />),
       )}
 
+      {scene.cursor.shown > 0 ? (
+        <g opacity={scene.cursor.shown}>
+          <line x1={cursorX} x2={cursorX} y1={plot.top} y2={plot.bottom} stroke={colours.text.count} strokeWidth={props.strokes.grid * 2} />
+          {props.rows.map((row, i) =>
+            scene.seated[i] ? <rect key={`seat-${row.key}`} x={cursorX - props.yearWidth * 0.18} y={row.y - row.h * 0.15} width={props.yearWidth * 0.36} height={row.h * 1.3} fill={colours.text.count} /> : null,
+          )}
+          {cursorYear ? <Text line={{ ...cursorYear, x: Math.min(plot.right - cursorYear.width * 1.02, Math.max(plot.left, cursorX - cursorYear.width / 2)), y: props.tickY }} register={r.axis} fill={colours.text.count} /> : null}
+        </g>
+      ) : null}
       <Text line={{ ...count, ...props.countAt }} register={r.value} fill={colours.text.count} opacity={scene.counting} halo={{ colour: colours.ground, width: props.halo.value }} />
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
