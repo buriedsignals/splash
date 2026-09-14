@@ -1,6 +1,6 @@
 # Addendum — les cartes scrolly passent par MapTiler, avec tous les pays et un niveau de détail choisi par le sujet
 
-**Statut :** conception, à approuver. Non planifiée, non implémentée.
+**Statut :** approuvé par le propriétaire le 2026-09-15 (la projection, §7.1, reste à trancher). Non planifié, non implémenté.
 **Complète :** `2026-09-12-maps-through-maptiler-spec.md` (« la spec »), qui traite le statique, le web et la vidéo,
 et exclut le cartogramme et la grille hexagonale (§11).
 **Décisions du propriétaire enregistrées ici (2026-09-15) :**
@@ -65,8 +65,10 @@ entier : aucun extrait gelé, aucune fenêtre. Un pays sans donnée est une terr
 
 **3.2 Les surfaces teintées suivent la même côte.** Une couche de remplissage par pays (choroplèthe) ne peut pas
 redessiner une côte Natural Earth par-dessus celle d'OpenMapTiles (le halo de §1.3 de la spec). Elle se branche sur des
-polygones **issus des mêmes tuiles** et joints aux données par code ISO. *À vérifier avant le plan : quel jeu MapTiler
-porte des polygones de pays et de régions avec leurs codes, à quels niveaux, et son coût en requêtes.*
+polygones **issus des mêmes tuiles** et joints aux données par code ISO. Le jeu **MapTiler Countries**
+(`https://docs.maptiler.com/schema/countries/`) porte des unités administratives du niveau 0 (pays) au niveau 4, avec
+leur code ISO A2 et un identifiant par unité, prévues pour être jointes à des données. *Reste à mesurer avant le plan :
+son coût en requêtes et la correspondance de ses codes régionaux avec ceux des données (NUTS, ISO 3166-2).*
 
 **3.3 Garde.** Pour chaque caméra du beat, aucune zone de terre de la vue n'est vide de fond : la capture de contrôle
 échoue si un pixel de terre attendu est de la couleur de la page.
@@ -131,5 +133,6 @@ cartogramme et grille hexagonale en dernier (§5).
    Les chiffres des cartes (moyenne « au km² ») restent calculés sur les vraies surfaces, mais une carte qui **montre**
    une surface la montre fausse. À trancher : Mercator accepté, globe, ou refus des sujets dont l'argument est une
    surface vue.
-2. **Les polygones joints** (§3.2) : jeu MapTiler ou contours gelés recalés sur la côte du fond.
+2. **Les polygones joints** (§3.2) : MapTiler Countries retenu ; son coût et la correspondance des codes régionaux sont
+   à mesurer.
 3. **Le poids du repli** : une image par carte de texte multiplie le poids de la page par le nombre de cartes.
