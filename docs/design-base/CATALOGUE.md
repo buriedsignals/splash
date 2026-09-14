@@ -30,7 +30,7 @@ other export yet.
 | 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ◦ |
 | 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ◦ |
 | 13 | Gantt | 2 | ✅ | ◦ | ✅ | ◦ |
-| 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ◦ |
+| 14 | Grouped bar | 9 | ✅ | ◦ | ✅ | ◦ |
 | 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ◦ |
 | 16 | Histogram | 6 | ✅ | ◦ | ◦ | ◦ |
 | 17 | Line | 2 | ✅ | ◦ | ✅ | ◦ |
@@ -91,6 +91,7 @@ other export yet.
 | Gantt | static | `proof/static-gantt-top-ten-tenure` |
 | Gantt | video | `proof/video-gantt-top-ten-tenure` — validated by the owner 2026-09-14 |
 | Grouped bar | static | `proof/static-wind-vs-solar` |
+| Grouped bar | video | `proof/video-grouped-bar-wind-vs-solar` — validated by the owner 2026-09-14 |
 | Heatmap | static | `proof/static-heatmap-europe-electricity` |
 | Histogram | static | `proof/static-carbon-footprint-spread` |
 | Line | static | `proof/co2-suisse` |
