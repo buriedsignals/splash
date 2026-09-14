@@ -60,7 +60,7 @@ other export yet.
 | 02 | Choropleth | 1 | ✅ | ◦ | ✅ | ◦ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ✅ | ◦ |
 | 04 | Dot density | 3 | ✅ | ◦ | ✅ | ◦ |
-| 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
+| 05 | Flow map | 1 | ✅ | ◦ | ✅ | ◦ |
 | 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ◦ |
 | 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
 | 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ◦ |
@@ -108,6 +108,7 @@ other export yet.
 | Dot density | static | `proof/static-dot-density-europe-stations` |
 | Dot density | video | `proof/video-dot-density-europe-stations` — validated by the owner 2026-09-14 |
 | Flow map | static | `proof/static-flow-map-ukraine-protection` |
+| Flow map | video | `proof/video-flow-map-ukraine-protection` — validated by the owner 2026-09-14 |
 | Hex grid | static | `proof/static-hex-grid-europe-protection` |
 | Proportional symbol | static | `proof/static-proportional-symbol-europe-capacity` |
 | Locator | static | `proof/static-locator-zaporizhzhia` |
