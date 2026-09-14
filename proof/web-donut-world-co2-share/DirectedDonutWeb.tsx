@@ -139,6 +139,12 @@ export function rampForTones(ground: string, accent: string, tones: number): str
  * floors, both measured on the colours the page actually paints — every tone against the ground,
  * and every tone against its neighbour in the ramp.
  */
+/** THE STEP A WEDGE TAKES UNDER THE POINTER, and the floor it must clear. Same rule and same two
+ *  numbers as the ranking beat's columns: mixed toward the direction's own ink, never nudged with a
+ *  brightness filter, which lightens on a light ground and on a dark one alike. */
+const MARK_ACTIVE_STEP = 0.3;
+const MARK_ACTIVE_MIN_STEP = 1.12;
+
 export function assertRampIsSeparable(
   ramp: string[],
   ground: string,
@@ -211,6 +217,23 @@ export function DirectedDonutWeb({
   const tones = legend.length;
   const ramp = rampForTones(ground, accent, tones);
   assertRampIsSeparable(ramp, ground, { adjacentMin: 1.25 });
+
+  // WHAT A WEDGE TAKES UNDER THE READER'S POINTER. The format keeps a point invisible once it names
+  // the shape that answers for it (`data-mark-ref` -> `data-mark`) and paints the shape instead, in
+  // a colour read off the mark. A dot floating on a ring is the same wrong affordance it was on a
+  // column: the reading IS the wedge. Each of the four tones lifts by its own step toward the ink,
+  // and the step is MEASURED — a ramp already spaced at 1,25 between neighbours has no room for a
+  // lift that lands on the next tone, so a lift under the floor is refused rather than shipped.
+  const markActive = ramp.map((tone, i) => {
+    const lifted = mix(tone, ink, MARK_ACTIVE_STEP);
+    const step = contrast(lifted, tone);
+    if (step < MARK_ACTIVE_MIN_STEP)
+      throw new Error(
+        `tone ${i} lifts only ${step.toFixed(3)}:1 under the pointer, under the ` +
+          `${MARK_ACTIVE_MIN_STEP}:1 floor — a reader cannot see which wedge answered`,
+      );
+    return lifted;
+  });
 
   const label = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
   const cx = FRAME.width / 2;
@@ -429,6 +452,8 @@ export function DirectedDonutWeb({
             <path
               key={`${w.ring}-${w.key}`}
               data-col={w.key}
+              data-mark={`${w.ring}-${w.key}`}
+              style={{ "--mark-active": markActive[w.tone] } as React.CSSProperties}
               d={arcPath(cx, cy, rings[w.ring].inner, rings[w.ring].outer, w.from, w.to)}
               fill={ramp[w.tone]}
               vectorEffect="non-scaling-stroke"
@@ -463,6 +488,7 @@ export function DirectedDonutWeb({
               <circle
                 key={`hit-${w.ring}-${w.key}`}
                 className="pt"
+                data-mark-ref={`${w.ring}-${w.key}`}
                 cx={px}
                 cy={py}
                 r={(rings[w.ring].outer - rings[w.ring].inner) / 2}
