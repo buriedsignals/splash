@@ -121,6 +121,29 @@ moment the note wraps — 30 px on one line at 1280 and 61 px on two at 375, put
 frame. It now hangs a fixed 10 px BELOW its point, into the plot, on the ground chip `.note` already
 carries.
 
+## What the owner's read taught — the ink was solved against the wrong thing
+
+*« le petit cercle et texte "solaire" en noir sont pas très lisibles »*, on `renders/rapport.html`.
+
+Both words in that sentence are the same defect. The in-band names were solved fill by fill
+(`inkOnFill`), and that rule **flips pole between band two and band three**: on `creme`, hydraulique
+and nucléaire take the ground (6,64:1 and 5,40:1) while solaire takes black (4,71:1). The flip is not
+a taste failure — a mid-tone fill runs both poles out of room at once, and **4,76:1 is the ceiling**
+for any ink at all on solaire's fill. There is no colour that answers.
+
+The 2016 marker was worse, and for something the fill-by-fill rule could not see: it is r=6 on a band
+that is **6,11 units thick in 2016**, so it crosses **four** fills (nucléaire, solaire, biomasse,
+éolien) and was measured against none. On `nocturne` its white stroke lands on the mint end of the
+ramp at **2,00:1** — under the non-text floor, an invisible marker on the one year the claim turns
+on. Nobody had looked at the dark direction for this.
+
+Both take the ground casing the floor rule on this same plate already used, and both are refused in
+the component: the casing against **every step of the ramp** (≥ 3,05:1 by construction, since the
+ramp was lifted to that floor against this exact ground) and the ink against the casing
+(20,41 / 21,00 / 17,78). Worst in-band name **4,71:1 → 20,41:1**; ring **2,00:1 → 17,78:1**. A chip
+is also what the format's own `.end-label` ships by default — this beat had overridden it to
+`background: transparent`, which is where the compromise came from.
+
 ## Verification
 
 `verify-web.mjs` per direction: **creme 99/0/6, nocturne 93/0/5, rapport 93/0/5**. The control driven
@@ -140,6 +163,20 @@ Three mutations held; **a fourth went green, and that is itself the finding**:
   a plate's geometry is on screen; it counts words, `.pt` marks and opacities, all of which survive.
   Same shape as the sankey on this branch that rendered green with zero ribbons lit. Not fixed here:
   `verify-web.mjs` is shared and five sibling agents are in this tree.
+
+Three more, run for the casing:
+
+- the ramp keeps no non-text lift against the ground — refused in all three directions, the casing
+  at 1,37:1 / 1,37:1 / 1,54:1 against the nearest band;
+- the plot's ink is made a step of its own ramp — refused on `creme` (4,33:1) and `rapport`
+  (4,41:1); `nocturne` **stayed green, correctly**, because a mid-ramp mint does clear 4,5:1 against
+  that direction's dark ground. The guard measures the pair, not the identity;
+- the casing thrown away at the paint site (`background: transparent` on the names, the ring's
+  ground circle deleted) — **green everywhere, and `verify-web` reported 99/93/93 with 0 failed**.
+  The refusals above measure the *values*; nothing mechanical checks that the paint actually uses
+  them, and nothing in `verify-web` measures a word against what is behind it. Same family as the
+  swapped plate rules above. Not fixed here: `verify-web.mjs` is shared and sibling agents are in
+  this tree.
 
 One gap named rather than papered over: `interaction-plan.ts`'s `shippedControls` discovers a
 control by its radio-id prefix and knows `chart-filter-`, `chart-stack-`, `chart-level-` and

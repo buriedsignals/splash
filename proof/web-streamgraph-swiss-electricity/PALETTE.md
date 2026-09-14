@@ -52,25 +52,50 @@ names on the three bands thick enough to hold one; and — the part the web genr
 readout, which names **all nine sources in rank order** with their TWh. A reader who cannot tell
 charbon from pétrole by colour reads them off the pointer, in the order that is the claim.
 
-## Everything drawn ON a band is the ground, and that is one measured pair rather than nine
+## Everything drawn ON a band is the ground, and that is two measured pairs rather than thirty-six
 
 The seams between bands, the dashed graduations of the axis an option earns, the casing under the
-floor rule and the guide that lights a year are all the direction's own ground. They need nothing
-measured against nine fills, because each fill was already lifted to the non-text floor against that
-exact ground: worst of the nine, **3,07:1** (creme), **3,08:1** (rapport), **3,05:1** (nocturne).
-The floor rule itself is the direction's ink taken to the TEXT floor against the ground it is cased
-in — **20,41:1**, **21,00:1**, **17,78:1** — so it reads on its casing, and its casing reads on the
-band. No opacity is laid over anything, which is the failure two beats on this branch shipped at
-1,75:1 and 2,19:1.
+floor rule, the guide that lights a year, the chip under each carried name and the casing around the
+2016 marker are all the direction's own ground. They need nothing measured against nine fills,
+because each fill was already lifted to the non-text floor against that exact ground: worst of the
+nine, **3,07:1** (creme), **3,08:1** (rapport), **3,05:1** (nocturne). The ink laid on that casing is
+the direction's ink taken to the TEXT floor against the ground — **20,41:1**, **21,00:1**,
+**17,78:1**. Both pairs are refused in the component before anything is drawn. No opacity is laid
+over anything, which is the failure two beats on this branch shipped at 1,75:1 and 2,19:1.
 
-## The in-band names flip poles mid-ramp, which is exactly the trap the type sheet names
+## The pole flip was not a feature — it was the defect, and the arithmetic is closed
 
-`streamgraph.md` records a shipped failure where a naive brightness rule put white text on a
-mid-toned band and landed under 4,5:1. `inkOnFill` picks whichever of the direction's ink and its
-ground actually clears the floor on that particular fill, and on this page the answer **changes
-between band two and band three**: on `creme`, hydraulique and nucléaire take the ground `#FFFCEE`
-(6,64:1 and 5,40:1) while solaire takes `#000000` (4,71:1). One threshold applied the same way to
-all three would have been wrong about one of them.
+The page first solved each in-band name against the fill it sits on, picking whichever of ink and
+ground reads better there (`inkOnFill`). The owner's read of `renders/rapport.html` retired that:
+*« le petit cercle et texte "solaire" en noir sont pas très lisibles »*.
+
+He is reading the arithmetic. `inkOnFill`'s answer **changes pole between band two and band three** —
+on `creme`, hydraulique and nucléaire take the ground `#FFFCEE` (6,64:1 and 5,40:1) while solaire
+takes `#000000` (4,71:1) — so one word came out black between two cream ones. And the black is not a
+bad choice, it is the *best available*: solaire's fill sits near the middle of the luminance range,
+where **4,76:1 is the ceiling** for any ink whatsoever (pure black; pure white reaches 4,41). A
+mid-tone fill runs both poles out of room at once. No ink fixes it, so the ink is not where the fix
+goes.
+
+The 2016 marker was worse, and for a reason the fill-by-fill rule could not even see. It is r=6 on a
+band that is **6,11 units thick in 2016**, so it does not sit on the solaire fill at all — it crosses
+**four** of them (nucléaire 2,95 u, solaire 6,11 u, biomasse 2,66 u, éolien 0,28 u) and its single
+stroke was measured against none:
+
+| direction | ring, worst fill it crosses | after casing |
+|---|---|---|
+| creme | 3,78:1 (nucléaire) | 20,41:1 on ground, ground ≥ 3,07:1 on every band |
+| rapport | 3,74:1 (nucléaire) | 21,00:1 on ground, ground ≥ 3,08:1 on every band |
+| nocturne | **2,00:1** (nucléaire) | 17,78:1 on ground, ground ≥ 3,05:1 on every band |
+
+`nocturne` was **under the 3:1 non-text floor** on the one year the whole claim turns on — a white
+ring on the mint end of the ramp, gone. That is a second, independent defect the owner's light-ground
+read would never have shown.
+
+Both now take the ground casing the floor rule already used, and both are measured in the component:
+the casing against every step of the ramp, the ink against the casing. The worst in-band name goes
+from **4,71:1** (creme, solaire, on its band) to **20,41:1** (on its chip); the ring from **2,00:1**
+(nocturne) to **17,78:1**.
 
 The axis labels, the x-axis years, the totals at both ends and the sentence under the control are
 steps off the direction's own ground, computed by `deriveFurniture` at render time and never written

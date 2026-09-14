@@ -33,7 +33,7 @@
  */
 
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { figureVars, inkOnFill, noteAnchor, webRegisters } from "#shared/design-base/web.mjs";
+import { figureVars, noteAnchor, webRegisters } from "#shared/design-base/web.mjs";
 import {
   assertFloorDeclaration,
   floorChromeCss,
@@ -138,6 +138,46 @@ export function DirectedStreamWeb({
       : c;
   });
   const label = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
+
+  // EVERY WORD AND EVERY RING INSIDE THE PLOT IS CASED IN THE GROUND, AND THE ARITHMETIC IS WHY.
+  //
+  // The owner's read of `renders/rapport.html`: the little 2016 circle and the word "solaire", both
+  // in black, are not very legible. Both were solved against the wrong thing.
+  //
+  // The ring first. It is r=6 on a band that is 6,11 units thick in 2016, so it does not sit on the
+  // solaire fill — it CROSSES FOUR of them (nucléaire 2,95 u, solaire 6,11 u, biomasse 2,66 u,
+  // éolien 0,28 u), and a single stroke was measured against none. On `nocturne` that stroke is the
+  // white ink and it lands on the mint end of the ramp at 2,00:1 against nucléaire and 2,47:1
+  // against solaire — UNDER the 3:1 non-text floor, an invisible marker on the one year the claim
+  // turns on. On `rapport` it is 3,74:1 at worst, which clears the floor and is exactly the dim
+  // black ring the owner is looking at.
+  //
+  // The name second, and this one is arithmetically closed rather than merely badly chosen. A word
+  // laid straight on solaire's fill can reach 4,76:1 AT BEST, with pure black, because that fill
+  // sits near the middle of the luminance range and both poles run out of room at once —
+  // `inkOnFill` was choosing the better of two bad answers, and its pole flips between band two and
+  // band three, so "solaire" came out black under two cream neighbours. No ink fixes that.
+  //
+  // A casing does, and by construction rather than by luck: EVERY step of the ramp above was
+  // already lifted to the non-text floor against this exact ground, so a casing drawn IN the ground
+  // clears 3:1 against every fill it can possibly cross, and the ink only has to clear the casing —
+  // which is the ink-against-ground contrast the direction already holds at the TEXT floor. Two
+  // measured pairs instead of the thirty-six the ring alone would need. It is the same instrument
+  // the floor rule below already uses, and the two refusals below are its couture.
+  const casing = ground;
+  const casingWorst = Math.min(...ramp.map((step) => contrast(casing, step)));
+  if (casingWorst < NON_TEXT_CONTRAST_MIN)
+    throw new Error(
+      `the casing under the plot's words measures ${casingWorst.toFixed(2)}:1 against the nearest ` +
+        `band — the 2016 marker and the carried names would disappear into part of their own stream`,
+    );
+  const labelOnCasing = contrast(label, casing);
+  if (labelOnCasing < TEXT_CONTRAST_MIN)
+    throw new Error(
+      `the plot's words measure ${labelOnCasing.toFixed(2)}:1 against their own casing — a cased ` +
+        `word the reader cannot separate from its casing is a smudge in the shape of a word`,
+    );
+
   const toneOf = new Map(plates[0].bands.map((b) => [b.key, b.tone]));
 
   // Refused before anything is drawn, against what this component is actually handed.
@@ -308,8 +348,15 @@ export function DirectedStreamWeb({
                   <line x1={0} x2={FRAME.width} y1={plate.ruleY} y2={plate.ruleY} stroke={label} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
                 </g>
               )}
+              {/* THE 2016 MARKER, CASED FOR THE REASON ABOVE — it is wider than the band it marks
+                  and crosses four fills, so it is not measured against any of them: the ground goes
+                  down first at 5, the ink at 2 on top of it, and what the reader separates the ring
+                  from is 1,5 units of ground on either side. */}
               {plate.crossing === null ? null : (
-                <circle cx={plate.crossing.x} cy={plate.crossing.y} r={6} fill="none" stroke={label} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+                <g>
+                  <circle cx={plate.crossing.x} cy={plate.crossing.y} r={6} fill="none" stroke={casing} strokeWidth={5} vectorEffect="non-scaling-stroke" />
+                  <circle cx={plate.crossing.x} cy={plate.crossing.y} r={6} fill="none" stroke={label} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+                </g>
               )}
             </g>
           ))}
@@ -368,11 +415,17 @@ export function DirectedStreamWeb({
               style={{
                 ...regs.value,
                 fontSize: `${Math.max(11, Number.parseFloat(regs.value.fontSize as string) - 2)}px`,
-                color: inkOnFill(ramp[toneOf.get(b.key) ?? 0], { ink, ground }, contrast, adjustToContrast, TEXT_CONTRAST_MIN),
+                // CASED, NOT POLE-PICKED. The band under a carried name never changes — a name
+                // moves with its own band — but the fill it lands on is a mid-tone the ink cannot
+                // win against: 4,71:1 on creme, 4,76:1 on rapport, and that is the CEILING, not the
+                // answer. So the word takes the same ground casing as everything else drawn in this
+                // plot, and reads at its contrast against that casing in all three directions and
+                // in every state of the control. `.end-label` carries the chip; `background` is
+                // stated here anyway so the paint is bound to the value the refusals above measure.
+                color: label,
+                background: casing,
                 left: `${pct(b.x, FRAME.width)}%`,
                 transform: "translate(-50%, -50%)",
-                background: "transparent",
-                padding: 0,
               }}
             >
               {b.text}
