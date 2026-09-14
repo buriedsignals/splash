@@ -98,6 +98,9 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
         ...[0.35, 0.7].map((t) => ({ name: `reveal-fill-${t}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.fill[0] + t * (WINDOWS.reveal.fill[1] - WINDOWS.reveal.fill[0]))) })),
+        { name: "subject-sweep", frame: mid("subject", WINDOWS.subject.sweep) },
+        { name: "subject-flatten", frame: mid("subject", WINDOWS.subject.flatten) },
+        { name: "conclusion-unflatten", frame: mid("conclusion", WINDOWS.conclusion.flatten) },
       ];
       for (const { name, frame } of frames) {
         const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {

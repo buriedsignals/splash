@@ -1,5 +1,6 @@
 // EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the plot, the surface's points, the ticks, the
-// midpoint rule, the halves' names seated inside their surfaces, every stock text measured, the colours and the states.
+// midpoint rule and every year it passes, each half's mean height, the halves' names seated in their blocks and on their
+// curves, the stock and its gauge, every text measured, the colours and the states.
 //
 // Runs in Bun only.
 
@@ -12,7 +13,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { loadSubject } from "./subject.mjs";
@@ -34,7 +35,6 @@ export function loadBeat() {
 }
 
 const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
-const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[\u202F\u00A0\u2009]/g, NB);
 
 export function copyOf(subject) {
   const first = subject.readings[0].year;
@@ -43,9 +43,9 @@ export function copyOf(subject) {
     eyebrow: "Climat · Suisse",
     title: [`La moitié du CO₂ suisse depuis ${first} a été émise après ${subject.midpoint}`, `Le CO₂ suisse depuis ${first}`],
     stock: (mt) => `${n0(mt)}${NB}Mt depuis ${first}`,
-    // Two lines each — the years, then the share — so a half as narrow as 38 years still holds its name.
-    before: [`${first}–${subject.midpoint}`, `${one(subject.shareBefore)}${NB}%`],
-    after: [`${subject.midpoint + 1}–${last}`, `${one(subject.shareAfter)}${NB}%`],
+    // Two lines each — the years, then their length — so a half as narrow as 38 years still holds its name.
+    before: [`${first}–${subject.midpoint}`, `${subject.before}${NB}ans`],
+    after: [`${subject.midpoint + 1}–${last}`, `${subject.after}${NB}ans`],
     tick: (v, top) => `${v}${top ? `${NB}Mt` : ""}`,
     source: [`Source : Global Carbon Budget 2025, via Our World in Data · émissions territoriales`, `Source : Global Carbon Budget 2025, via Our World in Data`].map((f) => f.replace(" · ", `${NB}· `)),
   };
@@ -58,7 +58,7 @@ export function textPerRegisterOf(copy, subject) {
     body: copy.source.join(" "),
     annot: [...copy.before, ...copy.after].join(" "),
     value: `${copy.stock(subject.total)} 0123456789`,
-    axis: `${YEARS.join(" ")} 0 25 45 Mt ${copy.source.join(" ")}`,
+    axis: `${YEARS.join(" ")} 0123456789 Mt ${copy.source.join(" ")}`,
   };
 }
 
@@ -85,9 +85,9 @@ export function buildDirection(id, { subject, states, copy }) {
   const annotBand = bandOf(BAND_PROBE, annot);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
 
-  // ── the plot, zero-based: the surface is the stock ────────────────────────────────────────────────────────
+  // ── the plot, zero-based: the surface is the stock; the credit takes its own row under the years ─────────────
   const { readings, midpoint } = subject;
   const tickTexts = VALUE_TICKS.map((v, i) => measure(copy.tick(v, i === VALUE_TICKS.length - 1), axis));
   const tickWidth = Math.max(...tickTexts.map((t) => t.width)) * (1 + DRAWN_WIDER);
@@ -96,7 +96,7 @@ export function buildDirection(id, { subject, states, copy }) {
     left: inset + tickWidth + gap,
     right: stage.width - inset - yearTexts.at(-1).width / 2,
     top: vInset + axisBand.ascent + axisBand.descent + gap,
-    bottom: stage.height - vInset - axisBand.ascent - axisBand.descent - 1.6 * gap,
+    bottom: stage.height - vInset - credit.height - gap - axisBand.ascent - axisBand.descent - 1.6 * gap,
   };
   const first = readings[0].year;
   const last = readings.at(-1).year;
@@ -104,11 +104,23 @@ export function buildDirection(id, { subject, states, copy }) {
   const top = Math.ceil(maxMt);
   const x = (year) => plot.left + ((year - first) / (last - first)) * (plot.right - plot.left);
   const y = (mt) => plot.bottom - (mt / top) * (plot.bottom - plot.top);
-  const points = readings.map((r) => ({ year: r.year, x: r1(x(r.year)), y: r1(y(r.mt)) }));
+  const points = readings.map((r) => ({ year: r.year, x: r1(x(r.year)), y: r1(y(r.mt)), mt: r.mt }));
   const ticksY = VALUE_TICKS.map((v, i) => ({ ...tickTexts[i], x: plot.left - gap - tickTexts[i].width, y: y(v), baseline: y(v) + (axisBand.ascent - axisBand.descent) / 2 }));
   const ticksX = YEARS.map((year, i) => ({ ...yearTexts[i], x: x(year) - yearTexts[i].width / 2, y: plot.bottom + 1.6 * gap + axisBand.ascent, tickX: x(year) }));
   const ruleX = x(midpoint + 0.5);
-  const ruleYear = { ...measure(String(midpoint), axis), x: ruleX - measure(String(midpoint), axis).width / 2, y: plot.top - gap };
+  // Every year the swept rule names, from 2024 back to the midpoint.
+  const ruleYears = Object.fromEntries(readings.filter((r) => r.year >= midpoint).map((r) => [String(r.year), measure(String(r.year), axis)]));
+  const ruleYearY = plot.top - gap;
+
+  // ── each half's mean height: the outline's surface on its side of the rule, over its width ───────────────────
+  const cut = points.findIndex((p) => p.year > midpoint);
+  const atRule = (points[cut - 1].y + points[cut].y) / 2;
+  const surfaceOf = (top) => top.slice(1).reduce((s, p, i) => s + ((p.x - top[i].x) * (2 * plot.bottom - p.y - top[i].y)) / 2, 0);
+  const halves = [
+    [...points.slice(0, cut), { x: ruleX, y: atRule }],
+    [{ x: ruleX, y: atRule }, ...points.slice(cut)],
+  ];
+  const means = halves.map((top) => plot.bottom - surfaceOf(top) / (top.at(-1).x - top[0].x));
 
   // ── colours: the later half in the accent, the earlier stepped back to its tint ─────────────────────────────
   const { ground, accent } = direction;
@@ -157,22 +169,31 @@ export function buildDirection(id, { subject, states, copy }) {
     if (!(y(curveMinOver(cx - w / 2, cx + w / 2)) <= topNeeded)) throw new Error(`« ${texts.join(" ")} » does not fit inside ${what}'s surface`);
     return lines.map((l, i) => ({ ...l, x: cx - l.width / 2, y: lastBaseline - (lines.length - 1 - i) * annot.lead }));
   };
-  // The earlier name sits in its last decades, where its surface is tall; the later one across its whole span.
-  const beforeLabel = seatInside(copy.before, x(1950), ruleX, "the earlier half");
-  const afterLabel = seatInside(copy.after, ruleX, plot.right, "the later half");
+  /** A half's name in its flattened block: centred in the block both ways, refused if the block cannot hold it. */
+  const seatInBlock = (texts, x0, x1, meanY, what) => {
+    const lines = texts.map((t) => measure(t, annot));
+    const w = Math.max(...lines.map((l) => l.width)) * (1 + DRAWN_WIDER);
+    const h = (lines.length - 1) * annot.lead + annotBand.ascent + annotBand.descent;
+    if (!(w + 2 * gap <= x1 - x0 && h + 2 * gap <= plot.bottom - meanY)) throw new Error(`« ${texts.join(" ")} » does not fit inside ${what}'s block`);
+    const cx = (x0 + x1) / 2;
+    const firstBaseline = (meanY + plot.bottom) / 2 - h / 2 + annotBand.ascent;
+    return lines.map((l, i) => ({ ...l, x: cx - l.width / 2, y: firstBaseline + i * annot.lead }));
+  };
+  // On the curve, the earlier name sits in its last decades, where its surface is tall; the later one across its span.
+  const beforeLabel = { block: seatInBlock(copy.before, plot.left, ruleX, means[0], "the earlier half"), curve: seatInside(copy.before, x(1950), ruleX, "the earlier half") };
+  const afterLabel = { block: seatInBlock(copy.after, ruleX, plot.right, means[1], "the later half"), curve: seatInside(copy.after, ruleX, plot.right, "the later half") };
 
-  // ── the stock, in the empty upper left: above the curve under its whole width ───────────────────────────────
+  // ── the stock and its gauge, in the empty upper left: above the curve under their whole width ──────────────
   const stockTexts = Object.fromEntries(readings.map((r, i) => [String(r.year), measure(copy.stock(subject.cumulative[i]), value)]));
   const stockWidth = Math.max(...Object.values(stockTexts).map((t) => t.width)) * (1 + DRAWN_WIDER);
   // Under the top gridline, so no rule runs through the words.
   const stockAt = { x: plot.left + gap, y: y(VALUE_TICKS.at(-1)) + gap + valueBand.ascent };
-  if (!(y(curveMinOver(stockAt.x, stockAt.x + stockWidth) === Infinity ? 0 : Math.max(...readings.filter((r) => x(r.year) <= stockAt.x + stockWidth).map((r) => r.mt))) > stockAt.y + valueBand.descent + gap))
-    throw new Error("the stock's line would sit on the curve");
+  const gauge = { x: stockAt.x, y: stockAt.y + valueBand.descent + gap, width: stockWidth, height: 0.4 * value.lead };
+  const highestUnder = (x0, x1) => Math.max(...readings.filter((r) => x(r.year) >= x0 - 3 && x(r.year) <= x1 + 3).map((r) => r.mt));
+  if (!(y(highestUnder(gauge.x, gauge.x + gauge.width)) > gauge.y + 1.6 * gauge.height + gap)) throw new Error("the stock's gauge would sit on the curve");
 
-  // ── the credit: in the upper left under the stock, if the curve leaves it free ──────────────────────────────
-  const creditAt = { x: plot.left + gap, y: stockAt.y + valueBand.descent + gap };
-  const creditHigh = Math.max(...readings.filter((r) => x(r.year) <= creditAt.x + credit.width).map((r) => r.mt));
-  if (!(y(creditHigh) > creditAt.y + credit.height + gap)) throw new Error("the credit would sit on the curve");
+  // ── the credit: one line, under the years ─────────────────────────────────────────────────────────────────
+  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   const props = {
     frame: stage,
@@ -184,11 +205,16 @@ export function buildDirection(id, { subject, states, copy }) {
     plot,
     points,
     baseY: plot.bottom,
+    midpoint,
+    total: subject.total,
+    means,
     ruleX,
-    ruleYear,
+    ruleYears,
+    ruleYearY,
     ticksY,
     ticksX,
     stock: { at: stockAt, texts: stockTexts },
+    gauge,
     beforeLabel,
     afterLabel,
     halo: haloOf(value, k),
