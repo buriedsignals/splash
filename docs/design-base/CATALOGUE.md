@@ -22,7 +22,7 @@ other export yet.
 | 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Box plot | 1 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
-| 06 | Bump | 2 | ✅ | ◦ | ◦ | ◦ |
+| 06 | Bump | 2 | ✅ | ◦ | ✅ | ◦ |
 | 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
 | 08 | Connected scatter | 1 | ✅ | ◦ | ◦ | ◦ |
 | 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ◦ |
@@ -78,6 +78,7 @@ other export yet.
 | Box plot | static | `proof/more-boxplot-france-co2-decades` |
 | Bullet | static | `proof/static-bullet-low-carbon-share` |
 | Bump | static | `proof/static-bump-emitter-rank` |
+| Bump | video | `proof/video-bump-emitter-rank` — validated by the owner 2026-09-14 |
 | Calendar heatmap | static | `proof/static-calendar-heatmap-geneva` |
 | Connected scatter | static | `proof/static-connected-scatter-lowcarbon` |
 | Dot strip | static | `proof/static-dot-strip-lowcarbon-spread` |
