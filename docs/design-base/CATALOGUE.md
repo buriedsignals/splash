@@ -125,7 +125,7 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | Dumbbell | scrolly | `proof/scrolly-dumbbell-life-expectancy-gains` |
 | Gantt | scrolly | `proof/scrolly-gantt-top-ten-tenure` |
 | Grouped bar | scrolly | `proof/scrolly-wind-vs-solar` |
-| Heatmap | scrolly | `proof/scrolly-heatmap-europe-electricity` |
+| Heatmap | scrolly | `proof/scrolly-heatmap-europe-electricity`, `proof/scrolly-heatmap-coal-share-europe` |
 | Histogram | scrolly | `proof/scrolly-carbon-footprint-spread` |
 | Line | scrolly | `proof/scrolly-line-swiss-co2` |
 | Lollipop | scrolly | `proof/scrolly-lollipop-co2-per-person` |
