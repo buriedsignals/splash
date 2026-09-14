@@ -20,10 +20,12 @@
 //
 // Runs in Bun only (resvg).
 
-import { measureText, measureTextBand } from "#shared/chart-beat/render-still.mjs";
-import { applyCase } from "#shared/chart-beat/registers.mjs";
-import { frameInsetFor, MARGIN_RATIO, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
+import { keyFor, sourceCreditFor, titleCardFor, verticalInsetFor } from "../../skills/map-beat/scripts/shots.mjs";
+
+// The shots every type shares — the title card, the key, the credit — are the skill's (`shots.mjs`).
+export { DRAWN_WIDER, haloOf, pillOf, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
 
 /** The register each slot is set in. */
 export const SLOT_REGISTERS = Object.freeze({
@@ -55,130 +57,11 @@ export function mapRegistersOf(registers, k) {
   };
 }
 
-/** THE HALO A MAP WORD IS STRUCK IN — the still's plate: a stroke of `max(2.5, ascent × 0.34)` behind an area
- *  name, `max(2, ascent × 0.3)` behind a sea's, the floors carried by `k`. */
-export function haloOf(r, k, kind = "area") {
-  const { ascent } = measureTextBand(BAND_PROBE, faceOf(r));
-  return kind === "water" ? Math.max(2 * k, 0.3 * ascent) : Math.max(2.5 * k, 0.34 * ascent);
-}
-
-// ── the rhythm: every gap a multiple of the lead of the register named beside it ───────────────────────
-/** The title card sets its words to a reading measure, not across the whole frame. */
-const CARD_MEASURE = 0.72; // × content width
-const CARD_MAX_LINES = 3;
-/** The source block's measure: narrow enough to sit on the Atlantic beside Europe. */
-const SOURCE_MEASURE = 0.28; // × content width
-const COUNTER_TO_KEY = 0.45; // × axis lead
-const GUTTER = 1; // × axis lead
-const SWATCH_HEIGHT = 0.4; // × axis lead
-const SWATCH_AIR = 0.5; // × axis lead: a swatch is its widest borne plus this
-const SWATCH_JOIN = 0.05; // × axis lead
-const MISSING_GAP = 0.25; // × axis lead
-/** A pill's padding around its word, as shares of the register's size (the scrolly's 5 px × 1 px at 13 px). */
-const PILL_PAD_X = 0.3;
-const PILL_PAD_Y = 0.12;
-/** Bun measures the static TrueType face, Chrome draws the web woff2, and the render accepts Chrome up to 2 %
- *  wider (spec §4.1). A measure fitted to the last Bun pixel is drawn past it by that much. */
-export const DRAWN_WIDER = 0.02;
-/** The band every pill of one register shares, so pills of one role are one height. */
-const BAND_PROBE = "ÉÀÇHxpgjq1,’";
-
-const faceOf = (r) => ({
-  fontSize: r.fontSize,
-  fontWeight: r.fontWeight,
-  fontFamily: r.fontFamily,
-  fontStyle: r.fontStyle === "italic" ? "italic" : "normal",
-});
-
-/** A line's width as the composition's width agreement reads it (spec §4.1). */
-export function widthOf(text, r) {
-  return measureText(text, faceOf(r)) + Number(r.letterSpacing ?? 0) * Math.max(0, [...text].length - 1);
-}
-const bandOf = (text, r) => measureTextBand(text, faceOf(r));
-
-/** THE FRAME'S TOP AND BOTTOM MARGIN — `frameInsetFor`'s own rule, read on the frame's HEIGHT. */
-export function verticalInsetFor(size) {
-  const row = sizeFor(size);
-  return Math.max(Math.round(MARGIN_RATIO * row.height), row.minTypePx * 2);
-}
-
-/** The display register at another size, its tracking and lead scaled with it. */
-const displayAt = (display, fontSize) => ({
-  ...display,
-  fontSize,
-  letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
-  lead: (display.lead * fontSize) / display.fontSize,
-});
-
-/** Words wrapped greedily to `measure`, each line's width measured. */
-export function wrap(text, r, measure) {
-  const lines = [];
-  let current = "";
-  // Breaks at ordinary spaces only: a no-break space (« 94 % », « Data · ») holds its words together.
-  for (const word of text.split(/ +/)) {
-    const trial = current ? `${current} ${word}` : word;
-    if (current && widthOf(trial, r) > measure) {
-      lines.push(current);
-      current = word;
-    } else current = trial;
-  }
-  if (current) lines.push(current);
-  return lines.map((t) => ({ text: t, width: widthOf(t, r) }));
-}
-
-/**
- * A CARD'S WORDS: the first form, in the display register, that wraps into at most `CARD_MAX_LINES` lines
- * of the measure; a form may step its size down by quarter pixels, never to or under the largest other
- * register — a headline smaller than the voice under it has stopped being the headline.
- */
-export function cardTextFor(forms, registers, { measure, maxLines = CARD_MAX_LINES }) {
-  const drawn = registers.display;
-  const largest = Math.max(...Object.entries(registers).filter(([n]) => n !== "display").map(([, r]) => r.fontSize));
-  if (!(drawn.fontSize > largest))
-    throw new Error(`the display register is ${drawn.fontSize}px, not larger than every other register (${largest}px)`);
-  const lowestQuarter = Math.floor(largest * 4) + 1;
-  for (let form = 0; form < forms.length; form++) {
-    const text = applyCase(forms[form], drawn.transform);
-    for (let quarter = Math.floor(drawn.fontSize * 4); quarter >= lowestQuarter; quarter -= 2) {
-      const r = quarter / 4 === drawn.fontSize ? drawn : displayAt(drawn, quarter / 4);
-      const lines = wrap(text, r, measure);
-      if (lines.length <= maxLines && lines.every((l) => l.width <= measure)) return { form, register: r, lines };
-    }
-  }
-  throw new Error(`no card form wraps into ${maxLines} lines of ${measure}px above ${lowestQuarter / 4}px in ${drawn.fontFamily}`);
-}
-
-/** The longest form that wraps into at most `maxLines` lines of the measure, at the register's own size. */
-function blockFor(forms, r, measure, maxLines) {
-  for (let form = 0; form < forms.length; form++) {
-    const lines = wrap(applyCase(forms[form], r.transform), r, measure);
-    if (lines.length <= maxLines && lines.every((l) => l.width <= measure)) return { form, lines };
-  }
-  throw new Error(`no form wraps into ${maxLines} lines of ${measure}px in ${r.fontFamily} ${r.fontSize}px`);
-}
-
-/** A name's box: the word, its padding (a pill's, or the halo's own reach), one height per register. */
-export function pillOf(text, r, pad) {
-  const cased = applyCase(text, r.transform);
-  const textWidth = widthOf(cased, r);
-  const band = bandOf(BAND_PROBE, r);
-  const padX = pad ?? PILL_PAD_X * r.fontSize;
-  const padY = pad ?? PILL_PAD_Y * r.fontSize;
-  return {
-    text: cased,
-    textWidth,
-    width: textWidth + 2 * padX,
-    height: band.ascent + band.descent + 2 * padY,
-    textX: padX,
-    baseline: padY + band.ascent,
-  };
-}
-
 /**
  * @param {{ registers: Record<string, any>, copy: {
  *   eyebrow: string, title: string[], counterSteps: string[], breaks: string[], missingLabel: string,
  *   source: string[] }, size: "landscape", k: number }} input
- *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
+ *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register.
  */
 export function layoutFor({ registers, copy, size, k }) {
   if (size !== "landscape") throw new Error(`the choropleth video lays out at landscape only, not ${JSON.stringify(size)}`);
@@ -186,80 +69,26 @@ export function layoutFor({ registers, copy, size, k }) {
   const frame = { width: row.width, height: row.height };
   const inset = frameInsetFor(size);
   const vInset = verticalInsetFor(size);
-  const content = frame.width - 2 * inset;
   for (const [name, r] of Object.entries(registers))
     if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
-  const { eyebrow: eyebrowR, value, axis } = registers;
-  const line = (text, r, x, y, width = widthOf(text, r)) => ({ text, x, y, width });
-  const measure = (CARD_MEASURE * content) / (1 + DRAWN_WIDER);
 
-  // ── 1. THE TITLE CARD: eyebrow and title, a block centred on the frame's height ─────────────────────────────
-  const title = cardTextFor(copy.title, registers, { measure });
-  const eyebrowText = applyCase(copy.eyebrow, eyebrowR.transform);
-  const eyebrowBand = bandOf(eyebrowText, eyebrowR);
-  const titleBand = bandOf(title.lines.map((l) => l.text).join(" "), title.register);
-  const titleBlock = eyebrowBand.ascent + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent + (title.lines.length - 1) * title.register.lead + titleBand.descent;
-  const titleTop = Math.round((frame.height - titleBlock) / 2);
-  const eyebrowLine = line(eyebrowText, eyebrowR, inset, titleTop + eyebrowBand.ascent);
-  const firstTitleBaseline = eyebrowLine.y + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent;
-  const titleLines = title.lines.map((l, i) => line(l.text, title.register, inset, firstTitleBaseline + i * title.register.lead, l.width));
-
-  // ── 3. THE SOURCE: no end card — the video ends on the map, the source set small on it ─────────────────
-  // The owner (2026-09-14): « la vue finale doit être la map et pas le titre à nouveau ». The source is a block at
-  // its own origin, the longest form that holds three lines of a narrow measure, the halo's reach around it;
-  // `build.mjs` seats it on the sea.
-  // A credit, not a word the story is read in: the axis voice at the type floor, the smallest the frame allows.
-  const sourceR = { ...axis, fontSize: row.minTypePx, letterSpacing: (axis.letterSpacing * row.minTypePx) / axis.fontSize, lead: (axis.lead * row.minTypePx) / axis.fontSize };
-  const sourceHalo = haloOf(sourceR, k);
-  const src = blockFor(copy.source, sourceR, (SOURCE_MEASURE * content) / (1 + DRAWN_WIDER), 3);
-  const sourceBand = bandOf(src.lines.map((l) => l.text).join(" "), sourceR);
-  const sourceLines = src.lines.map((l, i) => line(l.text, sourceR, sourceHalo / 2, sourceHalo / 2 + sourceBand.ascent + i * sourceR.lead, l.width));
-  const source = {
-    form: src.form,
-    lines: sourceLines,
-    halo: sourceHalo,
-    width: Math.ceil(sourceHalo + Math.max(...sourceLines.map((l) => l.width)) * (1 + DRAWN_WIDER)),
-    height: Math.ceil(sourceHalo + sourceBand.ascent + (sourceLines.length - 1) * sourceR.lead + sourceBand.descent),
-  };
-
-  // ── 2. THE PANEL: the count over the key, laid out at its own origin ──────────────────────────────────────
-  // No plate and no unit line: the words stand on the sea in their halo, the title has named the measure, and
-  // the floor's cursor on the bornes says which share the count is above.
-  const pad = haloOf(axis, k) / 2;
-  const counterTexts = copy.counterSteps.map((t) => applyCase(t, value.transform));
-  const counterWidths = counterTexts.map((t) => widthOf(t, value));
-  const counterBand = counterTexts.map((t) => bandOf(t, value)).reduce((a, b) => ({ ascent: Math.max(a.ascent, b.ascent), descent: Math.max(a.descent, b.descent) }));
-  const counterBaseline = pad + counterBand.ascent;
-  const counter = counterTexts.map((t, i) => line(t, value, pad, counterBaseline, counterWidths[i]));
-
-  const breaks = copy.breaks.map((b) => applyCase(b, axis.transform));
-  const breakWidths = breaks.map((b) => widthOf(b, axis));
-  const swatchW = Math.max(...breakWidths) + SWATCH_AIR * axis.lead;
-  const swatchH = SWATCH_HEIGHT * axis.lead;
-  const join = SWATCH_JOIN * axis.lead;
-  const classCount = breaks.length + 1;
-  const keyBand = bandOf(BAND_PROBE, axis);
-  const swatchTop = counterBaseline + counterBand.descent + COUNTER_TO_KEY * axis.lead;
-  const swatches = Array.from({ length: classCount }, (_, i) => ({ x: pad + i * swatchW, y: swatchTop, width: swatchW - join, height: swatchH }));
-  const borneBaseline = swatchTop + swatchH + keyBand.ascent;
-  const bornes = breaks.map((text, i) => line(text, axis, pad + (i + 1) * swatchW - breakWidths[i] / 2, borneBaseline, breakWidths[i]));
-  const missingText = applyCase(copy.missingLabel, axis.transform);
-  const missingBaseline = borneBaseline + axis.lead;
-  const missingSwatch = { x: pad, y: missingBaseline - swatchH, width: swatchW - join, height: swatchH };
-  const missingLabel = line(missingText, axis, pad + swatchW + MISSING_GAP * axis.lead, missingBaseline);
-  const panelWidth = Math.ceil(pad + Math.max(...counterWidths, classCount * swatchW, missingLabel.x - pad + missingLabel.width) * (1 + DRAWN_WIDER) + pad);
-  const panelHeight = Math.ceil(missingBaseline + keyBand.descent + pad);
+  // 1. THE TITLE CARD, 3. THE CREDIT — the owner (2026-09-14): « la vue finale doit être la map et pas le titre à
+  // nouveau »; `build.mjs` seats the credit on the sea.
+  const { form, register, eyebrow, title } = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
+  const { register: sourceR, ...source } = sourceCreditFor({ registers, forms: copy.source, size, k });
+  // 2. THE KEY: the count over the key — the floor's cursor on the bornes says which share the count is above.
+  const { counters, ...key } = keyFor({ registers, k, counters: [copy.counterSteps], breaks: copy.breaks, missingLabel: copy.missingLabel });
 
   return {
     frame,
     inset,
     vInset,
-    content,
+    content: frame.width - 2 * inset,
     registers: { ...registers, source: sourceR },
     /** The story's map: the whole frame. */
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
-    titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines },
+    titleCard: { form, register, eyebrow, title },
     source,
-    panel: { width: panelWidth, height: panelHeight, halo: haloOf(axis, k), valueHalo: haloOf(value, k), counter, swatches, bornes, missingSwatch, missingLabel },
+    panel: { width: key.width, height: key.height, halo: key.halo, valueHalo: key.valueHalo, counter: counters[0], swatches: key.swatches, bornes: key.bornes, missingSwatch: key.missingSwatch, missingLabel: key.missingLabel },
   };
 }
