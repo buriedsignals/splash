@@ -25,7 +25,7 @@ other export yet.
 | 06 | Bump | 2 | ✅ | ◦ | ✅ | ◦ |
 | 07 | Calendar heatmap | 5 | ✅ | ◦ | ✅ | ◦ |
 | 08 | Connected scatter | 1 | ✅ | ◦ | ✅ | ◦ |
-| 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ◦ |
+| 09 | Diverging bar | 7 | ✅ | ◦ | ✅ | ◦ |
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ◦ |
 | 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ◦ |
 | 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ◦ |
@@ -87,6 +87,7 @@ other export yet.
 | Connected scatter | video | `proof/video-connected-scatter-lowcarbon` — validated by the owner 2026-09-14 |
 | Dot strip | static | `proof/static-dot-strip-lowcarbon-spread` |
 | Diverging bar | static | `proof/static-diverging-bar-eu-per-capita` |
+| Diverging bar | video | `proof/video-diverging-bar-eu-per-capita` — validated by the owner 2026-09-14 |
 | Diverging stacked bar | static | `proof/static-diverging-stacked-electricity` |
 | Dumbbell | static | `proof/more-dumbbell-life-expectancy-gains` |
 | Gantt | static | `proof/static-gantt-top-ten-tenure` |

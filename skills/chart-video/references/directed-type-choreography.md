@@ -72,8 +72,15 @@ les vidéos c'est de réussir à faire comprendre en écrivant le moins possible
 6. **A camera that focuses on a country shows its regions' borders** — admin-1 lines, secondary to the national border,
    drawn as the camera closes in.
 7. **The video ends on the picture, never on a card.** The last frame is the full chart with what was
-   learned still marked; the source is a credit at the type floor, in a corner of the picture that
-   holds it without touching a word.
+   learned still marked; the source is a credit at the type floor, **on one line** (`CREDIT_ONE_LINE`, from
+   `scripts/shots.mjs`), in a part of the picture that holds it without touching a word.
+8. **An argument, not a reveal.** The owner, 2026-09-14: « je les trouve très simples… dans le scrolly il y a vraiment une
+   chorégraphie… ça doit être visuel et presque pas textuel, genre les vidéos documentaires ou explicatives. Vraiment
+   chercher à proposer plus que simplement faire apparaître les données. » Making the marks appear one by one and counting
+   is the floor, not the video. Each beat shows *where its answer comes from*: start from a state the viewer already
+   understands (a total, a level, a map) and **transform** it into the chart that answers — a part detaching and becoming a
+   change, a whole splitting into its members, a mark sliding onto another to compare, the camera **magnifying** a detail too
+   small to see and pulling back. Every transformation keeps its lengths on one scale, so the motion itself is honest.
 
 ## Precision still applies
 
