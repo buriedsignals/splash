@@ -24,7 +24,7 @@ other export yet.
 | 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Bump | 2 | ✅ | ◦ | ✅ | ◦ |
 | 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
-| 08 | Connected scatter | 1 | ✅ | ◦ | ◦ | ◦ |
+| 08 | Connected scatter | 1 | ✅ | ◦ | ✅ | ◦ |
 | 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ◦ |
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ◦ |
 | 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ◦ |
@@ -81,6 +81,7 @@ other export yet.
 | Bump | video | `proof/video-bump-emitter-rank` — validated by the owner 2026-09-14 |
 | Calendar heatmap | static | `proof/static-calendar-heatmap-geneva` |
 | Connected scatter | static | `proof/static-connected-scatter-lowcarbon` |
+| Connected scatter | video | `proof/video-connected-scatter-lowcarbon` — validated by the owner 2026-09-14 |
 | Dot strip | static | `proof/static-dot-strip-lowcarbon-spread` |
 | Diverging bar | static | `proof/static-diverging-bar-eu-per-capita` |
 | Diverging stacked bar | static | `proof/static-diverging-stacked-electricity` |
