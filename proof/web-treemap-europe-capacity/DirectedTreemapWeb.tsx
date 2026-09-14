@@ -232,6 +232,24 @@ export function DirectedTreemapWeb({
    * ink, which `inkOnFill` has already measured against that exact fill. No `--mark-active` is
    * declared, because a custom property nothing reads is dead CSS.
    */
+  /** A cell moves off its OWN fill under the pointer, and the DOSE IS HUNTED rather than typed. A
+   *  fixed step cannot serve three directions: 0,22 toward the ink reads 1,29:1 on the light grounds
+   *  and only 1,10:1 on nocturne, where the ink is pale and the ramp already sits near it. So the
+   *  smallest dose that clears the floor is searched for, and a fill with no such dose is refused
+   *  rather than shipped — never calibrated against the GROUND, which is what turned nocturne's
+   *  brightest cell almost white and repainted it out of its own group. On a treemap the fill IS the
+   *  membership. */
+  const darken = (fill: string) => {
+    for (let dose = 0.16; dose <= 0.6; dose += 0.02) {
+      const moved = mix(fill, ink, dose);
+      if (contrast(moved, fill) >= 1.12) return moved;
+    }
+    throw new Error(
+      `no dose of the direction's ink moves ${fill} 1.12:1 off itself — a reader could not see ` +
+        `which cell answered the pointer`,
+    );
+  };
+
   const inkOn = (fill: string) =>
     inkOnFill(fill, { ink, ground }, contrast, adjustToContrast, TEXT_CONTRAST_MIN);
 
@@ -270,8 +288,15 @@ export function DirectedTreemapWeb({
     // while the label sitting inside the same cell was already at 10,93:1. One measurement, two
     // users. `vector-effect` is on the rect, so 3 is CSS pixels at every frame size rather than
     // viewBox units at one of them.
-    `${SCOPE} rect.mark-active[data-fill="field"] { fill: ${neutral}; stroke: ${inkOn(neutral)}; stroke-width: 3; }`,
-    `${SCOPE} rect.mark-active[data-fill="thread"] { fill: ${lit}; stroke: ${inkOn(lit)}; stroke-width: 3; }`,
+        // A RING WAS THE WRONG ANSWER. It was reached for because lifting a cell toward the ink turned
+    // nocturne's brightest cell almost white — repainting it out of its own group, which on a
+    // treemap destroys the encoding, since the fill IS the membership. But the owner's reading of
+    // the ring was that it looks unfinished, and he is right: a 3px stroke inside a cell reads as a
+    // border the layout grew, not as an answer. The cell DARKENS instead — toward the ink, by a
+    // step small enough that it stays its own colour and large enough to be seen, refused if the
+    // step falls under the floor.
+    `${SCOPE} rect.mark-active[data-fill="field"] { fill: ${darken(neutral)}; }`,
+    `${SCOPE} rect.mark-active[data-fill="thread"] { fill: ${darken(lit)}; }`,
     // THE ANSWER IS SIX READINGS LONG, AND THE FORMAT'S BOX IS 220px WIDE. `anchorOn` raises the box
     // off the TOP of the mark it names, so a five-line answer about a cell in the top-left corner of
     // the plot rose clean over the descent's own pills and hid the control the reader had just

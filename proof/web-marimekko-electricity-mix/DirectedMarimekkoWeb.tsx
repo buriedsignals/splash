@@ -131,6 +131,21 @@ export function DirectedMarimekkoWeb({
   grid: string;
   measure: (text: string, style: any) => number;
 }) {
+  /** A BAND DARKENS UNDER THE POINTER; a grey disc on a mosaic is the wrong affordance, since the
+   *  reading IS the tile. The dose is hunted rather than typed: the ramp's nine tones sit at very
+   *  different distances from the direction's ink, so one step cannot serve them all, and a tone
+   *  with no dose that clears the floor is refused rather than shipped. */
+  const darken = (fill: string) => {
+    for (let dose = 0.16; dose <= 0.6; dose += 0.02) {
+      const moved = mix(fill, ink, dose);
+      if (contrast(moved, fill) >= 1.12) return moved;
+    }
+    throw new Error(
+      `no dose of the direction's ink moves ${fill} 1.12:1 off itself — a reader could not see ` +
+        `which band answered the pointer`,
+    );
+  };
+
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
   /** One hue, as many chromas as there are sources, ordered so the darkest is the last band —
@@ -477,6 +492,8 @@ export function DirectedMarimekkoWeb({
                 .map((b) => (
                   <rect
                     key={`${b.code}-${b.source}`}
+                    data-mark={`${b.code}-${b.source}`}
+                    style={{ "--mark-active": darken(ramp[b.tone]) } as React.CSSProperties}
                     x={b.x}
                     y={b.y}
                     width={b.w}
@@ -507,6 +524,7 @@ export function DirectedMarimekkoWeb({
             <circle
               key={`hit-${b.code}-${b.source}`}
               className="pt"
+              data-mark-ref={`${b.code}-${b.source}`}
               cx={b.x + b.w / 2}
               // THE HIT POINT IS HELD INSIDE THE PLOT, and the number is small because the defect
               // is. The topmost band of a column whose share rounds to nothing centres its point

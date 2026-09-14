@@ -663,7 +663,12 @@ ${scope} .chart-follow .options {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   min-width: 0;
-  flex: 1 1 auto;
+  /* SHRINK, NEVER GROW. a grow factor of 1 let the row take every pixel offered it, so the frame that
+     is meant to hug the options measured 1240px around 490px of content — a border with half a row
+     of nothing inside it. The scrollable line still needs to SHRINK when the window is narrower than
+     the options, which is the 1 in the shrink slot; growing past the content was never part of
+     that and is what read as odd. */
+  flex: 0 1 auto;
 }
 ${scope} .chart-follow label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 ${scope} .chart-follow input { cursor: pointer; margin: 0; }
