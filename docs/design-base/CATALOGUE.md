@@ -6,7 +6,7 @@ and a tick means a **directed** beat exists — one that goes through the design
 its six registers, the arbiter's treatments). Beats that predate the design base are not ticked here;
 they are listed at the foot.
 
-Last measured: 2026-09-09 · 179 references · 40 directed static beats. Scrolly column updated 2026-09-14 on
+Last measured: 2026-09-09 · 179 references · 40 directed static beats. Scrolly column updated 2026-09-15 on
 branch `quality/scrolly`: the directed scrolly beats the owner validated in that pass.
 
 - ✅ a directed beat exists
@@ -20,7 +20,7 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 01 | Area | 1 | ✅ | ◦ | ◦ | ✅ |
 | 02 | Bar and column | 2 | ✅ | ◦ | ◦ | ◦ |
 | 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ◦ |
-| 04 | Box plot | 1 | ✅ | ◦ | ◦ | ◦ |
+| 04 | Box plot | 1 | ✅ | ◦ | ◦ | ✅ |
 | 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Bump | 2 | ✅ | ◦ | ◦ | ✅ |
 | 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
@@ -28,12 +28,12 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ✅ |
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ✅ |
 | 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ✅ |
-| 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ◦ |
+| 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ✅ |
 | 13 | Gantt | 2 | ✅ | ◦ | ◦ | ✅ |
 | 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ✅ |
 | 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ✅ |
 | 16 | Histogram | 6 | ✅ | ◦ | ◦ | ✅ |
-| 17 | Line | 2 | ✅ | ◦ | ◦ | ◦ |
+| 17 | Line | 2 | ✅ | ◦ | ◦ | ✅ |
 | 18 | Lollipop | 1 | ✅ | ◦ | ◦ | ✅ |
 | 19 | Marimekko | 7 | ✅ | ◦ | ◦ | ✅ |
 | 20 | Parallel coordinates | 1 | ✅ | ◦ | ◦ | ✅ |
@@ -50,7 +50,7 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 31 | Treemap | 1 | ✅ | ◦ | ◦ | ✅ |
 | 32 | Waterfall | 12 | ✅ | ◦ | ◦ | ✅ |
 
-**Charts: 32 of 32 done in static, 25 of 32 in scrolly, 0 in web or video.**
+**Charts: 32 of 32 done in static, 28 of 32 in scrolly, 0 in web or video.**
 
 ## Maps
 
@@ -112,15 +112,18 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
 | Area | scrolly | `proof/scrolly-world-population` |
+| Box plot | scrolly | `proof/scrolly-boxplot-france-co2-decades` |
 | Bump | scrolly | `proof/scrolly-bump-emitter-rank` |
 | Connected scatter | scrolly | `proof/scrolly-connected-scatter-lowcarbon` |
 | Diverging bar | scrolly | `proof/scrolly-diverging-bar-eu-per-capita` |
 | Diverging stacked bar | scrolly | `proof/scrolly-diverging-stacked-electricity` |
 | Dot strip | scrolly | `proof/scrolly-dot-strip-lowcarbon-spread` |
+| Dumbbell | scrolly | `proof/scrolly-dumbbell-life-expectancy-gains` |
 | Gantt | scrolly | `proof/scrolly-gantt-top-ten-tenure` |
 | Grouped bar | scrolly | `proof/scrolly-wind-vs-solar` |
 | Heatmap | scrolly | `proof/scrolly-heatmap-europe-electricity` |
 | Histogram | scrolly | `proof/scrolly-carbon-footprint-spread` |
+| Line | scrolly | `proof/scrolly-line-swiss-co2` |
 | Lollipop | scrolly | `proof/scrolly-lollipop-co2-per-person` |
 | Marimekko | scrolly | `proof/scrolly-marimekko-electricity-mix` |
 | Parallel coordinates | scrolly | `proof/scrolly-parallel-coordinates-electricity-mix` |
