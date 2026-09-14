@@ -26,7 +26,8 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
-import { DirectedAreaWeb } from "./DirectedAreaWeb.tsx";
+import { levelSlugOf } from "../../skills/chart-web/assets/level.ts";
+import { DirectedAreaWeb, SERIES, xOf } from "./DirectedAreaWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -113,6 +114,142 @@ const facts = beatFacts(
 const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
+// ── THE YARDSTICK THE READER PARKS ON THEIR OWN YEAR ─────────────────────────────────────────
+//
+// The plate cuts the surface once, at the year the running total crosses its half. This is the same
+// cut, handed over: five birth years spanning a readership, each recomputed from the frozen file.
+// Nothing below is typed — every figure is an integral of the same rows the surface is drawn from,
+// and the arithmetic is asserted against the picture before a mark is drawn.
+const BIRTH_YEARS = [1950, 1965, 1980, 1995, 2005];
+
+const cumulativeTo = new Map();
+let cumulate = 0;
+for (const row of rows) {
+  cumulate += row.tonnes;
+  cumulativeTo.set(row.year, cumulate);
+}
+
+const cohorts = BIRTH_YEARS.map((year) => {
+  if (!cumulativeTo.has(year))
+    throw new Error(`${year} is not a reading this series carries — a cohort cannot be cut there`);
+  const before = cumulativeTo.get(year - 1) ?? 0;
+  const after = total - before;
+  const yearsLived = lastYear - year + 1;
+  const yearsBefore = year - firstYear;
+  if (yearsLived < 2 || yearsBefore < 2)
+    throw new Error(`${year} leaves ${yearsLived} lived and ${yearsBefore} before it — not a cut`);
+  return {
+    year,
+    yearsLived,
+    yearsBefore,
+    shareOfTime: (yearsLived / rows.length) * 100,
+    shareOfStock: (after / total) * 100,
+    mtLived: after / 1e6,
+    mtBefore: before / 1e6,
+    meanLived: after / 1e6 / yearsLived,
+    meanBefore: before / 1e6 / yearsBefore,
+  };
+});
+
+// THE COHORTS' OWN CLAIM, ASSERTED. Each of these is a sentence the page puts in front of a reader,
+// so each is refused here rather than trusted: a share of the stock must be a share, it must FALL as
+// the birth year rises (a later reader has lived less of the history), and the rate the reader lived
+// through must be the higher one on every cohort — which is the whole point being made.
+for (const [i, c] of cohorts.entries()) {
+  if (!(c.shareOfStock > 0 && c.shareOfStock < 100))
+    throw new Error(`${c.year} carries ${c.shareOfStock} % of the stock, which is not a share`);
+  if (!(c.shareOfStock > c.shareOfTime))
+    throw new Error(
+      `${c.year} lived ${c.shareOfTime.toFixed(1)} % of the years and ${c.shareOfStock.toFixed(1)} % ` +
+        `of the stock — the page says the recent years are the heavy ones and this cohort says they are not`,
+    );
+  if (!(c.meanLived > c.meanBefore))
+    throw new Error(
+      `${c.year} lived through ${c.meanLived.toFixed(1)} Mt/an against ${c.meanBefore.toFixed(1)} before it`,
+    );
+  if (i > 0 && !(c.shareOfStock < cohorts[i - 1].shareOfStock))
+    throw new Error(
+      `${c.year} carries more of the stock than ${cohorts[i - 1].year}, which is later-born — the ` +
+        `cumulative total does not run backwards`,
+    );
+}
+console.table(
+  cohorts.map((c) => ({
+    naissance: c.year,
+    "années vécues": `${c.yearsLived}/${rows.length}`,
+    "% du temps": fr(c.shareOfTime),
+    "Mt depuis": fr(c.mtLived, 0),
+    "% du stock": fr(c.shareOfStock),
+    "Mt/an pendant": fr(c.meanLived),
+    "Mt/an avant": fr(c.meanBefore),
+  })),
+);
+
+const levels = {
+  label: "Depuis ma naissance en",
+  // THE UNTOUCHED OPTION IS THE PLATE, said in the plate's own words: the cut the page asserts.
+  noneLabel: `La moitié, en ${midYear}`,
+  options: cohorts.map((c) => ({
+    key: String(c.year),
+    label: String(c.year),
+    announce:
+      `${c.year} — ${c.yearsLived} des ${rows.length} années de la série, soit ` +
+      `${fr(c.shareOfTime, 0)} % du temps, et ${fr(c.shareOfStock)} % de tout ce que la Suisse a ` +
+      `émis depuis ${firstYear}`,
+    note:
+      `Naissance en ${c.year} : ${c.yearsLived} des ${rows.length} années, ` +
+      `${fr(c.shareOfTime, 0)} % du temps — et ${fr(c.mtLived, 0)} Mt émis depuis, soit ` +
+      `${fr(c.shareOfStock)} % de tout ce que la Suisse a émis depuis ${firstYear}. ` +
+      `${fr(c.meanLived)} Mt ` +
+      `par an en moyenne pendant ces ${c.yearsLived} ans, contre ${fr(c.meanBefore)} Mt par an ` +
+      `sur les ${c.yearsBefore} précédentes.`,
+    // ONE REFERENCE, STOOD UP: on this shape the x axis is the one that carries the cut, and the
+    // beat draws one series, so an option lays exactly one mark or `assertLevelDeclaration` refuses
+    // it as a yardstick that answers half the question.
+    marks: [{ series: SERIES, x: xOf(c.year, firstYear, lastYear) }],
+  })),
+};
+const splits = cohorts.map((c) => ({
+  slug: levelSlugOf(String(c.year)),
+  year: c.year,
+  label: String(c.year),
+  x: xOf(c.year, firstYear, lastYear),
+}));
+
+// Written in `BRIEF.md` before any of this was built and carried here so the prose and the render
+// cannot drift: `assertInteractionPlan` matches every declared gesture against a control the markup
+// actually ships, and every shipped control against a declaration.
+const interaction = {
+  earns:
+    "Une plaque ne peut couper la surface qu'une fois, à l'année de l'auteur. Ici le lecteur pose " +
+    "la coupe sur la sienne : né en 1950, il a vécu 75 des 167 années — 45 % du temps — et 85,3 % " +
+    "de tout le stock suisse a été émis dedans ; né en 2005, 20 ans, 12 % du temps, et un quart " +
+    "du stock. Aucune image fixe et aucune vidéo ne peuvent dire l'un ou l'autre, ni être amenées " +
+    "à le dire.",
+  controls: [
+    {
+      question:
+        "Depuis l'année où je suis venu au monde, quelle part de tout le CO₂ suisse a été émise ?",
+      gesture: "find-your-own-case",
+      changes:
+        "La surface se recoupe à cette année-là : la couture entre les deux chromas quitte " +
+        `${midYear} et voyage jusqu'à l'année choisie, si bien que le bloc d'accent EST la vie du ` +
+        "lecteur. Une règle d'encre, gainée de fond, se dresse sur la nouvelle couture ; l'année " +
+        "s'écrit au pied de cette règle ; sa lecture prend un cerne parmi 166 qui restent " +
+        "anonymes ; et une phrase donne quatre lectures qu'aucun axe de cette plaque ne porte — le " +
+        "nombre d'années vécues, la part du TEMPS que cela représente, les Mt et la part du STOCK " +
+        "émis depuis, et le débit moyen de ces années contre celui de toutes les années d'avant.",
+    },
+    {
+      question: "Cette année-là vaut combien, et quelle part du total était déjà derrière ?",
+      gesture: "ask-a-mark",
+      changes:
+        "L'année répond avec son chiffre annuel et avec la part de toute la surface qui se trouve " +
+        "à sa gauche — les 167 lectures dont la plaque n'a pu en écrire que six.",
+    },
+  ],
+};
+
 // ── the words, per register ───────────────────────────────────────────────────────────────────
 const title = `La moitié du CO₂ suisse depuis ${firstYear} a été émise après ${midYear}`;
 const caveat =
@@ -121,8 +258,9 @@ const caveat =
 const midNote = `${midYear} : la moitié du total est derrière`;
 const readingLine =
   `Lecture : la hauteur est le débit d'une année, la surface est le stock qu'il accumule. ` +
-  `Survolez, touchez ou tabulez n'importe quelle année pour lire son chiffre et la part du total ` +
-  `déjà émise à cette date — les 167 lectures que l'image fixe ne pouvait pas écrire.`;
+  `Choisissez votre année de naissance pour recouper la surface dessus et lire ce qui a été émis ` +
+  `pendant votre vie. Survolez, touchez ou tabulez n'importe quelle année pour son chiffre et la ` +
+  `part du total déjà émise à cette date — les 167 lectures que l'image fixe ne pouvait pas écrire.`;
 const source = `Source : Global Carbon Budget 2025, via Our World in Data · ${firstYear}-${lastYear}`;
 const yTicks = [0, 10, 20, 30, 40, 50];
 const xTicks = [1860, 1900, 1940, 1980, 2020];
@@ -130,9 +268,12 @@ const xTicks = [1860, 1900, 1940, 1980, 2020];
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source} Total ${firstYear}-${lastYear} : ${fr(totalMt, 0)} Mt.`,
+  body:
+    `${caveat} ${readingLine} ${source} Total ${firstYear}-${lastYear} : ${fr(totalMt, 0)} Mt. ` +
+    `${levels.label} ${levels.noneLabel} ` +
+    `${levels.options.map((o) => `${o.label} ${o.note} ${o.announce}`).join(" ")}`,
   axis: `${yTicks.join(" ")} ${xTicks.join(" ")} ${UNIT}`,
-  annot: midNote,
+  annot: `${midNote} ${levels.options.map((o) => o.label).join(" ")}`,
   value: readings.map((r) => `${r.year} ${r.label}`).join(" "),
 };
 
@@ -167,6 +308,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         unit: UNIT,
         midNote,
         reading: readingLine,
+        levels,
+        splits,
+        interaction,
         alt:
           `Une aire remplie : les émissions annuelles de CO₂ de la Suisse de ${firstYear} à ` +
           `${lastYear}, en millions de tonnes. La surface monte jusqu'à un pic de ${fr(peak.mt)} Mt ` +

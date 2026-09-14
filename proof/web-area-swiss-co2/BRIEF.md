@@ -39,18 +39,87 @@ shorter one.
 ## What the web adds, and it is not the static beat repeated
 
 An area chart's claim is that the SURFACE is a quantity — the stock a rate accumulates to. The
-static plate states that claim, prints the total and marks the crossing year, and has room to label
-perhaps six of its 167 readings. It cannot let a reader check the accumulation anywhere else.
+static plate states that claim, cuts the surface at **one** year, and prints the two shares either
+side of that cut. The cut is the AUTHOR'S: 1986, because that is where the running total crosses its
+own half. A plate can only ever hold one cut, so a reader who arrives with a different year in
+their head — the year they were born — is holding a question the still cannot answer.
 
-So the one thing this page adds is exactly the reading the plate had to omit: **every year answers
-with its own annual figure and with the share of the whole surface that lies to its left.** Hover,
-tap and keyboard all reach it; the detail string is baked server-side from the same arithmetic that
-drew the mark, so the browser never formats a number.
+**So the cut becomes the reader's.** The partition of the surface is the one thing this page hands
+over, and it is the claim itself rather than a decoration on it.
 
-Nothing that the static frame states is gated behind that ask. The title, the caveat, the crossing
-rule and its note, the end label, the reading line, the source and the total are all drawn
-unconditionally and survive with JavaScript off — verified by driving the page with scripting
-disabled.
+### The controls, and what each one had to pass
+
+**1 — « Et depuis ma naissance ? »**
+
+| | |
+| --- | --- |
+| **the reader's question** | Depuis l'année où je suis venu au monde, quelle part de tout le CO₂ suisse a été émise ? |
+| **the gesture** | `find-your-own-case` — `chart-web/assets/level.ts`, a reference stood UP at a year the reader chooses |
+| **what changes** | The surface **re-partitions at that year**: the tint/accent seam leaves 1986 and travels to 1950, 1965, 1980, 1995 or 2005, so the accent block IS the reader's own lifetime. An ink rule, cased in ground, stands up on the new seam; the year is written at the foot of it; that year's reading takes a ring among 166 that stay anonymous; and a sentence gives four readings no axis on this plate holds — how many of the 167 years the reader has lived, what share of the TIME that is, the Mt and the share of the STOCK emitted since, and the mean annual rate of those years against the mean of every year before. |
+
+What it answers, in the reader's own hand: a reader born in **1950** has lived 75 of the 167 years —
+45 % of the time — and **85,3 %** of Switzerland's whole stock has been emitted inside them. One born
+in **2005** has lived 20 years, 12 % of the time, and a **quarter** of the stock. The still can say
+that half came after 1986; it cannot say either of those, and it cannot be made to.
+
+**Two things the control does NOT do, and both are rule 5 of `directed-interaction.md`.** The
+midpoint rule at 1986, its note, the title, the total line and the reading line are drawn
+unconditionally and no option removes any of them — the reader's cut is laid *against* the claim,
+never *instead of* it. And the untouched state is exactly the plate: `noneLabel` is
+« La moitié, en 1986 », and it is the picture a reader with no script never leaves.
+
+**2 — « Cette année-là, elle valait combien ? »**
+
+| | |
+| --- | --- |
+| **the reader's question** | Cette année-là vaut combien, et quelle part du total était déjà derrière ? |
+| **the gesture** | `ask-a-mark` — hover, tap, keyboard focus on any of the 167 readings |
+| **what changes** | The year answers with its own annual figure and with the share of the whole surface lying to its left — the 167 readings the plate had room to label six of. Baked server-side from the same arithmetic that drew the mark; the browser never formats a number. |
+
+The two controls answer on two channels and one of them is not a repetition of the other: the ask
+reads the cumulative share **at** a year, the yardstick states what is **left after** it, in Mt, in
+years, and as a rate — and it repaints the surface to show it. `directed-interaction.md` says in as
+many words that two controls producing related states is not a defect when they answer two
+different questions.
+
+### How this is not the scrolly sibling's choreography
+
+`proof/scrolly-area-swiss-co2` (on `quality/scrolly`) traces, names, fills with a counted stock,
+splits, rescales onto the recent half, and pulls back. Its split is **card 4**: the author's, at
+1986, arrived at once and left behind. Its rescale is a moving `viewBox`.
+
+This page inverts the authorship and keeps the frame still. There is no sequence, no arrival and no
+camera: the split is the only thing that moves, it moves where the READER puts it, it can be put
+back, and every position of it is answered with arithmetic the scrolly never states because the
+scrolly only ever stands in one of them. Nothing here rescales — the 167 years stay in frame at
+every option, which is what makes the reader's block visibly a *part of* the whole rather than a
+frame of its own.
+
+### The type sheet's trap, and why it does not apply here
+
+`chart-beat/references/types/area.md`: *"Every band above the bottom one sits on a moving floor…
+a reader judging whether the SECOND-from-bottom band is growing is actually subtracting two wavy
+lines in their head."*
+
+**Its literal form is absent: this beat is not stacked.** It draws ONE series. The two chromas are
+not two bands — they are one band cut at a year, both halves sitting on the same flat zero, neither
+on a floor that moves. There is no second-from-bottom band to read, so the sheet's own remedy (let
+the reader choose which band rests on the baseline, as `proof/webx-electricity-mix` did) has nothing
+to act on, and reaching for it because it is at hand would have been a control over a problem this
+beat does not have.
+
+**Its reason is open, in this form's own shape, and the yardstick is the answer to it.** The reason
+the sheet gives is that the chart claims a reading the eye cannot take directly. A single-series
+area makes exactly that claim one axis over: the reader perceives HEIGHT directly and must
+INTEGRATE to get the stock, so *every* statement about the surface — including "these two halves are
+the same size", which the plate asserts of a 129-year slab and a 38-year block of utterly different
+shape — is a reading no eye can take off the picture. The plate answers it once, for its own cut.
+This page answers it for the reader's, wherever they put it, and states the integral on both sides
+in Mt and in percent rather than asking anyone to compare two areas by eye.
+
+The sheet's second, rendering failure — *"opaque, unbordered bands similar in hue fuse into a single
+mass"* — does apply, and was already paid: the curve carries its own stroke along the top edge, and
+the two chromas are separated by the rule standing on the seam.
 
 ## The two refusals, both checked rather than commented
 
