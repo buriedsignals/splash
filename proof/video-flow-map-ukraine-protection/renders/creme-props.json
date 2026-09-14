@@ -25,13 +25,13 @@
       "fill": "#1757B6"
     },
     "value": {
-      "fontFamily": "Inter",
-      "fontSize": 44.16,
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
       "fontWeight": 600,
       "fontStyle": "normal",
       "letterSpacing": 0,
       "transform": "none",
-      "lead": 47.08416825,
+      "lead": 54.0014677734375,
       "fill": "#1757B6"
     },
     "axis": {
@@ -100,379 +100,379 @@
       "y": 430
     },
     "width": 650,
-    "height": 239,
+    "height": 243,
     "peopleRow": {
       "x": 5.2867675781250005,
-      "y": 47.0964599609375
+      "y": 47.584130859375
     },
     "shareRow": {
       "x": 5.2867675781250005,
-      "y": 104.37695344726563
+      "y": 106.63220247070313
     },
     "peopleTexts": {
       "0": {
-        "text": "0 personnes",
-        "width": 265.1971642971039
+        "text": "0 personnes",
+        "width": 263.29833984375
       },
       "1": {
-        "text": "1 250 825 personnes",
-        "width": 435.86436891555786
+        "text": "1 250 825 personnes",
+        "width": 441.05712890625
       },
       "2": {
-        "text": "2 209 710 personnes",
-        "width": 436.33873176574707
+        "text": "2 209 710 personnes",
+        "width": 441.05712890625
       },
       "3": {
-        "text": "2 599 805 personnes",
-        "width": 446.17125129699707
+        "text": "2 599 805 personnes",
+        "width": 441.05712890625
       },
       "4": {
-        "text": "2 864 340 personnes",
-        "width": 450.76402473449707
+        "text": "2 864 340 personnes",
+        "width": 441.05712890625
       },
       "5": {
-        "text": "3 076 915 personnes",
-        "width": 434.0100073814392
+        "text": "3 076 915 personnes",
+        "width": 441.05712890625
       },
       "6": {
-        "text": "3 223 345 personnes",
-        "width": 446.45156621932983
+        "text": "3 223 345 personnes",
+        "width": 441.05712890625
       },
       "7": {
-        "text": "3 363 240 personnes",
-        "width": 448.58624029159546
+        "text": "3 363 240 personnes",
+        "width": 441.05712890625
       },
       "8": {
-        "text": "3 482 080 personnes",
-        "width": 450.50530767440796
+        "text": "3 482 080 personnes",
+        "width": 441.05712890625
       },
       "9": {
-        "text": "3 576 510 personnes",
-        "width": 433.66497564315796
+        "text": "3 576 510 personnes",
+        "width": 441.05712890625
       },
       "10": {
-        "text": "3 666 140 personnes",
-        "width": 440.73748540878296
+        "text": "3 666 140 personnes",
+        "width": 441.05712890625
       },
       "11": {
-        "text": "3 752 180 personnes",
-        "width": 434.4196753501892
+        "text": "3 752 180 personnes",
+        "width": 441.05712890625
       },
       "12": {
-        "text": "3 825 815 personnes",
-        "width": 435.5840735435486
+        "text": "3 825 815 personnes",
+        "width": 441.05712890625
       },
       "13": {
-        "text": "3 897 655 personnes",
-        "width": 442.2037329673767
+        "text": "3 897 655 personnes",
+        "width": 441.05712890625
       },
       "14": {
-        "text": "3 969 275 personnes",
-        "width": 443.08782720565796
+        "text": "3 969 275 personnes",
+        "width": 441.05712890625
       },
       "15": {
-        "text": "4 029 850 personnes",
-        "width": 449.42718267440796
+        "text": "4 029 850 personnes",
+        "width": 441.05712890625
       },
       "16": {
-        "text": "4 080 745 personnes",
-        "width": 445.95562505722046
+        "text": "4 080 745 personnes",
+        "width": 441.05712890625
       },
       "17": {
-        "text": "4 131 555 personnes",
-        "width": 426.65716314315796
+        "text": "4 131 555 personnes",
+        "width": 441.05712890625
       },
       "18": {
-        "text": "4 181 625 personnes",
-        "width": 428.5115637779236
+        "text": "4 181 625 personnes",
+        "width": 441.05712890625
       },
       "19": {
-        "text": "4 229 955 personnes",
-        "width": 445.6968665122986
+        "text": "4 229 955 personnes",
+        "width": 441.05712890625
       },
       "20": {
-        "text": "4 277 590 personnes",
-        "width": 443.7777991294861
+        "text": "4 277 590 personnes",
+        "width": 441.05712890625
       },
       "21": {
-        "text": "4 321 965 personnes",
-        "width": 437.9128088951111
+        "text": "4 321 965 personnes",
+        "width": 441.05712890625
       },
       "22": {
-        "text": "4 362 650 personnes",
-        "width": 448.3706030845642
+        "text": "4 362 650 personnes",
+        "width": 441.05712890625
       },
       "23": {
-        "text": "4 394 080 personnes",
-        "width": 452.3812232017517
+        "text": "4 394 080 personnes",
+        "width": 441.05712890625
       },
       "24": {
-        "text": "4 424 410 personnes",
-        "width": 441.5568518638611
+        "text": "4 424 410 personnes",
+        "width": 441.05712890625
       },
       "25": {
-        "text": "4 454 205 personnes",
-        "width": 449.6428198814392
+        "text": "4 454 205 personnes",
+        "width": 441.05712890625
       },
       "26": {
-        "text": "4 480 565 personnes",
-        "width": 449.2331213951111
+        "text": "4 480 565 personnes",
+        "width": 441.05712890625
       },
       "27": {
-        "text": "4 491 990 personnes",
-        "width": 442.05279302597046
+        "text": "4 491 990 personnes",
+        "width": 441.05712890625
       },
       "28": {
-        "text": "4 496 790 personnes",
-        "width": 448.3921790122986
+        "text": "4 496 790 personnes",
+        "width": 441.05712890625
       },
       "29": {
-        "text": "4 500 500 personnes",
-        "width": 450.69936895370483
+        "text": "4 500 500 personnes",
+        "width": 441.05712890625
       },
       "30": {
-        "text": "4 503 135 personnes",
-        "width": 438.17156744003296
+        "text": "4 503 135 personnes",
+        "width": 441.05712890625
       },
       "31": {
-        "text": "4 504 080 personnes",
-        "width": 452.2087378501892
+        "text": "4 504 080 personnes",
+        "width": 441.05712890625
       }
     },
     "shareTexts": {
       "0": {
-        "text": "Allemagne + Pologne : 0 %",
-        "width": 570.0477905273438
+        "text": "Allemagne + Pologne : 0 %",
+        "width": 563.1591796875
       },
       "1": {
-        "text": "Allemagne + Pologne : 1 %",
-        "width": 559.5899658203125
+        "text": "Allemagne + Pologne : 1 %",
+        "width": 563.1591796875
       },
       "2": {
-        "text": "Allemagne + Pologne : 2 %",
-        "width": 568.4306030273438
+        "text": "Allemagne + Pologne : 2 %",
+        "width": 563.1591796875
       },
       "3": {
-        "text": "Allemagne + Pologne : 3 %",
-        "width": 569.0127563476562
+        "text": "Allemagne + Pologne : 3 %",
+        "width": 563.1591796875
       },
       "4": {
-        "text": "Allemagne + Pologne : 4 %",
-        "width": 570.3280639648438
+        "text": "Allemagne + Pologne : 4 %",
+        "width": 563.1591796875
       },
       "5": {
-        "text": "Allemagne + Pologne : 5 %",
-        "width": 567.9562377929688
+        "text": "Allemagne + Pologne : 5 %",
+        "width": 563.1591796875
       },
       "6": {
-        "text": "Allemagne + Pologne : 6 %",
-        "width": 569.1636962890625
+        "text": "Allemagne + Pologne : 6 %",
+        "width": 563.1591796875
       },
       "7": {
-        "text": "Allemagne + Pologne : 7 %",
-        "width": 566.360595703125
+        "text": "Allemagne + Pologne : 7 %",
+        "width": 563.1591796875
       },
       "8": {
-        "text": "Allemagne + Pologne : 8 %",
-        "width": 569.185302734375
+        "text": "Allemagne + Pologne : 8 %",
+        "width": 563.1591796875
       },
       "9": {
-        "text": "Allemagne + Pologne : 9 %",
-        "width": 569.1636962890625
+        "text": "Allemagne + Pologne : 9 %",
+        "width": 563.1591796875
       },
       "10": {
-        "text": "Allemagne + Pologne : 10 %",
-        "width": 588.7208862304688
+        "text": "Allemagne + Pologne : 10 %",
+        "width": 588.88916015625
       },
       "11": {
-        "text": "Allemagne + Pologne : 11 %",
-        "width": 578.2630615234375
+        "text": "Allemagne + Pologne : 11 %",
+        "width": 588.88916015625
       },
       "12": {
-        "text": "Allemagne + Pologne : 12 %",
-        "width": 587.1036987304688
+        "text": "Allemagne + Pologne : 12 %",
+        "width": 588.88916015625
       },
       "13": {
-        "text": "Allemagne + Pologne : 13 %",
-        "width": 587.6859130859375
+        "text": "Allemagne + Pologne : 13 %",
+        "width": 588.88916015625
       },
       "14": {
-        "text": "Allemagne + Pologne : 14 %",
-        "width": 589.001220703125
+        "text": "Allemagne + Pologne : 14 %",
+        "width": 588.88916015625
       },
       "15": {
-        "text": "Allemagne + Pologne : 15 %",
-        "width": 586.6293334960938
+        "text": "Allemagne + Pologne : 15 %",
+        "width": 588.88916015625
       },
       "16": {
-        "text": "Allemagne + Pologne : 16 %",
-        "width": 587.8368530273438
+        "text": "Allemagne + Pologne : 16 %",
+        "width": 588.88916015625
       },
       "17": {
-        "text": "Allemagne + Pologne : 17 %",
-        "width": 585.03369140625
+        "text": "Allemagne + Pologne : 17 %",
+        "width": 588.88916015625
       },
       "18": {
-        "text": "Allemagne + Pologne : 18 %",
-        "width": 587.8583984375
+        "text": "Allemagne + Pologne : 18 %",
+        "width": 588.88916015625
       },
       "19": {
-        "text": "Allemagne + Pologne : 19 %",
-        "width": 587.8368530273438
+        "text": "Allemagne + Pologne : 19 %",
+        "width": 588.88916015625
       },
       "20": {
-        "text": "Allemagne + Pologne : 20 %",
-        "width": 597.5615234375
+        "text": "Allemagne + Pologne : 20 %",
+        "width": 588.88916015625
       },
       "21": {
-        "text": "Allemagne + Pologne : 21 %",
-        "width": 587.1036987304688
+        "text": "Allemagne + Pologne : 21 %",
+        "width": 588.88916015625
       },
       "22": {
-        "text": "Allemagne + Pologne : 22 %",
-        "width": 595.9443359375
+        "text": "Allemagne + Pologne : 22 %",
+        "width": 588.88916015625
       },
       "23": {
-        "text": "Allemagne + Pologne : 23 %",
-        "width": 596.5265502929688
+        "text": "Allemagne + Pologne : 23 %",
+        "width": 588.88916015625
       },
       "24": {
-        "text": "Allemagne + Pologne : 24 %",
-        "width": 597.15185546875
+        "text": "Allemagne + Pologne : 24 %",
+        "width": 588.88916015625
       },
       "25": {
-        "text": "Allemagne + Pologne : 25 %",
-        "width": 595.469970703125
+        "text": "Allemagne + Pologne : 25 %",
+        "width": 588.88916015625
       },
       "26": {
-        "text": "Allemagne + Pologne : 26 %",
-        "width": 596.677490234375
+        "text": "Allemagne + Pologne : 26 %",
+        "width": 588.88916015625
       },
       "27": {
-        "text": "Allemagne + Pologne : 27 %",
-        "width": 593.8743286132812
+        "text": "Allemagne + Pologne : 27 %",
+        "width": 588.88916015625
       },
       "28": {
-        "text": "Allemagne + Pologne : 28 %",
-        "width": 596.6990356445312
+        "text": "Allemagne + Pologne : 28 %",
+        "width": 588.88916015625
       },
       "29": {
-        "text": "Allemagne + Pologne : 29 %",
-        "width": 596.677490234375
+        "text": "Allemagne + Pologne : 29 %",
+        "width": 588.88916015625
       },
       "30": {
-        "text": "Allemagne + Pologne : 30 %",
-        "width": 598.1436767578125
+        "text": "Allemagne + Pologne : 30 %",
+        "width": 588.88916015625
       },
       "31": {
-        "text": "Allemagne + Pologne : 31 %",
-        "width": 587.6858520507812
+        "text": "Allemagne + Pologne : 31 %",
+        "width": 588.88916015625
       },
       "32": {
-        "text": "Allemagne + Pologne : 32 %",
-        "width": 596.5264892578125
+        "text": "Allemagne + Pologne : 32 %",
+        "width": 588.88916015625
       },
       "33": {
-        "text": "Allemagne + Pologne : 33 %",
-        "width": 597.1087036132812
+        "text": "Allemagne + Pologne : 33 %",
+        "width": 588.88916015625
       },
       "34": {
-        "text": "Allemagne + Pologne : 34 %",
-        "width": 598.4240112304688
+        "text": "Allemagne + Pologne : 34 %",
+        "width": 588.88916015625
       },
       "35": {
-        "text": "Allemagne + Pologne : 35 %",
-        "width": 596.0521240234375
+        "text": "Allemagne + Pologne : 35 %",
+        "width": 588.88916015625
       },
       "36": {
-        "text": "Allemagne + Pologne : 36 %",
-        "width": 597.2596435546875
+        "text": "Allemagne + Pologne : 36 %",
+        "width": 588.88916015625
       },
       "37": {
-        "text": "Allemagne + Pologne : 37 %",
-        "width": 594.4564819335938
+        "text": "Allemagne + Pologne : 37 %",
+        "width": 588.88916015625
       },
       "38": {
-        "text": "Allemagne + Pologne : 38 %",
-        "width": 597.2811889648438
+        "text": "Allemagne + Pologne : 38 %",
+        "width": 588.88916015625
       },
       "39": {
-        "text": "Allemagne + Pologne : 39 %",
-        "width": 597.2596435546875
+        "text": "Allemagne + Pologne : 39 %",
+        "width": 588.88916015625
       },
       "40": {
-        "text": "Allemagne + Pologne : 40 %",
-        "width": 599.458984375
+        "text": "Allemagne + Pologne : 40 %",
+        "width": 588.88916015625
       },
       "41": {
-        "text": "Allemagne + Pologne : 41 %",
-        "width": 587.599609375
+        "text": "Allemagne + Pologne : 41 %",
+        "width": 588.88916015625
       },
       "42": {
-        "text": "Allemagne + Pologne : 42 %",
-        "width": 597.841796875
+        "text": "Allemagne + Pologne : 42 %",
+        "width": 588.88916015625
       },
       "43": {
-        "text": "Allemagne + Pologne : 43 %",
-        "width": 598.4240112304688
+        "text": "Allemagne + Pologne : 43 %",
+        "width": 588.88916015625
       },
       "44": {
-        "text": "Allemagne + Pologne : 44 %",
-        "width": 599.7393188476562
+        "text": "Allemagne + Pologne : 44 %",
+        "width": 588.88916015625
       },
       "45": {
-        "text": "Allemagne + Pologne : 45 %",
-        "width": 597.367431640625
+        "text": "Allemagne + Pologne : 45 %",
+        "width": 588.88916015625
       },
       "46": {
-        "text": "Allemagne + Pologne : 46 %",
-        "width": 598.574951171875
+        "text": "Allemagne + Pologne : 46 %",
+        "width": 588.88916015625
       },
       "47": {
-        "text": "Allemagne + Pologne : 47 %",
-        "width": 595.7717895507812
+        "text": "Allemagne + Pologne : 47 %",
+        "width": 588.88916015625
       },
       "48": {
-        "text": "Allemagne + Pologne : 48 %",
-        "width": 598.5964965820312
+        "text": "Allemagne + Pologne : 48 %",
+        "width": 588.88916015625
       },
       "49": {
-        "text": "Allemagne + Pologne : 49 %",
-        "width": 598.574951171875
+        "text": "Allemagne + Pologne : 49 %",
+        "width": 588.88916015625
       },
       "49.1": {
-        "text": "Allemagne + Pologne : 49,1 %",
-        "width": 626.1749267578125
+        "text": "Allemagne + Pologne : 49,1 %",
+        "width": 626.85791015625
       }
     },
     "scale": [
       {
         "width": 28.781004537005575,
         "x": 5.2867675781250005,
-        "cy": 153.22131487304688,
+        "cy": 156.75647112304688,
         "length": 55.4415069140625,
         "label": {
-          "text": "1 million",
+          "text": "1 million",
           "width": 141.084375,
           "x": 74.58865122070313,
-          "y": 164.80676409179688
+          "y": 168.34192034179688
         }
       },
       {
         "width": 2.8781004537005574,
         "x": 5.2867675781250005,
-        "cy": 206.1080587890625,
+        "cy": 209.6432150390625,
         "length": 55.4415069140625,
         "label": {
-          "text": "100 000",
+          "text": "100 000",
           "width": 127.42119140625,
           "x": 74.58865122070313,
-          "y": 217.6935080078125
+          "y": 221.2286642578125
         }
       }
     ],
     "halo": 10.573535156250001,
-    "valueHalo": 14.215295410156251
+    "valueHalo": 14.381103515625002
   },
   "credit": {
     "form": 0,
@@ -490,7 +490,7 @@
         "width": 417.40456321022725
       },
       {
-        "text": "2026-06 · Natural Earth",
+        "text": "2026-06 · Natural Earth",
         "x": 4.80615234375,
         "y": 99.601078125,
         "width": 349.6494140625
@@ -912,7 +912,7 @@
   ],
   "names": {
     "DEU": {
-      "text": "Allemagne 1,25 M",
+      "text": "Allemagne 1,25 M",
       "width": 292.2802734375,
       "x": 1122.0605226249613,
       "y": 406.88522795507816,
@@ -920,7 +920,7 @@
       "haloColour": "#e8e5d9"
     },
     "POL": {
-      "text": "Pologne 959 k",
+      "text": "Pologne 959 k",
       "width": 232.39658203125,
       "x": 1329.0568345425725,
       "y": 347.3850555195313,
@@ -928,7 +928,7 @@
       "haloColour": "#e8e5d9"
     },
     "CZE": {
-      "text": "Tchéquie 390 k",
+      "text": "Tchéquie 390 k",
       "width": 249.69375,
       "x": 1249.5333927768133,
       "y": 543.4298575484485,
@@ -936,7 +936,7 @@
       "haloColour": "#e8e5d9"
     },
     "ESP": {
-      "text": "Espagne 265 k",
+      "text": "Espagne 265 k",
       "width": 236.94052734375,
       "x": 819.5628915588933,
       "y": 769.4194493006217,
@@ -944,7 +944,7 @@
       "haloColour": "#e8e5d9"
     },
     "ROU": {
-      "text": "Roumanie 213 k",
+      "text": "Roumanie 213 k",
       "width": 266.516015625,
       "x": 1456.3363189526071,
       "y": 602.9300299839954,
@@ -952,7 +952,7 @@
       "haloColour": "#e8e5d9"
     },
     "SVK": {
-      "text": "Slovaquie 146 k",
+      "text": "Slovaquie 146 k",
       "width": 259.67548828125,
       "x": 1176.1870254233102,
       "y": 602.9300299839954,
@@ -960,7 +960,7 @@
       "haloColour": "#e8e5d9"
     },
     "NLD": {
-      "text": "Pays-Bas 140 k",
+      "text": "Pays-Bas 140 k",
       "width": 245.891015625,
       "x": 983.1685719037666,
       "y": 466.385400390625,
@@ -968,7 +968,7 @@
       "haloColour": "#e8e5d9"
     },
     "IRL": {
-      "text": "Irlande 119 k",
+      "text": "Irlande 119 k",
       "width": 216.847265625,
       "x": 794.7106464192709,
       "y": 333.75144913687814,
@@ -976,7 +976,7 @@
       "haloColour": "#e8e5d9"
     },
     "BEL": {
-      "text": "Belgique 94 k",
+      "text": "Belgique 94 k",
       "width": 222.88974609375,
       "x": 1006.1698414350166,
       "y": 525.8855728261718,
@@ -984,7 +984,7 @@
       "haloColour": "#e8e5d9"
     },
     "AUT": {
-      "text": "Autriche 90 k",
+      "text": "Autriche 90 k",
       "width": 219.683203125,
       "x": 1225.4882151878182,
       "y": 662.4302024195423,
@@ -1087,13 +1087,6 @@
     },
     {
       "family": "Open Sans",
-      "style": "normal",
-      "weight": 600,
-      "weightTo": 600,
-      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
-    },
-    {
-      "family": "Inter",
       "style": "normal",
       "weight": 600,
       "weightTo": 600,
