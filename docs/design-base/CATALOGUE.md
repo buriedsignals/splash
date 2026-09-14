@@ -56,7 +56,7 @@ other export yet.
 
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
-| 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
+| 01 | Cartogram | 1 | ✅ | ◦ | ✅ | ◦ |
 | 02 | Choropleth | 1 | ✅ | ◦ | ✅ | ◦ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
@@ -111,6 +111,7 @@ other export yet.
 | Proportional symbol | static | `proof/static-proportional-symbol-europe-capacity` |
 | Locator | static | `proof/static-locator-zaporizhzhia` |
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
+| Cartogram | video | `proof/video-cartogram-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
 
 ## What is next, by how much evidence backs it

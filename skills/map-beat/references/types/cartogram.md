@@ -83,6 +83,17 @@ hollow cell, because no class is hollow. The hex cartogram in `hex-grid.md` is t
 six neighbours instead of four.
 
 
+## In video
+
+Worked example: `proof/video-cartogram-europe-lowcarbon` (validated 2026-09-14). The gesture only a video has is
+**the morph**: the map in an equal-area projection (the ink a country takes is its territory), the widest country
+picked out while the area-weighted count climbs, then every country travelling from its shape's box into its equal
+tile — an affine map per country, the shape giving way to the tile's rect in the last third — and the country count
+climbing beside the first. The key stands in one place for the whole story and the grid is laid out beside it, so it
+never covers a tile; the video ends on the tiles with both counts and the credit. The rings are clipped, not clamped.
+The tile's code register is the axis voice sized to what every tile holds, never under the floor. `key` cannot be a
+prop name on a React component — React keeps it.
+
 ## The worked example in this tree
 
 `proof/static-cartogram-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
