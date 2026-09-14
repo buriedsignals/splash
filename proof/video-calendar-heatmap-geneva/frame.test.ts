@@ -34,18 +34,29 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
       });
 
-    it("should open on the title and end with every day in its colour", () => {
+    it("should open on the title and end on the whole calendar: every day in its cell, in its colour, the credit on one line", () => {
       expect(sceneAt(props, 0).title).toBe(1);
       const end = sceneAt(props, props.timing.total - 1);
-      expect([end.title, end.cells.every((c: any) => c.shown === 1 && c.stepped === 0)]).toEqual([0, true]);
+      expect(end.title).toBe(0);
+      props.days.forEach((d: any, i: number) => {
+        const c = end.cells[i];
+        expect([i, c.shown, c.stepped, c.x, c.y, c.w, c.h]).toEqual([i, 1, 0, expect.closeTo(d.x, 6), expect.closeTo(d.y, 6), expect.closeTo(d.w, 6), expect.closeTo(d.h, 6)] as any);
+      });
+      expect(props.credit.lines.length).toBe(1);
     });
 
-    it("should fill the year in calendar order, the warm count as many as the warm days filled", () => {
-      const scene = sceneAt(props, within("reveal", "fill", 0.6));
+    it("should draw the year as its temperature curve in calendar order, the warm count as many as the warm days drawn", () => {
+      const scene = sceneAt(props, within("reference", "curve", 0.6));
       const shown = scene.cells.map((c: any) => c.shown);
       expect(shown.every((v: number, i: number) => i === 0 || v <= shown[i - 1])).toBe(true);
-      const warmFilled = props.days.filter((d: any, i: number) => shown[i] >= 1 && d.value >= props.threshold).length;
-      expect([scene.warm, scene.warm > 0 && scene.warm < 59]).toEqual([warmFilled, true]);
+      const warmDrawn = props.days.filter((d: any, i: number) => shown[i] >= 1 && d.value >= props.threshold).length;
+      expect([scene.warm, scene.warm > 0 && scene.warm < 59]).toEqual([warmDrawn, true]);
+      props.days.forEach((d: any, i: number) => {
+        if (!(shown[i] > 0)) return;
+        expect([scene.cells[i].x + scene.cells[i].w / 2, scene.cells[i].y + scene.cells[i].h / 2]).toEqual([expect.closeTo(d.cx, 6), expect.closeTo(d.cy, 6)] as any);
+      });
+      const above = props.days.filter((d: any) => d.value >= props.threshold);
+      expect(above.every((d: any) => d.cy <= props.thresholdLine.y)).toBe(true);
     });
 
     it("should outline the run only at the subject, its count the days outlined", () => {

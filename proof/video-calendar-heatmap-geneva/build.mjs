@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, keyFor, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, keyFor, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { daysInMonth, loadSubject, MONTHS, THRESHOLD, YEAR } from "./subject.mjs";
@@ -40,6 +40,7 @@ export function copyOf(subject) {
     title: [`${subject.streak.length} jours d’affilée au-dessus de ${THRESHOLD}${NB}°C à Genève en ${YEAR}`, `${subject.streak.length} jours d’affilée au-dessus de ${THRESHOLD}${NB}°C à Genève`],
     warm: (n) => `${days(n)} au-dessus de ${THRESHOLD}${NB}°C`,
     run: (n) => `${days(n)} d’affilée`,
+    threshold: `${THRESHOLD}${NB}°C`,
     breaks: subject.breaks.map((b, i) => (i === subject.breaks.length - 1 ? `${b}${NB}°C` : String(b))),
     source: [`Source : Open-Meteo (réanalyse ERA5), moyenne journalière à 2${NB}m, Genève`, "Source : Open-Meteo (réanalyse ERA5), Genève"],
   };
@@ -52,7 +53,7 @@ export function textPerRegisterOf(copy) {
     body: copy.source.join(" "),
     annot: "",
     value: `${copy.warm(59)} ${copy.run(31)} 0123456789`,
-    axis: `${MONTHS.join(" ")} ${DAY_TICKS.join(" ")} ${copy.breaks.join(" ")} ${copy.source.join(" ")}`,
+    axis: `${MONTHS.join(" ")} ${DAY_TICKS.join(" ")} ${copy.breaks.join(" ")} ${copy.threshold} ${copy.source.join(" ")}`,
   };
 }
 
@@ -77,7 +78,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const shift = (band.ascent - band.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   // THE BAND OVER THE CALENDAR: the two counts at the left, the key at the right, no plate.
@@ -109,6 +110,14 @@ export function buildDirection(id, { subject, states, copy }) {
   const r1 = (v) => Math.round(v * 10) / 10;
   const cellOf = (month, day) => ({ x: r1(xOf(day) + cellGap / 2), y: r1(yOf(month) + cellGap / 2), w: r1(cellW - cellGap), h: r1(cellH - cellGap) });
   const binOf = (v) => subject.breaks.filter((b) => v >= b).length;
+  // THE CURVE the calendar is rolled up from: the year across the grid's width, the temperature across its height.
+  const values = subject.days.map((d) => d.value);
+  const lo = Math.floor(Math.min(...values)) - 1;
+  const hi = Math.ceil(Math.max(...values)) + 1;
+  const curveX = (i) => grid.left + (i / (subject.days.length - 1)) * (grid.right - grid.left);
+  const curveY = (v) => grid.bottom - ((v - lo) / (hi - lo)) * (grid.bottom - grid.top);
+  const dot = Math.max(2 * k, 0.12 * axis.lead);
+  const thresholdWord = measure(copy.threshold, axis);
 
   const missing = [];
   for (let m = 0; m < 12; m++) for (let d = daysInMonth(m) + 1; d <= 31; d++) missing.push(cellOf(m, d));
@@ -137,6 +146,9 @@ export function buildDirection(id, { subject, states, copy }) {
     ramp: Array.from({ length: bins }, (_, i) => mix(cold, warm, i / (bins - 1))),
     /** An empty day before the fill, and a date that does not exist: the pale step off the ground. */
     empty: mix(ground, ink, 0.05),
+    /** A day on the curve: the accent at or over the threshold, the muted under it. */
+    hot: walked(accent, NON_TEXT_CONTRAST_MIN, "a warm day on the curve"),
+    cool: walked(mix(muted, ground, 0.3), NON_TEXT_CONTRAST_MIN, "a day on the curve"),
     stepped: mix(ground, ink, 0.1),
     /** The run's outline is the ink, struck over a halo of the ground so it parts from the darkest bin it runs along. */
     outline: walked(ink, NON_TEXT_CONTRAST_MIN, "the run's outline"),
@@ -154,7 +166,9 @@ export function buildDirection(id, { subject, states, copy }) {
     titleCard,
     credit: { ...credit, at: creditAt },
     colours,
-    days: subject.days.map((d) => ({ value: d.value, bin: binOf(d.value), ...cellOf(d.month, d.day) })),
+    days: subject.days.map((d, i) => ({ value: d.value, bin: binOf(d.value), ...cellOf(d.month, d.day), cx: r1(curveX(i)), cy: r1(curveY(d.value)) })),
+    dot: r1(dot),
+    thresholdLine: { y: r1(curveY(THRESHOLD)), left: grid.left, right: grid.right, label: { ...thresholdWord, x: grid.left - gap - thresholdWord.width * (1 + DRAWN_WIDER), y: curveY(THRESHOLD) + shift } },
     missing,
     months: monthNames.map((m, i) => ({ ...m, x: grid.left - gap - m.width * (1 + DRAWN_WIDER), y: yOf(i) + cellH / 2 + shift })),
     ticks: DAY_TICKS.map((d) => {

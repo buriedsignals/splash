@@ -97,7 +97,8 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
-        ...[0.3, 0.6].map((t) => ({ name: `reveal-fill-${t}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.fill[0] + t * (WINDOWS.reveal.fill[1] - WINDOWS.reveal.fill[0]))) })),
+        { name: "reference-curve", frame: Math.round(T.reference.start + T.reference.duration * 0.6) },
+        { name: "reveal-drop", frame: Math.round(T.reveal.start + T.reveal.duration * 0.45) },
         { name: "subject-tracing", frame: Math.round(T.subject.start + T.subject.duration * 0.55) },
       ];
       for (const { name, frame } of frames) {

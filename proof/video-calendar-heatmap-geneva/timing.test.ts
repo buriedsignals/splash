@@ -15,6 +15,6 @@ describe("the shipped calendar heatmap video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 380, duration: 180 } })).join(" ")).toContain("subject starts at 380");
+    expect(checkTiming(broken({ subject: { start: 330, duration: 150 } })).join(" ")).toContain("subject starts at 330");
   });
 });

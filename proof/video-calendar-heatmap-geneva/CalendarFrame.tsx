@@ -21,8 +21,10 @@ export type CalendarFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; ramp: string[]; empty: string; stepped: string; outline: string; text: Record<"eyebrow" | "title" | "axis" | "count", string> };
-  days: Array<Cell & { value: number; bin: number }>;
+  colours: { ground: string; ramp: string[]; empty: string; hot: string; cool: string; stepped: string; outline: string; text: Record<"eyebrow" | "title" | "axis" | "count", string> };
+  days: Array<Cell & { value: number; bin: number; cx: number; cy: number }>;
+  dot: number;
+  thresholdLine: { y: number; left: number; right: number; label: Line };
   missing: Cell[];
   months: Line[];
   ticks: Line[];
@@ -56,7 +58,16 @@ export function CalendarFrame(props: CalendarFrameProps & { at: number; svgRef?:
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
-      <g opacity={scene.furniture}>
+      {/* THE CURVE'S FURNITURE: the 20 °C line and its label, gone as the calendar comes in. */}
+      <g opacity={scene.curveFurniture}>
+        <line x1={props.thresholdLine.left} x2={props.thresholdLine.right} y1={props.thresholdLine.y} y2={props.thresholdLine.y} stroke={colours.outline} strokeWidth={props.strokes.outline * 0.6} strokeDasharray={`${props.dot * 2} ${props.dot * 1.5}`} />
+        <Text line={props.thresholdLine.label} register={r.axis} fill={colours.text.axis} halo={axisHalo} />
+      </g>
+      {scene.line.through > 0 && scene.line.opacity > 0 ? (
+        <polyline points={props.days.slice(0, scene.line.through + 1).map((d) => `${d.cx},${d.cy}`).join(" ")} fill="none" stroke={colours.cool} strokeWidth={props.dot * 0.6} strokeLinejoin="round" opacity={scene.line.opacity} />
+      ) : null}
+
+      <g opacity={scene.grid}>
         {props.months.map((m, i) => (
           <Text key={`month${i}`} line={m} register={r.axis} fill={colours.text.axis} />
         ))}
@@ -66,11 +77,6 @@ export function CalendarFrame(props: CalendarFrameProps & { at: number; svgRef?:
         {props.missing.map((c, i) => (
           <rect key={`missing${i}`} x={c.x} y={c.y} width={c.w} height={c.h} fill={colours.empty} />
         ))}
-        {props.days.map((d, i) => {
-          const s = scene.cells[i];
-          const fill = blend(colours.empty, blend(colours.ramp[d.bin], colours.stepped, s.stepped), s.shown);
-          return <rect key={`day${i}`} x={d.x} y={d.y} width={d.w} height={d.h} fill={fill} />;
-        })}
         <g transform={`translate(${legend.at.x} ${legend.at.y})`}>
           {legend.swatches.map((s, i) => (
             <rect key={`swatch${i}`} x={s.x} y={s.y} width={s.width} height={s.height} fill={colours.ramp[i]} />
@@ -80,6 +86,13 @@ export function CalendarFrame(props: CalendarFrameProps & { at: number; svgRef?:
           ))}
         </g>
       </g>
+      {props.days.map((d, i) => {
+        const s = scene.cells[i];
+        if (!(s.shown > 0)) return null;
+        const onCurve = d.value >= props.threshold ? colours.hot : colours.cool;
+        const fill = blend(blend(onCurve, colours.ramp[d.bin], s.fall), colours.stepped, s.stepped);
+        return <rect key={`day${i}`} x={s.x} y={s.y} width={s.w} height={s.h} rx={props.dot * (1 - s.fall)} fill={fill} opacity={s.shown} />;
+      })}
 
       {/* Every halo first, then every stroke: a month's halo never covers the next month's line. */}
       {(["halo", "line"] as const).flatMap((layer) =>
