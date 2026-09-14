@@ -51,6 +51,14 @@ export type Bin = { label: string };
 
 const pct = (value: number, extent: number) => (value / extent) * 100;
 
+/** WHAT A CELL TAKES UNDER THE POINTER. A grey disc drawn on top of a cell is the wrong
+ *  affordance on a grid — the reading IS the cell. Each of the seven ramp levels lifts from its own
+ *  fill toward the ink by a measured step, and a step a reader cannot see is refused. The ramp is
+ *  already spaced at 1,28 between neighbours, so a lift that lands on the next level would be a lie
+ *  about which cell answered. */
+const MARK_ACTIVE_STEP = 0.3;
+const MARK_ACTIVE_MIN_STEP = 1.12;
+
 export function DirectedHeatmapWeb({
   cells,
   rowLabels,
@@ -122,6 +130,17 @@ export function DirectedHeatmapWeb({
   const ramp = bins.map((_, i) => mix(ground, accent, 0.10 + (i / (bins.length - 1)) * 0.90));
   const cellEdge = mix(ground, ink, 0.22);
   const label = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
+  const hoverOf = (fill: string) => {
+    const lifted = mix(fill, ink, MARK_ACTIVE_STEP);
+    const step = contrast(lifted, fill);
+    if (step < MARK_ACTIVE_MIN_STEP)
+      throw new Error(
+        `a cell lifts only ${step.toFixed(3)}:1 under the pointer, under the ` +
+          `${MARK_ACTIVE_MIN_STEP}:1 floor — a reader cannot see which cell answered`,
+      );
+    return lifted;
+  };
+
 
   /** A printed number sits ON its own cell, so it is measured against that cell's fill, never
    *  against the plate's ground. */
@@ -228,6 +247,26 @@ export function DirectedHeatmapWeb({
           <desc>{alt}</desc>
           <rect x={0} y={0} width={width} height={height} fill={ground} />
 
+          {/* THE GRID STAYS WHEN A CELL LEAVES. The filter's mechanism is `display: none`, so a cell
+              raised past the floor took its whole square with it and the reader lost the shape of
+              what was being narrowed — twelve rows of nothing where a grid had been. These outlines
+              carry NO `data-filter`, so no option can hide them: they are drawn once, underneath,
+              and a departing cell uncovers its own empty seat. Same answer the histogram gives when
+              a bar goes past the reader's band — hollowed, not deleted. */}
+          {cells.map((c) => (
+            <rect
+              key={`seat-${c.row}-${c.col}`}
+              x={c.col * CELL_W}
+              y={c.row * CELL_H}
+              width={CELL_W}
+              height={CELL_H}
+              fill="none"
+              stroke={cellEdge}
+              strokeWidth={0.6}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+
           {cells.map((c) => (
             <rect
               key={`${c.row}-${c.col}`}
@@ -236,6 +275,8 @@ export function DirectedHeatmapWeb({
               y={c.row * CELL_H}
               width={CELL_W}
               height={CELL_H}
+              data-mark={c.key}
+              style={{ "--mark-active": hoverOf(ramp[c.bin]) } as React.CSSProperties}
               fill={ramp[c.bin]}
               stroke={cellEdge}
               strokeWidth={0.6}
@@ -248,6 +289,7 @@ export function DirectedHeatmapWeb({
               key={`hit-${c.row}-${c.col}`}
               {...attrsFor(filterIndex, c.key)}
               className="pt"
+              data-mark-ref={c.key}
               cx={c.col * CELL_W + CELL_W / 2}
               cy={c.row * CELL_H + CELL_H / 2}
               r={Math.min(CELL_W, CELL_H) / 2 - 1}

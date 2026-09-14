@@ -62,6 +62,14 @@ export type Bar = {
 
 const pct = (value: number, extent: number) => (value / extent) * 100;
 
+/** WHAT A BAR TAKES UNDER THE POINTER. It used to be `--mark-active: label` on the figure — the
+ *  TEXT ink, so every bar went near-black under the pointer, which reads as a selection rather than
+ *  a bar answering. A bar lifts from ITS OWN fill toward the ink by a measured step, and a step that
+ *  a reader cannot see is refused rather than shipped. Same rule and same two numbers as the ranking
+ *  beat's columns and the donut's wedges. */
+const MARK_ACTIVE_STEP = 0.3;
+const MARK_ACTIVE_MIN_STEP = 1.12;
+
 export function DirectedHistogramWeb({
   bars,
   yTicks,
@@ -113,6 +121,17 @@ export function DirectedHistogramWeb({
   if (contrast(neutral, ground) < NON_TEXT_CONTRAST_MIN)
     neutral = adjustToContrast(neutral, ground, NON_TEXT_CONTRAST_MIN) ?? neutral;
   const baseline = mix(ground, ink, 0.75);
+  const hoverOf = (fill: string) => {
+    const lifted = mix(fill, ink, MARK_ACTIVE_STEP);
+    const step = contrast(lifted, fill);
+    if (step < MARK_ACTIVE_MIN_STEP)
+      throw new Error(
+        `a bar lifts only ${step.toFixed(3)}:1 under the pointer, under the ` +
+          `${MARK_ACTIVE_MIN_STEP}:1 floor — a reader cannot see which bar answered`,
+      );
+    return lifted;
+  };
+
   const label = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
 
   /**
@@ -232,7 +251,6 @@ export function DirectedHistogramWeb({
         ["--muted" as string]: muted,
         ["--grid" as string]: grid,
         ["--neutral" as string]: neutral,
-        ["--mark-active" as string]: label,
         ...figureVars(regs),
       }}
     >
@@ -327,6 +345,9 @@ export function DirectedHistogramWeb({
               width={x(b.from + binWidth) - x(b.from)}
               height={FRAME.height - y(b.count)}
               fill={b.inClaim ? accent : neutral}
+              style={
+                { "--mark-active": hoverOf(b.inClaim ? accent : neutral) } as React.CSSProperties
+              }
               vectorEffect="non-scaling-stroke"
             />
           ))}
