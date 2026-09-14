@@ -17,7 +17,7 @@ the change. Asserted: all 27 read in both years, exactly one rose, 26 fell. Name
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — 27 rows in two columns (at the type floor 27 rows do not hold one column of 1080 pixels), on ONE scale
    for the levels and the changes; over them the year, then the count, at the left, the unit at the right.
-3. **No end card** — the video ends on the diverging bars, the falls stepped back, Croatia ringed; the credit on one line.
+3. **No end card** — the video ends on the whole diverging chart, Croatia ringed; the credit on one line. About 20 s.
 
 ## The choreography — an argument, not a reveal
 
@@ -30,7 +30,7 @@ part becoming the change — and the one rise, too small to see, made visible by
 | `reference` | where they stood in 1990 | **reveal in order** | « 1990 »; the 27 levels grow from zero row after row | every 1990 level |
 | `reveal` | 2024 | **shrink + count** | every level goes to 2024, the largest fall first; the part lost stays, pale, past the new end; « {n} baisses depuis 1990 » climbs to 26 | 26 falls |
 | `subject` | the change, and the one rise | **transform + zoom** | the levels go; every pale part slides, keeping its length, across to the zero line and becomes the change; then the camera closes ×200 onto the zero line — every fall runs out of the frame and Croatia's +0,03 t becomes a bar | exactly one rise |
-| `conclusion` | — | **pull back + filter + name** | the whole scale again; every fall steps back; Croatia ringed; the credit | — |
+| `conclusion` | — | **pull back + name** | the whole chart again, nothing stepped back; Croatia ringed; the credit | — |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows

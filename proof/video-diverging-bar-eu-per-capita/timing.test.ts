@@ -15,6 +15,6 @@ describe("the shipped diverging bar video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 360, duration: 240 } })).join(" ")).toContain("subject starts at 360");
+    expect(checkTiming(broken({ subject: { start: 280, duration: 180 } })).join(" ")).toContain("subject starts at 280");
   });
 });

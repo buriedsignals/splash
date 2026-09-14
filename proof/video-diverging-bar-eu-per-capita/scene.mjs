@@ -18,7 +18,7 @@ export const WINDOWS = Object.freeze({
   reference: { title: [0, 0.12], furniture: [0.1, 0.35], level: [0.3, 0.95] },
   reveal: { shrink: [0.02, 0.9] },
   subject: { flip: [0, 0.35], zoom: [0.45, 0.8] },
-  conclusion: { back: [0, 0.3], focus: [0.35, 0.6], source: [0.5, 0.85] },
+  conclusion: { back: [0, 0.4], focus: [0.4, 0.75], source: [0.3, 0.75] },
 });
 const LINEAR = new Set(["level", "shrink"]);
 export const MOVE = 0.15;
@@ -77,7 +77,8 @@ export function sceneAt(props, frame) {
       part: { x: lerp(atLevel.x, asChange.x, flip), w: lerp(atLevel.w, asChange.w, flip), shown: gone > 0 ? 1 : 0 },
       zero,
       tip: zero + r.change * props.unit * scale,
-      stepBack: r.key === props.subject ? 0 : focus,
+      // The last shot is the whole chart: nothing steps back, the rise is only ringed.
+      stepBack: 0,
     };
   });
   return {
