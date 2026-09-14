@@ -29,7 +29,7 @@ other export yet.
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ◦ |
 | 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ◦ |
 | 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ◦ |
-| 13 | Gantt | 2 | ✅ | ◦ | ◦ | ◦ |
+| 13 | Gantt | 2 | ✅ | ◦ | ✅ | ◦ |
 | 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ◦ |
 | 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ◦ |
 | 16 | Histogram | 6 | ✅ | ◦ | ◦ | ◦ |
@@ -88,6 +88,7 @@ other export yet.
 | Diverging stacked bar | static | `proof/static-diverging-stacked-electricity` |
 | Dumbbell | static | `proof/more-dumbbell-life-expectancy-gains` |
 | Gantt | static | `proof/static-gantt-top-ten-tenure` |
+| Gantt | video | `proof/video-gantt-top-ten-tenure` — validated by the owner 2026-09-14 |
 | Grouped bar | static | `proof/static-wind-vs-solar` |
 | Heatmap | static | `proof/static-heatmap-europe-electricity` |
 | Histogram | static | `proof/static-carbon-footprint-spread` |
