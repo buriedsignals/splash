@@ -174,6 +174,25 @@ export function DirectedPyramidWeb({
 
   const left = reconcile(mix(ground, ink, 0.42), sideLabels.left);
   const right = reconcile(mix(accent, ground, 0.25), sideLabels.right);
+
+  // WHAT A BAND TAKES UNDER THE POINTER. The two bars of one band share the BAND's key, so the
+  // pointer lights the pair a reader is actually asking about — keyed by side, one key named every
+  // left bar in the plate at once, and a point naming it would have lit eleven bands to answer for
+  // one. Each side keeps its own lift, carried on the rect, because the two halves are drawn in two
+  // different colours and a single lifted value would repaint one of them.
+  const liftOf = (fill: string) => {
+    const lifted = mix(fill, ink, 0.35);
+    const step = contrast(lifted, fill);
+    if (step < 1.12)
+      throw new Error(
+        `a bar lifts only ${step.toFixed(3)}:1 under the pointer, under the 1.12:1 floor — ` +
+          `a reader cannot see which band answered`,
+      );
+    return lifted;
+  };
+  const liftLeft = liftOf(left);
+  const liftRight = liftOf(right);
+
   const centreInk = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
 
   const centre = FRAME.width / 2;
@@ -226,7 +245,6 @@ export function DirectedPyramidWeb({
     `${SCOPE} .chart-plot .option-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
     // What each half takes under the reader's pointer. One rule per half, off the mark's own fill —
     // the format lifts `--mark-active` from the mark and never from the text ink.
-    `${SCOPE} [data-mark="${sideLabels.left}"] { --mark-active: ${adjustToContrast(mix(left, ink, 0.35), ground, NON_TEXT_CONTRAST_MIN) ?? left}; }`,
     `${SCOPE} [data-mark="${sideLabels.right}"] { --mark-active: ${adjustToContrast(mix(right, ink, 0.35), ground, NON_TEXT_CONTRAST_MIN) ?? right}; }`,
     foldChromeCss({ scope: SCOPE }),
     foldCss(declaration, { scope: SCOPE, idPrefix: FOLD_ID_PREFIX, revealMs: REVEAL_MS }),
@@ -340,8 +358,8 @@ export function DirectedPyramidWeb({
 
           {bands.map((b, i) => (
             <g key={b.key}>
-              <rect data-mark={sideLabels.left} x={x(-b.left)} y={cy(i) - barH / 2} width={centre - x(-b.left)} height={barH} fill={left} opacity={b.peak ? 1 : 0.9} />
-              <rect data-mark={sideLabels.right} x={centre} y={cy(i) - barH / 2} width={x(b.right) - centre} height={barH} fill={right} opacity={b.peak ? 1 : 0.9} />
+              <rect data-mark={b.key} style={{ "--mark-active": liftLeft } as React.CSSProperties} x={x(-b.left)} y={cy(i) - barH / 2} width={centre - x(-b.left)} height={barH} fill={left} opacity={b.peak ? 1 : 0.9} />
+              <rect data-mark={b.key} style={{ "--mark-active": liftRight } as React.CSSProperties} x={centre} y={cy(i) - barH / 2} width={x(b.right) - centre} height={barH} fill={right} opacity={b.peak ? 1 : 0.9} />
             </g>
           ))}
 
@@ -372,6 +390,7 @@ export function DirectedPyramidWeb({
             <circle
               key={b.key}
               className="pt"
+              data-mark-ref={b.key}
               cx={centre}
               cy={cy(i)}
               r={ROW / 2}
