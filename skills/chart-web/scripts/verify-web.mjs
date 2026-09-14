@@ -584,8 +584,23 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
             // sit ON the plot, at the top of the tower it measures, so it lands inside it. What
             // must stay true — that the reader lands on the whole claim with nothing dimmed — is
             // unchanged: the seven totals belong to seven options nobody has chosen.
+            // `:not([data-fits-its-mark])` is the second exclusion and it is a DIFFERENT
+            // ownership from the first. A stack total is hidden by a control nobody has touched;
+            // one of these is a figure printed INSIDE its own mark, which its mark is sometimes
+            // too small to hold — and that is not a decision a build can make, because the plot's
+            // height in CSS pixels is not a function of its width (`.chart-figure` caps at
+            // `100dvh`). `proof/webx-electricity-mix` asks a size container per band and measures
+            // the answer in the reader's own pixels: of its eighteen bands, twelve are thick
+            // enough for a line of the value register at 1280 wide and eleven at 375. A beat that made the
+            // same call at build time would be right at one size and wrong at every other, which
+            // is exactly what it used to do. Every one of those bands still answers its column's
+            // hover, tap and Tab with the share to two decimals.
+            //
+            // THE HOLE THIS OPENS IS MEASURED RATHER THAN TRUSTED: a beat that marked every word
+            // and drew none of them would slip past an exclusion alone, so the marked words get a
+            // check of their own below.
             ".chart-title, .chart-caveat, .chart-source," +
-              " .chart-plot .overlay *:not([data-stack-total])",
+              " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark])",
           ),
           (el) => {
             const cs = getComputedStyle(el);
@@ -597,13 +612,37 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
           },
         )
         .filter((w) => w.text.length > 0);
-      return { marks, words };
+      const fitted = Array.prototype.map
+        .call(
+          document.querySelectorAll(".chart-plot .overlay [data-fits-its-mark]"),
+          (el) => {
+            const cs = getComputedStyle(el);
+            return {
+              text: el.textContent.trim().slice(0, 30),
+              drawn:
+                Number(cs.opacity) === 1 &&
+                cs.display !== "none" &&
+                cs.visibility !== "hidden",
+            };
+          },
+        )
+        .filter((w) => w.text.length > 0);
+      return { marks, words, fitted };
     });
     check(
       rest.marks.length > 0 && rest.marks.every((o) => o === 1),
       `${tag}: the default view dims nothing — the full claim is on screen`,
       `${rest.marks.length} marks, opacities ${[...new Set(rest.marks)].join("/")}`,
     );
+    // The exclusion above, held to something. A figure printed inside its own mark is allowed to
+    // go when the mark cannot hold it; a page on which they have ALL gone is a page that prints no
+    // figures at all, and the exclusion would have made that invisible.
+    if (rest.fitted.length)
+      check(
+        rest.fitted.some((w) => w.drawn),
+        `${tag}: the figures printed inside their own marks are not all suppressed at once`,
+        `${rest.fitted.filter((w) => w.drawn).length} of ${rest.fitted.length} drawn at this size`,
+      );
     check(
       rest.words.length > 0 && rest.words.every((w) => w.opacity === 1 && !w.hidden),
       `${tag}: every argument-bearing word is drawn unconditionally`,

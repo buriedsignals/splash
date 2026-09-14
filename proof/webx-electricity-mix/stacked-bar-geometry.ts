@@ -1,6 +1,16 @@
 /**
  * The pure core of the "electricity mix" web beat: data to coordinates, and the number formatting
  * that labels them. No colour, no font, no React.
+ *
+ * IT TAKES AN ORDER NOW, AND THAT IS THE WHOLE OF THE RE-BASE. A 100 %-stacked column's bands are
+ * drawn bottom-to-top in one fixed order, and only the BOTTOM one shares a real common reference
+ * across countries (`references/types/stacked-bar.md`, "The one thing that goes wrong"). A still can
+ * only suffer that. This page lets the reader put a different band on the floor, and the geometry of
+ * that is one argument: the same six columns, laid out in a ROTATED order. Every column is still
+ * exactly 100 units tall and still inside the frame — which is why the stack is rotated rather than
+ * slid down, and the two alternatives were measured before this one was written: aligning the six on
+ * a chosen band's own bottom needs 168 units of plot for 100 units of data, so the untouched plate
+ * would have spent two fifths of its height on empty room it never uses.
  */
 
 import { scaleLinear } from "d3-scale";
@@ -8,38 +18,21 @@ import { scaleLinear } from "d3-scale";
 export type Segment = "renewables" | "nuclear" | "fossil";
 
 export type Country = {
+  code: string;
   name: string;
   renewables: number; // % of total generation
   nuclear: number; // %
   fossil: number; // %
-  renewablesTwh: number; // absolute TWh — hover-only detail, printed nowhere on the static frame
+  renewablesTwh: number; // absolute TWh — hover-only detail, printed nowhere on the frame
   nuclearTwh: number;
   fossilTwh: number;
+  totalTwh: number;
 };
 
-/** The language this beat's own page declares (`<html lang="en">`, set by its runner) and the ONLY
- *  thing `formatNumber` below takes its locale from. This beat's words are English throughout, so
- *  "380.5 TWh" is what belongs in its tooltips; a French "380,5" under English prose is two number
- *  systems in one frame. */
-export const BEAT_LANG = "en";
-
-/** `decimals` places, grouped and pointed the way `BEAT_LANG` says — named for what it does rather
- *  than for any one locale, so the name cannot go on meaning something the body stopped doing. It
- *  replaces a function called `fr` that this beat called for its English words: a shared repair
- *  moved every `fr` in the tree onto `Intl.NumberFormat("fr-FR")`, right for the tree's French
- *  beats and wrong here, and the name is what hid it. */
-export function formatNumber(value: number, decimals = 1): string {
-  return new Intl.NumberFormat(BEAT_LANG, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value);
-}
-
-/** The French formatter this beat no longer calls. Kept, and kept exported, for one reason only:
- *  `skills/splash/test/helper-parity.test.ts` cross-checks every `fr` copy in the tree against
- *  every other to prove the rule has not silently drifted between them, and deleting this copy
- *  would blind that guard rather than satisfy it — the same reason `ChartWebSeed.tsx` still exports
- *  a `wrap` it no longer calls. This beat's own numbers go through `formatNumber` above. */
+/** `decimals` places, grouped and pointed the French way — the language this beat's own pages
+ *  declare (`<html lang="fr">`, which `renderWeb` writes) and the one every word on them is in.
+ *  `skills/splash/test/number-format-honest.test.ts` holds the name to the locale: a function called
+ *  `fr` may not format in English, which is what an earlier `toFixed` copy in this tree did. */
 export function fr(value: number, decimals = 1): string {
   return new Intl.NumberFormat("fr-FR", {
     minimumFractionDigits: decimals,
@@ -47,12 +40,27 @@ export function fr(value: number, decimals = 1): string {
   }).format(value);
 }
 
+/** The order the plate ships in, bottom first. It is also the order `PALETTE.md` reasons about the
+ *  three bands in, so a recorded colour can never land on the wrong band. */
 export const STACK_ORDER: Segment[] = ["renewables", "nuclear", "fossil"];
 
 /**
- * Pure geometry: one 100%-stacked column per country, bottom-to-top order fixed across every
- * column (`references/types/stacked-bar.md`: reordering a stack shifts every segment above the
- * swap, breaking the "same colour, same series" contract worse than a grouped bar would).
+ * The order that puts `band` on the floor: a CYCLIC rotation of `STACK_ORDER`, never a re-sort.
+ *
+ * The distinction is the type sheet's own: reordering a stack per column breaks "same colour, same
+ * series" and is worse than a grouped bar. A rotation is applied to all six columns at once and
+ * preserves the ring — renewables still sits under nuclear, nuclear still under fossil — so the only
+ * thing that changes is WHICH seam the reader is given as the common reference.
+ */
+export function rotatedOrder(band: Segment): Segment[] {
+  const at = STACK_ORDER.indexOf(band);
+  if (at < 0) throw new Error(`${band} is not one of the bands this beat draws`);
+  return [...STACK_ORDER.slice(at), ...STACK_ORDER.slice(0, at)];
+}
+
+/**
+ * Pure geometry: one 100 %-stacked column per country, in the order handed in (the plate's own by
+ * default).
  */
 export function stackedBarGeometry(
   countries: Country[],
@@ -62,12 +70,14 @@ export function stackedBarGeometry(
     padding,
     barWidth,
     barGap,
+    order = STACK_ORDER,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
     barWidth: number;
     barGap: number;
+    order?: Segment[];
   },
 ) {
   const plot = {
@@ -81,7 +91,7 @@ export function stackedBarGeometry(
   const bars = countries.map((c, i) => {
     const x = plot.left + i * (barWidth + barGap);
     let cursor = 0;
-    const segments = STACK_ORDER.map((key) => {
+    const segments = order.map((key) => {
       const value = c[key];
       const twh = c[`${key}Twh` as const];
       const bottom = y(cursor);
@@ -97,7 +107,7 @@ export function stackedBarGeometry(
         height: bottom - top,
       };
     });
-    return { name: c.name, x, center: x + barWidth / 2, segments };
+    return { code: c.code, name: c.name, x, center: x + barWidth / 2, segments };
   });
 
   return { plot, bars, ticksY: y.ticks(5).map((v) => ({ value: v, y: y(v) })) };

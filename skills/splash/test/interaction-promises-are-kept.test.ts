@@ -206,7 +206,7 @@
  * deliberately NOT failed (blind spot 8).
  *
  *   ENFORCED — promises hover + tap + keyboard, all three kept 3/3:
- *     webx-carbon-footprint · webx-electricity-mix · webx-germany-bridge · webx-life-expectancy
+ *     webx-carbon-footprint · webx-germany-bridge · webx-life-expectancy
  *     webx-wind-vs-solar · webx-world-population · weby-dumbbell-life-expectancy-gains
  *     weby-lollipop-co2-per-capita · weby-population-pyramid-switzerland
  *     weby-small-multiples-co2-per-capita · webz-diverging-bar-eu-per-capita
@@ -843,10 +843,6 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     probed: 3,
   },
   "proof/webx-carbon-footprint/carbon-footprint.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webx-electricity-mix/electricity-mix.html": {
     measurable: false,
     probed: 3,
   },

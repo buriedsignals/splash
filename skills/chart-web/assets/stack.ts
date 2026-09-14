@@ -326,8 +326,22 @@ export function stackCss(
     scope: string;
     idPrefix: string;
     /** What the reference column and its run take: a fill for the marks, an ink for their words.
-     *  `active` is what a mark under the reader's pointer becomes — see `dim.active`. */
-    lit: { fill: string; ink: string; active?: string };
+     *  `active` is what a mark under the reader's pointer becomes — see `dim.active`.
+     *
+     *  `fill` IS OPTIONAL, AND THE CASE IT IS OPTIONAL FOR IS A CATEGORICAL MARK. A tower of one
+     *  accent standing against nine neutrals is repainted by the option, because the accent IS the
+     *  thread the reader just built. A 100 %-stacked column is not: its bands encode CATEGORIES by
+     *  fill and by nothing else, so an option repainting twelve of eighteen segments to one neutral
+     *  would delete the encoding the whole beat rests on — `proof/webx-electricity-mix/PALETTE.md`
+     *  argues exactly that, at length, about exactly these three hues. Such a beat declares NEITHER
+     *  fill and the fill rules are not emitted at all, which is what keeps this file's own "no dead
+     *  CSS" claim literal rather than aspirational: the alternative was thirty-eight generated rules
+     *  repainting a fill to the value it already held.
+     *
+     *  EITHER BOTH ARE DECLARED OR NEITHER IS, and that is refused below rather than documented. A
+     *  run lit with nothing stepping back — or everything stepped back with nothing lit — is a
+     *  one-way repaint: the reader leaves the option and the picture does not come back. */
+    lit: { fill?: string; ink: string; active?: string };
     /** What every other column steps back to — fill, ink, and the weight its name goes back to.
      *
      *  `active` IS THE HOVER COLOUR, AND IT BELONGS HERE FOR A REASON THE FIRST BUILD MISSED.
@@ -336,7 +350,7 @@ export function stackCss(
      *  the reader has just LIT would still have carried the stepped-back column's hover colour,
      *  and pointing at it would have flashed the wrong state. Whatever repaints a fill repaints
      *  the fill it takes under a pointer, in the same rule, or the two drift by one option. */
-    dim: { fill: string; ink: string; weight: string; active?: string };
+    dim: { fill?: string; ink: string; weight: string; active?: string };
     /** What separates one stacked column from the next on the tower — the ground. */
     seam: string;
     /** How long a column takes to reach the tower. Honoured only under `no-preference`. */
@@ -363,6 +377,15 @@ export function stackCss(
   },
 ): string {
   if (!declaration) return "";
+  // See `lit.fill` above: a beat repaints both states or neither. Half a repaint is a picture the
+  // reader cannot get back out of, so it is refused here, where the stylesheet is written, rather
+  // than found by choosing an option and looking.
+  if (Boolean(lit.fill) !== Boolean(dim.fill))
+    throw new Error(
+      `stack: this beat declares ${lit.fill ? "a lit" : "a stepped-back"} fill and no ` +
+        `${lit.fill ? "stepped-back" : "lit"} one — a one-way repaint, which no state of the page ` +
+        "undoes. Declare both, or declare neither and let the marks keep their own fills.",
+    );
   /**
    * EVERY SELECTOR IN A GROUP CARRIES THE SCOPE, ASSERTED AND NOT REMEMBERED.
    *
@@ -436,11 +459,13 @@ export function stackCss(
       // step, because the only rule still matching it was the beat's own default. The exclusion
       // belongs to `fill` alone.
       ...(dim.active ? [`${at} [data-col] { --mark-active: ${dim.active}; }`] : []),
-      `${at} [data-col]:not(.mark-active) { fill: ${dim.fill}; }`,
+      ...(dim.fill ? [`${at} [data-col]:not(.mark-active) { fill: ${dim.fill}; }`] : []),
       `${at} [data-value] { color: ${dim.ink}; }`,
       `${at} [data-axis] { color: ${dim.ink}; font-weight: ${dim.weight}; }`,
       ...(lit.active ? [`${each("data-col", lits)} { --mark-active: ${lit.active}; }`] : []),
-      `${each("data-col", lits, ":not(.mark-active)")} { fill: ${lit.fill}; }`,
+      ...(lit.fill
+        ? [`${each("data-col", lits, ":not(.mark-active)")} { fill: ${lit.fill}; }`]
+        : []),
       `${each("data-value", [option.key])} { color: ${lit.ink}; }`,
       // The names stay under the bands the columns left. That is what tells the reader WHICH
       // countries went onto the tower, and it is the same reason a filter never moves the frame.

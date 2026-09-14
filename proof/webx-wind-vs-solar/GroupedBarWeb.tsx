@@ -406,7 +406,7 @@ export function GroupedBarWeb({
         </div>
 
         {/* The country names, STAGGERED across two rows — see the same block in
-            `proof/webx-electricity-mix/StackedBarWeb.tsx` for the measurements behind it: at 375px
+            `proof/webx-electricity-mix/DirectedStackedMixWeb.tsx` for the measurements behind it: at 375px
             a group is 41px wide and "Switzerland" measures 62px at this fixed size, so one row put
             it straight through its neighbour. Alternating rows doubles every label's own room at
             EVERY width. The box is exactly its own text, never a column-wide box: a wide box on the

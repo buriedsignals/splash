@@ -145,7 +145,6 @@ const ENTRANCE_PENDING = [
   "proof/web-co2-ranking/dist/co2-ranking.html",
   "proof/web-income-life-expectancy/income-life-expectancy.html",
   "proof/webx-carbon-footprint/carbon-footprint.html",
-  "proof/webx-electricity-mix/electricity-mix.html",
   "proof/webx-germany-bridge/germany-bridge.html",
   "proof/webx-wind-vs-solar/wind-vs-solar.html",
   "proof/webx-world-population/world-population.html",

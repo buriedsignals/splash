@@ -358,3 +358,61 @@ describe("the figures ride with the columns they belong to", () => {
     expect(carried.split("transition:").length - 1).toBe(3);
   });
 });
+
+/**
+ * THE CATEGORICAL MARK, added when `proof/webx-electricity-mix` re-based its own stack.
+ *
+ * Its eighteen segments are three CATEGORIES drawn in three hues, and every one of them moves under
+ * an option — so the repaint a tower wants would have stepped twelve of them back to one neutral and
+ * deleted the beat's whole encoding. Both cases below were run as mutations against that beat before
+ * they were written down: declaring one fill and not the other, and declaring both.
+ */
+describe("a beat whose marks carry their own categorical fills repaints neither state", () => {
+  const args = {
+    scope: ".chart-figure",
+    idPrefix: "chart-stack",
+    seam: "var(--ground)",
+    moveMs: 420,
+  };
+
+  it("emits no fill rule at all when neither fill is declared", () => {
+    const css = stackCss(PLAN as any, {
+      ...args,
+      lit: { ink: "var(--ink)" },
+      dim: { ink: "var(--seg-ink, var(--muted))", weight: "var(--legend-weight)" },
+    });
+    // Everything else the option does is still there — the movement, the sentence, the seam.
+    expect(css).toContain('[data-col="IND"] { transform: translate(-90px, -168px); }');
+    expect(css).toContain('[data-stack-note="chn"] { display: revert; }');
+    expect(css).toContain("stroke: var(--ground); stroke-width: 2;");
+    // And not one rule repaints a fill to the value the mark already carries.
+    expect(css).not.toContain("fill:");
+  });
+
+  it("still repaints both states when both fills are declared — the tower is unchanged", () => {
+    const css = stackCss(PLAN as any, {
+      ...args,
+      lit: { fill: "var(--accent)", ink: "var(--accent)" },
+      dim: { fill: "var(--col-neutral)", ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+    });
+    expect(css).toContain("[data-col]:not(.mark-active) { fill: var(--col-neutral); }");
+    expect(css).toContain("fill: var(--accent);");
+  });
+
+  it("refuses half a repaint, which no state of the page undoes", () => {
+    const lonely = () =>
+      stackCss(PLAN as any, {
+        ...args,
+        lit: { fill: "var(--accent)", ink: "var(--accent)" },
+        dim: { ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+      });
+    expect(lonely).toThrow(/one-way repaint/);
+    const backwards = () =>
+      stackCss(PLAN as any, {
+        ...args,
+        lit: { ink: "var(--accent)" },
+        dim: { fill: "var(--col-neutral)", ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+      });
+    expect(backwards).toThrow(/one-way repaint/);
+  });
+});
