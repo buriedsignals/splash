@@ -20,7 +20,7 @@ A locator answers "where"; the scroll starts from the whole continent and closes
 | --- | --- | --- | --- |
 | 1 | the largest low-carbon stations in Europe: one in Ukraine, 6,000 MW, then three French | — | Europe; four dots sized by capacity, labelled |
 | 2 | Ukraine is the only country with no reported 2024 generation | **isolate** | Ukraine outlined; the rest of the map steps back |
-| 3 | closer: Ukraine, the Black Sea, the Sea of Azov | **zoom** | the camera travels onto the region, the station held in the upper part of the stage |
+| 3 | closer: Ukraine, the Black Sea, the Sea of Azov | **zoom** | the camera travels onto the region and centres the station |
 | 4 | countries in capitals, towns in lower case on a dot, water in italic | **name** | the three classes of place named |
 | 5 | Zaporizhzhia, on the Dnieper, 6,000 MW installed | **ring** | the station ringed and named in the accent |
 | 6 | installed capacity, never output | **pull back** | the camera eases back part-way, every label kept |

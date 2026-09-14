@@ -1093,8 +1093,7 @@ function applyHexState(root, state, context) {
   const pair = clamp(state.pair);
   const fill = clamp(state.fill);
   const rate = ease(clamp(state.rate));
-  // For the pair, the camera closes on the two cells and holds them in the upper part of the stage: the card comes
-  // to rest across the middle, where the map's own centre row would put them.
+  // For the pair, the camera closes on the two cells and centres them.
   const pairE = ease(pair);
   const [ax, ay] = seat(mapL, c.tileOf[c.subject].row, c.tileOf[c.subject].col);
   const [bx, by] = seat(mapL, c.tileOf[c.largest].row, c.tileOf[c.largest].col);
@@ -1102,7 +1101,7 @@ function applyHexState(root, state, context) {
   const pmx = (ax + bx) / 2;
   const pmy = (ay + by) / 2;
   const toX = (x) => lerp(x, SW / 2 + (x - pmx) * 1.5, pairE);
-  const toY = (y) => lerp(y, (narrow ? bandH * 0.5 : SH * 0.26) + (y - pmy) * 1.5, pairE);
+  const toY = (y) => lerp(y, (narrow ? bandH : SH) * 0.5 + (y - pmy) * 1.5, pairE);
   for (const t of c.tiles) {
     const [sx, sy] = seat(mapL, t.row, t.col);
     const mx = toX(sx);

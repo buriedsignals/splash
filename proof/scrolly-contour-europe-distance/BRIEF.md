@@ -39,8 +39,7 @@ A contour map measures everywhere; the scroll makes that measurement happen in f
   room a horizontal number has against every other level's lines; the page takes only the lines currently
   drawn, the median first, then the innermost line outwards, spread apart. A line within 50 km of the median
   gives way to it: at the scale of Europe the two run a few pixels apart and neither could carry its number.
-- **The close-up centres the summit across and holds it in the upper third**, so the card resting on the
-  middle does not cover the mark the card is about.
+- **The close-up centres the summit**, both ways.
 - **Land rings are clipped, not clamped**, to the margin past the frame: Russia runs on to the Pacific, and a
   ring clamped onto the margin folds into a polygon that covers Western Europe.
 - **The land step is measured**: the static plate's 0.085 of the ink is the floor, raised until land and sea

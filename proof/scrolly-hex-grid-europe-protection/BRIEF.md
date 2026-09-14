@@ -22,7 +22,7 @@ one after the other (`skills/scrolly/references/directed-type-choreography.md`):
 | 2 | by count: Germany first (1,250,825), Poland second | **fill** | cells take the count's classes; the count key |
 | 3 | divided by population: Czechia darkest, 36.1 per 1 000 | **re-encode** | the same cells cross-fade to the rate's classes; the key changes |
 | 4 | ranked by rate: Czechia first, Germany 11th, France last at 0.7 | **reorder** | the cells leave the map for a honeycomb in rate order, each with its rate; Ukraine leaves |
-| 5 | Czechia 36.1, Germany 14.8 | **zoom + ring** | back on the map, the camera closes on the two cells, both ringed with their rates |
+| 5 | Czechia 36.1, Germany 14.8 | **zoom + ring** | back on the map, the camera closes on the two cells and centres them, both ringed with their rates |
 | 6 | the reading line | **pull back** | the grid by rate, its key and the note on Ukraine |
 
 ## Precision

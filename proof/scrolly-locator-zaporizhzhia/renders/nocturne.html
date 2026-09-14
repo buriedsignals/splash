@@ -1094,12 +1094,12 @@ function applyLocatorState(root, state, context) {
     h: lerp(c.europeBox.h, c.zoomBox.h, t),
   };
   const vb = fitViewBox(box, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 });
-  // The camera holds the station in the upper part of the stage: the card comes to rest across the middle, where a
-  // centred close-up puts the very point it is about.
-  // On a narrow stage the whole of Europe is taller than the stars of card one, so they are held there too.
+  // The close-up centres the station, both ways. On a narrow stage the whole of Europe is taller than the stars of
+  // card one, so before the zoom they are held in the upper part, easing to the centre as the camera closes.
   const narrow = SW < 560;
   const starsY = c.stations.reduce((sum, s) => sum + s.y, 0) / c.stations.length;
-  vb.y += (narrow ? 1 : z) * (lerp(starsY, c.subject.y, z) - (vb.y + 0.3 * vb.h));
+  vb.x += z * (c.subject.x - (vb.x + 0.5 * vb.w));
+  vb.y += (narrow ? 1 : z) * (lerp(starsY, c.subject.y, z) - (vb.y + lerp(narrow ? 0.3 : 0.5, 0.5, z) * vb.h));
   c.svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   c.svg.setAttribute("preserveAspectRatio", "none");
   const ppu = SW / vb.w;

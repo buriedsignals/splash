@@ -17,7 +17,6 @@
 // label's own box is clear of every OTHER DRAWN line (so a number is never laid across the next line), the median first, then from the innermost line out; among the allowed seats, the one
 // farthest from every number already placed.
 
-const FOCUS_HEIGHT = 0.3;
 const YIELD_KM = 50;
 
 export function applyContourState(root, state, context) {
@@ -39,9 +38,9 @@ export function applyContourState(root, state, context) {
   const SH = c.stage.clientHeight;
   if (!(SW > 0 && SH > 0)) return;
   const vb = fitViewBox(box, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 });
-  // In the close-up the summit is centred across and held in the upper part of the stage: the card comes to
-  // rest on the middle, and the mark it would cover is the point of the card.
-  vb.y += z * (c.summit[1] - (vb.y + FOCUS_HEIGHT * vb.h));
+  // The close-up centres the summit, both ways.
+  vb.x += z * (c.summit[0] - (vb.x + 0.5 * vb.w));
+  vb.y += z * (c.summit[1] - (vb.y + 0.5 * vb.h));
   c.field.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   c.field.setAttribute("preserveAspectRatio", "none");
   const ppu = SW / vb.w;
