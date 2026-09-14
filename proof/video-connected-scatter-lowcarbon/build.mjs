@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { arcAt } from "../scrolly-connected-scatter-lowcarbon/scatter-layout.mjs";
 import { seatOf } from "./scene.mjs";
@@ -54,7 +54,7 @@ export function copyOf(subject) {
     years: [FROM, TO],
     across: `−${one(subject.moves.weight)}${NB}pts`,
     up: `+${one(subject.moves.ownMix)}${NB}pts`,
-    source: ["Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data", "Source : Ember, Energy Institute, via Our World in Data"],
+    source: ["Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data", "Source : Ember, Energy Institute, via Our World in Data", "Source : Ember, via Our World in Data"],
   };
 }
 
@@ -101,7 +101,9 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueHalo = haloOf(value, k);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  // The credit shares the bottom row with the x axis name: one line, in the room the name leaves.
+  const xNameRoom = measure(copy.xName, axis).width * (1 + DRAWN_WIDER) + 3 * LABEL_GAP * axis.lead;
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE, measure: (stage.width - 2 * inset - xNameRoom) / (stage.width - 2 * inset) });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   // THE AXES. The x name sits right of the credit on the bottom row, the ticks above both, the y name over the plot.

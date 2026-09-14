@@ -97,6 +97,7 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
+        ...[0.55, 0.8].map((t) => ({ name: `reference-bars-${t}`, frame: Math.round(T.reference.start + T.reference.duration * t) })),
         ...[0.3, 0.6].map((t) => ({ name: `reveal-travel-${t}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.travel[0] + t * (WINDOWS.reveal.travel[1] - WINDOWS.reveal.travel[0]))) })),
         { name: "subject-zooming", frame: Math.round(T.subject.start + T.subject.duration * 0.2) },
         { name: "conclusion-picking", frame: Math.round(T.conclusion.start + T.conclusion.duration * 0.5) },

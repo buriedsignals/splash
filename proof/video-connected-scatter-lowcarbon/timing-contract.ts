@@ -1,25 +1,27 @@
 /**
- * The timing contract for « Tous plus propres chez eux, 5 plus légers en Europe » (BRIEF.md).
+ * The timing contract for « Tous plus propres chez eux, 5 plus légers en Europe » (BRIEF.md). A brisk rhythm.
  *
  * - `establish`: 45 frames. THE TITLE CARD from frame 0.
- * - `reference`: 60 frames. The axes, the key, the sixteen 2000 rings.
- * - `reveal`: 210 frames. Sixteen countries travel to 2024 one after another, the count climbing as each lands.
- * - `subject`: 120 frames. The close-up onto 0–12 %: the crowd opens and is named.
- * - `conclusion`: 240 frames. The pull back; the five that weigh less, one after another; France's two moves; the credit.
- * - `hold`: 90 frames.
+ * - `reference`: 105 frames. The axes, the key; each country's 2000 weight as a bar from zero at its own mix, collapsing to
+ *   its ring.
+ * - `reveal`: 180 frames. Sixteen countries travel to 2024 one after another, the count climbing as each lands.
+ * - `subject`: 105 frames. The close-up onto 0–12 %: the crowd opens and is named.
+ * - `conclusion`: 210 frames. The pull back; the five that weigh less, one after another; France's two moves; every country
+ *   back — the whole chart; the credit.
+ * - `hold`: 60 frames.
  *
- * Total: 771 frames, 25.7 seconds at 30 fps.
+ * Total: 711 frames, 23.7 seconds at 30 fps.
  */
 
 import type { BeatTiming } from "#shared/chart-video/timing.ts";
 
 export const CONNECTED_SCATTER_VIDEO_TIMING: BeatTiming = {
   fps: 30,
-  total: 771,
+  total: 711,
   establish: { start: 0, duration: 45 },
-  reference: { start: 51, duration: 60 },
-  reveal: { start: 111, duration: 210 },
-  subject: { start: 321, duration: 120 },
-  conclusion: { start: 441, duration: 240 },
-  hold: { start: 681, duration: 90 },
+  reference: { start: 51, duration: 105 },
+  reveal: { start: 156, duration: 180 },
+  subject: { start: 336, duration: 105 },
+  conclusion: { start: 441, duration: 210 },
+  hold: { start: 651, duration: 60 },
 };

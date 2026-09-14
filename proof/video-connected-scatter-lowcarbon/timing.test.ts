@@ -15,6 +15,6 @@ describe("the shipped connected scatter video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 300, duration: 120 } })).join(" ")).toContain("subject starts at 300");
+    expect(checkTiming(broken({ subject: { start: 320, duration: 105 } })).join(" ")).toContain("subject starts at 320");
   });
 });

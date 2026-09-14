@@ -120,7 +120,8 @@ export function ConnectedScatterFrame(props: ConnectedScatterFrameProps & { at: 
           return (
             <g key={e.code}>
               {s.arc ? <path d={s.arc} fill="none" stroke={c} strokeWidth={strokes.arc} strokeDasharray={props.dash.join(" ")} strokeLinecap="round" /> : null}
-              <circle cx={s.ring[0]} cy={s.ring[1]} r={R} fill={colours.ground} stroke={c} strokeWidth={strokes.ring} />
+              {s.bar.to > s.bar.from + 0.5 ? <line x1={s.bar.from} x2={s.bar.to} y1={s.bar.y} y2={s.bar.y} stroke={c} strokeWidth={R * 1.3} strokeLinecap="round" /> : null}
+              <circle cx={s.ring[0]} cy={s.ring[1]} r={R} fill={colours.ground} stroke={c} strokeWidth={strokes.ring} opacity={s.ringShown} />
               <circle cx={s.point[0]} cy={s.point[1]} r={R} fill={c} opacity={s.disc} />
             </g>
           );

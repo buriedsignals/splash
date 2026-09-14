@@ -31,6 +31,25 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
       });
 
+    it("should explain the axes with bars from zero at each own mix, collapsed into the 2000 rings by the end of the reference", () => {
+      const { start, duration } = props.timing.reference;
+      const grown = sceneAt(props, Math.round(start + duration * 0.62));
+      const collapsed = sceneAt(props, endOf(props.timing.reference) - 1);
+      for (const e of props.entities) {
+        const g = grown.entities[e.code];
+        expect([e.code, g.bar.y, g.bar.to]).toEqual([e.code, g.ring[1], expect.closeTo(g.ring[0], 6)] as any);
+        const c = collapsed.entities[e.code];
+        expect([c.bar.from, c.ringShown]).toEqual([expect.closeTo(c.ring[0], 6), 1] as any);
+      }
+    });
+
+    it("should end on the whole chart: nothing stepped back, the five and France still marked, the credit on one line", () => {
+      const end = sceneAt(props, props.timing.total - 1);
+      expect(Object.values(end.entities).every((e: any) => e.stepBack === 0)).toBe(true);
+      expect(props.lighter.every((c: string) => end.entities[c].picked === 1)).toBe(true);
+      expect(props.credit.lines.length).toBe(1);
+    });
+
     it("should open on the title and end on the whole axis", () => {
       expect(sceneAt(props, 0).title).toBe(1);
       const end = sceneAt(props, props.timing.total - 1);
