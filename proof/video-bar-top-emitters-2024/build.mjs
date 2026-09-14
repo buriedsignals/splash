@@ -94,7 +94,8 @@ export function buildDirection(id, { subject, states, copy }) {
   const left = inset + Math.max(worldName.width, ...names.map((n) => n.width)) * (1 + DRAWN_WIDER) + gap;
   const plotTop = vInset;
   const plotBottom = creditAt.y - gap;
-  const pitch = (plotBottom - plotTop) / (TOP_N + 1);
+  // The world bar stands on the first row: the first of the ten is already in place inside it, the others fall below.
+  const pitch = (plotBottom - plotTop) / TOP_N;
   if (!(pitch >= valueBand.ascent + valueBand.descent + gap)) throw new Error(`a row is ${pitch.toFixed(1)}px, too thin for its count`);
   const countOf = (v) => widthOf(applyCase(copy.unit(valueText(v)), value.transform), value) * (1 + DRAWN_WIDER);
   const room = stage.width - inset - gap - left;
@@ -117,8 +118,8 @@ export function buildDirection(id, { subject, states, copy }) {
     return at;
   });
   const tenthRow = subject.top[TOP_N - 1];
-  const pileY = rowY(2);
-  const pileNameBaseline = rowY(3) + barH / 2 + shift;
+  const pileY = rowY(1);
+  const pileNameBaseline = rowY(2) + barH / 2 + shift;
   let cursor = left;
   const blocks = piled.map((r, j) => ({ r, from: pile[j].before }));
   const pileNames = blocks.map(({ r, from }) => {
@@ -141,7 +142,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const bracketX = left + longest * unit + gap + countOf(longest) + gap;
   const sumWidth = countOf(subject.combined);
   if (!(bracketX + gap + sumWidth <= stage.width - inset)) throw new Error("the five's bracket and its sum run past the frame");
-  const bracket = { x: bracketX, y1: rowY(2), y2: rowY(1 + subject.beaten) + barH, tick: gap / 2 };
+  const bracket = { x: bracketX, y1: rowY(1), y2: rowY(subject.beaten) + barH, tick: gap / 2 };
 
   const counts = [...countTexts(subject.top[0].value), valueText(subject.world)];
   const measured = (texts, r) => Object.fromEntries(texts.map((t) => [t, widthOf(applyCase(t, r.transform), r)]));
@@ -195,12 +196,12 @@ export function buildDirection(id, { subject, states, copy }) {
         const p = i >= 1 && i <= subject.beaten ? pile[i - 1] : null;
         const bar = {
           value: r.value,
-          y: r1(rowY(i + 1)),
+          y: r1(rowY(i)),
           inWorld,
           stacked: p ? p.stacked : null,
           before: p ? p.before : 0,
           tenth: i === TOP_N - 1,
-          name: { ...names[i], x: left - gap - names[i].width * (1 + DRAWN_WIDER), y: rowY(i + 1) + barH / 2 + shift },
+          name: { ...names[i], x: left - gap - names[i].width * (1 + DRAWN_WIDER), y: rowY(i) + barH / 2 + shift },
         };
         inWorld += r.value;
         return bar;
@@ -209,7 +210,7 @@ export function buildDirection(id, { subject, states, copy }) {
     pileNames,
     tenthName,
     bracket,
-    rows: { first: r1(rowY(1)), pile: r1(pileY) },
+    rows: { first: r1(rowY(0)), pile: r1(pileY) },
     combined: subject.combined,
     countWidths,
     countGap: gap,

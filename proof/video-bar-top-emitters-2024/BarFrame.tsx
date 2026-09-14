@@ -66,7 +66,8 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
   const firstEnd = props.left + props.bars[0].value * scene.unit;
   const sumText = withUnit(valueText(scene.sum));
   const pileFront = Math.max(props.left + scene.sum * scene.unit, ...props.bars.map((b, i) => (b.stacked !== null && scene.bars[i].move > 0.5 ? scene.bars[i].x + scene.bars[i].w : 0)));
-  const worldGoing = 1 - Math.min(1, scene.bars[0].fall * 3);
+  // « Monde » gives way to the first's name on the same row as the others start to fall.
+  const worldGoing = 1 - Math.min(1, scene.bars[1].fall * 3);
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -83,7 +84,8 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
           const s = scene.bars[i];
           const out = b.tenth ? 0 : s.move;
           const faded = (after(i) && !b.tenth) || (b.tenth && scene.back > 0) ? scene.stepBack : 0;
-          return <Text key={`name${i}`} line={b.name} register={r.axis} fill={blend(colours.text.name, colours.text.axis, faded)} opacity={s.landed * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
+          const arrived = i === 0 ? 1 - worldGoing : s.landed;
+          return <Text key={`name${i}`} line={b.name} register={r.axis} fill={blend(colours.text.name, colours.text.axis, faded)} opacity={arrived * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
         })}
       </g>
 

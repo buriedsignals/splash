@@ -29,8 +29,8 @@ after China lining up under it and stopping short — and the tenth, Germany, sl
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
-| `reference` | the world's emissions | **reveal** | « Monde » grows as one bar to 38,6 Gt; the ten largest are marked inside it, end to end | the ten under the world |
-| `reveal` | the ten largest | **split + rescale** | the ten fall out of the world into their rows, largest first, keeping their lengths; the scale closes until China fills the row, the rest of the world running out of the frame; each count lands | the ranking |
+| `reference` | the world's emissions | **reveal** | « Monde » grows as one bar to 38,6 Gt on the first row; the ten largest are marked inside it, end to end, China first | the ten under the world |
+| `reveal` | the ten largest | **split + rescale** | China stays in place and « Monde » gives way to its name; the nine others fall out of the world into the rows below, largest first, keeping their lengths; the scale closes until China fills the row, the rest of the world running out of the frame; each count lands | the ranking |
 | `subject` | the next five together are less | **reorder + count** | China's end dropped as a dashed line; the five slide onto the second row end to end, named under their blocks; their sum counts to 11,7 Gt; the four after step back | the five, 11,7 < 12,3 |
 | `conclusion` | the gap is more than Germany; the whole ranking | **compare + pull back** | the sum gives way; Germany slides into the gap between the five and China's end, and fits; then every bar returns to its row — the whole ranking — the five bracketed with « 11,7 Gt » under China's « 12,3 Gt »; the credit | 0,57 < 0,64 |
 | `hold` | the addition | — | nothing | hold = conclusion |
