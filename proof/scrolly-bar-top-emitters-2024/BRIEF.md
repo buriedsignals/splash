@@ -3,7 +3,7 @@ format: scrolly
 type: bar and column
 ---
 
-# Beat — La Chine a émis plus de CO2 en 2024 que les cinq pays suivants réunis (scrolly)
+# Beat — La Chine a émis plus de CO₂ en 2024 que les cinq pays suivants réunis (scrolly)
 
 **Type:** bar and column (chart). **Medium/format:** chart / **scrolly**. **Frame:** the whole graphic,
 from a phone to a wide desktop.
@@ -13,26 +13,26 @@ ranking search, French names and words as `static-bar-top-emitters-2024`.
 
 ## The choreography
 
-The static plate is the floor — ranking, search, French names, colour rules. The scroll tells the subject
-with its own gestures (`skills/scrolly/references/directed-type-choreography.md`):
+A ranking of ten is a cut through every country; the scroll shows the cut before the podium, then lays the headline's
+sum out as lengths (`skills/scrolly/references/directed-type-choreography.md`):
 
 | card | what the card says | gesture | what the reader sees move |
 | --- | --- | --- | --- |
-| 1 | what is measured: the ten largest emitters of 2024 | — | ten names on an empty baseline |
-| 2 | from the tenth, Germany (0,57), to the second, the United States (4,9) | **reveal in order + count** | the columns rise one by one from the tenth, each value counting up |
-| 3 | then China: 12,3 — 2,5 times the United States | **reveal + count** | China rises last, its value counting to 12,3 |
-| 4 | the next five together: 11,7 — less than China alone | **reorder / stack** | the five slide onto the second slot and stack, block by block, under China's level; the rest steps back |
-| 5 | the ten are 69 % of the world total; territorial accounting | **pull back + compare** | the columns return; a bar shows the ten's share of the world |
-
-The world share is computed from the frozen world row and asserted in the runner.
+| 1 | every one of the 215 countries, largest first: a few long bars, then a long tail | **reveal** | 215 thin rows, one per country |
+| 2 | the ten keep their bars; the 205 others end to end make 10.8, less than China; the ten are 69 % of the world | **regroup** | the ten grow into rows, every other country slides end to end into one row |
+| 3 | from the tenth, Germany (0.57), to the second, the United States (4.9) | **reveal in order** | names and values arrive from the tenth up |
+| 4 | China: 12.3, 2.5 times the United States, 32 % of the world alone | **highlight** | China in the accent, named and written |
+| 5 | the next five end to end: 11.7, less than China alone | **stack** | five bars slide end to end into the second row, China's length ruled down, the rest stepping back |
+| 6 | territorial accounting | **pull back** | the ten and the others, every value written |
 
 ## Precision
 
-- **Names are never rotated or cut**: columns when every name fits in two lines, rows otherwise; the
-  stack works in both — stacked vertically on the second slot, end to end along the second row.
-- **The stack is built from the marks themselves**, measured on every resize; each block keeps a seam
-  of the ground so the pile reads as five countries; its sum sits at its top.
-- **The title steps down a ladder of three forms.**
+- **Bars in rows at every width**, so no name is ever rotated or cut; one value scale from zero for every picture.
+- **Laid out in the reader's pixels**: the 205 slivers settle into one bar once laid end to end, so their seams do not
+  read as a texture; the stacked five keep a seam of the ground so the row reads as five countries.
+- **Every sentence is asserted**: every country's value numeric, a French name for each of the ten, China first (the
+  cards agree "seule" with it), the search behind the headline finding five, the 205 others below China, the ten's
+  share of the world total a share.
 
 ## Directions
 

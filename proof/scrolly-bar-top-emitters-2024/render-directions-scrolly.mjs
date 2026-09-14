@@ -5,11 +5,12 @@
 // five put together", the French names and the colour rules are the static beat's own; the scroll tells
 // them with its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. what is measured — the ten names on an empty baseline;
-//   2. from the tenth to the second — the columns rise one by one, each counting its value;
-//   3. the first — China rises last, its value counting to 12,3;
-//   4. the headline's arithmetic — the next five slide onto the second slot and stack under China's level;
-//   5. what the ten weigh — back apart, and the ten's share of the world total.
+//   1. every country a thin row, largest first — a few long bars, then a long tail;
+//   2. the ten keep their rows, every other country laid end to end into one;
+//   3. the ten named, from the tenth up to the second;
+//   4. China, and what it weighs against the second and the world;
+//   5. the headline's arithmetic — the next five laid end to end in the second row, under China's length;
+//   6. the static plate, its accounting stated.
 //
 // Usage:  bun proof/scrolly-bar-top-emitters-2024/render-directions-scrolly.mjs
 
@@ -26,7 +27,7 @@ import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.m
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
-import { DirectedColumnsScrolly } from "./DirectedColumnsScrolly.tsx";
+import { DirectedBarScrolly } from "./DirectedBarScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -53,7 +54,7 @@ const ranked = records
   .filter((r) => ISO3.test(r.Code))
   .map((r) => ({ country: r.Entity, value: Number(r[VALUE]) / 1e9 }))
   .sort((a, b) => b.value - a.value);
-for (const r of ranked.slice(0, 20)) if (!Number.isFinite(r.value)) throw new Error(`${r.country} has a non-numeric value`);
+for (const r of ranked) if (!Number.isFinite(r.value)) throw new Error(`${r.country} has a non-numeric value`);
 const top = ranked.slice(0, TOP_N);
 const subject = top[0];
 let combined = 0;
@@ -68,6 +69,12 @@ const beaten = top.slice(1, beatenCount + 1);
 const topShare = top.reduce((s, r) => s + r.value, 0) / (Number(world[VALUE]) / 1e9);
 const lastPlace = top[TOP_N - 1];
 const ratioToSecond = subject.value / top[1].value;
+const others = ranked.slice(TOP_N);
+const othersSum = others.reduce((s, r) => s + r.value, 0);
+const subjectShare = subject.value / (Number(world[VALUE]) / 1e9);
+if (subject.country !== "China") throw new Error(`the cards agree "seule" with China; the first is ${subject.country}`);
+if (beatenCount !== 5) throw new Error(`card 5 lays five countries against China; the search finds ${beatenCount}`);
+if (!(othersSum < subject.value)) throw new Error(`card 2 says the ${others.length} others together weigh less than China; they weigh ${othersSum.toFixed(2)}`);
 
 /** The plate is in French and so are its columns; a country the ranking reaches that has no French
  *  name here THROWS, because the ranking is a search and the copy has to follow the data. */
@@ -95,48 +102,59 @@ const fr = (v, digits) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractio
 /** One decimal above 1 bn t, two below — at one decimal ranks 9 and 10 would both print `0,6`. */
 const format = (v) => (v >= 1 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
 
-// ── the words: the static beat's, one reading per card ─────────────────────────────────────────
+// ── the words: one reading per card ────────────────────────────────────────────────────────────
+const NB = "\u00A0";
 const title = [
-  `${capital(named(subject.country))} a émis plus de CO2 en ${YEAR} que les ${SPELLED[beatenCount]} pays suivants réunis`,
+  `${capital(named(subject.country))} a émis plus de CO₂ en ${YEAR} que les ${SPELLED[beatenCount]} pays suivants réunis`,
   `${capital(named(subject.country))} a émis plus que les ${SPELLED[beatenCount]} pays suivants réunis`,
   `${capital(named(subject.country))}, plus que les ${SPELLED[beatenCount]} suivants`,
 ];
-const comparisonNote = `Les ${SPELLED[beatenCount]} suivants réunis : ${format(combined)}`;
-const NB = "\u00A0";
 if (!(topShare > 0 && topShare < 1)) throw new Error(`the ten's share of the world total is ${topShare}, not a share`);
-const worldLabel = `Les ${SPELLED[TOP_N]} : ${(topShare * 100).toFixed(0)}${NB}% des émissions mondiales`;
+const percent = (v) => `${(v * 100).toFixed(0)}${NB}%`;
 const prose = [
-  [`CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes : les ${SPELLED[TOP_N]} pays qui en ont le plus émis en ${YEAR}.`],
+  [`Le CO₂ émis en ${YEAR} par chacun des ${ranked.length}${NB}pays, du plus gros au plus petit, en milliards de tonnes : quelques longues barres, puis une longue traîne.`],
+  [`Les ${SPELLED[TOP_N]} plus gros gardent leur barre. Les ${others.length} autres, mis bout à bout, font ${format(othersSum)} : moins que ${named(subject.country)} seule. Les ${SPELLED[TOP_N]} pèsent ${percent(topShare)} des émissions mondiales.`],
   [`Du dixième, ${named(lastPlace.country)} (${format(lastPlace.value)}), au deuxième, ${named(top[1].country)} (${format(top[1].value)}).`],
-  [`Puis ${named(subject.country)} : ${format(subject.value)} — ${fr(ratioToSecond, 1)} fois ${named(top[1].country)}.`],
-  [`Les ${SPELLED[beatenCount]} suivants réunis : ${format(combined)} — moins que ${named(subject.country)} seule.`],
-  [`Ces ${SPELLED[TOP_N]} pays représentent ${(topShare * 100).toFixed(0)}${NB}% du total mondial. Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`],
+  [`Puis ${named(subject.country)} : ${format(subject.value)}, ${fr(ratioToSecond, 1)}${NB}fois ${named(top[1].country)}. À elle seule, ${percent(subjectShare)} du total mondial.`],
+  [`Les ${SPELLED[beatenCount]} suivants mis bout à bout : ${format(combined)}, moins que ${named(subject.country)} seule.`],
+  [`Lecture : CO₂ territorial, combustibles fossiles et industrie. Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`],
 ];
 const source = `Source : Global Carbon Budget 2025, via Our World in Data · données ${YEAR}, extraites le 9 août 2026`;
-const rows = top.map((r) => ({ name: french(r.country), value: r.value, label: format(r.value) }));
+const topRows = top.map((r) => ({ key: r.country, name: french(r.country), value: r.value, label: format(r.value) }));
+const restName = `${others.length}${NB}autres pays`;
+const stackName = `${SPELLED[beatenCount]} suivants`;
+const words = {
+  unit: `milliards de tonnes de CO₂, ${YEAR}`,
+  tailNote: `${ranked.length}${NB}pays`,
+  restNote: `les ${SPELLED[TOP_N]}${NB}: ${percent(topShare)} du monde`,
+  rankNote: `du 10e au 2e`,
+  subjectNote: `${french(subject.country)}${NB}: ${percent(subjectShare)} du monde`,
+  stackNote: `${format(combined)} contre ${format(subject.value)}`,
+  readNote: `les ${SPELLED[TOP_N]} premiers en ${YEAR}`,
+};
 const alt =
-  `Colonnes classant les ${SPELLED[TOP_N]} pays qui ont le plus émis de CO2 en ${YEAR}. ` +
+  `Barres classant les ${SPELLED[TOP_N]} pays qui ont le plus émis de CO₂ en ${YEAR}, et les ${others.length} autres réunis. ` +
   `${capital(named(subject.country))} est très au-dessus avec ${format(subject.value)} milliards de tonnes, ` +
   `${fr(ratioToSecond, 1)} fois les ${format(top[1].value)} de ${named(top[1].country)}, et davantage que ` +
-  `${beaten.map((r) => french(r.country)).join(", ")} réunis (${format(combined)}). Les colonnes suivantes ` +
-  `descendent jusqu'à ${format(lastPlace.value)} pour ${french(lastPlace.country)}.`;
+  `${beaten.map((r) => french(r.country)).join(", ")} réunis (${format(combined)}).`;
 
 /** One state per card; see `bar-drive.mjs` for what each field paints. */
 const STATES = [
-  { rise: 0, china: 0, stack: 0, rule: 0, world: 0 },
-  { rise: 1, china: 0, stack: 0, rule: 0, world: 0 },
-  { rise: 1, china: 1, stack: 0, rule: 0, world: 0 },
-  { rise: 1, china: 1, stack: 1, rule: 1, world: 0 },
-  { rise: 1, china: 1, stack: 0, rule: 0, world: 1 },
+  { spread: 0, rest: 0, rank: 0, subject: 0, stack: 0, note: 0 },
+  { spread: 1, rest: 1, rank: 0, subject: 0, stack: 0, note: 1 },
+  { spread: 1, rest: 1, rank: 1, subject: 0, stack: 0, note: 2 },
+  { spread: 1, rest: 1, rank: 1, subject: 1, stack: 0, note: 3 },
+  { spread: 1, rest: 1, rank: 1, subject: 1, stack: 1, note: 4 },
+  { spread: 1, rest: 1, rank: 1, subject: 1, stack: 0, note: 5 },
 ];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: "0",
-  annot: `${rows.map((r) => r.name).join(" ")} ${comparisonNote} ${worldLabel}`,
-  value: `${rows.map((r) => r.label).join(" ")} ${format(combined)} 0123456789,`,
+  axis: words.unit,
+  annot: `${topRows.map((r) => r.name).join(" ")} ${restName} ${stackName}`,
+  value: `${topRows.map((r) => r.label).join(" ")} ${format(othersSum)} ${format(combined)} ${Object.entries(words).filter(([k]) => k.endsWith("Note")).map(([, v]) => v).join(" ")}`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -156,20 +174,19 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
   try {
     const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["mesure", "montee", "chine", "pile", "monde"][i], prose: p })),
+      steps: prose.map((p, i) => ({ id: ["traine", "dix", "classement", "chine", "pile", "lecture"][i], prose: p })),
       reveal: {
-        element: createElement(DirectedColumnsScrolly, {
-          rows,
-          subject: french(subject.country),
-          comparison: beaten.map((r) => french(r.country)),
-          comparisonNote,
+        element: createElement(DirectedBarScrolly, {
+          top: topRows,
+          tail: others.map((r) => r.value),
+          stackCount: beatenCount,
+          restName,
+          restLabel: format(othersSum),
+          stackName,
           stackLabel: format(combined),
-          worldShare: topShare,
-          worldLabel,
+          words,
           alt,
           regs,
-          pad: direction.pad,
-          stroke: direction.stroke ?? {},
           ground: direction.ground,
           accent: direction.accent,
           ink,

@@ -1,153 +1,135 @@
 // The painting function for this beat's one visual, inlined by `renderScrolly`'s `reveal` option.
 //
 // A STATE, field by field (every gesture scrubbed by the reader's own scroll):
-//   rise    the nine columns after the first rising one by one, the tenth first      0..1
-//   china   the first column rising last, its value counting up                     0..1
-//   stack   the set the headline adds up sliding onto the second slot and stacking    0..1
-//   rule    the rule at the first column's level                                     0..1
-//   world   the ten's share of the world total                                       0..1
+//   spread   every country a thin row, largest first, travelling to the podium: the ten keep a row each, every
+//            other country laid end to end into one row                                                   0..1
+//   rest     the row of the others named and written                                                      0..1
+//   rank     the ten named and written, from the tenth up to the second                                   0..1
+//   subject  the first row in the accent, named and written                                               0..1
+//   stack    the next few slid end to end into the second row against the first; the rest stepping back   0..1
+//   note     which header note is read                                                                    0..5
 //
-// THE ORIENTATION IS MEASURED, on the first paint and after every resize: columns when every name fits
-// its column in two lines and every value its step, rows otherwise — names are never rotated or cut.
-//
-// THE STACK IS MEASURED TOO. On a resize the driver records every bar's natural box in its container;
-// stacking translates each bar of the set from that box to its seat in the stack — in columns onto the
-// second slot, each on top of the one before; in rows end to end along the second row — so the pile a
-// reader compares with the first column is built out of the very marks they were just reading.
+// EVERYTHING IS LAID OUT IN THE READER'S PIXELS on each paint: names in a left column, one value scale from zero
+// shared by every picture, a value written after its bar.
 
 export function applyBarState(root, state, context) {
-  if (context.resized || !root.__bar) seatBar(root);
+  const carrier = root.querySelector("[data-bar]");
+  if (!carrier) return;
+  if (context.resized || !root.__bar) seatBar(root, carrier);
   const c = root.__bar;
-  if (!c) return;
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  const format = (v) => (v >= 1 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
-  const n = c.bars.length;
+  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const SW = c.stage.clientWidth;
+  const SH = c.stage.clientHeight;
+  if (!(SW > 0 && SH > 0)) return;
+  c.svg.setAttribute("viewBox", `0 0 ${SW} ${SH}`);
 
-  for (let rank = 0; rank < n; rank++) {
-    const bar = c.bars[rank];
-    const value = c.values[rank];
-    const scale = rank === 0 ? state.china : clamp(state.rise * (n - 1) - (n - 1 - rank));
-    const inSet = c.set.includes(rank);
-    const seat = c.seats[rank];
-    const dx = inSet ? seat.dx * state.stack : 0;
-    const dy = inSet ? seat.dy * state.stack : 0;
-    const dim = !inSet && rank > 0 ? 1 - 0.65 * state.stack : 1;
-    bar.el.style.transform = c.rows
-      ? `translate(${dx}px, ${dy}px) scaleX(${scale})`
-      : `translate(${dx}px, ${dy}px) scaleY(${scale})`;
-    bar.el.style.opacity = String(dim);
-    // Once stacked, each block keeps a seam of the ground on its leading edge, so the pile reads as the
-    // five countries it adds up and not as one taller bar.
-    bar.el.style.boxShadow = inSet && state.stack > 0 ? `inset ${c.rows ? "-2px 0" : "0 2px"} 0 ${c.ground}` : "none";
+  const narrow = SW < 560;
+  const spread = ease(clamp(state.spread));
+  const restOn = clamp(state.rest);
+  const rank = clamp(state.rank);
+  const subjectOn = clamp(state.subject);
+  const stack = ease(clamp(state.stack));
 
-    const amount = Number(value.el.dataset.amount);
-    const text = format(amount * scale);
-    if (value.el.textContent !== text) value.el.textContent = text;
-    const follow = c.rows ? `translateY(-50%) translateX(${-(1 - scale) * bar.box.width}px)` : `translate(-50%, ${(1 - scale) * bar.box.height - 6}px)`;
-    value.el.style.transform = follow;
-    value.el.style.opacity = String((scale > 0.02 ? 1 : 0) * (inSet ? 1 - state.stack : dim));
+  const gap = narrow ? 8 : 12;
+  const x0 = c.nameW + gap;
+  const x1 = SW - c.valueW - gap;
+  const top = 2;
+  const bottom = SH - 2;
+  const max = c.top[0];
+  const X = (v) => x0 + (v / max) * (x1 - x0);
+  const count = c.top.length + c.tail.length;
+  const tailH = (bottom - top) / count;
+  const podiumH = (bottom - top) / (c.top.length + 1);
+  const thinY = (index) => top + (index + 0.5) * tailH;
+  const slotY = (slot) => top + (slot + 0.5) * podiumH;
+  const thick = lerp(Math.max(1, tailH * 0.75), Math.min(podiumH * 0.62, 36), spread);
+
+  set(c.baseline, { x1: x0, x2: x0, y1: top, y2: bottom });
+
+  // The others: each at its own thin row, then laid end to end into the last row, which settles into one bar so the
+  // seams between 205 slivers do not read as a texture.
+  const merged = clamp((spread - 0.85) / 0.15);
+  set(c.rest, { x: x0, y: slotY(c.top.length) - thick / 2, width: X(c.tailSum) - x0, height: thick, opacity: merged * (1 - 0.7 * stack) });
+  c.tailNodes.forEach((node, j) => {
+    const y = lerp(thinY(c.top.length + j), slotY(c.top.length), spread);
+    const from = lerp(0, c.tailCum[j], spread);
+    set(node, { x: X(from), y: y - thick / 2, width: Math.max(0, X(from + c.tail[j]) - X(from)), height: thick, opacity: (1 - merged) * (1 - 0.7 * stack) });
+  });
+  const restY = slotY(c.top.length);
+  Object.assign(c.restName.style, { left: `${x0 - gap}px`, top: `${restY}px`, transform: "translate(-100%, -50%)", opacity: String(spread * restOn) });
+  Object.assign(c.restValue.style, { left: `${X(c.tailSum) + 6}px`, top: `${restY}px`, transform: "translateY(-50%)", opacity: String(spread * restOn * (1 - stack)) });
+
+  // The ten: rows of their own; on the stack card the next few slide end to end into the second row.
+  let stacked = 0;
+  c.topNodes.forEach(({ bar, name, value }, i) => {
+    const inStack = i >= 1 && i <= c.stackCount;
+    const baseY = lerp(thinY(i), slotY(i), spread);
+    const y = inStack ? lerp(baseY, slotY(1), stack) : baseY;
+    const from = inStack ? lerp(0, stacked, stack) : 0;
+    if (inStack) stacked += c.top[i];
+    const kept = i === 0 || inStack ? 1 : 1 - 0.7 * stack;
+    set(bar, { x: X(from), y: y - thick / 2, width: X(from + c.top[i]) - X(from), height: thick, opacity: kept, "stroke-width": inStack ? 1.5 * stack : 0 });
+
+    // From the tenth up to the second, one name after another; the first waits for its own card.
+    const shown = i === 0 ? subjectOn : clamp(rank * (c.top.length - 1) - (c.top.length - 1 - i));
+    const stepAside = i === 0 ? 1 : inStack ? 1 - stack : 1 - 0.7 * stack;
+    Object.assign(name.style, { left: `${x0 - gap}px`, top: `${slotY(i)}px`, transform: "translate(-100%, -50%)", opacity: String(shown * spread * stepAside) });
+    Object.assign(value.style, { left: `${X(c.top[i]) + 6}px`, top: `${slotY(i)}px`, transform: "translateY(-50%)", opacity: String(shown * spread * stepAside) });
+  });
+  const first = c.topNodes[0].bar;
+  set(c.subject, { x: first.getAttribute("x"), y: first.getAttribute("y"), width: first.getAttribute("width"), height: thick, opacity: subjectOn });
+
+  // The stack against the first: its name in the second row, its sum at its end, the first's length ruled down.
+  Object.assign(c.stackName.style, { left: `${x0 - gap}px`, top: `${slotY(1)}px`, transform: "translate(-100%, -50%)", opacity: String(stack) });
+  Object.assign(c.stackValue.style, { left: `${X(c.stackSum) + 6}px`, top: `${slotY(1)}px`, transform: "translateY(-50%)", opacity: String(clamp((stack - 0.5) / 0.5)) });
+  set(c.rule, { x1: X(max), x2: X(max), y1: slotY(0) - thick / 2, y2: slotY(1) + thick / 2 + 4, opacity: stack });
+
+  c.notes.forEach((node, k) => {
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
+  });
+
+  function set(el, attrs) {
+    for (const [key, v] of Object.entries(attrs)) el.setAttribute(key, String(v));
   }
-
-  const label = c.stackLabel;
-  label.style.left = `${c.stackTop.x}px`;
-  label.style.top = `${c.stackTop.y}px`;
-  label.style.transform = c.rows ? "translateY(-50%)" : "translate(-50%, -100%)";
-  label.style.opacity = String(state.stack);
-
-  if (c.rule) c.rule.style.opacity = String(state.rule);
-  for (const node of c.static) node.style.opacity = "0";
-  c.world.style.opacity = String(state.world);
 }
 
-export function seatBar(root) {
-  chooseOrientation(root);
-  const orient = root.querySelector(`[data-orient="${root.dataset.orientation || "columns"}"]`);
-  if (!orient) return;
-  const rows = orient.getAttribute("data-orient") === "rows";
-  const carrier = root.querySelector("[data-set-ranks]");
-  const set = JSON.parse(carrier.getAttribute("data-set-ranks"));
-
-  // Natural boxes, with every transform off, relative to the container the bars are positioned in.
-  const barEls = Array.from(orient.querySelectorAll('[data-part="bar"]')).sort((a, b) => a.dataset.rank - b.dataset.rank);
-  const valueEls = Array.from(orient.querySelectorAll('[data-part="value"]')).sort((a, b) => a.dataset.rank - b.dataset.rank);
-  for (const el of [...barEls, ...valueEls]) el.style.transform = "none";
-  // Boxes are taken relative to the container the stack label is positioned in (the columns' plot, the
-  // rows' grid), so the label's seat and the bars' boxes share one origin.
-  const stackLabel = orient.querySelector('[data-part="stack-label"]');
-  const frame = (stackLabel.offsetParent || orient).getBoundingClientRect();
-  const boxOf = (el) => {
-    const r = el.getBoundingClientRect();
-    return { left: r.left - frame.left, top: r.top - frame.top, width: r.width, height: r.height };
-  };
-  const bars = barEls.map((el) => ({ el, box: boxOf(el) }));
-  const values = valueEls.map((el) => ({ el, box: boxOf(el) }));
-
-  const anchor = bars[set[0]].box;
-  const seats = bars.map(() => ({ dx: 0, dy: 0 }));
+function seatBar(root, carrier) {
+  const data = root.__barData || (root.__barData = JSON.parse(carrier.getAttribute("data-bar")));
+  const stage = root.querySelector('[data-part="stage"]');
+  const q = (sel) => stage.querySelector(sel);
+  const w = (node) => node.getBoundingClientRect().width;
+  const tailCum = [];
   let run = 0;
-  for (const rank of set) {
-    const box = bars[rank].box;
-    if (rows) {
-      seats[rank] = { dx: anchor.left + run - box.left, dy: anchor.top - box.top };
-      run += box.width;
-    } else {
-      seats[rank] = { dx: anchor.left - box.left, dy: -run };
-      run += box.height;
-    }
+  for (const v of data.tail) {
+    tailCum.push(run);
+    run += v;
   }
-  const stackTop = rows
-    ? { x: anchor.left + run + 6, y: anchor.top + anchor.height / 2 }
-    : { x: anchor.left + anchor.width / 2, y: anchor.top + anchor.height - run - 6 };
-
+  const topNodes = data.top.map((_, i) => ({ bar: q(`[data-top="${i}"]`), name: q(`[data-name="${i}"]`), value: q(`[data-value="${i}"]`) }));
+  const restName = q('[data-part="rest-name"]');
+  const restValue = q('[data-part="rest-value"]');
+  const stackName = q('[data-part="stack-name"]');
+  const stackValue = q('[data-part="stack-value"]');
   root.__bar = {
-    rows,
-    set,
-    bars,
-    values,
-    seats,
-    stackTop,
-    stackLabel,
-    ground: getComputedStyle(root.querySelector('[role="img"]')).backgroundColor,
-    rule: orient.querySelector('[data-part="rule"]'),
-    static: Array.from(orient.querySelectorAll('[data-part="bracket"], [data-part="note"]')),
-    world: orient.querySelector('[data-part="world"]'),
+    ...data,
+    stage,
+    svg: q('[data-part="field"]'),
+    baseline: q('[data-part="baseline"]'),
+    subject: q('[data-part="subject"]'),
+    rule: q('[data-part="rule"]'),
+    rest: q('[data-part="rest"]'),
+    tailNodes: data.tail.map((_, j) => q(`[data-tail="${j}"]`)),
+    tailCum,
+    tailSum: run,
+    stackSum: data.top.slice(1, data.stackCount + 1).reduce((s, v) => s + v, 0),
+    topNodes,
+    restName,
+    restValue,
+    stackName,
+    stackValue,
+    nameW: Math.max(w(restName), w(stackName), ...topNodes.map((t) => w(t.name))),
+    valueW: Math.max(w(restValue), w(stackValue), ...topNodes.map((t) => w(t.value))),
+    notes: data.notes.map((k) => root.querySelector(`[data-note="${k}"]`)),
   };
-}
-
-export function chooseOrientation(root) {
-  const columns = root.querySelector('[data-orient="columns"]');
-  const rows = root.querySelector('[data-orient="rows"]');
-  if (!columns || !rows) return;
-  // Shown by `style.display`, not `hidden`: each container sets its own inline display.
-  columns.style.display = "grid";
-  rows.style.display = "none";
-  for (const el of columns.querySelectorAll('[data-part="bar"], [data-part="value"]')) el.style.transform = "";
-
-  let fits = true;
-  for (const name of columns.querySelectorAll('[data-part="name"]')) {
-    const lineHeight = Number.parseFloat(getComputedStyle(name).lineHeight);
-    if (name.scrollWidth > name.clientWidth + 1 || name.offsetHeight > lineHeight * 2 + 1) fits = false;
-    // A single word wider than its column overflows without growing the box; test each word alone.
-    const probe = document.createElement("span");
-    probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap";
-    probe.style.font = getComputedStyle(name).font;
-    probe.style.letterSpacing = getComputedStyle(name).letterSpacing;
-    name.parentElement.appendChild(probe);
-    for (const word of name.textContent.split(/\s+/)) {
-      probe.textContent = word;
-      if (probe.offsetWidth > name.clientWidth) fits = false;
-    }
-    probe.remove();
-  }
-  const values = Array.from(columns.querySelectorAll('[data-part="value"]'));
-  const boxes = values.map((v) => v.getBoundingClientRect());
-  for (let i = 1; i < boxes.length; i++) if (boxes[i].left < boxes[i - 1].right + 4) fits = false;
-
-  // The names row is as tall as its tallest name, not a fixed two lines: a row sized for two lines under
-  // names that all fit on one left a band of bare ground under the chart.
-  const namesRow = columns.querySelector('[data-part="names-row"]');
-  if (namesRow) namesRow.style.height = `${Math.max(...Array.from(columns.querySelectorAll('[data-part="name"]')).map((n) => n.offsetHeight))}px`;
-  columns.style.display = fits ? "grid" : "none";
-  rows.style.display = fits ? "none" : "grid";
-  root.dataset.orientation = fits ? "columns" : "rows";
 }
