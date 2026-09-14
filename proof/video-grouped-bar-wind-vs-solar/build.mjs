@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { shareText } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
@@ -82,7 +82,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueBand = bandOf(BAND_PROBE, value);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   // THE BAND OVER THE BARS: the two series named in their inks, and the lead count, on one line.
@@ -116,6 +116,8 @@ export function buildDirection(id, { subject, states, copy }) {
   const top = bandBaseline + valueBand.descent + 1.5 * gap + valueBand.ascent + valueBand.descent + gap;
   const most = Math.max(...subject.groups.flatMap((g) => [g.wind, g.solar]));
   const unit = (baseline - top) / most;
+  /** Two cameras: the whole mix to 100 % across the plot, and the close-up where the largest share fills it. */
+  const units = { whole: (baseline - top) / 100, close: unit };
   const seam = Math.max(2 * k, 0.1 * axis.lead);
   const barW = (slot * PAIR - seam) / 2;
   const centre = (i) => inset + slot * (i + 0.5);
@@ -145,6 +147,8 @@ export function buildDirection(id, { subject, states, copy }) {
     wind: walked(accent, NON_TEXT_CONTRAST_MIN, "wind's bars"),
     solar: walked(muted, NON_TEXT_CONTRAST_MIN, "solar's bars"),
     faded: mix(ground, ink, 0.12),
+    /** Every other source of the mix: two neutrals, alternating, so the column reads as parts. */
+    others: [mix(ground, ink, 0.2), mix(ground, ink, 0.3)],
     text: {
       eyebrow: walked(registers.eyebrow.fill ?? accent, TEXT_CONTRAST_MIN, "the eyebrow"),
       title: walked(registers.display.fill ?? ink, TEXT_CONTRAST_MIN, "the title"),
@@ -168,11 +172,16 @@ export function buildDirection(id, { subject, states, copy }) {
       name: g.name,
       wind: g.wind,
       solar: g.solar,
+      mix: g.mix,
+      colX: r1(centre(i) - seam / 2 - barW),
       windX: r1(centre(i) - seam / 2 - barW),
       solarX: r1(centre(i) + seam / 2),
       label: { ...names[i], x: centre(i) - names[i].width / 2, y: nameBaseline },
     })),
     barW: r1(barW),
+    colW: r1(2 * barW + seam),
+    units,
+    seam: r1(seam),
     baseline: r1(baseline),
     unit,
     left: inset,

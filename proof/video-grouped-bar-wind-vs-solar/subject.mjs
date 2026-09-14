@@ -14,6 +14,9 @@ export const YEAR = 2024;
 export const SUBJECT = "Suisse";
 const FR = { France: "France", Germany: "Allemagne", Norway: "Norvège", Poland: "Pologne", Sweden: "Suède", Switzerland: "Suisse" };
 const SOURCES = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower", "Nuclear", "Gas", "Oil", "Coal"];
+/** The whole mix, stacked from the bottom: every other source first, then wind and solar on top, so the two can be seen
+ *  leaving it. */
+export const STACK = ["Nuclear", "Hydropower", "Coal", "Gas", "Oil", "Bioenergy", "Other renewables", "Wind", "Solar"];
 
 export function loadSubject({ dir = STATIC_DIR } = {}) {
   const rows = readFileSync(join(dir, "data.csv"), "utf8").trim().split(/\r?\n/);
@@ -29,12 +32,13 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
     .filter((c) => FR[c[0]] && Number(c[head.indexOf("Year")]) === YEAR)
     .map((c) => {
       const total = SOURCES.reduce((t, name) => t + at(c, name), 0);
-      return { name: FR[c[0]], wind: (at(c, "Wind") / total) * 100, solar: (at(c, "Solar") / total) * 100 };
+      return { name: FR[c[0]], wind: (at(c, "Wind") / total) * 100, solar: (at(c, "Solar") / total) * 100, mix: STACK.map((source) => ({ source, share: (at(c, source) / total) * 100 })) };
     })
     // The static plate's own order: the gap between the two, wind's lead first.
     .sort((a, b) => b.wind - b.solar - (a.wind - a.solar));
   if (groups.length !== 6) throw new Error(`six countries in ${YEAR}; the file gives ${groups.length}`);
   const reversals = groups.filter((g) => g.solar > g.wind);
+  for (const g of groups) if (Math.abs(g.mix.reduce((t, m) => t + m.share, 0) - 100) > 1e-9) throw new Error(`${g.name}'s mix does not add to 100 %`);
   if (reversals.length !== 1 || reversals[0].name !== SUBJECT) throw new Error(`the title says ${SUBJECT} is the one exception; solar leads in ${reversals.map((g) => g.name).join(", ") || "none"}`);
   return { groups, lead: groups.length - reversals.length };
 }

@@ -8,9 +8,10 @@ import { GroupedBarFrame } from "./GroupedBarFrame.tsx";
 import { moveOf, sceneAt, WINDOWS } from "./scene.mjs";
 
 /**
- * The markup at the last frame of every event — the type floor, every word with its measured width — and the comparison
- * told in order: the title at frame 0, wind across the six before any solar, the lead counting only the groups whose solar
- * has landed under wind, the exception kept alone at the focus.
+ * The markup at the last frame of every event — the type floor, every word with its measured width — and the argument told
+ * in order: the title at frame 0; each whole mix to 100 % at the end of the reference, every source at its share; wind and
+ * solar keeping their heights while they leave it, never crossing; the scale closing onto them; the lead counted only
+ * where solar ended under wind's level; the exception alone kept; the credit on one line.
  */
 
 const beat = loadBeat();
@@ -34,32 +35,44 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
       });
 
-    it("should carry a measured width for every share at every frame", () => {
-      const unmeasured = [];
-      for (let f = 0; f < props.timing.total; f += 2) if (/<text\b(?![^>]*data-width="\d)[^>]*>/.test(markupAt(f))) unmeasured.push(f);
-      expect(unmeasured).toEqual([]);
-    });
-
-    it("should open on the title and raise wind across the six before any solar", () => {
+    it("should open on the title and stand every whole mix at 100 %, each source at its share", () => {
       expect(sceneAt(props, 0).title).toBe(1);
-      const scene = sceneAt(props, within("reveal", "wind", 1));
-      expect([scene.groups.every((g: any) => g.wind === 1), scene.groups.every((g: any) => g.solar === 0)]).toEqual([true, true]);
+      const s = sceneAt(props, last("reference"));
+      props.groups.forEach((g: any, i: number) => {
+        const total = s.groups[i].segments.reduce((t: number, seg: any) => t + seg.h, 0);
+        expect(total).toBeCloseTo(100 * props.units.whole, 6);
+        s.groups[i].segments.forEach((seg: any, j: number) => expect(seg.h).toBeCloseTo(g.mix[j].share * props.units.whole, 6));
+      });
     });
 
-    it("should count the lead only where solar has landed under wind", () => {
-      for (const t of [0.3, 0.6, 0.9, 1]) {
-        const scene = sceneAt(props, within("reveal", "solar", t));
-        const solar = t;
-        const expected = props.groups.filter((g: any, i: number) => moveOf(solar, i, props.groups.length) >= 1 && g.solar < g.wind).length;
-        expect([t, scene.lead]).toEqual([t, expected]);
+    it("should keep wind's and solar's heights while they leave the mix, and never let them overlap", () => {
+      for (const t of [0.2, 0.5, 0.8]) {
+        const s = sceneAt(props, within("reveal", "split", t));
+        expect(s.unit).toBeCloseTo(props.units.whole, 9);
+        props.groups.forEach((g: any, i: number) => {
+          const { wind, solar } = s.groups[i];
+          expect([wind.h, solar.h]).toEqual([expect.closeTo(g.wind * props.units.whole, 6), expect.closeTo(g.solar * props.units.whole, 6)] as any);
+          const sideBySide = wind.x + wind.w <= solar.x + 1e-6;
+          const stacked = wind.y >= solar.y + solar.h - 1e-6 || solar.y >= wind.y + wind.h - 1e-6;
+          expect([t, g.name, sideBySide || stacked]).toEqual([t, g.name, true]);
+        });
+      }
+      expect(sceneAt(props, last("reveal")).unit).toBeCloseTo(props.units.close, 9);
+    });
+
+    it("should count the lead only where solar ended under wind's level", () => {
+      for (const t of [0.3, 0.7, 1]) {
+        const s = sceneAt(props, within("subject", "compare", t));
+        const expected = props.groups.filter((g: any, i: number) => moveOf(t, i, props.groups.length) >= 1 && g.solar < g.wind).length;
+        expect([t, s.lead]).toEqual([t, expected]);
       }
       expect(sceneAt(props, props.timing.total - 1).lead).toBe(props.groups.length - 1);
     });
 
-    it("should keep the exception alone at the focus, and step nothing back before it", () => {
-      expect(sceneAt(props, last("reveal")).groups.every((g: any) => g.stepBack === 0)).toBe(true);
+    it("should keep the exception alone at the end, and the credit on one line", () => {
       const end = sceneAt(props, props.timing.total - 1);
       expect(props.groups.filter((g: any, i: number) => end.groups[i].stepBack === 0).map((g: any) => g.name)).toEqual([props.subject]);
+      expect(props.credit.lines.length).toBe(1);
     });
   });
 }

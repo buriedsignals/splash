@@ -19,18 +19,19 @@ ordered by the gap between them. Asserted: six countries, solar ahead in exactly
    in their own inks with the unit said once, and the lead count at the right. No plate, no axis — every bar is labelled.
 3. **No end card** — the video ends on the six groups, Switzerland alone kept; the credit.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-What only a video can do is **run the comparison one country at a time**: wind first across the six, then solar beside it
-group by group, and the viewer watches solar land under wind five times before it towers over it once.
+The still compares two shares. The video **shows where the two shares come from**: each country's whole electricity, the
+two sources the title is about leaving it, and the scale closing onto them — then the comparison made one country at a
+time, wind's level carried across over solar.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
-| `reference` | six countries, two sources | — (furniture) | the six names, the baseline, « Éolien » and « Solaire » in their inks | — |
-| `reveal` | wind, then solar | **reveal in order + count** | wind's bars rise across the six, each counting its share; solar's rise beside them group by group; « éolien devant : {n} sur 6 » counts each group where solar landed under wind | 5 of 6 |
-| `subject` | Switzerland is the exception | **filter** | the five other groups step back; Switzerland kept | the one exception |
-| `conclusion` | — | — | the credit | — |
+| `reference` | each country's whole electricity | **reveal** | six columns rise, source on source, to 100 % — every other source in two neutrals, wind and solar on top in their colours | every mix adds to 100 % |
+| `reveal` | wind and solar | **split + rescale** | every other source fades; each column parts into wind and solar side by side, which slide down to the baseline keeping their heights; the scale closes from 100 % onto them; their shares land | the shares |
+| `subject` | wind ahead, five times | **compare + count** | group after group, wind's level carries across over solar as a dashed line; « éolien devant : {n} sur 6 » counts each group where solar ends under it — Switzerland's solar clears the line | 5 of 6 |
+| `conclusion` | Switzerland is the exception | **filter** | every other group steps back; the credit on one line | the one exception |
 | `hold` | the comparison | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows

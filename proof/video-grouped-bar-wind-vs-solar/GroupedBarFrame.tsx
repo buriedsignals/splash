@@ -1,7 +1,8 @@
 /**
- * One frame of « Dans 5 de ces 6 pays l'éolien devance le solaire, la Suisse est l'exception » — the title card, the six
- * groups, wind rising across them, then solar beside it group by group as the lead is counted, then everything but the
- * exception stepping back (BRIEF.md).
+ * One frame of « Dans 5 de ces 6 pays l'éolien devance le solaire, la Suisse est l'exception » — the title card, each
+ * country's whole electricity as one column, every other source fading, wind and solar sliding down side by side, the scale
+ * closing onto them, wind's level carried across to solar group after group as the lead is counted, then everything but
+ * the exception stepping back (BRIEF.md).
  *
  * NOTHING HERE IS MEASURED OR CHOSEN: positions, texts and colours come from `build.mjs`; motion from `sceneAt`.
  */
@@ -20,12 +21,14 @@ export type GroupedBarFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; grid: string; wind: string; solar: string; faded: string; text: Record<"eyebrow" | "title" | "wind" | "solar" | "name" | "axis" | "count", string> };
+  colours: { ground: string; grid: string; wind: string; solar: string; faded: string; others: string[]; text: Record<"eyebrow" | "title" | "wind" | "solar" | "name" | "axis" | "count", string> };
   subject: string;
-  groups: Array<{ name: string; wind: number; solar: number; windX: number; solarX: number; label: Line }>;
+  groups: Array<{ name: string; wind: number; solar: number; mix: Array<{ source: string; share: number }>; colX: number; windX: number; solarX: number; label: Line }>;
   barW: number;
+  colW: number;
+  units: { whole: number; close: number };
+  seam: number;
   baseline: number;
-  unit: number;
   left: number;
   right: number;
   series: Line[];
@@ -71,24 +74,39 @@ export function GroupedBarFrame(props: GroupedBarFrameProps & { at: number; svgR
 
       {props.groups.flatMap((g, i) => {
         const s = scene.groups[i];
+        const others = s.segments.filter((seg) => seg.fade < 1 && seg.h > 0 && seg.source !== "Wind" && seg.source !== "Solar");
+        return [
+          ...others.map((seg, j) => (
+            <rect key={`other${i}-${seg.source}`} x={g.colX} y={seg.y + props.seam / 2} width={props.colW} height={Math.max(0, seg.h - props.seam / 2)} fill={colours.others[j % 2]} opacity={1 - seg.fade} />
+          )),
+          ...(["wind", "solar"] as const).map((key) => {
+            const b = s[key];
+            if (!(b.h > 0)) return null;
+            return <rect key={`${key}${i}`} x={b.x} y={b.y} width={b.w} height={b.h} fill={blend(colours[key], colours.faded, s.stepBack)} />;
+          }),
+        ];
+      })}
+
+      {props.groups.map((g, i) => {
+        const s = scene.groups[i];
+        if (!(s.level.reach > 0 && scene.levels > 0)) return null;
+        const x1 = g.windX;
+        const x2 = g.windX + (g.solarX + props.barW - g.windX) * s.level.reach;
+        return <line key={`level${i}`} x1={x1} x2={x2} y1={s.level.y} y2={s.level.y} stroke={colours.text.wind} strokeWidth={props.strokes.grid * 2} strokeDasharray={`${props.seam * 2} ${props.seam * 1.5}`} opacity={scene.levels * (1 - 0.8 * s.stepBack)} />;
+      })}
+
+      {props.groups.flatMap((g, i) => {
+        const s = scene.groups[i];
+        if (!(s.shares > 0)) return [];
         return (["wind", "solar"] as const).map((key) => {
-          const up = s[key];
-          if (!(up > 0)) return null;
-          const v = g[key] * up;
-          const h = v * props.unit;
-          const x = key === "wind" ? g.windX : g.solarX;
-          const text = shareText(v);
+          const b = s[key];
+          const text = shareText(b.value);
           const width = props.shareWidths[text];
-          return (
-            <g key={`${key}${i}`}>
-              <rect x={x} y={props.baseline - h} width={props.barW} height={h} fill={blend(colours[key], colours.faded, s.stepBack)} />
-              <Text line={{ text, width, x: x + props.barW / 2 - width / 2, y: props.baseline - h - props.shareGap }} register={r.value} fill={colours.text[key]} opacity={1 - 0.7 * s.stepBack} halo={valueHalo} />
-            </g>
-          );
+          return <Text key={`share${key}${i}`} line={{ text, width, x: b.x + b.w / 2 - width / 2, y: b.y - props.shareGap }} register={r.value} fill={colours.text[key]} opacity={s.shares * (1 - 0.7 * s.stepBack)} halo={valueHalo} />;
         });
       })}
 
-      <Text line={{ ...lead, ...props.leadAt }} register={r.value} fill={colours.text.count} opacity={scene.counting} halo={valueHalo} />
+      {scene.counting ? <Text line={{ ...lead, ...props.leadAt }} register={r.value} fill={colours.text.count} halo={valueHalo} /> : null}
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (
