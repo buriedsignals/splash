@@ -35,7 +35,7 @@
 | `shared/map-beat/inline.mjs` (create) | Node: concatenate the runtime and the trunk modules it needs into one inlinable script |
 | `shared/map-beat/bake.mjs` (modify) | `bakeCards`: one fallback PNG per card camera |
 | `skills/scrolly/scripts/render-scrolly.mjs` (modify) | `vendor` option: inline MapLibre's JS and CSS in the page head |
-| `skills/scrolly/scripts/verify-live-map-scrolly.mjs` (create) | Live guards: no missing tile after the warm during fast scrubs; no land left page-coloured at any card camera |
+| `skills/scrolly/scripts/verify-live-map-scrolly.mjs` (create) | Live guards: no missing tile after the warm during fast scrubs; no point of the canvas left undrawn at any card camera |
 | `skills/map-beat/test/scrolly-camera.test.ts`, `scrolly-bindings.test.ts`, `plan-vector-source.test.ts`, `scrolly-inline.test.ts` (create) | Fast-lane tests of the pure modules |
 | `skills/map-beat/test/scrolly-live.test.ts` (create, heavy) | Offline browser test of the runtime on a local style |
 | `skills/scrolly/test/render-scrolly.test.ts` (modify) | The `vendor` option |
@@ -559,7 +559,7 @@ git log -1 --format=%B | grep -ci "claude\|anthropic"
 **Interfaces:**
 - Consumes: `viewOf`, `bindState` (Task 3); `mountPlan` (Task 4); `applyLiveStyle`, `assertLiveStyleAnswered` (`shared/map-beat/style.mjs`).
 - Produces (browser globals once inlined):
-  - `initScrollyMap(root, plan, options) → handle | null` — `plan` is `{ styleUrl, style?, layers, cameras: state[], warmSamples: number, tints, keepLabels?, glyphs?: { [stack]: { [range]: base64 } }, projection: "globe" }`; `options` is `{ window, onReady?, warmTimeoutMs? }`. Returns null when the key placeholder is still in `styleUrl`, when `maplibregl` is absent, or when `[data-part="live"]` is missing.
+  - `initScrollyMap(root, plan, options) → handle | null` — `plan` is `{ styleUrl, layers, cameras: state[], referenceWidth?: number, warmSamples: number, tints, keepLabels?: string[], glyphs?: { [stack]: { [range]: base64 } }, projection: "globe" }`; cameras are authored for `referenceWidth` and shifted by `log2(stageWidth / referenceWidth)` zoom levels; `options` is `{ window, onReady?, warmTimeoutMs? }`. Returns null when the key placeholder is still in `styleUrl`, when `maplibregl` is absent, or when `[data-part="live"]` is missing.
   - `applyScrollyMap(handle, state)` — `jumpTo(viewOf(state))`, then `setPaintProperty` for every binding, then publishes `root.dataset.liveView`.
 - Produces (node): `scrollyMapScript() → Promise<string>` from `inline.mjs`.
 
@@ -611,17 +611,21 @@ Expected: FAIL, `Cannot find module '#shared/map-beat/inline.mjs'`.
 
 const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
-function warmScrollyCameras(map, cameras, samples, win, timeoutMs) {
+function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
   const views = [];
+  const shifted = function (view) {
+    view.zoom += zoomOffset || 0;
+    return view;
+  };
   for (let i = 0; i < cameras.length; i++) {
-    views.push(viewOf(cameras[i]));
+    views.push(shifted(viewOf(cameras[i])));
     if (i + 1 < cameras.length)
       for (let s = 1; s <= samples; s++) {
         const t = s / (samples + 1);
         const mix = {};
         for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch"])
           mix[k] = (cameras[i][k] ?? 0) + ((cameras[i + 1][k] ?? 0) - (cameras[i][k] ?? 0)) * t;
-        views.push(viewOf(mix));
+        views.push(shifted(viewOf(mix)));
       }
   }
   let i = 0;
@@ -677,7 +681,12 @@ function initScrollyMap(root, plan, options) {
     fadeDuration: 0,
     maxTileCacheSize: 800,
   });
+  // Cameras are authored for `plan.referenceWidth`; a narrower stage sees the same ground one
+  // log2(width ratio) zoom level further out, so a phone keeps the card's whole subject in view.
   const handle = { map: map, plan: plan, root: root, ready: false, pending: null };
+  handle.zoomOffset = function () {
+    return plan.referenceWidth ? Math.log2(container.clientWidth / plan.referenceWidth) : 0;
+  };
 
   map.once("style.load", function () {
     if (plan.projection) map.setProjection({ type: plan.projection });
@@ -688,7 +697,7 @@ function initScrollyMap(root, plan, options) {
 
   map.once("load", function () {
     const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
-    warmScrollyCameras(map, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000).then(function (warm) {
+    warmScrollyCameras(map, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
       root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
       container.style.opacity = "1";
       handle.ready = true;
@@ -710,6 +719,7 @@ function applyScrollyMap(handle, state) {
     return;
   }
   const view = viewOf(state);
+  view.zoom += handle.zoomOffset();
   handle.map.jumpTo(view);
   for (const layer of handle.plan.layers)
     for (const property in layer.bindings || {})
@@ -823,7 +833,7 @@ describe("the scrolly map runtime in a browser", () => {
     const result = await page.evaluate(async (plan) => {
       const root = document.getElementById("root")!;
       const handle = await new Promise<any>((resolve) => {
-        const h = (window as any).initScrollyMap(root, plan, { window, onReady: () => resolve(h), warmTimeoutMs: 2000 });
+        const h = (window as any).initScrollyMap(root, { ...plan, referenceWidth: 800 }, { window, onReady: () => resolve(h), warmTimeoutMs: 2000 });
       });
       (window as any).applyScrollyMap(handle, { ...plan.cameras[1], reveal: 0.75 });
       return {
@@ -998,6 +1008,12 @@ Append to `shared/map-beat/bake.mjs` (and add `import { bindState, viewOf } from
  *  own state applied to every binding. Baked at the size the layout publishes, like `bakePlan`. */
 export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem }) {
   const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
+  // The same zoom shift the live runtime applies: cameras are authored for `plan.referenceWidth`.
+  const shiftedView = (k) => {
+    const view = viewOf(cameras[k]);
+    view.zoom += plan.referenceWidth ? Math.log2(size.width / plan.referenceWidth) : 0;
+    return view;
+  };
   await page.setViewport({ ...size, deviceScaleFactor: 2 });
   await page.evaluate(
     async (style, plan, first) => {
@@ -1010,7 +1026,7 @@ export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, k
     },
     style,
     plan,
-    viewOf(cameras[0]),
+    shiftedView(0),
   );
   const out = [];
   for (let k = 0; k < cameras.length; k++) {
@@ -1024,7 +1040,7 @@ export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, k
         for (const [id, property, value] of paints) map.setPaintProperty(id, property, value);
         await new Promise((r) => map.once("idle", r));
       },
-      viewOf(cameras[k]),
+      shiftedView(k),
       paints,
     );
     const png = join(outDir, `${stem}-${k + 1}.png`);
@@ -1053,7 +1069,7 @@ git log -1 --format=%B | grep -ci "claude\|anthropic"
 
 ### Task 8: The live guards
 
-Addendum §2.6 (no frame with a missing tile after the warm) and §3.3 (no land left page-coloured at any card camera).
+Addendum §2.6 (no frame with a missing tile after the warm) and §3.3 (no point of the canvas left undrawn at any card camera).
 
 **Files:**
 - Create: `skills/scrolly/scripts/verify-live-map-scrolly.mjs`
@@ -1071,7 +1087,8 @@ Addendum §2.6 (no frame with a missing tile after the warm) and §3.3 (no land 
 //
 //   1. After the warm, a scrub at 30, 120 and 400 px per animation frame meets no frame whose tiles
 //      are not all loaded (`map.areTilesLoaded()` sampled every frame).
-//   2. At every card's camera, no point the basemap calls land is painted the page's own ground.
+//   2. At every card's camera, no sampled point of the canvas is left undrawn — the page's own ground
+//      or transparent — which is what a missing country or the space around the globe looks like.
 //
 // The key is substituted into a temporary copy of the page, never into the committed file.
 //
@@ -1132,6 +1149,9 @@ for (const [width, height] of viewports) {
     if (missing !== 0) failures.push(`${width}x${height}: ${missing === -1 ? "no window.__scrollyMap handle" : `${missing} frames with a missing tile`} at ${speed}px/frame`);
   }
 
+  // Land is tinted `mix(ground, ink, 0.045)` and water by `plateTints`, so the page's own ground colour
+  // appears in the canvas only where nothing is drawn: a country missing from the tiles, or space
+  // around the globe's limb. Either is a defect a real map does not have.
   const bare = await page.evaluate(async () => {
     const handle = window.__scrollyMap;
     const ground = getComputedStyle(document.body).backgroundColor.match(/\d+/g).slice(0, 3).map(Number);
@@ -1141,22 +1161,19 @@ for (const [width, height] of viewports) {
       await new Promise((r) => handle.map.once("idle", r));
       const canvas = handle.map.getCanvas();
       const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-      const landIds = handle.map.getStyle().layers.filter((l) => l.type === "background" || /land|earth/i.test(l.id)).map((l) => l.id);
       let bareCount = 0;
-      for (let x = 10; x < canvas.width; x += Math.floor(canvas.width / 24))
-        for (let y = 10; y < canvas.height; y += Math.floor(canvas.height / 24)) {
-          const onLand = handle.map.queryRenderedFeatures([x / devicePixelRatio, y / devicePixelRatio], { layers: landIds }).length > 0;
-          if (!onLand) continue;
-          const px = new Uint8Array(4);
-          gl.readPixels(x, canvas.height - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-          if (Math.abs(px[0] - ground[0]) + Math.abs(px[1] - ground[1]) + Math.abs(px[2] - ground[2]) < 3) bareCount += 1;
+      const px = new Uint8Array(4);
+      for (let x = 2; x < canvas.width; x += Math.max(1, Math.floor(canvas.width / 48)))
+        for (let y = 2; y < canvas.height; y += Math.max(1, Math.floor(canvas.height / 48))) {
+          gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          if (px[3] === 0 || Math.abs(px[0] - ground[0]) + Math.abs(px[1] - ground[1]) + Math.abs(px[2] - ground[2]) < 3) bareCount += 1;
         }
       out.push(bareCount);
     }
     return out;
   });
   bare.forEach((n, k) => {
-    if (n > 0) failures.push(`${width}x${height}: card ${k + 1} leaves ${n} sampled land points in the page's own ground colour`);
+    if (n > 0) failures.push(`${width}x${height}: card ${k + 1} leaves ${n} sampled points of the canvas undrawn (page ground or transparent)`);
   });
   await page.close();
 }
@@ -1208,7 +1225,7 @@ git log -1 --format=%B | grep -ci "claude\|anthropic"
 
 **Interfaces:**
 - Consumes: everything above; `plateTints(direction)` (`shared/map-beat/tints.mjs`); the runner's existing assertions and words.
-- Produces: `choroplethPlan({ direction, shares, breaks, top, odd, neighbours, missing, cameras, words, glyphs }) → plan` from `plan.mjs`.
+- Produces: `choroplethPlan({ tints, classFills, shares, breaks, top, odd, neighbours, cameras, statesForCards, words, fonts, glyphs, referenceWidth }) → plan` from `plan.mjs`, where `shares` is `{ [iso2]: number | null }`, `top` is `iso2[]`, `odd` and each of `neighbours` / `words.top` is `{ text, seat: [lon, lat] }`, `fonts` is `{ axis: stack, axisSize: px, ink, accentInk }`.
 
 - [ ] **Step 1: Measure the Countries tileset**
 
@@ -1237,7 +1254,7 @@ const LEVEL = "level";
 const ISO = "iso_a2";
 const KEY = "__MAPTILER" + "_KEY__";
 
-export function choroplethPlan({ tints, classFills, shares, breaks, top, odd, neighbours, cameras, statesForCards, words, fonts }) {
+export function choroplethPlan({ tints, classFills, shares, breaks, top, odd, neighbours, cameras, statesForCards, words, fonts, glyphs, referenceWidth }) {
   const classOf = (v) => breaks.filter((b) => v >= b).length;
   const classMatch = ["match", ["get", ISO]];
   const topMatch = ["match", ["get", ISO]];
@@ -1264,6 +1281,9 @@ export function choroplethPlan({ tints, classFills, shares, breaks, top, odd, ne
     tints,
     cameras,
     statesForCards,
+    referenceWidth,
+    glyphs,
+    oddSeat: odd.seat,
     warmSamples: 3,
     degreesPerPixel: 1,
     layers: [
@@ -1311,7 +1331,7 @@ The odd one's name stays an HTML chip lifted above the card (the validated gestu
 In `render-directions-scrolly.mjs`:
 
 1. Remove the imports of `choropleth-geometry.mjs` and the reading of `shapes.geojson`; keep every data assertion and every sentence unchanged.
-2. Build per-card cameras in degrees from the beat's own facts, then convert: card 1–3 and 6 the whole study window — `cameraFields({ center: [10, 52], zoom: <fit> })` where `<fit>` is `Math.log2(width / 512 * 360 / 75)` for the stage width the runner renders at (75° is the window's longitude span); card 4–5 the close-up centred on Albania's seat `cameraFields({ center: oddSeat, zoom: <fit> + 2.3 })`. Store them with each state: `STATES[k] = { ...STATES[k], ...cameras[k], arrived: k === 3 || k === 4 ? 1 : 0, atRest: k === 3 || k === 4 ? 0 : 1 }`.
+2. Build per-card cameras in degrees from the beat's own facts, then convert. `referenceWidth = 1280`. Cards 1–3 and 6 frame the study window: `cameraFields({ center: [10, 52], zoom: Math.log2((1280 / 512) * (360 / 75)) })` (75° is the window's longitude span); cards 4–5 are the close-up centred on Albania's seat: `cameraFields({ center: oddSeat, zoom: Math.log2((1280 / 512) * (360 / 75)) + 2.3 })`. Pass `referenceWidth` to `choroplethPlan`. Store them with each state: `STATES[k] = { ...STATES[k], ...cameras[k], arrived: k === 3 || k === 4 ? 1 : 0, atRest: k === 3 || k === 4 ? 0 : 1 }`.
 3. Seats: keep the seats the current component computed (the label anchor inside each country), exported as `[lon, lat]` from the static beat `proof/static-choropleth-europe-lowcarbon` (its `render-directions.mjs` computes them from `shapes.geojson` in degrees; import that function rather than re-deriving). ISO3 → ISO2: add a `ISO2` map beside the existing `NAMES` for every country in `data.csv`, and throw when one is missing.
 4. Glyphs: bake the direction's axis face with `bakeGlyphs` (`shared/map-beat/glyphs.mjs`) for `rangesNeededBy(allWords)` and pass them base64-encoded as `plan.glyphs = { [stack]: { [range]: base64 } }`; `fonts.axis` is that stack name.
 5. For each direction: `choroplethPlan(...)`, `validateScrollyPlan(plan, STATES)` must return `[]` (throw with the list otherwise); bake the six fallbacks with `bakeCards` into `fallback/<direction>-<card>.png` only when the file is absent or the plan's JSON hash changed (store the hash beside them in `fallback/<direction>.hash`); render with `renderScrolly({ …, vendor: [{ js: maplibreJs, css: maplibreCss }], reveal: { element, states: STATES, driver, apply: "applyChoroplethState" } })` where `driver` is `(await scrollyMapScript()) + "\n" + (await readFile(join(HERE, "choropleth-drive.mjs"), "utf8"))`.
