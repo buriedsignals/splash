@@ -61,11 +61,16 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(bottom).toBeLessThan(row.height);
     });
 
-    it("should set the source in at most three lines of its narrow measure, the halo's reach around it", () => {
+    it("should set the source at the type floor — smaller than every other word — in at most three lines of its narrow measure", () => {
       const { source } = layout;
+      expect(registers.source.fontSize).toBe(row.minTypePx);
+      const others = Object.entries(registers).filter(([n]) => n !== "source").map(([, r]: any) => r.fontSize);
+      expect(registers.source.fontSize).toBeLessThanOrEqual(Math.min(...others));
+      expect(registers.source.fontSize).toBeLessThan(registers.axis.fontSize);
       expect(source.lines.length).toBeLessThanOrEqual(3);
+      expect(source.lines.some((l: any) => l.text.startsWith("·"))).toBe(false);
       for (const l of source.lines)
-        expect(l.x + measured(l.text, registers.axis) * (1 + DRAWN_WIDER)).toBeLessThanOrEqual(source.width + 0.01);
+        expect(l.x + measured(l.text, registers.source) * (1 + DRAWN_WIDER)).toBeLessThanOrEqual(source.width + 0.01);
       expect(source.lines.at(-1).y).toBeLessThanOrEqual(source.height);
     });
 

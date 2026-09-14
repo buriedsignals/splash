@@ -28,7 +28,7 @@ export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the composition draws with — `body` is resolved for the ladder's factor, never drawn. */
-export const DRAWN_REGISTERS = ["display", "eyebrow", "value", "axis", "area", "feature", "closeFeature", "water"];
+export const DRAWN_REGISTERS = ["display", "eyebrow", "value", "axis", "area", "feature", "closeFeature", "water", "source"];
 const NB = " ";
 /** The air a pill keeps from another pill and from the stage's edge, × the axis lead. */
 const PILL_GAP = 0.25;
@@ -48,6 +48,8 @@ const SEA_ANGLES = 16;
  *  set on France reads as naming France, so « Suisse » steps beside France's name rather than over France,
  *  and at the close-up the neighbours' names sit around Albania rather than on it. */
 const NAMED_COVER = 4;
+/** The share of its box over land the source may take — a coast's pixel, not a country. */
+const SOURCE_LAND = 0.03;
 /** The side, in stage pixels, of the cells the panel's cover of land is counted on. */
 const PANEL_CELL = 16;
 /** The step, in stage pixels, of the positions the panel is tried at. */
@@ -85,7 +87,7 @@ export function copyOf(subject) {
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
-    ],
+    ].map((form) => form.replace(" · ", `${NB}· `)),
     /** THE STILL'S ANATOMY: the seven the claim is about set as features, every other name as an area,
      *  uppercased; the three lowest shares named as the still names them. `klass` picks the ink's floor. */
     names: [
@@ -537,16 +539,20 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   }
 
   // ── the source: set small on the sea at the overview, where the video ends ────────────────────────────────
-  // Every position on the panel's grid inside the margins is tried, lowest first; it may touch no name, no sea's
-  // name and not the panel, and the one over the least land wins.
+  // A credit sits in a corner, not in open water mid-frame: the positions are tried from the bottom margin up, and
+  // from the left margin rightwards, and the first that lies over almost no land (`SOURCE_LAND`) and touches no
+  // name, no sea's name and not the panel wins.
   let sourceSeat = null;
   const sourceBox = { width: layout.source.width, height: layout.source.height };
-  for (let y = stage.height - vInset - sourceBox.height; y >= vInset; y -= PANEL_STEP)
+  search: for (let y = stage.height - vInset - sourceBox.height; y >= vInset; y -= PANEL_STEP)
     for (let x = inset; x + sourceBox.width <= stage.width - inset; x += PANEL_STEP) {
       const box = { x, y, ...sourceBox };
       if (taken.some((t) => touches(box, t))) continue;
       const share = landShare(box);
-      if (!sourceSeat || share < sourceSeat.share - 1e-9) sourceSeat = { x, y, share };
+      if (share <= SOURCE_LAND) {
+        sourceSeat = { x, y, share };
+        break search;
+      }
     }
   if (!sourceSeat) throw new Error(`a ${sourceBox.width}×${sourceBox.height} source finds no place on the overview`);
   const sourceAt = { x: sourceSeat.x, y: sourceSeat.y };

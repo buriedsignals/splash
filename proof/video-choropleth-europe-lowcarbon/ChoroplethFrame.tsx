@@ -36,7 +36,8 @@ type Slot =
   | "area"
   | "feature"
   | "closeFeature"
-  | "water";
+  | "water"
+  | "source";
 
 export type ChoroplethFrameProps = {
   frame: { width: number; height: number };
@@ -426,7 +427,7 @@ export function ChoroplethFrame(
           <Word
             key={`source${i}`}
             line={line}
-            register={r.axis}
+            register={r.source}
             fill={colours.text.source}
             opacity={1}
             halo={{ colour: colours.sea, width: props.source.halo }}

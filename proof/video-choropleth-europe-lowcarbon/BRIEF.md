@@ -54,8 +54,9 @@ premier puis ensuite tout un storytelling ». The video is cut into shots:
    The map carries **the still's anatomy** (below).
 3. **No end card — the video ends on the map** (end of `conclusion`, then `hold`). The owner (2026-09-14): « la
    vue finale doit être la map et pas le titre à nouveau ». The last picture is the overview with every class,
-   the seven named, Albania ringed and the three lowest named; the source is set small on the sea, in at most
-   three lines of a narrow measure, where it covers the least land and touches no word.
+   the seven named, Albania ringed and the three lowest named; the source is set at the type floor (30 px, the
+   axis voice — smaller than every other word), in at most three lines of a narrow measure, in the lowest,
+   leftmost corner of the sea that holds it and touches no word.
 
 ## Write as little as the picture allows
 

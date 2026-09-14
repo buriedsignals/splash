@@ -67,7 +67,7 @@ export function haloOf(r, k, kind = "area") {
 const CARD_MEASURE = 0.72; // × content width
 const CARD_MAX_LINES = 3;
 /** The source block's measure: narrow enough to sit on the Atlantic beside Europe. */
-const SOURCE_MEASURE = 0.3; // × content width
+const SOURCE_MEASURE = 0.28; // × content width
 const COUNTER_TO_KEY = 0.45; // × axis lead
 const GUTTER = 1; // × axis lead
 const SWATCH_HEIGHT = 0.4; // × axis lead
@@ -114,7 +114,8 @@ const displayAt = (display, fontSize) => ({
 export function wrap(text, r, measure) {
   const lines = [];
   let current = "";
-  for (const word of text.split(/\s+/)) {
+  // Breaks at ordinary spaces only: a no-break space (« 94 % », « Data · ») holds its words together.
+  for (const word of text.split(/ +/)) {
     const trial = current ? `${current} ${word}` : word;
     if (current && widthOf(trial, r) > measure) {
       lines.push(current);
@@ -205,18 +206,20 @@ export function layoutFor({ registers, copy, size, k }) {
 
   // ── 3. THE SOURCE: no end card — the video ends on the map, the source set small on it ─────────────────
   // The owner (2026-09-14): « la vue finale doit être la map et pas le titre à nouveau ». The source is a block at
-  // its own origin, the shortest measure its longest form holds in three lines, the halo's reach around it;
+  // its own origin, the longest form that holds three lines of a narrow measure, the halo's reach around it;
   // `build.mjs` seats it on the sea.
-  const sourceHalo = haloOf(axis, k);
-  const src = blockFor(copy.source, axis, (SOURCE_MEASURE * content) / (1 + DRAWN_WIDER), 3);
-  const sourceBand = bandOf(src.lines.map((l) => l.text).join(" "), axis);
-  const sourceLines = src.lines.map((l, i) => line(l.text, axis, sourceHalo / 2, sourceHalo / 2 + sourceBand.ascent + i * axis.lead, l.width));
+  // A credit, not a word the story is read in: the axis voice at the type floor, the smallest the frame allows.
+  const sourceR = { ...axis, fontSize: row.minTypePx, letterSpacing: (axis.letterSpacing * row.minTypePx) / axis.fontSize, lead: (axis.lead * row.minTypePx) / axis.fontSize };
+  const sourceHalo = haloOf(sourceR, k);
+  const src = blockFor(copy.source, sourceR, (SOURCE_MEASURE * content) / (1 + DRAWN_WIDER), 3);
+  const sourceBand = bandOf(src.lines.map((l) => l.text).join(" "), sourceR);
+  const sourceLines = src.lines.map((l, i) => line(l.text, sourceR, sourceHalo / 2, sourceHalo / 2 + sourceBand.ascent + i * sourceR.lead, l.width));
   const source = {
     form: src.form,
     lines: sourceLines,
     halo: sourceHalo,
     width: Math.ceil(sourceHalo + Math.max(...sourceLines.map((l) => l.width)) * (1 + DRAWN_WIDER)),
-    height: Math.ceil(sourceHalo + sourceBand.ascent + (sourceLines.length - 1) * axis.lead + sourceBand.descent),
+    height: Math.ceil(sourceHalo + sourceBand.ascent + (sourceLines.length - 1) * sourceR.lead + sourceBand.descent),
   };
 
   // ── 2. THE PANEL: the count over the key, laid out at its own origin ──────────────────────────────────────
@@ -252,7 +255,7 @@ export function layoutFor({ registers, copy, size, k }) {
     inset,
     vInset,
     content,
-    registers,
+    registers: { ...registers, source: sourceR },
     /** The story's map: the whole frame. */
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
     titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines },
