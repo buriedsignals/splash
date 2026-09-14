@@ -1,12 +1,14 @@
 # Lollipop — in video
 
-Worked example: `proof/video-lollipop-co2-per-person` (validated 2026-09-14), from `proof/static-lollipop-co2-per-person`.
+Worked example: `proof/video-lollipop-co2-per-person` (validated 2026-09-15, recut as an argument), from
+`proof/static-lollipop-co2-per-person`.
 
-- **The gesture only a video has is making the change happen**: both stems of every pair rise to the first date's level,
-  pair after pair, counting; then every second stem travels to the second date's level, all together and eased (two dates
-  and nothing between them), while the first stays in its tint — the still's one-hue-two-chromas rule.
-- **A derived ratio counts with the stems**: computed from the two heads at the frame, so it moves as they move; shown only
-  once both its heads have landed, and not drawn at all before — an invisible text still has to be measured.
-- **The dates are said once**, under the first pair; the unit once, over the pairs; the heads print bare values.
-- The filter comes last: the pairs the claim is not about step back, the subject's later head is ringed (the chroma axis
-  is spent on the dates, so the subject is ringed, not recoloured).
+- **Measure a ratio with the marks themselves**: copies of the smaller stem fly over one after another and stack end to end
+  beside the larger stem, cut at its head, so the last copy shows only its fraction and « ×N » is literally the copies
+  that fit. When the dates change the copies grow or shrink with their stem and the stack, still cut at the head, holds
+  more or fewer. While the ratio shows, the larger head's own value gives way.
+- **Two dates are one hue at two chromas**: the stems rise at their slot's centre; at the second date each travels (eased,
+  an arrival) and slides right while a tint of it stays at the first date on the left. Dates said once, under the first
+  pair; the unit once.
+- **End on the whole chart**: the copies go, every pair back with both dates, the subject's later head ringed; the credit on
+  one line. A brisk rhythm: about 18 s.
