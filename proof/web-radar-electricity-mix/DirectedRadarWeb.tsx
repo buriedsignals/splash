@@ -27,12 +27,32 @@
  * `skills/chart-web/assets/reorder.ts`; the arithmetic that refuses an ordering which draws the same
  * polygon is there and not here.
  *
- * EVERY ORDERING IS A COMPLETE `<svg>` OF ITS OWN, and that is the one structural decision this
- * component makes on the control's behalf. `interaction.mjs` resolves the mark under a pointer from
- * `cx`/`cy` read once at init, which no CSS transform ever changes, and a `.pt` hidden by `opacity`
- * stays in that hit test and answers for a vertex the reader cannot see. `initAll` wires every
- * `svg.chart` separately, so four whole drawings stacked in one grid cell and revealed with `display`
- * give the unchosen three no pointer event, no tab stop and no probe. Nothing is transformed.
+ * THE CONTROL SAYS WHAT IT WILL DO BEFORE IT IS PRESSED, and that sentence is not decoration either.
+ * The owner read this page and asked *"pourquoi les labels changent d'ordre au filtre ?"* -- the
+ * gesture working exactly as designed, and nothing on the page warning him it was about to. A legend
+ * names what the reader is CHOOSING; every other sentence this control owns is a counterfactual that
+ * does not exist until an option has been taken. So the reserved row under the pills is no longer
+ * empty at rest: it carries the warning, one line, between the control and the circle it changes.
+ *
+ * THE DRAWING TRAVELS AND THE THINGS THAT ANSWER DO NOT -- the structural decision this component
+ * makes on the control's behalf, and it is the second one it has made. The owner's other reading was
+ * that the graph "pourrait changer en lerp smooth au lieu de saccader en changement direct". It could
+ * not, because every ordering was a whole `<svg>` revealed with `display`, and `display` cannot be
+ * transitioned. What CAN be transitioned is a property changing on an element that is ALWAYS
+ * rendered, which is the only one of the three triggers CSS has that survived being driven (the other
+ * two, and what each measured, are in `reorder.ts`'s own "THE TRAVEL"). So there is now ONE drawing:
+ * the rings, the spokes, both areas, sixteen dots and eight names, `aria-hidden` and
+ * `pointer-events: none`, whose dots and names move on `transform` and whose areas morph on `d`, both
+ * on one clock.
+ *
+ * And the defect that forced four whole `<svg>`s in the first place has NOT gone away, so it is
+ * answered rather than forgotten: `interaction.mjs` resolves the mark under a pointer from `cx`/`cy`
+ * read once at init, which no CSS transform ever changes, and a `.pt` hidden by `opacity` stays in
+ * that hit test and answers for a vertex the reader cannot see. A mark that moves must not be the
+ * mark that answers. So every ordering still gets an `<svg>` of its own -- transparent now, holding
+ * only the sixteen points that answer and the overlay that resolves them, baked at that ordering's
+ * own coordinates, swapped with `display`, out of the hit test and out of the tab order when
+ * unchosen. The drawing moves; the answers jump.
  *
  * AND THE SECOND CHANNEL IS UNCHANGED, on purpose: every vertex still answers with the country, the
  * source, its exact share, the TWh behind it and what the OTHER country has on the same axis. Those
@@ -47,21 +67,27 @@
  * positioned in percentages of that CELL does not. Inside the viewBox the labels follow the drawing
  * exactly. The stated cost is that they scale with the graphic instead of holding a fixed pixel size
  * -- the trade this format normally refuses, taken here because the alternative is labels that point
- * at nothing. It is also what makes the reorder drawable at all: the spoke NAMES are inside the
- * geometry, so an ordering is one more `<svg>` and never a second layout.
+ * at nothing. It is also what lets a spoke's NAME travel with its own vertex: the names are inside
+ * the geometry, so they move under the rule that moves the dots and never under a second layout.
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
 import {
+  REORDER_NONE_SLUG,
   assertReorderDeclaration,
+  assertReorderMotion,
   reorderChromeCss,
   reorderCss,
+  reorderMarkLiftCss,
+  reorderMotionCss,
   reorderNotesForMarkup,
   reorderOptionsForMarkup,
   reorderPlatesForMarkup,
+  reorderAreaPaths,
   reorderReadoutsForMarkup,
   type ReorderDeclaration,
+  type ReorderMotion,
 } from "../../skills/chart-web/assets/reorder.ts";
 
 export const FRAME = { width: 620, height: 440 };
@@ -85,6 +111,8 @@ export type Shape = {
 export type ReorderPlan = {
   label: string;
   noneLabel: string;
+  /** What pressing a pill will DO, said in the state the page ships in. */
+  noneNote: string;
   options: { key: string; label: string; announce: string; note: string; readout: string; order: string[]; alt: string }[];
 };
 
@@ -170,6 +198,10 @@ export function DirectedRadarWeb({
     cx + (v / ceiling) * R * Math.cos(angle(slot)),
     cy + (v / ceiling) * R * Math.sin(angle(slot)),
   ];
+  /** Where a spoke's NAME sits: just outside the ceiling ring, hung off its spoke on the side the
+   *  spoke points to, so a name on the left of the circle does not run back across the drawing. */
+  const NAME_RADIUS = ceiling * 1.14;
+  const anchorAt = (x: number) => (x > cx + 4 ? "start" : x < cx - 4 ? "end" : "middle");
 
   // ── THE DECLARATION, REFUSED BEFORE ANYTHING IS DRAWN ────────────────────────────────────────
   // `assertReorderDeclaration` measures every ordering against the shapes it will really produce: an
@@ -179,6 +211,7 @@ export function DirectedRadarWeb({
   const declaration: ReorderDeclaration = {
     label: reorderPlan.label,
     noneLabel: reorderPlan.noneLabel,
+    noneNote: reorderPlan.noneNote,
     axes,
     options: reorderPlan.options.map((option) => ({
       key: option.key,
@@ -201,6 +234,71 @@ export function DirectedRadarWeb({
   const altOf = new Map<string, string>(reorderPlan.options.map((o) => [o.label, o.alt]));
   const labelOfSlug = new Map(options.map((o) => [o.slug, o.label]));
 
+  // ── WHERE EVERYTHING TRAVELS ─────────────────────────────────────────────────────────────────
+  // The one drawing is BAKED in the plate's own ordering, so every other ordering is an OFFSET from
+  // it and the plate's own offsets are exactly zero. `reorder.ts` refuses the motion if they are not,
+  // and refuses an ordering missing from this table at all -- a missing entry is not a state that
+  // fails to move, it is a state that silently draws the plate while its words say otherwise.
+  // A DOT IS NAMED BY ITS SPOKE AND NOT BY ITS SOURCE, and that is not a detail — it is what keeps
+  // the drawing coherent while it moves. The two things that travel here travel along DIFFERENT
+  // paths: a `<path>`'s `d` interpolates its point i to the other path's point i, and point i is
+  // SLOT i, so every corner slides along its own spoke as the reading landing on that spoke changes.
+  // A dot named by its SOURCE would fly across the circle to its new spoke instead, and the first
+  // version of this component did exactly that: measured mid-flight, the dots stood up to 5,5 user
+  // units clear of the outline they belong to, and the frame read as a broken drawing. So a dot is
+  // the vertex AT A SPOKE. It interpolates between the same two points its corner does, along the
+  // same line, on the same clock, and the two are never more than rounding apart.
+  const markOf = (code: string, slot: number) => `${code}-slot${slot}`;
+  const nameMoveOf = (key: string) => `axis-${key}`;
+  const slotIn = (order: Axis[], key: string) => order.findIndex((a) => a.key === key);
+  const home: Record<string, [number, number]> = {};
+  for (const shape of shapes)
+    axes.forEach((axis, slot) => {
+      home[markOf(shape.code, slot)] = at(slot, shape.values[axis.key]) as [number, number];
+    });
+  for (const axis of axes)
+    home[nameMoveOf(axis.key)] = at(slotIn(axes, axis.key), NAME_RADIUS) as [number, number];
+
+  const motion: ReorderMotion = {
+    home,
+    moves: {},
+    // Each country's outline is walked spoke by spoke through its OWN vertices. `reorder.ts` builds
+    // the two paths out of these, in every state, so a corner and the dot on it are one arithmetic
+    // done once rather than twice.
+    corners: Object.fromEntries(
+      shapes.map((shape) => [shape.code, axes.map((_, slot) => markOf(shape.code, slot))]),
+    ),
+    anchors: {},
+  };
+  for (const plate of plates) {
+    const moves: Record<string, [number, number]> = {};
+    const anchors: Record<string, string> = {};
+    for (const shape of shapes)
+      plate.axes.forEach((axis, slot) => {
+        const id = markOf(shape.code, slot);
+        const [x, y] = at(slot, shape.values[axis.key]);
+        const [hx, hy] = home[id];
+        moves[id] = [x - hx, y - hy];
+      });
+    for (const axis of axes) {
+      const id = nameMoveOf(axis.key);
+      const [x, y] = at(slotIn(plate.axes, axis.key), NAME_RADIUS);
+      const [hx, hy] = home[id];
+      moves[id] = [x - hx, y - hy];
+      anchors[id] = anchorAt(x);
+    }
+    motion.moves[plate.slug] = moves;
+    motion.anchors![plate.slug] = anchors;
+  }
+  assertReorderMotion(declaration, motion);
+  const areaPaths = reorderAreaPaths(motion);
+
+  /** Every vertex the drawing shows and a hit plate speaks for -- the keys the lift's generated
+   *  `:has()` rules are written against, since the class can no longer cross between the two. Named
+   *  by spoke, so the rules need no state: the point that is pointed at lives in the CHOSEN plate,
+   *  and in that plate its spoke is the one the reader has their pointer on. */
+  const marks = shapes.flatMap((shape) => axes.map((_, slot) => markOf(shape.code, slot)));
+
   const css = [
     // A SECOND LAYER OVER THE SAME GRID CELL, and the split is the point rather than a workaround.
     // `.overlay` is the PLATE's layer: `verify-web.mjs` reads every word in it and requires all of
@@ -209,25 +307,29 @@ export function DirectedRadarWeb({
     `${SCOPE} .chart-plot .option-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
     reorderChromeCss({ scope: SCOPE }),
     reorderCss(declaration, { scope: SCOPE, idPrefix: REORDER_ID_PREFIX }),
+    reorderMotionCss(declaration, { scope: SCOPE, idPrefix: REORDER_ID_PREFIX }, motion),
+    reorderMarkLiftCss({ scope: SCOPE, marks }),
   ].join("\n\n");
 
-  /** One complete drawing of one ordering. Everything inside is at its own real coordinate; nothing
-   *  is transformed and nothing is shared with another ordering but the numbers. */
-  const plateSvg = (plate: { slug: string; isNone: boolean; axes: Axis[] }) => (
+  /**
+   * THE DRAWING, AND THERE IS ONLY ONE. Everything a reader looks at is here, baked at the plate's
+   * own coordinates; the stylesheet moves the dots and the names and morphs the two areas. It is
+   * `aria-hidden` and takes no pointer event: it is a picture of the data and not a way to ask it
+   * anything, which is what lets it move at all.
+   */
+  const motionSvg = (
     <svg
-      key={plate.slug}
-      data-reorder-plate={plate.slug}
-      role="group"
-      aria-label={plate.isNone ? title : `${title} — ${labelOfSlug.get(plate.slug)}`}
+      data-reorder-motion=""
+      role="presentation"
+      aria-hidden="true"
+      focusable="false"
       xmlns="http://www.w3.org/2000/svg"
       className="chart"
-      data-hit="cell"
       viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
       // A radial geometry cannot be stretched: an ellipse would make the same share read as two
       // different distances depending on which axis it sits on.
       preserveAspectRatio="xMidYMid meet"
     >
-      <desc>{plate.isNone ? alt : (altOf.get(labelOfSlug.get(plate.slug) ?? "") ?? alt)}</desc>
       <rect x={0} y={0} width={FRAME.width} height={FRAME.height} fill={ground} />
 
       {/* THE GRID IS CIRCLES. A polygonal grid joining the axes makes a value near an axis look
@@ -236,15 +338,21 @@ export function DirectedRadarWeb({
       {rings.map((r) => (
         <circle key={r} cx={cx} cy={cy} r={(r / ceiling) * R} fill="none" stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />
       ))}
-      {plate.axes.map((a, i) => {
+      {/* The spokes are a function of the SLOT and of nothing else, so they are the same eight lines
+          in every ordering and they are the one thing here that never travels. */}
+      {axes.map((a, i) => {
         const [ex, ey] = at(i, ceiling);
         return <line key={a.key} x1={cx} y1={cy} x2={ex} y2={ey} stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />;
       })}
 
+      {/* THE AREA THAT TRAVELS -- one path per country, whose `d` the stylesheet sets per ordering
+          and transitions. Its `d` attribute is the plate's own, which is what an engine that ignores
+          the CSS property would draw; `reorderMotionCss`'s `@supports` pair hides one of the two. */}
       {shapes.map((s) => (
-        <polygon
-          key={s.code}
-          points={plate.axes.map((a, i) => at(i, s.values[a.key]).join(",")).join(" ")}
+        <path
+          key={`area-${s.code}`}
+          data-reorder-area={s.code}
+          d={areaPaths[REORDER_NONE_SLUG][s.code]}
           fill={toneOf(s.tone)}
           fillOpacity={0.16}
           stroke={toneOf(s.tone)}
@@ -253,61 +361,68 @@ export function DirectedRadarWeb({
           vectorEffect="non-scaling-stroke"
         />
       ))}
+      {/* THE AREA THAT DOES NOT -- one baked path per ordering per country, swapped with `display`.
+          Dead weight in every engine with a CSS `d` property, and the difference between a correct
+          picture and a wrong one in any that has none. */}
+      {plates.flatMap((plate) =>
+        shapes.map((s) => (
+          <path
+            key={`still-${plate.slug}-${s.code}`}
+            data-reorder-still={plate.slug}
+            d={areaPaths[plate.slug][s.code]}
+            fill={toneOf(s.tone)}
+            fillOpacity={0.16}
+            stroke={toneOf(s.tone)}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        )),
+      )}
 
-      {/* THE VERTEX ANSWERS, AND IT LIFTS FROM ITS OWN COUNTRY'S INK. Two circles and not one, which
-          is the format's own `data-mark` / `data-mark-ref` mechanism rather than a local invention.
-          A bare `.pt` takes `fill: var(--muted)` under the pointer — the shared stylesheet's default,
-          and correct on a beat whose points are one series. Here it was a confident miscue: `--muted`
-          is the furniture's neutral, the one this page draws GERMANY in, so hovering a French vertex
-          repainted it in the other country's colour. Measured in creme, `--muted` is #61605a and
-          Germany's own tone #807e77 — 1,32:1 apart, which is to say indistinguishable. So the
-          visible dot carries `data-mark` and its own lifted colour, and a transparent twin on top
-          carries the hit test, the tab stop and the reading. */}
+      {/* THE VISIBLE VERTEX, AND IT IS NOT THE ONE THAT ANSWERS. It carries `data-mark` and the
+          colour it takes when the point that speaks for it is pointed at -- `--mark-active`, measured
+          on the dot's own fill and never on the text ink. A bare `.pt` takes `fill: var(--muted)`
+          under the pointer, the shared stylesheet's default, and `--muted` is the furniture's
+          neutral -- the one this page draws GERMANY in, so hovering a French vertex repainted it in
+          the other country's colour (measured in creme: #61605a against #807e77, 1,32:1 apart, which
+          is to say indistinguishable). The class that used to carry the lift came from
+          `interaction.mjs` and cannot cross into another `<svg>`, so it is a generated `:has()` rule
+          now -- `reorderMarkLiftCss` -- which also makes the lift work with the script absent. */}
       {shapes.flatMap((s) =>
-        plate.axes.map((a, i) => {
-          const [px, py] = at(i, s.values[a.key]);
-          const mark = `${s.code}-${a.key}`;
+        axes.map((a, slot) => {
+          const id = markOf(s.code, slot);
+          const [hx, hy] = home[id];
           return (
-            <g key={mark}>
-              <circle
-                data-mark={mark}
-                style={{ "--mark-active": liftOf(toneOf(s.tone)) } as React.CSSProperties}
-                cx={px}
-                cy={py}
-                r={4.5}
-                fill={toneOf(s.tone)}
-                stroke={ground}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
-              <circle
-                className="pt"
-                data-mark-ref={mark}
-                cx={px}
-                cy={py}
-                r={8}
-                fill="transparent"
-                stroke="none"
-                tabIndex={0}
-                role="img"
-                aria-label={s.details[a.key]}
-                data-detail={s.details[a.key]}
-              />
-            </g>
+            <circle
+              key={id}
+              data-mark={id}
+              data-reorder-move={id}
+              style={{ "--mark-active": liftOf(toneOf(s.tone)) } as React.CSSProperties}
+              cx={hx}
+              cy={hy}
+              r={4.5}
+              fill={toneOf(s.tone)}
+              stroke={ground}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
           );
         }),
       )}
-      <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
 
-      {/* THE ONLY WORDS THIS BASE SETS INSIDE AN SVG -- see the component header for why, and for
-          why that decision is what makes an ordering drawable as one more `<svg>`. */}
-      {plate.axes.map((a, i) => {
-        const [lx, ly] = at(i, ceiling * 1.14);
-        const anchor = lx > cx + 4 ? "start" : lx < cx - 4 ? "end" : "middle";
+      {/* THE ONLY WORDS THIS BASE SETS INSIDE AN SVG -- see the component header for why. Each name
+          travels with its own vertex, on the same clock, and takes the anchor its destination spoke
+          needs: a name crossing to the other side of the circle has to hang off its spoke the other
+          way or it runs back across the drawing. */}
+      {axes.map((a) => {
+        const id = nameMoveOf(a.key);
+        const [lx, ly] = home[id];
         return (
           <text
             pointerEvents="none"
             key={`n-${a.key}`}
+            data-reorder-move={id}
             x={lx}
             y={ly}
             fill={label}
@@ -315,7 +430,7 @@ export function DirectedRadarWeb({
             fontSize={14}
             fontWeight={regs.axis.fontWeight as number}
             fontStyle={regs.axis.fontStyle as string}
-            textAnchor={anchor}
+            textAnchor={anchorAt(lx)}
             dominantBaseline="middle"
           >
             {a.name}
@@ -336,6 +451,51 @@ export function DirectedRadarWeb({
       >
         {ceilingLabel}
       </text>
+    </svg>
+  );
+
+  /**
+   * ONE ORDERING'S ANSWERS. Transparent, so it draws nothing over the picture underneath; complete,
+   * so `initChart` wires it on its own and the unchosen ones -- `display: none` -- hold no pointer
+   * event, no tab stop and no probe. Every point sits at ITS OWN ordering's real coordinate and never
+   * moves, which is exactly what the travelling drawing could not promise.
+   */
+  const hitPlate = (plate: { slug: string; isNone: boolean; axes: Axis[] }) => (
+    <svg
+      key={plate.slug}
+      data-reorder-plate={plate.slug}
+      role="group"
+      aria-label={plate.isNone ? title : `${title} — ${labelOfSlug.get(plate.slug)}`}
+      xmlns="http://www.w3.org/2000/svg"
+      className="chart"
+      data-hit="cell"
+      viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <desc>{plate.isNone ? alt : (altOf.get(labelOfSlug.get(plate.slug) ?? "") ?? alt)}</desc>
+      {shapes.flatMap((s) =>
+        plate.axes.map((a, i) => {
+          const [px, py] = at(i, s.values[a.key]);
+          const mark = markOf(s.code, i);
+          return (
+            <circle
+              key={mark}
+              className="pt"
+              data-mark-ref={mark}
+              cx={px}
+              cy={py}
+              r={8}
+              fill="transparent"
+              stroke="none"
+              tabIndex={0}
+              role="img"
+              aria-label={s.details[a.key]}
+              data-detail={s.details[a.key]}
+            />
+          );
+        }),
+      )}
+      <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
     </svg>
   );
 
@@ -395,10 +555,12 @@ export function DirectedRadarWeb({
         </div>
       </fieldset>
 
-      {/* THE SENTENCE THE CONTROL OWES THE READER -- what this ordering produced, in words, for a
-          reader who is not looking at the plot. Its row is reserved whether or not an option is
-          chosen, so choosing one never moves the plot underneath it. The untouched option reveals
-          none: it is not a counterfactual, it is the claim the title states. */}
+      {/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW IS NO LONGER EMPTY AT REST. At rest it
+          says what pressing a pill will DO, which is the one thing the legend, the pills and the
+          counterfactuals between them never said until it had already happened -- the owner read this
+          page and had to ask. Choosing an option replaces it with what THAT ordering produced. Every
+          sentence is stacked in one grid cell, so the row is always as tall as the longest of them
+          and the plot underneath never moves. */}
       <div className="reorder-notes" role="status">
         {notes.map((note) => (
           <p data-reorder-note={note.slug} key={note.slug}>{note.text}</p>
@@ -415,7 +577,10 @@ export function DirectedRadarWeb({
       >
         <div className="y-axis" />
 
-        {plates.map(plateSvg)}
+        {/* The drawing FIRST and the answers on top of it: paint order is hit order in SVG, and the
+            chosen plate's own `.hit-area` has to be the thing a pointer lands on. */}
+        {motionSvg}
+        {plates.map(hitPlate)}
 
         <div className="overlay" aria-hidden="true" />
 

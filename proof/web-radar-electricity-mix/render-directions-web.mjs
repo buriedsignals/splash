@@ -200,6 +200,16 @@ const plateReadout = plain(areaWords(PLATE_ORDER));
 const reorderPlan = {
   label: "Ordre des axes",
   noneLabel: "la plaque",
+  // WHAT PRESSING A PILL DOES, SAID BEFORE ANYBODY PRESSES ONE. The owner read this page and asked
+  // *pourquoi les labels changent d'ordre au filtre ?* -- the control doing exactly what it is for,
+  // and the page saying so nowhere he was looking. The legend names what he is CHOOSING; the three
+  // sentences below are counterfactuals that do not exist until he has chosen. This is the sentence
+  // for the state the page ships in, and it says the two halves of the gesture in the order a reader
+  // meets them: the names move, the numbers do not.
+  noneNote: plain(
+    `Les boutons ci-dessus déplacent les huit sources autour du cercle : les intitulés changent de ` +
+      `rayon, les deux formes sont redessinées, aucune valeur ne bouge.`,
+  ),
   options: [
     {
       key: "france",
@@ -326,9 +336,10 @@ const source = `Source : Ember, Energy Institute — Statistical Review of World
 // display and no register names is a glyph the delivered file cannot draw. The control's own words --
 // the legend, the four pills, the three sentences it reveals and the four readouts it prints -- are
 // new words on this page and they go in.
-const reorderWords = reorderPlan.options
-  .map((o) => `${o.label} ${o.announce} ${o.note} ${o.readout}`)
-  .join(" ");
+const reorderWords = [
+  reorderPlan.noneNote,
+  ...reorderPlan.options.map((o) => `${o.label} ${o.announce} ${o.note} ${o.readout}`),
+].join(" ");
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,

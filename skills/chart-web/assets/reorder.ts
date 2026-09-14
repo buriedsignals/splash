@@ -142,6 +142,24 @@ export type ReorderDeclaration = {
   label: string;
   /** The untouched option's words. It is always first, always the default, and it is the plate. */
   noneLabel: string;
+  /**
+   * WHAT THE CONTROL WILL DO, SAID BEFORE IT IS PRESSED — and it is required, because the owner
+   * had to ask.
+   *
+   * He looked at a finished page and asked *« pourquoi les labels changent d'ordre au filtre ? »*.
+   * The gesture was working exactly as designed; what was missing is that nothing on the page said
+   * so until after the pill was pressed. Every other sentence this vocabulary owns is a
+   * COUNTERFACTUAL — what this ordering produced, once it exists — and a counterfactual cannot warn
+   * anybody. A legend names the control (`Ordre des axes`), which tells a reader what it is ABOUT
+   * and not what pressing it DOES; eight words jumping round a circle with no warning is the
+   * reader's first experience of the control either way.
+   *
+   * So this is the one sentence in the whole mechanism written for the state the page SHIPS in. It
+   * takes the same reserved row the counterfactuals take, directly under the control and directly
+   * above the drawing, so it is read where the change will happen and costs the layout nothing: the
+   * row is already as tall as the longest sentence in it.
+   */
+  noneNote: string;
   /** The axes AS THE PLATE DRAWS THEM, in the plate's own order. This is the ordering every option
    *  is refused against, and it is also the one the untouched option restores. */
   axes: ReorderAxis[];
@@ -264,6 +282,18 @@ export function assertReorderDeclaration(
     throw new Error(
       at(
         "the untouched option has no words, and it is the state the page ships in",
+      ),
+    );
+  // THE SENTENCE THAT WARNS, REFUSED IF IT IS MISSING. Every other sentence here is written about a
+  // state the reader has already produced; this is the only one written for the state they arrive
+  // in, and without it the control's first act is eight words moving with no warning. The owner
+  // asked why, on a page where the legend already named the control.
+  if (!declaration.noneNote?.trim())
+    throw new Error(
+      at(
+        "nothing on the page says what this control will DO before it is pressed — the legend names " +
+          "what the reader is choosing, not what choosing does, and every other sentence here is a " +
+          "counterfactual that only exists once an option has been taken",
       ),
     );
   if (!Array.isArray(declaration.axes) || declaration.axes.length < 3)
@@ -484,16 +514,27 @@ export function reorderPlatesForMarkup(
   ];
 }
 
-/** Every sentence the control reveals under itself, by the slug that reveals it. The untouched
- *  option gets none: it is not a counterfactual, it is the claim the title states. */
+/**
+ * Every sentence this row holds, by the slug that shows it — THE UNTOUCHED OPTION'S FIRST.
+ *
+ * It used to get none, on the argument that it "is not a counterfactual, it is the claim the title
+ * states". That argument is still true of a counterfactual and it was the wrong thing to conclude
+ * from: the row was EMPTY in the state the page ships in, so the whole apparatus said nothing until
+ * after the reader had pressed something. The owner read such a page and asked why the labels moved.
+ * So the untouched option's sentence is not a counterfactual either — it is the WARNING, and it goes
+ * where the counterfactuals go, in the same reserved row, which already costs the layout nothing.
+ */
 export function reorderNotesForMarkup(
   declaration: ReorderDeclaration | null | undefined,
 ): { slug: string; text: string }[] {
   if (!declaration) return [];
-  return declaration.options.map((option) => ({
-    slug: reorderSlugOf(option.key),
-    text: option.note,
-  }));
+  return [
+    { slug: REORDER_NONE_SLUG, text: declaration.noneNote },
+    ...declaration.options.map((option) => ({
+      slug: reorderSlugOf(option.key),
+      text: option.note,
+    })),
+  ];
 }
 
 /**
@@ -573,6 +614,9 @@ export function reorderCss(
     // height to a grid cell. Hidden by visibility it still sizes the row, still leaves the
     // accessibility tree, and still cannot be read.
     `${scope} [data-reorder-note] { visibility: hidden; }`,
+    // The warning is what the untouched page says, so it is the one the row shows at rest; each
+    // option takes its place below.
+    `${scope} [data-reorder-note="${REORDER_NONE_SLUG}"] { visibility: visible; }`,
   ];
   for (const option of declaration.options) {
     const slug = reorderSlugOf(option.key);
@@ -582,10 +626,355 @@ export function reorderCss(
       `${at} [data-reorder-plate="${slug}"] { display: block; }`,
       `${at} [data-reorder-readout="${REORDER_NONE_SLUG}"] { display: none; }`,
       `${at} [data-reorder-readout="${slug}"] { display: revert; }`,
+      `${at} [data-reorder-note="${REORDER_NONE_SLUG}"] { visibility: hidden; }`,
       `${at} [data-reorder-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
+}
+
+/**
+ * ── THE TRAVEL ───────────────────────────────────────────────────────────────────────────────
+ *
+ * WHAT THE OWNER ASKED FOR, AND WHY IT WAS NOT WHAT THIS FILE FIRST SHIPPED. He looked at a page
+ * built on the rules above and said the graph could *« changer en lerp smooth au lieu de saccader en
+ * changement direct »* — the vertices travelling round the circle to their new spokes rather than one
+ * picture being swapped for another. The first mechanism could not do it and the reason was
+ * structural, not cosmetic: `display` cannot be transitioned, and every ordering was a whole `<svg>`
+ * revealed with `display`.
+ *
+ * THE THREE TRIGGERS CSS HAS, AND WHAT EACH MEASURED (Chrome 151, driven, not assumed):
+ *
+ *   1. AN ANIMATION ON A PLATE THAT IS BEING REVEALED. `display: none` does NOT restart a CSS
+ *      animation on the DESCENDANTS of the hidden element — measured: a plate's vertices ran their
+ *      whole 3s animation while the plate was hidden, from page load, and by the time a reader
+ *      pressed the pill there was nothing left to play. Unusable.
+ *   2. `@starting-style` PLUS `transition-behavior: allow-discrete`. Measured: the starting style
+ *      fired ONCE, at load, for the hidden plate too — the descendants of a `display: none` element
+ *      still have a computed style, so they are never "newly rendered" and the reveal re-triggers
+ *      nothing. Unusable.
+ *   3. A PROPERTY CHANGING ON AN ELEMENT THAT IS ALWAYS RENDERED. This is the only one that works,
+ *      and it decides the architecture: the drawing cannot be one `<svg>` per ordering any more. It
+ *      has to be ONE drawing whose geometry moves.
+ *
+ * WHICH RUNS STRAIGHT INTO THE DEFECT THE FIRST MECHANISM EXISTED TO AVOID, and it has not gone
+ * away: `interaction.mjs` resolves the mark under a pointer from `cx`/`cy` read ONCE at init, so a
+ * mark that moves under a `transform` answers from where it used to be. A drawing that moves cannot
+ * be the thing that answers.
+ *
+ * SO THE TWO JOBS ARE SPLIT, and that is the whole of this section:
+ *
+ *   - ONE `[data-reorder-motion]` drawing — rings, spokes, both areas, every dot, every spoke's
+ *     name. Always rendered, `pointer-events: none`, `aria-hidden`. Nothing in it answers anything.
+ *     Its dots and names TRAVEL on `transform`, its areas MORPH on `d`, both driven by the same
+ *     `:has(:checked)` rule that used to swap plates.
+ *   - N `[data-reorder-plate]` HIT PLATES, one per ordering, transparent, carrying only the points
+ *     that answer and the overlay that resolves them. Still swapped with `display`, still one wired
+ *     `svg.chart` each, still zero-box and out of the tab order when unchosen. THE MARKS THAT ANSWER
+ *     NEVER MOVE: each plate's points are baked at that ordering's own coordinates and jump to them.
+ *
+ * The one honest cost, stated rather than hidden: for the travel's own duration the hit layer is
+ * already at the destination while the drawing is still in the air. A reader who points DURING the
+ * flight is answered about the vertex that is arriving. Nothing is ever answered from a position no
+ * vertex will occupy, which is the failure the split exists to prevent.
+ *
+ * WHY `d` AND `transform` AND NOT ONE OF THEM. A polygon's corner cannot be carried by a translate —
+ * its two edges end on vertices travelling to different places. A `<path>`'s `d` interpolates
+ * point by point (measured: `M 50 10` toward `M 10 10` reported `M 44.6668 10` a seventh of the way
+ * in), which is exactly the lerp that was asked for. The dots and the names cannot use `d` at all. So
+ * both are used, with THE SAME DURATION AND THE SAME EASING — that is load-bearing, not tidiness: a
+ * dot and the corner it sits on are interpolated by two different engines and stay coincident only
+ * because both are linear in the same clock (measured at 400ms of 3000: the dot 13,3 % of the way,
+ * the corner 13,3 % of the way).
+ *
+ * AND THE PAGE IS CORRECT WITH NO MOTION AT ALL, three ways. Under `prefers-reduced-motion: reduce`
+ * every transition is gone — the declarations that set the geometry are outside the query and the
+ * transitions are inside it, so the picture SNAPS (measured: `document.getAnimations()` empty, the
+ * new geometry already in place at the first sample). With JavaScript off nothing here changes, as
+ * with everything else in this file. And on an engine with no CSS `d` property the areas are drawn
+ * as one baked `<path>` per ordering, swapped with `display` — the first mechanism, one level down,
+ * behind `@supports not`, so an engine this file has never been driven in gets a correct picture
+ * that does not travel rather than a travelling picture that is wrong.
+ */
+
+/**
+ * How long a vertex takes to cross to its new spoke. A JUDGEMENT, and a knob, in the shape
+ * `ENTRANCE_CEILING_MS` is one: the travel has to be slow enough that a reader can follow ONE
+ * vertex across the circle — which is the whole thing the owner asked to be able to see — and short
+ * enough that pressing the second pill is not waiting for the first. It is not measured off
+ * anything, and saying so is better than dressing it as arithmetic.
+ */
+export const REORDER_TRAVEL_MS = 420;
+
+/** The same curve for the areas as for the dots, for the reason in the section header: two engines
+ *  interpolating the same flight stay together only if they are given the same clock. */
+export const REORDER_TRAVEL_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** The feature the travelling AREA rests on, written once and asked twice — for the fallback and for
+ *  the motion itself, so the two can never drift apart. */
+const REORDER_D_SUPPORT = '(d: path("M 0 0 Z"))';
+
+/**
+ * WHERE EVERY MOVING THING SITS IN EVERY STATE — computed by the beat, because it is the beat that
+ * owns the scale, exactly as `reorderCss` owns no coordinate.
+ *
+ * THE AREAS ARE NOT DECLARED HERE, AND THAT IS THE ONE THING THIS TYPE GOT WRONG FIRST. They were,
+ * and the first driven frame showed why it cannot be: a `<path>`'s `d` interpolates its point i to
+ * the other path's point i, so a corner travels along whatever line joins the two points that happen
+ * to share an index — and a beat that named its dots by SOURCE while its paths were indexed by SPOKE
+ * sent the two on different journeys. Measured mid-flight: the dots stood up to 5,5 user units clear
+ * of the outline they belong to, in a picture whose whole subject is where a vertex sits.
+ *
+ * So the polygon is no longer a thing a beat states. It is BUILT, here, out of the same two numbers
+ * the dot is built from — `home[id]` plus `moves[state][id]` — walked in the order `corners` gives.
+ * The dot and its corner are then the same arithmetic twice, and there is no declaration in which
+ * they can disagree. A refusal would have caught this case; construction cannot express it.
+ */
+export type ReorderMotion = {
+  /** Every moving element's baked coordinate — where the ONE drawing really puts it, before any
+   *  state moves it. In the drawing's own user units. */
+  home: Record<string, [number, number]>;
+  /** state slug -> element id -> [dx, dy] from `home`, in the drawing's own user units. */
+  moves: Record<string, Record<string, [number, number]>>;
+  /** area id -> the element ids whose points ARE that area's corners, in the order the outline walks
+   *  them. The same in every state: an ordering changes what sits on a spoke, never which spokes are
+   *  neighbours. */
+  corners: Record<string, string[]>;
+  /** state slug -> element id -> the `text-anchor` that element takes in that state. A name that
+   *  crosses to the other side of the circle has to hang off its spoke the other way. */
+  anchors?: Record<string, Record<string, string>>;
+};
+
+/** Two decimals of a user unit. At this beat's scale that is a fortieth of a pixel on a laptop, and
+ *  it keeps a generated stylesheet that names two dozen elements in four states from carrying
+ *  seventeen digits of floating-point noise per coordinate. */
+const px = (n: number) => `${Number(n.toFixed(2))}px`;
+const unit = (n: number) => Number(n.toFixed(2));
+
+/**
+ * EVERY AREA'S CLOSED PATH IN EVERY STATE, built from the vertices rather than beside them — see the
+ * type's own header for the frame that made this necessary. Exported because the component needs the
+ * untouched state's path for the `d` ATTRIBUTE it bakes into the markup, and every state's for the
+ * baked fallback an engine with no CSS `d` property falls back to.
+ */
+export function reorderAreaPaths(
+  motion: ReorderMotion,
+): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  for (const [state, moves] of Object.entries(motion.moves)) {
+    out[state] = {};
+    for (const [id, ids] of Object.entries(motion.corners))
+      out[state][id] =
+        ids
+          .map((corner, i) => {
+            const [hx, hy] = motion.home[corner];
+            const [dx, dy] = moves[corner];
+            return `${i === 0 ? "M" : "L"} ${unit(hx + dx)} ${unit(hy + dy)}`;
+          })
+          .join(" ") + " Z";
+  }
+  return out;
+}
+
+/**
+ * Refuses a motion declaration that would draw a state WRONG, which is a worse failure than a state
+ * that does not move: a missing entry is silently the DEFAULT geometry, so the reader presses a pill,
+ * the sentence and the readout change, and the picture keeps saying what the plate said.
+ */
+export function assertReorderMotion(
+  declaration: ReorderDeclaration | null | undefined,
+  motion: ReorderMotion,
+): void {
+  if (!declaration) return;
+  const at = (what: string) => `reorder: ${what}`;
+  const states = [
+    REORDER_NONE_SLUG,
+    ...declaration.options.map((option) => reorderSlugOf(option.key)),
+  ];
+  for (const state of states)
+    if (!motion.moves?.[state])
+      throw new Error(
+        at(
+          `the ordering ${JSON.stringify(state)} says where nothing travels, so its drawing would ` +
+            "stay at the plate's own coordinates while its words said otherwise",
+        ),
+      );
+  const ids = Object.keys(motion.moves[REORDER_NONE_SLUG]).sort().join(" ");
+  for (const state of states)
+    if (Object.keys(motion.moves[state]).sort().join(" ") !== ids)
+      throw new Error(
+        at(
+          `the ordering ${JSON.stringify(state)} moves a different set of things than the plate ` +
+            "does — one of them would be left behind on its old spoke",
+        ),
+      );
+  for (const [id, [dx, dy]] of Object.entries(motion.moves[REORDER_NONE_SLUG]))
+    if (dx !== 0 || dy !== 0)
+      throw new Error(
+        at(
+          `the untouched ordering offsets ${JSON.stringify(id)} by (${dx}, ${dy}) — the one drawing ` +
+            "is baked at the plate's own coordinates, so the state the page ships in is the only " +
+            "one that may not move",
+        ),
+      );
+  for (const [area, corners] of Object.entries(motion.corners ?? {})) {
+    if (corners.length < 3)
+      throw new Error(
+        at(`the area ${JSON.stringify(area)} is walked through ${corners.length} corner(s), which closes nothing`),
+      );
+    for (const corner of corners)
+      if (!motion.home?.[corner] || !motion.moves[REORDER_NONE_SLUG][corner])
+        throw new Error(
+          at(
+            `the area ${JSON.stringify(area)} is walked through ${JSON.stringify(corner)}, which is ` +
+              "not one of the things that travel — a corner the vertices do not carry is a corner " +
+              "that can leave the vertices behind, and it is the defect this shape exists to prevent",
+          ),
+        );
+  }
+  for (const option of declaration.options) {
+    const slug = reorderSlugOf(option.key);
+    const moved = Object.values(motion.moves[slug]).some(([dx, dy]) => dx !== 0 || dy !== 0);
+    if (!moved)
+      throw new Error(
+        at(
+          `${JSON.stringify(option.label)} moves nothing at all — the reader would press it and ` +
+            "watch the picture stand still",
+        ),
+      );
+    const cornerMoved = Object.values(motion.corners ?? {}).some((corners) =>
+      corners.some((corner) => {
+        const [dx, dy] = motion.moves[slug][corner];
+        return dx !== 0 || dy !== 0;
+      }),
+    );
+    if (!cornerMoved)
+      throw new Error(
+        at(
+          `${JSON.stringify(option.label)} moves the spoke NAMES and not one corner, so the two ` +
+            "shapes the reader is being asked to compare are the shapes they are already looking at",
+        ),
+      );
+  }
+}
+
+/**
+ * THE TRAVEL'S STYLESHEET. Same mechanism as `reorderCss` — `:has()` on the scope, `:checked` on a
+ * real radio, generated once at build time — and the same emission discipline: the general rule
+ * first, the per-state rules after it, and every transition LAST, inside
+ * `@media (prefers-reduced-motion: no-preference)`, where `reduce` cannot reach it.
+ *
+ * NOTHING HERE NAMES A COLOUR AND NOTHING HERE COMPUTES A COORDINATE.
+ */
+export function reorderMotionCss(
+  declaration: ReorderDeclaration | null | undefined,
+  { scope, idPrefix }: { scope: string; idPrefix: string },
+  motion: ReorderMotion,
+): string {
+  if (!declaration) return "";
+  const areas = reorderAreaPaths(motion);
+  const lines: string[] = [
+    `/* The travel: the one drawing's dots and spoke names move on transform, its areas on d, both`,
+    `   on the same ${REORDER_TRAVEL_MS}ms clock so a dot and the corner under it stay together. The`,
+    `   drawing answers nothing — the hit plates above it do, and they never move. */`,
+    `${scope} [data-reorder-motion] { pointer-events: none; }`,
+    `${scope} [data-reorder-move] { transform: translate(0px, 0px); }`,
+    // Both halves of the area are hidden here and exactly one is turned back on, by the `@supports`
+    // pair below — hidden outside either branch so an engine with no `@supports` at all draws
+    // neither instead of both.
+    `${scope} [data-reorder-area] { display: none; }`,
+    `${scope} [data-reorder-still] { display: none; }`,
+  ];
+
+  const whenChecked = (slug: string) =>
+    `${scope}:has(#${reorderOptionId(idPrefix, slug)}:checked)`;
+
+  for (const option of declaration.options) {
+    const slug = reorderSlugOf(option.key);
+    const at = whenChecked(slug);
+    for (const [id, [dx, dy]] of Object.entries(motion.moves[slug] ?? {}))
+      if (dx !== 0 || dy !== 0)
+        lines.push(
+          `${at} [data-reorder-move="${id}"] { transform: translate(${px(dx)}, ${px(dy)}); }`,
+        );
+    for (const [id, anchor] of Object.entries(motion.anchors?.[slug] ?? {}))
+      if (anchor !== motion.anchors?.[REORDER_NONE_SLUG]?.[id])
+        lines.push(`${at} [data-reorder-move="${id}"] { text-anchor: ${anchor}; }`);
+  }
+
+  // THE AREA THAT TRAVELS, and it is the half that is not Baseline everywhere.
+  lines.push(`@supports ${REORDER_D_SUPPORT} {`);
+  lines.push(`  ${scope} [data-reorder-area] { display: block; }`);
+  for (const [id, d] of Object.entries(areas[REORDER_NONE_SLUG]))
+    lines.push(`  ${scope} [data-reorder-area="${id}"] { d: path("${d}"); }`);
+  for (const option of declaration.options) {
+    const slug = reorderSlugOf(option.key);
+    const at = whenChecked(slug);
+    for (const [id, d] of Object.entries(areas[slug] ?? {}))
+      lines.push(`  ${at} [data-reorder-area="${id}"] { d: path("${d}"); }`);
+  }
+  lines.push(`}`);
+
+  // THE AREA THAT DOES NOT — one baked path per ordering, swapped with display. This is the first
+  // mechanism this file shipped, kept for the engines the travel cannot reach, and it is why a page
+  // with no CSS `d` is still CORRECT rather than merely still.
+  lines.push(`@supports not ${REORDER_D_SUPPORT} {`);
+  lines.push(`  ${scope} [data-reorder-still="${REORDER_NONE_SLUG}"] { display: block; }`);
+  for (const option of declaration.options) {
+    const slug = reorderSlugOf(option.key);
+    const at = whenChecked(slug);
+    lines.push(
+      `  ${at} [data-reorder-still="${REORDER_NONE_SLUG}"] { display: none; }`,
+      `  ${at} [data-reorder-still="${slug}"] { display: block; }`,
+    );
+  }
+  lines.push(`}`);
+
+  lines.push(
+    `@media (prefers-reduced-motion: no-preference) {`,
+    `  ${scope} [data-reorder-move] { transition: transform ${REORDER_TRAVEL_MS}ms ${REORDER_TRAVEL_EASING}; }`,
+    `  ${scope} [data-reorder-area] { transition: d ${REORDER_TRAVEL_MS}ms ${REORDER_TRAVEL_EASING}; }`,
+    `}`,
+  );
+  return lines.join("\n");
+}
+
+/**
+ * THE VERTEX STILL LIGHTS UNDER THE POINTER, ACROSS THE SPLIT THE TRAVEL FORCED.
+ *
+ * `interaction.mjs` carries `.mark-active` from a point to `[data-mark="<key>"]` found with
+ * `svg.querySelectorAll` — INSIDE THE SAME `<svg>`. The travel put the visible dot in the drawing
+ * and the point that answers in a hit plate, which are two `<svg>`s, so that lookup finds nothing
+ * and the format's own `--mark-active` mechanism goes quiet. This puts it back in CSS, which can
+ * cross the boundary because both live under one `.chart-plot`: `:has()` on the plot, keyed on the
+ * point, painting the dot in the colour THE BEAT declared and measured on the dot itself.
+ *
+ * AND IT IS BETTER THAN WHAT IT REPLACES ON ONE AXIS: `:focus` is in the selector, so a reader
+ * tabbing through the vertices with the script absent now gets the lift the script used to be the
+ * only source of.
+ *
+ * A LINGERING CLASS CANNOT LIGHT A HIDDEN PLATE'S TWIN, and it is worth saying why the rule does not
+ * have to name the chosen state to be safe: every path that changes the state clears the class
+ * first. Pressing a pill is a `pointerdown` outside the svg, which `initChart`'s document listener
+ * clears on; reaching one by keyboard blurs the point, which clears on `blur`.
+ */
+export function reorderMarkLiftCss({
+  scope,
+  marks,
+}: {
+  scope: string;
+  marks: string[];
+}): string {
+  if (marks.length === 0) return "";
+  return [
+    `/* The dot the pointed point speaks for, lit across the drawing/hit-plate split. */`,
+    ...marks.map(
+      (key) =>
+        `${scope} .chart-plot:has(.pt[data-mark-ref="${key}"].pt-active) [data-mark="${key}"],` +
+        `\n${scope} .chart-plot:has(.pt[data-mark-ref="${key}"]:focus) [data-mark="${key}"] ` +
+        `{ fill: var(--mark-active); }`,
+    ),
+  ].join("\n");
 }
 
 /**

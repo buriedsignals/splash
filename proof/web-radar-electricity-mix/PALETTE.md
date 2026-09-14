@@ -79,6 +79,13 @@ ink until it is at least 1,12:1 from where it started and still 3:1 on the groun
 measured, and the component throws rather than ship a lift that clears neither. A French vertex
 lifts to a deeper France and a German one to a deeper grey; the hue never crosses sides.
 
+**And it is delivered by CSS now rather than by the script.** The travel put the visible dot in the
+one drawing and the point that answers in a hit plate, which are two `<svg>`s, and
+`interaction.mjs` only carries its class within one. So the lift is a generated `:has()` rule on
+`.chart-plot`, keyed on the point and painting the dot in the value declared on the dot itself —
+which changes no colour and no floor, and adds one thing: `:focus` is in the selector, so a reader
+tabbing the vertices with the script absent now sees the lift too.
+
 ## What is not chromatic
 
 Nothing else. The rings, the spokes, the spoke names, the ceiling label, the readout on the plot and
