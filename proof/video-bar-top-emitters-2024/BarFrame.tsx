@@ -52,7 +52,7 @@ function Text({ line, register, fill, opacity = 1, halo }: { line: Line; registe
   );
 }
 
-const NB = " ";
+const NB = "\u00A0";
 const withUnit = (text: string) => `${text}${NB}Gt`;
 
 export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {

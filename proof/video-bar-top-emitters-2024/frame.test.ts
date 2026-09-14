@@ -33,7 +33,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     it("should have measured the text of every value a count passes through", () => {
       const missing = new Set<string>();
       for (let v = 0; v <= props.bars[0].value; v += 0.0005) {
-        const text = `${valueText(v)} Gt`;
+        const text = `${valueText(v)}\u00A0Gt`;
         if (!(text in props.countWidths)) missing.add(text);
       }
       expect([...missing]).toEqual([]);
