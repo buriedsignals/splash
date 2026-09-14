@@ -538,6 +538,69 @@ async function checkHover(page, vp) {
   check(cleared, `${vp.label}: the tooltip clears when the pointer leaves the plot`);
 }
 
+/**
+ * ITEM: the yardstick's own words, proven by a REAL click on each option.
+ *
+ * `verify-web.mjs` excludes `[data-level-rule]` from the default view, on the ground that those
+ * words belong to an option nobody has chosen. This is the other half of that bargain: choose each
+ * option in turn, at the pill's own centre so the click is hit-tested like a reader's, and require
+ * that the words that option owns become drawn — and that no other option's do.
+ */
+async function checkLevel(page, tag) {
+  const options = await page.evaluate(() => {
+    const fs = document.querySelector("fieldset.chart-level");
+    if (!fs) return null;
+    return Array.prototype.map
+      .call(fs.querySelectorAll("input[type=radio]"), (i) => i.id)
+      .filter((id) => !id.endsWith("-none"));
+  });
+  if (!options) return;
+  if (options.length === 0) {
+    check(false, `${tag}: the yardstick offers an option to choose`, "none found");
+    return;
+  }
+  for (const id of options) {
+    const slug = id.replace(/^(?:chart|mw)-level-/, "");
+    const box = await page.evaluate((radioId) => {
+      const input = document.getElementById(radioId);
+      const r = (input.closest("label") ?? input).getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, id);
+    await page.mouse.click(box.x, box.y);
+    await sleep(80);
+    const seen = await page.evaluate((chosen) => {
+      const drawn = (el) => {
+        const cs = getComputedStyle(el);
+        return Number(cs.opacity) === 1 && cs.display !== "none" && cs.visibility !== "hidden";
+      };
+      const out = { mine: 0, mineDrawn: 0, others: 0, othersDrawn: 0, note: null };
+      for (const el of document.querySelectorAll(".chart-plot .overlay [data-level-rule]")) {
+        const mine = el.getAttribute("data-level-rule").split(":")[0] === chosen;
+        if (mine) {
+          out.mine += 1;
+          if (drawn(el)) out.mineDrawn += 1;
+        } else {
+          out.others += 1;
+          if (drawn(el)) out.othersDrawn += 1;
+        }
+      }
+      const note = document.querySelector(`[data-level-note="${chosen}"]`);
+      out.note = note && drawn(note) ? note.textContent.trim() : null;
+      return out;
+    }, slug);
+    check(
+      seen.mine > 0 && seen.mineDrawn === seen.mine && seen.othersDrawn === 0,
+      `${tag}: choosing "${slug}" draws its own words on the plot and nobody else's`,
+      `${seen.mineDrawn}/${seen.mine} of its own drawn, ${seen.othersDrawn} of ${seen.others} belonging to other options`,
+    );
+    check(
+      Boolean(seen.note),
+      `${tag}: choosing "${slug}" reveals the sentence the control owes the reader`,
+      seen.note ? `"${seen.note.slice(0, 70)}…"` : "no sentence drawn",
+    );
+  }
+}
+
 /** ITEM: verify the filter with REAL clicks — the picture changes, and the DEFAULT state already
  *  shows the whole claim. `page.mouse.click` at the pill's own centre, so the click is hit-tested
  *  like a reader's: a control covered by something else fails here. */
@@ -599,8 +662,17 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
             // THE HOLE THIS OPENS IS MEASURED RATHER THAN TRUSTED: a beat that marked every word
             // and drew none of them would slip past an exclusion alone, so the marked words get a
             // check of their own below.
+            //
+            // `:not([data-level-rule])` is the SAME ownership as the stack total's, one
+            // vocabulary over. A yardstick's own reference and the name it writes at that
+            // reference belong to an option nobody has chosen yet; they are drawn once, at their
+            // own coordinate, and revealed by `:checked` (`assets/level.ts`). Counting them as
+            // part of the default view would mean a beat could only ship a yardstick by drawing
+            // every option's answer at once, which is the picture the control exists to avoid.
+            // The hole it opens is held to something below, by clicking: the words a level owns
+            // must actually become drawn when their own option is chosen.
             ".chart-title, .chart-caveat, .chart-source," +
-              " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark])",
+              " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark]):not([data-level-rule])",
           ),
           (el) => {
             const cs = getComputedStyle(el);
@@ -648,6 +720,12 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
       `${tag}: every argument-bearing word is drawn unconditionally`,
       `${rest.words.length} words checked`,
     );
+    // THE EXCLUSION ABOVE, HELD TO SOMETHING, and held by CLICKING rather than by reading the
+    // markup. A yardstick is radios plus generated CSS and nothing else, so this works with the
+    // script disabled exactly as it works with it on — which is the whole claim `level.ts` makes
+    // and the one a reader without JavaScript is owed. A beat that tagged every word
+    // `data-level-rule` and wired no option to reveal it would slip past the exclusion alone.
+    await checkLevel(page, tag);
     return;
   }
   check(

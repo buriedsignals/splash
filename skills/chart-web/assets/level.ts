@@ -63,9 +63,28 @@
 // are, because every refusal here is the same sentence: a yardstick the plate cannot honour is a
 // yardstick whose sentence claims more than the reader can see.
 
-/** One reference laid across the plot: which series it belongs to, and where it sits in the
- *  geometry's own units. */
-export type LevelMark = { series: string; y: number };
+/**
+ * One reference laid across the plot: which series it belongs to, and where it sits in the
+ * geometry's own units.
+ *
+ * ONE COORDINATE, AND THE KEY THAT CARRIES IT NAMES THE AXIS THE RULE CROSSES. `y` is a reference
+ * laid FLAT across the plot, which is what every type in this catalogue that spends its x on
+ * category needs and the only thing this vocabulary could draw when it was written. `x` is the same
+ * reference stood UP, and it exists because a scatter is the one type here where BOTH axes carry a
+ * measured value (`chart-beat/references/types/scatter.md`, first paragraph). On that shape a
+ * chosen case's own values are TWO references, one per axis — and a vocabulary that can only lay
+ * them flat answers half of them while looking like it answered all of it, which is word for word
+ * the half-answer `assertLevelDeclaration` already refuses when an option lays a rule on one of two
+ * series.
+ *
+ * EXACTLY ONE OF THE TWO IS DECLARED, and which key is PRESENT is the declaration. A mark carrying
+ * both is refused rather than resolved by precedence: a reference cannot cross the plot in two
+ * directions at once, and a silent precedence is how one of the two values a reader asked for
+ * disappears without anything going red.
+ */
+export type LevelMark =
+  | { series: string; y: number; x?: undefined }
+  | { series: string; x: number; y?: undefined };
 
 /** One option: the datum whose levels are laid across the plot, and the words for it. */
 export type LevelOption = {
@@ -141,8 +160,11 @@ export function levelRuleKey(slug: string, series: string): string {
  *                     yardstick answers is "where does this datum sit on each of the things being
  *                     compared", and an option that lays one rule on a two-series plate answers
  *                     half of it while looking like it answered all of it.
- * @param height       the geometry's own height. A rule outside it is a reference the reader cannot
- *                     see, offered as though they could.
+ * @param height       the geometry's own height. A flat rule outside it is a reference the reader
+ *                     cannot see, offered as though they could.
+ * @param width        the geometry's own width, and the same refusal one axis over. Required only
+ *                     once an option declares an `x` mark, so a beat that lays every reference flat
+ *                     declares exactly what it always did.
  */
 export function assertLevelDeclaration(
   declaration: LevelDeclaration,
@@ -150,7 +172,8 @@ export function assertLevelDeclaration(
     drawnKeys,
     drawnSeries,
     height,
-  }: { drawnKeys: string[]; drawnSeries: string[]; height: number },
+    width,
+  }: { drawnKeys: string[]; drawnSeries: string[]; height: number; width?: number },
 ): void {
   const where = "level declaration";
   if (
@@ -257,17 +280,54 @@ export function assertLevelDeclaration(
             "in one ink is a picture the reader cannot resolve",
         );
       named.add(mark.series);
-      if (!Number.isFinite(mark.y))
+      // WHICH KEY IS PRESENT IS THE AXIS, and a mark that declares neither or both is refused
+      // rather than resolved — see `LevelMark`.
+      const hasY = "y" in mark && mark.y !== undefined;
+      const hasX = "x" in mark && mark.x !== undefined;
+      if (hasY && hasX)
         throw new Error(
-          `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} a ` +
-            `non-finite y (${mark.y}) — the rule would be drawn off the frame`,
+          `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} ` +
+            `both an x (${(mark as any).x}) and a y (${(mark as any).y}) — a reference crosses the ` +
+            "plot in ONE direction, and a silent precedence would drop the other value without " +
+            "anything going red",
         );
-      if (mark.y < 0 || mark.y > height)
+      if (!hasY && !hasX)
         throw new Error(
-          `${where}: option ${JSON.stringify(option.label)} draws its ${JSON.stringify(mark.series)} ` +
-            `rule at y=${mark.y}, outside the plot's own 0…${height} — a reference the reader cannot ` +
-            "see, offered as though they could",
+          `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} ` +
+            "neither an x nor a y — a reference with no coordinate is not drawn anywhere",
         );
+      if (hasY) {
+        if (!Number.isFinite(mark.y))
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} a ` +
+              `non-finite y (${mark.y}) — the rule would be drawn off the frame`,
+          );
+        if ((mark.y as number) < 0 || (mark.y as number) > height)
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} draws its ${JSON.stringify(mark.series)} ` +
+              `rule at y=${mark.y}, outside the plot's own 0…${height} — a reference the reader cannot ` +
+              "see, offered as though they could",
+          );
+      } else {
+        if (!Number.isFinite(width) || (width as number) <= 0)
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} stands its ${JSON.stringify(mark.series)} ` +
+              `reference UP the plot, so the geometry's width is what it is checked against — got ` +
+              `${JSON.stringify(width)}. A beat that lays every reference flat needs no width; one ` +
+              "that declares an x mark does",
+          );
+        if (!Number.isFinite(mark.x))
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} a ` +
+              `non-finite x (${mark.x}) — the rule would be drawn off the frame`,
+          );
+        if ((mark.x as number) < 0 || (mark.x as number) > (width as number))
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} draws its ${JSON.stringify(mark.series)} ` +
+              `rule at x=${mark.x}, outside the plot's own 0…${width} — a reference the reader cannot ` +
+              "see, offered as though they could",
+          );
+      }
     }
     for (const name of series)
       if (!named.has(name))
@@ -338,7 +398,7 @@ export function levelNotesForMarkup(
  */
 export function levelRulesForMarkup(
   declaration: LevelDeclaration | null | undefined,
-): { key: string; slug: string; series: string; y: number }[] {
+): { key: string; slug: string; series: string; y?: number; x?: number }[] {
   if (!declaration) return [];
   return declaration.options.flatMap((option) => {
     const slug = levelSlugOf(option.key);
@@ -346,7 +406,10 @@ export function levelRulesForMarkup(
       key: levelRuleKey(slug, mark.series),
       slug,
       series: mark.series,
-      y: mark.y,
+      // The coordinate the option declared, and only that one — a rule the beat draws flat and a
+      // rule it stands up are told apart by which of these is defined, exactly as the declaration
+      // told them apart.
+      ...("y" in mark && mark.y !== undefined ? { y: mark.y } : { x: mark.x }),
     }));
   });
 }

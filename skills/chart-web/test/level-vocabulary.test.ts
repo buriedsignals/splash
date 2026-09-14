@@ -125,6 +125,86 @@ describe("a yardstick the plate cannot honour is refused before anything is draw
     expect(() => assertLevelDeclaration(plan, DRAWN)).toThrow(/non-finite y/);
   });
 
+  // ── A REFERENCE STOOD UP, and the refusals that come with the second axis ────────────────────
+  // `proof/web-scatter-income-life-expectancy` is the beat that needed it: a scatter is the one
+  // type here where BOTH axes carry a measured value, so a chosen country's own case is two
+  // references, one flat and one upright.
+  const UPRIGHT = {
+    drawnKeys: ["NGA", "CHN"],
+    drawnSeries: ["income", "life"],
+    height: 340,
+    width: 880,
+  };
+  const upright = () => ({
+    label: "Mesurer le nuage à l'aune de",
+    noneLabel: "Le nuage entier",
+    options: [
+      {
+        key: "NGA",
+        label: "Nigeria",
+        announce: "Nigeria — 5 029 $ par personne, 53,5 ans",
+        note: "Nigeria · 5 029 $ · 53,5 ans · 41 pays plus pauvres vivent plus longtemps",
+        marks: [
+          { series: "income", x: 300.2 },
+          { series: "life", y: 250.4 },
+        ],
+      },
+      {
+        key: "CHN",
+        label: "Chine",
+        announce: "Chine — 18 667 $ par personne, 78,1 ans",
+        note: "Chine · 18 667 $ · 78,1 ans · 61 pays plus riches vivent moins longtemps",
+        marks: [
+          { series: "income", x: 540.9 },
+          { series: "life", y: 96.3 },
+        ],
+      },
+    ],
+  });
+
+  it("should accept a case whose two references cross the plot on different axes", () => {
+    expect(() => assertLevelDeclaration(upright() as any, UPRIGHT)).not.toThrow();
+  });
+
+  it("should refuse a mark carrying both an x and a y, rather than pick one silently", () => {
+    const plan = upright();
+    (plan.options[0].marks[1] as any).x = 12;
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/both an x .* and a y/);
+  });
+
+  it("should refuse a mark carrying neither coordinate", () => {
+    const plan = upright();
+    delete (plan.options[1].marks[0] as any).x;
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/neither an x nor a y/);
+  });
+
+  it("should refuse an upright reference outside the plot the reader can see", () => {
+    const plan = upright();
+    plan.options[1].marks[0].x = 880.5;
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(
+      /rule at x=880.5, outside the plot's own 0…880/,
+    );
+  });
+
+  it("should refuse a non-finite x rather than draw a rule off the frame", () => {
+    const plan = upright();
+    plan.options[0].marks[0].x = Number.NaN;
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/non-finite x/);
+  });
+
+  it("should refuse an upright reference when the beat declared no width to check it against", () => {
+    const { width, ...noWidth } = UPRIGHT;
+    expect(() => assertLevelDeclaration(upright() as any, noWidth as any)).toThrow(
+      /the geometry's width is what it is checked against/,
+    );
+  });
+
+  it("should still refuse a case that lays only one of the two axes", () => {
+    const plan = upright();
+    plan.options[0].marks = [plan.options[0].marks[0]] as any;
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/lays no rule on "life"/);
+  });
+
   it("should refuse an option with no sentence — the derived reading would live nowhere", () => {
     const plan = clone();
     plan.options[1].note = "  ";
@@ -183,6 +263,29 @@ describe("one identity, derived once", () => {
       "pol:wind",
       "pol:solar",
     ]);
+  });
+
+  it("should carry through only the coordinate each mark declared", () => {
+    const rules = levelRulesForMarkup({
+      label: "l",
+      noneLabel: "n",
+      options: [
+        {
+          key: "NGA",
+          label: "Nigeria",
+          announce: "Nigeria",
+          note: "Nigeria",
+          marks: [
+            { series: "income", x: 300.2 },
+            { series: "life", y: 250.4 },
+          ],
+        },
+      ],
+    } as any);
+    expect(rules).toEqual([
+      { key: "nga:income", slug: "nga", series: "income", x: 300.2 },
+      { key: "nga:life", slug: "nga", series: "life", y: 250.4 },
+    ] as any);
   });
 
   it("should emit nothing at all for a beat that declared no yardstick", () => {
