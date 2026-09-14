@@ -93,6 +93,16 @@
       "transform": "none",
       "lead": 39.6010763671875,
       "fill": "#61605a"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
     }
   },
   "titleCard": {
@@ -139,29 +149,29 @@
     "lines": [
       {
         "text": "Source : Ember, Energy",
-        "x": 5.2867675781250005,
-        "y": 30.359033203125,
-        "width": 385.170703125
+        "x": 4.80615234375,
+        "y": 27.59912109375,
+        "width": 350.15518465909093
       },
       {
         "text": "Institute, via Our World in",
-        "x": 5.2867675781250005,
-        "y": 69.96010957031251,
-        "width": 431.17998046875
+        "x": 4.80615234375,
+        "y": 63.600099609375,
+        "width": 391.9818004261364
       },
       {
-        "text": "Data · Natural Earth",
-        "x": 5.2867675781250005,
-        "y": 109.5611859375,
-        "width": 331.14375
+        "text": "Data · Natural Earth",
+        "x": 4.80615234375,
+        "y": 99.601078125,
+        "width": 301.03977272727275
       }
     ],
-    "halo": 10.573535156250001,
-    "width": 451,
-    "height": 123,
+    "halo": 9.6123046875,
+    "width": 410,
+    "height": 112,
     "at": {
       "x": 85,
-      "y": 897
+      "y": 908
     }
   },
   "panel": {
