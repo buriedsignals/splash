@@ -336,6 +336,12 @@
     "x": 1650.408102068537,
     "y": 277.54819553968395
   },
+  "bracket": {
+    "x": 1045.9978983310054,
+    "y1": 240.6648693503125,
+    "y2": 618.4186870827842,
+    "tick": 8.337826624218751
+  },
   "rows": {
     "first": 158.5,
     "pile": 240.7
@@ -581,6 +587,7 @@
       "camera": 0,
       "stack": 0,
       "tenth": 0,
+      "back": 0,
       "source": 0
     },
     {
@@ -591,6 +598,7 @@
       "camera": 0,
       "stack": 0,
       "tenth": 0,
+      "back": 0,
       "source": 0
     },
     {
@@ -601,6 +609,7 @@
       "camera": 1,
       "stack": 0,
       "tenth": 0,
+      "back": 0,
       "source": 0
     },
     {
@@ -611,6 +620,7 @@
       "camera": 1,
       "stack": 1,
       "tenth": 0,
+      "back": 0,
       "source": 0
     },
     {
@@ -621,6 +631,7 @@
       "camera": 1,
       "stack": 1,
       "tenth": 1,
+      "back": 1,
       "source": 1
     },
     {
@@ -631,12 +642,13 @@
       "camera": 1,
       "stack": 1,
       "tenth": 1,
+      "back": 1,
       "source": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 801,
+    "total": 891,
     "establish": {
       "start": 0,
       "duration": 45
@@ -655,10 +667,10 @@
     },
     "conclusion": {
       "start": 561,
-      "duration": 150
+      "duration": 240
     },
     "hold": {
-      "start": 711,
+      "start": 801,
       "duration": 90
     }
   },
