@@ -9,6 +9,10 @@
     "width": 1920,
     "height": 1080
   },
+  "layoutInset": {
+    "x": 85,
+    "y": 60
+  },
   "registers": {
     "display": {
       "fontFamily": "Merriweather",
@@ -29,6 +33,16 @@
       "transform": "uppercase",
       "lead": 36.000978515625,
       "fill": "#1F5C8B"
+    },
+    "body": {
+      "fontFamily": "Merriweather",
+      "fontSize": 41.05,
+      "fontWeight": 400,
+      "fontStyle": "italic",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 59.520426974999985,
+      "fill": "#616161"
     },
     "value": {
       "fontFamily": "Open Sans",
@@ -59,6 +73,46 @@
       "transform": "uppercase",
       "lead": 44.2103346484375,
       "fill": "#000000"
+    },
+    "area": {
+      "fontFamily": "Open Sans",
+      "fontSize": 34.74,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 2.5265454545454546,
+      "transform": "none",
+      "lead": 41.689133121093754,
+      "fill": "#616161"
+    },
+    "feature": {
+      "fontFamily": "Open Sans",
+      "fontSize": 34.74,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": 2.5265454545454546,
+      "transform": "none",
+      "lead": 41.689133121093754,
+      "fill": "#616161"
+    },
+    "closeFeature": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45.79,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": 3.330181818181818,
+      "transform": "none",
+      "lead": 54.94949354101562,
+      "fill": "#1F5C8B"
+    },
+    "water": {
+      "fontFamily": "Open Sans",
+      "fontSize": 34.74,
+      "fontWeight": 400,
+      "fontStyle": "italic",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 41.689133121093754,
+      "fill": "#616161"
     }
   },
   "titleCard": {
@@ -76,35 +130,56 @@
     "eyebrow": {
       "text": "ÉNERGIE · EUROPE",
       "x": 85,
-      "y": 336.0224609375,
+      "y": 227.0224609375,
       "width": 343.2113486842105
     },
     "title": [
       {
         "text": "Sept pays européens",
         "x": 85,
-        "y": 439.23129418945314,
+        "y": 330.23129418945314,
         "width": 841.2469779968262
       },
       {
         "text": "dépassent 94 % d’électricité",
         "x": 85,
-        "y": 543.2400622394531,
+        "y": 434.24006223945315,
         "width": 1140.389061498642
       },
       {
         "text": "bas-carbone — six au",
         "x": 85,
-        "y": 647.2488302894532,
+        "y": 538.2488302894532,
         "width": 887.5281684027777
       },
       {
         "text": "nord-ouest, et l’Albanie",
         "x": 85,
-        "y": 751.2575983394531,
+        "y": 642.2575983394531,
         "width": 951.3425812774234
       }
-    ]
+    ],
+    "standfirst": [
+      {
+        "text": "Part de l’électricité bas-carbone — renouvelables et nucléaire",
+        "x": 85,
+        "y": 752.3893371091406,
+        "width": 1118.6173267569393
+      },
+      {
+        "text": "réunis — en 2024, dans les 40 pays européens dont la production",
+        "x": 85,
+        "y": 811.9097640841405,
+        "width": 1188.8079226016998
+      },
+      {
+        "text": "est rapportée.",
+        "x": 85,
+        "y": 871.4301910591405,
+        "width": 246.60787749290466
+      }
+    ],
+    "standfirstForm": 1
   },
   "endCard": {
     "form": 0,
@@ -283,7 +358,7 @@
     },
     "at": {
       "x": 85,
-      "y": 208
+      "y": 228
     }
   },
   "colours": {
@@ -307,8 +382,7 @@
       "counter": "#1e5a88",
       "key": "#5f5f5f",
       "source": "#5f5f5f",
-      "nameAccent": "#1e5a88",
-      "nameInk": "#000000",
+      "standfirst": "#5f5f5f",
       "water": "#1c64a0"
     }
   },
@@ -840,16 +914,30 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "Islande",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 124.0588657613234,
-      "width": 144.9028657613234,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 372.1327776456542,
-      "y": 127.29089029476768
+      "text": "ISLANDE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 160.75177341391824,
+      "width": 171.78477756430888,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 358.6918217441614,
+      "y": 35.88739164261925,
+      "ink": "#18486c",
+      "onKey": null,
+      "leader": {
+        "from": {
+          "x": 444.58421052631587,
+          "y": 152.05263157894737
+        },
+        "to": {
+          "x": 444.58421052631587,
+          "y": 87.71614164261925
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "top:SWE",
@@ -859,16 +947,20 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "Suède",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 105.12520009647716,
-      "width": 125.96920009647715,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1109.0364525833406,
-      "y": 39.04352187371505
+      "text": "SUÈDE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 118.07499166124518,
+      "width": 129.10799581163582,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 1107.4670547257615,
+      "y": 37.890888157894736,
+      "ink": "#c5d5e1",
+      "onKey": "SWE",
+      "leader": null
     },
     {
       "key": "top:NOR",
@@ -878,16 +970,30 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "Norvège",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 144.14294168905778,
-      "width": 164.98694168905777,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 850.3282147858381,
-      "y": 246.09089029476766
+      "text": "NORVÈGE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 178.57977634360574,
+      "width": 189.61278049399638,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 771.947900622307,
+      "y": 193.10950657894733,
+      "ink": "#18486c",
+      "onKey": null,
+      "leader": {
+        "from": {
+          "x": 974.0684210526315,
+          "y": 270.85263157894735
+        },
+        "to": {
+          "x": 961.5606811163034,
+          "y": 244.93825657894735
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "top:CHE",
@@ -897,16 +1003,30 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "Suisse",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 107.82384361787275,
-      "width": 128.66784361787276,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 920.805840632428,
-      "y": 738.4856271368728
+      "text": "SUISSE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 125.19847620270468,
+      "width": 136.23148035309532,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 929.2626975208962,
+      "y": 775.7551083573807,
+      "ink": "#133956",
+      "onKey": "ITA",
+      "leader": {
+        "from": {
+          "x": 944.0842105263159,
+          "y": 763.2473684210526
+        },
+        "to": {
+          "x": 944.0842105263159,
+          "y": 775.7551083573807
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "top:FIN",
@@ -916,16 +1036,20 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "Finlande",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 147.3843861137737,
-      "width": 168.2283861137737,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1213.6700174694292,
-      "y": 211.70141661055715
+      "text": "FINLANDE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 191.453688131159,
+      "width": 202.48669228154964,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 1196.5408643855412,
+      "y": 210.54878289473683,
+      "ink": "#c5d5e1",
+      "onKey": "FIN",
+      "leader": null
     },
     {
       "key": "top:FRA",
@@ -935,16 +1059,20 @@
       },
       "role": "top",
       "camera": "overview",
-      "text": "France",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 114.96521796746687,
-      "width": 135.80921796746688,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 774.5743383846877,
-      "y": 726.122469242136
+      "text": "FRANCE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 146.3851248099587,
+      "width": 157.41812896034935,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 761.4222842802734,
+      "y": 724.9698355263158,
+      "ink": "#c5d5e1",
+      "onKey": "FRA",
+      "leader": null
     },
     {
       "key": "odd:ALB",
@@ -954,16 +1082,30 @@
       },
       "role": "odd",
       "camera": "overview",
-      "text": "Albanie · 100 %",
-      "accent": true,
-      "register": "axis",
-      "textWidth": 265.7622409889915,
-      "width": 286.6062409889915,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 839.5562936567427,
-      "y": 922.6894736842104
+      "text": "ALBANIE",
+      "register": "feature",
+      "halo": 11.033004150390626,
+      "textWidth": 163.21139675071024,
+      "width": 174.24440090110087,
+      "height": 51.82875,
+      "textX": 5.516502075195313,
+      "baseline": 37.96651428222656,
+      "klass": "feature",
+      "x": 1089.8725363915548,
+      "y": 973.5216758805817,
+      "ink": "#18486c",
+      "onKey": null,
+      "leader": {
+        "from": {
+          "x": 1176.9947368421053,
+          "y": 963.0993916003082
+        },
+        "to": {
+          "x": 1176.9947368421053,
+          "y": 973.5216758805817
+        },
+        "dot": 0
+      }
     },
     {
       "key": "missing:UKR",
@@ -973,114 +1115,327 @@
       },
       "role": "missing",
       "camera": "overview",
-      "text": "Ukraine · donnée non rapportée",
-      "accent": false,
-      "register": "axis",
-      "textWidth": 565.6554041324962,
-      "width": 586.4994041324962,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1227.8269390384767,
-      "y": 666.1767023935033
+      "text": "UKRAINE",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 158.2242875664451,
+      "width": 169.38993820121073,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 1327.3418730046578,
+      "y": 661.0452860300165,
+      "ink": "#5f5f5f",
+      "onKey": "UKR",
+      "leader": null
+    },
+    {
+      "key": "context:CYP",
+      "seat": {
+        "x": 1422.2684210526315,
+        "y": 1058.9684210526316
+      },
+      "role": "context",
+      "camera": "overview",
+      "text": "CHYPRE",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 139.09107840798117,
+      "width": 150.2567290427468,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 1434.7761609889596,
+      "y": 1017.2261835166016,
+      "ink": "#5f5f5f",
+      "onKey": "SYR",
+      "leader": {
+        "from": {
+          "x": 1422.2684210526315,
+          "y": 1058.9684210526316
+        },
+        "to": {
+          "x": 1434.7761609889596,
+          "y": 1058.9684210526316
+        },
+        "dot": 4.1689133121093755
+      }
+    },
+    {
+      "key": "context:MLT",
+      "seat": {
+        "x": 1070.9842105263158,
+        "y": 1036.657894736842
+      },
+      "role": "context",
+      "camera": "overview",
+      "text": "MALTE",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 117.78660960786993,
+      "width": 128.95226024263556,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 929.5242103473521,
+      "y": 1010.4821281352796,
+      "ink": "#5f5f5f",
+      "onKey": "TUN",
+      "leader": {
+        "from": {
+          "x": 1070.9842105263158,
+          "y": 1036.657894736842
+        },
+        "to": {
+          "x": 1058.4764705899877,
+          "y": 1036.657894736842
+        },
+        "dot": 4.1689133121093755
+      }
+    },
+    {
+      "key": "context:MDA",
+      "seat": {
+        "x": 1332.3157894736844,
+        "y": 741.0789473684212
+      },
+      "role": "context",
+      "camera": "overview",
+      "text": "MOLDAVIE",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 188.87531732160394,
+      "width": 200.04096795636957,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 1282.3055474845921,
+      "y": 787.2208698065892,
+      "ink": "#3a3a3a",
+      "onKey": null,
+      "leader": {
+        "from": {
+          "x": 1332.3157894736844,
+          "y": 741.0789473684212
+        },
+        "to": {
+          "x": 1332.3157894736844,
+          "y": 787.2208698065892
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "close:ALB",
       "seat": {
-        "x": 960.0000000000005,
-        "y": 539.9999999999997
+        "x": 960.0000000000007,
+        "y": 539.9999999999999
       },
       "role": "odd",
       "camera": "closeUp",
-      "text": "Albanie · 100 %",
-      "accent": true,
-      "register": "value",
-      "textWidth": 340.4512939453125,
-      "width": 367.9252939453125,
-      "height": 64.76154213867187,
-      "textX": 13.737,
-      "baseline": 48.2664064453125,
-      "x": 776.0373530273442,
-      "y": 507.6192289306637
+      "text": "ALBANIE · 100 %",
+      "register": "closeFeature",
+      "halo": 14.542346191406251,
+      "textWidth": 411.6010000443892,
+      "width": 426.14334623579543,
+      "height": 68.31428833007813,
+      "textX": 7.2711730957031255,
+      "baseline": 50.042779541015626,
+      "klass": "feature",
+      "x": 746.928326882103,
+      "y": 505.8428558349608,
+      "ink": "#c5d5e1",
+      "onKey": "ALB",
+      "leader": null
     },
     {
       "key": "neighbour:MNE",
       "seat": {
-        "x": 799.1389508327135,
-        "y": 35.1840245644528
+        "x": 799.5895340297035,
+        "y": 36.59804988183579
       },
       "role": "neighbour",
       "camera": "closeUp",
-      "text": "Monténégro · 59 %",
-      "accent": false,
-      "register": "axis",
-      "textWidth": 328.29054023309186,
-      "width": 349.13454023309185,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 624.5716807161675,
-      "y": 10.422283280273438
+      "text": "MONTÉNÉGRO · 59 %",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 385.3821249720834,
+      "width": 396.547775606849,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 390.5340184865264,
+      "y": 10.422283280273438,
+      "ink": "#171717",
+      "onKey": "BIH",
+      "leader": {
+        "from": {
+          "x": 799.5895340297035,
+          "y": 36.59804988183579
+        },
+        "to": {
+          "x": 787.0817940933754,
+          "y": 36.59804988183579
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "neighbour:MKD",
       "seat": {
-        "x": 1169.2501452582585,
-        "y": 354.2904960832963
+        "x": 1168.6640207743694,
+        "y": 354.81068156274824
       },
       "role": "neighbour",
       "camera": "closeUp",
-      "text": "Macédoine du Nord · 39 %",
-      "accent": false,
-      "register": "axis",
-      "textWidth": 460.78155452641573,
-      "width": 481.6255545264157,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1133.6381147615618,
-      "y": 329.52875479911665
+      "text": "MACÉDOINE DU NORD · 39 %",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 531.2225452046828,
+      "width": 542.3881958394484,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 1181.1717607106975,
+      "y": 328.63491496118576,
+      "ink": "#171717",
+      "onKey": "BGR",
+      "leader": {
+        "from": {
+          "x": 1168.6640207743694,
+          "y": 354.81068156274824
+        },
+        "to": {
+          "x": 1181.1717607106975,
+          "y": 354.81068156274824
+        },
+        "dot": 4.1689133121093755
+      }
     },
     {
       "key": "neighbour:GRC",
       "seat": {
-        "x": 1230.717375427871,
-        "y": 734.8641977717538
+        "x": 1229.9590768768396,
+        "y": 734.3183693461323
       },
       "role": "neighbour",
       "camera": "closeUp",
-      "text": "Grèce · 49 %",
-      "accent": false,
-      "register": "axis",
-      "textWidth": 215.39479553222657,
-      "width": 236.23879553222656,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1133.6381147615618,
-      "y": 710.102456487574
+      "text": "GRÈCE · 49 %",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 237.8943712158203,
+      "width": 249.06002185058594,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 1133.180935655257,
+      "y": 708.1426027445698,
+      "ink": "#535353",
+      "onKey": "GRC",
+      "leader": null
     },
     {
       "key": "neighbour:-99:Kosovo",
       "seat": {
-        "x": 1098.6282212335952,
-        "y": 103.19032177338585
+        "x": 1098.2399137630189,
+        "y": 104.41385663350484
       },
       "role": "neighbour",
       "camera": "closeUp",
-      "text": "Kosovo, hors données",
-      "accent": false,
-      "register": "axis",
-      "textWidth": 386.647533419349,
-      "width": 407.49153341934897,
-      "height": 49.52348256835938,
-      "textX": 10.422,
-      "baseline": 37.00894892578125,
-      "x": 1133.6381147615618,
-      "y": 78.42858048920615
+      "text": "KOSOVO, HORS DONNÉES",
+      "register": "area",
+      "halo": 11.165650634765626,
+      "textWidth": 470.8044127029072,
+      "width": 481.97006333767285,
+      "height": 52.351533203125,
+      "textX": 5.582825317382813,
+      "baseline": 38.42297424316406,
+      "klass": "area",
+      "x": 857.2548820941824,
+      "y": 21.841064883541218,
+      "ink": "#3a3a3a",
+      "onKey": "-99:Kosovo",
+      "leader": {
+        "from": {
+          "x": 1098.2399137630189,
+          "y": 104.41385663350484
+        },
+        "to": {
+          "x": 1098.2399137630189,
+          "y": 74.19259808666622
+        },
+        "dot": 4.1689133121093755
+      }
     }
   ],
-  "waters": [],
+  "waters": [
+    {
+      "key": "water:atlantic",
+      "text": "Océan Atlantique",
+      "width": 262.67037987709045,
+      "x": 366.95487125286644,
+      "y": 524.5819986088586
+    },
+    {
+      "key": "water:norwegian",
+      "text": "Mer de Norvège",
+      "width": 240.82217597961426,
+      "x": 719.0417702441646,
+      "y": 97.10137388173808
+    }
+  ],
+  "halos": {
+    "water": 9.852044677734375
+  },
+  "callout": {
+    "lines": [
+      {
+        "text": "ALBANIE, 100,0 %, EST LE",
+        "x": 10.029429321289063,
+        "y": 32.92801940917969,
+        "width": 478.4111079589844
+      },
+      {
+        "text": "SEUL DU GROUPE HORS",
+        "x": 10.029429321289063,
+        "y": 77.13835405761719,
+        "width": 439.071831357193
+      },
+      {
+        "text": "DU NORD-OUEST. SES 3",
+        "x": 10.029429321289063,
+        "y": 121.3486887060547,
+        "width": 435.71395020256045
+      },
+      {
+        "text": "VOISINS SONT TOUS",
+        "x": 10.029429321289063,
+        "y": 165.55902335449218,
+        "width": 379.05001694335937
+      },
+      {
+        "text": "SOUS 60 %.",
+        "x": 10.029429321289063,
+        "y": 209.7693580029297,
+        "width": 208.91157669410705
+      }
+    ],
+    "halo": 10.029429321289063,
+    "width": 509,
+    "height": 224,
+    "at": {
+      "x": 145,
+      "y": 80
+    },
+    "ink": "#1e5a88"
+  },
   "cameras": {
     "overview": {
       "x": -175.5555555555556,
@@ -1089,10 +1444,10 @@
       "h": 760
     },
     "closeUp": {
-      "x": 579.2950330354965,
-      "y": 608.0097060824668,
-      "w": 146.80993392900695,
-      "h": 82.58058783506641
+      "x": 579.0888429687217,
+      "y": 607.8937241699059,
+      "w": 147.22231406255665,
+      "h": 82.8125516601881
     }
   },
   "states": [
@@ -1104,9 +1459,11 @@
       "floor": 0,
       "count": 0,
       "top": 0,
+      "context": 0,
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
+      "callout": 0,
       "missing": 0,
       "end": 0
     },
@@ -1116,11 +1473,13 @@
       "classes": 1,
       "filter": 0,
       "floor": 0,
-      "count": 0,
+      "count": 1,
       "top": 0,
+      "context": 1,
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
+      "callout": 0,
       "missing": 0,
       "end": 0
     },
@@ -1132,9 +1491,11 @@
       "floor": 1,
       "count": 1,
       "top": 1,
+      "context": 0,
       "zoom": 0,
       "odd": 0,
       "neighbours": 0,
+      "callout": 0,
       "missing": 0,
       "end": 0
     },
@@ -1146,9 +1507,11 @@
       "floor": 1,
       "count": 1,
       "top": 0,
+      "context": 0,
       "zoom": 1,
       "odd": 1,
       "neighbours": 1,
+      "callout": 1,
       "missing": 0,
       "end": 0
     },
@@ -1160,9 +1523,11 @@
       "floor": 1,
       "count": 1,
       "top": 1,
+      "context": 1,
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
+      "callout": 0,
       "missing": 1,
       "end": 1
     },
@@ -1174,38 +1539,40 @@
       "floor": 1,
       "count": 1,
       "top": 1,
+      "context": 1,
       "zoom": 0,
       "odd": 1,
       "neighbours": 0,
+      "callout": 0,
       "missing": 1,
       "end": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 706,
+    "total": 870,
     "establish": {
       "start": 0,
-      "duration": 90
+      "duration": 120
     },
     "reference": {
-      "start": 90,
+      "start": 120,
       "duration": 100
     },
     "reveal": {
-      "start": 196,
+      "start": 226,
       "duration": 160
     },
     "subject": {
-      "start": 368,
-      "duration": 96
+      "start": 398,
+      "duration": 240
     },
     "conclusion": {
-      "start": 476,
+      "start": 650,
       "duration": 120
     },
     "hold": {
-      "start": 606,
+      "start": 770,
       "duration": 100
     }
   },
@@ -1226,8 +1593,22 @@
       "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
     },
     {
+      "family": "Merriweather",
+      "style": "italic",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
       "family": "Open Sans",
       "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "italic",
       "weight": 400,
       "weightTo": 400,
       "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
