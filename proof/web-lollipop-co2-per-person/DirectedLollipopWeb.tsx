@@ -46,11 +46,40 @@ export const SERIES = ["before", "after"] as const;
 /** The fraction of the span left above the tallest stem, so its printed figure has ground to sit on. */
 export const HEADROOM = 0.14;
 
-const HEAD_R = 7;
-/** The head's ground casing, in READER pixels. THE SEPARATION THE COLOURS CANNOT PROVIDE: a head
- *  filled with the colour its own stem is stroked with measures 1,00:1 against it, which is what
- *  this beat shipped. See `PALETTE.md`, "the head that was not there". */
-const CASING_PX = 2.5;
+/**
+ * THE HEAD IS DRAWN IN HTML, AT A FIXED CSS SIZE — this format's own split, not an exception to it.
+ *
+ * `render-web.mjs` states the split the page is built on: the `<svg>` carries GEOMETRY ONLY and
+ * stretches with its container (`preserveAspectRatio="none"`), while every word is HTML positioned
+ * by `%` at a FIXED pixel size. Geometry stretches; type does not. A `<circle>` inside that svg is
+ * therefore an ELLIPSE at every container aspect but one — measured at 1400 x 900 this beat's heads
+ * came out 22,5 x 23,4 px, 0,96:1, and further off at other widths — and NO RADIUS COMPUTED AT
+ * BUILD TIME CAN CORRECT IT, because the stretch is a function of a container the build never sees.
+ *
+ * A lollipop's head is not geometry. It is a MARK OF FIXED SIZE, exactly as the 3 px stems already
+ * are: `vectorEffect="non-scaling-stroke"` is that same decision taken for a length instead of for
+ * an area. So the head is drawn where fixed sizes live — in the `.overlay`, positioned by `%` like
+ * the value labels beside it — and it is round at 320 px and at 1920.
+ *
+ * WHY 12 AND NOT THE 23 px THE STRETCH GAVE AT 1400. A fixed head has to hold at the NARROW end
+ * too: the two heads of a pair sit `2 * off` apart, which is 4,33 % of the plot's width, so at a
+ * 375 px window their centres are 14,2 px apart. 12 px leaves 2,2 px of ground between the two
+ * fills there and reads as four stem-widths across — a proportion the 5,5 px head the stretch gave
+ * at that width never had.
+ */
+const HEAD_PX = 12;
+/** The head's ground casing, as a RING of CSS pixels around the fill. THE SEPARATION THE COLOURS
+ *  CANNOT PROVIDE: a head filled with the colour its own stem is stroked with measures 1,00:1
+ *  against it, which is what this beat shipped. See `PALETTE.md`, "the head that was not there". */
+const HEAD_CASING_PX = 2;
+/** The whole mark, casing included: the box the `.overlay` span occupies AND the viewBox of the
+ *  head's own 1:1 svg, so one number is both and nothing has to be reconciled. */
+const HEAD_BOX_PX = HEAD_PX + HEAD_CASING_PX * 2;
+/** Between the top of a head's casing and the bottom of its own printed value. THE CLEARANCE IS NOW
+ *  ARITHMETIC IN ONE UNIT — head and label are both CSS pixels in the same layer — rather than a
+ *  guess taken across a stretch: the label shipped at -8 px against a head whose drawn radius at
+ *  1400 x 900 was 11,7, and the two overlapped by 4 px, which is what the owner saw. */
+const LABEL_GAP_PX = 4;
 const STEM_PX = 3;
 const RING_PX = 1.6;
 const RULE_PX = 1.4;
@@ -316,13 +345,44 @@ export function DirectedLollipopWeb({
     // floor; the 0.8 this row shipped delivered 3,89:1 in creme and 3,90:1 in rapport.
     `${SCOPE} .x-axis [data-change] { display: block; color: var(--annot-ink); }`,
     `${SCOPE} .x-axis [data-change="${subject}"] { color: var(--subject-ink); }`,
-    // THE PAIR IS THE MARK, AND IT LIGHTS AS A HALO RATHER THAN AS A FILL. The shared sheet paints an
-    // active mark's fill, which is right for a bar; here the shapes the reading is about are the two
-    // HEADS, and repainting them would delete the two chromas the page spends on the two dates. So
-    // what carries `data-mark` is each head's ground casing, and what it takes is ink — the heads
-    // keep their own colours and gain a halo. Scoped at (0,2,0) and touching nothing `level.ts`
-    // generates, so a yardstick held open never suppresses it.
-    `${SCOPE} .mark-active { fill: var(--mark-active); stroke: var(--mark-active); }`,
+    // THE HEAD'S OWN BOX, in fixed CSS pixels, centred on the `%` position its `left`/`top` names.
+    // `overflow: visible` because a ring straddles the fill's edge and a hair of it would otherwise
+    // be clipped by the svg's own viewport.
+    `${SCOPE} .overlay .head { position: absolute; width: ${HEAD_BOX_PX}px; height: ${HEAD_BOX_PX}px; transform: translate(-50%, -50%); }`,
+    `${SCOPE} .overlay .head > svg { display: block; overflow: visible; }`,
+    // THE RING SURVIVES THE MOVE THROUGH INHERITANCE, AND THAT IS ALSO HOW IT STILL CLEARS.
+    // `stroke` and `stroke-width` are INHERITED CSS properties and inheritance does not stop at a
+    // namespace boundary. `level.ts` sets them on whatever carries `data-col`; here that is the HTML
+    // span, and from it they descend into the head's own 1:1 svg and reach the fill circle, which
+    // declares no `stroke` of its own and so has nothing to beat inheritance with. The casing circle
+    // declares `stroke="none"` and is immune — the same immunity it had as a separate SVG shape and
+    // for the same reason: `[data-col] { stroke: none }` would otherwise step the casing back with
+    // the ring and re-open the 1,00:1 head-is-its-own-stem collision for five pairs at a time.
+    //
+    // THE SUBJECT'S DEFAULT RING IS STILL THE ONE THE READER'S OWN CHOICE CLEARS, and it is now a
+    // rule rather than the presentation attribute it was, because HTML has no presentation
+    // attribute to be. So it is written to LOSE, which is what specificity zero bought before:
+    // (0,4,0) against `level.ts`'s clearing rule at (1,3,0) — one id inside `:has()` outranks any
+    // number of classes — so picking a yardstick takes this ring off exactly as it used to, and the
+    // lit rule (1,3,0, emitted after the clearing one) puts the ring on the country the READER
+    // chose. Measured rather than assumed: the mutation is below, in the verification.
+    `${SCOPE} .head[data-col="${subject}"][data-head="${SERIES[1]}"] { stroke: var(--subject-ring); stroke-width: ${RING_PX}; }`,
+    // THE PAIR STILL LIGHTS AS A HALO RATHER THAN AS A FILL. The shapes the reading is about are the
+    // two HEADS, and repainting them would delete the two chromas the page spends on the two dates,
+    // so what takes ink is each head's ground CASING and `data-mark` is still the thing on it.
+    //
+    // WHAT CHANGED IS WHO CARRIES THE CLASS. `interaction.mjs` resolves a point's marks with
+    // `svg.querySelectorAll('[data-mark=...]')`, scoped to the plot's own svg — so once the casings
+    // are HTML that query returns nothing and `.mark-active` is never added to them. That file is
+    // shared by every web beat and is not this beat's to widen, so the bridge is CSS: the same
+    // script already puts `.pt-active` on the pointed point, and `:has()` on their common ancestor
+    // carries it across to the sibling overlay. Same trigger, same ink, no second script — and with
+    // JavaScript off nothing lights, which is what happened before the move too.
+    ...pairs.map(
+      (p) =>
+        `${SCOPE} .chart-plot:has(.pt[data-mark-ref="${p.code}"].pt-active) ` +
+        `.head[data-col="${p.code}"] [data-mark] { fill: var(--mark-active); }`,
+    ),
     // A head takes no ring until the page's own subject rule or a reader asks for one.
     levelChromeCss({ scope: SCOPE }),
     `${SCOPE} .chart-level { margin-top: 4px; }`,
@@ -358,6 +418,9 @@ export function DirectedLollipopWeb({
         ["--annot-ink" as string]: _annotInk,
         ["--subject-ink" as string]: subjectInk,
         ["--mark-active" as string]: label,
+        // The subject's ring. A custom property because `levelCss` takes its own ring the same way
+        // and a direction that changes its ink changes both together.
+        ["--subject-ring" as string]: label,
         // THE PLOT IS ASKED, NOT THE VIEWPORT — and it is asked here, on the figure, because a
         // container query styles a container's DESCENDANTS and `--x-axis-h` lives on the plot. An
         // `inline-size` container is queried on its CONTENT box, which is exactly the plot's width:
@@ -386,10 +449,10 @@ export function DirectedLollipopWeb({
           <span key={k.t} style={{ ...regs.annot, display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
-                width: 12,
-                height: 12,
+                width: HEAD_PX,
+                height: HEAD_PX,
                 background: k.c,
-                boxShadow: `0 0 0 ${CASING_PX}px var(--ground)`,
+                boxShadow: `0 0 0 ${HEAD_CASING_PX}px var(--ground)`,
                 display: "inline-block",
                 borderRadius: "50%",
               }}
@@ -491,49 +554,18 @@ export function DirectedLollipopWeb({
             </g>
           ))}
 
-          {pairs.map((p, i) => {
-            const isSubject = p.code === subject;
-            return (
-              <g key={p.code}>
-                <line x1={cx(i) - off} x2={cx(i) - off} y1={FRAME.height} y2={y(p.before)} stroke={tint} strokeWidth={STEM_PX} vectorEffect="non-scaling-stroke" />
-                <line x1={cx(i) + off} x2={cx(i) + off} y1={FRAME.height} y2={y(p.after)} stroke={accent} strokeWidth={STEM_PX} vectorEffect="non-scaling-stroke" />
-                {/* EACH HEAD ON ITS OWN GROUND CASING, as its own shape rather than as the head's
-                    stroke: the yardstick's generated `[data-col] { stroke: none }` steps every other
-                    country's ring back, and a casing carried on that stroke would step back with it —
-                    re-opening, for five pairs at a time, exactly the 1,00:1 collision it exists to
-                    close. It is also what carries `data-mark`, so the pair lights as a halo and the
-                    two chromas the page spends on the two dates are never repainted. */}
-                {[p.before, p.after].map((v, k) => (
-                  <circle
-                    key={k}
-                    data-mark={p.code}
-                    cx={k === 0 ? cx(i) - off : cx(i) + off}
-                    cy={y(v)}
-                    r={HEAD_R}
-                    fill={headCasing}
-                    stroke={headCasing}
-                    strokeWidth={CASING_PX * 2}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
-                <circle data-col={p.code} cx={cx(i) - off} cy={y(p.before)} r={HEAD_R} fill={tint} vectorEffect="non-scaling-stroke" />
-                {/* `the-subject-is-ringed-not-recoloured`, as a PRESENTATION attribute and not a rule:
-                    specificity zero, so `level.ts`'s `:has(#…:checked) [data-col] { stroke: none }`
-                    clears it the moment the reader picks a yardstick of their own. Under a chosen
-                    option the emphasis belongs to the comparison the READER asked for. */}
-                <circle
-                  data-col={p.code}
-                  cx={cx(i) + off}
-                  cy={y(p.after)}
-                  r={HEAD_R}
-                  fill={accent}
-                  stroke={isSubject ? label : "none"}
-                  strokeWidth={isSubject ? RING_PX : 0}
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
-            );
-          })}
+          {/* THE STEMS AND NOTHING ELSE. The heads used to be drawn here and are now in the
+              `.overlay` — see `HEAD_PX` — so this layer is pure geometry, which is the only thing
+              `preserveAspectRatio="none"` may be handed: a length stretches and stays a length, an
+              area stretches and stops being a circle. The stems already refused the stretch on the
+              one axis that would have shown (`non-scaling-stroke`, so 3 px at every width); their
+              LENGTH is the reading and it still scales with the plot, as it must. */}
+          {pairs.map((p, i) => (
+            <g key={p.code}>
+              <line x1={cx(i) - off} x2={cx(i) - off} y1={FRAME.height} y2={y(p.before)} stroke={tint} strokeWidth={STEM_PX} vectorEffect="non-scaling-stroke" />
+              <line x1={cx(i) + off} x2={cx(i) + off} y1={FRAME.height} y2={y(p.after)} stroke={accent} strokeWidth={STEM_PX} vectorEffect="non-scaling-stroke" />
+            </g>
+          ))}
 
           <line x1={0} x2={FRAME.width} y1={FRAME.height} y2={FRAME.height} stroke={baseline} strokeWidth={1.2} vectorEffect="non-scaling-stroke" />
 
@@ -562,13 +594,66 @@ export function DirectedLollipopWeb({
         </svg>
 
         <div className="overlay" aria-hidden="true">
+          {/* THE TWELVE HEADS, IN HTML, AT A FIXED SIZE — the fix this file's `HEAD_PX` states in
+              full. Each is one span positioned by `%` on the same two numbers the stem it caps was
+              drawn from, so it lands on the geometry however the plot is stretched, and it carries
+              its own tiny 1:1 svg rather than a `border-radius` div for one reason: `data-mark` has
+              to stay on a shape whose `fill` the format's own `--mark-active` can paint, and the
+              ring has to reach a shape that can be STROKED, which is how `level.ts`'s generated
+              rules still reach it — through inheritance, from the span that carries `data-col`.
+              Drawn BEFORE the labels, so where one ever meets a head the label's ground chip is on
+              top rather than under it. */}
+          {pairs.flatMap((p, i) =>
+            [
+              { state: SERIES[0], value: p.before, hue: tint, x: cx(i) - off },
+              { state: SERIES[1], value: p.after, hue: accent, x: cx(i) + off },
+            ].map((head) => (
+              <span
+                key={`${p.code}-${head.state}`}
+                className="head"
+                data-col={p.code}
+                data-head={head.state}
+                style={{
+                  left: `${pct(head.x, FRAME.width)}%`,
+                  top: `${pct(y(head.value), FRAME.height)}%`,
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={HEAD_BOX_PX}
+                  height={HEAD_BOX_PX}
+                  viewBox={`0 0 ${HEAD_BOX_PX} ${HEAD_BOX_PX}`}
+                >
+                  {/* The casing, as a filled disc and never as the fill's stroke — see the css. */}
+                  <circle
+                    data-mark={p.code}
+                    cx={HEAD_BOX_PX / 2}
+                    cy={HEAD_BOX_PX / 2}
+                    r={HEAD_BOX_PX / 2}
+                    fill={headCasing}
+                    stroke="none"
+                  />
+                  {/* No `stroke` of its own, deliberately: that is what leaves the ring to whatever
+                      `level.ts` — or this beat's own subject rule — sets on the span above it. */}
+                  <circle cx={HEAD_BOX_PX / 2} cy={HEAD_BOX_PX / 2} r={HEAD_PX / 2} fill={head.hue} />
+                </svg>
+              </span>
+            )),
+          )}
           {pairs.map((p, i) => (
             <span key={p.code}>
               {/* EVERY PRINTED VALUE IS IN INK. `references/types/lollipop.md` names this type's own
                   shipped bug: the accent carried into the value label beside the dot "for visual
                   consistency". The label carries the value, the mark carries the hue, and the two are
                   never the same colour — which element is TEXT is what decides it, not what it sits
-                  beside. The subject is identified by the ring on its head and by its name. */}
+                  beside. The subject is identified by the ring on its head and by its name.
+
+                  AND IT CLEARS ITS OWN HEAD BY ARITHMETIC, not by a number that looked right once.
+                  `-100%` puts the label's bottom edge on the head's CENTRE, so what it owes is the
+                  head's radius plus a gap — and both are CSS pixels in this same layer now, which
+                  is the second thing moving the head out of the stretched svg bought. At -8 px
+                  against a head the stretch had grown to 11,7 px of radius, the two overlapped by
+                  4 px; the owner read it as the label hiding the dot, which is what it was. */}
               <span
                 className="end-label"
                 style={{
@@ -577,7 +662,7 @@ export function DirectedLollipopWeb({
                   color: label,
                   left: `${pct(cx(i) - off, FRAME.width)}%`,
                   top: `${pct(y(p.before), FRAME.height)}%`,
-                  transform: "translate(-50%, -100%) translateY(-8px)",
+                  transform: `translate(-50%, -100%) translateY(-${HEAD_BOX_PX / 2 + LABEL_GAP_PX}px)`,
                 }}
               >
                 {p.beforeLabel}
@@ -590,7 +675,7 @@ export function DirectedLollipopWeb({
                   color: label,
                   left: `${pct(cx(i) + off, FRAME.width)}%`,
                   top: `${pct(y(p.after), FRAME.height)}%`,
-                  transform: "translate(-50%, -100%) translateY(-8px)",
+                  transform: `translate(-50%, -100%) translateY(-${HEAD_BOX_PX / 2 + LABEL_GAP_PX}px)`,
                 }}
               >
                 {p.afterLabel}
