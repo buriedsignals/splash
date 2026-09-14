@@ -35,7 +35,7 @@ const OUT = join(HERE, "renders");
 const FROM = 2000;
 const TO = 2024;
 const EYEBROW = "Énergie · Europe";
-const NB = " ";
+const NB = "\u00A0";
 const OVERTOOK = "Finland";
 const OVERTAKEN = "France";
 /** The static plate draws six lines: the pair, and the largest producers of 2024. */

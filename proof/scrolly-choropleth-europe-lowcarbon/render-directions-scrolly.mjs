@@ -37,7 +37,7 @@ const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 const YEAR = 2024;
 const EYEBROW = "Énergie · Europe";
-const NB = " ";
+const NB = "\u00A0";
 /** The static plate's own bake bounds and camera aspect (`bake.mjs` BEAT, `CAMERA_ASPECT`). */
 const BOUNDS = [[-25, 34], [42, 68]];
 const FRAME = { width: 1000, height: 760 };
