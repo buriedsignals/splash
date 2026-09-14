@@ -147,6 +147,7 @@ export function buildDirection(id, { subject, states, copy }) {
     wind: walked(accent, NON_TEXT_CONTRAST_MIN, "wind's bars"),
     solar: walked(muted, NON_TEXT_CONTRAST_MIN, "solar's bars"),
     faded: mix(ground, ink, 0.12),
+    ring: walked(ink, NON_TEXT_CONTRAST_MIN, "the exception's ring"),
     /** Every other source of the mix: two neutrals, alternating, so the column reads as parts. */
     others: [mix(ground, ink, 0.2), mix(ground, ink, 0.3)],
     text: {
@@ -192,6 +193,14 @@ export function buildDirection(id, { subject, states, copy }) {
     leadAt,
     shareWidths,
     shareGap: gap / 2 + valueBand.descent,
+    /** The exception's ring at the end: around its two bars at their final heights, their shares and its name. */
+    ring: (() => {
+      const i = subject.groups.findIndex((g) => g.name === SUBJECT);
+      const g = subject.groups[i];
+      const topY = baseline - Math.max(g.wind, g.solar) * unit - gap / 2 - valueBand.descent - valueBand.ascent - gap / 2;
+      const x = centre(i) - slot / 2 + gap / 2;
+      return { x, y: topY, w: slot - gap, h: nameBaseline + band.descent + gap / 2 - topY, r: gap };
+    })(),
     strokes: { grid: (direction.stroke?.hairline ?? 0.6) * k },
     halo: { value: haloOf(value, k) },
     states,

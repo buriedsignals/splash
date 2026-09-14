@@ -21,7 +21,7 @@ export type GroupedBarFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; grid: string; wind: string; solar: string; faded: string; others: string[]; text: Record<"eyebrow" | "title" | "wind" | "solar" | "name" | "axis" | "count", string> };
+  colours: { ground: string; grid: string; wind: string; solar: string; faded: string; ring: string; others: string[]; text: Record<"eyebrow" | "title" | "wind" | "solar" | "name" | "axis" | "count", string> };
   subject: string;
   groups: Array<{ name: string; wind: number; solar: number; mix: Array<{ source: string; share: number }>; colX: number; windX: number; solarX: number; label: Line }>;
   barW: number;
@@ -37,6 +37,7 @@ export type GroupedBarFrameProps = {
   leadAt: { x: number; y: number };
   shareWidths: Record<string, number>;
   shareGap: number;
+  ring: { x: number; y: number; w: number; h: number; r: number };
   strokes: { grid: number };
   halo: { value: number };
   states: Record<string, number>[];
@@ -106,6 +107,7 @@ export function GroupedBarFrame(props: GroupedBarFrameProps & { at: number; svgR
         });
       })}
 
+      <rect x={props.ring.x} y={props.ring.y} width={props.ring.w} height={props.ring.h} rx={props.ring.r} fill="none" stroke={colours.ring} strokeWidth={props.strokes.grid * 2.5} opacity={scene.ring} />
       {scene.counting ? <Text line={{ ...lead, ...props.leadAt }} register={r.value} fill={colours.text.count} halo={valueHalo} /> : null}
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>

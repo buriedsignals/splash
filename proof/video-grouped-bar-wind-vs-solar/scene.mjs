@@ -8,17 +8,17 @@
 //   - CAMERA: the scale closes geometrically from 100 % onto the two; their shares land over them.
 //   - COMPARE: group after group, wind's level is carried across over solar as a line; the lead is counted where solar ends
 //     under it.
-//   - FOCUS: every group but the exception steps back.
+//   - FOCUS: every group but the exception steps back; RELEASE brings the whole chart back, the exception ringed.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.15], furniture: [0.1, 0.4], mix: [0.2, 0.95] },
-  reveal: { others: [0, 0.25], split: [0.28, 0.6], camera: [0.66, 0.96] },
-  subject: { compare: [0.05, 0.9] },
-  conclusion: { focus: [0, 0.5], source: [0.3, 0.8] },
+  reference: { title: [0, 0.2], furniture: [0.05, 0.4], mix: [0.1, 0.95] },
+  reveal: { others: [0, 0.22], split: [0.18, 0.62], camera: [0.55, 0.97] },
+  subject: { compare: [0, 0.68], focus: [0.72, 1] },
+  conclusion: { release: [0, 0.55], source: [0.2, 0.7] },
 });
 const LINEAR = new Set(["mix", "compare", "split"]);
 /** Of a staggered field, the share one group's own move takes. */
@@ -57,7 +57,8 @@ export function sceneAt(props, frame) {
   const split = at("split");
   const camera = at("camera");
   const compare = at("compare");
-  const focus = at("focus");
+  const focus = clamp01(at("focus") - at("release"));
+  const release = at("release");
   const unit = props.units.whole * (props.units.close / props.units.whole) ** camera;
   const n = props.groups.length;
   let lead = 0;
@@ -98,5 +99,5 @@ export function sceneAt(props, frame) {
       stepBack: g.name === props.subject ? 0 : focus,
     };
   });
-  return { title: at("title"), furniture: at("furniture"), groups, unit, lead, counting: compare > 0 ? 1 : 0, levels: 1 - focus, source: at("source") };
+  return { title: at("title"), furniture: at("furniture"), groups, unit, lead, counting: compare > 0 ? 1 : 0, levels: 1 - Math.max(focus, release), ring: release, source: at("source") };
 }

@@ -48,10 +48,9 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     it("should keep wind's and solar's heights while they leave the mix, and never let them overlap", () => {
       for (const t of [0.2, 0.5, 0.8]) {
         const s = sceneAt(props, within("reveal", "split", t));
-        expect(s.unit).toBeCloseTo(props.units.whole, 9);
         props.groups.forEach((g: any, i: number) => {
           const { wind, solar } = s.groups[i];
-          expect([wind.h, solar.h]).toEqual([expect.closeTo(g.wind * props.units.whole, 6), expect.closeTo(g.solar * props.units.whole, 6)] as any);
+          expect([wind.h, solar.h]).toEqual([expect.closeTo(g.wind * s.unit, 6), expect.closeTo(g.solar * s.unit, 6)] as any);
           const sideBySide = wind.x + wind.w <= solar.x + 1e-6;
           const stacked = wind.y >= solar.y + solar.h - 1e-6 || solar.y >= wind.y + wind.h - 1e-6;
           expect([t, g.name, sideBySide || stacked]).toEqual([t, g.name, true]);
@@ -69,9 +68,14 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(sceneAt(props, props.timing.total - 1).lead).toBe(props.groups.length - 1);
     });
 
-    it("should keep the exception alone at the end, and the credit on one line", () => {
+    it("should keep the exception alone at the end of the subject", () => {
+      const s = sceneAt(props, last("subject"));
+      expect(props.groups.filter((g: any, i: number) => s.groups[i].stepBack === 0).map((g: any) => g.name)).toEqual([props.subject]);
+    });
+
+    it("should end on the whole chart, nothing stepped back, the exception ringed, the credit on one line", () => {
       const end = sceneAt(props, props.timing.total - 1);
-      expect(props.groups.filter((g: any, i: number) => end.groups[i].stepBack === 0).map((g: any) => g.name)).toEqual([props.subject]);
+      expect([end.groups.every((g: any) => g.stepBack === 0), end.ring]).toEqual([true, 1]);
       expect(props.credit.lines.length).toBe(1);
     });
   });
