@@ -618,6 +618,25 @@ exception, and it is not really an exception: it was already drawn in the accent
 interaction, so hovering it — or dimming its period under the filter, which it never is, since the
 end point carries no `data-period` — changes nothing about what colour means.
 
+**A dot is the answer only where the reading IS a dot.** `.pt` is a `circle r=5` at the reading's own
+position, and filling it is exactly right for a line: the mark a reader is pointing at is that point.
+On a bar or a column it is wrong — the mark is the whole rectangle, and the filled circle prints a
+grey spot floating at its top, which is what the ranking beat shipped until the owner looked at it. A
+component whose marks are shapes says so: `data-mark-ref="<key>"` on the point, `data-mark="<key>"` on
+the shape. `assets/interaction.mjs` then carries `.mark-active` between them on hover, focus and tap,
+and the format's stylesheet keeps such a point invisible and paints the shape instead. A beat that
+names no shape is untouched, which is the whole of "a line beat keeps its dot".
+
+WHAT THE ACTIVE MARK BECOMES IS THE BEAT'S, and it obeys the paragraph above rather than escaping it.
+The stylesheet reads `--mark-active` off the mark and names no colour; the beat sets it, per fill,
+and measures it. The step is TOWARD THE DIRECTION'S OWN INK, never a `filter: brightness()` — ink is
+by definition the pole furthest from the ground, so the step darkens on a light ground and lightens on
+a dark one and can only raise the mark's contrast, where a brightness filter does the same thing to
+both and washes a mark off one of them. Measured on the ranking beat across three directions: stepping
+toward the GROUND instead takes the neutral to 2.34 : 1, 2.97 : 1 and 2.35 : 1, under the 3 : 1 mark
+floor. And the accent is still reserved: a neutral column under the pointer becomes a deeper NEUTRAL,
+not the accent; the accent column becomes a deeper accent, which it already was.
+
 ## The one box this format allows, and why the rest of `static-discipline.md` still holds
 
 `static-discipline.md`'s "every layer earns its place" rule calls out boxes and frames by name as

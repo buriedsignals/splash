@@ -28,6 +28,7 @@
 //           label: "Chine",                 // the pill's words
 //           announce: "Chine — 6 pays …",   // what a screen reader hears. Must contain `label`.
 //           note: "les 6 pays suivants · …",// the sentence revealed under the control
+//           total: "= 12,44",               // what the tower ADDS UP TO, printed on the tower
 //           onto: [{ key: "USA", dx: 0, dy: 0 }, { key: "IND", dx: -90, dy: -137 }, …],
 //         },
 //         …
@@ -64,6 +65,17 @@ export type StackOption = {
   /** The sentence revealed under the control: the count and the running total, in the beat's own
    *  words. Revealed by the same `:checked` that moves the columns, so it works with no script. */
   note: string;
+  /**
+   * WHAT THE TOWER ADDS UP TO, IN THE BEAT'S OWN WORDS, AND IT IS REQUIRED.
+   *
+   * A tower of one accent with no figure on it is a picture of a stack, not a picture of an
+   * ADDITION: the owner's own reading of the first build was "a reader sees segments of one colour
+   * and no total", and the number was on the page only in the sentence under the control. The
+   * sentence is for a reader who is not looking at the picture; this is for the one who is. It is
+   * the beat's own formatted string — this file never formats a number — and the component prints
+   * it at the tower's own top, where the comparison is made.
+   */
+  total: string;
   /** The run stacked against `key`, bottom of the tower first. */
   onto: StackedColumn[];
 };
@@ -162,6 +174,12 @@ export function assertStackDeclaration(
           `${where}: option ${JSON.stringify(option.label)} has no \`${field}\` — a control whose ` +
             "answer is only a picture leaves a keyboard reader with nothing",
         );
+    if (typeof option.total !== "string" || !option.total.trim())
+      throw new Error(
+        `${where}: option ${JSON.stringify(option.label)} has no \`total\` — a tower that does not ` +
+          "say what it adds up to is a picture of a stack, not of an addition, and the reader " +
+          "looking at it is left to estimate the one number the option exists to give",
+      );
     if (!option.announce.includes(option.label))
       throw new Error(
         `${where}: option ${JSON.stringify(option.label)} announces ${JSON.stringify(option.announce)}, ` +
@@ -256,6 +274,25 @@ export function stackNotesForMarkup(
 }
 
 /**
+ * THE TOWER'S OWN TOTAL, one per option, for the component to place at the tower's top.
+ *
+ * SAME SHAPE AS `stackNotesForMarkup` AND FOR THE SAME REASON: the words are the beat's, the reveal
+ * is `:checked`, and the untouched option has none because it is not an addition. The difference is
+ * WHERE the two land — the note goes under the control, in the reading order, for a reader who is
+ * not looking at the plot; the total goes ON the plot, at the top of the tower it measures, because
+ * a comparison a reader makes with their eye needs its answer where their eye already is.
+ */
+export function stackTotalsForMarkup(
+  declaration: StackDeclaration | null | undefined,
+): { slug: string; text: string }[] {
+  if (!declaration) return [];
+  return declaration.options.map((option) => ({
+    slug: stackSlugOf(option.key),
+    text: option.total,
+  }));
+}
+
+/**
  * THE STYLESHEET, AND IT IS THE WHOLE MECHANISM. Pure CSS: `:has()` on the scope plus `:checked` on
  * a real radio. No script runs, so the control works with JavaScript off exactly as it works with it
  * on — and the empty string returned for a beat with no declaration is what makes "no dead CSS"
@@ -284,17 +321,45 @@ export function stackCss(
     dim,
     seam,
     moveMs,
+    carry,
   }: {
     scope: string;
     idPrefix: string;
-    /** What the reference column and its run take: a fill for the marks, an ink for their words. */
-    lit: { fill: string; ink: string };
-    /** What every other column steps back to — fill, ink, and the weight its name goes back to. */
-    dim: { fill: string; ink: string; weight: string };
+    /** What the reference column and its run take: a fill for the marks, an ink for their words.
+     *  `active` is what a mark under the reader's pointer becomes — see `dim.active`. */
+    lit: { fill: string; ink: string; active?: string };
+    /** What every other column steps back to — fill, ink, and the weight its name goes back to.
+     *
+     *  `active` IS THE HOVER COLOUR, AND IT BELONGS HERE FOR A REASON THE FIRST BUILD MISSED.
+     *  `interaction.mjs` lights the mark a reader is pointing at by adding `.mark-active`, whose
+     *  rule reads `--mark-active` off the mark itself. A stack repaints the marks — so a column
+     *  the reader has just LIT would still have carried the stepped-back column's hover colour,
+     *  and pointing at it would have flashed the wrong state. Whatever repaints a fill repaints
+     *  the fill it takes under a pointer, in the same rule, or the two drift by one option. */
+    dim: { fill: string; ink: string; weight: string; active?: string };
     /** What separates one stacked column from the next on the tower — the ground. */
     seam: string;
     /** How long a column takes to reach the tower. Honoured only under `no-preference`. */
     moveMs: number;
+    /**
+     * THE VALUE LABELS RIDE WITH THE COLUMNS THEY BELONG TO — declared, because a beat that draws
+     * no labels must not be given rules for them.
+     *
+     * WHY THE PLOT'S OWN EXTENTS AND NOT A LENGTH. A `[data-col]` is an SVG element and moves by
+     * `translate(Npx, Npx)`, which resolves in USER UNITS. A `[data-value]` is not: this format
+     * puts its value labels in `.overlay`, an HTML layer sharing the `<svg>`'s own grid cell so a
+     * `%` lands on the geometry it annotates, and a CSS pixel there is a different number of user
+     * units at every width. The one conversion that is exact at every size is a PERCENTAGE of that
+     * layer: under `preserveAspectRatio="none"` the viewBox maps linearly onto the cell in each
+     * axis independently, so `dx / width` of the overlay is `dx` user units, at 320 px and at 1600.
+     *
+     * The rules emitted are two custom properties and a flag — never a position — because where a
+     * riding label SITS is the beat's geometry and not this file's: it is the component that knows
+     * a column's figure stands above its top when the column is in its band and inside its own
+     * segment when it is on a tower. `--stack-carried: 1` is what lets the beat write that as one
+     * `calc()` on both states instead of a second rule per member.
+     */
+    carry?: { width: number; height: number };
   },
 ): string {
   if (!declaration) return "";
@@ -328,12 +393,16 @@ export function stackCss(
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
     `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-total] { display: none; }`,
     // The motion, and it is the only motion this control has. Under `reduce` the whole block does
     // not exist, so there is no transition to override and no branch anywhere — `render-web.mjs`'s
     // own entrance rules take the same shape for the same reason.
     `@media (prefers-reduced-motion: no-preference) {`,
     `  ${scope} [data-col] { transition: transform ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1), fill ${Math.round(moveMs / 2)}ms ease; }`,
-    `  ${scope} [data-value] { transition: opacity ${Math.round(moveMs / 2)}ms ease, color ${Math.round(moveMs / 2)}ms ease; }`,
+    // The riding label's `left`/`top` take the COLUMN's own duration and easing, not the ink's:
+    // the two are interpolated over the same displacement for the same time, so the figure stays
+    // glued to its segment for the whole trip instead of arriving after it.
+    `  ${scope} [data-value] { transition: opacity ${Math.round(moveMs / 2)}ms ease, color ${Math.round(moveMs / 2)}ms ease${carry ? `, left ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1), top ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1)` : ""}; }`,
     `  ${scope} [data-axis] { transition: color ${Math.round(moveMs / 2)}ms ease; }`,
     `}`,
   ];
@@ -347,17 +416,31 @@ export function stackCss(
     // India and Russia with the accent ON EVERY PAGE STATE, including the untouched one. Caught by
     // reading the emitted stylesheet back, not by any assertion: the markup was right, the
     // declaration was right, and the picture was wrong in a state nobody had selected.
-    const each = (attr: string, keys: string[]) =>
-      scoped(keys.map((k) => `${at} [${attr}="${k}"]`), at);
+    const each = (attr: string, keys: string[], also = "") =>
+      scoped(keys.map((k) => `${at} [${attr}="${k}"]${also}`), at);
     lines.push(
       // Everything steps back first, including the subject the plate lights by default: under a
       // chosen option the accent belongs to the comparison the READER asked for, not to the one the
       // author picked. Emitted before the lit rules and not weighted above them — identical
       // specificity, so source order is the whole of it.
-      `${at} [data-col] { fill: ${dim.fill}; }`,
+      // `:not(.mark-active)` IS WHAT LETS THE POINTER WIN, and it is specificity and not politeness.
+      // `.chart-figure:has(#id:checked) [data-col]` scores (1,3,0) — `:has()` takes its argument's
+      // specificity, and the argument is an id. The format's own `.mark-active { fill: … }` scores
+      // (0,1,0), so with both matching, a reader pointing at a column under a chosen option would
+      // have seen nothing change at all. Excluding the active mark here means only one rule ever
+      // matches it: a column under the pointer is painted by the POINTER, never by the option.
+      // WHAT A COLUMN TAKES UNDER THE POINTER IS SET ON EVERY COLUMN, INCLUDING THE ONE THE POINTER
+      // IS ON — a separate rule from the fill, and it took a browser to see why. Folding it into
+      // the `:not(.mark-active)` rule below meant the property stopped being declared at the exact
+      // moment it was read: the lit tower's top segment, hovered, came back #66645f, the NEUTRAL's
+      // step, because the only rule still matching it was the beat's own default. The exclusion
+      // belongs to `fill` alone.
+      ...(dim.active ? [`${at} [data-col] { --mark-active: ${dim.active}; }`] : []),
+      `${at} [data-col]:not(.mark-active) { fill: ${dim.fill}; }`,
       `${at} [data-value] { color: ${dim.ink}; }`,
       `${at} [data-axis] { color: ${dim.ink}; font-weight: ${dim.weight}; }`,
-      `${each("data-col", lits)} { fill: ${lit.fill}; }`,
+      ...(lit.active ? [`${each("data-col", lits)} { --mark-active: ${lit.active}; }`] : []),
+      `${each("data-col", lits, ":not(.mark-active)")} { fill: ${lit.fill}; }`,
       `${each("data-value", [option.key])} { color: ${lit.ink}; }`,
       // The names stay under the bands the columns left. That is what tells the reader WHICH
       // countries went onto the tower, and it is the same reason a filter never moves the frame.
@@ -378,16 +461,36 @@ export function stackCss(
       // per-character differences between Open Sans Bold and Helvetica Bold cancel to 0.06px. The
       // rule below is the design's own answer; it is not a way around the probe.
       `${each("data-axis", lits)} { color: ${lit.ink}; }`,
-      // The moved columns' own numbers go with them: a value printed over a tower is a comb, and
-      // the count and the total the tower is worth are what the sentence below the control carries.
-      `${each("data-value", option.onto.map((m) => m.key))} { opacity: 0; }`,
+      // THE MOVED COLUMNS' OWN NUMBERS GO WITH THEM, and the line this replaces did the opposite.
+      //
+      // It read `{ opacity: 0 }`, on the argument that a value printed over a tower is a comb and
+      // that the count and the sum belong to the sentence under the control. Looked at, that is
+      // five columns stacked and not one of them carrying a figure, under five empty bands that
+      // still carry their names — the reader is asked to believe an addition whose terms have been
+      // taken off the picture. A figure that rides its own column is not a comb: it is the same
+      // label, still attached to the same mark, which is exactly what every other state of this
+      // page already promises. What a segment too short for it does instead is the BEAT's rule and
+      // not this file's, because only the beat knows how tall its own segments are.
+      carry
+        ? `${each("data-value", option.onto.map((m) => m.key))} { --stack-carried: 1; }`
+        : // A beat that declares no `carry` has no label layer to move, so its moved marks' figures
+          // would otherwise stay behind on the baseline. Taking them away is the honest fallback —
+          // it is what this file did for every beat before the carry existed.
+          `${each("data-value", option.onto.map((m) => m.key))} { opacity: 0; }`,
       `${at} [data-stack-note="${slug}"] { display: revert; }`,
+      `${at} [data-stack-total="${slug}"] { display: revert; }`,
     );
     // The seam, grouped: a tower of one accent is one shape, and a reader asked to count six
-    // countries on it needs to see six. One CSS pixel of the ground between them, non-scaling, so
-    // it is the same hairline at 320 px and at 1600 px.
+    // countries on it needs to see six. Ground between them, non-scaling, so it is the same rule at
+    // 320 px and at 1600 px.
+    //
+    // TWO AND NOT ONE, and the difference is a picture. An SVG stroke is centred on the edge, so
+    // `stroke-width: 1` puts half a pixel on each side of a shared boundary and the whole gap
+    // between two stacked columns comes to ONE pixel — which is a hairline, and read as a stripe
+    // rather than as a join between two countries. Two makes the gap two, which is what separates
+    // the six members of this beat's tallest tower at every width it was looked at.
     lines.push(
-      `${each("data-col", option.onto.map((m) => m.key))} { stroke: ${seam}; stroke-width: 1; }`,
+      `${each("data-col", option.onto.map((m) => m.key))} { stroke: ${seam}; stroke-width: 2; }`,
     );
     // THE ONE RULE THAT CANNOT BE GROUPED: each column goes somewhere different.
     //
@@ -400,10 +503,17 @@ export function stackCss(
     // follower) while the box anchored on whichever mark had moved there. The bands, the names under
     // them and the region each answers for are the FRAME, and a filter does not move the frame
     // either. Only the columns move.
-    for (const member of option.onto)
+    for (const member of option.onto) {
       lines.push(
         `${at} [data-col="${member.key}"] { transform: translate(${round(member.dx)}px, ${round(member.dy)}px); }`,
       );
+      // THE SAME DISPLACEMENT, IN THE ONLY UNIT THE LABEL LAYER CAN HONOUR AT EVERY WIDTH — see
+      // `carry` above. One member, one rule, for the reason the line above it cannot be grouped.
+      if (carry)
+        lines.push(
+          `${at} [data-value="${member.key}"] { --stack-dx: ${round((member.dx / carry.width) * 100)}%; --stack-dy: ${round((member.dy / carry.height) * 100)}%; }`,
+        );
+    }
   }
   return lines.join("\n");
 }

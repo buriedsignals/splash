@@ -214,7 +214,9 @@ its canonical geometry is.
    `data-detail` string with the same `fr()` the other formats use — the browser script never formats
    a number, it only reads an attribute back.
 4. **Wire the interaction layer**, not the layout. `assets/interaction.mjs`'s `initChart` only ever
-   touches `.pt` circles' own class and the shared `#tooltip` — it has no code path that can hide or
+   touches a CLASS — the `.pt` circle's own, plus `.mark-active` on the shape a point names with
+   `data-mark-ref` (see `web-discipline.md`, "A dot is the answer only where the reading IS a dot") —
+   and the shared `#tooltip`. It has no code path that can hide or
    move the title, the reference rule, the peak's own label, or the subject's end label. See
    `web-discipline.md`, "What must not become interactive."
 5. **If the beat earns a filter** (see "When to use" above), express it as native `<input

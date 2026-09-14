@@ -577,7 +577,15 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
       const words = Array.prototype.map
         .call(
           document.querySelectorAll(
-            ".chart-title, .chart-caveat, .chart-source, .chart-plot .overlay *",
+            // `:not([data-stack-total])` — a word whose visibility is OWNED BY A DECLARED CONTROL
+            // is not part of the default view, and this check is about the default view. The
+            // stack's sentences (`.stack-notes p`) have always been in exactly that position and
+            // were never scanned only because they sit outside `.overlay`; a tower's total has to
+            // sit ON the plot, at the top of the tower it measures, so it lands inside it. What
+            // must stay true — that the reader lands on the whole claim with nothing dimmed — is
+            // unchanged: the seven totals belong to seven options nobody has chosen.
+            ".chart-title, .chart-caveat, .chart-source," +
+              " .chart-plot .overlay *:not([data-stack-total])",
           ),
           (el) => {
             const cs = getComputedStyle(el);

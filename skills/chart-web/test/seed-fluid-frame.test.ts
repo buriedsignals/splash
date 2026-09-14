@@ -537,3 +537,50 @@ describe("the filter — declared by the beat, default view complete, native con
     expect(overlay).toContain('data-key="2025" data-filter="2020-2025"');
   });
 });
+
+/**
+ * THE MARK ANSWERS, NOT A DOT ON TOP OF IT — the format's own contract with a beat whose readings
+ * are rectangles rather than points.
+ *
+ * What a string assertion here can hold is that the two rules exist and that a beat which names no
+ * shape is untouched. What it CANNOT hold is that the picture changes: that is `verify-web.mjs`
+ * driving a real pointer, and the beat's own capture. The defect this replaced was found by
+ * looking, not by reading CSS.
+ */
+describe("a point may delegate its answer to the mark it names", () => {
+  const css = () =>
+    buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+
+  it("should keep a delegating point invisible in every state hover/focus/tap put it in", () => {
+    // THE MUTATION: delete the `.pt[data-mark-ref]` rule. The column then lights AND a grey dot
+    // prints at its top — both answers at once, which is worse than either.
+    for (const state of [":hover", ":focus", ".pt-active"])
+      expect([state, css().includes(`.pt[data-mark-ref]${state}`)]).toEqual([state, true]);
+    const at = css().indexOf(".pt[data-mark-ref]:hover");
+    expect(css().slice(at, css().indexOf("}", at))).toContain("fill: transparent");
+  });
+
+  it("should paint the named mark in a colour the BEAT declared, never one this file names", () => {
+    // THE MUTATION: replace `var(--mark-active, var(--muted))` with a literal, or with a
+    // `filter: brightness(1.2)`. The first puts a colour decision in the format; the second
+    // lightens on a light ground and on a dark one alike, which is the thing this beat's own
+    // measurement refused.
+    const at = css().indexOf(".mark-active {");
+    const rule = css().slice(at, css().indexOf("}", at));
+    expect(rule).toContain("fill: var(--mark-active, var(--muted))");
+    expect(css()).not.toContain("filter: brightness");
+  });
+
+  it("should leave a point that names no mark exactly as it was — a line beat keeps its dot", () => {
+    const at = css().indexOf(".pt:hover");
+    expect(css().slice(at, css().indexOf("}", at))).toContain("fill: var(--muted)");
+    // And the seed, which is a line beat, names no mark at all.
+    expect(renderSeed()).not.toContain("data-mark-ref");
+  });
+});

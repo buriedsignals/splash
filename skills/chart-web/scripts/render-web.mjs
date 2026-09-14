@@ -30,7 +30,7 @@
 // structural CSS grid, the fluid sizing rule, the tooltip — and, ONLY for a beat that declared one
 // (`assets/filter.ts`), the filter's own chrome and its generated `:checked` hiding rules —
 // every class name a component targets (`.chart-figure`, `.chart-plot`, `.seg`, `.pt`, `.axis-label`,
-// `.note`, `.end-label`, `.hit-area`, `#tooltip`) is a documented CONTRACT between this file and
+// `.note`, `.end-label`, `.mark-active`, `.hit-area`, `#tooltip`) is a documented CONTRACT between this file and
 // `ChartWebSeed.tsx`-shaped components, the same contract `.pt`/`.hit-area`/`#tooltip` already were
 // in this format's first build. Everything under the CONFIG marker (the CONFIG block, `render`, the
 // CLI block) is the runner for THIS SKILL'S OWN SEED — `assets/ChartWebSeed.tsx`, drawn from
@@ -645,6 +645,25 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   fill: var(--muted);
   outline: none;
 }
+/* THE MARK ANSWERS, NOT A DOT ON TOP OF IT.
+   A .pt is a circle r=5 at the reading's own position, and filling it is exactly right for a
+   LINE: the reading is a point there, and the dot IS the mark. It is wrong for a bar or a column,
+   where the mark is the whole rectangle and the dot prints a grey spot floating at its top -- the
+   owner's own reading of the ranking beat, and the reason these two rules exist.
+   A component says which it has by giving the point a data-mark-ref naming the shape that
+   answers for it; interaction.mjs then puts .mark-active on [data-mark="<that name>"] on
+   hover, focus and tap, and the point itself stays invisible. A beat that names no shape is
+   unchanged to the byte: a line beat keeps its dot.
+   WHAT THE ACTIVE MARK BECOMES IS THE BEAT'S, NEVER THIS FILE'S. --mark-active is read off the
+   mark, so the one place that knows a column is drawn in the accent or in the neutral is the one
+   place that says what it takes under a pointer -- and it is measured there against the ground, in
+   each direction, rather than nudged here with a brightness filter, which lightens on a light
+   ground and on a dark one alike. --muted is the fallback, which is what a mark with no declared
+   colour already got. */
+.pt[data-mark-ref]:hover, .pt[data-mark-ref]:focus, .pt[data-mark-ref].pt-active {
+  fill: transparent;
+}
+.mark-active { fill: var(--mark-active, var(--muted)); }
 .pt:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;

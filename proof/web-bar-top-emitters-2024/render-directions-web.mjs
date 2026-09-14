@@ -159,6 +159,12 @@ columns.forEach((c, i) => {
     note:
       `Les ${c.followers} pays suivants du classement · ${fr(c.followersGt)} Gt réunis · ` +
       `${c.name} : ${c.label} Gt`,
+    // WHAT THE TOWER IS WORTH, PRINTED ON THE TOWER. The same `followersGt` the sentence and the
+    // accessible name already carry — one arithmetic, now four readers — written as an addition
+    // rather than as a bare figure, because what the tower does is ADD and the reader is being
+    // asked to see that. The component checks this against the columns it actually stacks.
+    total: `= ${fr(c.followersGt)}`,
+    totalGt: c.followersGt,
     onto,
   });
 });
@@ -216,7 +222,11 @@ const textPerRegister = {
   // still emits `--note-family`, so the face it names is still requested and must still cover the
   // words the page can display: the control's own, which are the ones that moved into this slot.
   annot: `${stackPlan.label} ${stackPlan.noneLabel} ${stackOptions.map((o) => o.note).join(" ")}`,
-  value: columns.map((c) => c.label).join(" "),
+  // The totals are set in the VALUE register too, and they carry a character no column label does
+  // — the "=" that makes the tower read as an addition. A register's declared text is what the
+  // page's own faces are subsetted from, so a glyph the page can display and the register does not
+  // name is a glyph the delivered file cannot draw.
+  value: [...columns.map((c) => c.label), ...stackOptions.map((o) => o.total)].join(" "),
 };
 
 // EVERY REGISTER'S TEXT PASSES THROUGH `plain` BEFORE IT REACHES THE LADDER. One U+202F or U+00A0 —
@@ -255,7 +265,8 @@ const interaction = {
         "additionner, plus bas dans le classement, pour l'égaler ?",
       gesture: "ask-a-mark",
       changes:
-        `The column's own mark lights and the answer box prints two readings the plate holds ` +
+        `The COLUMN itself steps one measured shade deeper — not a dot at its top — and the answer `+
+        `box prints two readings the plate holds ` +
         `nowhere: that country's share of the WORLD total (${columns[1].detail.split(" · ")[0]} for ` +
         `${columns[1].name}, against ${columns[0].detail.split(" · ")[0]} for ${columns[0].name}), ` +
         `and how many countries below it in the full ${countries.length}-country ranking must be ` +
@@ -274,9 +285,12 @@ const interaction = {
         `height — ${stackOptions[0].onto.length} of them for ${stackOptions[0].label}, ` +
         `${stackOptions[1].onto.length} for ${stackOptions[1].label}. The reference and its run ` +
         `take the accent and every other column steps back to the neutral, the names of the ` +
-        `columns that went stay under the bands they left, and one sentence appears under the ` +
-        `control with the count and the running total. The fixed bracket this page used to draw is ` +
-        `gone: it was that comparison made once, for the subject the author chose.`,
+        `columns that went stay under the bands they left, EACH COLUMN'S OWN FIGURE RIDES WITH IT ` +
+        `into the middle of its segment (a segment too short to hold one prints none), the sum the ` +
+        `tower comes to stands at its top — ${fr(stackOptions[0].totalGt)} Gt for ` +
+        `${stackOptions[0].label} against ${columns[0].label} Gt — and one sentence appears under ` +
+        `the control with the count and the running total. The fixed bracket this page used to ` +
+        `draw is gone: it was that comparison made once, for the subject the author chose.`,
     },
   ],
 };

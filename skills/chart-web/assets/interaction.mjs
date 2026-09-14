@@ -66,6 +66,33 @@ export function nearestCell(cxs, cys, x, y) {
 export function initChart(svg, tooltip) {
   const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
   if (points.length === 0) return;
+  /**
+   * WHICH SHAPE EACH POINT ANSWERS FOR, AND WHY THE POINT IS NOT ALWAYS THE ANSWER.
+   *
+   * A `.pt` is a 5px circle at the reading's own position. On a LINE that circle IS the mark, and
+   * filling it is the whole of "you are pointing here". On a BAR or a COLUMN it is not: the mark is
+   * the rectangle, and a filled circle at its top is a grey dot floating over the chart — which is
+   * what this format shipped until the owner looked at the ranking beat and said so.
+   *
+   * So a component may name the shape its point speaks for: `data-mark-ref="<key>"` on the point,
+   * `data-mark="<key>"` on the shape. This layer then carries `.mark-active` between them, and the
+   * format's stylesheet keeps such a point invisible (`.pt[data-mark-ref]`) and paints the shape
+   * instead, in a colour the BEAT declared and measured (`--mark-active`). Nothing is recomputed
+   * here and no colour is named here, exactly as with `data-detail`.
+   *
+   * Resolved ONCE at init, off attributes baked server-side — the same discipline as `cxs`. A
+   * beat that names no shape gets an empty list per point and this costs it nothing.
+   */
+  const marksOf = points.map(function (point) {
+    const key = point.getAttribute("data-mark-ref");
+    if (!key) return [];
+    return Array.prototype.slice.call(
+      svg.querySelectorAll('[data-mark="' + key + '"]'),
+    );
+  });
+  const allMarks = marksOf.reduce(function (into, marks) {
+    return into.concat(marks);
+  }, []);
   const hitArea = svg.querySelector(".hit-area");
   const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
   // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
@@ -77,11 +104,16 @@ export function initChart(svg, tooltip) {
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
+    allMarks.forEach((m) => m.classList.remove("mark-active"));
     tooltip.hidden = true;
   }
 
   function show(point, clientX, clientY) {
     points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    // The shape the active point speaks for takes the class; every other shape gives it back. Two
+    // passes and not one, because a shape may be named by more than one point.
+    allMarks.forEach((m) => m.classList.remove("mark-active"));
+    marksOf[points.indexOf(point)].forEach((m) => m.classList.add("mark-active"));
     tooltip.textContent = point.getAttribute("data-detail");
     tooltip.hidden = false;
     const tw = tooltip.offsetWidth || 160;

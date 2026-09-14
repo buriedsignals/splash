@@ -23,6 +23,7 @@ import {
   stackNotesForMarkup,
   stackOptionsForMarkup,
   stackSlugOf,
+  stackTotalsForMarkup,
 } from "../assets/stack.ts";
 
 const DRAWN = ["CHN", "USA", "IND", "RUS"];
@@ -37,6 +38,7 @@ const PLAN = {
       label: "Chine",
       announce: "Chine — empiler les 2 pays suivants",
       note: "Les 2 pays suivants du classement · 8,10 Gt réunis · Chine : 12,29 Gt",
+      total: "= 8,10",
       onto: [
         { key: "USA", dx: 0, dy: 0 },
         { key: "IND", dx: -90, dy: -168 },
@@ -47,6 +49,7 @@ const PLAN = {
       label: "États-Unis",
       announce: "États-Unis — empiler les 2 pays suivants",
       note: "Les 2 pays suivants du classement · 4,97 Gt réunis · États-Unis : 4,90 Gt",
+      total: "= 4,97",
       onto: [
         { key: "IND", dx: 0, dy: 0 },
         { key: "RUS", dx: -90, dy: -109 },
@@ -111,6 +114,14 @@ describe("assertStackDeclaration refuses a control the picture cannot honour", (
     expect(refuse((p) => (p.options[0].note = ""))).toThrow(/has no `note`/);
   });
 
+  it("refuses a tower that does not say what it adds up to", () => {
+    // The mutation on the real beat: drop `total` from the runner's option and re-run the render.
+    // It is the owner's own reading of the first build — six segments of one colour and no sum —
+    // turned into a refusal, so a tower can never again be drawn without the number it is worth.
+    expect(refuse((p) => delete p.options[0].total)).toThrow(/has no `total`/);
+    expect(refuse((p) => (p.options[0].total = "   "))).toThrow(/picture of a stack/);
+  });
+
   it("refuses an accessible name that does not contain its own visible label", () => {
     // WCAG 2.5.3: a reader speaking what they can see cannot reach an option whose name is
     // something else. Run on the real beat, which announces "<pays> — empiler les N pays suivants".
@@ -154,9 +165,17 @@ describe("the markup: the untouched option comes first and is the default", () =
     expect(stackNotesForMarkup(PLAN as any).map((n) => n.slug)).toEqual(["chn", "usa"]);
   });
 
+  it("gives each option its total, in the beat's own words, and the untouched one none", () => {
+    expect(stackTotalsForMarkup(PLAN as any)).toEqual([
+      { slug: "chn", text: "= 8,10" },
+      { slug: "usa", text: "= 4,97" },
+    ]);
+  });
+
   it("emits nothing at all for a beat that declares no stack", () => {
     expect(stackOptionsForMarkup(null, "chart-stack")).toEqual([]);
     expect(stackNotesForMarkup(null)).toEqual([]);
+    expect(stackTotalsForMarkup(null)).toEqual([]);
   });
 });
 
@@ -225,9 +244,117 @@ describe("the stylesheet is the whole mechanism, and every selector carries its 
     // Identical specificity — an attribute selector with a value is still one attribute selector —
     // so which wins is source order and nothing else.
     const at = ".chart-figure:has(#chart-stack-chn:checked)";
-    expect(css.indexOf(`${at} [data-col] { fill: var(--col-neutral); }`)).toBeLessThan(
-      css.indexOf(`${at} [data-col="CHN"], `),
+    expect(
+      css.indexOf(`${at} [data-col]:not(.mark-active) { fill: var(--col-neutral); }`),
+    ).toBeLessThan(css.indexOf(`${at} [data-col="CHN"]:not(.mark-active), `));
+    expect(css.indexOf(`${at} [data-col="CHN"]:not(.mark-active), `)).toBeGreaterThan(-1);
+  });
+
+  it("LETS THE POINTER WIN over the option, which specificity alone would not", () => {
+    // `…:has(#id:checked) [data-col]` scores (1,3,0) against `.mark-active`'s (0,1,0), so without
+    // the exclusion a reader pointing at a column under a chosen option saw nothing change.
+    // Excluding the active mark from the FILL leaves exactly one rule matching it.
+    for (const rule of css.split("\n"))
+      if (rule.includes(":has(#chart-stack") && / fill: /.test(rule))
+        expect([rule, rule.includes(":not(.mark-active)")]).toEqual([rule, true]);
+  });
+
+  it("still declares what a column takes under the pointer ON the column the pointer is on", () => {
+    // THE MUTATION THAT FOUND THIS, run in a real browser before it was written down: fold
+    // `--mark-active` into the `:not(.mark-active)` rule. The property then stops being declared
+    // at the exact moment it is read — the lit tower's top segment, hovered, came back #66645f,
+    // the NEUTRAL's step, because the only rule left matching it was the beat's own default.
+    const lifted = stackCss(PLAN as any, {
+      scope: ".chart-figure",
+      idPrefix: "chart-stack",
+      lit: { fill: "var(--accent)", ink: "var(--accent)", active: "#103d7f" },
+      dim: {
+        fill: "var(--col-neutral)",
+        ink: "var(--label-ink)",
+        weight: "var(--axis-weight)",
+        active: "#66645f",
+      },
+      seam: "var(--ground)",
+      moveMs: 420,
+    });
+    const at = ".chart-figure:has(#chart-stack-chn:checked)";
+    expect(lifted).toContain(`${at} [data-col] { --mark-active: #66645f; }`);
+    expect(lifted).toContain(
+      `${at} [data-col="CHN"], ${at} [data-col="USA"], ${at} [data-col="IND"] ` +
+        "{ --mark-active: #103d7f; }",
     );
-    expect(css.indexOf(`${at} [data-col="CHN"], `)).toBeGreaterThan(-1);
+    for (const rule of lifted.split("\n"))
+      if (rule.includes("--mark-active:"))
+        expect([rule, rule.includes(":not(.mark-active)")]).toEqual([rule, false]);
+    // And a beat that declares no active colour gets no property at all — no dead CSS, the rule
+    // `stackCss` already holds for a beat with no declaration.
+    expect(css).not.toContain("--mark-active");
+  });
+
+  it("reveals the tower's own total with the same :checked that moves the columns", () => {
+    expect(css).toContain(".chart-figure [data-stack-total] { display: none; }");
+    expect(css).toContain('[data-stack-total="chn"] { display: revert; }');
+    expect(css).toContain('[data-stack-total="usa"] { display: revert; }');
+  });
+});
+
+describe("the figures ride with the columns they belong to", () => {
+  /** The same declaration with no `carry`: the shape every beat had before figures could ride. */
+  const uncarried = stackCss(PLAN as any, {
+    scope: ".chart-figure",
+    idPrefix: "chart-stack",
+    lit: { fill: "var(--accent)", ink: "var(--accent)" },
+    dim: { fill: "var(--col-neutral)", ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+    seam: "var(--ground)",
+    moveMs: 420,
+  });
+  const carried = stackCss(PLAN as any, {
+    scope: ".chart-figure",
+    idPrefix: "chart-stack",
+    lit: { fill: "var(--accent)", ink: "var(--accent)" },
+    dim: { fill: "var(--col-neutral)", ink: "var(--label-ink)", weight: "var(--axis-weight)" },
+    seam: "var(--ground)",
+    moveMs: 420,
+    carry: { width: 900, height: 420 },
+  });
+
+  it("moves each figure by its own column's displacement, as a share of the label layer", () => {
+    // The same `dx`/`dy` the column moves by, converted once: the overlay shares the `<svg>`'s own
+    // grid cell and the `<svg>` carries `preserveAspectRatio="none"`, so `dx / 900` of that layer
+    // IS `dx` viewBox units, at every width.
+    expect(carried).toContain(
+      '.chart-figure:has(#chart-stack-chn:checked) [data-value="IND"] { --stack-dx: -10%; --stack-dy: -40%; }',
+    );
+    expect(carried).toContain(
+      '.chart-figure:has(#chart-stack-chn:checked) [data-value="USA"] { --stack-dx: 0%; --stack-dy: 0%; }',
+    );
+  });
+
+  it("flags the riding figures instead of taking them away", () => {
+    expect(carried).toContain(
+      '.chart-figure:has(#chart-stack-chn:checked) [data-value="USA"], ' +
+        '.chart-figure:has(#chart-stack-chn:checked) [data-value="IND"] { --stack-carried: 1; }',
+    );
+    expect(carried).not.toContain("[data-value=\"IND\"] { opacity: 0; }");
+  });
+
+  it("takes them away for a beat with NO label layer, which is what it always did", () => {
+    // The fallback is stated rather than silent: a beat that declares no `carry` has nothing to
+    // move, and a figure left behind on the baseline while its mark is on a tower is the defect.
+    expect(uncarried).toContain(
+      '.chart-figure:has(#chart-stack-chn:checked) [data-value="USA"], ' +
+        '.chart-figure:has(#chart-stack-chn:checked) [data-value="IND"] { opacity: 0; }',
+    );
+    expect(uncarried).not.toContain("--stack-carried");
+    expect(uncarried).not.toContain("--stack-dx");
+  });
+
+  it("glues the figure to its column for the whole trip, not just at the ends", () => {
+    // `left`/`top` take the COLUMN's duration and easing, in the one declaration the labels
+    // already had — so the count of transitions this file emits is unchanged.
+    expect(carried).toContain(
+      "transition: opacity 210ms ease, color 210ms ease, left 420ms cubic-bezier(0.4, 0, 0.2, 1), top 420ms cubic-bezier(0.4, 0, 0.2, 1);",
+    );
+    expect(carried.split("transition:").length - 1).toBe(3);
   });
 });
