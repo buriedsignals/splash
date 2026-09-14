@@ -82,6 +82,28 @@ const SELECTED_LINE_WIDTH = 3.4;
 const SELECTED_RAIL_WIDTH = 2;
 const RING_WIDTH = 1.8;
 
+/** THE PLOT INSETS BY THE ROOM ITS OWN LARGEST MARK NEEDS, on all four sides.
+ *
+ *  The first rail sat ON the frame's left edge, the last ON its right, and a vertex sits ON its
+ *  rail — so thirty-two of this page's hundred and twelve vertices were drawn half outside the
+ *  `<svg>` and cut in half by it, measured at 1400x900 on the committed page. The floor did the
+ *  same to every country at 0 % on a rail and the ceiling to every country at one. A mark
+ *  half-drawn at the frame's edge reads as a rendering fault, and on this type the outermost rails
+ *  carry the two variables the axis order makes most prominent. The remedy is ROOM, never a smaller
+ *  mark: the drawing area insets and the marks keep their size.
+ *
+ *  HOW MUCH ROOM, MEASURED AT BOTH ENDS OF THE RANGE. A vertex is `MARK_R` in the geometry's own
+ *  units and scales with the viewBox, so `MARK_R` of inset would hold it at every width. Its brush
+ *  RING does not: that stroke is `non-scaling`, a constant 1,8 px however squeezed the box is, so
+ *  its half-width costs MORE of the geometry's units the narrower the page gets. At 1400 px this
+ *  880x340 box is drawn 1352x544, and the ring's 0,9 px is 0,6 units across and 0,6 down; at
+ *  375 px it is drawn 327x99, and the same 0,9 px is 2,4 units across and 3,1 down. So the inset a
+ *  ringed vertex needs is 6,4 units at the narrow end, not 4,6 — and 8 holds it at both. Eight is
+ *  also half `BAND_WIDTH`, which is what lets every band centre on its own rail instead of being
+ *  pushed off it to stay inside the frame. */
+const MARK_R = 4;
+const MARK_INSET = 8;
+
 export type Axis = { key: string; name: string; ceiling: number; ceilingLabel: string };
 export type Line = { code: string; name: string; values: number[]; highlight: boolean; detail: string };
 
@@ -170,11 +192,53 @@ export function DirectedParallelWeb({
   // opacity, for the reason this file's header gives.
   const bandFill = mix(ground, ink, 0.2);
   const bandStroke = deep;
+  // WHAT THE CONTROL ITSELF IS DRAWN IN, and it is measured here for the reason every other colour
+  // on this page is: `brush.ts` may not import a colour module. The pills used to carry no edge at
+  // all — the shared chrome frames the GROUP and leaves each option bare — so five of the six
+  // reached the reader as `muted` words on the ground and only the chosen one looked pressable.
+  // `--grid`, the obvious candidate for a hairline, measures 1,52:1 against the cream ground and
+  // 1,70:1 against the midnight one: a border a reader cannot see is not an affordance. So the
+  // outline is mixed from the direction's own ink and held to the non-text floor, the same way
+  // `thread` and `deep` are, and every state's reading goes to `assertBrushDeclaration` below.
+  let pillOutline = mix(ground, ink, 0.45);
+  if (contrast(pillOutline, ground) < NON_TEXT_CONTRAST_MIN)
+    pillOutline = adjustToContrast(pillOutline, ground, NON_TEXT_CONTRAST_MIN) ?? pillOutline;
 
-  const x = (i: number) => (i / (axes.length - 1)) * FRAME.width;
+  // Both scales run edge to edge of the INSET drawing area, never of the frame — see `MARK_INSET`.
+  const x = (i: number) =>
+    MARK_INSET + (i / (axes.length - 1)) * (FRAME.width - 2 * MARK_INSET);
   const y = (axisIndex: number, value: number) =>
-    FRAME.height - (value / axes[axisIndex].ceiling) * FRAME.height;
+    FRAME.height -
+    MARK_INSET -
+    (value / axes[axisIndex].ceiling) * (FRAME.height - 2 * MARK_INSET);
   const path = (l: Line) => l.values.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(i, v)}`).join(" ");
+
+  // NO MARK IS DRAWN ACROSS THE FRAME'S OWN EDGE, and it is checked rather than reasoned about.
+  // `MARK_INSET` is a number, and a number can be lowered by somebody who has not measured what it
+  // holds; the defect that produces is thirty-two half-vertices at the two ends of the plot, which
+  // is not something any guard in this format looks for — `verify-web.mjs` reads text, geometry,
+  // opacity and colour, and says in its own header that a clipped mark is not reachable from there.
+  // So the beat looks, in its own units, at the marks it is about to write. What this CANNOT see is
+  // the brush ring's overhang: that stroke is non-scaling, so its cost is in reader pixels and this
+  // check is in geometry units. The ring is why the inset is 8 and not 4, measured at 375 px in a
+  // real browser with a band selected, and it stays a measurement rather than a guard.
+  for (const line of lines)
+    line.values.forEach((value, i) => {
+      const cx = x(i);
+      const cy = y(i, value);
+      if (
+        cx - MARK_R < 0 ||
+        cx + MARK_R > FRAME.width ||
+        cy - MARK_R < 0 ||
+        cy + MARK_R > FRAME.height
+      )
+        throw new Error(
+          `${line.name}'s vertex on ${axes[i].name} is centred at ${cx.toFixed(1)},` +
+            `${cy.toFixed(1)} with r=${MARK_R} on a ${FRAME.width}x${FRAME.height} plot, so the ` +
+            "frame would cut it in half. The drawing area insets by the room its own marks need — " +
+            "raise MARK_INSET, never the mark's own size.",
+        );
+    });
 
   // ── the brush, turned from bounds in the axis's units into geometry this component owns ──────
   const BAND_WIDTH = 12;
@@ -208,9 +272,12 @@ export function DirectedParallelWeb({
         note: option.note,
         keys: drawn,
         band: {
-          // A rail sits ON the frame's own edge at both ends, so its band is carried INSIDE the
-          // frame rather than centred off it — `assertBrushDeclaration` refuses the clipped version.
-          x: Math.min(Math.max(x(i) - BAND_WIDTH / 2, 0), FRAME.width - BAND_WIDTH),
+          // CENTRED ON ITS RAIL, at every rail, and no longer clamped. A rail used to sit ON the
+          // frame's own edge, so the outermost bands had to be pushed inside it to stay drawable —
+          // which put the band beside its rail rather than on it. `MARK_INSET` is half this width,
+          // so there is now room for the band the reader is actually being shown.
+          // `assertBrushDeclaration` still refuses one the viewBox would cut.
+          x: x(i) - BAND_WIDTH / 2,
           width: BAND_WIDTH,
           top,
           height: bottom - top,
@@ -231,6 +298,12 @@ export function DirectedParallelWeb({
         baseOnGround: contrast(thread, ground),
         deepOnGround: contrast(deep, ground),
         deepOnBase: contrast(deep, thread),
+        // The four states of the control, each against the ground it ACTUALLY sits on — which for
+        // the chosen option's words is the ink fill under them, not the page.
+        pillRestOnGround: contrast(muted, ground),
+        pillOutlineOnGround: contrast(pillOutline, ground),
+        pillActiveOnGround: contrast(ink, ground),
+        pillSelectedTextOnFill: contrast(ground, ink),
       },
     },
   );
@@ -241,7 +314,7 @@ export function DirectedParallelWeb({
   const brushBands = brushBandsForMarkup(declaration);
 
   const css = [
-    brushChromeCss({ scope: SCOPE }),
+    brushChromeCss({ scope: SCOPE, pill: { outline: pillOutline } }),
     brushCss(declaration, {
       scope: SCOPE,
       idPrefix: BRUSH_ID_PREFIX,
@@ -352,8 +425,8 @@ export function DirectedParallelWeb({
               data-brush-axis={a.key}
               x1={x(i)}
               x2={x(i)}
-              y1={0}
-              y2={FRAME.height}
+              y1={MARK_INSET}
+              y2={FRAME.height - MARK_INSET}
               stroke={rail}
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
@@ -386,7 +459,7 @@ export function DirectedParallelWeb({
                 {...brushAttrsFor(brushIndex, declaration, l.code, "vertex")}
                 cx={x(i)}
                 cy={y(i, v)}
-                r={4}
+                r={MARK_R}
                 fill={l.highlight ? lit : thread}
                 stroke="none"
                 vectorEffect="non-scaling-stroke"
@@ -413,7 +486,10 @@ export function DirectedParallelWeb({
                 // has not, so a ceiling label seated at the very top edge sits over the figure's
                 // padding, where the hit area cannot answer for it.
                 ...noteAnchor(pct(x(i), FRAME.width)),
-                top: "2%",
+                // At the rail's own top, which is `MARK_INSET` down from the frame now rather than
+                // flush with it — the label names the ceiling, so it follows the rail that carries
+                // it rather than staying at a percentage nothing on the plot is drawn at any more.
+                top: `${pct(MARK_INSET, FRAME.height)}%`,
               }}
             >
               {a.ceilingLabel}

@@ -124,7 +124,9 @@ export type BrushDeclaration = {
   options: BrushOption[];
 };
 
-/** What the beat measured, with its own `colour.mjs`, about the two states a selected mark has. */
+/** What the beat measured, with its own `colour.mjs`, about the two states a selected mark has —
+ *  and about the four states of the CONTROL that selects them. This file may not import a colour
+ *  module and will not pretend to measure; every number here is handed in. */
 export type BrushTone = {
   /** The context mark's own contrast against the direction's ground, at rest. */
   baseOnGround: number;
@@ -133,6 +135,20 @@ export type BrushTone = {
   /** The step BETWEEN the two states. The one measurement a floor check cannot stand in for: two
    *  colours can each clear 3:1 against the ground and be indistinguishable from each other. */
   deepOnBase: number;
+  /** AN OPTION AT REST: its words against the ground. Held to the TEXT floor — this is prose a
+   *  reader reads, not a mark they glance at. */
+  pillRestOnGround: number;
+  /** AN OPTION AT REST: the outline that says it can be pressed, against the same ground. Held to
+   *  the non-text floor. A control whose options carry no measured edge reaches the reader as a row
+   *  of grey words, which is the defect this reading exists to refuse. */
+  pillOutlineOnGround: number;
+  /** THE ACTIVE INK — what the hovered option's words, the focus ring and the chosen option's fill
+   *  are all painted in, against the ground. Held to the TEXT floor, because one of its three uses
+   *  is text. */
+  pillActiveOnGround: number;
+  /** THE CHOSEN OPTION: its words against the fill they sit on, which is NOT the ground. The one
+   *  reading a floor check against the ground cannot stand in for. */
+  pillSelectedTextOnFill: number;
 };
 
 /** The reserved id of the untouched option. No declared option may slug to it. */
@@ -141,6 +157,11 @@ export const BRUSH_NONE_SLUG = "none";
 /** The floor a mark is held to against the ground — the same WCAG non-text floor `colour.mjs`
  *  carries, restated as a number here because this file may not import it. */
 export const BRUSH_GROUND_MIN = 3;
+
+/** The floor WORDS are held to against what they sit on — the same WCAG text floor, restated here
+ *  for the same reason. The control's own labels are prose: an option a reader has to squint at is
+ *  not an option they have. */
+export const BRUSH_TEXT_MIN = 4.5;
 
 /** The floor the two STATES of one mark are held to against each other. Not a WCAG number: a brush
  *  is read by seeing which lines came forward, and 1,6:1 is the step below which the answer to that
@@ -223,7 +244,15 @@ export function assertBrushDeclaration(
       );
 
   // ── the two states of a selected mark ────────────────────────────────────────────────────────
-  for (const reading of ["baseOnGround", "deepOnGround", "deepOnBase"] as const)
+  for (const reading of [
+    "baseOnGround",
+    "deepOnGround",
+    "deepOnBase",
+    "pillRestOnGround",
+    "pillOutlineOnGround",
+    "pillActiveOnGround",
+    "pillSelectedTextOnFill",
+  ] as const)
     if (!Number.isFinite(tone?.[reading]))
       throw new Error(
         `${where}: \`tone.${reading}\` must be a contrast the beat MEASURED with its own colour ` +
@@ -245,6 +274,27 @@ export function assertBrushDeclaration(
         "against the ground and be indistinguishable from EACH OTHER, which is the only comparison " +
         "a reader operating this control is making.",
     );
+
+  // ── the four states of the CONTROL, which is the only part of the page a reader operates ─────
+  //
+  // The picture above was measured from the first line of this file; the pills under it were not,
+  // and shipped at 13 px in the direction's `--muted` with no border and no fill — six options
+  // reaching the reader as a row of grey words rather than as things that can be pressed. A control
+  // is not legible because its words clear a floor; it is legible because its EDGE does, and that
+  // edge had never been measured because there had never been one. So every state is a reading, and
+  // the two that carry words are held to the text floor rather than to the mark's.
+  for (const [reading, floor, what] of [
+    ["pillRestOnGround", BRUSH_TEXT_MIN, "an option's words at rest, on the ground"],
+    ["pillOutlineOnGround", BRUSH_GROUND_MIN, "the outline that says an option can be pressed"],
+    ["pillActiveOnGround", BRUSH_TEXT_MIN, "the hovered words, the focus ring and the chosen fill"],
+    ["pillSelectedTextOnFill", BRUSH_TEXT_MIN, "the chosen option's words, on the fill under them"],
+  ] as const)
+    if (tone[reading] < floor)
+      throw new Error(
+        `${where}: ${what} reads ${tone[reading].toFixed(2)}:1, under the ${floor}:1 floor ` +
+          `(\`tone.${reading}\`). A reader who cannot tell an option from a caption cannot operate ` +
+          "this control, and every reading the picture clears is worth nothing to them.",
+      );
 
   const drawn = new Set(drawnKeys);
   if (drawn.size !== drawnKeys.length)
@@ -801,12 +851,30 @@ export function assertBrushChangesThePicture(
  * together by the eye; the thing that would actually hurt if they drifted — a reader unable to
  * operate the control — is held by neither, but by `verify-web.mjs` driving a real keyboard.
  *
+ * AND ONE PLACE IT NO LONGER COPIES THEM, WHICH IS THE POINT OF THE `pill` ARGUMENT. Those blocks
+ * draw ONE rounded outline around the whole row of options and leave each option bare, so only the
+ * chosen one — ink fill, ground words — reads as a control at all. Measured on this vocabulary's
+ * own first page: six options at 13 px, five of them `#61605a` on the cream ground with no border
+ * and no fill, i.e. a row of grey words beside a black pill. So the group's frame comes off, a real
+ * gap goes between the options, and EVERY option carries its own outline — painted in a colour the
+ * BEAT measured against the ground it actually sits on and handed in, because this file may not
+ * measure one. `assertBrushDeclaration` refuses the declaration whose outline is under the floor.
+ *
  * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
  * (`opacity: 0`, never `display: none`) and the whole treatment is behind
  * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets the plain radios
  * rather than six identical ones.
  */
-export function brushChromeCss({ scope }: { scope: string }): string {
+export function brushChromeCss({
+  scope,
+  pill,
+}: {
+  scope: string;
+  /** What the option at rest is outlined in. One colour, measured by the beat against the ground —
+   *  the hovered, focused and chosen states are all the direction's own `--ink`, which is already
+   *  what this format draws its words in. */
+  pill: { outline: string };
+}): string {
   return `
 ${scope} .chart-brush {
   flex: 0 0 auto;
@@ -841,19 +909,31 @@ ${scope} .brush-notes {
 ${scope} .brush-notes p { margin: 0; }
 
 @supports selector(:has(*)) {
+  /* NO FRAME AROUND THE GROUP, AND ONE AROUND EVERY OPTION — see this function's own header for the
+     measurement. The gap is what makes six outlines read as six objects rather than as one ruled
+     table; without it two 1px edges meet and the row goes back to looking like a single frame. The
+     two axes are not the same number and must not be: 6px ACROSS is what separates two outlines on
+     one row, while 2px DOWN is all a wrapped row can afford — at 375px this control wraps to three
+     rows on the direction that sets its display in 32px uppercase, where the page has no pixels to
+     spare and the format's window-fit rule pays for every one of them out of the plot. */
   ${scope} .chart-brush .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
+    gap: 2px 6px;
+    padding: 0;
+    border: 0;
   }
+  /* 4px of vertical padding and not the 5px the frameless copies take, so that an option's OUTER
+     box is the same 25,6px it was before it had a border: the 1px edge is paid for out of the
+     padding rather than out of the plot below, which on this format's tightest direction at 375px
+     is the difference between the source line being on screen and being under the fold. Still a
+     24px touch target, which is what the 5px was there to protect. */
   ${scope} .chart-brush label {
     gap: 0;
-    padding: 5px 10px;
+    padding: 4px 10px;
+    border: 1px solid ${pill.outline};
     border-radius: 999px;
     line-height: 1.2;
     white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
   }
   ${scope} .chart-brush label input {
     position: absolute;
@@ -866,11 +946,13 @@ ${scope} .brush-notes p { margin: 0; }
     -webkit-appearance: none;
     border-radius: 999px;
   }
-  ${scope} .chart-brush label:hover { color: var(--ink); }
+  ${scope} .chart-brush label:hover { color: var(--ink); border-color: var(--ink); }
   /* ink-on-ground, never the accent: the accent is what the argument is drawn in on this page, and a
      control that borrowed it would make the one colour that means something also mean "you clicked
-     here". */
-  ${scope} .chart-brush label:has(input:checked) { background: var(--ink); color: var(--ground); }
+     here". The chosen option keeps a border rather than dropping one: its own fill hides it, and a
+     pill that lost 2px of box on being chosen would shove the row sideways every time the reader
+     changed their mind. */
+  ${scope} .chart-brush label:has(input:checked) { background: var(--ink); color: var(--ground); border-color: var(--ink); }
   ${scope} .chart-brush label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
 }
 `.trim();

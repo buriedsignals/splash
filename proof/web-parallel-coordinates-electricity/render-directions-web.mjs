@@ -40,12 +40,22 @@ const WIND_FLOOR = 20;
 // ADJACENT rails show a relationship in a parallel-coordinates drawing, so the still can carry
 // exactly one of the twenty-one pairs seven rails make. Two of these five are deliberately
 // NON-ADJACENT pairs — readings that do not exist on the plate at all.
+//
+// `name` IS THE PILL'S WHOLE VISIBLE TEXT, AND IT IS WORDS RATHER THAN A FORMULA. The bands used to
+// be labelled with their own arithmetic — « Nucleaire > 25 % », « Eolien < 10 % » — which is precise
+// and is also six mathematical expressions in a row at 13 px, read left to right before the reader
+// has chosen anything. A band has a name: it is the rail, and whether the cut is at the top of it or
+// the bottom. The BOUND has not gone anywhere — it is stated in the sentence the band reveals and in
+// what a screen reader hears, both of which have room for it, and neither of which the reader has to
+// scan six of. The name is written by hand, once per band, because French agrees its adjectives and
+// a rule that derived « Hydraulique elevee » from « hydraulique » would be a grammar engine; what is
+// checked rather than trusted is that the name NAMES THE RAIL IT CUTS, below.
 const BANDS = [
-  { key: "nuclear-high", axis: "nuclear_generation__twh", from: NUCLEAR_FLOOR, to: null, against: "wind_generation__twh" },
-  { key: "wind-high", axis: "wind_generation__twh", from: WIND_FLOOR, to: null, against: "nuclear_generation__twh" },
-  { key: "wind-low", axis: "wind_generation__twh", from: 0, to: 10, against: "nuclear_generation__twh" },
-  { key: "hydro-high", axis: "hydro_generation__twh", from: 30, to: null, against: "gas_generation__twh" },
-  { key: "coal-high", axis: "coal_generation__twh", from: 15, to: null, against: "hydro_generation__twh" },
+  { key: "nuclear-high", axis: "nuclear_generation__twh", from: NUCLEAR_FLOOR, to: null, against: "wind_generation__twh", name: "Nucléaire élevé" },
+  { key: "wind-high", axis: "wind_generation__twh", from: WIND_FLOOR, to: null, against: "nuclear_generation__twh", name: "Éolien élevé" },
+  { key: "wind-low", axis: "wind_generation__twh", from: 0, to: 10, against: "nuclear_generation__twh", name: "Éolien faible" },
+  { key: "hydro-high", axis: "hydro_generation__twh", from: 30, to: null, against: "gas_generation__twh", name: "Hydraulique élevée" },
+  { key: "coal-high", axis: "coal_generation__twh", from: 15, to: null, against: "hydro_generation__twh", name: "Charbon élevé" },
 ];
 const AXES = [
   ["nuclear_generation__twh", "nucléaire"],
@@ -165,22 +175,38 @@ const brushOptions = BANDS.map((band) => {
       `the band ${band.key} holds ${inside.length} of ${lines.length} lines — a band that keeps ` +
         "none, or keeps them all, is a threshold that does nothing",
     );
-  const label = plain(lo === 0 ? `${cap(axes[i].name)} < ${hi} %` : `${cap(axes[i].name)} > ${lo} %`);
+  // THE PILL SAYS WHAT THE BAND IS; THE SENTENCE SAYS WHERE IT CUTS. The name is hand-written above
+  // and must still name the rail this band actually cuts — otherwise a reader presses « Charbon
+  // élevé » and a wash appears on the hydro rail, with nothing red anywhere.
+  const label = plain(band.name);
+  if (!label.startsWith(cap(axes[i].name)))
+    throw new Error(
+      `the band ${band.key} is called ${label}, which does not open with the rail it cuts ` +
+        `(${axes[i].name}) — the pill would name one rail and the wash appear on another`,
+    );
+  const bound = plain(lo === 0 ? `sous ${hi} %` : `plus de ${lo} %`);
   const adjacent = Math.abs(i - j) === 1;
+  // THE SENTENCE IS WRITTEN TO A HEIGHT, and the height was measured rather than guessed. The bound
+  // moved here from the pill, which costs this line about twenty characters; at 375 px on the
+  // direction that sets its display in 32 px uppercase, twenty characters is a third row, and this
+  // page has exactly zero pixels of slack at that width. So the words the bound displaced come back
+  // out of the ones that were saying the same thing twice — « leur éolien vaut X % » says nothing
+  // « éolien : X % » does not, beside a count that has just named whose. Measured in the browser,
+  // on this beat's own note element: 108 characters is two rows, 113 is three.
   const note = plain(
-    `${label} : ${inside.length} pays sur ${lines.length} · leur ${axes[j].name} vaut ` +
+    `${label}, ${bound} : ${inside.length} pays sur ${lines.length} · ${axes[j].name} : ` +
       `${fr(mean(inside.map((l) => l.values[j])))} % en moyenne, contre ` +
       `${fr(mean(outside.map((l) => l.values[j])))} % pour les ${outside.length} autres` +
       (adjacent
         ? ""
-        : ` · ${axes[i].name} et ${axes[j].name} ne sont pas voisins sur le tracé, donc c'est une ` +
-          "lecture que l'image fixe ne peut pas faire"),
+        : ` · ${axes[i].name} et ${axes[j].name} ne sont pas voisins sur le tracé, une lecture ` +
+          "que l'image fixe ne peut pas faire"),
   );
   return {
     key: band.key,
     axis: band.axis,
     label,
-    announce: plain(`${label} — ${inside.length} pays sur ${lines.length}`),
+    announce: plain(`${label}, ${bound} — ${inside.length} pays sur ${lines.length}`),
     note,
     lo,
     hi,
@@ -219,10 +245,15 @@ const caveat =
   `Sept axes, un par source, chacun avec SON PROPRE plafond : un axe partagé mentirait sur sept ` +
   `quantités. Une ligne par pays.`;
 const claimNote = `${both.map((r) => r.name).join(" et ")} : au-dessus des deux seuils`;
+// THE READING LINE PAYS FOR THE CONTROL'S OWN ROW, and that is measured rather than eyeballed: at
+// 375 px the tallest direction sets this page to EXACTLY the window's height with nothing to spare,
+// so the six px the outlined pills cost had to come from somewhere. It comes from here — "d'un
+// coup" and "qui la traversent" say nothing the shorter forms do not — and the words the band's
+// pill no longer carries are named instead: its seuil is in the sentence the band reveals.
 const readingLine =
-  `Lecture : survolez un point pour lire le pays et ses sept parts d'un coup. Seuls deux axes ` +
-  `VOISINS montrent une relation : ici nucléaire contre éolien, corrélation ${fr(corr, 2)}. Les ` +
-  `${brushOptions.length} bandes lèvent la limite — choisissez-en une, les pays qui la traversent ` +
+  `Lecture : survolez un point pour lire le pays et ses sept parts. Seuls deux axes VOISINS ` +
+  `montrent une relation : ici nucléaire contre éolien, corrélation ${fr(corr, 2)}. Les ` +
+  `${brushOptions.length} bandes lèvent la limite — choisissez-en une, les pays concernés ` +
   `passent au premier plan.`;
 const source = `Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · ${YEAR}`;
 
