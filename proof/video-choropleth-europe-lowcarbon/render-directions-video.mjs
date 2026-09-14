@@ -88,7 +88,7 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
     for (const d of direction.decisions) console.log(`  ${d.register.padEnd(8)} ${d.role.padEnd(15)} -> ${d.family}`);
     console.log(
       `  title form ${report.titleForm + 1} at ${report.titleSize}px · source form ${report.sourceForm + 1} · stage ${report.stage.width}×${report.stage.height} ` +
-        `at (${report.stage.x}, ${report.stage.y}) · k ${report.k.toFixed(3)} · seas ${report.waters.join(", ") || "none"} · standfirst form ${report.standfirstForm} · callout land ${(100 * report.calloutLand).toFixed(1)} %`,
+        `at (${report.stage.x}, ${report.stage.y}) · k ${report.k.toFixed(3)} · seas ${report.waters.join(", ") || "none"}`,
     );
     assertEventFramesReadable(props, id);
 

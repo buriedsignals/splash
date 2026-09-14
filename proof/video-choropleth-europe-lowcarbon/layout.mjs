@@ -4,13 +4,13 @@
 // premier puis ensuite tout un storytelling ». So the frame is not a header over a map over a key: it is a
 // sequence of shots.
 //
-//   1. THE TITLE CARD — the eyebrow, the title and the still's standfirst, alone on the direction's ground,
-//      the title as large as the display register draws, wrapped to a reading measure. The longest title form
-//      that names the subject; the longest standfirst that holds three lines.
+//   1. THE TITLE CARD — the eyebrow and the title, alone on the direction's ground, as large as the display
+//      register draws, wrapped to a reading measure. No standfirst: a video says what it can show rather than
+//      writing it (the owner, 2026-09-14: « faire comprendre en écrivant le moins possible de texte explicatif »).
 //   2. THE STORY — the map on the whole frame, edge to edge. What the story needs to be read — the count and
 //      the key — sits in one PANEL that comes and goes with its gestures; `build.mjs` seats it where it covers
-//      the least land at the overview camera. The panel and the close-up's callout are laid out here at their
-//      own origins; the map's words are the still's anatomy, uppercased and haloed (`build.mjs`).
+//      the least land at the overview camera. The panel is laid out here at its own origin: the count and the
+//      key, no sentence; the map's words are the still's anatomy, uppercased and haloed (`build.mjs`).
 //   3. THE END CARD — the claim, stated once its evidence has been shown, and the source.
 //
 // Every width is `measureText` on the face the composition embeds, plus the register's tracking; every
@@ -29,7 +29,6 @@ import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
 export const SLOT_REGISTERS = Object.freeze({
   eyebrow: "eyebrow",
   title: "display",
-  standfirst: "body",
   claim: "display",
   counter: "value",
   key: "axis",
@@ -38,7 +37,6 @@ export const SLOT_REGISTERS = Object.freeze({
   featureName: "feature",
   oddName: "closeFeature",
   water: "water",
-  callout: "annot",
 });
 
 /**
@@ -68,12 +66,7 @@ export function haloOf(r, k, kind = "area") {
 // ── the rhythm: every gap a multiple of the lead of the register named beside it ───────────────────────
 /** The title card and the end card set their words to a reading measure, not across the whole frame. */
 const CARD_MEASURE = 0.72; // × content width
-const CARD_MAX_LINES = 4;
-const STANDFIRST_MAX_LINES = 3;
-const TITLE_TO_STANDFIRST = 0.9; // × body lead
-/** The callout is set to a narrower measure: it sits on the close-up's sea beside Albania. */
-const CALLOUT_MEASURE = 0.28; // × content width
-const PANEL_PAD = 0.55; // × axis lead
+const CARD_MAX_LINES = 3;
 const COUNTER_TO_KEY = 0.45; // × axis lead
 const CLAIM_TO_SOURCE = 1.2; // × axis lead
 const GUTTER = 1; // × axis lead
@@ -192,8 +185,8 @@ export function pillOf(text, r, pad) {
 
 /**
  * @param {{ registers: Record<string, any>, copy: {
- *   eyebrow: string, title: string[], standfirst: string[], claim: string[], callout: string, counterSteps: string[],
- *   breaks: string[], unit: string, missingLabel: string, source: string[] }, size: "landscape", k: number }} input
+ *   eyebrow: string, title: string[], claim: string[], counterSteps: string[], breaks: string[], missingLabel: string,
+ *   source: string[] }, size: "landscape", k: number }} input
  *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
  */
 export function layoutFor({ registers, copy, size, k }) {
@@ -205,39 +198,20 @@ export function layoutFor({ registers, copy, size, k }) {
   const content = frame.width - 2 * inset;
   for (const [name, r] of Object.entries(registers))
     if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
-  const { eyebrow: eyebrowR, value, axis, body, annot } = registers;
+  const { eyebrow: eyebrowR, value, axis } = registers;
   const line = (text, r, x, y, width = widthOf(text, r)) => ({ text, x, y, width });
   const measure = (CARD_MEASURE * content) / (1 + DRAWN_WIDER);
 
-  // ── 1. THE TITLE CARD: eyebrow, title and standfirst, a block centred on the frame's height ──────────────
+  // ── 1. THE TITLE CARD: eyebrow and title, a block centred on the frame's height ─────────────────────────────
   const title = cardTextFor(copy.title, registers, { measure });
   const eyebrowText = applyCase(copy.eyebrow, eyebrowR.transform);
   const eyebrowBand = bandOf(eyebrowText, eyebrowR);
   const titleBand = bandOf(title.lines.map((l) => l.text).join(" "), title.register);
-  const standfirst = blockFor(copy.standfirst, body, measure, STANDFIRST_MAX_LINES);
-  const standfirstBand = bandOf(standfirst.lines.map((l) => l.text).join(" "), body);
-  const toStandfirst = titleBand.descent + TITLE_TO_STANDFIRST * body.lead + standfirstBand.ascent;
-  const titleBlock =
-    eyebrowBand.ascent + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent + (title.lines.length - 1) * title.register.lead +
-    toStandfirst + (standfirst.lines.length - 1) * body.lead + standfirstBand.descent;
+  const titleBlock = eyebrowBand.ascent + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent + (title.lines.length - 1) * title.register.lead + titleBand.descent;
   const titleTop = Math.round((frame.height - titleBlock) / 2);
   const eyebrowLine = line(eyebrowText, eyebrowR, inset, titleTop + eyebrowBand.ascent);
   const firstTitleBaseline = eyebrowLine.y + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent;
   const titleLines = title.lines.map((l, i) => line(l.text, title.register, inset, firstTitleBaseline + i * title.register.lead, l.width));
-  const firstStandfirstBaseline = titleLines.at(-1).y + toStandfirst;
-  const standfirstLines = standfirst.lines.map((l, i) => line(l.text, body, inset, firstStandfirstBaseline + i * body.lead, l.width));
-
-  // ── THE CALLOUT: the still's sentence, at its own origin, the halo's reach around it ─────────────────────
-  const calloutHalo = haloOf(annot, k);
-  const calloutText = wrap(applyCase(copy.callout, annot.transform), annot, (CALLOUT_MEASURE * content) / (1 + DRAWN_WIDER));
-  const calloutBand = bandOf(calloutText.map((l) => l.text).join(" "), annot);
-  const calloutLines = calloutText.map((l, i) => line(l.text, annot, calloutHalo, calloutHalo + calloutBand.ascent + i * annot.lead, l.width));
-  const callout = {
-    lines: calloutLines,
-    halo: calloutHalo,
-    width: Math.ceil(2 * calloutHalo + Math.max(...calloutLines.map((l) => l.width)) * (1 + DRAWN_WIDER)),
-    height: Math.ceil(2 * calloutHalo + calloutBand.ascent + (calloutLines.length - 1) * annot.lead + calloutBand.descent),
-  };
 
   // ── 3. THE END CARD: the claim, a block centred on the frame's height; the source on the bottom margin ───
   const claim = cardTextFor(copy.claim, registers, { measure });
@@ -250,7 +224,9 @@ export function layoutFor({ registers, copy, size, k }) {
   const claimLines = claim.lines.map((l, i) => line(l.text, claim.register, inset, claimTop + claimBand.ascent + i * claim.register.lead, l.width));
 
   // ── 2. THE PANEL: the count over the key, laid out at its own origin ──────────────────────────────────────
-  const pad = PANEL_PAD * axis.lead;
+  // No plate and no unit line: the words stand on the sea in their halo, the title has named the measure, and
+  // the floor's cursor on the bornes says which share the count is above.
+  const pad = haloOf(axis, k) / 2;
   const counterTexts = copy.counterSteps.map((t) => applyCase(t, value.transform));
   const counterWidths = counterTexts.map((t) => widthOf(t, value));
   const counterBand = counterTexts.map((t) => bandOf(t, value)).reduce((a, b) => ({ ascent: Math.max(a.ascent, b.ascent), descent: Math.max(a.descent, b.descent) }));
@@ -268,13 +244,11 @@ export function layoutFor({ registers, copy, size, k }) {
   const swatches = Array.from({ length: classCount }, (_, i) => ({ x: pad + i * swatchW, y: swatchTop, width: swatchW - join, height: swatchH }));
   const borneBaseline = swatchTop + swatchH + keyBand.ascent;
   const bornes = breaks.map((text, i) => line(text, axis, pad + (i + 1) * swatchW - breakWidths[i] / 2, borneBaseline, breakWidths[i]));
-  const unitText = applyCase(copy.unit, axis.transform);
-  const unit = line(unitText, axis, pad, borneBaseline + axis.lead);
   const missingText = applyCase(copy.missingLabel, axis.transform);
-  const missingBaseline = unit.y + axis.lead;
+  const missingBaseline = borneBaseline + axis.lead;
   const missingSwatch = { x: pad, y: missingBaseline - swatchH, width: swatchW - join, height: swatchH };
   const missingLabel = line(missingText, axis, pad + swatchW + MISSING_GAP * axis.lead, missingBaseline);
-  const panelWidth = Math.ceil(pad + Math.max(...counterWidths, classCount * swatchW, unit.width, missingLabel.x - pad + missingLabel.width) * (1 + DRAWN_WIDER) + pad);
+  const panelWidth = Math.ceil(pad + Math.max(...counterWidths, classCount * swatchW, missingLabel.x - pad + missingLabel.width) * (1 + DRAWN_WIDER) + pad);
   const panelHeight = Math.ceil(missingBaseline + keyBand.descent + pad);
 
   return {
@@ -285,9 +259,8 @@ export function layoutFor({ registers, copy, size, k }) {
     registers,
     /** The story's map: the whole frame. */
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
-    titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines, standfirst: standfirstLines, standfirstForm: standfirst.form },
-    callout,
+    titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines },
     endCard: { form: claim.form, register: claim.register, claim: claimLines, source: sourceLine },
-    panel: { width: panelWidth, height: panelHeight, counter, swatches, bornes, unit, missingSwatch, missingLabel },
+    panel: { width: panelWidth, height: panelHeight, halo: haloOf(axis, k), valueHalo: haloOf(value, k), counter, swatches, bornes, missingSwatch, missingLabel },
   };
 }

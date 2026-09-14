@@ -8,8 +8,7 @@ import { toStage } from "./scene.mjs";
  * THE STILL'S ANATOMY, ON THE VIDEO'S PROPS — measured again here on the drawn shapes, not read back from
  * `build.mjs`'s own grids: every map word uppercased and readable on every cell it crosses in every state it is
  * seen in, set wholly inside its country or led to it, the seas in open water near their own centres, the panel
- * off the seven, the callout on the close-up's sea clear of the ring and the names, the standfirst on the title
- * card.
+ * off the seven — and no sentence written where the picture can show it.
  */
 
 const beat = loadBeat();
@@ -123,27 +122,10 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         }
     });
 
-    it("should set the callout on the close-up inside the margins, clear of Albania's ring and of every close-up name, in an ink that reads on the sea", () => {
-      const c = props.callout;
-      const box = { x: c.at.x, y: c.at.y, width: c.width, height: c.height };
-      expect(box.x).toBeGreaterThanOrEqual(props.layoutInset.x);
-      expect(box.y).toBeGreaterThanOrEqual(props.layoutInset.y);
-      expect(box.x + box.width).toBeLessThanOrEqual(stage.width - props.layoutInset.x);
-      expect(box.y + box.height).toBeLessThanOrEqual(stage.height - props.layoutInset.y);
-      const r = (props.ring.r / cameras.closeUp.w) * stage.width + props.strokes.ring;
-      const near = Math.hypot(Math.max(box.x - stage.width / 2, 0, stage.width / 2 - box.x - box.width), Math.max(box.y - stage.height / 2, 0, stage.height / 2 - box.y - box.height));
-      expect(near).toBeGreaterThan(r);
-      for (const n of props.names.filter((x: any) => x.camera === "closeUp")) expect([n.key, touches(box, n)]).toEqual([n.key, false]);
-      expect(contrast(c.ink, colours.sea)).toBeGreaterThanOrEqual(4.5 - 0.05);
-      expect(c.lines.map((l: any) => l.text).join(" ").toLowerCase()).toContain("albanie");
-    });
-
-    it("should set the still's standfirst on the title card, under the title, in the body register", () => {
-      const { standfirst, title } = props.titleCard;
-      expect(standfirst.length).toBeGreaterThan(0);
-      expect(standfirst.length).toBeLessThanOrEqual(3);
-      expect(standfirst[0].y).toBeGreaterThan(title.at(-1).y + props.registers.body.fontSize);
-      expect(beat.copy.standfirst.map((f: string) => f.replace(/\s+/g, " "))).toContain(standfirst.map((l: any) => l.text).join(" "));
+    it("should write no sentence on the map — no callout, no standfirst", () => {
+      expect((props as any).callout).toBeUndefined();
+      expect((props.titleCard as any).standfirst).toBeUndefined();
+      for (const n of props.names) expect([n.key, n.text.split(/\s+/).length <= 6]).toEqual([n.key, true]);
     });
   });
 }

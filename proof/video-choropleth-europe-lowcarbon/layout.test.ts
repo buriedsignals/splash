@@ -29,7 +29,9 @@ for (const id of ["creme", "nocturne", "rapport"]) {
   const measure = 0.72 * content;
 
   describe(`the shots of ${id}`, () => {
-    it("should open on the title that names Albania, in at most four lines of the reading measure", () => {
+    it("should open on the title that names Albania, in at most three lines of the reading measure, with nothing under it", () => {
+      expect(titleCard.title.length).toBeLessThanOrEqual(3);
+      expect(Object.keys(titleCard).sort()).toEqual(["eyebrow", "form", "register", "title"]);
       const text = titleCard.title
         .map((l: any) => l.text)
         .join(" ")
@@ -59,10 +61,10 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(bottom).toBeLessThan(row.height);
     });
 
-    it("should state the claim with Albania's measured neighbours on the end card, above its source, inside the margins", () => {
+    it("should state the claim on the end card in at most three lines, above its source, inside the margins", () => {
       const text = endCard.claim.map((l: any) => l.text).join(" ").toLowerCase();
       expect(text).toContain("albanie");
-      expect(text).toContain("voisins mesurés");
+      expect(endCard.claim.length).toBeLessThanOrEqual(3);
       for (const l of endCard.claim)
         expect(
           measured(l.text, endCard.register) * (1 + DRAWN_WIDER),
@@ -80,7 +82,6 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       const words = [
         ...panel.counter,
         ...panel.bornes,
-        panel.unit,
         panel.missingLabel,
       ];
       for (const w of words) {
@@ -92,6 +93,13 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         ]).toEqual([w.text, true, true]);
         expect([w.text, w.y <= panel.height]).toEqual([w.text, true]);
       }
+    });
+
+    it("should keep the panel to the count, the key's bornes and the absence — no sentence, no plate", () => {
+      const words = [...panel.bornes, panel.missingLabel].map((l: any) => l.text.split(/\s+/).length);
+      expect(Math.max(...words)).toBeLessThanOrEqual(2);
+      expect(panel.counter.every((l: any) => l.text.split(/\s+/).length === 2)).toBe(true);
+      expect(panel.width).toBeLessThan(0.36 * row.width);
     });
 
     it("should seat the panel inside the frame's margins, over at most 3 % land at the overview camera", () => {

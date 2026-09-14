@@ -46,17 +46,18 @@ export type ChoroplethFrameProps = {
     register: Register;
     eyebrow: Line;
     title: Line[];
-    standfirst: Line[];
   };
   endCard: { register: Register; claim: Line[]; source: Line };
   panel: {
     at: { x: number; y: number };
     width: number;
     height: number;
+    /** The halo the key's words and the count stand in, on the sea: no plate. */
+    halo: number;
+    valueHalo: number;
     counter: Line[];
     swatches: Rect[];
     bornes: Line[];
-    unit: Line;
     missingSwatch: Rect;
     missingLabel: Line;
   };
@@ -71,7 +72,6 @@ export type ChoroplethFrameProps = {
     text: Record<
       | "eyebrow"
       | "title"
-      | "standfirst"
       | "counter"
       | "key"
       | "source"
@@ -122,14 +122,6 @@ export type ChoroplethFrameProps = {
     y: number;
   }>;
   halos: { water: number };
-  callout: {
-    at: { x: number; y: number };
-    width: number;
-    height: number;
-    halo: number;
-    ink: string;
-    lines: Line[];
-  };
   cameras: { overview: Box; closeUp: Box };
   states: Record<string, number>[];
   timing: unknown;
@@ -340,34 +332,17 @@ export function ChoroplethFrame(
         );
       })}
 
-      {/* ── THE CALLOUT: the still's sentence, over the close-up's sea. ── */}
-      <g
-        transform={`translate(${props.callout.at.x} ${props.callout.at.y})`}
-        opacity={scene.callout}
-      >
-        {props.callout.lines.map((line, i) => (
-          <Word
-            key={`callout${i}`}
-            line={line}
-            register={r.annot}
-            fill={props.callout.ink}
-            opacity={1}
-            halo={{ colour: colours.sea, width: props.callout.halo }}
-          />
-        ))}
-      </g>
-
       {/* ── THE PANEL: the count over the key, seated where it covers the least land, with its gestures. ── */}
       <g
         transform={`translate(${panel.at.x} ${panel.at.y})`}
         opacity={scene.furniture}
       >
-        <rect width={panel.width} height={panel.height} fill={colours.ground} />
         <Word
           line={counter}
           register={r.value}
           fill={colours.text.counter}
           opacity={scene.counter.opacity}
+          halo={{ colour: colours.sea, width: panel.valueHalo }}
         />
         {panel.swatches.map((s, i) => (
           <rect
@@ -390,6 +365,7 @@ export function ChoroplethFrame(
             register={r.axis}
             fill={colours.text.key}
             opacity={scene.swatches[i]}
+            halo={{ colour: colours.sea, width: panel.halo }}
           />
         ))}
         <rect
@@ -399,12 +375,6 @@ export function ChoroplethFrame(
           height={2 * panel.swatches[0].height}
           fill={colours.text.counter}
           opacity={scene.cursor.opacity}
-        />
-        <Word
-          line={panel.unit}
-          register={r.axis}
-          fill={colours.text.key}
-          opacity={1}
         />
         <rect
           x={panel.missingSwatch.x}
@@ -418,6 +388,7 @@ export function ChoroplethFrame(
           register={r.axis}
           fill={colours.text.key}
           opacity={1}
+          halo={{ colour: colours.sea, width: panel.halo }}
         />
       </g>
 
@@ -436,15 +407,6 @@ export function ChoroplethFrame(
             line={line}
             register={titleCard.register}
             fill={colours.text.title}
-            opacity={1}
-          />
-        ))}
-        {titleCard.standfirst.map((line, i) => (
-          <Word
-            key={`standfirst${i}`}
-            line={line}
-            register={r.body}
-            fill={colours.text.standfirst}
             opacity={1}
           />
         ))}

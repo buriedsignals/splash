@@ -28,7 +28,7 @@ export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the composition draws with — `body` is resolved for the ladder's factor, never drawn. */
-export const DRAWN_REGISTERS = ["display", "eyebrow", "body", "value", "axis", "annot", "area", "feature", "closeFeature", "water"];
+export const DRAWN_REGISTERS = ["display", "eyebrow", "value", "axis", "area", "feature", "closeFeature", "water"];
 const NB = " ";
 /** The air a pill keeps from another pill and from the stage's edge, × the axis lead. */
 const PILL_GAP = 0.25;
@@ -74,30 +74,18 @@ export function copyOf(subject) {
   const oddText = upper(`${french(ODD_ONE)} · ${pct(value.get(ODD_ONE).lowCarbon)}`);
   return {
     eyebrow: "Énergie · Europe",
-    /** The scrolly's own three forms (`render-directions-scrolly.mjs`). */
-    title: [
-      `Sept pays européens dépassent ${FLOOR}${NB}% d’électricité bas-carbone — six au nord-ouest, et l’Albanie`,
-      `Le bas-carbone européen est au nord-ouest — et en Albanie`,
-      `Le bas-carbone européen, et son exception`,
-    ],
-    /** The still's standfirst ladder, as the still words it. */
-    standfirst: still.limits,
-    /** The still's callout, set over the close-up's sea. */
-    callout: still.callout.lines.join(" "),
+    /** The scrolly's two shorter forms: the title card is read in two seconds, and the story shows the rest. */
+    title: [`Le bas-carbone européen est au nord-ouest — et en Albanie`, `Le bas-carbone européen, et son exception`],
     /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the
      *  counter the cursor steps through (BRIEF.md). The last one is the claim. */
     /** THE END CARD'S CLAIM, stated once its evidence has been shown — longest form first. */
-    claim: [
-      `Sept pays dépassent ${FLOOR}${NB}% d’électricité bas-carbone : six au nord-ouest, et l’Albanie, dont les ${neighbours.length} voisins mesurés sont tous sous ${subject.NEIGHBOUR_CEILING}${NB}%.`,
-      `Sept pays dépassent ${FLOOR}${NB}% : six au nord-ouest, et l’Albanie.`,
-    ],
-    counterSteps: [
-      `${value.size} pays`,
-      ...BREAKS.map((b) => `${[...value.values()].filter((v) => v.lowCarbon >= b).length} pays au-dessus de ${b}${NB}%`),
-    ],
+    //  The neighbours were SHOWN in the close-up — their shares counted beside Albania's — so the claim does not
+    //  write them again.
+    claim: [`Sept pays dépassent ${FLOOR}${NB}% : six au nord-ouest, et l’Albanie.`],
+    // The count alone: the cursor on the bornes says which share it is above.
+    counterSteps: [`${value.size} pays`, ...BREAKS.map((b) => `${[...value.values()].filter((v) => v.lowCarbon >= b).length} pays`)],
     breaks: BREAKS.map((b) => `${b}${NB}%`),
-    unit: "part bas-carbone de la production",
-    missingLabel: "donnée non rapportée",
+    missingLabel: "sans donnée",
     source: [
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute (2025), via Our World in Data · contours Natural Earth 50 m",
@@ -110,7 +98,6 @@ export function copyOf(subject) {
       // At the overview the names are the still's: the country alone — the share was counted at the close-up, and
       // « donnée non rapportée » is the key's own swatch.
       { key: `odd:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "overview", text: upper(french(ODD_ONE)), slot: "featureName", klass: "feature" },
-      { key: `missing:${unreported[0].iso}`, seat: unreported[0].iso, role: "missing", camera: "overview", text: upper(french(unreported[0].iso)), slot: "name", klass: "area" },
       ...ranked.slice(-3).map((r) => ({ key: `context:${r.iso}`, seat: r.iso, role: "context", camera: "overview", text: upper(french(r.iso)), slot: "name", klass: "area" })),
       { key: `close:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "closeUp", text: oddText, slot: "oddName", klass: "feature" },
       ...neighbours.map((iso) => ({ key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", text: upper(`${french(iso)} · ${pct(value.get(iso).lowCarbon)}`), slot: "name", klass: "area" })),
@@ -139,10 +126,10 @@ export function textPerRegisterOf(copy) {
   return {
     display: [...copy.title, ...copy.claim].join(" "),
     eyebrow: copy.eyebrow,
-    body: copy.standfirst.join(" "),
-    annot: copy.callout,
+    body: copy.source.join(" "),
+    annot: copy.waters.flatMap((w) => w.forms).join(" "),
     value: `${copy.counterSteps.join(" ")} 0123456789 ${bySlot("oddName").join(" ")}`,
-    axis: [...bySlot("name"), ...bySlot("featureName"), ...copy.waters.flatMap((w) => w.forms), ...copy.breaks, copy.unit, copy.missingLabel, ...copy.source].join(" "),
+    axis: [...bySlot("name"), ...bySlot("featureName"), ...copy.waters.flatMap((w) => w.forms), ...copy.breaks, copy.missingLabel, ...copy.source].join(" "),
   };
 }
 
@@ -196,10 +183,10 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     text: {
       eyebrow: onGround(registers.eyebrow.fill),
       title: onGround(registers.display.fill),
-      counter: onGround(accent),
-      key: onGround(muted),
+      // The count and the key stand on the sea, in their halo.
+      counter: adjustToContrast(accent, tints.water, TEXT_CONTRAST_MIN) ?? onGround(accent),
+      key: adjustToContrast(muted, tints.water, TEXT_CONTRAST_MIN) ?? onGround(muted),
       source: onGround(muted),
-      standfirst: onGround(registers.body.fill ?? muted),
       water: adjustToContrast(WATER_HUE, tints.water, TEXT_CONTRAST_MIN) ?? onGround(ink),
     },
   };
@@ -237,14 +224,28 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   const odd = shapeOf(subject.ODD_ONE);
   const ringRadius = Math.max(odd.box.w, odd.box.h) / 2;
   const strokes = { border: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k };
+  // THE CLOSE-UP FRAMES WHAT IT SHOWS: Albania's ring and the neighbours' names, centred on their extent — the
+  // ring whole, each name as wide as it is drawn around its seat — not Albania at the centre with half the shot
+  // given to the Adriatic. The names' width in map units depends on the scale, and the scale on the centre, so the
+  // centre is found by a few rounds of the two.
+  const ringR = Math.max(odd.box.w, odd.box.h) / 2;
+  const closePills = pills.filter((p) => p.camera === "closeUp");
+  const closeItems = [
+    // Air: each name keeps half the frame's margin beyond its pill, the ring the whole margin.
+    ...closePills.map((p) => ({ seat: p.seatAt, width: p.width + layout.inset, height: p.height + layout.vInset })),
+    ...[-ringR, ringR].flatMap((dx) => [-ringR, ringR].map((dy) => ({ seat: { x: odd.seat.x + dx, y: odd.seat.y + dy }, width: 2 * layout.inset, height: 2 * layout.vInset }))),
+  ];
+  const extentAt = (vb) => {
+    const perPx = vb.w / stage.width;
+    const xs = [odd.seat.x - ringR, odd.seat.x + ringR, ...closePills.flatMap((p) => [p.seatAt.x - (p.width / 2) * perPx, p.seatAt.x + (p.width / 2) * perPx])];
+    const ys = [odd.seat.y - ringR, odd.seat.y + ringR, ...closePills.flatMap((p) => [p.seatAt.y - (p.height / 2) * perPx, p.seatAt.y + (p.height / 2) * perPx])];
+    return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  };
+  let closeUpCamera = closeUpViewBox(stage, odd.seat, closeItems, gap);
+  for (let round = 0; round < 6; round++) closeUpCamera = closeUpViewBox(stage, extentAt(closeUpCamera), closeItems, gap);
   const cameras = {
     overview: overviewViewBox(FRAME, stage),
-    closeUp: closeUpViewBox(
-      stage,
-      odd.seat,
-      pills.filter((p) => p.camera === "closeUp").map((p) => ({ seat: p.seatAt, width: p.width, height: p.height })),
-      gap,
-    ),
+    closeUp: closeUpCamera,
   };
   // ── the panel: seated where it covers the least land at the overview ─────────────────────────────────────
   // The story runs on the whole frame, so the count and the key sit OVER the map; the place is measured, not
@@ -540,41 +541,11 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     }
   }
 
-  // ── the callout: seated on the close-up's sea, clear of every close-up name and of Albania's ring ────────────
-  const { callout } = layout;
-  const closeRingPx = (ringRadius / cameras.closeUp.w) * stage.width + strokes.ring;
-  const closeObstacles = names.filter((n) => n.camera === "closeUp");
-  /** The ring is a circle at the centre of the close-up: a box clears it when its nearest point is outside it. */
-  const clearOfRing = (box) =>
-    Math.hypot(Math.max(box.x - stage.width / 2, 0, stage.width / 2 - box.x - box.width), Math.max(box.y - stage.height / 2, 0, stage.height / 2 - box.y - box.height)) > closeRingPx + gap;
-  const closeLand = new Uint8Array(landCols * landRows);
-  for (let j = 0; j < landRows; j++)
-    for (let i = 0; i < landCols; i++) closeLand[j * landCols + i] = landAt(cameras.closeUp, (i + 0.5) * PANEL_CELL, (j + 0.5) * PANEL_CELL) ? 1 : 0;
-  let calloutAt = null;
-  for (let y = vInset; y + callout.height <= stage.height - vInset; y += PANEL_STEP)
-    for (let x = inset; x + callout.width <= stage.width - inset; x += PANEL_STEP) {
-      const box = { x, y, width: callout.width, height: callout.height };
-      if (closeObstacles.some((o) => touches(box, o)) || !clearOfRing(box)) continue;
-      let covered = 0;
-      let total = 0;
-      for (let j = Math.floor(y / PANEL_CELL); j < Math.ceil((y + box.height) / PANEL_CELL); j++)
-        for (let i = Math.floor(x / PANEL_CELL); i < Math.ceil((x + box.width) / PANEL_CELL); i++) {
-          total++;
-          covered += closeLand[j * landCols + i] ?? 0;
-        }
-      const share = total ? covered / total : 0;
-      if (!calloutAt || share < calloutAt.share - 1e-9) calloutAt = { x, y, share };
-    }
-  if (!calloutAt) throw new Error(`a ${callout.width}×${callout.height} callout finds no place clear of the close-up's names`);
-  // The still sets its callout in the accent (`annot`'s italic, the subject's colour); here it is walked to the text floor on the sea.
-  const calloutInk = adjustToContrast(accent, colours.sea, TEXT_CONTRAST_MIN);
-  if (!calloutInk) throw new Error(`no variant of ${accent} reads on the sea ${colours.sea}`);
-
   const strokeScale = sizeFor(SIZE).typeScale;
   const props = {
     frame: layout.frame,
     stage,
-    /** The frame's margins — what the seas and the callout are held inside. */
+    /** The frame's margins — what the seas are held inside. */
     layoutInset: { x: inset, y: vInset },
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
     titleCard: layout.titleCard,
@@ -589,10 +560,11 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     names,
     waters: waters.map(({ box, ...w }) => w),
     halos: { water: waterHalo },
-    callout: { ...callout, at: { x: calloutAt.x, y: calloutAt.y }, ink: calloutInk },
+    /** Every close-up name's seat, in map units — what the close-up camera frames. */
+    closeUpSeats: Object.fromEntries(pills.filter((p) => p.camera === "closeUp").map((p) => [p.key, p.seatAt])),
     cameras,
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
   };
-  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, calloutLand: calloutAt.share, standfirstForm: layout.titleCard.standfirstForm, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
+  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
 }

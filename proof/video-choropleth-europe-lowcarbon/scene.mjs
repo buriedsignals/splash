@@ -22,20 +22,21 @@ import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 /** The share of its own event each field changes over. A field changing in an event not named here
  *  changes over the whole event. */
 export const WINDOWS = Object.freeze({
-  establish: { title: [0, 0.001] },
+  // The title card is up from frame 0: its window closes before the first frame, so frame 0 is the title.
+  establish: { title: [-1, 0] },
   // The lowest class lands at 0.375 of reference; its three names follow it.
   reference: { title: [0, 0.15], furniture: [0.12, 0.25], count: [0.12, 0.25], classes: [0.25, 1], context: [0.42, 0.52] },
   // The floor passes the lowest borne at 0.17 of reveal; its three names step back with it.
   reveal: { filter: [0.03, 0.73], floor: [0.03, 0.73], context: [0.03, 0.15], top: [0.8, 0.95] },
-  subject: { top: [0, 0.05], furniture: [0, 0.04], filter: [0.04, 0.22], zoom: [0.04, 0.24], odd: [0.27, 0.32], neighbours: [0.31, 0.38], callout: [0.44, 0.5] },
-  conclusion: { neighbours: [0, 0.08], callout: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], context: [0.45, 0.55], missing: [0.47, 0.57], end: [0.78, 0.92] },
+  subject: { top: [0, 0.08], furniture: [0, 0.06], filter: [0.06, 0.33], zoom: [0.06, 0.36], odd: [0.4, 0.48], neighbours: [0.46, 0.56] },
+  conclusion: { neighbours: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], context: [0.45, 0.55], end: [0.78, 0.92] },
 });
 
 /** When the names of each camera may be seen: the overview's leave before the camera departs and return
  *  after it has come back; the close-up's arrive after it has settled and leave before it departs. */
 export const GATES = Object.freeze({
-  overview: { leaves: ["subject", 0, 0.05], returns: ["conclusion", 0.45, 0.57] },
-  closeUp: { arrives: ["subject", 0.27, 0.32], leaves: ["conclusion", 0, 0.08] },
+  overview: { leaves: ["subject", 0, 0.08], returns: ["conclusion", 0.45, 0.57] },
+  closeUp: { arrives: ["subject", 0.4, 0.48], leaves: ["conclusion", 0, 0.08] },
 });
 
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
@@ -45,7 +46,7 @@ const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, ti
 const LINEAR = new Set(["classes", "filter", "floor"]);
 
 /** When the close-up's shares count up from zero: after the camera has settled, each over its own window. */
-export const COUNT_UP = Object.freeze({ odd: ["subject", 0.27, 0.37], neighbour: ["subject", 0.31, 0.41] });
+export const COUNT_UP = Object.freeze({ odd: ["subject", 0.4, 0.55], neighbour: ["subject", 0.46, 0.61] });
 
 /** A field's value at `frame`: nothing before `establish`, then every event's change run through its window.
  *  The class reveal is linear across the classes (each class eases its own arrival, below); everything
@@ -194,7 +195,7 @@ export function blend(a, b, t) {
  * @param {{ states: Record<string, number>[], timing: any, stage: {width:number,height:number},
  *   cameras: { overview: any, closeUp: any }, shapes: Array<{ key: string, classIndex: number|null, kept: boolean }>,
  *   colours: { land: string, classFills: string[], missingFill: string },
- *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"missing"|"context", camera: "overview"|"closeUp" }>,
+ *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"context", camera: "overview"|"closeUp" }>,
  *   waters: Array<{ key: string }> }} props
  */
 export function sceneAt(props, frame) {
@@ -214,7 +215,7 @@ export function sceneAt(props, frame) {
     fills[shape.key] = blend(colours.land, colours.classFills[shape.classIndex], reached * kept);
   }
 
-  const role = { top: at("top"), odd: at("odd"), neighbour: at("neighbours"), missing: at("missing"), context: at("context") };
+  const role = { top: at("top"), odd: at("odd"), neighbour: at("neighbours"), context: at("context") };
   const names = {};
   for (const name of props.names) names[name.key] = clamp01(role[name.role] * gates[name.camera]);
   const count = at("count");
@@ -224,7 +225,6 @@ export function sceneAt(props, frame) {
   return {
     title: at("title"),
     furniture: at("furniture"),
-    callout: at("callout"),
     end: at("end"),
     swatches: Array.from({ length: n }, (_, i) => ease(clamp01(classes * n - i))),
     /** How far each class's swatch has stepped back with the floor — the key follows the map. */

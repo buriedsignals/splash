@@ -26,8 +26,8 @@ const EXPECTED_NAMES: Record<string, string[]> = {
     "neighbour:GRC",
     "neighbour:-99:Kosovo",
   ],
-  conclusion: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR", ...LOWEST],
-  hold: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR", ...LOWEST],
+  conclusion: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", ...LOWEST],
+  hold: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", ...LOWEST],
 };
 const shown = (scene: any) =>
   Object.entries(scene.names)
@@ -42,6 +42,10 @@ for (const id of DIRECTIONS) {
   const gap = 0.25 * props.registers.axis.lead;
 
   describe(`${id}, frame by frame`, () => {
+    it("should open on the title card at full opacity from frame 0", () => {
+      expect(sceneAt(props, 0).title).toBe(1);
+    });
+
     it("should draw Europe at frame 0 with no class, no name and no furniture yet", () => {
       const scene = sceneAt(props, 0);
       expect(props.shapes.length).toBeGreaterThan(40);
@@ -136,14 +140,21 @@ for (const id of DIRECTIONS) {
       }
     });
 
-    it("should set Albania at the centre of its close-up", () => {
+    it("should frame the close-up on what it shows — Albania's ring and its neighbours' names, centred on their extent and wholly in frame", () => {
       const scene = sceneAt(props, last("subject"));
-      const at = toStage(scene.viewBox, props.stage, {
-        x: props.ring.cx,
-        y: props.ring.cy,
-      });
-      expect(Math.abs(at.x - props.stage.width / 2)).toBeLessThan(0.5);
-      expect(Math.abs(at.y - props.stage.height / 2)).toBeLessThan(0.5);
+      const shown = props.names.filter((n: any) => n.camera === "closeUp");
+      const r = props.ring.r;
+      const perPx = scene.viewBox.w / props.stage.width;
+      const seatOf = (n: any) => props.closeUpSeats[n.key];
+      const xs = [props.ring.cx - r, props.ring.cx + r, ...shown.flatMap((n: any) => [seatOf(n).x - (n.width / 2) * perPx, seatOf(n).x + (n.width / 2) * perPx])];
+      const ys = [props.ring.cy - r, props.ring.cy + r, ...shown.flatMap((n: any) => [seatOf(n).y - (n.height / 2) * perPx, seatOf(n).y + (n.height / 2) * perPx])];
+      const a = toStage(scene.viewBox, props.stage, { x: Math.min(...xs), y: Math.min(...ys) });
+      const b = toStage(scene.viewBox, props.stage, { x: Math.max(...xs), y: Math.max(...ys) });
+      // centred on their extent on both axes…
+      expect(Math.abs((a.x + b.x) / 2 - props.stage.width / 2)).toBeLessThan(2);
+      expect(Math.abs((a.y + b.y) / 2 - props.stage.height / 2)).toBeLessThan(2);
+      // …and every name kept inside the stage (placement test above) with Albania wholly in frame.
+      expect([a.x > 0, a.y > 0, b.x < props.stage.width, b.y < props.stage.height]).toEqual([true, true, true, true]);
     });
 
     it("should pull back to exactly the establish camera", () => {
@@ -178,9 +189,8 @@ for (const id of DIRECTIONS) {
       }
     });
 
-    it("should step the counter down the floor — 40, 32, 26, 20, 12, then 7 above 94 % — and keep it to the last frame", () => {
-      expect(props.panel.counter.map((l: any) => Number.parseInt(l.text, 10))).toEqual([40, 32, 26, 20, 12, 7]);
-      expect(props.panel.counter.at(-1).text).toContain("94");
+    it("should step the counter down the floor — 40, 32, 26, 20, 12, then 7 — the count alone, and keep it to the last frame", () => {
+      expect(props.panel.counter.map((l: any) => l.text)).toEqual(["40 pays", "32 pays", "26 pays", "20 pays", "12 pays", "7 pays"]);
       const steps = new Set<number>();
       for (let f = T.reveal.start; f <= last("reveal"); f++) steps.add(sceneAt(props, f).counter.step);
       expect([...steps].sort()).toEqual([0, 1, 2, 3, 4, 5]);

@@ -7,7 +7,6 @@
 //   top         the six countries of the north-west named                                  0..1
 //   zoom        the camera travelling from Europe onto Albania and its neighbours           0..1
 //   odd         Albania ringed and named                                                   0..1
-//   missing     the reporting country with no reading named                                0..1
 // and three the video adds, because the scrolly derives them from its cards:
 //   title       the title card, alone on the ground, before the story                          0..1
 //   furniture   the panel — the count over the key — while the story needs it                  0..1
@@ -16,8 +15,6 @@
 //   count       the counter — « 40 pays » with the panel, then stepping down with the floor; it stays  0..1
 //   neighbours  Albania's neighbours named with their shares, and Kosovo « hors données »    0..1
 //   context     the three lowest shares named, as the still names them, while their class stands  0..1
-//   callout     the still's callout — Albania alone of the seven outside the north-west — set  0..1
-//               over the close-up's sea once the shares have counted
 //
 // A state is the picture at the END of its event. The order INSIDE an event — the names only after the
 // filter has landed, only after the camera has settled — is the composition's windows (`scene.mjs`).
@@ -74,12 +71,12 @@ export function assertDerivedValues(subject, geometry) {
 /** One state per event in `EVENT_ORDER`, the hold restating the conclusion exactly. */
 export function statesFor(subject, geometry) {
   assertDerivedValues(subject, geometry);
-  const blank = { title: 0, furniture: 0, classes: 0, filter: 0, floor: 0, count: 0, top: 0, context: 0, zoom: 0, odd: 0, neighbours: 0, callout: 0, missing: 0, end: 0 };
+  const blank = { title: 0, furniture: 0, classes: 0, filter: 0, floor: 0, count: 0, top: 0, context: 0, zoom: 0, odd: 0, neighbours: 0, end: 0 };
   const establish = { ...blank, title: 1 };
   const reference = { ...establish, title: 0, furniture: 1, count: 1, classes: 1, context: 1 };
   const reveal = { ...reference, filter: 1, floor: 1, top: 1, context: 0 };
-  const subjectState = { ...reveal, furniture: 0, filter: 0, top: 0, zoom: 1, odd: 1, neighbours: 1, callout: 1 };
-  const conclusion = { ...subjectState, furniture: 1, zoom: 0, neighbours: 0, callout: 0, top: 1, context: 1, missing: 1, end: 1 };
+  const subjectState = { ...reveal, furniture: 0, filter: 0, top: 0, zoom: 1, odd: 1, neighbours: 1 };
+  const conclusion = { ...subjectState, furniture: 1, zoom: 0, neighbours: 0, top: 1, context: 1, end: 1 };
   const byEvent = { establish, reference, reveal, subject: subjectState, conclusion, hold: { ...conclusion } };
   return assertEventStates(
     EVENT_ORDER.map((name) => byEvent[name]),
