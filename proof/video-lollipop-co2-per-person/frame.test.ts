@@ -8,10 +8,10 @@ import { LollipopFrame } from "./LollipopFrame.tsx";
 import { oneText, sceneAt } from "./scene.mjs";
 
 /**
- * The markup at the last frame of every event — the type floor, every word with its measured width — and the change told
- * in order: the title at frame 0, both stems at 2000 before any travel, the ratio shown only once its two heads have
- * landed and always the American head over the Chinese one, every second stem at 2023 by the end, the 2000 stem never
- * moving, the four others stepped back only at the conclusion.
+ * The markup at the last frame of every event — the type floor, every word with its measured width — and the argument told
+ * in order: the title at frame 0; copies of China's stem, each its length, stacked end to end and cut at the American head,
+ * so the stack stands exactly as tall as the American stem and the ratio is the copies that fit; the stack re-forming at
+ * 2023; the whole chart at the end, both dates for every pair, nothing stepped back, China ringed; the credit on one line.
  */
 
 const beat = loadBeat();
@@ -20,7 +20,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat) as any;
   const markupAt = (frame: number) => renderToStaticMarkup(createElement(LollipopFrame, { ...props, at: frame }));
   const last = (event: string) => endOf(props.timing[event]) - 1;
-  const byCode = (code: string) => props.pairs.findIndex((p: any) => p.code === code);
+  const at = (code: string) => props.pairs.findIndex((p: any) => p.code === code);
 
   describe(`${id}'s lollipop video`, () => {
     for (const event of EVENT_ORDER)
@@ -37,32 +37,24 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(unmeasured).toEqual([]);
     });
 
-    it("should hold both stems at 2000 at the end of the reveal, and every second stem at 2023 by the end", () => {
-      expect(sceneAt(props, 0).title).toBe(1);
-      const risen = sceneAt(props, last("reveal"));
-      expect(risen.pairs.map((s: any) => [s.past, s.present])).toEqual(props.pairs.map((p: any) => [p.before, p.before]));
-      const end = sceneAt(props, props.timing.total - 1);
-      expect(end.pairs.map((s: any) => [s.past, s.present])).toEqual(props.pairs.map((p: any) => [p.before, p.after]));
-    });
+    for (const [event, value, label] of [["reveal", "before", "2000"], ["subject", "after", "2023"]] as const)
+      it(`should stack China's copies exactly to the American head at the end of the ${event} (${label}), the ratio the copies that fit`, () => {
+        expect(sceneAt(props, 0).title).toBe(1);
+        const s = sceneAt(props, last(event));
+        const cn = props.pairs[at(props.subject)][value];
+        const us = props.pairs[at(props.other)][value];
+        const top = Math.max(...s.copies.filter((c: any) => c.h > 0).map((c: any) => c.low + c.h));
+        expect(top).toBeCloseTo(Math.min(us, props.copies * cn) * props.unit, 6);
+        s.copies.forEach((c: any) => expect(c.h).toBeLessThanOrEqual(cn * props.unit + 1e-6));
+        expect(oneText(s.ratio)).toBe(oneText(us / cn));
+        expect(s.ratioShown).toBe(1);
+      });
 
-    it("should show the ratio only once both heads have landed, the American head over the Chinese", () => {
-      for (let f = 0; f < props.timing.total; f += 5) {
-        const s = sceneAt(props, f);
-        const us = s.pairs[byCode(props.other)];
-        const cn = s.pairs[byCode(props.subject)];
-        if (s.ratioShown) {
-          expect([f, us.up, cn.up]).toEqual([f, 1, 1]);
-          expect(s.ratio).toBeCloseTo(us.present / cn.present, 9);
-        }
-      }
-      expect(oneText(sceneAt(props, last("reveal")).ratio)).toBe(oneText(beat.subject.ratio.before));
-      expect(oneText(sceneAt(props, props.timing.total - 1).ratio)).toBe(oneText(beat.subject.ratio.after));
-    });
-
-    it("should step back the four others only at the conclusion, and never China or the United States", () => {
-      expect(sceneAt(props, last("subject")).pairs.every((s: any) => s.stepBack === 0)).toBe(true);
-      const end = sceneAt(props, props.timing.total - 1);
-      expect(props.pairs.filter((p: any, i: number) => end.pairs[i].stepBack === 0).map((p: any) => p.code).sort()).toEqual([props.other, props.subject].sort());
+    it("should end on the whole chart: both dates for every pair, nothing stepped back, China ringed, no copy left", () => {
+      const s = sceneAt(props, props.timing.total - 1);
+      expect(s.pairs.map((p: any) => [p.past, p.present])).toEqual(props.pairs.map((p: any) => [p.before, p.after]));
+      expect([s.pairs.every((p: any) => p.stepBack === 0 && p.pastShown === 1), s.ring, s.copies.every((c: any) => c.opacity === 0)]).toEqual([true, 1, true]);
+      expect(props.credit.lines.length).toBe(1);
     });
   });
 }

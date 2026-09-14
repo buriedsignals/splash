@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { oneText } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
@@ -38,7 +38,7 @@ export function copyOf(subject) {
     title: [`La Chine a triplé son CO₂ par personne, l’écart avec les États-Unis est passé de ${oneText(subject.ratio.before)} à ${oneText(subject.ratio.after)}`, "La Chine a triplé son CO₂ par personne depuis 2000"],
     /** The unit is said once, beside the zero line; the heads print bare. */
     unit: `tonnes de CO₂ par personne`,
-    ratio: (text) => `États-Unis / Chine${NB}: ×${text}`,
+    ratio: (text) => `×${text}`,
     dates: [String(FROM), String(TO)],
     source: [`Source : Global Carbon Budget 2025, population (${TO}), via Our World in Data`, "Source : Global Carbon Budget 2025, via Our World in Data"],
   };
@@ -75,7 +75,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueBand = bandOf(BAND_PROBE, value);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   // THE BAND OVER THE PAIRS: the ratio at the left, the unit at the right.
@@ -85,8 +85,8 @@ export function buildDirection(id, { subject, states, copy }) {
   const ratioWidths = Object.fromEntries([...ratios].map((t) => [t, widthOf(applyCase(copy.ratio(t), value.transform), value)]));
   const bandBaseline = vInset + valueBand.ascent;
   const unitWord = measure(copy.unit, axis);
-  const unitLine = { ...unitWord, x: stage.width - inset - unitWord.width * (1 + DRAWN_WIDER), y: bandBaseline };
-  if (!(inset + Math.max(...Object.values(ratioWidths)) * (1 + DRAWN_WIDER) + 2 * gap < unitLine.x)) throw new Error("the ratio and the unit do not fit on one line");
+  const unitLine = { ...unitWord, x: inset, y: bandBaseline };
+
 
   // THE PAIRS: six slots; in each, the 2000 stem then the 2023 stem, a head's width apart plus its value's; the dates under
   // the first pair only, the name under every pair.
@@ -106,6 +106,12 @@ export function buildDirection(id, { subject, states, copy }) {
   const plotTop = bandBaseline + valueBand.descent + 1.5 * gap + valueBand.ascent + valueBand.descent + gap / 2 + R;
   const unit = (baseline - plotTop) / top;
   const centre = (i) => inset + slot * (i + 0.5);
+  // THE STACK of China's copies stands just left of the American stem, its ratio centred over it; while the ratio shows the
+  // American head's own value gives way. At 2023 the stack must stay clear of the 2000 tint on the pair's left.
+  const copies = Math.ceil(subject.ratio.before);
+  const stackGap = R + gap / 3;
+  const stackW = 2 * R;
+  if (!(apart - stackGap - stackW > R + gap / 3)) throw new Error("the stack runs into the 2000 tint");
 
   const { ground, accent } = direction;
   const { ink, muted, grid } = deriveFurniture(ground);
@@ -149,6 +155,7 @@ export function buildDirection(id, { subject, states, copy }) {
       const pastX = centre(i) - apart / 2;
       const presentX = centre(i) + apart / 2;
       return {
+        centreX: r1(centre(i)),
         code: p.code,
         before: p.before,
         after: p.after,
@@ -163,7 +170,10 @@ export function buildDirection(id, { subject, states, copy }) {
     R: r1(R),
     zero: { left: inset, right: stage.width - inset },
     ratioWidths,
-    ratioAt: { x: inset, y: bandBaseline },
+    copies,
+    stackGap: r1(stackGap),
+    stackW: r1(stackW),
+    seam: r1(Math.max(2 * k, 0.08 * axis.lead)),
     unitLine,
     valueWidths,
     valueRise: R + gap / 2 + valueBand.descent,

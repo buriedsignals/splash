@@ -16,30 +16,29 @@ China more than 2,5 times its 2000 level, the ratio from above five to between o
 ## The picture — shots, not a page
 
 1. **The title card** (from frame 0, 1.5 s).
-2. **The story** — six pairs of stems from one zero line, a value over every head, the dates under the first pair only, the
-   names under all; over them the ratio at the left and the unit, said once, at the right. The 2000 stem is a tint of the
-   2023 stem's hue — the still's rule.
-3. **No end card** — the video ends on the six pairs at 2000 and 2023, China and the United States kept, China's head
-   ringed; the credit.
+2. **The story** — six pairs of stems from one zero line, a value over every head; the unit said once at the top left, the
+   dates once under the first pair. The 2000 stem is a tint of the 2023 stem's hue — the still's rule.
+3. **No end card** — the video ends on the whole chart, both dates for every pair, China's 2023 head ringed; the credit on
+   one line.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-What only a video can do is **make the change happen**: every pair starts as two equal stems at the 2000 level, then the
-second travels to 2023 while the first stays — and the ratio between the American and the Chinese heads counts down as
-they move.
+The still prints the ratio. The video **measures it with China's own stem**: copies of it stacked beside the American stem
+until they reach its head — seven and a half — then, at 2023, the same copies grown with China's stem, and fewer fitting.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
-| `reference` | six largest emitters | — (furniture) | the six names, the zero line, the unit | the six |
-| `reveal` | where they stood in 2000 | **reveal in order + count** | both stems of each pair rise to its 2000 level, pair after pair, counting; « États-Unis / Chine : ×7,5 » once both heads land | 7,5 |
-| `subject` | 2023 | **move + count** | every second stem travels to its 2023 level, its value counting; the ratio counts down to ×1,7 | 1,7; China ×3 |
-| `conclusion` | China and the United States | **filter + name** | the four others step back; China's 2023 head ringed; the credit | — |
+| `reference` | the six largest emitters, per person, in 2000 | **reveal** | the six 2000 stems rise, each counting its value | every 2000 level |
+| `reveal` | an American emits 7,5 Chinese | **compare by measuring** | the four others step back; copies of China's stem fly over one after another and stack end to end just left of the American stem, cut at its head; « ×7,5 » over the stack | 7,5 |
+| `subject` | 2023: 1,7 | **move + re-measure** | every stem travels to 2023 and a tint stays at 2000 on its left; the copies grow with China's stem and the stack, still cut at the American head, holds fewer — « ×1,7 » | 1,7; China ×3 |
+| `conclusion` | the whole comparison | **pull back** | the copies go; the four others come back — the whole chart; China's 2023 head ringed; the credit | — |
 | `hold` | the change | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst, no change row, no reading line, no selection rule: the ratio counts the claim; the dates are said once.
+The unit, the dates, the values, « ×7,5 » and « ×1,7 ». No standfirst, no change row, no selection rule. A brisk rhythm:
+17,7 s.
 
 ## Directions
 
