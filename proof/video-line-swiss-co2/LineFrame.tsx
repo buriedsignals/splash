@@ -23,8 +23,9 @@ export type LineFrameProps = {
   points: Array<{ year: number; x: number; y: number }>;
   peak: { x: number; y: number; year: number; label: Line };
   end: { x: number; y: number };
-  referenceY: number;
-  referenceLabel: Line;
+  landing: { x: number; y: number; year: number };
+  yearTexts: Record<string, { text: string; width: number }>;
+  yearRise: number;
   ticksY: Array<Line & { y: number; baseline: number }>;
   ticksX: Array<Line & { tickX: number }>;
   tipTexts: Record<string, { text: string; width: number }>;
@@ -69,8 +70,7 @@ export function LineFrame(props: LineFrameProps & { at: number; svgRef?: Ref<SVG
             <Word line={t} register={r.axis} fill={colours.text.axis} />
           </g>
         ))}
-        <line x1={plot.left} x2={plot.right} y1={props.referenceY} y2={props.referenceY} stroke={colours.rule} strokeWidth={strokes.rule} strokeDasharray={strokes.dash.join(" ")} />
-        <Word line={props.referenceLabel} register={r.annot} fill={colours.text.annot} halo={halo} />
+
       </g>
 
       {/* ── THE LINE, traced ── */}
@@ -84,6 +84,18 @@ export function LineFrame(props: LineFrameProps & { at: number; svgRef?: Ref<SVG
         <Word line={{ ...tipText, x: scene.tip.x + props.tipOffset, y: scene.tip.y + props.tipBaselineShift }} register={r.value} fill={colours.text.tip} halo={halo} />
       </g>
       <circle cx={props.end.x} cy={props.end.y} r={props.dotR * 3} fill="none" stroke={colours.line} strokeWidth={strokes.rule} opacity={scene.subject} />
+      {scene.rewind.t > 0 ? (() => {
+        const year = props.yearTexts[String(scene.rewind.year)];
+        return (
+          <g>
+            <line x1={props.end.x} x2={scene.rewind.headX} y1={props.end.y} y2={props.end.y} stroke={colours.rule} strokeWidth={strokes.rule} strokeDasharray={strokes.dash.join(" ")} />
+            <circle cx={scene.rewind.headX} cy={props.end.y} r={props.dotR} fill={colours.rule} />
+            {/* Riding over the head while it runs; once landed, left of the ring — clear of the rising line. */}
+            <Word line={{ ...year, x: scene.rewind.headX - year.width / 2 - (year.width / 2 + props.dotR * 3 + props.dotR * 2) * scene.rewind.landed, y: props.end.y - (props.yearRise - props.tipBaselineShift) * (1 - scene.rewind.landed) + props.tipBaselineShift * scene.rewind.landed }} register={r.annot} fill={scene.rewind.landed > 0.5 ? colours.text.tip : colours.text.annot} halo={halo} />
+            <circle cx={props.landing.x} cy={props.end.y} r={props.dotR * 3} fill="none" stroke={colours.line} strokeWidth={strokes.rule} opacity={scene.rewind.landed} />
+          </g>
+        );
+      })() : null}
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (

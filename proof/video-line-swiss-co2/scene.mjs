@@ -9,10 +9,10 @@ import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.2], furniture: [0.25, 0.7] },
-  reveal: { trace: [0.02, 0.94] },
-  subject: { subject: [0, 0.5] },
-  conclusion: { source: [0, 0.4] },
+  reference: { title: [0, 0.2], furniture: [0.1, 0.7] },
+  reveal: { trace: [0, 0.96] },
+  subject: { subject: [0, 0.2], rewind: [0.2, 0.75] },
+  conclusion: { source: [0, 0.5] },
 });
 const LINEAR = new Set(["trace"]);
 
@@ -29,7 +29,8 @@ export function fieldAt(field, frame, states, timing) {
   return value;
 }
 
-/** @param {{ states: any[], timing: any, points: Array<{ year: number, x: number, y: number }>, peakYear: number }} props */
+/** @param {{ states: any[], timing: any, points: Array<{ year: number, x: number, y: number }>, peakYear: number,
+ *   end: { x: number, y: number }, landing: { x: number, year: number } }} props */
 export function sceneAt(props, frame) {
   const at = (f) => fieldAt(f, frame, props.states, props.timing);
   const trace = at("trace");
@@ -50,6 +51,14 @@ export function sceneAt(props, frame) {
     tip: { x: tip[0], y: tip[1], year: pts[whole].year, shown: trace > 0 ? 1 : 0 },
     peak: clamp01((reach - peakIndex) / 3),
     subject: at("subject"),
+    // THE REWIND: the level line's head runs back from the last reading to the landing, the year at its head counting down;
+    // the landing is ringed once reached.
+    rewind: (() => {
+      const t = at("rewind");
+      const headX = props.end.x + (props.landing.x - props.end.x) * t;
+      const year = Math.round(pts[0].year + ((headX - pts[0].x) / (pts.at(-1).x - pts[0].x)) * (pts.at(-1).year - pts[0].year));
+      return { t, headX, year: t >= 1 - 1e-9 ? props.landing.year : Math.max(props.landing.year, year), landed: t >= 1 - 1e-9 ? 1 : clamp01((t - 0.92) / 0.08) };
+    })(),
     source: at("source"),
   };
 }

@@ -6,14 +6,14 @@ import { statesFor } from "./states.mjs";
 const [establish, reference, reveal, subject, conclusion, hold] = statesFor();
 
 describe("statesFor", () => {
-  it("should open on the title card alone, then the furniture and the 1967 rule", () => {
-    expect(establish).toEqual({ title: 1, furniture: 0, trace: 0, subject: 0, source: 0 });
+  it("should open on the title card alone, then the ticks and decades", () => {
+    expect(establish).toEqual({ title: 1, furniture: 0, trace: 0, subject: 0, rewind: 0, source: 0 });
     expect(reference).toEqual({ ...establish, title: 0, furniture: 1 });
   });
 
-  it("should trace the line at reveal and name 2024 at subject", () => {
+  it("should trace the line at reveal, then name 2024 and rewind to 1967 at subject", () => {
     expect(reveal).toEqual({ ...reference, trace: 1 });
-    expect(subject).toEqual({ ...reveal, subject: 1 });
+    expect(subject).toEqual({ ...reveal, subject: 1, rewind: 1 });
   });
 
   it("should set the credit at conclusion and hold it exactly", () => {

@@ -17,28 +17,27 @@ geometry (`../co2-suisse/crossing-geometry.ts`) as the static line beat: territo
 
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — the chart on the whole frame: three value ticks (floor, the 1967 level, top), decades along the bottom,
-   the 1967 level a dashed rule named on itself.
-3. **No end card** — the video ends on the whole line with 2024 named; the credit.
+   the credit on one line under them.
+3. **No end card** — the video ends on the whole line, 2024 and its landing in 1967 ringed, the level line between them.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-A line's argument is its shape through time. What only a video can do is **draw the time**: the line traces itself year
-by year, linearly, with the year and its reading riding at its tip — the viewer sees the climb, the plateau and the fall,
-and sees the line come back down through the rule.
+A line's argument is its shape through time. The video **draws the time, then rewinds it**: the line traces 1950 → 2024,
+then a level line shoots back from the 2024 reading, the years counting down at its head, until it meets the line on its
+way up — in 1967.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
-| `reference` | this is the level of 1967 | — (furniture) | the ticks and decades; the 1967 rule lands with « Niveau de 1967 » | — |
-| `reveal` | 75 years of emissions | **trace** | the line draws 1950 → 2024, linear in years; the tip carries « {année} · {valeur} Mt »; the 1973 peak is marked « pic de 1973 » once passed | peak = 1973 |
-| `subject` | 2024: 32,1 Mt, under 1967 | **name** | the end point is ringed; the tip label settles in the accent | 2024 < 32,5; the crossing year |
+| `reference` | the scale | — (furniture) | the ticks and decades | — |
+| `reveal` | 75 years of emissions | **trace** | the line draws 1950 → 2024, linear in years; the tip carries « {année} · {valeur} Mt »; « pic de 1973 » once passed | peak = 1973 |
+| `subject` | 2024 is back at 1967 | **name + rewind** | the 2024 point ringed; a dashed level line shoots back from it, the year counting down at its head, and lands where the rising line first reached today's reading — « 1967 », ringed | the landing between 1966 and 1967 |
 | `conclusion` | — | — | the credit | — |
 | `hold` | the line, readable | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst (« émissions territoriales » is in the credit's source line), no era bands, no « sous le niveau dès 2023 »:
-the line crossing the rule shows it.
+The tip label, « pic de 1973 », the year at the head. No rule named in advance: the rewind finds 1967. A brisk rhythm: 20,2 s.
 
 ## Directions
 

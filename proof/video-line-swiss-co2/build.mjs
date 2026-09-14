@@ -13,7 +13,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { crossingGeometry, fr } from "../co2-suisse/crossing-geometry.ts";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { loadSubject } from "./subject.mjs";
@@ -81,7 +81,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueBand = bandOf(BAND_PROBE, value);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
 
   // ── the plot: room at the left for the value ticks, at the right for the tip label, at the bottom for the decades ──
   const { data, reference } = subject;
@@ -96,7 +96,7 @@ export function buildDirection(id, { subject, states, copy }) {
     left: inset + tickWidth + gap,
     right: inset + 3.6 * dotR + gap / 2 + tipWidth,
     top: vInset + valueBand.ascent + 2 * annot.lead,
-    bottom: vInset + axisBand.ascent + axisBand.descent + 1.6 * gap,
+    bottom: vInset + credit.height + gap + axisBand.ascent + axisBand.descent + 1.6 * gap,
   };
   const g = crossingGeometry(data, { width: stage.width, height: stage.height, padding, reference });
   const x = (year) => g.plot.left + ((year - data[0].year) / (data.at(-1).year - data[0].year)) * (g.plot.right - g.plot.left);
@@ -106,29 +106,15 @@ export function buildDirection(id, { subject, states, copy }) {
     const t = measure(String(year), axis);
     return { ...t, x: x(year) - t.width / 2, y: g.plot.bottom + 1.6 * gap + axisBand.ascent, tickX: x(year) };
   });
-  // THE RULE'S NAME sits on the rule where the line is not: every position along it, above or below, is tried from the
-  // left, and the first whose box no reading of the line touches wins.
-  const refText = measure(copy.reference, annot);
-  const annotBand = bandOf(BAND_PROBE, annot);
-  const lineNear = (box) => g.points.some((p, i) => {
-    const q = g.points[i + 1] ?? p;
-    return [0, 0.25, 0.5, 0.75].some((t) => {
-      const px = p.x + (q.x - p.x) * t;
-      const py = p.y + (q.y - p.y) * t;
-      return px >= box.x - gap && px <= box.x + box.width + gap && py >= box.y - gap && py <= box.y + box.height + gap;
-    });
-  });
-  let referenceLabel = null;
-  for (let lx = g.plot.left + gap; lx + refText.width <= g.plot.right - gap && !referenceLabel; lx += 10)
-    for (const below of [false, true]) {
-      const y = below ? g.referenceY + gap / 2 + annotBand.ascent : g.referenceY - gap / 2 - annotBand.descent;
-      const box = { x: lx, y: y - annotBand.ascent, width: refText.width, height: annotBand.ascent + annotBand.descent };
-      if (!lineNear(box)) {
-        referenceLabel = { ...refText, x: lx, y };
-        break;
-      }
-    }
-  if (!referenceLabel) throw new Error(`« ${copy.reference} » finds no place on the rule clear of the line`);
+  // THE LANDING: where the rising line first reached today's reading — between the last year under it before the peak and the
+  // next — the level line shot back from 2024 stops there.
+  const endReading = data.at(-1).mt;
+  const rise = data.findIndex((d, i) => i > 0 && d.year < subject.peak.year && data[i - 1].mt <= endReading && d.mt > endReading);
+  if (rise < 1) throw new Error("the rising line never crosses today's reading before the peak");
+  const [a, b] = [g.points[rise - 1], g.points[rise]];
+  const share = (endReading - data[rise - 1].mt) / (data[rise].mt - data[rise - 1].mt);
+  const landing = { x: a.x + (b.x - a.x) * share, y: g.end.y, year: data[rise].year };
+  const yearTexts = Object.fromEntries(data.map((d) => [String(d.year), measure(String(d.year), annot)]));
   const peakLabel = { ...measure(copy.peak, annot), x: g.peak.x - measure(copy.peak, annot).width / 2, y: g.peak.y - 2 * dotR - gap };
 
   // ── colours ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -153,26 +139,8 @@ export function buildDirection(id, { subject, states, copy }) {
     },
   };
 
-  // ── the credit: the first corner of the plot that holds it clear of the line and every word ─────────────────
-  const touches = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-  const words = [
-    ...ticksY.map((t) => ({ x: t.x, y: t.baseline - axisBand.ascent, width: t.width, height: axisBand.ascent + axisBand.descent })),
-    ...ticksX.map((t) => ({ x: t.x, y: t.y - axisBand.ascent, width: t.width, height: axisBand.ascent + axisBand.descent })),
-    { x: referenceLabel.x, y: referenceLabel.y - annot.fontSize, width: referenceLabel.width, height: annot.lead },
-    { x: peakLabel.x, y: peakLabel.y - annot.fontSize, width: peakLabel.width, height: annot.lead },
-  ];
-  const clearOfLine = (box) => g.points.every((p) => !(p.x >= box.x - 8 && p.x <= box.x + box.width + 8 && p.y >= box.y - 8 && p.y <= box.y + box.height + 8));
-  let creditAt = null;
-  const xs = [g.plot.left + gap, g.plot.right - credit.width];
-  const ys = [g.plot.top, g.plot.bottom - credit.height - gap];
-  for (const cy of [ys[0], ys[1]])
-    for (const cx of xs) {
-      if (creditAt) break;
-      const box = { x: cx, y: cy, width: credit.width, height: credit.height };
-      if (words.some((w) => touches(box, w)) || !clearOfLine(box) || touches(box, { x: g.plot.left, y: g.referenceY - annot.lead, width: g.plot.right - g.plot.left, height: 2 * annot.lead })) continue;
-      creditAt = { x: cx, y: cy };
-    }
-  if (!creditAt) throw new Error(`a ${credit.width}×${credit.height} credit finds no corner of the plot clear of the line`);
+  // ── the credit: one line, under the decades ───────────────────────────────────────────────────────────────
+  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
   const props = {
     frame: stage,
@@ -185,8 +153,9 @@ export function buildDirection(id, { subject, states, copy }) {
     points: g.points.map((p) => ({ year: p.year, x: r1(p.x), y: r1(p.y) })),
     peak: { x: g.peak.x, y: g.peak.y, year: g.peak.year, label: peakLabel },
     end: { x: g.end.x, y: g.end.y },
-    referenceY: g.referenceY,
-    referenceLabel,
+    landing,
+    yearTexts,
+    yearRise: 2 * dotR + gap / 2,
     ticksY,
     ticksX,
     tipTexts,

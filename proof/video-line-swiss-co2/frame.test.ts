@@ -44,18 +44,24 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
     });
 
-    it("should set the rule's name clear of every reading of the line", () => {
-      const l = props.referenceLabel;
-      // The label's ink box, densified along every segment of the line — the line may cross it between two readings.
-      const box = { x0: l.x, x1: l.x + l.width, y0: l.y - props.registers.annot.fontSize * 0.75, y1: l.y + props.registers.annot.fontSize * 0.25 };
-      props.points.forEach((p: any, i: number) => {
-        const q = props.points[i + 1] ?? p;
-        for (let t = 0; t <= 1; t += 0.05) {
-          const x = p.x + (q.x - p.x) * t;
-          const y = p.y + (q.y - p.y) * t;
-          expect([p.year, t, x >= box.x0 && x <= box.x1 && y >= box.y0 && y <= box.y1]).toEqual([p.year, t, false]);
-        }
-      });
+    it("should land the level line where the rising line first reaches today's reading, before the peak", () => {
+      const end = props.points.at(-1);
+      const i = props.points.findIndex((p: any) => p.x >= props.landing.x);
+      const [a, b] = [props.points[i - 1], props.points[i]];
+      const yAt = a.y + ((b.y - a.y) * (props.landing.x - a.x)) / (b.x - a.x);
+      expect(yAt).toBeCloseTo(end.y, 0);
+      expect(props.landing.x).toBeLessThan(props.peak.x);
+      expect(props.points.filter((p: any) => p.x < props.landing.x).every((p: any) => p.y >= end.y - 1)).toBe(true);
+      expect(props.landing.year).toBe(1967);
+    });
+
+    it("should count the years back at the level line's head, and end on the landing ringed with the credit on one line", () => {
+      const { start, duration } = props.timing.subject;
+      const mid = sceneAt(props as any, Math.round(start + duration * 0.45));
+      expect(mid.rewind.year > 1967 && mid.rewind.year < 2024).toBe(true);
+      const endScene = sceneAt(props as any, props.timing.total - 1);
+      expect([endScene.rewind.headX, endScene.rewind.year, endScene.rewind.landed]).toEqual([expect.closeTo(props.landing.x, 6), 1967, 1] as any);
+      expect(props.credit.lines.length).toBe(1);
     });
 
     it("should keep the tip label inside the frame at 2024, and ring 2024 at the end", () => {
