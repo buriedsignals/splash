@@ -53,8 +53,29 @@ const LEVEL_ID_PREFIX = "chart-level";
 const REVEAL_MS = 220;
 const RING_PX = 1.5;
 const LABEL_OFFSET_PX = 3;
-// The underline a pointed band takes, in the geometry's own units — see the markup.
-const BAND_TICK_UNITS = 5;
+/**
+ * THE UNDERLINE A POINTED GROUP TAKES, IN READER PIXELS, AND WHY THAT UNIT IS THE FIX.
+ *
+ * It used to be a `<rect>` five of the GEOMETRY'S units tall. This `<svg>` carries
+ * `preserveAspectRatio="none"`, so a geometry unit is a different number of reader pixels at every
+ * window — measured on this beat, the same underline came out 6,74 px at 1280x800 and 1,62 px at
+ * 375x812, a 4,2x swing on one piece of chrome. At the desktop end that is the "heavy solid dark
+ * bar" the owner saw sitting across one group; at the phone end it is a hairline the reader cannot
+ * find. Every other stroke on this plate — the baseline, the grid, the ring, the rules — is already
+ * `vectorEffect="non-scaling-stroke"`, i.e. declared in reader pixels; this was the one that was
+ * not, and it is now a `<line>` like the rest.
+ *
+ * It is centred on the frame's own bottom edge, exactly as the baseline it thickens is, so the root
+ * `<svg>` clips the lower half of both: the number below is the declared width and half of it is
+ * what a reader sees.
+ */
+const BAND_UNDERLINE_PX = 6;
+/** The dash a yardstick is drawn with, and the ground-coloured casing carried under it. The casing
+ *  is wider on both sides by a hair over one reader pixel — see `casing` below for the measurement
+ *  that makes it necessary and the guard that keeps it honest. */
+const RULE_PX = 2;
+const RULE_CASING_PX = 5;
+const RULE_DASH = "7 5";
 
 /**
  * THE TWO SERIES ARE TOLD APART BY LIGHTNESS, AND THE FLOOR IS HELD HERE RATHER THAN HOPED FOR.
@@ -145,6 +166,29 @@ export function DirectedGroupedBarWeb({
     );
 
   const baseline = mix(ground, ink, 0.7);
+
+  /**
+   * THE CASING UNDER A YARDSTICK, AND THE MEASUREMENT THAT FORCED IT.
+   *
+   * Each rule used to be drawn in `seriesInkOf(rule.series)` alone — the exact ink of its own
+   * series. Measured on this tree, that is a rule which is 1,000:1 against the columns of its own
+   * series: the solar level DISAPPEARS the instant it crosses a solar column and the wind level
+   * disappears over a wind one. And those crossings are the whole question a yardstick is laid down
+   * to answer — is THIS country's column above or below THAT country's level. In creme and rapport
+   * it is worse still: the solar rule over a wind column measures 2,142:1, under the 3:1 non-text
+   * floor, so five of the six crossings a reader actually looks at were illegible and one of them
+   * was mathematically invisible.
+   *
+   * A CASING is the instrument: the dash is drawn twice, first wider in the GROUND and then at full
+   * width in the series' own ink, so the dash keeps its series and carries a hairline of ground
+   * either side of it wherever it crosses a fill. Both copies take the same dash pattern, so the
+   * casing shows only under the dashes and the columns are not cut by a continuous band.
+   *
+   * Why the ground and not a neutral: measured here, the ground separates from every fill a rule
+   * crosses on this plate by at least 3,068:1 (nocturne, against the wind ink) — see the guard
+   * below, which measures it rather than trusting this sentence.
+   */
+  const casing = ground;
   const label = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
   // THE AXIS NAMES' INK AND WEIGHT LEAVE THE INLINE STYLE AND BECOME TWO CUSTOM PROPERTIES, and
   // that is not tidiness. An inline style beats every selector there is, so with `regs.axis` spread
@@ -197,6 +241,61 @@ export function DirectedGroupedBarWeb({
   const levelRules = levelRulesForMarkup(levels);
   const seriesInkOf = (series: string) => (series === "solar" ? solarInk : windInk);
 
+  /**
+   * EVERY FILL A RULE ACTUALLY CROSSES, MEASURED AGAINST THE CASING — not against the ground alone.
+   *
+   * A rule spans the whole plot, so it crosses every column whose own top is at or above it: a
+   * column runs from `y(value)` down to the baseline, so `y(value) <= rule.y` IS the crossing test.
+   * The pointed group's underline is the third fill and it is in the set for EVERY rule, because
+   * its weight is declared in reader pixels (see `BAND_UNDERLINE_PX`) and which rules it reaches is
+   * therefore a window-time fact no build-time number can settle — so the guard measures all of
+   * them against it rather than guessing which.
+   *
+   * Two floors, both at the non-text 3:1, because a casing has two edges to earn:
+   *   · the casing against the fill — without it the halo vanishes into the column and the rule is
+   *     back to being drawn straight onto a hue;
+   *   · the dash against the casing — without it the rule vanishes into its own halo.
+   *
+   * Measured on this tree, the state this replaces: the wind rule over a wind column was 1,000:1
+   * and the solar rule over a solar column was 1,000:1 in all three directions, and in creme and
+   * rapport each rule over the OTHER series' column was 2,142:1. Six of the twelve readings a
+   * reader takes off this yardstick were under the floor and two of them were invisible.
+   */
+  const crossedFills = (ruleY: number): { ink: string; where: string }[] => {
+    const fills = new Map<string, string>();
+    for (const g of groups)
+      for (const [series, value] of [
+        ["wind", g.wind],
+        ["solar", g.solar],
+      ] as const)
+        if (y(value) <= ruleY)
+          fills.set(seriesInkOf(series), `${g.name}'s ${series} column`);
+    fills.set(ink, "the pointed group's underline");
+    return [...fills].map(([fill, where]) => ({ ink: fill, where }));
+  };
+  for (const rule of levelRules) {
+    const dash = seriesInkOf(rule.series);
+    for (const fill of crossedFills(rule.y)) {
+      const behind = contrast(casing, fill.ink);
+      if (behind < NON_TEXT_CONTRAST_MIN)
+        throw new Error(
+          `the ${rule.series} level for ${rule.slug} is drawn across ${fill.where}, and its casing ` +
+            `${casing} measures ${behind.toFixed(3)}:1 against that fill ${fill.ink} — under the ` +
+            `${NON_TEXT_CONTRAST_MIN}:1 non-text floor. A yardstick is laid down to be read WHERE IT ` +
+            `CROSSES A COLUMN; a casing the column swallows leaves the dash sitting straight on the ` +
+            `hue, which is the defect this pair of floors exists to refuse`,
+        );
+    }
+    const inside = contrast(dash, casing);
+    if (inside < NON_TEXT_CONTRAST_MIN)
+      throw new Error(
+        `the ${rule.series} level is drawn ${dash} on a casing of ${casing}, which measure ` +
+          `${inside.toFixed(3)}:1 against each other — under the ${NON_TEXT_CONTRAST_MIN}:1 ` +
+          `non-text floor. A rule that cannot be told from its own halo is a rule the reader ` +
+          `cannot follow across the plot`,
+      );
+  }
+
   // THE DEFAULT STATE AS TWO RULES, not as an inline style on every name — the option rules clear
   // this specificity by an id, so choosing a country steps the default subject back with everything
   // else instead of leaving a second emphasis on the plate.
@@ -210,11 +309,19 @@ export function DirectedGroupedBarWeb({
     `${SCOPE} .axis-label.x { color: var(--axis-ink); font-weight: var(--axis-weight); }`,
     `${SCOPE} .axis-label.x[data-axis="${subject}"] { color: var(--ink); font-weight: 700; }`,
     `${SCOPE} [data-col] { stroke: none; }`,
-    // WHAT A POINTED BAND BECOMES, declared on the shape because the format reads `--mark-active`
-    // off the mark itself. The ink, and nothing else: on this page colour carries the SERIES, so a
-    // pointer that repainted a column would break the one association the reader is asked to learn
-    // once and reuse — see the header, and `references/types/grouped-bar.md`, "where it goes wrong".
-    `${SCOPE} [data-mark] { --mark-active: var(--ink); }`,
+    // WHAT A POINTED GROUP BECOMES, AND WHY THE BEAT LIGHTS IT ITSELF. The ink, and nothing else:
+    // on this page colour carries the SERIES, so a pointer that repainted a column would break the
+    // one association the reader is asked to learn once and reuse — see the header, and
+    // `references/types/grouped-bar.md`, "where it goes wrong".
+    //
+    // The format's shared sheet paints a pointed mark with `fill: var(--mark-active)`, which is the
+    // right instrument for a mark that is a SHAPE. This beat's answer is an underline whose weight
+    // has to hold still in reader pixels across a plot that is 458 px tall on a laptop and 90 px on
+    // a phone (see `BAND_UNDERLINE_PX`), so it is a `<line>` with a non-scaling stroke — and a line
+    // has no fill to paint. The beat therefore lights its own mark here, in the same block where it
+    // already says what a pointed band becomes.
+    `${SCOPE} [data-mark] { stroke: transparent; }`,
+    `${SCOPE} [data-mark].mark-active { stroke: var(--ink); }`,
     `${SCOPE} [data-col="${subject}"] { stroke: var(--ink); stroke-width: ${RING_PX}; }`,
     // THE BOX IS THE EMPTY SPACE ABOVE THE BAR — see `labelFitsPx` above for what that buys and
     // what it cost to find out.
@@ -367,45 +474,71 @@ export function DirectedGroupedBarWeb({
 
           <line x1={0} x2={FRAME.width} y1={FRAME.height} y2={FRAME.height} stroke={baseline} strokeWidth={1} vectorEffect="non-scaling-stroke" />
 
-          {/* EVERY OPTION'S REFERENCES, DRAWN ONCE AT THEIR OWN HEIGHT AND HIDDEN. The stylesheet
-              only reveals; nothing moves. That is what keeps `interaction.mjs`'s by-x resolution
-              honest — it reads `cx` once at init and a CSS transform never changes it. Dashed, so a
-              yardstick the reader parked is never read as a seventh datum. */}
-          {levelRules.map((rule) => (
-            <line
-              key={rule.key}
-              data-level-rule={rule.key}
-              x1={0}
-              x2={FRAME.width}
-              y1={rule.y}
-              y2={rule.y}
-              stroke={seriesInkOf(rule.series)}
-              strokeWidth={2}
-              strokeDasharray="7 5"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-
-          {/* THE BAND ANSWERS, NOT A DOT ON TOP OF A COLUMN. A `.pt` filled under the pointer is
+          {/* THE GROUP ANSWERS, NOT A DOT ON TOP OF A COLUMN. A `.pt` filled under the pointer is
               right for a line — the reading IS a point there — and wrong for a column, where it
               prints a grey spot floating at the top of the taller bar. `render-web.mjs` already
               carries the generic way out: the point names the shape that answers for it
               (`data-mark-ref`), the shape carries `data-mark`, `interaction.mjs` moves
               `.mark-active` between them and the point itself stays invisible. What answers here is
-              the GROUP — an underline the width of its band, on the baseline, transparent until the
-              reader points at it. It is not a fill behind the columns, and that is a measurement:
-              the wind series sits at 3,07–3,10:1 against the ground in all three directions, so any
-              tint laid UNDER it would put it through the 3:1 non-text floor. */}
+              the GROUP — an underline the width of its band, thickening the baseline under it,
+              transparent until the reader points at it. It is not a fill behind the columns, and
+              that is a measurement: the wind series sits at 3,07–3,10:1 against the ground in all
+              three directions, so any tint laid UNDER it would put it through the 3:1 non-text
+              floor. And it is a non-scaling STROKE rather than a five-unit rect, which is the
+              defect the owner saw — see `BAND_UNDERLINE_PX`. */}
           {groups.map((g, i) => (
-            <rect
+            <line
               key={`${g.code}-band`}
               data-mark={g.code}
-              x={band * i}
-              y={FRAME.height - BAND_TICK_UNITS}
-              width={band}
-              height={BAND_TICK_UNITS}
-              fill="transparent"
+              x1={band * i}
+              x2={band * (i + 1)}
+              y1={FRAME.height}
+              y2={FRAME.height}
+              strokeWidth={BAND_UNDERLINE_PX}
+              vectorEffect="non-scaling-stroke"
             />
+          ))}
+
+          {/* EVERY OPTION'S REFERENCES, DRAWN ONCE AT THEIR OWN HEIGHT AND HIDDEN, AND DRAWN LAST.
+              The stylesheet only reveals; nothing moves. That is what keeps `interaction.mjs`'s
+              by-x resolution honest — it reads `cx` once at init and a CSS transform never changes
+              it. Dashed, so a yardstick the reader parked is never read as a seventh datum.
+
+              LAST, because the two things that can cover a rule are both below it in the paint
+              order now: the columns, and the pointed group's underline. The underline used to be
+              painted after the rules and it ATE them — measured with Suisse parked and Pologne
+              pointed at, the wind level at y=337,5 fell inside the underline's 335…340 strip in all
+              three directions, so a reader who pointed at a group lost the yardstick they had just
+              laid down, in exactly the group they were asking about.
+
+              Each rule is TWO lines carrying the same `data-level-rule`, so the generated
+              `opacity: 1` reveals both: the ground-coloured casing first, then the series' own dash
+              on top of it. Same dash pattern on both, so the casing shows only under the dashes. */}
+          {levelRules.map((rule) => (
+            <g key={rule.key}>
+              <line
+                data-level-rule={rule.key}
+                x1={0}
+                x2={FRAME.width}
+                y1={rule.y}
+                y2={rule.y}
+                stroke={casing}
+                strokeWidth={RULE_CASING_PX}
+                strokeDasharray={RULE_DASH}
+                vectorEffect="non-scaling-stroke"
+              />
+              <line
+                data-level-rule={rule.key}
+                x1={0}
+                x2={FRAME.width}
+                y1={rule.y}
+                y2={rule.y}
+                stroke={seriesInkOf(rule.series)}
+                strokeWidth={RULE_PX}
+                strokeDasharray={RULE_DASH}
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
           ))}
 
           {groups.map((g, i) => (

@@ -669,21 +669,30 @@ function initChart(svg, tooltip) {
     const index = byCell
       ? nearestCell(cxs, cys, local.x, local.y)
       : nearestIndex(cxs, local.x);
-    // THE ANSWER SITS ON THE MARK IT NAMES, NOT ON THE POINTER. The overlay resolves the NEAREST
-    // mark, so the pointer is routinely not over it — in the gap between two columns, or anywhere
-    // off a wide mark's centre. Anchoring the box to `evt.clientX` therefore drew an answer about
-    // one column on top of its neighbour, which reads as a confident wrong answer: the reader
+    // THE ANSWER SITS ON THE MARK IT NAMES, NOT ON THE POINTER — ON BOTH AXES. The overlay resolves
+    // the NEAREST mark, so the pointer is routinely not over it — in the gap between two columns, or
+    // anywhere off a wide mark's centre. Anchoring the box to `evt.clientX` therefore drew an answer
+    // about one column on top of its neighbour, which reads as a confident wrong answer: the reader
     // believes the box belongs to what it covers. Measured on the ten-column ranking, the box for
-    // India sat over the United States. The keyboard path never had this — it has always anchored
-    // on the mark's own rect — so this makes the pointer agree with the key.
-    anchorOn(points[index], evt.clientY);
+    // India sat over the United States.
+    //
+    // THE SAME ARGUMENT IS TRUE OF `evt.clientY` AND THAT HALF WAS LEFT STANDING, which the owner
+    // found on the grouped bar: with the height taken from the pointer, the box floats at whatever
+    // height the reader's hand happens to be, i.e. across the MIDDLE of the columns, and on a short
+    // mark it lands over its neighbours. Measured on `web-grouped-bar-wind-vs-solar` at 1280x800,
+    // pointing at Pologne put the box over Pologne's own wind column in all three directions; at
+    // 375x812 it covered Allemagne's and Suède's. The keyboard path never had either half — it has
+    // always anchored on the mark's own rect, top included — so this makes the pointer agree with
+    // the key on both axes instead of only one, and the box now rises out of the empty space above
+    // the mark it names.
+    anchorOn(points[index]);
   }
 
-  /** Place the answer over the mark's own horizontal centre, keeping the pointer's height so the
-   *  box still rises from where the reader is looking. */
-  function anchorOn(point, clientY) {
+  /** Place the answer on the mark's own rect: centred on its horizontal centre, rising from its
+   *  top. Nothing about the pointer enters, which is what keeps the box off the picture. */
+  function anchorOn(point) {
     const rect = point.getBoundingClientRect();
-    show(point, rect.left + rect.width / 2, clientY);
+    show(point, rect.left + rect.width / 2, rect.top);
   }
 
   if (hitArea) {
@@ -701,8 +710,7 @@ function initChart(svg, tooltip) {
   // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
   points.forEach((point, i) => {
     point.addEventListener("focus", function () {
-      const rect = point.getBoundingClientRect();
-      show(point, rect.left + rect.width / 2, rect.top);
+      anchorOn(point);
     });
     point.addEventListener("blur", clear);
     point.addEventListener("keydown", function (evt) {

@@ -223,6 +223,25 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   fill: var(--muted);
   outline: none;
 }
+/* THE MARK ANSWERS, NOT A DOT ON TOP OF IT.
+   A .pt is a circle r=5 at the reading's own position, and filling it is exactly right for a
+   LINE: the reading is a point there, and the dot IS the mark. It is wrong for a bar or a column,
+   where the mark is the whole rectangle and the dot prints a grey spot floating at its top -- the
+   owner's own reading of the ranking beat, and the reason these two rules exist.
+   A component says which it has by giving the point a data-mark-ref naming the shape that
+   answers for it; interaction.mjs then puts .mark-active on [data-mark="<that name>"] on
+   hover, focus and tap, and the point itself stays invisible. A beat that names no shape is
+   unchanged to the byte: a line beat keeps its dot.
+   WHAT THE ACTIVE MARK BECOMES IS THE BEAT'S, NEVER THIS FILE'S. --mark-active is read off the
+   mark, so the one place that knows a column is drawn in the accent or in the neutral is the one
+   place that says what it takes under a pointer -- and it is measured there against the ground, in
+   each direction, rather than nudged here with a brightness filter, which lightens on a light
+   ground and on a dark one alike. --muted is the fallback, which is what a mark with no declared
+   colour already got. */
+.pt[data-mark-ref]:hover, .pt[data-mark-ref]:focus, .pt[data-mark-ref].pt-active {
+  fill: transparent;
+}
+.mark-active { fill: var(--mark-active, var(--muted)); }
 .pt:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
@@ -315,6 +334,33 @@ function nearestCell(cxs, cys, x, y) {
 function initChart(svg, tooltip) {
   const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
   if (points.length === 0) return;
+  /**
+   * WHICH SHAPE EACH POINT ANSWERS FOR, AND WHY THE POINT IS NOT ALWAYS THE ANSWER.
+   *
+   * A `.pt` is a 5px circle at the reading's own position. On a LINE that circle IS the mark, and
+   * filling it is the whole of "you are pointing here". On a BAR or a COLUMN it is not: the mark is
+   * the rectangle, and a filled circle at its top is a grey dot floating over the chart — which is
+   * what this format shipped until the owner looked at the ranking beat and said so.
+   *
+   * So a component may name the shape its point speaks for: `data-mark-ref="<key>"` on the point,
+   * `data-mark="<key>"` on the shape. This layer then carries `.mark-active` between them, and the
+   * format's stylesheet keeps such a point invisible (`.pt[data-mark-ref]`) and paints the shape
+   * instead, in a colour the BEAT declared and measured (`--mark-active`). Nothing is recomputed
+   * here and no colour is named here, exactly as with `data-detail`.
+   *
+   * Resolved ONCE at init, off attributes baked server-side — the same discipline as `cxs`. A
+   * beat that names no shape gets an empty list per point and this costs it nothing.
+   */
+  const marksOf = points.map(function (point) {
+    const key = point.getAttribute("data-mark-ref");
+    if (!key) return [];
+    return Array.prototype.slice.call(
+      svg.querySelectorAll('[data-mark="' + key + '"]'),
+    );
+  });
+  const allMarks = marksOf.reduce(function (into, marks) {
+    return into.concat(marks);
+  }, []);
   const hitArea = svg.querySelector(".hit-area");
   const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
   // A mark drawn as a rect carries no cx/cy; a beat in cell mode gives its own marks a `data-cx`
@@ -326,11 +372,16 @@ function initChart(svg, tooltip) {
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
+    allMarks.forEach((m) => m.classList.remove("mark-active"));
     tooltip.hidden = true;
   }
 
   function show(point, clientX, clientY) {
     points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    // The shape the active point speaks for takes the class; every other shape gives it back. Two
+    // passes and not one, because a shape may be named by more than one point.
+    allMarks.forEach((m) => m.classList.remove("mark-active"));
+    marksOf[points.indexOf(point)].forEach((m) => m.classList.add("mark-active"));
     tooltip.textContent = point.getAttribute("data-detail");
     tooltip.hidden = false;
     const tw = tooltip.offsetWidth || 160;
@@ -354,7 +405,30 @@ function initChart(svg, tooltip) {
     const index = byCell
       ? nearestCell(cxs, cys, local.x, local.y)
       : nearestIndex(cxs, local.x);
-    show(points[index], evt.clientX, evt.clientY);
+    // THE ANSWER SITS ON THE MARK IT NAMES, NOT ON THE POINTER — ON BOTH AXES. The overlay resolves
+    // the NEAREST mark, so the pointer is routinely not over it — in the gap between two columns, or
+    // anywhere off a wide mark's centre. Anchoring the box to `evt.clientX` therefore drew an answer
+    // about one column on top of its neighbour, which reads as a confident wrong answer: the reader
+    // believes the box belongs to what it covers. Measured on the ten-column ranking, the box for
+    // India sat over the United States.
+    //
+    // THE SAME ARGUMENT IS TRUE OF `evt.clientY` AND THAT HALF WAS LEFT STANDING, which the owner
+    // found on the grouped bar: with the height taken from the pointer, the box floats at whatever
+    // height the reader's hand happens to be, i.e. across the MIDDLE of the columns, and on a short
+    // mark it lands over its neighbours. Measured on `web-grouped-bar-wind-vs-solar` at 1280x800,
+    // pointing at Pologne put the box over Pologne's own wind column in all three directions; at
+    // 375x812 it covered Allemagne's and Suède's. The keyboard path never had either half — it has
+    // always anchored on the mark's own rect, top included — so this makes the pointer agree with
+    // the key on both axes instead of only one, and the box now rises out of the empty space above
+    // the mark it names.
+    anchorOn(points[index]);
+  }
+
+  /** Place the answer on the mark's own rect: centred on its horizontal centre, rising from its
+   *  top. Nothing about the pointer enters, which is what keeps the box off the picture. */
+  function anchorOn(point) {
+    const rect = point.getBoundingClientRect();
+    show(point, rect.left + rect.width / 2, rect.top);
   }
 
   if (hitArea) {
@@ -368,8 +442,7 @@ function initChart(svg, tooltip) {
   // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
   points.forEach((point, i) => {
     point.addEventListener("focus", function () {
-      const rect = point.getBoundingClientRect();
-      show(point, rect.left + rect.width / 2, rect.top);
+      anchorOn(point);
     });
     point.addEventListener("blur", clear);
     point.addEventListener("keydown", function (evt) {
