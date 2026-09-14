@@ -97,7 +97,10 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
-        ...[0.35, 0.7].map((t) => ({ name: `reveal-flow-${t}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.flow[0] + t * (WINDOWS.reveal.flow[1] - WINDOWS.reveal.flow[0]))) })),
+        ...[0.5].map((t) => ({ name: `reveal-flow-${t}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.flow[0] + t * (WINDOWS.reveal.flow[1] - WINDOWS.reveal.flow[0]))) })),
+        ...["aside", "magnify", "lines"].map((field) => ({ name: `subject-${field}`, frame: Math.round(T.subject.start + T.subject.duration * WINDOWS.subject[field][1]) })),
+        ...[0.3, 0.7].map((t) => ({ name: `subject-race-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.race[0] + t * (WINDOWS.subject.race[1] - WINDOWS.subject.race[0]))) })),
+        { name: "conclusion-release", frame: Math.round(T.conclusion.start + T.conclusion.duration * 0.4) },
       ];
       for (const { name, frame } of frames) {
         const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {

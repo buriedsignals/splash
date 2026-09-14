@@ -18,26 +18,33 @@ offset, inside-out order, no value axis.
 
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — the stream on the whole frame, years along the bottom, no value axis (a free baseline has none).
-3. **No end card** — the video ends on the whole stream, solar named with its rank; the credit.
+3. **No end card** — the video ends on the whole stream, 2016 ruled through it, « Solaire · 3e » at its end; the credit on
+   one line under the years.
 
 ## The choreography
 
-The claim is a rank changing over time. What only a video can do is **carry the rank along the time**: the stream flows
-from 2000 to 2024, linear in years, and solar's name rides the front of its own band with its rank that year —
-« Solaire · 7e », then 5e in 2014, 4e in 2015, 3e in 2016 — and holds 3e to the end.
+The claim is a rank, and the stream hides it: hydropower and nuclear are so large that the race for third runs in bands
+a few pixels thick. So the video **sets the giants aside** — they fade and close to nothing while the small sources close
+in where they were, on the stream's own scale — **magnifies** what is left until it fills the frame, then **turns it into
+lines from zero**, where rank is height. A cursor **races** the years with solar's rank riding its line — 7e, 5e, 4e —
+and as solar passes oil the rank turns 3e and 2016 is ruled. Then **everything returns**: the lines become bands, the
+magnification drops, the giants come back, and 2016 stays ruled through the whole stream.
+
+The stream is drawn on a curve that passes through the readings, so the lines cross where the data cross.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
 | `reference` | the years | — (furniture) | the year ticks | 25 complete years, one country |
-| `reveal` | 25 years of Swiss electricity, solar climbing | **trace + count** | the stream flows left to right; the two large bands are named inside themselves once passed; « Solaire · {rang}e » rides solar's band at the front | solar's rank per year |
-| `subject` | third since 2016 | **filter + name** | every band but solar steps back; the 2016 rule lands with its year | first third in 2016; held since |
-| `conclusion` | — | — | the others return; the credit | — |
+| `reveal` | 25 years of Swiss electricity | **trace** | the stream flows left to right, linear in years; hydropower and nuclear named inside themselves once passed | — |
+| `subject` | third since 2016 | **filter, magnify, transform, count** | the giants fade and close; the small stream magnified about 7×; the bands turn into lines from zero; the cursor races 2000 → 2024 with « Solaire · {rang}e »; oil named; 2016 ruled once passed | the giants hold ranks 1–2 every year; solar under oil in 2015, over it in 2016; first third in 2016; held since |
+| `conclusion` | — | **pull back** | lines back to bands, the magnification drops, the giants return; the credit | — |
 | `hold` | the stream | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst, no reading line, no totals, no start and end values: the rank riding the band is the claim.
+No standfirst, no values, no value axis: the rank riding the line and the rule are the claim. Only oil — the source solar
+overtakes — is named in the lines.
 
 ## Directions
 

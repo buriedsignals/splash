@@ -13,7 +13,11 @@ export const FIRST = 2000;
 export const LAST = 2024;
 export const TRACKED = "Solar";
 export const RANK = 3;
-export const LABELS = { Hydropower: "Hydraulique", Nuclear: "Nucléaire", Solar: "Solaire" };
+export const LABELS = { Hydropower: "Hydraulique", Nuclear: "Nucléaire", Solar: "Solaire", Oil: "Pétrole" };
+/** The two sources that hold the first two ranks every year — set aside so the race for third can be seen. */
+export const GIANTS = ["Hydropower", "Nuclear"];
+/** The source solar overtakes for third. */
+export const RIVAL = "Oil";
 
 export function loadSubject({ dir = STATIC_DIR } = {}) {
   const csv = readFileSync(join(dir, "data.csv"), "utf8").trim().split(/\r?\n/);
@@ -32,5 +36,12 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
   const reachedAt = ranks.find((r) => r.rank <= RANK);
   if (!reachedAt) throw new Error(`${TRACKED} never reaches rank ${RANK}`);
   if (!ranks.filter((r) => r.year >= reachedAt.year).every((r) => r.rank <= RANK)) throw new Error(`the title says solar has held rank ${RANK} since ${reachedAt.year}; it has not`);
+  for (const r of readings) {
+    const order = keys.map((k) => ({ k, v: r[k] })).sort((a, b) => b.v - a.v).map((o) => o.k);
+    if (!GIANTS.every((g) => order.slice(0, GIANTS.length).includes(g))) throw new Error(`in ${r.year} the two giants do not hold the first two ranks; setting them aside would hide the race`);
+  }
+  const before = readings.find((r) => r.year === reachedAt.year - 1);
+  const at = readings.find((r) => r.year === reachedAt.year);
+  if (!(before[TRACKED] < before[RIVAL] && at[TRACKED] > at[RIVAL])) throw new Error(`${TRACKED} should overtake ${RIVAL} in ${reachedAt.year}`);
   return { readings, keys, ranks, reachedAt: reachedAt.year };
 }
