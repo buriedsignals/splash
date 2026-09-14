@@ -169,13 +169,17 @@ describe("a yardstick the plate cannot honour is refused before anything is draw
   it("should refuse a mark carrying both an x and a y, rather than pick one silently", () => {
     const plan = upright();
     (plan.options[0].marks[1] as any).x = 12;
-    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/both an x .* and a y/);
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(
+      /2 coordinates at once \(x, y\)/,
+    );
   });
 
   it("should refuse a mark carrying neither coordinate", () => {
     const plan = upright();
     delete (plan.options[1].marks[0] as any).x;
-    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/neither an x nor a y/);
+    expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(
+      /neither an x, a y nor an angle/,
+    );
   });
 
   it("should refuse an upright reference outside the plot the reader can see", () => {
@@ -203,6 +207,83 @@ describe("a yardstick the plate cannot honour is refused before anything is draw
     const plan = upright();
     plan.options[0].marks = [plan.options[0].marks[0]] as any;
     expect(() => assertLevelDeclaration(plan as any, UPRIGHT)).toThrow(/lays no rule on "life"/);
+  });
+
+  // ── A REFERENCE LAID AROUND A DIAL, and the refusals the third coordinate brings with it ────
+  // `proof/web-donut-world-co2-share` is the beat that needed it: a donut has no flat band and no
+  // upright one — a horizontal rule at one y names TWO wedges, mirrored about the vertical axis —
+  // so the reference is an ANGLE, and the sweep it is bounded against is the beat's to state.
+  const TURN = Math.PI * 2;
+  const RADIAL = {
+    drawnKeys: ["CHN", "USA"],
+    drawnSeries: ["2000", "2023"],
+    height: 380,
+    turn: TURN,
+  };
+  const radial = () => ({
+    label: "Lire un pays sur les deux anneaux",
+    noneLabel: "Les deux anneaux tels quels",
+    options: [
+      {
+        key: "CHN",
+        label: "Chine",
+        announce: "Chine — 14,7 % en 2000, 32,9 % en 2023",
+        note: "Chine · 14,7 % (3,6 Gt) en 2000, 32,9 % (12,2 Gt) en 2023",
+        marks: [
+          { series: "2000", angle: 1.5 },
+          { series: "2023", angle: 0.93 },
+        ],
+      },
+      {
+        key: "USA",
+        label: "États-Unis",
+        announce: "États-Unis — 24,4 % en 2000, 13,3 % en 2023",
+        note: "États-Unis · 24,4 % (6,0 Gt) en 2000, 13,3 % (4,9 Gt) en 2023",
+        marks: [
+          { series: "2000", angle: 1.76 },
+          { series: "2023", angle: 3.6 },
+        ],
+      },
+    ],
+  });
+
+  it("should accept a case whose two references are laid around the dial", () => {
+    expect(() => assertLevelDeclaration(radial() as any, RADIAL)).not.toThrow();
+  });
+
+  it("should refuse a reference past the end of the sweep the beat draws", () => {
+    const plan = radial();
+    plan.options[1].marks[0].angle = TURN + 0.01;
+    expect(() => assertLevelDeclaration(plan as any, RADIAL)).toThrow(
+      /reference at 6\.29\d* rad, outside the plot's own 0…6\.28/,
+    );
+  });
+
+  it("should refuse a non-finite angle rather than draw a reference nowhere on the dial", () => {
+    const plan = radial();
+    plan.options[0].marks[1].angle = Number.NaN;
+    expect(() => assertLevelDeclaration(plan as any, RADIAL)).toThrow(/non-finite angle/);
+  });
+
+  it("should refuse an angled reference when the beat declared no turn to check it against", () => {
+    const { turn, ...noTurn } = RADIAL;
+    expect(() => assertLevelDeclaration(radial() as any, noTurn as any)).toThrow(
+      /the geometry's full sweep in radians is what it is checked against/,
+    );
+  });
+
+  it("should refuse a mark carrying an angle AND an axis, rather than pick one silently", () => {
+    const plan = radial();
+    (plan.options[0].marks[0] as any).y = 12;
+    expect(() => assertLevelDeclaration(plan as any, RADIAL)).toThrow(
+      /2 coordinates at once \(y, angle\)/,
+    );
+  });
+
+  it("should still refuse a dial that lays a reference on one of its two rings", () => {
+    const plan = radial();
+    plan.options[0].marks = [plan.options[0].marks[0]] as any;
+    expect(() => assertLevelDeclaration(plan as any, RADIAL)).toThrow(/lays no rule on "2023"/);
   });
 
   it("should refuse an option with no sentence — the derived reading would live nowhere", () => {

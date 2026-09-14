@@ -567,6 +567,20 @@ async function checkLevel(page, tag) {
       return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
     }, id);
     await page.mouse.click(box.x, box.y);
+    // WAIT FOR THE REVEAL TO SETTLE, AND DO NOT GUESS AT IT. `levelCss` fades a chosen option's
+    // references in over the beat's own `revealMs` (220 ms in the corpus), so a fixed 80 ms sleep
+    // read them MID-FADE — computed `opacity: 0.65` is not 1, and this check read it as "the words
+    // were never drawn". It went green anyway on the only committed beat that had ever reached it,
+    // because that beat's one revealed element carries `data-axis` too and its opacity never
+    // transitions; the first beat to reveal an element that does fade found the hole
+    // (`proof/web-donut-world-co2-share`). Settle on the animations the page itself reports.
+    await page
+      .evaluate(() =>
+        Promise.all(
+          document.getAnimations().map((a) => a.finished.catch(() => undefined)),
+        ),
+      )
+      .catch(() => undefined);
     await sleep(80);
     const seen = await page.evaluate((chosen) => {
       const drawn = (el) => {

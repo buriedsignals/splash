@@ -77,14 +77,25 @@
  * the half-answer `assertLevelDeclaration` already refuses when an option lays a rule on one of two
  * series.
  *
- * EXACTLY ONE OF THE TWO IS DECLARED, and which key is PRESENT is the declaration. A mark carrying
- * both is refused rather than resolved by precedence: a reference cannot cross the plot in two
- * directions at once, and a silent precedence is how one of the two values a reader asked for
- * disappears without anything going red.
+ * `angle` is the same reference laid AROUND the plot rather than across it, and it exists because a
+ * RADIAL geometry has neither of the other two. On a donut a horizontal band at one `y` names TWO
+ * wedges, mirrored about the vertical axis, and a vertical band at one `x` names two more — so
+ * declaring either here would be word for word the half-answer `assertLevelDeclaration` already
+ * refuses when an option lays a rule on one of two series. An angle names exactly one place on the
+ * dial. It is in the geometry's own radians, measured from the form's fixed 12 o'clock anchor, and
+ * it is bounded against a `turn` the beat passes the same way it passes `width` for an `x` — a full
+ * ring declares `2 * Math.PI`, a half-ring declares `Math.PI`, and a reference outside that sweep is
+ * a reference the reader cannot see, offered as though they could.
+ *
+ * EXACTLY ONE OF THE THREE IS DECLARED, and which key is PRESENT is the declaration. A mark carrying
+ * more than one is refused rather than resolved by precedence: a reference crosses the plot in ONE
+ * direction, and a silent precedence is how one of the values a reader asked for disappears without
+ * anything going red.
  */
 export type LevelMark =
-  | { series: string; y: number; x?: undefined }
-  | { series: string; x: number; y?: undefined };
+  | { series: string; y: number; x?: undefined; angle?: undefined }
+  | { series: string; x: number; y?: undefined; angle?: undefined }
+  | { series: string; angle: number; x?: undefined; y?: undefined };
 
 /** One option: the datum whose levels are laid across the plot, and the words for it. */
 export type LevelOption = {
@@ -165,6 +176,10 @@ export function levelRuleKey(slug: string, series: string): string {
  * @param width        the geometry's own width, and the same refusal one axis over. Required only
  *                     once an option declares an `x` mark, so a beat that lays every reference flat
  *                     declares exactly what it always did.
+ * @param turn         the geometry's own full sweep in radians, and the same refusal on a radial
+ *                     plot. Required only once an option declares an `angle` mark — a closed ring
+ *                     passes `2 * Math.PI` — so a beat drawn on axes declares exactly what it
+ *                     always did.
  */
 export function assertLevelDeclaration(
   declaration: LevelDeclaration,
@@ -173,7 +188,14 @@ export function assertLevelDeclaration(
     drawnSeries,
     height,
     width,
-  }: { drawnKeys: string[]; drawnSeries: string[]; height: number; width?: number },
+    turn,
+  }: {
+    drawnKeys: string[];
+    drawnSeries: string[];
+    height: number;
+    width?: number;
+    turn?: number;
+  },
 ): void {
   const where = "level declaration";
   if (
@@ -280,23 +302,49 @@ export function assertLevelDeclaration(
             "in one ink is a picture the reader cannot resolve",
         );
       named.add(mark.series);
-      // WHICH KEY IS PRESENT IS THE AXIS, and a mark that declares neither or both is refused
+      // WHICH KEY IS PRESENT IS THE AXIS, and a mark that declares none or more than one is refused
       // rather than resolved — see `LevelMark`.
       const hasY = "y" in mark && mark.y !== undefined;
       const hasX = "x" in mark && mark.x !== undefined;
-      if (hasY && hasX)
+      const hasAngle = "angle" in mark && (mark as any).angle !== undefined;
+      const declared = [hasX && "x", hasY && "y", hasAngle && "angle"].filter(
+        Boolean,
+      ) as string[];
+      if (declared.length > 1)
         throw new Error(
           `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} ` +
-            `both an x (${(mark as any).x}) and a y (${(mark as any).y}) — a reference crosses the ` +
-            "plot in ONE direction, and a silent precedence would drop the other value without " +
+            `${declared.length} coordinates at once (${declared.join(", ")}) — a reference crosses ` +
+            "the plot in ONE direction, and a silent precedence would drop the others without " +
             "anything going red",
         );
-      if (!hasY && !hasX)
+      if (declared.length === 0)
         throw new Error(
           `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} ` +
-            "neither an x nor a y — a reference with no coordinate is not drawn anywhere",
+            "neither an x, a y nor an angle — a reference with no coordinate is not drawn anywhere",
         );
-      if (hasY) {
+      if (hasAngle) {
+        // A RADIAL PLOT'S OWN SWEEP, and it is the beat's to state: a full ring turns 2π, a
+        // half-ring turns π, and a reference past the end of that sweep is off the dial.
+        if (!Number.isFinite(turn) || (turn as number) <= 0)
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} lays its ${JSON.stringify(mark.series)} ` +
+              "reference AROUND the plot, so the geometry's full sweep in radians is what it is " +
+              `checked against — got ${JSON.stringify(turn)}. A beat drawn on axes needs no turn; ` +
+              "one that declares an angle mark does",
+          );
+        const angle = (mark as any).angle as number;
+        if (!Number.isFinite(angle))
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} a ` +
+              `non-finite angle (${angle}) — the reference would be drawn nowhere on the dial`,
+          );
+        if (angle < 0 || angle > (turn as number))
+          throw new Error(
+            `${where}: option ${JSON.stringify(option.label)} lays its ${JSON.stringify(mark.series)} ` +
+              `reference at ${angle} rad, outside the plot's own 0…${turn} — a reference the reader ` +
+              "cannot see, offered as though they could",
+          );
+      } else if (hasY) {
         if (!Number.isFinite(mark.y))
           throw new Error(
             `${where}: option ${JSON.stringify(option.label)} gives ${JSON.stringify(mark.series)} a ` +
@@ -398,7 +446,14 @@ export function levelNotesForMarkup(
  */
 export function levelRulesForMarkup(
   declaration: LevelDeclaration | null | undefined,
-): { key: string; slug: string; series: string; y?: number; x?: number }[] {
+): {
+  key: string;
+  slug: string;
+  series: string;
+  y?: number;
+  x?: number;
+  angle?: number;
+}[] {
   if (!declaration) return [];
   return declaration.options.flatMap((option) => {
     const slug = levelSlugOf(option.key);
@@ -406,10 +461,14 @@ export function levelRulesForMarkup(
       key: levelRuleKey(slug, mark.series),
       slug,
       series: mark.series,
-      // The coordinate the option declared, and only that one — a rule the beat draws flat and a
-      // rule it stands up are told apart by which of these is defined, exactly as the declaration
-      // told them apart.
-      ...("y" in mark && mark.y !== undefined ? { y: mark.y } : { x: mark.x }),
+      // The coordinate the option declared, and only that one — a rule the beat draws flat, one it
+      // stands up and one it lays around a dial are told apart by which of these is defined,
+      // exactly as the declaration told them apart.
+      ...("y" in mark && mark.y !== undefined
+        ? { y: mark.y }
+        : "x" in mark && mark.x !== undefined
+          ? { x: mark.x }
+          : { angle: (mark as any).angle as number }),
     }));
   });
 }
