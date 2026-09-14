@@ -19,6 +19,6 @@ describe("the shipped slope video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 200, duration: 105 } })).join(" ")).toContain("subject starts at 200");
+    expect(checkTiming(broken({ subject: { start: 240, duration: 180 } })).join(" ")).toContain("subject starts at 240");
   });
 });

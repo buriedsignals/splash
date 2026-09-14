@@ -23,27 +23,28 @@ direction's registers cannot seat sixteen on a rail, the render refuses.
 
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — two rails, 2000 and 2024, sixteen lines between them; names and 2000 values on the left, 2024 values on
-   the right, pushed apart to a legible pitch, never dropped.
-3. **No end card** — the video ends on the sixteen lines with France and Finland picked out; the credit.
+   the right, pushed apart to a legible pitch, never dropped; the count between the rails at the top.
+3. **No end card** — the video ends on the whole chart, France and Finland in the accent, their crossing ringed; the credit
+   on one line.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-A slope's argument is the change between two dates. What only a video can do is **make the change happen**: every line
-travels from its 2000 value to its 2024 value together, the order on the right rail assembling — then the one swap the
-claim is about is picked out and its crossing ringed.
+The still shows the two lines that cross. The video **runs the test**: every line rises — counted — then France's line
+becomes the bar to clear, and every country that started under it is tried in turn, from the lowest finish up; each one
+lights and falls back under France until the last, Finland, ends above it.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
 | `reference` | sixteen countries in 2000 | — (furniture) | the rails; each country's 2000 dot, name and value | — |
-| `reveal` | all sixteen rose | **trace** | every line draws from 2000 to 2024 together; each 2024 value lands on arrival | all 16 rose |
-| `subject` | Finland passed France, and only Finland | **filter + name** | every other line steps back; France and Finland in the accent; their crossing ringed | the one crossing of France |
-| `conclusion` | — | — | the credit | — |
+| `reveal` | all sixteen rose | **trace + count** | the lines drawn to 2024 one after another, the largest rise first; « {n} en hausse » climbs to 16 | all 16 rose |
+| `subject` | only Finland passed France | **test + count** | France's line takes the accent; Sweden, above it from the start, steps back; the fourteen that started under France light up in turn, lowest 2024 finish first, and step back ending under it — Finland, tried last, ends above it, takes the accent, its crossing ringed; « {n} dépasse la France » stops at 1 | the one crossing of France |
+| `conclusion` | the whole slope | **pull back** | every line comes back — the whole chart — the pair in the accent; the credit | — |
 | `hold` | the slope | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst, no reading line, no deltas: the lines show the rise, the rails print the levels.
+The rails, names and values, and the two counts. A brisk rhythm: 19,2 s.
 
 ## Directions
 

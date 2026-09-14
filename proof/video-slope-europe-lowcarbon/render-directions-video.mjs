@@ -97,7 +97,8 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
-        { name: "reveal-travelling", frame: mid("reveal", WINDOWS.reveal.travel) },
+        { name: "reveal-travel", frame: Math.round(T.reveal.start + T.reveal.duration * 0.5) },
+        ...[0.4, 0.8].map((t) => ({ name: `subject-check-${t}`, frame: Math.round(T.subject.start + T.subject.duration * t) })),
       ];
       for (const { name, frame } of frames) {
         const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {

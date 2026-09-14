@@ -4,21 +4,27 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { buildDirection, loadBeat, PITCH } from "./build.mjs";
-import { sceneAt } from "./scene.mjs";
+import { moveOf, sceneAt, TEST, WINDOWS } from "./scene.mjs";
 import { SlopeFrame } from "./SlopeFrame.tsx";
 
 /**
- * The markup at the last frame of every event — the type floor, every word with its measured width — and the claim told
- * in order: all sixteen lines drawn, every end label kept at a legible pitch and in the order of its values, every line
- * rising, the pair picked out at the end with its crossing between the rails.
+ * The markup at the last frame of every event — the type floor, every word with its measured width — and the argument told
+ * in order: all sixteen lines, every one rising, every end label at a legible pitch in the order of its values; the rises
+ * counted only as lines land; every line that started under France tested, the one that ends above it tested last and
+ * the only one counted; the whole chart at the end, nothing stepped back, the pair in the accent, the crossing ringed.
  */
 
 const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
-  const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(SlopeFrame, { ...(props as any), at: frame }));
-  const last = (event: string) => endOf((props.timing as any)[event]) - 1;
+  const { props } = buildDirection(id, beat) as any;
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(SlopeFrame, { ...props, at: frame }));
+  const last = (event: string) => endOf(props.timing[event]) - 1;
+  const within = (event: string, field: string, t: number) => {
+    const { start, duration } = props.timing[event];
+    const [a, b] = (WINDOWS as any)[event][field];
+    return Math.round(start + duration * (a + t * (b - a)));
+  };
 
   describe(`${id}'s slope video`, () => {
     for (const event of EVENT_ORDER)
@@ -29,11 +35,13 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
       });
 
-    it("should draw all sixteen, every one rising, with no line at 2024 before the reveal", () => {
+    it("should draw all sixteen, every one rising, and count the rises only as the lines land", () => {
       expect(props.lines.length).toBe(16);
       for (const d of props.lines) expect([d.key, d.b.y < d.a.y]).toEqual([d.key, true]);
-      expect(sceneAt(props as any, last("reference")).travel).toBe(0);
-      expect(sceneAt(props as any, last("reveal")).travel).toBe(1);
+      const s = sceneAt(props, within("reveal", "travel", 0.5));
+      expect(s.rose).toBe(s.lines.filter((l: any) => l.arrived >= 1).length);
+      expect(s.rose > 0 && s.rose < 16).toBe(true);
+      expect(sceneAt(props, last("reveal")).rose).toBe(16);
     });
 
     it("should keep every rail's labels apart at the pitch, in the order of their values", () => {
@@ -43,12 +51,24 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       }
     });
 
-    it("should pick out the pair at the end and ring their crossing between the rails, near the right one", () => {
-      const end = sceneAt(props as any, props.timing.total - 1);
-      expect(end.focus).toBe(1);
-      expect(props.lines.filter((d: any) => d.pair).map((d: any) => d.key).sort()).toEqual(["Finland", "France"]);
-      expect(props.cross.x).toBeGreaterThan(props.rail.left);
-      expect(props.cross.x).toBeLessThan(props.rail.right);
+    it("should test every line that started under France, the one that passes it last, and count only that one", () => {
+      const tested = props.lines.filter((d: any) => d.testRank !== null);
+      const france = props.lines.find((d: any) => d.key === props.held);
+      expect(tested.map((d: any) => d.key).sort()).toEqual(props.lines.filter((d: any) => d.key !== props.held && d.a.y > france.a.y).map((d: any) => d.key).sort());
+      const lastTested = tested.find((d: any) => d.testRank === tested.length - 1);
+      expect([lastTested.key, tested.filter((d: any) => d.passes).map((d: any) => d.key)]).toEqual([props.climber, [props.climber]]);
+      const mid = sceneAt(props, within("subject", "check", 0.5));
+      expect(mid.passed).toBe(0);
+      expect(sceneAt(props, last("subject")).passed).toBe(1);
+      expect(moveOf(1, tested.length - 1, tested.length, TEST)).toBeCloseTo(1, 9);
+    });
+
+    it("should end on the whole chart: nothing stepped back, the pair in the accent, the crossing ringed, the credit on one line", () => {
+      const end = sceneAt(props, props.timing.total - 1);
+      expect(end.lines.every((l: any) => l.stepBack === 0)).toBe(true);
+      expect(props.lines.filter((d: any, i: number) => end.lines[i].accent === 1).map((d: any) => d.key).sort()).toEqual([props.climber, props.held].sort());
+      expect([end.ring, end.passed]).toEqual([1, 1]);
+      expect(props.credit.lines.length).toBe(1);
     });
   });
 }
