@@ -74,15 +74,10 @@ export function copyOf(subject) {
   const oddText = upper(`${french(ODD_ONE)} · ${pct(value.get(ODD_ONE).lowCarbon)}`);
   return {
     eyebrow: "Énergie · Europe",
-    /** The scrolly's two shorter forms: the title card is read in two seconds, and the story shows the rest. */
+    /** The scrolly's two shorter forms: the title card is read in a second and a half, and the story shows the rest. */
     title: [`Le bas-carbone européen est au nord-ouest — et en Albanie`, `Le bas-carbone européen, et son exception`],
-    /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the
-     *  counter the cursor steps through (BRIEF.md). The last one is the claim. */
-    /** THE END CARD'S CLAIM, stated once its evidence has been shown — longest form first. */
-    //  The neighbours were SHOWN in the close-up — their shares counted beside Albania's — so the claim does not
-    //  write them again.
-    claim: [`Sept pays dépassent ${FLOOR}${NB}% : six au nord-ouest, et l’Albanie.`],
-    // The count alone: the cursor on the bornes says which share it is above.
+    /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the count
+     *  alone; the cursor on the bornes says which share it is above. The last one is the claim, and it stays. */
     counterSteps: [`${value.size} pays`, ...BREAKS.map((b) => `${[...value.values()].filter((v) => v.lowCarbon >= b).length} pays`)],
     breaks: BREAKS.map((b) => `${b}${NB}%`),
     missingLabel: "sans donnée",
@@ -124,7 +119,7 @@ export function copyOf(subject) {
 export function textPerRegisterOf(copy) {
   const bySlot = (slot) => copy.names.filter((n) => n.slot === slot).map((n) => n.text);
   return {
-    display: [...copy.title, ...copy.claim].join(" "),
+    display: copy.title.join(" "),
     eyebrow: copy.eyebrow,
     body: copy.source.join(" "),
     annot: copy.waters.flatMap((w) => w.forms).join(" "),
@@ -186,7 +181,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       // The count and the key stand on the sea, in their halo.
       counter: adjustToContrast(accent, tints.water, TEXT_CONTRAST_MIN) ?? onGround(accent),
       key: adjustToContrast(muted, tints.water, TEXT_CONTRAST_MIN) ?? onGround(muted),
-      source: onGround(muted),
+      source: adjustToContrast(muted, tints.water, TEXT_CONTRAST_MIN) ?? onGround(muted),
       water: adjustToContrast(WATER_HUE, tints.water, TEXT_CONTRAST_MIN) ?? onGround(ink),
     },
   };
@@ -541,6 +536,21 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     }
   }
 
+  // ── the source: set small on the sea at the overview, where the video ends ────────────────────────────────
+  // Every position on the panel's grid inside the margins is tried, lowest first; it may touch no name, no sea's
+  // name and not the panel, and the one over the least land wins.
+  let sourceSeat = null;
+  const sourceBox = { width: layout.source.width, height: layout.source.height };
+  for (let y = stage.height - vInset - sourceBox.height; y >= vInset; y -= PANEL_STEP)
+    for (let x = inset; x + sourceBox.width <= stage.width - inset; x += PANEL_STEP) {
+      const box = { x, y, ...sourceBox };
+      if (taken.some((t) => touches(box, t))) continue;
+      const share = landShare(box);
+      if (!sourceSeat || share < sourceSeat.share - 1e-9) sourceSeat = { x, y, share };
+    }
+  if (!sourceSeat) throw new Error(`a ${sourceBox.width}×${sourceBox.height} source finds no place on the overview`);
+  const sourceAt = { x: sourceSeat.x, y: sourceSeat.y };
+
   const strokeScale = sizeFor(SIZE).typeScale;
   const props = {
     frame: layout.frame,
@@ -549,7 +559,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     layoutInset: { x: inset, y: vInset },
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
     titleCard: layout.titleCard,
-    endCard: layout.endCard,
+    source: { ...layout.source, at: sourceAt },
     panel: { ...panelLayout, at: { x: panelBox.x, y: panelBox.y } },
     colours,
     strokes,
@@ -566,5 +576,5 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
   };
-  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
+  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, sourceForm: layout.source.form, stage, panel: panelBox, panelLand: panelAt.share, sourceLand: sourceSeat.share, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
 }

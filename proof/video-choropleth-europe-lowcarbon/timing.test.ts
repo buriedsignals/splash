@@ -21,8 +21,8 @@ describe("the shipped choropleth video timing", () => {
     expect(T.hold.duration).toBeGreaterThanOrEqual(60);
   });
 
-  it("should hold the title card no longer than three seconds", () => {
-    expect(T.establish.duration).toBeLessThanOrEqual(T.fps * 3);
+  it("should hold the title card no longer than a second and a half", () => {
+    expect(T.establish.duration).toBeLessThanOrEqual(T.fps * 1.5);
   });
 
   it("should give each of the six classes at least ten frames of the reference event", () => {
@@ -41,13 +41,13 @@ describe("the shipped choropleth video timing", () => {
 describe("checkTiming on a mutated choropleth video timing", () => {
   it("should refuse a subject that starts before the reveal has finished", () => {
     expect(
-      checkTiming(broken({ subject: { start: 300, duration: 160 } })).join(" "),
-    ).toContain("subject starts at 300");
+      checkTiming(broken({ subject: { start: 250, duration: 160 } })).join(" "),
+    ).toContain("subject starts at 250");
   });
 
   it("should refuse a composition that ends on a transition instead of a hold", () => {
     expect(
-      checkTiming(broken({ hold: { start: 645, duration: 40 } })).join(" "),
-    ).toContain("hold ends at 685");
+      checkTiming(broken({ hold: { start: 615, duration: 40 } })).join(" "),
+    ).toContain("hold ends at 655");
   });
 });

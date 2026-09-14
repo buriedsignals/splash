@@ -30,7 +30,7 @@ describe("statesFor", () => {
   it("should open on the title card alone at establish — no map class, name or panel yet", () => {
     expect(establish).toEqual({
       title: 1, furniture: 0, classes: 0, filter: 0, floor: 0, count: 0,
-      top: 0, context: 0, zoom: 0, odd: 0, neighbours: 0, end: 0,
+      top: 0, context: 0, zoom: 0, odd: 0, neighbours: 0, source: 0,
     });
   });
 
@@ -46,8 +46,8 @@ describe("statesFor", () => {
     expect(subjectState).toEqual({ ...reveal, furniture: 0, filter: 0, top: 0, zoom: 1, odd: 1, neighbours: 1 });
   });
 
-  it("should pull back, name the six, Albania and the three lowest, and close on the end card at conclusion (card 6)", () => {
-    expect(conclusion).toEqual({ ...subjectState, furniture: 1, zoom: 0, neighbours: 0, top: 1, context: 1, end: 1 });
+  it("should pull back, name the six, Albania and the three lowest, and set the source on the map at conclusion (card 6)", () => {
+    expect(conclusion).toEqual({ ...subjectState, furniture: 1, zoom: 0, neighbours: 0, top: 1, context: 1, source: 1 });
   });
 
   it("should refuse a subject that changes nothing from reveal (the guard it runs through)", () => {

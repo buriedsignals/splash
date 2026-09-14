@@ -42,6 +42,12 @@ for (const id of DIRECTIONS) {
   const gap = 0.25 * props.registers.axis.lead;
 
   describe(`${id}, frame by frame`, () => {
+    it("should end on the map — no card over it at the last frame of the hold", () => {
+      const scene: any = sceneAt(props, T.total - 1);
+      expect([scene.title, scene.end ?? 0]).toEqual([0, 0]);
+      expect((props as any).endCard).toBeUndefined();
+    });
+
     it("should open on the title card at full opacity from frame 0", () => {
       expect(sceneAt(props, 0).title).toBe(1);
     });

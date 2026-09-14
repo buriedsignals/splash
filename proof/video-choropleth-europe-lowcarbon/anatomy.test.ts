@@ -122,6 +122,18 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         }
     });
 
+    it("should set the source on the final map inside the margins, clear of every name, sea name and the panel, its words in open water", () => {
+      const src = props.source;
+      const box = { x: src.at.x, y: src.at.y, width: src.width, height: src.height };
+      expect(src.lines.every((l: any) => l.x + l.width <= src.width && l.y <= src.height)).toBe(true);
+      expect([box.x >= props.layoutInset.x, box.y >= props.layoutInset.y, box.x + box.width <= stage.width - props.layoutInset.x, box.y + box.height <= stage.height - props.layoutInset.y]).toEqual([true, true, true, true]);
+      const panel = { ...props.panel.at, width: props.panel.width, height: props.panel.height };
+      for (const o of [...props.names.filter((n: any) => n.camera === "overview"), panel]) expect([o.key ?? "panel", touches(box, o)]).toEqual([o.key ?? "panel", false]);
+      for (const w of props.waters) expect([w.key, touches(box, { x: w.x, y: w.y - props.registers.water.fontSize, width: w.width, height: props.registers.water.fontSize })]).toEqual([w.key, false]);
+      for (const l of src.lines)
+        for (let i = 0; i <= 10; i++) expect([l.text, i, shapeUnder("overview", src.at.x + l.x + (l.width * i) / 10, src.at.y + l.y - props.registers.axis.fontSize / 3)]).toEqual([l.text, i, null]);
+    });
+
     it("should write no sentence on the map — no callout, no standfirst", () => {
       expect((props as any).callout).toBeUndefined();
       expect((props.titleCard as any).standfirst).toBeUndefined();

@@ -25,11 +25,11 @@ export const WINDOWS = Object.freeze({
   // The title card is up from frame 0: its window closes before the first frame, so frame 0 is the title.
   establish: { title: [-1, 0] },
   // The lowest class lands at 0.375 of reference; its three names follow it.
-  reference: { title: [0, 0.15], furniture: [0.12, 0.25], count: [0.12, 0.25], classes: [0.25, 1], context: [0.42, 0.52] },
+  reference: { title: [0, 0.1], furniture: [0.08, 0.2], count: [0.08, 0.2], classes: [0.2, 1], context: [0.4, 0.5] },
   // The floor passes the lowest borne at 0.17 of reveal; its three names step back with it.
   reveal: { filter: [0.03, 0.73], floor: [0.03, 0.73], context: [0.03, 0.15], top: [0.8, 0.95] },
   subject: { top: [0, 0.08], furniture: [0, 0.06], filter: [0.06, 0.33], zoom: [0.06, 0.36], odd: [0.4, 0.48], neighbours: [0.46, 0.56] },
-  conclusion: { neighbours: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], context: [0.45, 0.55], end: [0.78, 0.92] },
+  conclusion: { neighbours: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], context: [0.45, 0.55], source: [0.6, 0.75] },
 });
 
 /** When the names of each camera may be seen: the overview's leave before the camera departs and return
@@ -225,7 +225,7 @@ export function sceneAt(props, frame) {
   return {
     title: at("title"),
     furniture: at("furniture"),
-    end: at("end"),
+    source: at("source"),
     swatches: Array.from({ length: n }, (_, i) => ease(clamp01(classes * n - i))),
     /** How far each class's swatch has stepped back with the floor — the key follows the map. */
     swatchesBack: Array.from({ length: n }, (_, i) => (i === n - 1 ? 0 : ease(clamp01(filter * (n - 1) - i)))),

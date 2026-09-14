@@ -47,7 +47,13 @@ export type ChoroplethFrameProps = {
     eyebrow: Line;
     title: Line[];
   };
-  endCard: { register: Register; claim: Line[]; source: Line };
+  source: {
+    at: { x: number; y: number };
+    width: number;
+    height: number;
+    halo: number;
+    lines: Line[];
+  };
   panel: {
     at: { x: number; y: number };
     width: number;
@@ -183,7 +189,6 @@ export function ChoroplethFrame(
     strokes,
     panel,
     titleCard,
-    endCard,
   } = props;
   const scene = sceneAt(props as never, props.at);
   const shapeFill = Object.fromEntries(props.shapes.map((s) => [s.key, s.fill]));
@@ -412,24 +417,21 @@ export function ChoroplethFrame(
         ))}
       </g>
 
-      {/* ── THE END CARD: the claim, once its evidence has been shown, and the source. ── */}
-      <g opacity={scene.end}>
-        <rect width={frame.width} height={frame.height} fill={colours.ground} />
-        {endCard.claim.map((line, i) => (
+      {/* ── NO END CARD: the video ends on the map; the source is set small on its sea. ── */}
+      <g
+        transform={`translate(${props.source.at.x} ${props.source.at.y})`}
+        opacity={scene.source}
+      >
+        {props.source.lines.map((line, i) => (
           <Word
-            key={`claim${i}`}
+            key={`source${i}`}
             line={line}
-            register={endCard.register}
-            fill={colours.text.title}
+            register={r.axis}
+            fill={colours.text.source}
             opacity={1}
+            halo={{ colour: colours.sea, width: props.source.halo }}
           />
         ))}
-        <Word
-          line={endCard.source}
-          register={r.axis}
-          fill={colours.text.source}
-          opacity={1}
-        />
       </g>
     </svg>
   );

@@ -25,7 +25,7 @@ const measured = (text: string, r: any) =>
 
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { layout, props, report } = buildDirection(id, beat);
-  const { titleCard, endCard, panel, registers } = layout;
+  const { titleCard, panel, registers } = layout;
   const measure = 0.72 * content;
 
   describe(`the shots of ${id}`, () => {
@@ -61,21 +61,12 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(bottom).toBeLessThan(row.height);
     });
 
-    it("should state the claim on the end card in at most three lines, above its source, inside the margins", () => {
-      const text = endCard.claim.map((l: any) => l.text).join(" ").toLowerCase();
-      expect(text).toContain("albanie");
-      expect(endCard.claim.length).toBeLessThanOrEqual(3);
-      for (const l of endCard.claim)
-        expect(
-          measured(l.text, endCard.register) * (1 + DRAWN_WIDER),
-        ).toBeLessThanOrEqual(measure + 0.01);
-      expect(endCard.claim.at(-1).y).toBeLessThan(
-        endCard.source.y - registers.axis.lead,
-      );
-      expect(endCard.source.y).toBeLessThanOrEqual(row.height - layout.vInset);
-      expect(
-        measured(endCard.source.text, registers.axis) * (1 + DRAWN_WIDER),
-      ).toBeLessThanOrEqual(content + 0.01);
+    it("should set the source in at most three lines of its narrow measure, the halo's reach around it", () => {
+      const { source } = layout;
+      expect(source.lines.length).toBeLessThanOrEqual(3);
+      for (const l of source.lines)
+        expect(l.x + measured(l.text, registers.axis) * (1 + DRAWN_WIDER)).toBeLessThanOrEqual(source.width + 0.01);
+      expect(source.lines.at(-1).y).toBeLessThanOrEqual(source.height);
     });
 
     it("should hold every panel word inside the panel, the widest counter step included", () => {

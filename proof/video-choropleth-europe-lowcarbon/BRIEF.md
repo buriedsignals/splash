@@ -45,15 +45,17 @@ No MapLibre, no MapTiler, no key, no proxy.
 The owner (2026-09-14): « Le layout vidéo ne doit pas être comme les autres, genre premier plan le titre en
 premier puis ensuite tout un storytelling ». The video is cut into shots:
 
-1. **The title card** (`establish`, from frame 0, 2.5 s) — the eyebrow and the short title that names
+1. **The title card** (`establish`, from frame 0, 1.5 s) — the eyebrow and the short title that names
    Albania, alone on the direction's ground, as large as the display register draws, wrapped to a reading
    measure (72 % of the content width, at most three lines), the block centred on the frame's height.
 2. **The story** (`reference` → `conclusion`) — the map on the whole frame, edge to edge; the camera is the
    viewBox. The count and the key sit in ONE PANEL, seated by measurement where it covers the least land
    under the overview camera and none of the seven's; it comes with the classes and leaves for the close-up.
    The map carries **the still's anatomy** (below).
-3. **The end card** (end of `conclusion`, then `hold`) — the claim, stated once its evidence has been shown,
-   and the source on the bottom margin.
+3. **No end card — the video ends on the map** (end of `conclusion`, then `hold`). The owner (2026-09-14): « la
+   vue finale doit être la map et pas le titre à nouveau ». The last picture is the overview with every class,
+   the seven named, Albania ringed and the three lowest named; the source is set small on the sea, in at most
+   three lines of a narrow measure, where it covers the least land and touches no word.
 
 ## Write as little as the picture allows
 
@@ -61,7 +63,8 @@ The owner (2026-09-14), on the second cut: « l'objectif dans les vidéos c'est 
 écrivant le moins possible de texte explicatif ». So: no standfirst, no callout, no unit line; the count is
 « 7 pays » alone — the cursor on the bornes says above what; the key's absence is « sans donnée »; the panel
 has no plate, its words stand in their halo on the sea; the claim does not repeat the neighbours the close-up
-counted. What a sentence said, the choreography shows.
+counted — and there is no end card to restate it: the final map is the claim. What a sentence said, the
+choreography shows.
 
 ## The still's anatomy, redrawn in the frame
 
@@ -105,8 +108,7 @@ set in SVG over the vector map:
 | names, close-up | ALBANIE · 100 % · MONTÉNÉGRO · 59 % · MACÉDOINE DU NORD · 39 % · GRÈCE · 49 % · KOSOVO, HORS DONNÉES — no name but Albania's may sit on Albania's box; the neighbours placed in the order that keeps them nearest their seats | value as a feature (Albania), area |
 | names, pull back | the six · ALBANIE · the three lowest — the share was counted at the close-up; Ukraine's fill is the key's « sans donnée » | feature, area |
 | seas | Océan Atlantique · Mer de Norvège · Mer Noire (and the still's Mer du Nord · Mer Méditerranée · Mer Baltique where they fit) | water |
-| claim (end card) | « Sept pays dépassent 94 % : six au nord-ouest, et l'Albanie. » | display |
-| source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », shortened to the longest of its forms that holds one line | axis |
+| source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », the longest of its forms that holds three lines of the narrow measure, set on the final map | axis |
 
 ## The choreography — the scrolly's six cards, told with what only a video has
 
@@ -121,8 +123,8 @@ the filter and the count run first, and the six names arrive only once the filte
 | `reference` | 2 | the colour is a class, from under 40 % to 94 % and more | **reveal in order** | the title card gives way to the map; the panel comes up with « 40 pays »; the six classes take their fill one after another, < 40 % first, ≥ 94 % last — each class's swatch and its borne arriving with it; once the lowest class has landed, CHYPRE, MALTE, MOLDAVIE are named | class counts low → high = 8 · 6 · 6 · 8 · 5 · 7, summing to 40 |
 | `reveal` | 3 + 4 | above 94 %, only seven remain — six are north or west | **the floor rises** (filter as time), then **name** | a cursor travels the key borne by borne — 40, 55, 70, 85, 94 % — and each class it passes steps back to bare land, its swatch fading with it, while the counter steps down « 40 pays » → « 32 pays » → 26 → 20 → 12 → « 7 pays »; the three lowest names step back as the floor passes 40 %; once the floor stands at 94 %, Islande, Suède, Norvège, Finlande, France, Suisse are named | counts at or above each borne = 40 · 32 · 26 · 20 · 12 · 7; stepped back = 33; named = 6, each north or west of Albania |
 | `subject` | 5 | the seventh is Albania, 100 %, and its three measured neighbours are all under 60 % | **zoom + name** | the six names leave; every class returns as the camera travels, eased, onto the Balkans, Albania at the centre of the close-up; once the camera has settled: Albania ringed and named, its share **counting up** from 0 to « 100 % », then « Monténégro », « Macédoine du Nord », « Grèce », each share counting up to 59, 39 and 49 %, and « Kosovo, hors données », left two seconds once counted | Albania ∈ `above` at 100 %; measured neighbours = 3, the highest Monténégro 59.5 % < 60; Kosovo = the one ring-neighbour without a row |
-| `conclusion` | 6 | Europe again, with what was learned still marked | **pull back** + **name** | the close-up names leave; the camera returns to the overview; once it has settled: every class on the map, the six named, Albania ringed and named, the three lowest named; then the end card | conclusion camera = establish camera |
-| `hold` | — | the claim, readable | — (stillness) | nothing | hold state = conclusion state; hold ≥ 60 frames |
+| `conclusion` | 6 | Europe again, with what was learned still marked | **pull back** + **name** | the close-up names leave; the camera returns to the overview; once it has settled: every class on the map, the six named, Albania ringed and named, the three lowest named; then the source on the sea | conclusion camera = establish camera |
+| `hold` | — | the final map, readable | — (stillness) | nothing | hold state = conclusion state; hold ≥ 60 frames |
 
 Rules the composition keeps:
 

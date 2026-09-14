@@ -11,7 +11,7 @@
 //      the key — sits in one PANEL that comes and goes with its gestures; `build.mjs` seats it where it covers
 //      the least land at the overview camera. The panel is laid out here at its own origin: the count and the
 //      key, no sentence; the map's words are the still's anatomy, uppercased and haloed (`build.mjs`).
-//   3. THE END CARD — the claim, stated once its evidence has been shown, and the source.
+//   3. NO END CARD — the video ends on the map, with the source set small on its sea.
 //
 // Every width is `measureText` on the face the composition embeds, plus the register's tracking; every
 // baseline sits at its block's edge plus the ink ascent resvg measures; every gap is a multiple of the lead
@@ -29,7 +29,6 @@ import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
 export const SLOT_REGISTERS = Object.freeze({
   eyebrow: "eyebrow",
   title: "display",
-  claim: "display",
   counter: "value",
   key: "axis",
   source: "axis",
@@ -64,11 +63,12 @@ export function haloOf(r, k, kind = "area") {
 }
 
 // ── the rhythm: every gap a multiple of the lead of the register named beside it ───────────────────────
-/** The title card and the end card set their words to a reading measure, not across the whole frame. */
+/** The title card sets its words to a reading measure, not across the whole frame. */
 const CARD_MEASURE = 0.72; // × content width
 const CARD_MAX_LINES = 3;
+/** The source block's measure: narrow enough to sit on the Atlantic beside Europe. */
+const SOURCE_MEASURE = 0.3; // × content width
 const COUNTER_TO_KEY = 0.45; // × axis lead
-const CLAIM_TO_SOURCE = 1.2; // × axis lead
 const GUTTER = 1; // × axis lead
 const SWATCH_HEIGHT = 0.4; // × axis lead
 const SWATCH_AIR = 0.5; // × axis lead: a swatch is its widest borne plus this
@@ -151,19 +151,9 @@ export function cardTextFor(forms, registers, { measure, maxLines = CARD_MAX_LIN
 function blockFor(forms, r, measure, maxLines) {
   for (let form = 0; form < forms.length; form++) {
     const lines = wrap(applyCase(forms[form], r.transform), r, measure);
-    if (lines.length <= maxLines) return { form, lines };
+    if (lines.length <= maxLines && lines.every((l) => l.width <= measure)) return { form, lines };
   }
   throw new Error(`no form wraps into ${maxLines} lines of ${measure}px in ${r.fontFamily} ${r.fontSize}px`);
-}
-
-/** The longest form that holds one line. */
-function oneLineFor(forms, r, measure) {
-  for (let form = 0; form < forms.length; form++) {
-    const text = applyCase(forms[form], r.transform);
-    const width = widthOf(text, r);
-    if (width <= measure) return { form, text, width };
-  }
-  throw new Error(`no form holds one line of ${measure}px in ${r.fontFamily} ${r.fontSize}px`);
 }
 
 /** A name's box: the word, its padding (a pill's, or the halo's own reach), one height per register. */
@@ -185,7 +175,7 @@ export function pillOf(text, r, pad) {
 
 /**
  * @param {{ registers: Record<string, any>, copy: {
- *   eyebrow: string, title: string[], claim: string[], counterSteps: string[], breaks: string[], missingLabel: string,
+ *   eyebrow: string, title: string[], counterSteps: string[], breaks: string[], missingLabel: string,
  *   source: string[] }, size: "landscape", k: number }} input
  *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
  */
@@ -213,15 +203,21 @@ export function layoutFor({ registers, copy, size, k }) {
   const firstTitleBaseline = eyebrowLine.y + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent;
   const titleLines = title.lines.map((l, i) => line(l.text, title.register, inset, firstTitleBaseline + i * title.register.lead, l.width));
 
-  // ── 3. THE END CARD: the claim, a block centred on the frame's height; the source on the bottom margin ───
-  const claim = cardTextFor(copy.claim, registers, { measure });
-  const claimBand = bandOf(claim.lines.map((l) => l.text).join(" "), claim.register);
-  const claimBlock = claimBand.ascent + (claim.lines.length - 1) * claim.register.lead + claimBand.descent;
-  const src = oneLineFor(copy.source, axis, content / (1 + DRAWN_WIDER));
-  const sourceBand = bandOf(src.text, axis);
-  const sourceLine = { ...line(src.text, axis, inset, frame.height - vInset - sourceBand.descent, src.width), form: src.form };
-  const claimTop = Math.min(Math.round((frame.height - claimBlock) / 2), sourceLine.y - sourceBand.ascent - CLAIM_TO_SOURCE * axis.lead - claimBlock);
-  const claimLines = claim.lines.map((l, i) => line(l.text, claim.register, inset, claimTop + claimBand.ascent + i * claim.register.lead, l.width));
+  // ── 3. THE SOURCE: no end card — the video ends on the map, the source set small on it ─────────────────
+  // The owner (2026-09-14): « la vue finale doit être la map et pas le titre à nouveau ». The source is a block at
+  // its own origin, the shortest measure its longest form holds in three lines, the halo's reach around it;
+  // `build.mjs` seats it on the sea.
+  const sourceHalo = haloOf(axis, k);
+  const src = blockFor(copy.source, axis, (SOURCE_MEASURE * content) / (1 + DRAWN_WIDER), 3);
+  const sourceBand = bandOf(src.lines.map((l) => l.text).join(" "), axis);
+  const sourceLines = src.lines.map((l, i) => line(l.text, axis, sourceHalo / 2, sourceHalo / 2 + sourceBand.ascent + i * axis.lead, l.width));
+  const source = {
+    form: src.form,
+    lines: sourceLines,
+    halo: sourceHalo,
+    width: Math.ceil(sourceHalo + Math.max(...sourceLines.map((l) => l.width)) * (1 + DRAWN_WIDER)),
+    height: Math.ceil(sourceHalo + sourceBand.ascent + (sourceLines.length - 1) * axis.lead + sourceBand.descent),
+  };
 
   // ── 2. THE PANEL: the count over the key, laid out at its own origin ──────────────────────────────────────
   // No plate and no unit line: the words stand on the sea in their halo, the title has named the measure, and
@@ -260,7 +256,7 @@ export function layoutFor({ registers, copy, size, k }) {
     /** The story's map: the whole frame. */
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
     titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines },
-    endCard: { form: claim.form, register: claim.register, claim: claimLines, source: sourceLine },
+    source,
     panel: { width: panelWidth, height: panelHeight, halo: haloOf(axis, k), valueHalo: haloOf(value, k), counter, swatches, bornes, missingSwatch, missingLabel },
   };
 }
