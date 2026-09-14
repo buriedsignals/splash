@@ -20,7 +20,7 @@ A locator answers "where"; the scroll starts from the whole continent and closes
 | --- | --- | --- | --- |
 | 1 | the largest low-carbon stations in Europe: one in Ukraine, 6,000 MW, then three French | — | Europe; four dots sized by capacity, labelled |
 | 2 | Ukraine is the only country with no reported 2024 generation | **isolate** | Ukraine outlined; the rest of the map steps back |
-| 3 | closer: Ukraine, the Black Sea, the Sea of Azov | **zoom** | the camera travels onto the region and centres the station |
+| 3 | closer: Ukraine, the Black Sea, the Sea of Azov | **zoom** | the camera travels onto the region and centres the station; Ukraine's oblasts appear as the camera arrives |
 | 4 | countries in capitals, towns in lower case on a dot, water in italic | **name** | the three classes of place named |
 | 5 | Zaporizhzhia, on the Dnieper, 6,000 MW installed | **ring** | the station ringed and named in the accent |
 | 6 | installed capacity, never output | **pull back** | the camera eases back part-way, every label kept |
@@ -34,6 +34,17 @@ A locator answers "where"; the scroll starts from the whole continent and closes
   when no side is free.
 - **Every sentence is asserted**: the largest station in Ukraine and at 6,000 MW, the next three French, Ukraine the
   only country with no reported generation, every country label and the station inside their countries.
+
+## The regions
+
+Ukraine's 24 oblasts and Kyiv city, drawn as light dashed boundaries once the camera has closed on the country:
+Natural Earth 10 m admin-1 (public domain), frozen beside this beat as `regions.geojson`, the 25 features whose
+`adm0_a3` is `UKR`. Natural Earth assigns Crimea and Sevastopol to Russia, as the 50 m country shapes this beat draws
+already do, so the regions and the country outline agree. Fetched on 2026-09-14:
+
+```
+curl -sSL https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
+```
 
 ## Directions
 

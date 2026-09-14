@@ -36,6 +36,7 @@ export function DirectedLocatorScrolly({
   width,
   height,
   countries,
+  regions,
   subjectCountry,
   europeBox,
   zoomBox,
@@ -55,6 +56,7 @@ export function DirectedLocatorScrolly({
   width: number;
   height: number;
   countries: Record<string, string>;
+  regions: string;
   subjectCountry: string;
   europeBox: Box;
   zoomBox: Box;
@@ -226,6 +228,16 @@ export function DirectedLocatorScrolly({
               fillRule="evenodd"
             />
           ))}
+          <path
+            data-part="regions"
+            d={regions}
+            fill="none"
+            stroke={mix(tints.land, ink, 0.45)}
+            strokeWidth={stroke.hairline ?? 0.6}
+            strokeDasharray="3 2"
+            vectorEffect="non-scaling-stroke"
+            opacity={0}
+          />
           <path
             data-part="country-outline"
             d={countries[subjectCountry]}

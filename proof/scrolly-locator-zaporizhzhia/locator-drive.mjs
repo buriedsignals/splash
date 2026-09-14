@@ -4,7 +4,7 @@
 // A STATE, field by field (every gesture scrubbed by the reader's own scroll):
 //   tops     the largest stations across Europe, dotted and labelled with their capacity              0..1
 //   country  the subject's country outlined, the one with no reported generation                     0..1
-//   zoom     the camera from Europe onto the region around the station                               0..1
+//   zoom     the camera from Europe onto the region around the station, the country's oblasts appearing 0..1
 //   places   the three classes of place named: countries, settlements, water                         0..1
 //   subject  the station ringed and named                                                            0..1
 //   limit    the database's limit stated                                                               0..1
@@ -58,6 +58,8 @@ export function applyLocatorState(root, state, context) {
   }
   for (const [iso, node] of c.countries) node.setAttribute("opacity", iso === c.subjectCountry ? "1" : String(1 - 0.35 * country * (1 - z)));
   c.outline.setAttribute("opacity", String(country));
+  // The oblasts come with the close-up: at the scale of Europe they are a grey smear inside the country.
+  c.regions.setAttribute("opacity", String(clamp((z - 0.5) * 2)));
   c.subjectRing.setAttribute("r", String(lerp(5, 9, subject) / ppu));
   c.subjectRing.setAttribute("opacity", String(Math.max(subject, tops * (1 - z))));
   c.subjectDot.setAttribute("r", String(3 / ppu));
@@ -133,6 +135,7 @@ function seatLocator(root, carrier) {
     svg,
     countries: Array.from(svg.querySelectorAll("[data-country]")).map((n) => [n.dataset.country, n]),
     outline: svg.querySelector('[data-part="country-outline"]'),
+    regions: svg.querySelector('[data-part="regions"]'),
     stations: data.stations.map((s) => ({ ...s, el: svg.querySelector(`[data-station="${s.id}"]`) })),
     placeDots: Array.from(svg.querySelectorAll("[data-place-dot]")),
     subjectRing: svg.querySelector('[data-part="subject-ring"]'),

@@ -93,7 +93,12 @@ const inCountry = (iso, [lon, lat]) =>
 for (const a of AREAS) if (!inCountry(a.iso, a.at)) throw new Error(`the ${a.name} label is declared outside ${a.iso}`);
 if (!inCountry("UKR", [biggest.lon, biggest.lat])) throw new Error("the station's coordinates fall outside Ukraine");
 
-const map = locatorGeometry(geo, { window: WINDOW, width: 1000 });
+/** Ukraine's oblasts, Natural Earth 10 m admin-1, frozen beside this beat. Natural Earth assigns Crimea and
+ *  Sevastopol to Russia, as the country shapes this beat draws already do, so the regions and the country agree. */
+const regions = JSON.parse(await readFile(join(HERE, "regions.geojson"), "utf8"));
+if (regions.features.length !== 25 || regions.features.some((f) => !f.properties.iso_3166_2.startsWith("UA-")))
+  throw new Error(`the close-up draws Ukraine's 24 oblasts and Kyiv city; the regions file holds ${regions.features.length} features`);
+const map = locatorGeometry(geo, { window: WINDOW, width: 1000, regions });
 const [sx, sy] = map.place([biggest.lon, biggest.lat]);
 /** The close-up: the static plate's own window, ±9° of longitude and ±5.2° of latitude around the station. */
 const corners = [
@@ -153,7 +158,7 @@ const prose = [
   [`Zaporijjia, sur le Dniepr : ${n0(biggest.mw)}${NB}MW de puissance installée, la plus grosse centrale bas-carbone d’Europe.`],
   [`Lecture : la base enregistre une puissance installée, jamais une production. La centrale est dessinée là où elle est, pas là où elle produit.`],
 ];
-const source = "Source : WRI Global Power Plant Database v1.3.0 · lieux et contours Natural Earth 50 m, projection équivalente";
+const source = "Source : WRI Global Power Plant Database v1.3.0 · lieux et contours Natural Earth 50 m, régions Natural Earth 10 m, projection équivalente";
 const words = {
   unit: "centrales bas-carbone, puissance installée",
   topNote: `${n0(biggest.mw)}${NB}MW en Ukraine`,
@@ -208,6 +213,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           width: map.width,
           height: map.height,
           countries: map.countries,
+          regions: map.regions,
           subjectCountry: "UKR",
           europeBox,
           zoomBox,

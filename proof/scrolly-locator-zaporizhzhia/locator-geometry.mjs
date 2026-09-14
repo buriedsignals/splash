@@ -27,7 +27,7 @@ export function laea([lonDeg, latDeg]) {
  * @param {object} geo  the frozen FeatureCollection
  * @param {{window: {west: number, east: number, south: number, north: number}, width: number}} options
  */
-export function locatorGeometry(geo, { window: win, width }) {
+export function locatorGeometry(geo, { window: win, width, regions = null }) {
   const border = [];
   for (let i = 0; i <= 120; i++) {
     const t = i / 120;
@@ -123,8 +123,26 @@ export function locatorGeometry(geo, { window: win, width }) {
     if (area > 0) seats[f.properties.iso] = [r1(ax / area), r1(ay / area)];
   }
 
+  /** A country's administrative regions, drawn only in a close-up: kept at a finer step than the land (a quarter of
+   *  a unit), because the camera shows them several times larger than it shows Europe. */
+  let regionPaths = "";
+  if (regions)
+    for (const f of regions.features) {
+      const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+      for (const poly of polys) {
+        const pts = poly[0].map((p) => toFrame(laea(p)));
+        const kept = [pts[0]];
+        for (const p of pts.slice(1)) {
+          const q = kept[kept.length - 1];
+          if (Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) >= 0.25) kept.push(p);
+        }
+        if (kept.length >= 3) regionPaths += `M${kept.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}Z`;
+      }
+    }
+
   return {
     width,
+    regions: regionPaths,
     height,
     margin: M,
     land: rings.join(""),
