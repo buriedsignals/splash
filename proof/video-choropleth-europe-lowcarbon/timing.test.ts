@@ -13,8 +13,9 @@ describe("the shipped choropleth video timing", () => {
     expect(checkTiming(T)).toEqual([]);
   });
 
-  it("should run at least twelve seconds", () => {
+  it("should run at least twelve seconds and no longer than twenty-two", () => {
     expect(T.total).toBeGreaterThanOrEqual(T.fps * 12);
+    expect(T.total).toBeLessThanOrEqual(T.fps * 22);
   });
 
   it("should hold the final frame at least 60 frames", () => {
@@ -47,7 +48,7 @@ describe("checkTiming on a mutated choropleth video timing", () => {
 
   it("should refuse a composition that ends on a transition instead of a hold", () => {
     expect(
-      checkTiming(broken({ hold: { start: 615, duration: 40 } })).join(" "),
-    ).toContain("hold ends at 655");
+      checkTiming(broken({ hold: { start: T.hold.start, duration: 40 } })).join(" "),
+    ).toContain(`hold ends at ${T.hold.start + 40}`);
   });
 });

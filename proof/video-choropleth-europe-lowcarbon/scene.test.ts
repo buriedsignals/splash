@@ -223,6 +223,30 @@ for (const id of DIRECTIONS) {
       expect(mid.neighbour).toBeLessThan(1);
     });
 
+    it("should give every measured close-up share a gauge on one scale, the floor notched on it, counting up with its share", () => {
+      const gauged = props.names.filter((n: any) => n.gauge);
+      expect(gauged.map((n: any) => n.key).sort()).toEqual(["close:ALB", "neighbour:GRC", "neighbour:MKD", "neighbour:MNE"]);
+      const width = gauged[0].gauge.width;
+      for (const n of gauged) {
+        expect(n.gauge.width).toBe(width);
+        expect(n.gauge.notch).toBeCloseTo(0.94, 9);
+        // Inside its pill, under its text: the placement that keeps pills apart keeps gauges apart.
+        expect(n.gauge.x).toBeGreaterThanOrEqual(0);
+        expect(n.gauge.x + n.gauge.width).toBeLessThanOrEqual(n.width + 1e-6);
+        expect(n.gauge.y).toBeGreaterThan(n.baseline);
+        expect(n.gauge.y + n.gauge.height).toBeLessThanOrEqual(n.height + 1e-6);
+      }
+      const share = (iso: string) => beat.subject.value.get(iso).lowCarbon / 100;
+      const settled = sceneAt(props, last("subject"));
+      for (const n of gauged) expect(settled.gauges[n.key]).toBeCloseTo(share(n.key.split(":")[1]), 9);
+      const passing = gauged.filter((n: any) => settled.gauges[n.key] > n.gauge.notch).map((n: any) => n.key);
+      expect(passing).toEqual(["close:ALB"]);
+      const [, a, b] = COUNT_UP.neighbour;
+      const mid = sceneAt(props, T.subject.start + Math.round((T.subject.duration * (a + b)) / 2));
+      expect(mid.gauges["neighbour:MNE"]).toBeCloseTo(share("MNE") * mid.countUp.neighbour, 9);
+      expect(sceneAt(props, T.subject.start).gauges["neighbour:MNE"]).toBe(0);
+    });
+
     it("should step the 33 back and keep the seven at the end of reveal", () => {
       const scene = sceneAt(props, last("reveal"));
       const kept = props.shapes.filter((s: any) => s.kept);

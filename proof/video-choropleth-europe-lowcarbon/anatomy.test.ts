@@ -122,7 +122,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         }
     });
 
-    it("should set the source on the final map inside the margins, clear of every name, sea name and the panel, its words in open water", () => {
+    it("should set the source on one line of the final map inside the margins, clear of every name, sea name and the panel, its words over no studied country, in an ink that reads on sea and land", () => {
       const src = props.source;
       const box = { x: src.at.x, y: src.at.y, width: src.width, height: src.height };
       expect(src.lines.every((l: any) => l.x + l.width <= src.width && l.y <= src.height)).toBe(true);
@@ -131,7 +131,9 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       for (const o of [...props.names.filter((n: any) => n.camera === "overview"), panel]) expect([o.key ?? "panel", touches(box, o)]).toEqual([o.key ?? "panel", false]);
       for (const w of props.waters) expect([w.key, touches(box, { x: w.x, y: w.y - props.registers.water.fontSize, width: w.width, height: props.registers.water.fontSize })]).toEqual([w.key, false]);
       for (const l of src.lines)
-        for (let i = 0; i <= 10; i++) expect([l.text, i, shapeUnder("overview", src.at.x + l.x + (l.width * i) / 10, src.at.y + l.y - props.registers.axis.fontSize / 3)]).toEqual([l.text, i, null]);
+        for (let i = 0; i <= 10; i++) expect([l.text, i, shapeUnder("overview", src.at.x + l.x + (l.width * i) / 10, src.at.y + l.y - props.registers.axis.fontSize / 3)?.studied ?? false]).toEqual([l.text, i, false]);
+      expect(src.lines.length).toBe(1);
+      for (const ground of [colours.sea, colours.land]) expect(contrast(colours.text.source, ground)).toBeGreaterThanOrEqual(4.5);
     });
 
     it("should write no sentence on the map — no callout, no standfirst", () => {

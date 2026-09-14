@@ -22,7 +22,7 @@
 
 import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
-import { keyFor, sourceCreditFor, titleCardFor, verticalInsetFor } from "../../skills/map-beat/scripts/shots.mjs";
+import { CREDIT_ONE_LINE, keyFor, sourceCreditFor, titleCardFor, verticalInsetFor } from "../../skills/map-beat/scripts/shots.mjs";
 
 // The shots every type shares — the title card, the key, the credit — are the skill's (`shots.mjs`).
 export { DRAWN_WIDER, haloOf, pillOf, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
@@ -75,7 +75,16 @@ export function layoutFor({ registers, copy, size, k }) {
   // 1. THE TITLE CARD, 3. THE CREDIT — the owner (2026-09-14): « la vue finale doit être la map et pas le titre à
   // nouveau »; `build.mjs` seats the credit on the sea.
   const { form, register, eyebrow, title } = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceR, ...source } = sourceCreditFor({ registers, forms: copy.source, size, k });
+  // The credit on one line, in every form that holds one: `build.mjs` seats the longest that finds a sea corner.
+  const sources = copy.source.flatMap((form) => {
+    try {
+      return [sourceCreditFor({ registers, forms: [form], size, k, ...CREDIT_ONE_LINE })];
+    } catch {
+      return [];
+    }
+  });
+  if (!sources.length) throw new Error("no form of the source holds one line");
+  const { register: sourceR, ...source } = sources[0];
   // 2. THE KEY: the count over the key — the floor's cursor on the bornes says which share the count is above.
   const { counters, ...key } = keyFor({ registers, k, counters: [copy.counterSteps], breaks: copy.breaks, missingLabel: copy.missingLabel });
 
@@ -89,6 +98,8 @@ export function layoutFor({ registers, copy, size, k }) {
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
     titleCard: { form, register, eyebrow, title },
     source,
+    /** Every one-line form of the credit, longest first, each laid out at its own origin. */
+    sources: sources.map(({ register, ...s }) => s),
     panel: { width: key.width, height: key.height, halo: key.halo, valueHalo: key.valueHalo, counter: counters[0], swatches: key.swatches, bornes: key.bornes, missingSwatch: key.missingSwatch, missingLabel: key.missingLabel },
   };
 }

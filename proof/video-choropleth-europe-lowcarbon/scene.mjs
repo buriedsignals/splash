@@ -195,7 +195,7 @@ export function blend(a, b, t) {
  * @param {{ states: Record<string, number>[], timing: any, stage: {width:number,height:number},
  *   cameras: { overview: any, closeUp: any }, shapes: Array<{ key: string, classIndex: number|null, kept: boolean }>,
  *   colours: { land: string, classFills: string[], missingFill: string },
- *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"context", camera: "overview"|"closeUp" }>,
+ *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"context", camera: "overview"|"closeUp", gauge: { share: number } | null }>,
  *   waters: Array<{ key: string }> }} props
  */
 export function sceneAt(props, frame) {
@@ -237,6 +237,8 @@ export function sceneAt(props, frame) {
     names,
     waters: gates.overview,
     ring: clamp01(role.odd * Math.max(gates.overview, gates.closeUp)),
+    /** Each close-up gauge's fill, as a share of its width: its value, counting up with its words. */
+    gauges: Object.fromEntries(props.names.filter((n) => n.gauge).map((n) => [n.key, n.gauge.share * (countUp[n.role] ?? 1)])),
     gates,
   };
 }

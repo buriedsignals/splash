@@ -48,8 +48,14 @@ const SEA_ANGLES = 16;
  *  set on France reads as naming France, so « Suisse » steps beside France's name rather than over France,
  *  and at the close-up the neighbours' names sit around Albania rather than on it. */
 const NAMED_COVER = 4;
-/** The share of its box over land the source may take — a coast's pixel, not a country. */
-const SOURCE_LAND = 0.03;
+/** A close-up gauge: its width at 100 %, its thickness and its air under the words, × the axis lead. */
+const GAUGE_WIDTH = 5;
+const GAUGE_HEIGHT = 0.3;
+const GAUGE_GAP = 0.3;
+/** The share of land the panel may cover when it hangs under the credit. */
+const PANEL_LAND = 0.03;
+/** The side, in stage pixels, of the cells the credit's line is checked for studied land on. */
+const CREDIT_PROBE = 6;
 /** The side, in stage pixels, of the cells the panel's cover of land is counted on. */
 const PANEL_CELL = 16;
 /** The step, in stage pixels, of the positions the panel is tried at. */
@@ -87,6 +93,9 @@ export function copyOf(subject) {
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
+      "Source : Ember, via Our World in Data · Natural Earth",
+      // Natural Earth asks for no credit: the shortest form names the data alone.
+      "Source : Ember, via Our World in Data",
     ].map((form) => form.replace(" · ", `${NB}· `)),
     /** THE STILL'S ANATOMY: the seven the claim is about set as features, every other name as an area,
      *  uppercased; the three lowest shares named as the still names them. `klass` picks the ink's floor. */
@@ -183,7 +192,12 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       // The count and the key stand on the sea, in their halo.
       counter: adjustToContrast(accent, tints.water, TEXT_CONTRAST_MIN) ?? onGround(accent),
       key: adjustToContrast(muted, tints.water, TEXT_CONTRAST_MIN) ?? onGround(muted),
-      source: adjustToContrast(muted, tints.water, TEXT_CONTRAST_MIN) ?? onGround(muted),
+      // The credit crosses the sea and the land outside the study: its ink is walked on the one it reads worse on.
+      source: (() => {
+        const onBoth = [tints.water, tints.land].map((c) => adjustToContrast(muted, c, TEXT_CONTRAST_MIN)).find((ink) => ink && [tints.water, tints.land].every((c) => contrast(ink, c) >= TEXT_CONTRAST_MIN));
+        if (!onBoth) throw new Error(`no variant of ${muted} reads on both ${tints.water} and ${tints.land}`);
+        return onBoth;
+      })(),
       water: adjustToContrast(WATER_HUE, tints.water, TEXT_CONTRAST_MIN) ?? onGround(ink),
     },
   };
@@ -209,6 +223,23 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   };
 
   // ── names: pills, the two cameras, and every pill placed once per camera ─────────────────────────────
+  // THE CLOSE-UP'S GAUGES: every measured share at the close-up carries a bar under its words, all on ONE scale —
+  // 0 to 100 % over the same width — with the floor the video raised notched on it. The gauge is part of its
+  // name's pill, so the placement that keeps names apart keeps gauges apart, and the close-up frames them.
+  const gaugeWidth = GAUGE_WIDTH * registers.axis.lead;
+  const gaugeHeight = GAUGE_HEIGHT * registers.axis.lead;
+  const withGauge = (p) => {
+    if (p.camera !== "closeUp" || !subject.value.has(p.seat)) return { ...p, gauge: null };
+    const pad = p.textX;
+    const descent = p.height - p.baseline - pad;
+    const y = p.baseline + descent + GAUGE_GAP * registers.axis.lead;
+    return {
+      ...p,
+      width: Math.max(p.width, gaugeWidth + 2 * pad),
+      height: y + gaugeHeight + pad,
+      gauge: { x: pad, y, width: gaugeWidth, height: gaugeHeight, share: subject.value.get(p.seat).lowCarbon / 100, notch: subject.FLOOR / 100 },
+    };
+  };
   // A map word has no pill: its box is the word and the halo's reach around it.
   const pills = copy.names.map((n) => ({
     ...n,
@@ -217,7 +248,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     ...pillOf(n.text, registers[SLOT_REGISTERS[n.slot]], haloOf(registers[SLOT_REGISTERS[n.slot]], k) / 2),
     seatAt: shapeOf(n.seat).seat,
     reach: Math.max(shapeOf(n.seat).box.w, shapeOf(n.seat).box.h),
-  }));
+  })).map(withGauge);
   const odd = shapeOf(subject.ODD_ONE);
   const ringRadius = Math.max(odd.box.w, odd.box.h) / 2;
   const strokes = { border: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k };
@@ -244,10 +275,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     overview: overviewViewBox(FRAME, stage),
     closeUp: closeUpCamera,
   };
-  // ── the panel: seated where it covers the least land at the overview ─────────────────────────────────────
-  // The story runs on the whole frame, so the count and the key sit OVER the map; the place is measured, not
-  // chosen: every position on a `PANEL_STEP` grid inside the margins is tried, and the one whose box covers the
-  // fewest cells of land under the overview camera wins (ties: lower, then further left — the Atlantic's side).
+  // ── what the panel's place is measured on: land under the overview, and the seven's own land ──────────────
   const allRings = geometry.shapes.map((sh) => ({ box: sh.box, rings: ringsOf(sh.path) }));
   const landAt = (vb, sx, sy) => {
     const x = vb.x + (sx / stage.width) * vb.w;
@@ -282,14 +310,63 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     return total ? covered / total : 0;
   };
   const { inset, vInset, panel: panelLayout } = layout;
-  let panelAt = null;
-  for (let y = stage.height - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
-    for (let x = inset; x + panelLayout.width <= stage.width - inset; x += PANEL_STEP) {
-      const share = landShare({ x, y, width: panelLayout.width, height: panelLayout.height });
-      if (panelAt && share >= panelAt.share - 1e-9) continue;
-      if (coversSeven({ x, y, width: panelLayout.width, height: panelLayout.height })) continue;
-      panelAt = { x, y, share };
+
+  // ── the credit and the panel: the credit's one row first, then the panel where it covers the least land ─────
+  // The story runs on the whole frame, so the count, the key and the credit sit OVER the map; their places are
+  // measured, not chosen. One line at the type floor is wider than any sea corner the panel leaves, so the credit
+  // is seated first — its line may cross no studied country, and may cross land outside the study (Greenland, North
+  // Africa) in an ink that reads on sea and land alike — and the panel, the names and the seas keep clear of it.
+  const studiedRings = geometry.shapes.filter((sh) => study.has(sh.iso)).map((sh) => ({ box: sh.box, rings: ringsOf(sh.path) }));
+  const studiedCols = Math.ceil(stage.width / CREDIT_PROBE);
+  const studiedRows = Math.ceil(stage.height / CREDIT_PROBE);
+  const studiedLand = new Uint8Array(studiedCols * studiedRows);
+  for (let j = 0; j < studiedRows; j++)
+    for (let i = 0; i < studiedCols; i++) {
+      const vb = cameras.overview;
+      const x = vb.x + (((i + 0.5) * CREDIT_PROBE) / stage.width) * vb.w;
+      const y = vb.y + (((j + 0.5) * CREDIT_PROBE) / stage.height) * vb.h;
+      studiedLand[j * studiedCols + i] = studiedRings.some((sh) => x >= sh.box.x && x <= sh.box.x + sh.box.w && y >= sh.box.y && y <= sh.box.y + sh.box.h && sh.rings.some((r) => insideRing(r, x, y))) ? 1 : 0;
     }
+  const overStudied = (box) => {
+    for (let j = Math.max(0, Math.floor(box.y / CREDIT_PROBE)); j < Math.min(studiedRows, Math.ceil((box.y + box.height) / CREDIT_PROBE)); j++)
+      for (let i = Math.max(0, Math.floor(box.x / CREDIT_PROBE)); i < Math.min(studiedCols, Math.ceil((box.x + box.width) / CREDIT_PROBE)); i++) if (studiedLand[j * studiedCols + i]) return true;
+    return false;
+  };
+  const PANEL_AIR = PILL_GAP * registers.axis.lead;
+  // THE CREDIT FIRST, in the top-left corner: the first row from the top margin down, and the first position from the
+  // left margin rightwards, whose line crosses no studied country — the longest form that finds one.
+  let sourceAt = null;
+  let credit = null;
+  for (const form of layout.sources) {
+    search: for (let y = vInset; y + form.height <= stage.height - vInset; y += PANEL_STEP / 4)
+      for (let x = inset; x + form.width <= stage.width - inset; x += PANEL_STEP) {
+        if (overStudied({ x, y, width: form.width, height: form.height })) continue;
+        sourceAt = { x, y };
+        break search;
+      }
+    if (sourceAt) {
+      credit = form;
+      break;
+    }
+  }
+  if (!sourceAt) throw new Error(`no one-line form of the source (the shortest ${layout.sources.at(-1).width}×${layout.sources.at(-1).height}) finds a place on the overview`);
+  const sourceBox = { ...sourceAt, width: credit.width, height: credit.height };
+  const nearSource = (box) => box.x < sourceBox.x + sourceBox.width + PANEL_AIR && sourceBox.x < box.x + box.width + PANEL_AIR && box.y < sourceBox.y + sourceBox.height + PANEL_AIR && sourceBox.y < box.y + box.height + PANEL_AIR;
+  // THE PANEL: hung under the credit — one block, the credit's line over the count and the key — when that place
+  // covers at most `PANEL_LAND` of land and none of the seven's; otherwise where it covers the least land (ties:
+  // lower, then further left — the Atlantic's side), off the seven and off the credit.
+  let panelAt = null;
+  const under = { x: sourceBox.x, y: sourceBox.y + sourceBox.height + PANEL_AIR, width: panelLayout.width, height: panelLayout.height };
+  if (under.y + under.height <= stage.height - vInset && landShare(under) <= PANEL_LAND && !coversSeven(under)) panelAt = { x: under.x, y: under.y, share: landShare(under) };
+  if (!panelAt)
+    for (let y = stage.height - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
+      for (let x = inset; x + panelLayout.width <= stage.width - inset; x += PANEL_STEP) {
+        const box = { x, y, width: panelLayout.width, height: panelLayout.height };
+        const share = landShare(box);
+        if (panelAt && share >= panelAt.share - 1e-9) continue;
+        if (coversSeven(box) || nearSource(box)) continue;
+        panelAt = { x, y, share };
+      }
   if (!panelAt) throw new Error(`a ${panelLayout.width}×${panelLayout.height} panel does not fit inside the margins`);
   const panelBox = { x: panelAt.x, y: panelAt.y, width: panelLayout.width, height: panelLayout.height };
 
@@ -433,7 +510,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     // encloses Albania's name, as in the scrolly.
     const ringAt = toStage(cameras.overview, stage, odd.seat);
     const ringPx = (ringRadius / cameras.overview.w) * stage.width + strokes.ring;
-    const obstacles = camera === "overview" ? [{ x: ringAt.x - ringPx, y: ringAt.y - ringPx, width: 2 * ringPx, height: 2 * ringPx }, panelBox] : [];
+    const obstacles = camera === "overview" ? [{ x: ringAt.x - ringPx, y: ringAt.y - ringPx, width: 2 * ringPx, height: 2 * ringPx }, panelBox, sourceBox] : [];
     // COVER IS WEIGHED AT THE OVERVIEW ONLY. There a name is wider than most countries and has to choose what
     // it hides; in the close-up every country is larger than its name, and the seat itself is the place —
     // weighing cover there walked « Macédoine du Nord » off North Macedonia onto the sea past Albania.
@@ -507,7 +584,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   const touches = (a, b) => a.x < b.x + b.width + gap && b.x < a.x + a.width + gap && a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
   const water = registers.water;
   const waterHalo = haloOf(water, k, "water");
-  const taken = [...names.filter((n) => n.camera === "overview"), panelBox];
+  const taken = [...names.filter((n) => n.camera === "overview"), panelBox, sourceBox];
   const waters = [];
   for (const w of copy.waters) {
     const [ux, uy] = geometry.project([w.lon, w.lat]);
@@ -538,24 +615,6 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     }
   }
 
-  // ── the source: set small on the sea at the overview, where the video ends ────────────────────────────────
-  // A credit sits in a corner, not in open water mid-frame: the positions are tried from the bottom margin up, and
-  // from the left margin rightwards, and the first that lies over almost no land (`SOURCE_LAND`) and touches no
-  // name, no sea's name and not the panel wins.
-  let sourceSeat = null;
-  const sourceBox = { width: layout.source.width, height: layout.source.height };
-  search: for (let y = stage.height - vInset - sourceBox.height; y >= vInset; y -= PANEL_STEP)
-    for (let x = inset; x + sourceBox.width <= stage.width - inset; x += PANEL_STEP) {
-      const box = { x, y, ...sourceBox };
-      if (taken.some((t) => touches(box, t))) continue;
-      const share = landShare(box);
-      if (share <= SOURCE_LAND) {
-        sourceSeat = { x, y, share };
-        break search;
-      }
-    }
-  if (!sourceSeat) throw new Error(`a ${sourceBox.width}×${sourceBox.height} source finds no place on the overview`);
-  const sourceAt = { x: sourceSeat.x, y: sourceSeat.y };
 
   const strokeScale = sizeFor(SIZE).typeScale;
   const props = {
@@ -565,7 +624,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     layoutInset: { x: inset, y: vInset },
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
     titleCard: layout.titleCard,
-    source: { ...layout.source, at: sourceAt },
+    source: { ...credit, at: sourceAt },
     panel: { ...panelLayout, at: { x: panelBox.x, y: panelBox.y } },
     colours,
     strokes,
@@ -582,5 +641,5 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
   };
-  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, sourceForm: layout.source.form, stage, panel: panelBox, panelLand: panelAt.share, sourceLand: sourceSeat.share, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
+  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, sourceForm: credit.form, sourceText: credit.lines[0].text, stage, panel: panelBox, panelLand: panelAt.share, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
 }

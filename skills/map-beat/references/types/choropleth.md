@@ -75,7 +75,7 @@ than it) collapse into the same colour for a meaningful fraction of readers.
 
 ## In video
 
-Worked example: `proof/video-choropleth-europe-lowcarbon` (validated 2026-09-14). What the type keeps,
+Worked example: `proof/video-choropleth-europe-lowcarbon` (validated 2026-09-14, recut 2026-09-15). What the type keeps,
 drops and changes when it is watched rather than read:
 
 - **The basemap is vector**, Natural Earth projected in Bun and drawn in SVG, the camera a viewBox — the
@@ -87,11 +87,15 @@ drops and changes when it is watched rather than read:
 - **The ramp arrives class by class**, lowest first, and **the floor rises**: a cursor travels the key's
   bornes while every class it passes steps back to bare land and the count steps down with it. This is
   the filter as time — the one gesture a still cannot make.
-- **The exception gets a close-up**: the camera travels onto it, framed on the subject's ring and the
-  neighbours' names, and their shares **count up** once the camera has settled. No callout: the counted
-  shares say it.
+- **The exception gets a close-up that measures it**: the camera travels onto it, framed on the subject's ring and
+  the neighbours' names, and once it has settled each measured share counts up with a **gauge** under its words —
+  one scale for all, the floor the video raised notched on it — so the exception crosses the notch and its
+  neighbours visibly do not. The gauge is part of its name's box, so placement and framing account for it. No
+  callout: the gauges say it.
 - **Pull back to the whole**, the claim's areas named again, and **end on the map** with the source as a
-  credit in a sea corner. No end card.
+  one-line credit. A map run edge to edge rarely leaves a sea corner a line wide: the credit is seated first, in
+  the first row whose line crosses no studied country (outside land such as Greenland is allowed, in an ink that
+  reads on sea and land), and the key hangs under it. No end card.
 - What broke at validation: the first frame was the map (the title's window opened at frame 0); the title
   stayed four seconds; the key was a plated block with a unit line that hid Iceland; the close-up centred
   Albania with half the shot on the Adriatic; an end card repeated the title; the source was set at the

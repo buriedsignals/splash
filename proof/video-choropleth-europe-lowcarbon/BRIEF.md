@@ -55,8 +55,10 @@ premier puis ensuite tout un storytelling ». The video is cut into shots:
 3. **No end card — the video ends on the map** (end of `conclusion`, then `hold`). The owner (2026-09-14): « la
    vue finale doit être la map et pas le titre à nouveau ». The last picture is the overview with every class,
    the seven named, Albania ringed and the three lowest named; the source is set at the type floor (30 px, the
-   axis voice — smaller than every other word), in at most three lines of a narrow measure, in the lowest,
-   leftmost corner of the sea that holds it and touches no word.
+   axis voice — smaller than every other word) **on one line** (the owner, 2026-09-14: « tes crédits/sources sur
+   trois lignes alors que le tout pourrait tenir en une ligne »). One line is wider than any sea corner this camera
+   leaves, so the credit is seated first, in the highest row from the top-left whose line crosses no studied
+   country (it may cross Greenland), and the panel hangs under it — one block, the credit over the count and the key.
 
 ## Write as little as the picture allows
 
@@ -109,11 +111,12 @@ set in SVG over the vector map:
 | names, close-up | ALBANIE · 100 % · MONTÉNÉGRO · 59 % · MACÉDOINE DU NORD · 39 % · GRÈCE · 49 % · KOSOVO, HORS DONNÉES — no name but Albania's may sit on Albania's box; the neighbours placed in the order that keeps them nearest their seats | value as a feature (Albania), area |
 | names, pull back | the six · ALBANIE · the three lowest — the share was counted at the close-up; Ukraine's fill is the key's « sans donnée » | feature, area |
 | seas | Océan Atlantique · Mer de Norvège · Mer Noire (and the still's Mer du Nord · Mer Méditerranée · Mer Baltique where they fit) | water |
-| source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », the longest of its forms that holds three lines of the narrow measure, set on the final map | axis |
+| source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m » down to « Source : Ember, via Our World in Data » (Natural Earth asks for no credit) — the longest one-line form that finds a row, set on the final map | axis |
+| gauges | none — each measured share at the close-up carries a bar under its words, 0–100 % over one width, the 94 % floor notched in the accent | — |
 
 ## The choreography — the scrolly's six cards, told with what only a video has
 
-The owner (2026-09-14): « la manière de présenter les données entre static, scrolly et web interactif et video c'est pas du tout pareil. Donc utilise à bon escient le fait que ce soit une vidéo ». Two gestures only time can make: the FLOOR RISES — the filter is a cursor travelling the key while the count steps down with it — and the close-up's SHARES COUNT UP once the camera has settled.
+The owner (2026-09-14): « la manière de présenter les données entre static, scrolly et web interactif et video c'est pas du tout pareil. Donc utilise à bon escient le fait que ce soit une vidéo ». Two gestures only time can make: the FLOOR RISES — the filter is a cursor travelling the key while the count steps down with it — and the close-up MEASURES AGAINST THAT FLOOR: every measured share fills a gauge on one scale with the 94 % floor notched on it, so the exception is seen, not read — Albania's gauge crosses the notch, its neighbours' stop near half (the owner, 2026-09-14: « vraiment chercher à proposer plus que simplement faire apparaître les données »). Brisk: 19.3 s, a 2 s hold.
 
 The timing contract's events carry the cards in order. The scrolly's cards 3 and 4 share `reveal`:
 the filter and the count run first, and the six names arrive only once the filter has landed.
@@ -123,7 +126,7 @@ the filter and the count run first, and the six names arrive only once the filte
 | `establish` | 1 | Europe in 2024, before any value | — (furniture) | Europe's land and sea are drawn from frame 0 at the overview camera, every studied country bare land, Ukraine in the « non rapportée » fill; the eyebrow, title, key frame (label and « non rapportée » swatch) and source come up once and never move again | reported `value.size` = 40; unreported = 1 (Ukraine) |
 | `reference` | 2 | the colour is a class, from under 40 % to 94 % and more | **reveal in order** | the title card gives way to the map; the panel comes up with « 40 pays »; the six classes take their fill one after another, < 40 % first, ≥ 94 % last — each class's swatch and its borne arriving with it; once the lowest class has landed, CHYPRE, MALTE, MOLDAVIE are named | class counts low → high = 8 · 6 · 6 · 8 · 5 · 7, summing to 40 |
 | `reveal` | 3 + 4 | above 94 %, only seven remain — six are north or west | **the floor rises** (filter as time), then **name** | a cursor travels the key borne by borne — 40, 55, 70, 85, 94 % — and each class it passes steps back to bare land, its swatch fading with it, while the counter steps down « 40 pays » → « 32 pays » → 26 → 20 → 12 → « 7 pays »; the three lowest names step back as the floor passes 40 %; once the floor stands at 94 %, Islande, Suède, Norvège, Finlande, France, Suisse are named | counts at or above each borne = 40 · 32 · 26 · 20 · 12 · 7; stepped back = 33; named = 6, each north or west of Albania |
-| `subject` | 5 | the seventh is Albania, 100 %, and its three measured neighbours are all under 60 % | **zoom + name** | the six names leave; every class returns as the camera travels, eased, onto the Balkans, Albania at the centre of the close-up; once the camera has settled: Albania ringed and named, its share **counting up** from 0 to « 100 % », then « Monténégro », « Macédoine du Nord », « Grèce », each share counting up to 59, 39 and 49 %, and « Kosovo, hors données », left two seconds once counted | Albania ∈ `above` at 100 %; measured neighbours = 3, the highest Monténégro 59.5 % < 60; Kosovo = the one ring-neighbour without a row |
+| `subject` | 5 | the seventh is Albania, 100 %, and its three measured neighbours are all under 60 % | **zoom + measure** | the six names leave; every class returns as the camera travels, eased, onto the Balkans, Albania at the centre of the close-up; once the camera has settled: Albania ringed and named, its share **counting up** from 0 to « 100 % » as its gauge fills past the 94 % notch, then « Monténégro », « Macédoine du Nord », « Grèce », each share and gauge counting up to 59, 39 and 49 % — stopping far short of the notch — and « Kosovo, hors données », with no gauge | Albania ∈ `above` at 100 %; measured neighbours = 3, the highest Monténégro 59.5 % < 60; Kosovo = the one ring-neighbour without a row |
 | `conclusion` | 6 | Europe again, with what was learned still marked | **pull back** + **name** | the close-up names leave; the camera returns to the overview; once it has settled: every class on the map, the six named, Albania ringed and named, the three lowest named; then the source on the sea | conclusion camera = establish camera |
 | `hold` | — | the final map, readable | — (stillness) | nothing | hold state = conclusion state; hold ≥ 60 frames |
 

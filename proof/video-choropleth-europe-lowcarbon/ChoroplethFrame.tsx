@@ -120,6 +120,8 @@ export type ChoroplethFrameProps = {
     } | null;
     x: number;
     y: number;
+    /** A close-up share's gauge, inside the pill: 0–100 % over its width, the floor notched at `notch`. */
+    gauge: { x: number; y: number; width: number; height: number; share: number; notch: number } | null;
   }>;
   waters: Array<{
     key: string;
@@ -335,6 +337,24 @@ export function ChoroplethFrame(
             measured={shown.final}
             halo={{ colour: cellUnder(n.onKey), width: n.halo }}
           />
+        );
+      })}
+
+      {/* ── THE GAUGES: every measured share at the close-up on one scale, the floor notched, filling as it counts. ── */}
+      {props.names.map((n) => {
+        if (!n.gauge) return null;
+        const g = n.gauge;
+        const x = stage.x + n.x + g.x;
+        const y = stage.y + n.y + g.y;
+        const fill = scene.gauges[n.key] ?? 0;
+        return (
+          <g key={`gauge-${n.key}`} opacity={scene.names[n.key]}>
+            <rect x={x} y={y} width={g.width} height={g.height} fill="none" stroke={cellUnder(n.onKey)} strokeWidth={n.halo} strokeLinejoin="round" />
+            <rect x={x} y={y} width={g.width} height={g.height} fill="none" stroke={n.ink} strokeWidth={strokes.border} />
+            <rect x={x} y={y} width={g.width * fill} height={g.height} fill={n.ink} />
+            <line x1={x + g.width * g.notch} x2={x + g.width * g.notch} y1={y - g.height * 0.6} y2={y + g.height * 1.6} stroke={cellUnder(n.onKey)} strokeWidth={3 * strokes.ring} />
+            <line x1={x + g.width * g.notch} x2={x + g.width * g.notch} y1={y - g.height * 0.6} y2={y + g.height * 1.6} stroke={colours.ring} strokeWidth={strokes.ring} />
+          </g>
         );
       })}
 
