@@ -1,13 +1,11 @@
 # Bump — in video
 
-Worked example: `proof/video-bump-emitter-rank` (validated 2026-09-14), from `proof/static-bump-emitter-rank`.
+Worked example: `proof/video-bump-emitter-rank` (validated 2026-09-15, recut as an argument), from `proof/static-bump-emitter-rank`.
 
-- **The gesture only a video has is running the clock**: every line advances year by year together, linear in years (a
-  measured axis, never eased), so the viewer watches each swap happen instead of reading crossings off a finished tangle.
-  A line is drawn only between consecutive years its entity holds a rank; it stops where the entity leaves.
-- **The subject's rank rides its tip** (« Inde · 3e ») — the count is the rank itself, no rank axis sentence.
-- **Each pass is ringed on the subject's line the year it happens**, derived from the data and asserted, never captioned:
-  the viewer has just watched it, the ring keeps the place.
-- The names land at the rails: the first year's ranks at the start, the last year's on arrival.
-- **The filter comes after the clock**: the countries the subject passed keep the neutral style of every other line until the
-  focus — picking them out earlier gives the ending away — then the rest steps back.
+- **Follow the climber**: the camera closes in on the subject's tip (a scale about the tip, holding it at a fixed point of
+  the frame) and tracks it while every line advances year by year, linear in years; every line in view carries its name
+  at its tip, the year stands in a corner, the subject's rank rides its tip, and each pass happens in close-up between two
+  named lines, ringed as it happens. Then the camera pulls back and the whole climb is seen at once, the last names landing.
+- A line is drawn only between consecutive years its entity holds a rank; it stops where the entity leaves.
+- **The filter comes after the proof** — the entities passed keep the neutral style until the focus — and **the video ends
+  on the whole chart**, every line back; the credit on one line. About 20 s.
