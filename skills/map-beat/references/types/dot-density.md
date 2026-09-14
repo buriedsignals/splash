@@ -64,6 +64,15 @@ reader nothing at all — it deserves the same legibility as the headline, not
 footer-line treatment, because without it the map cannot be read as data at
 all, only as texture.
 
+## In video
+
+Worked example: `proof/video-dot-density-europe-stations` (validated 2026-09-14). A dot map's two readings — the count
+of places and the weight of each — are told one after the other on the same dots: the units arrive kind by kind (the
+rare kind last, never buried) while the count climbs; the subject is ringed while the rest steps back; then **every dot
+grows to an area proportional to its quantity**, the ring closing onto the disc, the share of the total climbing and a
+size reference landing in the key. Every text a count can show is measured in Bun and keyed by its number, so the
+composition types no word. The key and the credit are seated clear of every disc at its largest, not only of the dots.
+
 ## The worked example in this tree
 
 `proof/static-dot-density-europe-stations` — a **directed** beat of this type: written by hand under the doctrine, taken through a
