@@ -1,0 +1,893 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 85,
+      "y": 433.1982421875,
+      "width": 348.29296875
+    },
+    "title": [
+      {
+        "text": "Tous plus propres chez eux,",
+        "x": 85,
+        "y": 540.6369490966797,
+        "width": 1206.7799463510514
+      },
+      {
+        "text": "5 plus légers en Europe",
+        "x": 85,
+        "y": 650.4409270966797,
+        "width": 1004.8350198745727
+      }
+    ]
+  },
+  "credit": {
+    "form": 1,
+    "lines": [
+      {
+        "text": "Source : Ember, Energy",
+        "x": 4.80615234375,
+        "y": 27.59912109375,
+        "width": 350.15518465909093
+      },
+      {
+        "text": "Institute, via Our World in Data",
+        "x": 4.80615234375,
+        "y": 63.600099609375,
+        "width": 472.4656427556818
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 492,
+    "height": 76,
+    "at": {
+      "x": 85,
+      "y": 944
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "grid": "#d1cfc3",
+    "context": "#7193c2",
+    "faded": "#d1cfc3",
+    "picked": "#3d71bc",
+    "subject": "#1755b2",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "name": "#5f5e58",
+      "picked": "#000000",
+      "subject": "#1755b2",
+      "axis": "#5f5e58",
+      "count": "#000000"
+    }
+  },
+  "strokes": {
+    "arc": 2.88,
+    "ring": 3.2399999999999998,
+    "grid": 1.7999999999999998,
+    "leg": 3.5999999999999996
+  },
+  "dash": [
+    4.8,
+    4.8
+  ],
+  "R": 12.600000000000001,
+  "plot": {
+    "left": 159.43225867187502,
+    "right": 1822.4,
+    "top": 130.41611414062498,
+    "bottom": 873.2927717187499
+  },
+  "bowCap": 47.521291640625,
+  "domain": {
+    "whole": 40.300661956944985,
+    "close": 12
+  },
+  "grid": [
+    {
+      "y": 873.2927717187499,
+      "label": {
+        "text": "0",
+        "width": 17.3056640625,
+        "x": 125.94005078125001,
+        "y": 884.8782209374999
+      }
+    },
+    {
+      "y": 687.5736073242188,
+      "label": {
+        "text": "25",
+        "width": 37.1326171875,
+        "x": 105.71655859375,
+        "y": 699.1590565429688
+      }
+    },
+    {
+      "y": 501.8544429296875,
+      "label": {
+        "text": "50",
+        "width": 37.37431640625,
+        "x": 105.47002539062501,
+        "y": 513.4398921484375
+      }
+    },
+    {
+      "y": 316.1352785351562,
+      "label": {
+        "text": "75",
+        "width": 37.1326171875,
+        "x": 105.71655859375,
+        "y": 327.7207277539062
+      }
+    },
+    {
+      "y": 130.41611414062504,
+      "label": {
+        "text": "100",
+        "width": 57.44296875,
+        "x": 85,
+        "y": 142.00156335937504
+      }
+    }
+  ],
+  "xTicks": {
+    "whole": [
+      {
+        "v": 0,
+        "text": "0",
+        "width": 17.3056640625
+      },
+      {
+        "v": 10,
+        "text": "10",
+        "width": 37.37431640625
+      },
+      {
+        "v": 20,
+        "text": "20",
+        "width": 37.37431640625
+      },
+      {
+        "v": 30,
+        "text": "30",
+        "width": 37.37431640625
+      },
+      {
+        "v": 40,
+        "text": "40",
+        "width": 37.37431640625
+      }
+    ],
+    "close": [
+      {
+        "v": 0,
+        "text": "0",
+        "width": 17.3056640625
+      },
+      {
+        "v": 3,
+        "text": "3",
+        "width": 17.080078125
+      },
+      {
+        "v": 6,
+        "text": "6",
+        "width": 17.40234375
+      },
+      {
+        "v": 9,
+        "text": "9",
+        "width": 17.2412109375
+      },
+      {
+        "v": 12,
+        "text": "12",
+        "width": 37.30986328125
+      }
+    ],
+    "y": 920.231835078125
+  },
+  "xName": {
+    "text": "part du bas-carbone des 16 pays, en %",
+    "width": 643.065234375,
+    "x": 1179.0734609375,
+    "y": 1012.072265625
+  },
+  "yName": {
+    "text": "bas-carbone dans sa propre électricité, en %",
+    "width": 742.61806640625,
+    "x": 159.43225867187502,
+    "y": 91.0986328125
+  },
+  "entities": [
+    {
+      "code": "AUT",
+      "rank": 13,
+      "from": 3.4520299748090815,
+      "to": 3.3692534459405628,
+      "y0": 332.2,
+      "y1": 232.8,
+      "names": {
+        "whole": {
+          "text": "Autriche",
+          "width": 139.22373046875,
+          "dx": 303.014517421875,
+          "dy": 11.58544921875
+        },
+        "close": {
+          "text": "Autriche",
+          "width": 139.22373046875,
+          "dx": -111.84076994472355,
+          "dy": -39.431580950344255
+        }
+      }
+    },
+    {
+      "code": "BEL",
+      "rank": 12,
+      "from": 3.910552372475941,
+      "to": 2.8897099832682662,
+      "y0": 431.7,
+      "y1": 306.1,
+      "names": {
+        "whole": {
+          "text": "Belgique",
+          "width": 142.4302734375,
+          "dx": 85.2085974023438,
+          "dy": 11.58544921875
+        },
+        "close": {
+          "text": "Belgique",
+          "width": 142.4302734375,
+          "dx": -114.10192320213275,
+          "dy": 62.602479387844255
+        }
+      }
+    },
+    {
+      "code": "CZE",
+      "rank": 6,
+      "from": 1.2611352601339807,
+      "to": 2.091466815393196,
+      "y0": 711.6,
+      "y1": 444.8,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Tchéquie",
+          "width": 149.165625,
+          "dx": 27.19837510748806,
+          "dy": -9.546496589286221
+        }
+      }
+    },
+    {
+      "code": "DNK",
+      "rank": 0,
+      "from": 0.44262907365761006,
+      "to": 1.5571468408891724,
+      "y0": 757.9,
+      "y1": 210.7,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Danemark",
+          "width": 172.1431640625,
+          "dx": -201.89238133349747,
+          "dy": 32.71739502678619
+        }
+      }
+    },
+    {
+      "code": "FIN",
+      "rank": 9,
+      "from": 3.644339195321005,
+      "to": 3.9195084057047263,
+      "y0": 386.4,
+      "y1": 165,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Finlande",
+          "width": 140.6900390625,
+          "dx": 25.806982851562452,
+          "dy": 11.58544921875
+        }
+      }
+    },
+    {
+      "code": "FRA",
+      "rank": 14,
+      "from": 38.38158281613808,
+      "to": 26.54768544339097,
+      "y0": 199.6,
+      "y1": 168.3,
+      "names": {
+        "whole": {
+          "text": "France",
+          "width": 109.7373046875,
+          "dx": -55.96602539062519,
+          "dy": -33.73471722656251
+        },
+        "close": null
+      }
+    },
+    {
+      "code": "DEU",
+      "rank": 11,
+      "from": 16.292246441882085,
+      "to": 14.483905664887262,
+      "y0": 605.6,
+      "y1": 437.7,
+      "names": {
+        "whole": {
+          "text": "Allemagne",
+          "width": 172.84365234375,
+          "dx": -88.15026269531245,
+          "dy": -33.73471722656251
+        },
+        "close": null
+      }
+    },
+    {
+      "code": "GRC",
+      "rank": 4,
+      "from": 0.3289918069914732,
+      "to": 1.399290893155924,
+      "y0": 815.2,
+      "y1": 507.6,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Grèce",
+          "width": 94.63154296875,
+          "dx": -153.27960838373497,
+          "dy": -20.912503461446704
+        }
+      }
+    },
+    {
+      "code": "IRL",
+      "rank": 3,
+      "from": 0.09456527785503699,
+      "to": 0.7200621464425147,
+      "y0": 835.9,
+      "y1": 527.7,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Irlande",
+          "width": 116.319140625,
+          "dx": 196.88838543826898,
+          "dy": 239.6469737274058
+        }
+      }
+    },
+    {
+      "code": "ITA",
+      "rank": 8,
+      "from": 4.042466961752716,
+      "to": 6.684726316628159,
+      "y0": 733.3,
+      "y1": 500.6,
+      "names": {
+        "whole": {
+          "text": "Italie",
+          "width": 81.45849609375,
+          "dx": -108.89464886718747,
+          "dy": 11.58544921875
+        },
+        "close": {
+          "text": "Italie",
+          "width": 81.45849609375,
+          "dx": 25.806982851562452,
+          "dy": 11.58544921875
+        }
+      }
+    },
+    {
+      "code": "NLD",
+      "rank": 2,
+      "from": 0.548319678319122,
+      "to": 3.2686638514859383,
+      "y0": 815.1,
+      "y1": 474.7,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Pays-Bas",
+          "width": 145.57236328125,
+          "dx": 27.337870696026698,
+          "dy": 32.71739502678622
+        }
+      }
+    },
+    {
+      "code": "POL",
+      "rank": 10,
+      "from": 0.1851572247077615,
+      "to": 2.6696079993626007,
+      "y0": 861.2,
+      "y1": 641.9,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Pologne",
+          "width": 131.86845703125,
+          "dx": 25.806982851562452,
+          "dy": 11.58544921875
+        }
+      }
+    },
+    {
+      "code": "PRT",
+      "rank": 1,
+      "from": 1.022735399995232,
+      "to": 2.005318301330571,
+      "y0": 652,
+      "y1": 240.4,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Portugal",
+          "width": 138.19248046875,
+          "dx": -122.47957174917451,
+          "dy": -66.87154889113998
+        }
+      }
+    },
+    {
+      "code": "ESP",
+      "rank": 7,
+      "from": 7.684422158472333,
+      "to": 10.736694287307785,
+      "y0": 548.1,
+      "y1": 303.2,
+      "names": {
+        "whole": {
+          "text": "Espagne",
+          "width": 136.41240234375,
+          "dx": 25.806982851562566,
+          "dy": 11.58544921875
+        },
+        "close": {
+          "text": "Espagne",
+          "width": 136.41240234375,
+          "dx": 25.806982851562452,
+          "dy": 11.58544921875
+        }
+      }
+    },
+    {
+      "code": "SWE",
+      "rank": 15,
+      "from": 11.161881451696216,
+      "to": 8.468946697474305,
+      "y0": 154.8,
+      "y1": 139.4,
+      "names": {
+        "whole": {
+          "text": "Suède",
+          "width": 99.78779296875,
+          "dx": -50.89177441406247,
+          "dy": 56.90561566406251
+        },
+        "close": {
+          "text": "Suède",
+          "width": 99.78779296875,
+          "dx": -127.59053167968773,
+          "dy": 11.58544921875
+        }
+      }
+    },
+    {
+      "code": "GBR",
+      "rank": 5,
+      "from": 7.546944905792322,
+      "to": 9.188012907338063,
+      "y0": 686.2,
+      "y1": 390.9,
+      "names": {
+        "whole": null,
+        "close": {
+          "text": "Royaume-Uni",
+          "width": 220.74755859375,
+          "dx": -250.9694926171876,
+          "dy": 11.58544921875
+        }
+      }
+    }
+  ],
+  "leaders": {
+    "whole": [
+      {
+        "code": "BEL",
+        "dx0": 18.600000000000023,
+        "dy0": 0,
+        "dx1": 79.92182982421878,
+        "dy1": 0
+      },
+      {
+        "code": "AUT",
+        "dx0": 18.600000000000023,
+        "dy0": 0,
+        "dx1": 297.72774984374996,
+        "dy1": 0
+      }
+    ],
+    "close": [
+      {
+        "code": "PRT",
+        "dx0": -7.11791184199069,
+        "dy0": -17.184159304709937,
+        "dx1": -23.00742224325694,
+        "dy1": -55.54483081491537
+      },
+      {
+        "code": "GRC",
+        "dx0": -17.184159304709908,
+        "dy0": -7.11791184199069,
+        "dx1": -55.54483081491537,
+        "dy1": -23.00742224325694
+      },
+      {
+        "code": "IRL",
+        "dx0": 13.152186130069765,
+        "dy0": 13.152186130069822,
+        "dx1": 210.52531086192772,
+        "dy1": 210.52531086192766
+      }
+    ]
+  },
+  "subject": "FRA",
+  "lighter": [
+    "FRA",
+    "SWE",
+    "DEU",
+    "BEL",
+    "AUT"
+  ],
+  "legs": {
+    "from": [
+      1743.2110599367559,
+      199.5621181892725
+    ],
+    "corner": [
+      1254.8967586458623,
+      199.5621181892725
+    ],
+    "to": [
+      1254.8967586458623,
+      168.3150158569357
+    ],
+    "across": {
+      "text": "−11,8 pts",
+      "width": 192.7001953125,
+      "x": 1402.703811635059,
+      "y": 257.69991201739754
+    },
+    "up": {
+      "text": "+4,2 pts",
+      "width": 166.97021484375,
+      "x": 1068.7467089583622,
+      "y": 199.6819752262291
+    }
+  },
+  "panel": {
+    "at": {
+      "x": 1319.479736328125,
+      "y": 683.8924037890624
+    },
+    "cleaner": {
+      "x": 7.190551757812501,
+      "y": 49.4879150390625
+    },
+    "lighter": {
+      "x": 7.190551757812501,
+      "y": 118.4362557421875
+    },
+    "key": {
+      "cy": 164.6004167578125,
+      "ring": 19.7905517578125,
+      "disc": 163.653481640625,
+      "years": [
+        {
+          "text": "2000",
+          "width": 77.51162109375,
+          "x": 40.31076703125,
+          "y": 176.1858659765625
+        },
+        {
+          "text": "2024",
+          "width": 78.4623046875,
+          "x": 184.1736969140625,
+          "y": 176.1858659765625
+        }
+      ]
+    },
+    "counterTexts": {
+      "cleaner": {
+        "0": {
+          "text": "0 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "1": {
+          "text": "1 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "2": {
+          "text": "2 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "3": {
+          "text": "3 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "4": {
+          "text": "4 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "5": {
+          "text": "5 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "6": {
+          "text": "6 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "7": {
+          "text": "7 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "8": {
+          "text": "8 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "9": {
+          "text": "9 sur 16 plus propres",
+          "width": 453.22998046875
+        },
+        "10": {
+          "text": "10 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "11": {
+          "text": "11 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "12": {
+          "text": "12 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "13": {
+          "text": "13 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "14": {
+          "text": "14 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "15": {
+          "text": "15 sur 16 plus propres",
+          "width": 478.9599609375
+        },
+        "16": {
+          "text": "16 sur 16 plus propres",
+          "width": 478.9599609375
+        }
+      },
+      "lighter": {
+        "0": {
+          "text": "0 plus légers",
+          "width": 268.96728515625
+        },
+        "1": {
+          "text": "1 plus légers",
+          "width": 268.96728515625
+        },
+        "2": {
+          "text": "2 plus légers",
+          "width": 268.96728515625
+        },
+        "3": {
+          "text": "3 plus légers",
+          "width": 268.96728515625
+        },
+        "4": {
+          "text": "4 plus légers",
+          "width": 268.96728515625
+        },
+        "5": {
+          "text": "5 plus légers",
+          "width": 268.96728515625
+        }
+      }
+    }
+  },
+  "halo": {
+    "axis": 10.573535156250001,
+    "value": 14.381103515625002
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "travel": 0,
+      "zoom": 0,
+      "back": 0,
+      "lighter": 0,
+      "legs": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 0,
+      "zoom": 0,
+      "back": 0,
+      "lighter": 0,
+      "legs": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "zoom": 0,
+      "back": 0,
+      "lighter": 0,
+      "legs": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "zoom": 1,
+      "back": 0,
+      "lighter": 0,
+      "legs": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "zoom": 1,
+      "back": 1,
+      "lighter": 1,
+      "legs": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "zoom": 1,
+      "back": 1,
+      "lighter": 1,
+      "legs": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 771,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 60
+    },
+    "reveal": {
+      "start": 111,
+      "duration": 210
+    },
+    "subject": {
+      "start": 321,
+      "duration": 120
+    },
+    "conclusion": {
+      "start": 441,
+      "duration": 240
+    },
+    "hold": {
+      "start": 681,
+      "duration": 90
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}
