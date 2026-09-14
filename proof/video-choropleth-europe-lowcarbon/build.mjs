@@ -29,7 +29,7 @@ export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the composition draws with — `body` is resolved for the ladder's factor, never drawn. */
 export const DRAWN_REGISTERS = ["display", "eyebrow", "value", "axis", "area", "feature", "closeFeature", "water", "source"];
-const NB = " ";
+const NB = "\u00A0";
 /** The air a pill keeps from another pill and from the stage's edge, × the axis lead. */
 const PILL_GAP = 0.25;
 /** Points sampled along a sea name's box, per row, to find land under it. */

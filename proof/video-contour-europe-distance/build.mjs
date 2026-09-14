@@ -25,7 +25,7 @@ export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
-const NB = " ";
+const NB = "\u00A0";
 const SEAT_STEP = 10;
 const LAND_CELL = 12;
 /** The swatch beside « hors mesure », × the axis lead. */
@@ -41,7 +41,7 @@ export function loadBeat() {
   return { subject, states: statesFor(subject), copy: copyOf(subject) };
 }
 
-const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[  ]/g, NB);
+const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
 
 export function copyOf(subject) {
   const { field, MEDIAN, LEVELS } = subject;

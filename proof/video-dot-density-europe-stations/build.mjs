@@ -24,7 +24,7 @@ export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
-const NB = " ";
+const NB = "\u00A0";
 const SEAT_STEP = 10;
 const LAND_CELL = 12;
 const MAP_MARGIN = 200;
@@ -46,8 +46,8 @@ export function loadBeat() {
   return { subject, states: statesFor(), copy: copyOf(subject) };
 }
 
-const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[   ]/g, NB);
-const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[   ]/g, NB);
+const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
+const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[\u202F\u00A0\u2009]/g, NB);
 
 export function copyOf(subject) {
   const { total, nuclear, shareSites, shareCapacity } = subject;

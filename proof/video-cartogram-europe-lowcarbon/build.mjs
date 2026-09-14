@@ -25,7 +25,7 @@ export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
-const NB = "\u00a0";
+const NB = "\u00A0";
 /** How far past the stage the rings are kept: the camera never moves, so a little. */
 const MAP_MARGIN = 200;
 /** The step, in stage pixels, of the positions the key and the credit are tried at. */
@@ -44,7 +44,7 @@ export function loadBeat() {
   return { subject, states: statesFor(), copy: copyOf(subject) };
 }
 
-const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[  ]/g, " ");
+const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[\u202F\u00A0\u2009]/g, " ");
 const NAMES = { RUS: "Russie" };
 
 export function copyOf(subject) {

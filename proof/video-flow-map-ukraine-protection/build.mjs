@@ -27,7 +27,7 @@ export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
-const NB = " ";
+const NB = "\u00A0";
 /** The static beat's window, [west, south, east, north]; a seat is the centre of a country's part inside it. */
 const WINDOW = [-25, 34, 45, 72];
 /** The focus box's padding, × its span (the static beat's 16 %). */
@@ -48,8 +48,8 @@ export function loadBeat() {
   return { subject, states: statesFor(), copy: copyOf(subject) };
 }
 
-const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[   ]/g, NB);
-const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[   ]/g, NB);
+const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
+const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[\u202F\u00A0\u2009]/g, NB);
 const amount = (p) => (p >= 1e6 ? `${(p / 1e6).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${NB}M` : `${Math.round(p / 1000)}${NB}k`);
 
 export function copyOf(subject) {
