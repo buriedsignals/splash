@@ -122,7 +122,13 @@ export type InteractionPlan = {
 };
 
 /** The kinds of control this file can measure a state for, and the shape of each one's refusal. */
-export type ControlKind = "ask" | "table" | "filter" | "stack" | "level";
+export type ControlKind =
+  | "ask"
+  | "table"
+  | "filter"
+  | "stack"
+  | "level"
+  | "cutoff";
 
 const DECODE: [RegExp, string][] = [
   [/&nbsp;/g, " "],
@@ -174,6 +180,13 @@ export function defaultPrintedText(html: string): string {
   // printed would make the whole control look dead for exactly the reason the choropleth's 41
   // native `<title>`s and the stack's own sentence each cost a round of.
   text = text.replace(/<[^>]*data-level-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
+  // A cutoff's sentence is revealed by the same `:checked` that redraws the region its line selects
+  // (`cutoff.ts`), and it is where that control's DERIVED readings live — how long the selected run
+  // is, where it starts and ends, how much of the whole the line lets through. The outline itself is
+  // geometry and nothing here can see one, so the sentence is the only channel those numbers are on;
+  // counting it as printed would make the whole control look dead for exactly the reason the
+  // choropleth's 41 native `<title>`s, the stack's sentence and the yardstick's each cost a round of.
+  text = text.replace(/<[^>]*data-cutoff-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
   return decodeText(text.replace(/<[^>]*>/g, " "));
 }
 
@@ -322,6 +335,34 @@ export function levelNotes(html: string): { slug: string; text: string }[] {
   return [...out].map(([slug, text]) => ({ slug, text }));
 }
 
+/**
+ * The cutoff options the page ships, by slug, the claim's own line excluded.
+ *
+ * Read off the markup and never off the declaration, for the reason `filterOptionSlugs` gives, and
+ * with the same lesson applied: EVERY ATTRIBUTE IS LOOKED FOR INSIDE THE WHOLE TAG rather than in
+ * one order, because the first form of that function required `type="radio"` to precede `id=` and
+ * silently found four of the corpus's five filters.
+ */
+export function cutoffOptionSlugs(html: string): string[] {
+  const slugs: string[] = [];
+  for (const tag of String(html).matchAll(/<input\b[^>]*>/g)) {
+    if (!/\stype="radio"/.test(tag[0])) continue;
+    const id = tag[0].match(/\sid="(?:chart|mw)-cutoff-([a-z0-9-]+)"/);
+    if (id) slugs.push(id[1]);
+  }
+  return [...new Set(slugs)].filter((slug) => slug !== "claim");
+}
+
+/** Every sentence a moved line reveals, by the slug that reveals it. */
+export function cutoffNotes(html: string): { slug: string; text: string }[] {
+  const out = new Map<string, string>();
+  for (const block of String(html).matchAll(
+    /<[^>]*data-cutoff-note="([^"]*)"[^>]*>([\s\S]*?)<\/[a-z]+>/g,
+  ))
+    out.set(block[1], decodeText(block[2].replace(/<[^>]*>/g, " ")).trim());
+  return [...out].map(([slug, text]) => ({ slug, text }));
+}
+
 export type ShippedControl = {
   kind: ControlKind;
   /** What a message names it, and what a declaration's gesture is matched against. */
@@ -457,6 +498,35 @@ export function shippedControls(html: string): ShippedControl[] {
         `all ${levelSlugs.length} option(s) reveal a sentence the page already prints, or reveal ` +
         `none at all — a reader who parks the yardstick on every datum in turn is told nothing ` +
         `they could not read at rest`,
+    });
+  }
+
+  const cutoffSlugs = cutoffOptionSlugs(html);
+  if (cutoffSlugs.length) {
+    const notes = new Map(cutoffNotes(html).map((note) => [note.slug, note.text]));
+    // An option changes the picture when the sentence it reveals carries a reading the page does
+    // not already print. THE REGION ITSELF IS DELIBERATELY NOT WHAT IS MEASURED, for the reason the
+    // stack's movement and the yardstick's rules are not: an outline is geometry, this file cannot
+    // see one, and a version that counted revealed elements would go green on five options that
+    // outlined the same cells. `assertCutoffDeclaration` holds that half, against what the beat
+    // actually draws. What a cutoff OWES the reader is the derived reading its outline cannot draw —
+    // the length of the run the line selects, its two ends, how much of the whole clears it — and
+    // that is a string, which is measurable.
+    const adding = cutoffSlugs.filter((slug) => {
+      const note = notes.get(slug);
+      if (!note) return false;
+      return answerPieces(note).some((piece) => !printed.includes(piece));
+    });
+    out.push({
+      kind: "cutoff",
+      label: `the cutoff's ${cutoffSlugs.length} line(s)`,
+      gestures: ["toggle-a-comparison", "brush-a-range"],
+      changes: adding.length,
+      measured: cutoffSlugs.length,
+      why:
+        `all ${cutoffSlugs.length} line(s) reveal a sentence the page already prints, or reveal ` +
+        `none at all — a reader who sweeps the threshold from end to end is told nothing they ` +
+        `could not read at rest`,
     });
   }
 

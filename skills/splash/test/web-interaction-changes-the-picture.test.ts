@@ -138,8 +138,23 @@ describe("the census: what the committed web corpus does when a reader asks", ()
     // POINTS at the one country where solar beats wind, and the web beat deleted that callout and
     // gave the reader a yardstick instead — any country's own two levels laid flat across the other
     // five (`chart-web/assets/level.ts`).
+    //
+    // `cutoff` arrived the same way, with `proof/web-calendar-heatmap-geneva`: its claim — "31
+    // consecutive days at or above 20 °C" — is a reading off the data AND a line its author drew,
+    // and the web beat lets the reader move that line and watch the run redrawn around it
+    // (`chart-web/assets/cutoff.ts`). None of the three kinds already here could carry it: a filter
+    // makes the marks outside its set LEAVE, and on a calendar heatmap the filtered dimension IS the
+    // encoded one; a level's primitive is a rule at a coordinate, and this plot has no coordinate
+    // for 20 °C.
     const kinds = new Set(CONTROLS.map((entry) => entry.control.kind));
-    expect([...kinds].sort()).toEqual(["ask", "filter", "level", "stack", "table"]);
+    expect([...kinds].sort()).toEqual([
+      "ask",
+      "cutoff",
+      "filter",
+      "level",
+      "stack",
+      "table",
+    ]);
   });
 
   it("names every control that changes nothing, exactly", () => {
