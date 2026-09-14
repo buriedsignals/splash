@@ -33,7 +33,7 @@ other export yet.
 | 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ◦ |
 | 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ◦ |
 | 16 | Histogram | 6 | ✅ | ◦ | ◦ | ◦ |
-| 17 | Line | 2 | ✅ | ◦ | ◦ | ◦ |
+| 17 | Line | 2 | ✅ | ◦ | ✅ | ◦ |
 | 18 | Lollipop | 1 | ✅ | ◦ | ◦ | ◦ |
 | 19 | Marimekko | 7 | ✅ | ◦ | ◦ | ◦ |
 | 20 | Parallel coordinates | 1 | ✅ | ◦ | ◦ | ◦ |
@@ -88,6 +88,7 @@ other export yet.
 | Heatmap | static | `proof/static-heatmap-europe-electricity` |
 | Histogram | static | `proof/static-carbon-footprint-spread` |
 | Line | static | `proof/co2-suisse` |
+| Line | video | `proof/video-line-swiss-co2` — validated by the owner 2026-09-14 |
 | Lollipop | static | `proof/static-lollipop-co2-per-person` |
 | Marimekko | static | `proof/static-marimekko-electricity-mix` |
 | Pie and donut | static | `proof/static-donut-world-co2-share` |
