@@ -20,15 +20,13 @@ export type BulletFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; track: string; pale: string; thin: string; faded: string; half: string; text: Record<"eyebrow" | "title" | "name" | "axis" | "gain", string> };
+  colours: { ground: string; track: string; pale: string; thin: string; fossil: string; half: string; text: Record<"eyebrow" | "title" | "name" | "axis" | "gain", string> };
   moved: string;
   steps: string[][];
   rows: Array<{ key: string; before: number; after: number; name: { text: string; width: number; x: number } }>;
   top: number;
   pitch: number;
   trackH: number;
-  paleH: number;
-  thinH: number;
   left: number;
   right: number;
   gainX: number;
@@ -37,8 +35,10 @@ export type BulletFrameProps = {
   gainWidths: Record<string, number>;
   ticks: Line[];
   halfX: number;
+  ringX: number;
+  ringW: number;
   unitLine: Line;
-  legend: { pale: Box; thin: Box; dates: Line[] };
+  legend: Array<{ swatch: Box; word: Line }>;
   strokes: { half: number };
   dash: number[];
   halo: { value: number };
@@ -67,10 +67,11 @@ export function BulletFrame(props: BulletFrameProps & { at: number; svgRef?: Ref
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
         <Text line={props.unitLine} register={r.axis} fill={colours.text.axis} />
-        <rect x={key.pale.x} y={key.pale.y} width={key.pale.w} height={key.pale.h} fill={colours.pale} />
-        <rect x={key.thin.x} y={key.thin.y} width={key.thin.w} height={key.thin.h} fill={colours.thin} />
-        {key.dates.map((d, i) => (
-          <Text key={`date${i}`} line={d} register={r.axis} fill={colours.text.axis} />
+        {key.map((k, i) => (
+          <g key={`key${i}`}>
+            <rect x={k.swatch.x} y={k.swatch.y} width={k.swatch.w} height={k.swatch.h} fill={[colours.pale, colours.thin, colours.fossil][i]} />
+            <Text line={k.word} register={r.axis} fill={colours.text.axis} />
+          </g>
         ))}
         {props.ticks.map((t, i) => (
           <Text key={`tick${i}`} line={t} register={r.axis} fill={colours.text.axis} />
@@ -87,15 +88,20 @@ export function BulletFrame(props: BulletFrameProps & { at: number; svgRef?: Ref
         const gain = `${gainText(s.gain)}${NB}pts`;
         return (
           <g key={row.key} opacity={scene.furniture}>
-            <rect x={props.left} y={y} width={span} height={props.trackH} fill={colours.track} />
-            {s.pale > 0 ? <rect x={props.left} y={mid - props.paleH / 2} width={(s.pale / 100) * span} height={props.paleH} fill={blend(colours.pale, colours.faded, s.stepBack)} /> : null}
-            {s.thin > 0 ? <rect x={props.left} y={mid - props.thinH / 2} width={(s.thin / 100) * span} height={props.thinH} fill={blend(colours.thin, colours.faded, s.stepBack)} /> : null}
-            <Text line={{ ...row.name, y: props.top + s.slot * props.pitch + props.nameShift }} register={r.axis} fill={blend(colours.text.name, colours.text.axis, s.stepBack)} opacity={1 - 0.4 * s.stepBack} halo={halo} />
-            {s.shown ? <Text line={{ text: gain, width: props.gainWidths[gain], x: props.gainX, y: props.top + s.slot * props.pitch + props.gainShift }} register={r.value} fill={colours.text.gain} opacity={1 - 0.7 * s.stepBack} halo={halo} /> : null}
+            {s.fossil.to > s.fossil.from ? <rect x={props.left + (s.fossil.from / 100) * span} y={y} width={((s.fossil.to - s.fossil.from) / 100) * span} height={props.trackH} fill={colours.fossil} /> : null}
+            {s.pale > 0 ? <rect x={props.left} y={y} width={(s.pale / 100) * span} height={props.trackH} fill={colours.pale} /> : null}
+            {s.gained ? <rect x={props.left + (s.gained.from / 100) * span} y={y} width={((s.gained.to - s.gained.from) / 100) * span} height={props.trackH} fill={colours.thin} /> : null}
+            <Text line={{ ...row.name, y: props.top + s.slot * props.pitch + props.nameShift }} register={r.axis} fill={colours.text.name} halo={halo} />
+            {s.shown ? <Text line={{ text: gain, width: props.gainWidths[gain], x: props.gainX, y: props.top + s.slot * props.pitch + props.gainShift }} register={r.value} fill={colours.text.gain} halo={halo} /> : null}
           </g>
         );
       })}
 
+      {props.rows.map((row, i) => {
+        if (row.key !== props.moved) return null;
+        const y = props.top + scene.rows[i].slot * props.pitch;
+        return <rect key="ring" x={props.ringX} y={y + props.pitch * 0.06} width={props.ringW} height={props.pitch * 0.88} rx={props.pitch * 0.2} fill="none" stroke={colours.half} strokeWidth={props.strokes.half} opacity={scene.ring} />;
+      })}
       <line x1={props.halfX} x2={props.halfX} y1={props.top} y2={props.top + props.rows.length * props.pitch} stroke={colours.half} strokeWidth={props.strokes.half} strokeDasharray={props.dash.join(" ")} opacity={scene.half} />
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>

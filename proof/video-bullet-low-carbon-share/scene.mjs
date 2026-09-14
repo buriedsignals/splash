@@ -1,20 +1,22 @@
 // THE PICTURE AT ONE FRAME — pure arithmetic, run by the composition in Chrome and by the tests in Bun. Browser-safe.
 //
-//   - BEFORE: the thick pale 2015 bars extend from zero, row after row, eased.
-//   - AFTER: the thin saturated 2024 bars appear at the 2015 end and extend on to 2024, row after row, each gain counting.
+//   - BEFORE: each country's whole electricity extends to 100 %, row after row: the 2015 low-carbon part in the pale tint,
+//     the fossil rest in a neutral.
+//   - AFTER: the frontier between them moves to 2024, row after row: the part gained fills in the saturated hue, the fossil
+//     rest recedes, each gain counting.
 //   - REORDER: the insertion `subject.mjs` computed, step by step: in each step one row climbs to its slot while the rows it
 //     passes step down one slot together; the step's travel is eased, the steps follow one another.
-//   - HALF: the 50 % line dropped; every row but the one that moved furthest steps back.
+//   - HALF: the 50 % line dropped; the whole chart kept, the one still short of it ringed.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.2], furniture: [0.25, 0.8] },
-  reveal: { before: [0.02, 0.45], after: [0.5, 0.95] },
-  subject: { reorder: [0.05, 0.95] },
-  conclusion: { half: [0, 0.45], source: [0.4, 0.9] },
+  reference: { title: [0, 0.16], furniture: [0.05, 0.4], before: [0.12, 0.95] },
+  reveal: { after: [0, 0.95] },
+  subject: { reorder: [0, 0.97] },
+  conclusion: { half: [0, 0.4], source: [0.3, 0.75] },
 });
 const LINEAR = new Set(["before", "after", "reorder"]);
 export const MOVE = 0.4;
@@ -59,15 +61,18 @@ export function sceneAt(props, frame) {
     const thin = ease(moveOf(afterT, k, props.rows.length));
     const from = moves > 0 ? props.steps[step].indexOf(row.key) : k;
     const to = moves > 0 ? props.steps[step + 1].indexOf(row.key) : k;
+    // The whole electricity: the low-carbon part from zero, the fossil rest to 100 % — the rest arrives with the bar.
+    const now = row.before + (row.after - row.before) * thin;
     return {
       slot: from + (to - from) * within,
+      whole: pale * 100,
       pale: row.before * pale,
-      thin: thin > 0 ? row.before + (row.after - row.before) * thin : 0,
+      gained: thin > 0 ? { from: row.before, to: now } : null,
+      fossil: { from: pale >= 1 ? now : row.before * pale, to: pale * 100 },
       gain: (row.after - row.before) * thin,
       shown: thin > 0 ? 1 : 0,
-      stepBack: row.key === props.moved ? 0 : half,
       climbing: row.key === climber,
     };
   });
-  return { title: at("title"), furniture: at("furniture"), rows, half, source: at("source") };
+  return { title: at("title"), furniture: at("furniture"), rows, half, ring: clamp01((half - 0.6) / 0.4), source: at("source") };
 }

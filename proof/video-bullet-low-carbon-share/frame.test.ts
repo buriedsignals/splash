@@ -47,11 +47,14 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(orderAt(props.timing.total - 1)[0]).toBe(props.moved);
     });
 
-    it("should never draw a 2024 bar shorter than its 2015 bar once it shows", () => {
-      for (let f = 0; f < props.timing.total; f += 3) {
+    it("should draw each whole electricity to 100 %, the low-carbon part and the fossil rest meeting at the frontier", () => {
+      for (let f = props.timing.reveal.start; f < props.timing.total; f += 5) {
         const s = sceneAt(props, f);
         props.rows.forEach((r: any, i: number) => {
-          if (s.rows[i].thin > 0) expect([f, r.key, s.rows[i].thin >= r.before - 1e-9]).toEqual([f, r.key, true]);
+          const row = s.rows[i];
+          const frontier = row.gained ? row.gained.to : row.pale;
+          expect([f, r.key, row.whole, row.fossil.to, row.fossil.from]).toEqual([f, r.key, 100, 100, expect.closeTo(frontier, 9)] as any);
+          if (row.gained) expect(row.gained.from).toBe(r.before);
         });
       }
     });
@@ -70,11 +73,11 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       }
     });
 
-    it("should keep only the one that moved furthest at the end, and it alone under the half line", () => {
-      expect(sceneAt(props, last("subject")).rows.every((r: any) => r.stepBack === 0)).toBe(true);
+    it("should end on the whole chart with the one still under half ringed, and the credit on one line", () => {
       const end = sceneAt(props, props.timing.total - 1);
-      expect(props.rows.filter((r: any, i: number) => end.rows[i].stepBack === 0).map((r: any) => r.key)).toEqual([props.moved]);
+      expect([end.half, end.ring]).toEqual([1, 1]);
       expect(props.rows.filter((r: any) => r.after < 50).map((r: any) => r.key)).toEqual([props.moved]);
+      expect(props.credit.lines.length).toBe(1);
     });
   });
 }

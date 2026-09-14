@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { gainText } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
@@ -26,10 +26,8 @@ export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
-/** Of a row's pitch, the track; of the track, the 2015 bar; of the track, the 2024 bar. */
+/** Of a row's pitch, the bar of the whole electricity. */
 const TRACK = 0.56;
-const PALE = 0.8;
-const THIN = 0.3;
 
 export function loadBeat() {
   const subject = loadSubject();
@@ -44,7 +42,8 @@ export function copyOf(subject) {
     eyebrow: `Énergie${NB}· Europe`,
     title: [`${subject.moved.name} : +${one(gain)} points de bas-carbone depuis ${BEFORE}, toujours la seule sous la moitié`, `${subject.moved.name} : +${one(gain)} points de bas-carbone depuis ${BEFORE}`],
     gain: (text) => `${text}${NB}pts`,
-    dates: [String(BEFORE), String(AFTER)],
+    /** The key: the low-carbon part in 2015, the part gained by 2024, the fossil rest. */
+    dates: [String(BEFORE), String(AFTER), "fossile"],
     unit: `part du bas-carbone dans l’électricité`,
     ticks: [0, HALF, 100].map((v) => (v === 100 ? `100${NB}%` : String(v))),
     source: ["Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data", "Source : Ember, Energy Institute, via Our World in Data"],
@@ -84,27 +83,24 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueShift = (valueBand.ascent - valueBand.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
 
-  // THE BAND OVER THE ROWS: the unit at the left; the key — a pale thick swatch for 2015, a thin saturated one for 2024 —
-  // at the right.
+  // THE BAND OVER THE ROWS: the unit at the left; the key at the right — three swatches, each followed by its word.
   const bandBaseline = vInset + band.ascent;
   const unitLine = { ...measure(copy.unit, axis), x: inset, y: bandBaseline };
   const dates = copy.dates.map((d) => measure(d, axis));
-  const swatchW = 1.4 * axis.lead;
-  const keyH = band.ascent;
-  const keyWidth = swatchW + gap / 2 + dates[0].width * (1 + DRAWN_WIDER) + 2 * gap + swatchW + gap / 2 + dates[1].width * (1 + DRAWN_WIDER);
+  const swatchW = band.ascent;
+  const keyWidth = dates.reduce((w, d, i) => w + swatchW + gap / 2 + d.width * (1 + DRAWN_WIDER) + (i < dates.length - 1 ? 1.5 * gap : 0), 0);
   const keyX = stage.width - inset - keyWidth;
   if (!(unitLine.x + unitLine.width * (1 + DRAWN_WIDER) + 2 * gap < keyX)) throw new Error("the unit and the key do not fit on one line");
-  const key = {
-    pale: { x: keyX, y: bandBaseline - 0.4 * band.ascent - (keyH * PALE) / 2, w: swatchW, h: keyH * PALE },
-    thin: { x: keyX + swatchW + gap / 2 + dates[0].width * (1 + DRAWN_WIDER) + 2 * gap, y: bandBaseline - 0.4 * band.ascent - (keyH * THIN) / 2, w: swatchW, h: keyH * THIN },
-    dates: [
-      { ...dates[0], x: keyX + swatchW + gap / 2, y: bandBaseline },
-      { ...dates[1], x: keyX + 2 * swatchW + gap + dates[0].width * (1 + DRAWN_WIDER) + 2 * gap, y: bandBaseline },
-    ],
-  };
+  let cursor = keyX;
+  const key = dates.map((d) => {
+    const swatch = { x: cursor, y: bandBaseline - band.ascent, w: swatchW, h: band.ascent };
+    const word = { ...d, x: cursor + swatchW + gap / 2, y: bandBaseline };
+    cursor = word.x + d.width * (1 + DRAWN_WIDER) + 1.5 * gap;
+    return { swatch, word };
+  });
 
   // THE ROWS: names at the left, the track to 100 %, the gains in a column of their own at the right, the ticks under.
   const names = subject.countries.map((c) => measure(c.name, axis));
@@ -139,7 +135,7 @@ export function buildDirection(id, { subject, states, copy }) {
     track: mix(ground, ink, 0.07),
     pale: mix(accent, ground, 0.62),
     thin: walked(accent, NON_TEXT_CONTRAST_MIN, `the ${AFTER} bar`),
-    faded: mix(ground, ink, 0.16),
+    fossil: mix(ground, ink, 0.16),
     half: walked(ink, NON_TEXT_CONTRAST_MIN, "the half line"),
     text: {
       eyebrow: walked(registers.eyebrow.fill ?? accent, TEXT_CONTRAST_MIN, "the eyebrow"),
@@ -163,8 +159,7 @@ export function buildDirection(id, { subject, states, copy }) {
     top,
     pitch,
     trackH: r1(trackH),
-    paleH: r1(trackH * PALE),
-    thinH: r1(trackH * THIN),
+
     left: r1(left),
     right: r1(right),
     gainX: r1(right + gap),
@@ -173,6 +168,8 @@ export function buildDirection(id, { subject, states, copy }) {
     gainWidths,
     ticks,
     halfX: r1(xOf(HALF)),
+    ringX: r1(inset - gap / 2),
+    ringW: r1(stage.width - 2 * inset + gap),
     unitLine,
     legend: key,
     strokes: { half: (direction.stroke?.rule ?? 1) * k * 1.4 },
