@@ -23,7 +23,7 @@ other export yet.
 | 04 | Box plot | 1 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Bump | 2 | ✅ | ◦ | ✅ | ◦ |
-| 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
+| 07 | Calendar heatmap | 5 | ✅ | ◦ | ✅ | ◦ |
 | 08 | Connected scatter | 1 | ✅ | ◦ | ✅ | ◦ |
 | 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ◦ |
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ◦ |
@@ -80,6 +80,7 @@ other export yet.
 | Bump | static | `proof/static-bump-emitter-rank` |
 | Bump | video | `proof/video-bump-emitter-rank` — validated by the owner 2026-09-14 |
 | Calendar heatmap | static | `proof/static-calendar-heatmap-geneva` |
+| Calendar heatmap | video | `proof/video-calendar-heatmap-geneva` — validated by the owner 2026-09-14 |
 | Connected scatter | static | `proof/static-connected-scatter-lowcarbon` |
 | Connected scatter | video | `proof/video-connected-scatter-lowcarbon` — validated by the owner 2026-09-14 |
 | Dot strip | static | `proof/static-dot-strip-lowcarbon-spread` |
