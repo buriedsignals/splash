@@ -92,6 +92,15 @@ separated by a stroke in the ground's colour**, so the grid reads as a surface r
 smaller type size; **a unit that is not in the measure keeps its cell and loses its fill**.
 
 
+## In video
+
+Worked example: `proof/video-hex-grid-europe-protection` (validated 2026-09-14). The gesture only a video has is
+**re-classing the same cells**: the grid coloured by one measure (the count, lowest class first, the largest unit ringed),
+then every cell's fill travelling to its class under the other (per inhabitant), the key's bornes cross-fading, the new
+leader ringed and each figure line changing in place. No one code ink reads on a pale class and a dark one, so each cell
+carries the ink for each of its fills and switches as the fill passes the middle of its change; a test holds every code
+to the text floor at the end of every event.
+
 ## The worked example in this tree
 
 `proof/static-hex-grid-europe-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a
