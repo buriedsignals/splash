@@ -1,6 +1,6 @@
 # Addendum — les cartes scrolly passent par MapTiler, avec tous les pays et un niveau de détail choisi par le sujet
 
-**Statut :** approuvé par le propriétaire le 2026-09-15 (la projection, §7.1, reste à trancher). Non planifié, non implémenté.
+**Statut :** approuvé par le propriétaire le 2026-09-15, projection comprise (§7.1). Non planifié, non implémenté.
 **Complète :** `2026-09-12-maps-through-maptiler-spec.md` (« la spec »), qui traite le statique, le web et la vidéo,
 et exclut le cartogramme et la grille hexagonale (§11).
 **Décisions du propriétaire enregistrées ici (2026-09-15) :**
@@ -128,11 +128,11 @@ cartogramme et grille hexagonale en dernier (§5).
 
 ## 7. Questions ouvertes
 
-1. **La projection.** Les statiques et les scrollys SVG dessinent en Lambert azimutale équivalente ; MapLibre dessine en
-   Web Mercator (ou en globe). À 70° N, Mercator triple les surfaces : la Scandinavie et la Russie gonflent à l'écran.
-   Les chiffres des cartes (moyenne « au km² ») restent calculés sur les vraies surfaces, mais une carte qui **montre**
-   une surface la montre fausse. À trancher : Mercator accepté, globe, ou refus des sujets dont l'argument est une
-   surface vue.
+1. **La projection — tranchée le 2026-09-15 : globe.** Les statiques et les scrollys SVG dessinaient en Lambert
+   azimutale équivalente ; MapLibre dessine en Web Mercator ou en globe. À 70° N, Mercator triple les surfaces. Le
+   propriétaire retient la projection **globe** : aux zooms continentaux elle ne gonfle pas le Nord, en zoom proche elle
+   rejoint Mercator. *À vérifier dans S1 : que le style MapTiler, le rendu gelé et les gardes (§2.6, §3.3) tiennent en
+   globe, et mesurer l'écart de surface restant au bord d'une vue continentale.*
 2. **Les polygones joints** (§3.2) : MapTiler Countries retenu ; son coût et la correspondance des codes régionaux sont
    à mesurer.
 3. **Le poids du repli** : une image par carte de texte multiplie le poids de la page par le nombre de cartes.
