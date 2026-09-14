@@ -6,8 +6,8 @@ and a tick means a **directed** beat exists — one that goes through the design
 its six registers, the arbiter's treatments). Beats that predate the design base are not ticked here;
 they are listed at the foot.
 
-Last measured: 2026-09-09 · 179 references · 40 directed static beats. No directed beat in any
-other export yet.
+Last measured: 2026-09-09 · 179 references · 40 directed static beats. Scrolly column updated 2026-09-14 on
+branch `quality/scrolly`: the directed scrolly beats the owner validated in that pass.
 
 - ✅ a directed beat exists
 - ◦ references are harvested, no beat yet
@@ -17,40 +17,40 @@ other export yet.
 
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
-| 01 | Area | 1 | ✅ | ◦ | ◦ | ◦ |
+| 01 | Area | 1 | ✅ | ◦ | ◦ | ✅ |
 | 02 | Bar and column | 2 | ✅ | ◦ | ◦ | ◦ |
 | 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Box plot | 1 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
-| 06 | Bump | 2 | ✅ | ◦ | ◦ | ◦ |
+| 06 | Bump | 2 | ✅ | ◦ | ◦ | ✅ |
 | 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
-| 08 | Connected scatter | 1 | ✅ | ◦ | ◦ | ◦ |
-| 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ◦ |
-| 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ◦ |
-| 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ◦ |
+| 08 | Connected scatter | 1 | ✅ | ◦ | ◦ | ✅ |
+| 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ✅ |
+| 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ✅ |
+| 11 | Dot strip | 1 | ✅ | ◦ | ◦ | ✅ |
 | 12 | Dumbbell | 2 | ✅ | ◦ | ◦ | ◦ |
-| 13 | Gantt | 2 | ✅ | ◦ | ◦ | ◦ |
-| 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ◦ |
-| 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ◦ |
-| 16 | Histogram | 6 | ✅ | ◦ | ◦ | ◦ |
+| 13 | Gantt | 2 | ✅ | ◦ | ◦ | ✅ |
+| 14 | Grouped bar | 9 | ✅ | ◦ | ◦ | ✅ |
+| 15 | Heatmap | 3 | ✅ | ◦ | ◦ | ✅ |
+| 16 | Histogram | 6 | ✅ | ◦ | ◦ | ✅ |
 | 17 | Line | 2 | ✅ | ◦ | ◦ | ◦ |
-| 18 | Lollipop | 1 | ✅ | ◦ | ◦ | ◦ |
-| 19 | Marimekko | 7 | ✅ | ◦ | ◦ | ◦ |
-| 20 | Parallel coordinates | 1 | ✅ | ◦ | ◦ | ◦ |
-| 21 | Pictogram | 4 | ✅ | ◦ | ◦ | ◦ |
-| 22 | Pie and donut | 1 | ✅ | ◦ | ◦ | ◦ |
-| 23 | Population pyramid | 7 | ✅ | ◦ | ◦ | ◦ |
-| 24 | Radar | 6 | ✅ | ◦ | ◦ | ◦ |
-| 25 | Sankey | 7 | ✅ | ◦ | ◦ | ◦ |
-| 26 | Scatter | 7 | ✅ | ◦ | ◦ | ◦ |
-| 27 | Slope | 3 | ✅ | ◦ | ◦ | ◦ |
-| 28 | Small multiples | 4 | ✅ | ◦ | ◦ | ◦ |
-| 29 | Stacked bar | 5 | ✅ | ◦ | ◦ | ◦ |
-| 30 | Streamgraph | 5 | ✅ | ◦ | ◦ | ◦ |
-| 31 | Treemap | 1 | ✅ | ◦ | ◦ | ◦ |
-| 32 | Waterfall | 12 | ✅ | ◦ | ◦ | ◦ |
+| 18 | Lollipop | 1 | ✅ | ◦ | ◦ | ✅ |
+| 19 | Marimekko | 7 | ✅ | ◦ | ◦ | ✅ |
+| 20 | Parallel coordinates | 1 | ✅ | ◦ | ◦ | ✅ |
+| 21 | Pictogram | 4 | ✅ | ◦ | ◦ | ✅ |
+| 22 | Pie and donut | 1 | ✅ | ◦ | ◦ | ✅ |
+| 23 | Population pyramid | 7 | ✅ | ◦ | ◦ | ✅ |
+| 24 | Radar | 6 | ✅ | ◦ | ◦ | ✅ |
+| 25 | Sankey | 7 | ✅ | ◦ | ◦ | ✅ |
+| 26 | Scatter | 7 | ✅ | ◦ | ◦ | ✅ |
+| 27 | Slope | 3 | ✅ | ◦ | ◦ | ✅ |
+| 28 | Small multiples | 4 | ✅ | ◦ | ◦ | ✅ |
+| 29 | Stacked bar | 5 | ✅ | ◦ | ◦ | ✅ |
+| 30 | Streamgraph | 5 | ✅ | ◦ | ◦ | ✅ |
+| 31 | Treemap | 1 | ✅ | ◦ | ◦ | ✅ |
+| 32 | Waterfall | 12 | ✅ | ◦ | ◦ | ✅ |
 
-**Charts: 32 of 32 done in static, 0 of 32 in web, video or scrolly.**
+**Charts: 32 of 32 done in static, 25 of 32 in scrolly, 0 in web or video.**
 
 ## Maps
 
@@ -58,14 +58,14 @@ other export yet.
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
 | 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
 | 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ◦ |
-| 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
-| 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
-| 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
-| 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ◦ |
-| 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
-| 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ◦ |
+| 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ✅ |
+| 04 | Dot density | 3 | ✅ | ◦ | ◦ | ✅ |
+| 05 | Flow map | 1 | ✅ | ◦ | ◦ | ✅ |
+| 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ✅ |
+| 07 | Locator | 1 | ✅ | ◦ | ◦ | ✅ |
+| 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ✅ |
 
-**Maps: 8 of 8 done in static, 0 in web, video or scrolly.**
+**Maps: 8 of 8 done in static, 6 of 8 in scrolly, 0 in web or video.**
 
 ## What is done, beat by beat
 
@@ -111,6 +111,37 @@ other export yet.
 | Locator | static | `proof/static-locator-zaporizhzhia` |
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
+| Area | scrolly | `proof/scrolly-world-population` |
+| Bump | scrolly | `proof/scrolly-bump-emitter-rank` |
+| Connected scatter | scrolly | `proof/scrolly-connected-scatter-lowcarbon` |
+| Diverging bar | scrolly | `proof/scrolly-diverging-bar-eu-per-capita` |
+| Diverging stacked bar | scrolly | `proof/scrolly-diverging-stacked-electricity` |
+| Dot strip | scrolly | `proof/scrolly-dot-strip-lowcarbon-spread` |
+| Gantt | scrolly | `proof/scrolly-gantt-top-ten-tenure` |
+| Grouped bar | scrolly | `proof/scrolly-wind-vs-solar` |
+| Heatmap | scrolly | `proof/scrolly-heatmap-europe-electricity` |
+| Histogram | scrolly | `proof/scrolly-carbon-footprint-spread` |
+| Lollipop | scrolly | `proof/scrolly-lollipop-co2-per-person` |
+| Marimekko | scrolly | `proof/scrolly-marimekko-electricity-mix` |
+| Parallel coordinates | scrolly | `proof/scrolly-parallel-coordinates-electricity-mix` |
+| Pictogram | scrolly | `proof/scrolly-pictogram-europe-lowcarbon` |
+| Pie and donut | scrolly | `proof/scrolly-donut-world-co2-share` |
+| Population pyramid | scrolly | `proof/scrolly-swiss-age-pyramid` |
+| Radar | scrolly | `proof/scrolly-radar-electricity-mix` |
+| Sankey | scrolly | `proof/scrolly-sankey-electricity-sources` |
+| Scatter | scrolly | `proof/scrolly-scatter-income-life-expectancy` |
+| Slope | scrolly | `proof/scrolly-slope-europe-lowcarbon`, `proof/scrolly-renewables-shift` |
+| Small multiples | scrolly | `proof/scrolly-small-multiples-lowcarbon`, `proof/scrolly-small-multiples-solar-eu-six` |
+| Stacked bar | scrolly | `proof/scrolly-stacked-bar-lowcarbon-growth`, `proof/scrolly-electricity-mix-source` |
+| Streamgraph | scrolly | `proof/scrolly-streamgraph-swiss-electricity` |
+| Treemap | scrolly | `proof/scrolly-treemap-europe-capacity` |
+| Waterfall | scrolly | `proof/scrolly-germany-electricity-bridge` |
+| Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` |
+| Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` |
+| Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` |
+| Hex grid | scrolly | `proof/scrolly-hex-grid-europe-protection` |
+| Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` |
+| Proportional symbol | scrolly | `proof/scrolly-proportional-symbol-europe-capacity` |
 
 ## What is next, by how much evidence backs it
 
