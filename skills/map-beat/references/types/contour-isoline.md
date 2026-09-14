@@ -72,6 +72,16 @@ prominently, not just on the legend swatch but stated in the caption or title ("
 so it survives being screen-read or printed in monochrome, where the fill's sequential ramp — this
 type's only other channel — disappears entirely and the labelled lines are all that's left.
 
+## In video
+
+Worked example: `proof/video-contour-europe-distance` (validated 2026-09-14). The gesture only a video has is **the
+sweep**: the field thresholded at a level that travels linearly in the field's own unit, drawn as a canvas under an SVG
+that paints the sea over it (so the grid's cells never show on the water), its front in a rim colour, each line left
+whole the moment the front reaches it and its number set once the front has moved on, the count read off the field's
+own table. The claim's level (the median) lands as its own gesture; a line within 50 km of it gives way. At the video's
+30 px floor a number is taller than the gap between two lines 100 km apart, so a number sits on its line in a halo of
+the land's colour, at the seat crossing the fewest other lines. Every text the count can show is measured in Bun.
+
 ## The worked example in this tree
 
 `proof/static-contour-europe-distance` — a **directed** beat of this type: written by hand under the doctrine, taken through a

@@ -58,7 +58,7 @@ other export yet.
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
 | 01 | Cartogram | 1 | ✅ | ◦ | ✅ | ◦ |
 | 02 | Choropleth | 1 | ✅ | ◦ | ✅ | ◦ |
-| 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
+| 03 | Contour / isoline | 1 | ✅ | ◦ | ✅ | ◦ |
 | 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ◦ |
@@ -113,6 +113,7 @@ other export yet.
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
 | Cartogram | video | `proof/video-cartogram-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
+| Contour / isoline | video | `proof/video-contour-europe-distance` — validated by the owner 2026-09-14 |
 
 ## What is next, by how much evidence backs it
 
