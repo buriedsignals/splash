@@ -42,9 +42,12 @@ export type ContourFrameProps = {
     tint: string;
     rim: string;
     lines: Record<string, string>;
-    text: Record<"eyebrow" | "title" | "count" | "key" | "label" | "median" | "source", string>;
+    text: Record<"eyebrow" | "title" | "count" | "key" | "label" | "median" | "source" | "axis", string>;
   };
   strokes: { line: number; median: number; dot: number };
+  /** The curve: the share of the land within each distance of the sea, traced to the sweep's front. */
+  chart: { x: number; y: number; width: number; height: number; plot: { left: number; right: number; top: number; bottom: number }; maxKm: number; path: string; area: string; median: { x: number; y: number } };
+  layoutInset: { x: number; y: number };
   land: { study: string[]; other: string[] };
   lines: Array<{ level: number; d: string }>;
   levels: Array<{ level: number }>;
@@ -160,6 +163,25 @@ export function ContourFrame(props: ContourFrameProps & { at: number; svgRef?: R
           <Word line={{ text: legend.widths[countText].text, x: legend.count.x, y: legend.count.y, width: legend.widths[countText].width }} register={r.value} fill={colours.text.count} halo={{ colour: colours.ground, width: legend.valueHalo }} />
           <rect x={legend.swatch.x} y={legend.swatch.y} width={legend.swatch.width} height={legend.swatch.height} fill={colours.outside} />
           <Word line={legend.outside} register={r.axis} fill={colours.text.key} halo={{ colour: colours.ground, width: legend.halo }} />
+        </g>
+
+        {/* ── THE CURVE: traced to the front, the median's guides once it lands. ── */}
+        <g opacity={scene.furniture}>
+          <defs>
+            <clipPath id="contour-curve">
+              <rect x={props.chart.x} y={props.chart.y - strokes.median} width={Math.max(0, scene.chart.head.x - props.chart.x)} height={props.chart.height + 2 * strokes.median} />
+            </clipPath>
+          </defs>
+          <line x1={props.chart.plot.left} x2={props.chart.plot.right} y1={props.chart.plot.bottom} y2={props.chart.plot.bottom} stroke={colours.text.axis} strokeWidth={strokes.line} />
+          <line x1={props.chart.plot.left} x2={props.chart.plot.left} y1={props.chart.plot.top} y2={props.chart.plot.bottom} stroke={colours.text.axis} strokeWidth={strokes.line} />
+          <g clipPath="url(#contour-curve)" opacity={scene.chart.shown}>
+            <path d={props.chart.area} fill={colours.tint} opacity={0.8} />
+            <path d={props.chart.path} fill="none" stroke={colours.text.count} strokeWidth={strokes.median} strokeLinejoin="round" />
+          </g>
+          <g opacity={scene.chart.guides}>
+            <path d={`M${props.chart.median.x} ${props.chart.plot.bottom}V${props.chart.median.y}H${props.chart.plot.left}`} fill="none" stroke={colours.text.median} strokeWidth={strokes.line} strokeDasharray={`${4 * strokes.line} ${3 * strokes.line}`} />
+          </g>
+          <circle cx={scene.chart.head.x} cy={scene.chart.head.y} r={1.6 * strokes.dot} fill={colours.text.count} opacity={scene.chart.shown} />
         </g>
 
         <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>

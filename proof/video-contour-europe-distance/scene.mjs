@@ -10,10 +10,10 @@ import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 export const WINDOWS = Object.freeze({
   // The title card is up from frame 0: its window closes before the first frame.
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.2], furniture: [0.2, 0.55] },
+  reference: { title: [0, 0.25], furniture: [0.25, 0.7] },
   reveal: { tint: [0, 0.08], level: [0.05, 0.8], median: [0.82, 0.94] },
   subject: { level: [0, 0.85], summit: [0.86, 0.96] },
-  conclusion: { tint: [0, 0.35], source: [0.5, 0.65] },
+  conclusion: { tint: [0, 0.4], source: [0.3, 0.7] },
 });
 /** A measured axis is traversed linearly; everything that arrives eases. */
 const LINEAR = new Set(["level"]);
@@ -42,7 +42,16 @@ export function countAt(level, within, deepest) {
   return { p, km };
 }
 
-/** @param {{ states: any[], timing: any, levels: Array<{ level: number }>, medianLevel: number, within: number[], deepest: number }} props */
+/** The share of the land within `km` of the sea, between the two whole kilometres around it; all of it past the farthest point. */
+export function shareWithin(km, within, deepest) {
+  if (km >= deepest) return 100;
+  const lo = Math.floor(km);
+  const at = (i) => (i >= within.length ? 100 : within[i]);
+  return at(lo) + (at(lo + 1) - at(lo)) * (km - lo);
+}
+
+/** @param {{ states: any[], timing: any, levels: Array<{ level: number }>, medianLevel: number, within: number[], deepest: number,
+ *   chart: { plot: { left: number, right: number, top: number, bottom: number }, maxKm: number } }} props */
 export function sceneAt(props, frame) {
   const at = (f) => fieldAt(f, frame, props.states, props.timing);
   const level = at("level");
@@ -68,5 +77,12 @@ export function sceneAt(props, frame) {
     lines,
     labels,
     count: countAt(level, props.within, props.deepest),
+    /** THE CURVE: traced to the sweep's front — the share of the land the fill has covered, at the distance it has reached. */
+    chart: (() => {
+      const { plot, maxKm } = props.chart;
+      const km = Math.min(level, maxKm);
+      const head = { x: plot.left + ((plot.right - plot.left) * km) / maxKm, y: plot.bottom - ((plot.bottom - plot.top) * (level >= props.deepest ? 100 : shareWithin(km, props.within, props.deepest))) / 100 };
+      return { head, shown: level > 0 ? 1 : 0, guides: median };
+    })(),
   };
 }

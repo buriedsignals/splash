@@ -13,7 +13,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { SEA_LAND_MIN } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { fitViewBox } from "../../skills/scrolly/assets/reveal.mjs";
 import { statesFor } from "./states.mjs";
@@ -33,6 +33,13 @@ const SWATCH_W = 1.2;
 const SWATCH_H = 0.4;
 const SWATCH_GAP = 0.3;
 const ROW_GAP = 0.35;
+/** The curve's panel height, × the axis lead; its inner margin, × the axis lead. */
+const CHART_H = 7;
+const CHART_PAD = 0.3;
+/** The share of land the key and the chart may stand over. */
+const PANEL_LAND = 0.03;
+/** The side, in stage pixels, of the cells the credit's line is checked for measured land on. */
+const CREDIT_PROBE = 6;
 /** A line this close to the median gives way to it: at the scale of Europe the two run a few pixels apart. */
 export const YIELD_KM = 50;
 
@@ -55,6 +62,7 @@ export function copyOf(subject) {
     source: [
       `Contours Natural Earth 50 m · champ mesuré sur une grille de 6${NB}km en projection équivalente (LAEA)`,
       `Natural Earth 50 m · grille de 6${NB}km, projection équivalente`,
+      `Natural Earth · grille de 6${NB}km`,
     ].map((form) => form.replace(" · ", `${NB}· `)),
     medianLevel: MEDIAN,
     deepestName: NAMES[field.deepestIso],
@@ -116,7 +124,16 @@ export function buildDirection(id, { subject, states, copy }) {
 
   // ── the shots every type shares ──────────────────────────────────────────────────────────────────────────
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  /** The credit on one line, in every form that holds one — the longest that finds a row is set. */
+  const credits = copy.source.flatMap((form) => {
+    try {
+      return [sourceCreditFor({ registers, forms: [form], size: SIZE, k, ...CREDIT_ONE_LINE })];
+    } catch {
+      return [];
+    }
+  });
+  if (!credits.length) throw new Error("no form of the source holds one line");
+  const sourceRegister = credits[0].register;
 
   // ── the camera: the field's frame fitted to the stage and widened to it ─────────────────────────────────────
   const vb = fitViewBox({ x: 0, y: 0, w: field.width, h: field.height }, stage, { top: 0, right: 0, bottom: 0, left: 0 });
@@ -174,7 +191,9 @@ export function buildDirection(id, { subject, states, copy }) {
       key: onGround(muted),
       label: floorOn(ink, TEXT_CONTRAST_MIN, "a line's number"),
       median: floorOn(accent, TEXT_CONTRAST_MIN, "the median's number"),
-      source: onGround(muted),
+      // The credit may cross land outside the measurement: its ink reads on the sea and on that land.
+      source: [ground, outside].map((on) => adjustToContrast(muted, on, TEXT_CONTRAST_MIN)).find((c) => c && contrast(c, ground) >= TEXT_CONTRAST_MIN && contrast(c, outside) >= TEXT_CONTRAST_MIN),
+      axis: onGround(muted),
     },
   };
   for (const [slot, c] of Object.entries(colours.text)) if (!c) throw new Error(`the ${slot} has no ink that reads`);
@@ -203,13 +222,76 @@ export function buildDirection(id, { subject, states, copy }) {
     halo: haloOf(axis, k),
     valueHalo: haloOf(value, k),
   };
-  let keyAt = null;
-  for (let y = vInset; y + key.height <= stage.height - vInset; y += SEAT_STEP)
-    for (let x = inset; x <= inset + 4 * SEAT_STEP; x += SEAT_STEP) {
-      const share = landShare({ x, y, width: key.width, height: key.height });
-      if (!keyAt || share < keyAt.share - 1e-9) keyAt = { x, y, share };
+  // ── the credit, the key and the curve: one column at the left ────────────────────────────────────────────────
+  // THE CREDIT FIRST: one line is wider than the Atlantic the land leaves, so it takes the first row from the top whose
+  // line crosses no measured land (it may cross Greenland, which is not measured), in an ink that reads on the sea and
+  // on that land. The longest one-line form that finds a row is set.
+  const studyRings = field.shapes.study.flatMap(ringsOf).map((ring) => ring.map(toStage));
+  const probeCols = Math.ceil(stage.width / CREDIT_PROBE);
+  const probeRows = Math.ceil(stage.height / CREDIT_PROBE);
+  const measured = new Uint8Array(probeCols * probeRows);
+  for (let j = 0; j < probeRows; j++)
+    for (let i = 0; i < probeCols; i++) measured[j * probeCols + i] = studyRings.some((ring) => insideRing(ring, (i + 0.5) * CREDIT_PROBE, (j + 0.5) * CREDIT_PROBE)) ? 1 : 0;
+  const overMeasured = (box) => {
+    for (let j = Math.max(0, Math.floor(box.y / CREDIT_PROBE)); j < Math.min(probeRows, Math.ceil((box.y + box.height) / CREDIT_PROBE)); j++)
+      for (let i = Math.max(0, Math.floor(box.x / CREDIT_PROBE)); i < Math.min(probeCols, Math.ceil((box.x + box.width) / CREDIT_PROBE)); i++) if (measured[j * probeCols + i]) return true;
+    return false;
+  };
+  let credit = null;
+  let creditAt = null;
+  for (const form of credits) {
+    search: for (let y = vInset; y + form.height <= stage.height - vInset; y += SEAT_STEP / 2)
+      for (let x = inset; x + form.width <= stage.width - inset; x += SEAT_STEP) {
+        if (overMeasured({ x, y, width: form.width, height: form.height })) continue;
+        creditAt = { x, y };
+        break search;
+      }
+    if (creditAt) {
+      const { register, ...rest } = form;
+      credit = rest;
+      break;
     }
+  }
+  if (!creditAt) throw new Error(`no one-line form of the source finds a row that crosses no measured land`);
+  const creditBox = { x: creditAt.x, y: creditAt.y, width: credit.width, height: credit.height };
+  // THE KEY, hung under the credit when that place is over the sea; otherwise at the left margin over the least land.
+  let keyAt = null;
+  const underCredit = { x: creditBox.x, y: creditBox.y + creditBox.height + gap, width: key.width, height: key.height };
+  if (landShare(underCredit) <= PANEL_LAND) keyAt = { x: underCredit.x, y: underCredit.y, share: landShare(underCredit) };
+  if (!keyAt)
+    for (let y = vInset; y + key.height <= stage.height - vInset; y += SEAT_STEP)
+      for (let x = inset; x <= inset + 4 * SEAT_STEP; x += SEAT_STEP) {
+        const box = { x, y, width: key.width, height: key.height };
+        if (touches(box, creditBox, gap)) continue;
+        const share = landShare(box);
+        if (!keyAt || share < keyAt.share - 1e-9) keyAt = { x, y, share };
+      }
   const keyBox = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
+  // THE CURVE, under the key, as wide as it: the share of the land within each distance of the sea, 0 to the farthest
+  // point, on one scale — every kilometre's share from the field's own `within` table.
+  const chartBox = { x: keyBox.x, y: keyBox.y + keyBox.height + gap, width: keyBox.width, height: Math.round(CHART_H * axis.lead) };
+  if (chartBox.y + chartBox.height > stage.height - vInset) throw new Error("the curve does not fit under the key");
+  if (landShare(chartBox) > PANEL_LAND) throw new Error(`the curve would stand over ${(100 * landShare(chartBox)).toFixed(1)} % land`);
+  const chartPad = CHART_PAD * axis.lead;
+  const plot = { left: chartBox.x + chartPad, right: chartBox.x + chartBox.width - chartPad, top: chartBox.y + chartPad, bottom: chartBox.y + chartBox.height - chartPad };
+  const maxKm = field.deepest;
+  const cx = (km) => plot.left + ((plot.right - plot.left) * km) / maxKm;
+  const cy = (p) => plot.bottom - ((plot.bottom - plot.top) * p) / 100;
+  const r1 = (v) => Math.round(v * 10) / 10;
+  const curve = [];
+  for (let km = 0; km < maxKm; km++) curve.push([r1(cx(km)), r1(cy(field.within[Math.min(km, field.within.length - 1)]))]);
+  curve.push([r1(cx(maxKm)), r1(cy(100))]);
+  const chart = {
+    x: chartBox.x,
+    y: chartBox.y,
+    width: chartBox.width,
+    height: chartBox.height,
+    plot,
+    maxKm,
+    path: curve.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(""),
+    area: `M${r1(cx(0))} ${r1(plot.bottom)}${curve.map(([x, y]) => `L${x} ${y}`).join("")}L${r1(cx(maxKm))} ${r1(plot.bottom)}Z`,
+    median: { x: cx(copy.medianLevel), y: cy(field.within[copy.medianLevel]) },
+  };
 
   // ── the farthest point: a dot and its number beside it ───────────────────────────────────────────────────────
   const [sx, sy] = toStage(field.summit);
@@ -270,7 +352,7 @@ export function buildDirection(id, { subject, states, copy }) {
       const [cx, cy] = toStage([ux, uy]);
       const box = { x: cx - w / 2, y: cy - h / 2, width: w, height: h };
       if (box.x < inset || box.y < vInset || box.x + w > stage.width - inset || box.y + h > stage.height - vInset) continue;
-      if (touches(box, keyBox, gap) || touches(box, summitBox, gap) || placed.some((p) => touches(box, p, gap))) continue;
+      if (touches(box, keyBox, gap) || touches(box, summitBox, gap) || touches(box, chartBox, gap) || touches(box, creditBox, gap) || placed.some((p) => touches(box, p, gap))) continue;
       // AT THE VIDEO'S FLOOR A NUMBER IS TALLER THAN THE GAP BETWEEN TWO LINES: 100 km is about 24 px here, a 30 px
       // number with its halo about 50. So the still's « never across another line » becomes « across as few as the
       // line allows »: the halo, struck in the land's colour, masks what it crosses, and the seat crossing the fewest
@@ -290,17 +372,6 @@ export function buildDirection(id, { subject, states, copy }) {
     labels[l.level] = { text, width, x: best.cx, y: best.cy + (band.ascent - band.descent) / 2, halo: haloOf(r, k), crossed: best.crossed };
   }
 
-  // ── the credit: the lowest, leftmost sea corner that holds it and touches no word ───────────────────────────
-  let creditAt = null;
-  search: for (let y = stage.height - vInset - credit.height; y >= vInset; y -= SEAT_STEP)
-    for (let x = inset; x + credit.width <= stage.width - inset; x += SEAT_STEP) {
-      const box = { x, y, width: credit.width, height: credit.height };
-      if (touches(box, keyBox, gap) || touches(box, summitBox, gap) || placed.some((p) => touches(box, p, gap))) continue;
-      if (landShare(box) > 0.03) continue;
-      creditAt = { x, y };
-      break search;
-    }
-  if (!creditAt) throw new Error(`a ${credit.width}×${credit.height} credit finds no sea corner`);
 
   const raster = field.raster;
   const [rx, ry] = toStage([raster.x, raster.y]);
@@ -311,6 +382,8 @@ export function buildDirection(id, { subject, states, copy }) {
     titleCard,
     legend: { ...key, at: { x: keyBox.x, y: keyBox.y }, template: copy.count, widths: countWidths, final: applyCase(copy.count.replace("{p}", 100).replace("{km}", Math.round(field.deepest)), value.transform), finalWidth: widthOf(applyCase(copy.count.replace("{p}", 100).replace("{km}", Math.round(field.deepest)), value.transform), value) },
     credit: { ...credit, at: creditAt },
+    chart,
+    layoutInset: { x: inset, y: vInset },
     colours,
     strokes: { line: (direction.stroke?.rule ?? 1) * k, median: 1.6 * (direction.stroke?.rule ?? 1) * k, dot },
     land: { study: field.shapes.study, other: field.shapes.other },
@@ -326,5 +399,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: CONTOUR_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, keyLand: keyAt.share, ppu, labels: Object.keys(labels).map(Number), unlabelled } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, keyLand: keyAt.share, chartLand: landShare(chartBox), ppu, labels: Object.keys(labels).map(Number), unlabelled } };
 }
