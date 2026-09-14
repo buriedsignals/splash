@@ -43,7 +43,7 @@ other export yet.
 | 24 | Radar | 6 | ✅ | ◦ | ◦ | ◦ |
 | 25 | Sankey | 7 | ✅ | ◦ | ◦ | ◦ |
 | 26 | Scatter | 7 | ✅ | ◦ | ◦ | ◦ |
-| 27 | Slope | 3 | ✅ | ◦ | ◦ | ◦ |
+| 27 | Slope | 3 | ✅ | ◦ | ✅ | ◦ |
 | 28 | Small multiples | 4 | ✅ | ◦ | ◦ | ◦ |
 | 29 | Stacked bar | 5 | ✅ | ◦ | ◦ | ◦ |
 | 30 | Streamgraph | 5 | ✅ | ◦ | ✅ | ◦ |
@@ -102,6 +102,7 @@ other export yet.
 | Treemap | static | `proof/static-treemap-europe-capacity` |
 | Waterfall | static | `proof/static-germany-electricity-bridge` |
 | Slope | static | `proof/static-slope-europe-lowcarbon` |
+| Slope | video | `proof/video-slope-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Stacked bar | static | `proof/static-stacked-bar-lowcarbon-growth` |
 | Small multiples | static | `proof/static-small-multiples-lowcarbon` |
 | Parallel coordinates | static | `proof/static-parallel-coordinates-electricity-mix` |
