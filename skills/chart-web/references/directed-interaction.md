@@ -67,7 +67,7 @@ actually shipped when this file was written (143 delivered pages, 154 controls).
 | **Ask a mark** | one mark answers with a reading printed nowhere — hover, tap, keyboard focus | the encoding ranks but cannot measure: an area, an angle, a colour bin, a circle, a band in a stack | 143 pages |
 | **Ask a line** | the connector between two ends answers with what LINKS them, never with either end again | the claim is about the link — a slope, a crossing, a flow — and the ends already answer for themselves | 1 page (`web-co2-decline-slope`) |
 | **Filter to a subset** | the marks outside a named set leave; the frame they were measured against does not move | the reader wants a part, and the part is ORTHOGONAL to the encoded variable, so narrowing can never hide the claim | 5 pages |
-| **Toggle a comparison** | one named set is swapped for another on the same scale | the claim is "this, not that" and both halves need the same axis to be comparable | none |
+| **Toggle a comparison** | one named set is swapped for another on the same scale | the claim is "this, not that" and both halves need the same axis to be comparable | 1 page (`web-grouped-bar-wind-vs-solar`, whose reader picks the country everything else is measured against) |
 | **Open the full table** | every reading at once, as text, in an order no eye can impose on the marks | the marks cannot be ranked by eye at all — `mapgen-symbol-web`'s circles differ by 2,87 % | 6 pages |
 | **Zoom and pan** | the camera moves; marks too close to tell apart at this width come apart | and only when the arithmetic says it works: `map-web`'s `separationHeadroom` is what `mapgen-symbol-web` used to DECLINE one | none |
 | **Find your own case** | the reader's own row is named and ringed among marks that are otherwise anonymous | the reader is in the data — a country, a canton, a year they lived through | none |
@@ -91,6 +91,14 @@ and the thing being guarded is what the page actually ships.
   a control), not a filter's narrowing note (revealed by `:checked`).
 - **a revealing control's state** — the default plus what it answers with. Equal to the default
   exactly when it answers with nothing the page had not already printed.
+- **a moving or measuring control's state** — the default plus the sentence it reveals. Two
+  vocabularies are in this position and both are radios plus generated CSS: `assets/stack.ts`, whose
+  option moves columns onto a tower, and `assets/level.ts`, whose option lays one datum's own levels
+  across the whole plot so every other datum can be read against them. Neither the movement nor the
+  reference is what gets measured — a transform is not a reading and nothing here can see one, and a
+  check that counted generated rules would go green on a hundred rules that moved nothing. What is
+  measured is the sentence each option owes the reader, because that is where the derived reading
+  lives: the running total for a stack, the rank and the ratio for a level.
 - **a narrowing control's state** — the default minus what it takes away. Equal to the default
   exactly when it takes nothing away. `assertFilterDeclaration` has refused this form since the
   vocabulary was written: an option keeping every drawn datum "is the unfiltered view under a second

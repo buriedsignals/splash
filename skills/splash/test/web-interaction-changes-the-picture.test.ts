@@ -133,8 +133,13 @@ describe("the census: what the committed web corpus does when a reader asks", ()
     // reader stacks any column's followers against (`chart-web/assets/stack.ts`) — a kind this
     // census could not see until `shippedControls` learned to measure it, which is the point of
     // adding a kind here rather than letting a new control ship unmeasured.
+    //
+    // `level` arrived the same way, with `proof/web-grouped-bar-wind-vs-solar`: its static sibling
+    // POINTS at the one country where solar beats wind, and the web beat deleted that callout and
+    // gave the reader a yardstick instead — any country's own two levels laid flat across the other
+    // five (`chart-web/assets/level.ts`).
     const kinds = new Set(CONTROLS.map((entry) => entry.control.kind));
-    expect([...kinds].sort()).toEqual(["ask", "filter", "stack", "table"]);
+    expect([...kinds].sort()).toEqual(["ask", "filter", "level", "stack", "table"]);
   });
 
   it("names every control that changes nothing, exactly", () => {

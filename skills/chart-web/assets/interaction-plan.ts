@@ -122,7 +122,7 @@ export type InteractionPlan = {
 };
 
 /** The kinds of control this file can measure a state for, and the shape of each one's refusal. */
-export type ControlKind = "ask" | "table" | "filter" | "stack";
+export type ControlKind = "ask" | "table" | "filter" | "stack" | "level";
 
 const DECODE: [RegExp, string][] = [
   [/&nbsp;/g, " "],
@@ -167,6 +167,13 @@ export function defaultPrintedText(html: string): string {
   // it as printed would make the one channel its count and its running total are on look dead —
   // the same mistake the choropleth's 41 native `<title>`s cost a round of, one control to the left.
   text = text.replace(/<[^>]*data-stack-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
+  // A yardstick's sentence is revealed by the same `:checked` that lays its references across the
+  // plot (`level.ts`), and it is where that control's DERIVED readings live — the rank among the
+  // drawn data, the ratio between two series. The rules themselves are read against the axis the
+  // plate already draws, so the sentence is the only channel those numbers are on; counting it as
+  // printed would make the whole control look dead for exactly the reason the choropleth's 41
+  // native `<title>`s and the stack's own sentence each cost a round of.
+  text = text.replace(/<[^>]*data-level-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
   return decodeText(text.replace(/<[^>]*>/g, " "));
 }
 
@@ -287,6 +294,34 @@ export function stackNotes(html: string): { slug: string; text: string }[] {
   return [...out].map(([slug, text]) => ({ slug, text }));
 }
 
+/**
+ * The level options the page ships, by slug, the untouched one excluded.
+ *
+ * Read off the markup and never off the declaration, for the reason `filterOptionSlugs` gives, and
+ * with the same lesson applied: EVERY ATTRIBUTE IS LOOKED FOR INSIDE THE WHOLE TAG rather than in
+ * one order, because the first form of that function required `type="radio"` to precede `id=` and
+ * silently found four of the corpus's five filters.
+ */
+export function levelOptionSlugs(html: string): string[] {
+  const slugs: string[] = [];
+  for (const tag of String(html).matchAll(/<input\b[^>]*>/g)) {
+    if (!/\stype="radio"/.test(tag[0])) continue;
+    const id = tag[0].match(/\sid="(?:chart|mw)-level-([a-z0-9-]+)"/);
+    if (id) slugs.push(id[1]);
+  }
+  return [...new Set(slugs)].filter((slug) => slug !== "none");
+}
+
+/** Every sentence the yardstick reveals, by the slug that reveals it. */
+export function levelNotes(html: string): { slug: string; text: string }[] {
+  const out = new Map<string, string>();
+  for (const block of String(html).matchAll(
+    /<[^>]*data-level-note="([^"]*)"[^>]*>([\s\S]*?)<\/[a-z]+>/g,
+  ))
+    out.set(block[1], decodeText(block[2].replace(/<[^>]*>/g, " ")).trim());
+  return [...out].map(([slug, text]) => ({ slug, text }));
+}
+
 export type ShippedControl = {
   kind: ControlKind;
   /** What a message names it, and what a declaration's gesture is matched against. */
@@ -395,6 +430,33 @@ export function shippedControls(html: string): ShippedControl[] {
         `all ${stackSlugs.length} option(s) reveal a sentence the page already prints, or reveal ` +
         `none at all — a reader who works through every option is told nothing they could not read ` +
         `at rest`,
+    });
+  }
+
+  const levelSlugs = levelOptionSlugs(html);
+  if (levelSlugs.length) {
+    const notes = new Map(levelNotes(html).map((note) => [note.slug, note.text]));
+    // An option changes the picture when the sentence it reveals carries a reading the page does
+    // not already print. THE REFERENCES THEMSELVES ARE DELIBERATELY NOT WHAT IS MEASURED, for the
+    // reason the stack's movement is not: a rule laid across the plot is geometry, this file cannot
+    // see one, and a version that counted revealed elements would go green on a hundred rules drawn
+    // at the same height. What a yardstick OWES the reader is the derived reading its rules cannot
+    // draw — the rank, the ratio — and that is a string, which is measurable.
+    const adding = levelSlugs.filter((slug) => {
+      const note = notes.get(slug);
+      if (!note) return false;
+      return answerPieces(note).some((piece) => !printed.includes(piece));
+    });
+    out.push({
+      kind: "level",
+      label: `the yardstick's ${levelSlugs.length} option(s)`,
+      gestures: ["toggle-a-comparison", "find-your-own-case"],
+      changes: adding.length,
+      measured: levelSlugs.length,
+      why:
+        `all ${levelSlugs.length} option(s) reveal a sentence the page already prints, or reveal ` +
+        `none at all — a reader who parks the yardstick on every datum in turn is told nothing ` +
+        `they could not read at rest`,
     });
   }
 

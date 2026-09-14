@@ -14,9 +14,9 @@ import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.m
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
-import { plainSpaces } from "#shared/design-base/web.mjs";
+import { plainSpaces, fitY } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
-import { DirectedGroupedBarWeb } from "./DirectedGroupedBarWeb.tsx";
+import { DirectedGroupedBarWeb, FRAME } from "./DirectedGroupedBarWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -44,73 +44,131 @@ const raw = csv.slice(1).map((line) => {
   return o;
 });
 
-const groups = Object.keys(NAMES)
-  .map((code) => {
-    const r = raw.find((z) => z.code === code && z.year === YEAR);
-    if (!r) throw new Error(`${NAMES[code]} has no ${YEAR} row`);
-    const total = SOURCES.reduce((s, k) => s + r[k], 0);
-    if (!(total > 0)) throw new Error(`${NAMES[code]} generates nothing in ${YEAR}`);
-    const wind = (r.Wind / total) * 100;
-    const solar = (r.Solar / total) * 100;
+const measured = Object.keys(NAMES).map((code) => {
+  const r = raw.find((z) => z.code === code && z.year === YEAR);
+  if (!r) throw new Error(`${NAMES[code]} has no ${YEAR} row`);
+  const total = SOURCES.reduce((s, k) => s + r[k], 0);
+  if (!(total > 0)) throw new Error(`${NAMES[code]} generates nothing in ${YEAR}`);
+  return {
+    code,
+    name: NAMES[code],
+    wind: (r.Wind / total) * 100,
+    solar: (r.Solar / total) * 100,
+    windTwh: r.Wind,
+    solarTwh: r.Solar,
+    total,
+  };
+});
+
+// ── THE DERIVED READINGS THE YARDSTICK ANSWERS WITH ───────────────────────────────────────────
+// A rank among the drawn data and the ratio between the two series: neither is printed anywhere on
+// the plate, and neither is something a reader can take off a grouped bar by eye, because the group
+// boundary is built to keep each series' six columns apart. Derived here, in the runner, from the
+// frozen file — the browser never computes one (`directed-interaction.md`, rule 4).
+const rankOn = (key) => {
+  const order = [...measured].sort((a, b) => b[key] - a[key]);
+  return new Map(order.map((g, i) => [g.code, i + 1]));
+};
+const windRank = rankOn("wind");
+const solarRank = rankOn("solar");
+
+const groups = measured
+  .map((g) => {
+    const ratio = g.solar / g.wind;
     return {
-      code,
-      name: NAMES[code],
-      a: wind,
-      b: solar,
-      windTwh: r.Wind,
-      solarTwh: r.Solar,
-      total,
-      aLabel: `${fr(wind)}`,
-      bLabel: `${fr(solar)}`,
+      ...g,
+      windRank: windRank.get(g.code),
+      solarRank: solarRank.get(g.code),
+      ratio,
+      ratioPhrase:
+        ratio >= 1
+          ? `son solaire vaut ${fr(ratio, 1)} fois son éolien`
+          : `son solaire vaut ${fr(ratio * 100, 0)} % de son éolien`,
+      windLabel: fr(g.wind),
+      solarLabel: fr(g.solar),
       detail:
-        `${NAMES[code]} · ${YEAR} · éolien ${fr(wind)} % (${fr(r.Wind, 1)} TWh), solaire ` +
-        `${fr(solar)} % (${fr(r.Solar, 1)} TWh) · rapport ` +
-        (solar > 0 ? `${fr(wind / solar, 2)} fois plus d'éolien que de solaire` : "pas de solaire") +
-        ` · production totale ${fr(total, 0)} TWh`,
+        `${g.name} · ${YEAR} · éolien ${fr(g.wind)} % = ${fr(g.windTwh, 1)} TWh, solaire ` +
+        `${fr(g.solar)} % = ${fr(g.solarTwh, 1)} TWh · sur une production totale de ` +
+        `${fr(g.total, 0)} TWh`,
     };
   })
-  .sort((x, z) => z.a + z.b - (x.a + x.b));
+  .sort((x, z) => z.wind + z.solar - (x.wind + x.solar));
 
 // ── THE CLAIM, ASSERTED ───────────────────────────────────────────────────────────────────────
-const outliers = groups.filter((g) => g.b > g.a);
+const outliers = groups.filter((g) => g.solar > g.wind);
 if (outliers.length !== 1)
   throw new Error(`the headline names one country where solar beats wind; ${outliers.length} do`);
 const subject = outliers[0];
 console.log(
   `${groups.length} pays en ${YEAR} · un seul où le solaire dépasse l'éolien : ${subject.name} ` +
-    `(${fr(subject.b)} % contre ${fr(subject.a)} %)\n`,
+    `(${fr(subject.solar)} % contre ${fr(subject.wind)} %)\n`,
 );
-console.table(groups.map((g) => ({ pays: g.name, "éolien %": g.aLabel, "solaire %": g.bLabel, "TWh total": fr(g.total, 0) })));
+console.table(
+  groups.map((g) => ({
+    pays: g.name,
+    "éolien %": g.windLabel,
+    "rang éolien": `${g.windRank}/6`,
+    "solaire %": g.solarLabel,
+    "rang solaire": `${g.solarRank}/6`,
+    "solaire/éolien": g.ratioPhrase,
+  })),
+);
 
 const facts = beatFacts(
-  groups.map((g) => ({ key: g.code, label: g.name, value: g.a })),
+  groups.map((g) => ({ key: g.code, label: g.name, value: g.wind })),
   { subject: subject.name, declaredSequence: "%" },
 );
 const offered = applicableTreatments(facts);
-console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
+console.log(`\ntreatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
-const ceiling = Math.ceil(Math.max(...groups.flatMap((g) => [g.a, g.b])) / 5) * 5;
+const ceiling = Math.ceil(Math.max(...groups.flatMap((g) => [g.wind, g.solar])) / 5) * 5;
 const yTicks = Array.from({ length: ceiling / 5 + 1 }, (_, i) => i * 5).filter((t) => t % 10 === 0 || ceiling <= 20);
+
+// ── THE YARDSTICK ─────────────────────────────────────────────────────────────────────────────
+// Every option lays its two references at the SAME y the beat draws that country's two columns to.
+// `fitY` is the one scale in this beat, called here with the same arguments the component calls it
+// with, so a rule can never be drawn at a height the columns do not use.
+const y = fitY(0, yTicks[yTicks.length - 1], FRAME.height);
+const levels = {
+  label: "Mesurer les six à l'aune de",
+  noneLabel: "Chaque pays pour lui-même",
+  options: groups.map((g) => ({
+    key: g.code,
+    label: g.name,
+    announce:
+      `${g.name} — éolien ${fr(g.wind)} %, ${g.windRank}e sur 6 ; solaire ${fr(g.solar)} %, ` +
+      `${g.solarRank}e sur 6`,
+    note:
+      `${g.name} · éolien ${fr(g.wind)} % — ${g.windRank}e sur 6 · solaire ${fr(g.solar)} % — ` +
+      `${g.solarRank}e sur 6 · ${g.ratioPhrase}`,
+    marks: [
+      { series: "wind", y: y(g.wind) },
+      { series: "solar", y: y(g.solar) },
+    ],
+  })),
+};
 
 const title = `La ${subject.name} est la seule des six où le solaire dépasse l'éolien`;
 const caveat =
   `Part de l'éolien et du solaire dans la production d'électricité de chaque pays en ${YEAR}. Les ` +
   `deux barres d'un pays se touchent, et l'écart avec le pays suivant est plus large qu'une barre : ` +
   `c'est ce qui fait lire des GROUPES plutôt qu'une file de barres alternées.`;
-const subjectNote = `${subject.name} : solaire ${fr(subject.b)} % > éolien ${fr(subject.a)} %`;
 const readingLine =
-  `Lecture : survolez, touchez ou tabulez un groupe pour lire les deux parts, leur rapport, les TWh ` +
-  `derrière chacune et la production totale du pays — ce qu'une comparaison côte à côte ne dit ni ` +
-  `de l'écart ni du tout dont il vient.`;
+  `Lecture : choisissez un pays pour poser ses deux niveaux en travers des cinq autres — la ` +
+  `comparaison d'un groupe à l'autre que la séparation des groupes rend justement difficile. ` +
+  `Survolez, touchez ou tabulez un groupe pour les TWh derrière chaque part.`;
 const source = `Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · ${YEAR}`;
 
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source} éolien solaire`,
+  body:
+    `${caveat} ${readingLine} ${source} éolien solaire ${levels.label} ${levels.noneLabel} ` +
+    `${groups.map((g) => g.name).join(" ")} ` +
+    `${levels.options.map((o) => `${o.note} ${o.announce}`).join(" ")}`,
   axis: `${yTicks.join(" ")} % ${groups.map((g) => g.name).join(" ")}`,
-  annot: subjectNote,
-  value: groups.flatMap((g) => [g.aLabel, g.bLabel]).join(" "),
+  annot: `${groups.map((g) => g.detail).join(" ")}`,
+  value: groups.flatMap((g) => [g.windLabel, g.solarLabel]).join(" "),
 };
 
 // EVERY REGISTER'S TEXT PASSES THROUGH `plain` BEFORE IT REACHES THE LADDER. One U+202F or U+00A0 —
@@ -119,6 +177,41 @@ const textPerRegister = {
 // code point and not the string. Measured on the marimekko beat, where a no-break space typed inside
 // a band's own label, invisible in the source, stopped the whole build.
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
+
+// ── WHAT THIS PAGE EARNS, AND THE TWO CONTROLS THAT EARN IT ───────────────────────────────────
+// Written in `BRIEF.md` before any of this was built and carried here so the prose and the render
+// cannot drift: `assertInteractionPlan` matches every declared gesture against a control the markup
+// actually ships, and every shipped control against a declaration.
+const interaction = {
+  earns:
+    "Un fixe peut désigner la Suisse et affirmer qu'elle est la seule à basculer ; cette page laisse " +
+    "le lecteur poser les deux niveaux suisses en travers des cinq autres pays et voir que son " +
+    "solaire est 3e des six pendant que son éolien est dernier — la moitié de la démonstration " +
+    "qu'un fixe n'a aucun moyen de dessiner.",
+  controls: [
+    {
+      question:
+        "La Suisse bascule — mais est-ce que son solaire est grand, ou son éolien absent ? Et ce " +
+        "pays-ci, où se situe-t-il face aux cinq autres ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "Deux règles traversent tout le plot, à la part d'éolien et à la part de solaire du pays " +
+        "choisi, chacune dans l'encre de sa série ; le pays choisi prend un cerne et son nom passe " +
+        "en encre pleine ; une phrase donne son rang sur chacune des deux séries et le rapport " +
+        "entre les deux.",
+    },
+    {
+      question:
+        "7,2 % de quoi ? Combien de TWh y a-t-il derrière ces deux barres, et sur quelle " +
+        "production totale ?",
+      gesture: "ask-a-mark",
+      changes:
+        "Le groupe répond avec les TWh derrière chacune de ses deux parts et la production totale " +
+        "du pays pour l'année — les quantités que le pourcentage a divisées, qu'aucun axe de cette " +
+        "plaque ne porte.",
+    },
+  ],
+};
 
 const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => readDirection(join(DIRECTIONS, f)));
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
@@ -136,15 +229,16 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       props: {
         groups,
         subject: subject.code,
-        seriesLabels: { a: "éolien", b: "solaire" },
+        seriesLabels: { wind: "éolien", solar: "solaire" },
         yTicks,
-        unit: "%",
-        title, eyebrow: EYEBROW, caveat, source, reading: readingLine, subjectNote,
+        levels,
+        interaction,
+        title, eyebrow: EYEBROW, caveat, source, reading: readingLine,
         alt:
           `Six paires de colonnes, une paire par pays, mesurant la part de l'éolien et celle du ` +
           `solaire dans l'électricité de ${YEAR}. Dans cinq paires la colonne éolienne est la plus ` +
-          `haute ; dans celle de la ${subject.name}, c'est la colonne solaire, ${fr(subject.b)} % ` +
-          `contre ${fr(subject.a)} %.`,
+          `haute ; dans celle de la ${subject.name}, c'est la colonne solaire, ${fr(subject.solar)} % ` +
+          `contre ${fr(subject.wind)} %.`,
         direction,
         ground: direction.ground,
         accent: direction.accent,
