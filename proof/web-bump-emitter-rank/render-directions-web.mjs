@@ -4,8 +4,10 @@
 // self-contained interactive page.
 //
 // EVERY RANK IS COMPUTED OVER THE WHOLE FILE, not over the six lines drawn: a rank read off a subset
-// is not a world rank. The crossings the argument rests on are found by walking the subject's own
-// rank series and asking who it passed, never listed by hand.
+// is not a world rank. The crossings are found by walking a country's own rank series and asking who
+// left or joined the set above it, never listed by hand — and that is true of the five FOLLOWABLE
+// lines as much as of the subject's, which is what lets this page name the countries it does not
+// draw.
 //
 // Usage:  bun proof/web-bump-emitter-rank/render-directions-web.mjs
 
@@ -19,6 +21,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { followRuns, assertFollowChangesThePicture } from "../../skills/chart-web/assets/follow.ts";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { DirectedBumpWeb } from "./DirectedBumpWeb.tsx";
 
@@ -36,12 +39,25 @@ const NAMES = {
   ESP: "Espagne", THA: "Thaïlande", VNM: "Viêt Nam", MYS: "Malaisie", EGY: "Égypte",
   KAZ: "Kazakhstan", ARE: "Émirats arabes unis", PAK: "Pakistan", NGA: "Nigeria",
 };
+/** The same names with their article, for a sentence rather than a column heading. Written out
+ *  rather than derived: French articles are not a function of the string, and a rule that guessed
+ *  would be wrong on "les États-Unis" and on every name beginning with a vowel. */
+const THE = {
+  IND: "l'Inde", USA: "les États-Unis", CHN: "la Chine", RUS: "la Russie", JPN: "le Japon",
+  DEU: "l'Allemagne", UKR: "l'Ukraine", GBR: "le Royaume-Uni", IDN: "l'Indonésie", IRN: "l'Iran",
+  SAU: "l'Arabie saoudite", KOR: "la Corée du Sud", CAN: "le Canada", MEX: "le Mexique",
+  BRA: "le Brésil", TUR: "la Turquie", ITA: "l'Italie", FRA: "la France", POL: "la Pologne",
+  ZAF: "l'Afrique du Sud", AUS: "l'Australie", ESP: "l'Espagne", THA: "la Thaïlande",
+  VNM: "le Viêt Nam", MYS: "la Malaisie", EGY: "l'Égypte", KAZ: "le Kazakhstan",
+  ARE: "les Émirats arabes unis", PAK: "le Pakistan", NGA: "le Nigeria",
+};
 
 const plain = (s) => plainSpaces(s);
 const fr = (v, d = 2) =>
   plain(v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const ord = (n) => (n === 1 ? "1er" : `${n}e`);
 const nameOf = (code, fallback) => NAMES[code] ?? fallback;
+const theOf = (code, fallback) => THE[code] ?? nameOf(code, fallback);
 
 const csv = (await readFile(join(HERE, "data.csv"), "utf8")).trim().split(/\r?\n/);
 const header = csv[0].split(",");
@@ -66,6 +82,7 @@ const topAt = (year, n) => table.get(year).slice(0, n).map((r) => r.code);
 const drawn = [...new Set([...topAt(first, 5), ...topAt(last, 5), SUBJECT])];
 for (const code of drawn) {
   if (!NAMES[code]) throw new Error(`${code} has no French name filed in this beat`);
+  if (!THE[code]) throw new Error(`${code} has no articled French name filed in this beat`);
   for (const y of years) {
     const r = rankOf(code, y);
     if (r < 1) throw new Error(`${code} is missing from ${y}`);
@@ -84,22 +101,33 @@ const lines = drawn
   }))
   .sort((a, b) => a.ranks[0] - b.ranks[0]);
 
-// ── the crossings, found rather than listed ───────────────────────────────────────────────────
-const subjectRanks = years.map((y) => rankOf(SUBJECT, y));
-const crossings = [];
-for (let i = 1; i < years.length; i += 1) {
-  if (subjectRanks[i] >= subjectRanks[i - 1]) continue;
-  const before = new Set(table.get(years[i - 1]).slice(0, subjectRanks[i - 1] - 1).map((r) => r.code));
-  const after = new Set(table.get(years[i]).slice(0, subjectRanks[i] - 1).map((r) => r.code));
-  const passed = [...before].filter((c) => !after.has(c));
-  for (const code of passed)
-    crossings.push({
-      year: years[i],
-      rank: subjectRanks[i],
-      code,
-      name: nameOf(code, table.get(years[i]).find((r) => r.code === code)?.entity ?? code),
-    });
+/**
+ * ── THE CROSSINGS, FOUND RATHER THAN LISTED ───────────────────────────────────────────────────
+ *
+ * For ANY country, not just the subject: who was above it last year and is not this year (it passed
+ * them), and who is above it this year and was not last year (they passed it). Both directions,
+ * because the whole point of the follow control is that the interesting half of a falling line's
+ * story is the second one — and the countries in it mostly have no line on this chart.
+ */
+function walkOf(code) {
+  const positions = years.map((y) => rankOf(code, y));
+  const crossings = [];
+  for (let i = 1; i < years.length; i += 1) {
+    const before = new Set(table.get(years[i - 1]).slice(0, positions[i - 1] - 1).map((r) => r.code));
+    const after = new Set(table.get(years[i]).slice(0, positions[i] - 1).map((r) => r.code));
+    for (const other of [...before].filter((c) => !after.has(c)))
+      crossings.push({ year: years[i], rank: positions[i], code: other, direction: "passed" });
+    for (const other of [...after].filter((c) => !before.has(c)))
+      crossings.push({ year: years[i], rank: positions[i], code: other, direction: "overtaken" });
+  }
+  return { positions, crossings };
 }
+
+const subjectWalk = walkOf(SUBJECT);
+const subjectRanks = subjectWalk.positions;
+const crossings = subjectWalk.crossings
+  .filter((c) => c.direction === "passed")
+  .map((c) => ({ ...c, name: nameOf(c.code, table.get(c.year).find((r) => r.code === c.code)?.entity ?? c.code) }));
 const stillDrawn = crossings.filter((c) => drawn.includes(c.code));
 
 // ── THE CLAIM, ASSERTED ───────────────────────────────────────────────────────────────────────
@@ -131,6 +159,77 @@ const marks = years.map((y) => {
   };
 });
 
+/**
+ * ── THE FOLLOW: THE FIVE LINES THE PLATE LEAVES ANONYMOUS ─────────────────────────────────────
+ *
+ * The subject is deliberately absent. Its line is the claim — accented, ringed and captioned in
+ * every state this page can be put into — and `directed-interaction.md` rule 5 says nothing
+ * argument-bearing sits behind a control. `assertFollowDeclaration` is handed its key and refuses an
+ * option that names it, so that is enforced rather than remembered.
+ *
+ * Every string below is DERIVED. The run-length walk comes back from `followRuns` rather than being
+ * typed, which is the one discipline `types/bump.md` insists on for this type; the crossings come
+ * from `walkOf`; and the count of partners this chart does not draw is read off `drawn`.
+ */
+const STEPS = years.map((y) => String(y));
+const followOptions = lines
+  .filter((l) => l.code !== SUBJECT)
+  .map((l) => {
+    const { positions, crossings: events } = walkOf(l.code);
+    const runs = followRuns(STEPS, positions);
+    const walk = runs
+      .map((run) => `${ord(run.position)} ${run.from === run.to ? `en ${run.from}` : `de ${run.from} à ${run.to}`}`)
+      .join(", ");
+    const net = positions[positions.length - 1] - positions[0];
+    const moved =
+      net === 0
+        ? "même rang qu'en " + first
+        : net < 0
+          ? `${-net} rang${-net > 1 ? "s" : ""} gagné${-net > 1 ? "s" : ""}`
+          : `${net} rang${net > 1 ? "s" : ""} perdu${net > 1 ? "s" : ""}`;
+    // The two directions, worded so that neither needs a past participle: a French participle agrees
+    // with its subject, and a sentence template that agreed with one country would be wrong on the
+    // next. "dépasse" and "se fait dépasser" are invariable.
+    const said = (c) =>
+      `${c.direction === "passed" ? "dépasse" : "se fait dépasser par"} ${theOf(c.code, table.get(c.year).find((r) => r.code === c.code)?.entity ?? c.code)}`;
+    const ahead = events.filter((c) => c.direction === "passed");
+    const behind = events.filter((c) => c.direction === "overtaken");
+    const listed = (set) => set.map((c) => `${theOf(c.code, c.code)} (${c.year})`).join(", ");
+    const partners = [...new Set(events.map((c) => c.code))];
+    const undrawn = partners.filter((code) => !drawn.includes(code));
+    const sentences = [
+      `${THE[l.code].replace(/^l'/, "L'").replace(/^(le|la|les) /, (m) => m[0].toUpperCase() + m.slice(1))} : ${walk} — ${moved}.`,
+      behind.length ? `Se fait dépasser par ${listed(behind)}.` : "",
+      ahead.length ? `Dépasse ${listed(ahead)}.` : "",
+      undrawn.length
+        ? `${undrawn.length} de ces pays ${undrawn.length > 1 ? "n'ont" : "n'a"} aucune ligne sur ce graphique.`
+        : "",
+    ].filter(Boolean);
+    return {
+      key: l.code,
+      label: THE[l.code],
+      announce: `Suivre ${THE[l.code]} de ${first} à ${last}`,
+      note: plain(sentences.join(" ")),
+      positions,
+      crossings: events.map((c) => ({
+        step: String(c.year),
+        other: theOf(c.code, c.code),
+        direction: c.direction,
+        text: plain(`${c.year} · ${said(c)}`),
+      })),
+    };
+  });
+const follow = {
+  label: "Suivre une ligne",
+  noneLabel: `Les ${lines.length} lignes`,
+  steps: STEPS,
+  options: followOptions,
+};
+console.log(
+  `follow: ${follow.options.length} options · ${follow.options.reduce((n, o) => n + o.crossings.length, 0)} croisements · ` +
+    `${[...new Set(follow.options.flatMap((o) => o.crossings.map((c) => c.other)))].length} pays nommés\n`,
+);
+
 const facts = beatFacts(
   lines.map((l) => ({ key: l.code, label: l.name, value: MAX_RANK + 1 - l.ranks[l.ranks.length - 1] })),
   { subject: NAMES[SUBJECT], declaredSequence: "rang mondial" },
@@ -139,23 +238,29 @@ const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
 const title = `L'${NAMES[SUBJECT]} est passée du ${ord(from)} au ${ord(to)} rang mondial des émetteurs de CO₂`;
+// The words are never squeezed to make the chart fit — the chart is (`render-web.mjs`, .chart-plot).
+// So the caveat and the reading line are held to what they have to say and no longer: at 375 px each
+// extra sentence is two lines, and two lines come straight off the plot's own height.
 const caveat =
   `La position verticale est un RANG, jamais une valeur : une ligne qui monte a dépassé quelqu'un, ` +
-  `elle n'a pas forcément plus émis. ${lines.length} pays — ceux qui sont dans les cinq premiers en ` +
-  `${first} ou en ${last} — sur les ${MAX_RANK} premiers rangs du classement mondial.`;
+  `elle n'a pas forcément plus émis. ${lines.length} pays — les cinq premiers en ${first} ou en ` +
+  `${last} — sur les ${MAX_RANK} premiers rangs mondiaux ; les rangs vides sont tenus par des pays ` +
+  `que ce graphique ne dessine pas.`;
 const readingLine =
-  `Lecture : survolez, touchez ou tabulez une année pour lire le rang de l'${NAMES[SUBJECT]} cette ` +
-  `année-là, ce qu'elle a réellement émis, et qui la précédait et la suivait — la valeur que le ` +
-  `rang cache, année par année.`;
+  `Lecture : survolez ou tabulez une année pour le rang de l'${NAMES[SUBJECT]}, ce qu'elle a émis ` +
+  `et ses voisins au classement. Suivez une ligne pour lire son rang année après année et chaque ` +
+  `pays qui la dépasse — y compris ceux qui n'ont aucune ligne ici.`;
 const source = `Source : Global Carbon Budget 2025, via Our World in Data · ${first}-${last}, classement calculé sur les ${table.get(last).length} pays du fichier`;
 
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source}`,
-  axis: `${first} ${years[Math.floor(years.length / 2)]} ${last}`,
+  body: `${caveat} ${readingLine} ${source} ${follow.label} ${follow.noneLabel} ${follow.options
+    .map((o) => `${o.label} ${o.announce} ${o.note}`)
+    .join(" ")}`,
+  axis: `${first} ${years[Math.floor(years.length / 2)]} ${last} ${lines.map((l) => l.startLabel).join(" ")}`,
   annot: stillDrawn.map((c) => `dépasse ${c.name} · ${c.year}`).join(" "),
-  value: lines.map((l) => `${l.startLabel} ${l.endLabel}`).join(" "),
+  value: lines.map((l) => l.endLabel).join(" "),
 };
 
 // EVERY REGISTER'S TEXT PASSES THROUGH `plain` BEFORE IT REACHES THE LADDER. One U+202F or U+00A0 —
@@ -164,6 +269,39 @@ const textPerRegister = {
 // code point and not the string. Measured on the marimekko beat, where a no-break space typed inside
 // a band's own label, invisible in the source, stopped the whole build.
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
+
+/**
+ * THE INTERACTION, WRITTEN BEFORE THE CODE AND CARRIED INTO THE RENDER. `BRIEF.md` holds the same
+ * two controls in full. `assertInteractionPlan` matches what is declared against what the markup
+ * ships — for the `ask` control; it knows five control kinds and this page's second one is an eighth
+ * vocabulary it cannot see, so the refusal for that one ships with the vocabulary
+ * (`assertFollowChangesThePicture`, called on the delivered file below).
+ */
+const interaction = {
+  earns:
+    `Ten rank rows are ten places in the world and this plate draws six lines on them, so a line ` +
+    `that falls is a line falling past countries it never names. Following one names every country ` +
+    `it passed and every country that passed it, with the year — including the four that have no ` +
+    `line on this chart at all.`,
+  controls: [
+    {
+      question: "Cette année-là, l'Inde était où — et ça pesait combien ?",
+      gesture: "ask-a-mark",
+      changes:
+        "One mark per year answers with India's own world rank that year, what it actually emitted " +
+        "in gigatonnes, and the two countries immediately above and below it in the ranking.",
+    },
+    {
+      question: "Cette ligne grise qui tombe à travers les rangs vides, c'est qui — et qui l'a doublée ?",
+      gesture: "find-your-own-case",
+      changes:
+        "The chosen line comes forward in full ink and its two names with it, the rest of the field " +
+        "steps back to the non-text floor, every step where it crossed somebody is ringed on its " +
+        "own line, and the sentence gives its rank run by run across the thirty-five years with " +
+        "every country it passed or was passed by, named and dated.",
+    },
+  ],
+};
 
 const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => readDirection(join(DIRECTIONS, f)));
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
@@ -179,7 +317,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     await renderWeb({
       component: DirectedBumpWeb,
       props: {
-        lines, years, marks,
+        lines, years, marks, follow, interaction,
         subject: SUBJECT,
         maxRank: MAX_RANK,
         crossings: stillDrawn.map((c) => ({ year: c.year, rank: c.rank, text: `dépasse ${c.name} · ${c.year}` })),
@@ -196,10 +334,17 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       outDir: OUT,
       name: `${id}.html`,
     });
+    // THE REFUSAL THE CENSUS CANNOT MAKE FOR THIS VOCABULARY, made against the file just written.
+    assertFollowChangesThePicture(await readFile(join(OUT, `${id}.html`), "utf8"), follow, `renders/${id}.html`);
     console.log(`${id} -> renders/${id}.html`);
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render on disk wearing this run's date.
+  process.exitCode = 1;
+}
