@@ -81,6 +81,11 @@ les vidéos c'est de réussir à faire comprendre en écrivant le moins possible
    understands (a total, a level, a map) and **transform** it into the chart that answers — a part detaching and becoming a
    change, a whole splitting into its members, a mark sliding onto another to compare, the camera **magnifying** a detail too
    small to see and pulling back. Every transformation keeps its lengths on one scale, so the motion itself is honest.
+9. **The last shot is the whole chart or map.** « À la fin affiche le chart ou map complet » (the owner, 2026-09-15): after
+   the argument, everything returns — nothing stepped back, no row left empty by a transformation — with the lesson only
+   lightly marked (a ring, a bracket, a sum).
+10. **A brisk rhythm.** « Ajuste mieux ton rythme pour rendre ça plus dynamique »: short events, moves that overlap rather
+    than wait for each other, no dead time between gestures, a hold of about 60 frames; a type beat runs about 18–22 s.
 
 ## Precision still applies
 
