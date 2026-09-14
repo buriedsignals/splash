@@ -44,6 +44,10 @@ Each direction keeps its own palette and faces.
   box's aspect (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), with geography drawn far enough past the
   frame that no side of the row is left bare.
 
+- **The close-up keeps Albania at the centre of the stage, where the card reads over it**: its name is lifted
+  into the band above whichever card covers the country, and a leader runs down to it; the card hides the rest
+  of the line. The neighbours' names keep their seats around the country.
+
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs`.

@@ -67,7 +67,28 @@ export function applyChoroplethState(root, state, context) {
   }
   for (const w of c.waters) place(w, Number(w.dataset.x), Number(w.dataset.y), 1 - z);
   for (const ring of c.rings) ring.style.opacity = String(state.odd * Math.max(arrived, atRest));
-  keepApart(c.names, stage);
+
+  // THE CLOSE-UP KEEPS ITS SUBJECT AT THE CENTRE, where the card reads over it: the odd one's name is lifted
+  // above whichever card covers its country, and a leader runs down to it; the card hides the rest of the line.
+  c.leader.style.opacity = "0";
+  const odd = c.names.find((n) => n.dataset.role === "odd");
+  if (odd && arrived > 0) {
+    const x = Number.parseFloat(odd.style.left);
+    const y = Number.parseFloat(odd.style.top);
+    const panel = Array.from(root.ownerDocument.querySelectorAll(".step-panel"))
+      .map((el) => el.getBoundingClientRect())
+      .find((r) => r.width > 0 && x + stage.left > r.left && x + stage.left < r.right && y + stage.top > r.top - 12 && y + stage.top < r.bottom + 12);
+    if (panel) {
+      const h = odd.offsetHeight;
+      // High in the band above the card, clear of the neighbours' names that sit just around the country.
+      const lifted = Math.max(h / 2 + 2, (panel.top - stage.top) * 0.4);
+      const t = arrived;
+      odd.style.top = `${y + (lifted - y) * t}px`;
+      const from = lifted + h / 2;
+      Object.assign(c.leader.style, { left: `${x}px`, top: `${from}px`, height: `${Math.max(0, y - 22 - from)}px`, opacity: String(state.odd * arrived) });
+    }
+  }
+  keepApart([...c.names].sort((a, b) => (b.dataset.role === "odd") - (a.dataset.role === "odd")), stage);
 
   const count = c.topCount;
   const text = count.dataset.template.replace("{n}", String(Math.round(Number(count.dataset.value) * clamp(state.filter * 2))));
@@ -113,5 +134,6 @@ function seat(root, carrier) {
     swatches: Array.from(root.querySelectorAll("[data-class-swatch]")),
     key: root.querySelector('[data-part="key"]'),
     topCount: root.querySelector('[data-part="top-count"]'),
+    leader: root.querySelector('[data-part="odd-leader"]'),
   };
 }

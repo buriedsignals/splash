@@ -156,6 +156,8 @@ export function DirectedChoroplethScrolly({
             {w.text}
           </span>
         ))}
+        {/* The leader from the odd one's name, lifted above the card that reads over it, down to its country. */}
+        <div data-part="odd-leader" style={abs({ left: 0, top: 0, width: 0, height: 0, borderLeft: `${(stroke.rule ?? 1) * 1.5}px solid ${accentInk}`, opacity: 0 })} />
         {names.map((n) => (
           <span
             key={`${n.role}${n.iso}`}
