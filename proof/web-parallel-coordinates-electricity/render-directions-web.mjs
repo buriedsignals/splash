@@ -19,6 +19,11 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import {
+  assertBrushChangesThePicture,
+  assertOneBrushVocabulary,
+  buildBrushIndex,
+} from "../../skills/chart-web/assets/brush.ts";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { DirectedParallelWeb } from "./DirectedParallelWeb.tsx";
 
@@ -29,6 +34,19 @@ const EYEBROW = "Énergie · Europe";
 const YEAR = 2024;
 const NUCLEAR_FLOOR = 25;
 const WIND_FLOOR = 20;
+// THE BRUSH'S FIVE BANDS — `skills/chart-web/assets/brush.ts`, a gesture the corpus ships nowhere
+// else. Each names the RAIL it cuts, its bounds in that rail's own units, and the rail its selection
+// is READ AGAINST. That last field is what makes this control worth more than the plate: only
+// ADJACENT rails show a relationship in a parallel-coordinates drawing, so the still can carry
+// exactly one of the twenty-one pairs seven rails make. Two of these five are deliberately
+// NON-ADJACENT pairs — readings that do not exist on the plate at all.
+const BANDS = [
+  { key: "nuclear-high", axis: "nuclear_generation__twh", from: NUCLEAR_FLOOR, to: null, against: "wind_generation__twh" },
+  { key: "wind-high", axis: "wind_generation__twh", from: WIND_FLOOR, to: null, against: "nuclear_generation__twh" },
+  { key: "wind-low", axis: "wind_generation__twh", from: 0, to: 10, against: "nuclear_generation__twh" },
+  { key: "hydro-high", axis: "hydro_generation__twh", from: 30, to: null, against: "gas_generation__twh" },
+  { key: "coal-high", axis: "coal_generation__twh", from: 15, to: null, against: "hydro_generation__twh" },
+];
 const AXES = [
   ["nuclear_generation__twh", "nucléaire"],
   ["wind_generation__twh", "éolien"],
@@ -124,6 +142,66 @@ const lines = rows
 
 console.table(rows.map((r) => Object.fromEntries([["pays", r.name], ...axes.map((a) => [a.name, fr(r.shares[a.key])])])));
 
+// ── THE BRUSH, DERIVED FROM THE FROZEN FILE AND NEVER TYPED ───────────────────────────────────
+//
+// The runner owns the arithmetic — the count inside a band and the two means the band's sentence
+// carries come out of ONE pass over the same numbers the lines are drawn from — and the component
+// owns the scale that turns the bounds into a rectangle. `DirectedParallelWeb` checks the set this
+// pass measured against the set its own geometry puts inside the band, and refuses them if they
+// differ: two derivations of one selection is how a sentence ends up describing a picture that is
+// not on the page.
+const cap = (word) => word.charAt(0).toUpperCase() + word.slice(1);
+const brushOptions = BANDS.map((band) => {
+  const i = axes.findIndex((a) => a.key === band.axis);
+  const j = axes.findIndex((a) => a.key === band.against);
+  if (i < 0 || j < 0) throw new Error(`the band ${band.key} names a rail this beat does not draw`);
+  if (i === j) throw new Error(`the band ${band.key} is read against its own rail, which says nothing`);
+  const lo = band.from;
+  const hi = band.to ?? axes[i].ceiling;
+  const inside = lines.filter((l) => l.values[i] >= lo && l.values[i] <= hi);
+  const outside = lines.filter((l) => !(l.values[i] >= lo && l.values[i] <= hi));
+  if (!inside.length || !outside.length)
+    throw new Error(
+      `the band ${band.key} holds ${inside.length} of ${lines.length} lines — a band that keeps ` +
+        "none, or keeps them all, is a threshold that does nothing",
+    );
+  const label = plain(lo === 0 ? `${cap(axes[i].name)} < ${hi} %` : `${cap(axes[i].name)} > ${lo} %`);
+  const adjacent = Math.abs(i - j) === 1;
+  const note = plain(
+    `${label} : ${inside.length} pays sur ${lines.length} · leur ${axes[j].name} vaut ` +
+      `${fr(mean(inside.map((l) => l.values[j])))} % en moyenne, contre ` +
+      `${fr(mean(outside.map((l) => l.values[j])))} % pour les ${outside.length} autres` +
+      (adjacent
+        ? ""
+        : ` · ${axes[i].name} et ${axes[j].name} ne sont pas voisins sur le tracé, donc c'est une ` +
+          "lecture que l'image fixe ne peut pas faire"),
+  );
+  return {
+    key: band.key,
+    axis: band.axis,
+    label,
+    announce: plain(`${label} — ${inside.length} pays sur ${lines.length}`),
+    note,
+    lo,
+    hi,
+    keys: inside.map((l) => l.code),
+  };
+});
+const brushPlan = {
+  label: "Sélectionner une bande",
+  noneLabel: "Toutes les lignes",
+  options: brushOptions,
+};
+console.table(
+  brushOptions.map((o) => ({
+    bande: o.label,
+    pays: o.keys.length,
+    lecture: o.note.split(" · ")[1],
+  })),
+);
+console.log("");
+
+
 const facts = beatFacts(
   rows.map((r) => ({ key: r.code, label: r.name, value: r.shares[nuclearKey] })),
   { subject: both[0].name, declaredSequence: "%" },
@@ -131,26 +209,29 @@ const facts = beatFacts(
 const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
-const title = `${heavyNuclear.length} pays sur ${rows.length} tirent plus de ${NUCLEAR_FLOOR} % de leur électricité du nucléaire, ${heavyWind.length} plus de ${WIND_FLOOR} % de l'éolien — ${both.length} font les deux`;
+// THE HEADLINE IS SHORT BECAUSE ONE DIRECTION SETS IT IN 32 px UPPERCASE. `nocturne` wraps this
+// line to ten rows at 375 px, and every row it takes comes out of the plot below it — measured, not
+// guessed: the longer form this page used to carry put the source line 64 px under the fold on that
+// direction alone. The subject the shorter line drops ("de leur électricité") is carried by the
+// eyebrow, by the caveat's own first words and by the source.
+const title = `${heavyNuclear.length} pays sur ${rows.length} dépassent ${NUCLEAR_FLOOR} % de nucléaire, ${heavyWind.length} dépassent ${WIND_FLOOR} % d'éolien — ${both.length} font les deux`;
 const caveat =
-  `Sept axes, un par source, chacun avec SON PROPRE plafond en pourcentage : un axe partagé ` +
-  `mentirait sur sept quantités différentes. Une ligne par pays. Seuls deux axes VOISINS montrent ` +
-  `une relation — un croisement entre voisins est un vrai inverse, une ligne qui remonte trois axes ` +
-  `plus loin n'est rien.`;
+  `Sept axes, un par source, chacun avec SON PROPRE plafond : un axe partagé mentirait sur sept ` +
+  `quantités. Une ligne par pays.`;
 const claimNote = `${both.map((r) => r.name).join(" et ")} : au-dessus des deux seuils`;
 const readingLine =
-  `Lecture : survolez, touchez ou tabulez n'importe quel point d'une ligne pour lire le pays et ses ` +
-  `sept parts d'un coup — les sept points d'un pays répondent la même chose, donc il suffit d'en ` +
-  `attraper un. C'est ce que l'image fixe ne peut pas faire : suivre une ligne parmi seize à ` +
-  `travers quinze croisements. Ordre des axes : nucléaire contre éolien d'abord, parce que le ` +
-  `croisement entre eux EST la démonstration (corrélation ${fr(corr, 2)}) ; puis bas-carbone, puis ` +
-  `fossile.`;
+  `Lecture : survolez un point pour lire le pays et ses sept parts d'un coup. Seuls deux axes ` +
+  `VOISINS montrent une relation : ici nucléaire contre éolien, corrélation ${fr(corr, 2)}. Les ` +
+  `${brushOptions.length} bandes lèvent la limite — choisissez-en une, les pays qui la traversent ` +
+  `passent au premier plan.`;
 const source = `Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · ${YEAR}`;
 
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source}`,
+  body: `${caveat} ${readingLine} ${source} ${brushPlan.label} ${brushPlan.noneLabel} ${brushOptions
+    .map((o) => `${o.label} ${o.announce} ${o.note}`)
+    .join(" ")}`,
   axis: `${axes.map((a) => `${a.name} ${a.ceilingLabel}`).join(" ")}`,
   annot: claimNote,
   value: axes.map((a) => a.ceilingLabel).join(" "),
@@ -168,17 +249,20 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   try {
-    await renderWeb({
+    const { outPath } = await renderWeb({
       component: DirectedParallelWeb,
       props: {
-        axes, lines,
+        axes, lines, brushPlan,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
         alt:
           `Sept axes verticaux, un par source d'électricité, reliés par ${lines.length} lignes, une ` +
           `par pays. Chaque axe a son propre plafond. Entre l'axe du nucléaire et celui de l'éolien, ` +
           `les lignes se croisent abondamment : les pays hauts sur l'un sont bas sur l'autre ` +
           `(corrélation ${fr(corr, 2)}). Deux lignes, ${both.map((r) => r.name).join(" et ")}, sont ` +
-          `hautes sur les deux et dessinées en couleur.`,
+          `hautes sur les deux et dessinées en couleur. ${brushOptions.length} bandes nommées ` +
+          `permettent de sélectionner une tranche d'un rail : les lignes qui la traversent ` +
+          `s'épaississent et leurs sommets sont cerclés, et une phrase donne ce que cette ` +
+          `sélection vaut sur un autre rail.`,
         direction,
         ground: direction.ground,
         accent: direction.accent,
@@ -186,10 +270,31 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       outDir: OUT,
       name: `${id}.html`,
     });
+    // THE TWO CHECKS THE FORMAT'S OWN GUARDS CANNOT MAKE FOR THIS VOCABULARY, run on the page that
+    // was just written rather than on the props it was written from. `renderWeb` reads its markup
+    // back for the FILTER vocabulary (`assertOneVocabulary`) and `assertInteractionPlan` discovers a
+    // control by the shape of its markup — `chart-filter-*` / `chart-stack-*` / `chart-level-*`
+    // radios — so a brush is invisible to both and would ship unmeasured. See `BRIEF.md`, "Why no
+    // `interaction` prop travels with the render".
+    const written = await readFile(outPath, "utf8");
+    const brushIndex = buildBrushIndex({ options: brushOptions }, lines.map((l) => l.code));
+    // `perKey` is this beat's own number: one polyline plus one vertex per rail. Without it the
+    // scan cannot see a whole kind of element losing the vocabulary — measured, not assumed.
+    assertOneBrushVocabulary(written, brushIndex, { perKey: 1 + axes.length });
+    assertBrushChangesThePicture(written, { options: brushOptions }, `renders/${id}.html`);
     console.log(`${id} -> renders/${id}.html`);
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+// A REFUSAL IS AN EXIT CODE, NOT ONLY A LINE OF OUTPUT. Every guard this beat added — the band that
+// keeps everything, the declared set that disagrees with the geometry, the datum that stopped
+// carrying the vocabulary, the two states that are not a measured step apart — throws INSIDE the
+// loop above and is caught here. Found while mutating: without this line the process still exits 0,
+// so each of those mutations printed a red sentence and left a green build behind it, with the last
+// good renders still on disk.
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  process.exitCode = 1;
+}
