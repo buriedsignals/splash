@@ -69,6 +69,15 @@ same way the direct label does, or a keyboard/pointer user near the border
 gets a tooltip that's partly or fully cut off exactly where reading it
 matters most.
 
+## In video
+
+Worked example: `proof/video-proportional-symbol-europe-capacity` (validated 2026-09-14). The gesture only a video has is
+**the ranking arriving**: the largest symbols land one by one, largest first (linear in rank, each easing its own
+arrival), while the count of sites and their share of the total climb together; then the rest land at once as faint
+points and their share is set beside the first — a comparison, not a sentence. Hollow symbols, area proportional to the
+quantity, the key's named circles on the same function as the marks, one row per named circle with its label beside it.
+The still's drawing threshold is not needed: the rest are points.
+
 ## The worked example in this tree
 
 `proof/static-proportional-symbol-europe-capacity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
