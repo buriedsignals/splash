@@ -62,7 +62,7 @@ other export yet.
 | 04 | Dot density | 3 | ✅ | ◦ | ✅ | ◦ |
 | 05 | Flow map | 1 | ✅ | ◦ | ✅ | ◦ |
 | 06 | Hex grid | 2 | ✅ | ◦ | ✅ | ◦ |
-| 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
+| 07 | Locator | 1 | ✅ | ◦ | ✅ | ◦ |
 | 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ◦ |
 
 **Maps: 8 of 8 done in static, 0 in web, video or scrolly.**
@@ -113,6 +113,7 @@ other export yet.
 | Hex grid | video | `proof/video-hex-grid-europe-protection` — validated by the owner 2026-09-14 |
 | Proportional symbol | static | `proof/static-proportional-symbol-europe-capacity` |
 | Locator | static | `proof/static-locator-zaporizhzhia` |
+| Locator | video | `proof/video-locator-zaporizhzhia` — validated by the owner 2026-09-14 |
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
 | Cartogram | video | `proof/video-cartogram-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
