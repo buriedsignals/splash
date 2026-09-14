@@ -118,6 +118,7 @@
     "wind": "#1755b2",
     "solar": "#5f5e58",
     "faded": "#e0ded1",
+    "ring": "#000000",
     "others": [
       "#cccabe",
       "#b3b0a7"
@@ -814,6 +815,13 @@
     "28,6": 87.60498046875
   },
   "shareGap": 18.7307621484375,
+  "ring": {
+    "x": 1551.253548606771,
+    "y": 662.3831759688405,
+    "w": 275.8262361197917,
+    "h": 309.69660875772195,
+    "r": 15.840430546875002
+  },
   "strokes": {
     "grid": 1.7999999999999998
   },
@@ -830,6 +838,7 @@
       "camera": 0,
       "compare": 0,
       "focus": 0,
+      "release": 0,
       "source": 0
     },
     {
@@ -841,6 +850,7 @@
       "camera": 0,
       "compare": 0,
       "focus": 0,
+      "release": 0,
       "source": 0
     },
     {
@@ -852,17 +862,7 @@
       "camera": 1,
       "compare": 0,
       "focus": 0,
-      "source": 0
-    },
-    {
-      "title": 0,
-      "furniture": 1,
-      "mix": 1,
-      "others": 1,
-      "split": 1,
-      "camera": 1,
-      "compare": 1,
-      "focus": 0,
+      "release": 0,
       "source": 0
     },
     {
@@ -874,6 +874,19 @@
       "camera": 1,
       "compare": 1,
       "focus": 1,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "mix": 1,
+      "others": 1,
+      "split": 1,
+      "camera": 1,
+      "compare": 1,
+      "focus": 1,
+      "release": 1,
       "source": 1
     },
     {
@@ -885,35 +898,36 @@
       "camera": 1,
       "compare": 1,
       "focus": 1,
+      "release": 1,
       "source": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 741,
+    "total": 546,
     "establish": {
       "start": 0,
       "duration": 45
     },
     "reference": {
       "start": 51,
-      "duration": 90
+      "duration": 60
     },
     "reveal": {
-      "start": 141,
-      "duration": 240
+      "start": 111,
+      "duration": 150
     },
     "subject": {
-      "start": 381,
-      "duration": 180
+      "start": 261,
+      "duration": 150
     },
     "conclusion": {
-      "start": 561,
-      "duration": 90
+      "start": 411,
+      "duration": 75
     },
     "hold": {
-      "start": 651,
-      "duration": 90
+      "start": 486,
+      "duration": 60
     }
   },
   "fontFamily": null,
