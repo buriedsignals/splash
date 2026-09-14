@@ -5,12 +5,12 @@
 // both halves of the headline and the colour rules are the static beat's own; the scroll tells them with
 // its own gestures (`scrolly/references/directed-type-choreography.md`):
 //
-//   1. the tracks to 100 %, the rows in their 2015 order;
-//   2. the thick pale bars — 2015 — extending from zero;
-//   3. the thin saturated bars — 2024 — extending on from where 2015 ends;
-//   4. the rows re-sorting by their gain, Poland rising to the top, every gain counted;
+//   1. the thick pale bars — 2015 — extending from zero along tracks to 100 %;
+//   2. the thin saturated bars — 2024 — extending on from where 2015 ends;
+//   3. the rows re-sorting by their gain, Poland rising to the top, every gain counted;
+//   4. the half ruled across the tracks, every row past it stepping back: Poland alone under it;
 //   5. the axis closing onto 90–100 %, where the already-high countries' gains become visible;
-//   6. back to the full track.
+//   6. back to the full track, the rows sorted by their 2024 level — the 2015 order, unchanged.
 //
 // Usage:  bun proof/scrolly-bullet-low-carbon-share/render-directions-scrolly.mjs
 
@@ -38,6 +38,11 @@ const EYEBROW = "Énergie · Europe";
 /** Low-carbon: nuclear and every renewable — the split Ember's own columns make. */
 const LOW_CARBON = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower", "Nuclear"];
 const FRENCH = { France: "France", Germany: "Allemagne", Norway: "Norvège", Poland: "Pologne", Sweden: "Suède", Switzerland: "Suisse" };
+const ARTICLED = { France: "la France", Germany: "l’Allemagne", Norway: "la Norvège", Poland: "la Pologne", Sweden: "la Suède", Switzerland: "la Suisse" };
+const articled = (entity) => {
+  if (!ARTICLED[entity]) throw new Error(`no French article recorded for ${entity}`);
+  return ARTICLED[entity];
+};
 const french = (entity) => {
   if (!FRENCH[entity]) throw new Error(`no French name recorded for ${entity}`);
   return FRENCH[entity];
@@ -86,19 +91,23 @@ const ZOOM_FROM = 90;
  *  still be on that axis in 2015. */
 if (!alreadyHigh.every((r) => r.marker >= ZOOM_FROM)) throw new Error(`card 5 zooms onto ${ZOOM_FROM}–100 % and a country it names starts below it`);
 const orderByMarker = [...ranked].sort((a, b) => b.marker - a.marker);
+const orderByMeasure = [...ranked].sort((a, b) => b.measure - a.measure);
+if (orderByMeasure.some((r, i) => r !== orderByMarker[i])) throw new Error(`card 6 says the ${AFTER} ranking is the ${BEFORE} one; ${orderByMeasure.map((r) => r.key).join(", ")} against ${orderByMarker.map((r) => r.key).join(", ")}`);
 const orderBefore = ranked.map((r) => orderByMarker.indexOf(r));
+const underNext = orderByMeasure.at(-2);
 const prose = [
-  [`Part du bas-carbone — nucléaire et renouvelables — dans la production électrique de six pays européens. La piste va jusqu’à 100${NB}%.`],
-  [`La barre épaisse et pâle est ${BEFORE} : ${french(orderByMarker[0].key)} en tête, ${french(orderByMarker.at(-1).key)} en dernier, à ${one(orderByMarker.at(-1).marker)}${NB}%.`],
+  [`Part du bas-carbone — nucléaire et renouvelables — dans la production électrique de six pays européens, sur une piste jusqu’à 100${NB}%. La barre épaisse et pâle est ${BEFORE} : ${french(orderByMarker[0].key)} en tête, ${french(orderByMarker.at(-1).key)} en dernier, à ${one(orderByMarker.at(-1).marker)}${NB}%.`],
   [`La fine et saturée est ${AFTER} : chacune prolonge la barre de ${BEFORE}.`],
-  [`Rangés par gain, ${french(moved.key)} passe en tête : de ${one(moved.marker)}${NB}% à ${one(moved.measure)}${NB}%, +${one(moved.measure - moved.marker)} points — et reste la seule des six sous la moitié.`],
+  [`Rangés par gain, ${french(moved.key)} passe en tête : de ${one(moved.marker)}${NB}% à ${one(moved.measure)}${NB}%, +${one(moved.measure - moved.marker)} points.`],
+  [`Et elle reste la seule des six sous la moitié : ${one(moved.measure)}${NB}% en ${AFTER}, quand ${articled(underNext.key)}, l’avant-dernière, est à ${one(underNext.measure)}${NB}%.`],
   [`Resserrée sur ${ZOOM_FROM}–100${NB}%, l’échelle montre ce que la piste entière écrase : les ${SPELLED[alreadyHigh.length] ?? alreadyHigh.length} pays déjà au-dessus de ${SATURATED}${NB}% en ${BEFORE} gagnent moins d’un point chacun.`],
-  [`Aucun objectif n’est dessiné ici : ${BEFORE} est une date, pas une cible. Deux états d’une même mesure, donc une seule teinte à deux intensités.`],
+  [`Rangés par niveau en ${AFTER}, les six retrouvent l’ordre de ${BEFORE} : les gains n’ont déplacé personne. Aucun objectif n’est dessiné — ${BEFORE} est une date, pas une cible.`],
 ];
 const zoomTicks = [90, 95, 100].map((v) => ({ value: v, label: v === 100 ? `${format(v)}${NB}%` : format(v) }));
 const source = "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 const markerLabel = `${BEFORE} : ${format(moved.marker)} %`;
 const measureLabel = `${AFTER} : ${format(moved.measure)} %`;
+const halfLabel = `la moitié`;
 const ticks = [0, 50, 100].map((v) => ({ value: v, label: v === 100 ? `${format(v)} %` : format(v) }));
 const alt =
   `Graphique à puces : la part du bas-carbone dans l’électricité de six pays européens, ${BEFORE} contre ${AFTER}, ` +
@@ -107,12 +116,12 @@ const alt =
 
 /** One state per card; see `bullet-drive.mjs` for what each field paints. */
 const STATES = [
-  { marker: 0, measure: 0, reorder: 0, verdict: 0, zoom: 0 },
-  { marker: 1, measure: 0, reorder: 0, verdict: 0, zoom: 0 },
-  { marker: 1, measure: 1, reorder: 0, verdict: 0, zoom: 0 },
-  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 0 },
-  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 1 },
-  { marker: 1, measure: 1, reorder: 1, verdict: 1, zoom: 0 },
+  { marker: 1, measure: 0, reorder: 0, verdict: 0, half: 0, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 0, verdict: 0, half: 0, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, half: 0, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, half: 1, zoom: 0 },
+  { marker: 1, measure: 1, reorder: 1, verdict: 1, half: 0, zoom: 1 },
+  { marker: 1, measure: 1, reorder: 0, verdict: 1, half: 0, zoom: 0 },
 ];
 
 const textPerRegister = {
@@ -120,7 +129,7 @@ const textPerRegister = {
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
   axis: `${ticks.map((t) => t.label).join(" ")} ${zoomTicks.map((t) => t.label).join(" ")}`,
-  annot: `${rows.map((r) => r.label).join(" ")} ${markerLabel} ${measureLabel}`,
+  annot: `${rows.map((r) => r.label).join(" ")} ${markerLabel} ${measureLabel} ${halfLabel}`,
   value: `${rows.map((r) => r.verdict).join(" ")} +0123456789, pts`,
 };
 
@@ -149,6 +158,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           ceiling: 100,
           markerLabel,
           measureLabel,
+          halfLabel,
           ticks,
           zoomTicks,
           zoomFrom: ZOOM_FROM,
