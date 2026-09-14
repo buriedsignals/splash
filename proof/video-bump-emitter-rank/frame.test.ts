@@ -21,7 +21,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
   const last = (event: string) => endOf((props.timing as any)[event]) - 1;
   const frameAtYear = (year: number) => {
     const { start, duration } = props.timing.reveal;
-    return Math.ceil(start + duration * (0.02 + ((year - 1990) / 34) * 0.8)) + 1;
+    return Math.ceil(start + duration * (0.04 + ((year - 1990) / 34) * 0.92)) + 1;
   };
 
   describe(`${id}'s bump video`, () => {
@@ -44,10 +44,23 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       props.passes.forEach((p: any, i: number) => expect([p.entity, s.passes[i] > 0]).toEqual([p.entity, p.index <= 10]));
     });
 
+    it("should track India close up while the clock runs, and end on the whole chart with nothing stepped back", () => {
+      const mid = sceneAt(props as any, frameAtYear(2005));
+      expect(mid.camera).toBe(1);
+      const t = mid.tip!;
+      const m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([\d.]+)\)/.exec(mid.transform)!;
+      const [ox, oy, sc] = m.slice(1).map(Number);
+      expect(ox + t.x * sc).toBeCloseTo(0.58 * props.frame.width, 0);
+      expect(oy + t.y * sc).toBeCloseTo(0.5 * props.frame.height, 0);
+      const end = sceneAt(props as any, props.timing.total - 1);
+      expect([end.camera, end.focus, end.transform]).toEqual([0, 0, "translate(0 0) scale(1)"]);
+      expect(props.credit.lines.length).toBe(1);
+    });
+
     it("should not pick out the passed countries before the focus", () => {
       const svg = markupAt(last("reveal"));
       expect(svg).not.toContain(`stroke="${props.colours.passed}"`);
-      expect(markupAt(props.timing.total - 1)).toContain(`stroke="${props.colours.passed}"`);
+      expect(markupAt(props.timing.subject.start + props.timing.subject.duration - 1)).toContain(`stroke="${props.colours.passed}"`);
     });
   });
 }

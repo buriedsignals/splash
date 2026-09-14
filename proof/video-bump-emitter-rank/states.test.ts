@@ -7,17 +7,17 @@ const [establish, reference, reveal, subject, conclusion, hold] = statesFor();
 
 describe("statesFor", () => {
   it("should open on the title card alone, then the rows and the 1990 names", () => {
-    expect(establish).toEqual({ title: 1, furniture: 0, clock: 0, focus: 0, source: 0 });
+    expect(establish).toEqual({ title: 1, furniture: 0, zoom: 0, clock: 0, back: 0, focus: 0, release: 0, source: 0 });
     expect(reference).toEqual({ ...establish, title: 0, furniture: 1 });
   });
 
-  it("should run the clock at reveal and focus at subject", () => {
-    expect(reveal).toEqual({ ...reference, clock: 1 });
-    expect(subject).toEqual({ ...reveal, focus: 1 });
+  it("should track India as the clock runs at reveal, then pull back and focus at subject", () => {
+    expect(reveal).toEqual({ ...reference, zoom: 1, clock: 1 });
+    expect(subject).toEqual({ ...reveal, back: 1, focus: 1 });
   });
 
-  it("should set the credit at conclusion and hold it exactly", () => {
-    expect(conclusion).toEqual({ ...subject, source: 1 });
+  it("should bring the whole chart back with the credit at conclusion, and hold it exactly", () => {
+    expect(conclusion).toEqual({ ...subject, release: 1, source: 1 });
     expect(hold).toEqual(conclusion);
   });
 });

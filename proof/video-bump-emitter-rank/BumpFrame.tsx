@@ -29,6 +29,12 @@ export type BumpFrameProps = {
   leftNames: Array<Line & { entity: string; role: Role }>;
   rightNames: Array<Line & { entity: string; role: Role }>;
   tipTexts: Record<string, { text: string; width: number }>;
+  tipNames: Record<string, { text: string; width: number }>;
+  nameShift: number;
+  yearTexts: Record<string, { text: string; width: number }>;
+  yearAt: { right: number; y: number };
+  firstYear: number;
+  gap: number;
   tipRanks: Array<number | null>;
   tipOffset: number;
   tipRise: number;
@@ -61,6 +67,7 @@ export function BumpFrame(props: BumpFrameProps & { at: number; svgRef?: Ref<SVG
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
+      <g transform={scene.transform}>
       <g opacity={scene.furniture}>
         {props.rows.map((y, i) => (
           <line key={`row${i}`} x1={plot.left} x2={plot.right} y1={y} y2={y} stroke={colours.grid} strokeWidth={strokes.grid} />
@@ -84,11 +91,23 @@ export function BumpFrame(props: BumpFrameProps & { at: number; svgRef?: Ref<SVG
       {scene.tip && tipRank !== null ? (
         <Word line={{ ...props.tipTexts[String(tipRank)], x: scene.tip.x + props.tipOffset, y: scene.tip.y - props.tipRise }} register={r.value} fill={colours.text.subject} opacity={scene.tipShown} halo={halo} />
       ) : null}
-      <g opacity={scene.arrived}>
+      {props.tracks.map((t) => {
+        const at = scene.tips[t.key];
+        const name = props.tipNames[t.key];
+        if (!at || !name || !(scene.camera > 0)) return null;
+        return <Word key={`tip-${t.key}`} line={{ ...name, x: at.x + props.gap, y: at.y + props.nameShift }} register={r.axis} fill={colours.text[shown(t.role)]} opacity={scene.camera * stepped(t.role)} halo={halo} />;
+      })}
+      <g opacity={scene.arrived * (1 - scene.camera)}>
         {props.rightNames.map((n) => (
           <Word key={`r-${n.entity}`} line={n} register={r.axis} fill={colours.text[shown(n.role)]} opacity={stepped(n.role)} />
         ))}
       </g>
+      </g>
+
+      {scene.camera > 0 ? (() => {
+        const year = props.yearTexts[String(props.firstYear + Math.min(scene.tipIndex, props.xs.length - 1))];
+        return year ? <Word line={{ ...year, x: props.yearAt.right - year.width * 1.02, y: props.yearAt.y }} register={r.value} fill={colours.text.passed} opacity={scene.camera} halo={halo} /> : null;
+      })() : null}
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (

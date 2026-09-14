@@ -17,25 +17,26 @@ passed Germany (1999), Japan (2006) and Russia (2009).
 
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — ten rows, years along the bottom; the 1990 ranks named at the left, the 2024 ranks at the right.
-3. **No end card** — the video ends on the whole chart, India and the three it passed picked out; the credit.
+3. **No end card** — the video ends on the whole chart, India in the accent; the credit on one line.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-A bump chart's argument is its crossings. What only a video can do is **run the clock**: every line advances year by year,
-linear in years, and the viewer watches the swaps happen — India's rank riding its tip, each pass ringed as it happens.
+A bump chart's argument is its crossings. The video **follows the climber**: the camera closes in on India's tip and tracks
+it as the clock runs, every line in the top ten named at its tip, so each pass happens in close-up between two named lines
+— then the camera pulls back and the whole climb is seen at once.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
 | `reference` | the top ten in 1990 | — (furniture) | the ten rows; the 1990 names, India 8th in the accent | India 8th in 1990 |
-| `reveal` | 35 years of the ranking | **trace + count + name** | every line advances 1990 → 2024; « Inde · {rang}e » rides India's tip; each country India passes is ringed on India's line the year it happens; the 2024 names land on arrival | India 3rd in 2024; every pass |
-| `subject` | India passed Germany, Japan and Russia | **filter** | every line but India and the three it passed steps back | the three still in the top ten |
-| `conclusion` | — | — | the credit | — |
+| `reveal` | 35 years of the ranking, up close | **track + trace + name** | the camera closes ×1,7 on India's tip and holds it while every line advances 1990 → 2024; the lines named at their tips; the year in the corner; « Inde · {rang}e » rides India's tip; each pass ringed as it happens | India 3rd in 2024; every pass |
+| `subject` | India passed Germany, Japan and Russia | **pull back + filter** | the camera pulls back to the whole chart, the 2024 names landing; every line but India and the three it passed steps back | the three still in the top ten |
+| `conclusion` | the whole ranking | **release** | every line comes back; the credit | — |
 | `hold` | the ranking | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst, no captions « passed Germany · 1999 »: the viewer has just watched each pass; the rings keep the place.
+The names, the year, India's rank. A brisk rhythm: 19,7 s.
 
 ## Directions
 

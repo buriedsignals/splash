@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { FIRST, FRENCH, LAST, loadSubject, SLOTS, SUBJECT } from "./subject.mjs";
@@ -72,7 +72,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueBand = bandOf(BAND_PROBE, value);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
 
   const { years, tracks, top } = subject;
   const leftNames = top.get(FIRST).map((e, i) => ({ entity: e, ...measure(copy.end(i + 1, e), axis) }));
@@ -132,6 +132,14 @@ export function buildDirection(id, { subject, states, copy }) {
     leftNames: leftNames.map((t, i) => ({ ...t, role: roleOf(t.entity), x: plot.left - gap - t.width, y: yOf(i + 1) + shift })),
     rightNames: rightNames.map((t, i) => ({ ...t, role: roleOf(t.entity), x: plot.right + gap, y: yOf(i + 1) + shift })),
     tipTexts,
+    /** While the camera tracks India, every line in the top ten carries its name at its tip. */
+    tipNames: Object.fromEntries(tracks.filter((t) => t.entity !== SUBJECT).map((t) => [t.entity, measure(FRENCH[t.entity], axis)])),
+    nameShift: shift,
+    /** While the camera tracks, the years are out of the frame: the year the clock stands at, in the top right corner. */
+    yearTexts: Object.fromEntries(years.map((y) => [String(y), measure(String(y), value)])),
+    yearAt: { right: stage.width - inset, y: vInset + valueBand.ascent },
+    firstYear: FIRST,
+    gap,
     tipRanks: india.ranks,
     tipOffset: gap / 2,
     tipRise: valueBand.descent + gap / 2,
