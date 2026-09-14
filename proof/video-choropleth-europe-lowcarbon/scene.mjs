@@ -23,17 +23,19 @@ import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
  *  changes over the whole event. */
 export const WINDOWS = Object.freeze({
   establish: { title: [0, 0.001] },
-  reference: { title: [0, 0.15], furniture: [0.12, 0.25], classes: [0.25, 1] },
-  reveal: { count: [0, 0.03], filter: [0.03, 0.73], floor: [0.03, 0.73], top: [0.8, 0.95] },
-  subject: { top: [0, 0.12], furniture: [0, 0.1], filter: [0.1, 0.45], zoom: [0.1, 0.6], odd: [0.66, 0.78], neighbours: [0.74, 0.9] },
-  conclusion: { neighbours: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], missing: [0.47, 0.57], end: [0.78, 0.92] },
+  // The lowest class lands at 0.375 of reference; its three names follow it.
+  reference: { title: [0, 0.15], furniture: [0.12, 0.25], count: [0.12, 0.25], classes: [0.25, 1], context: [0.42, 0.52] },
+  // The floor passes the lowest borne at 0.17 of reveal; its three names step back with it.
+  reveal: { filter: [0.03, 0.73], floor: [0.03, 0.73], context: [0.03, 0.15], top: [0.8, 0.95] },
+  subject: { top: [0, 0.05], furniture: [0, 0.04], filter: [0.04, 0.22], zoom: [0.04, 0.24], odd: [0.27, 0.32], neighbours: [0.31, 0.38], callout: [0.44, 0.5] },
+  conclusion: { neighbours: [0, 0.08], callout: [0, 0.08], zoom: [0.1, 0.42], furniture: [0.4, 0.5], top: [0.45, 0.55], context: [0.45, 0.55], missing: [0.47, 0.57], end: [0.78, 0.92] },
 });
 
 /** When the names of each camera may be seen: the overview's leave before the camera departs and return
  *  after it has come back; the close-up's arrive after it has settled and leave before it departs. */
 export const GATES = Object.freeze({
-  overview: { leaves: ["subject", 0, 0.12], returns: ["conclusion", 0.45, 0.57] },
-  closeUp: { arrives: ["subject", 0.66, 0.78], leaves: ["conclusion", 0, 0.08] },
+  overview: { leaves: ["subject", 0, 0.05], returns: ["conclusion", 0.45, 0.57] },
+  closeUp: { arrives: ["subject", 0.27, 0.32], leaves: ["conclusion", 0, 0.08] },
 });
 
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
@@ -43,7 +45,7 @@ const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, ti
 const LINEAR = new Set(["classes", "filter", "floor"]);
 
 /** When the close-up's shares count up from zero: after the camera has settled, each over its own window. */
-export const COUNT_UP = Object.freeze({ odd: ["subject", 0.66, 0.9], neighbour: ["subject", 0.74, 0.97] });
+export const COUNT_UP = Object.freeze({ odd: ["subject", 0.27, 0.37], neighbour: ["subject", 0.31, 0.41] });
 
 /** A field's value at `frame`: nothing before `establish`, then every event's change run through its window.
  *  The class reveal is linear across the classes (each class eases its own arrival, below); everything
@@ -136,10 +138,12 @@ const hits = (a, b, gap) => a.x < b.x + b.width + gap && b.x < a.x + a.width + g
  * Items come in priority order. Returns top-left corners in stage pixels.
  *
  * @param {{ obstacles?: Array<{x:number,y:number,width:number,height:number}>,
- *           cover?: (box: {x:number,y:number,width:number,height:number}, key: string) => number }} [options]
+ *           cover?: (box: {x:number,y:number,width:number,height:number}, key: string) => number,
+ *           allowed?: (box: {x:number,y:number,width:number,height:number}, key: string) => boolean }} [options]
+ *   `allowed` refuses a position outright — a word whose ink cannot be read on the cell it would land on.
  */
 export const COVER_WEIGHT = 2;
-export function placePills(items, stage, gap, { obstacles = [], cover = () => 0 } = {}) {
+export function placePills(items, stage, gap, { obstacles = [], cover = () => 0, allowed = () => true } = {}) {
   const eps = 1e-6;
   const inside = (b) => b.x >= gap - eps && b.y >= gap - eps && b.x + b.width <= stage.width - gap + eps && b.y + b.height <= stage.height - gap + eps;
   const pull = (b) => ({
@@ -154,9 +158,11 @@ export function placePills(items, stage, gap, { obstacles = [], cover = () => 0 
     const h = item.height;
     const origin = pull({ x: item.cx - w / 2, y: item.cy - h / 2, width: w, height: h });
     const edges = [...placed, ...(item.avoid ?? [])];
-    const ys = [...[-1, -0.5, 0, 0.5, 1].map((k) => origin.y + k * h), ...edges.flatMap((p) => [p.y + p.height + gap + eps, p.y - gap - h - eps])];
-    const xs = [...[-0.5, -0.25, 0, 0.25, 0.5].map((k) => origin.x + k * w), ...edges.flatMap((p) => [p.x + p.width + gap + eps, p.x - gap - w - eps])];
-    const clear = xs.flatMap((x) => ys.map((y) => ({ x, y, width: w, height: h }))).filter((b) => inside(b) && !placed.some((p) => hits(b, p, gap)) && !(item.avoid ?? []).some((a) => hits(b, a, gap)));
+    // A name that may be led to its seat is also tried standing clear of the seat, one to three of its heights off.
+    const off = item.beside ? [1, 2, 3].map((k) => item.beside + (k - 1) * h) : [];
+    const ys = [...[-1, -0.5, 0, 0.5, 1].map((k) => origin.y + k * h), ...edges.flatMap((p) => [p.y + p.height + gap + eps, p.y - gap - h - eps]), ...off.flatMap((d) => [item.cy + d, item.cy - d - h])];
+    const xs = [...[-0.5, -0.25, 0, 0.25, 0.5].map((k) => origin.x + k * w), ...edges.flatMap((p) => [p.x + p.width + gap + eps, p.x - gap - w - eps]), ...off.flatMap((d) => [item.cx + d, item.cx - d - w])];
+    const clear = xs.flatMap((x) => ys.map((y) => ({ x, y, width: w, height: h }))).filter((b) => inside(b) && !placed.some((p) => hits(b, p, gap)) && !(item.avoid ?? []).some((a) => hits(b, a, gap)) && allowed(b, item.key));
     const reach = (b) => Math.hypot(Math.max(b.x - item.cx, 0, item.cx - b.x - w), Math.max(b.y - item.cy, 0, item.cy - b.y - h));
     const moved = (b) => Math.hypot((b.x - origin.x) / (w / 2), (b.y - origin.y) / h);
     // A name kept clear of an obstacle around its own seat (Albania's ring) may stand that obstacle's width further off.
@@ -188,7 +194,7 @@ export function blend(a, b, t) {
  * @param {{ states: Record<string, number>[], timing: any, stage: {width:number,height:number},
  *   cameras: { overview: any, closeUp: any }, shapes: Array<{ key: string, classIndex: number|null, kept: boolean }>,
  *   colours: { land: string, classFills: string[], missingFill: string },
- *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"missing", camera: "overview"|"closeUp" }>,
+ *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"missing"|"context", camera: "overview"|"closeUp" }>,
  *   waters: Array<{ key: string }> }} props
  */
 export function sceneAt(props, frame) {
@@ -208,7 +214,7 @@ export function sceneAt(props, frame) {
     fills[shape.key] = blend(colours.land, colours.classFills[shape.classIndex], reached * kept);
   }
 
-  const role = { top: at("top"), odd: at("odd"), neighbour: at("neighbours"), missing: at("missing") };
+  const role = { top: at("top"), odd: at("odd"), neighbour: at("neighbours"), missing: at("missing"), context: at("context") };
   const names = {};
   for (const name of props.names) names[name.key] = clamp01(role[name.role] * gates[name.camera]);
   const count = at("count");
@@ -218,6 +224,7 @@ export function sceneAt(props, frame) {
   return {
     title: at("title"),
     furniture: at("furniture"),
+    callout: at("callout"),
     end: at("end"),
     swatches: Array.from({ length: n }, (_, i) => ease(clamp01(classes * n - i))),
     /** How far each class's swatch has stepped back with the floor — the key follows the map. */

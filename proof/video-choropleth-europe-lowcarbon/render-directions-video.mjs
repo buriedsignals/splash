@@ -27,7 +27,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { wantedOf, writeRenderProps } from "../../skills/map-beat/scripts/video-faces.mjs";
 import { buildDirection, DIRECTIONS, loadBeat, ROOT, SIZE, textPerRegisterOf } from "./build.mjs";
 import { ChoroplethFrame } from "./ChoroplethFrame.tsx";
-import { WINDOWS } from "./scene.mjs";
+import { COUNT_UP, WINDOWS } from "./scene.mjs";
 
 const HERE = import.meta.dirname;
 const OUT = join(HERE, "renders");
@@ -88,7 +88,7 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
     for (const d of direction.decisions) console.log(`  ${d.register.padEnd(8)} ${d.role.padEnd(15)} -> ${d.family}`);
     console.log(
       `  title form ${report.titleForm + 1} at ${report.titleSize}px · source form ${report.sourceForm + 1} · stage ${report.stage.width}×${report.stage.height} ` +
-        `at (${report.stage.x}, ${report.stage.y}) · k ${report.k.toFixed(3)} · seas dropped ${report.droppedWaters}`,
+        `at (${report.stage.x}, ${report.stage.y}) · k ${report.k.toFixed(3)} · seas ${report.waters.join(", ") || "none"} · standfirst form ${report.standfirstForm} · callout land ${(100 * report.calloutLand).toFixed(1)} %`,
     );
     assertEventFramesReadable(props, id);
 
@@ -108,7 +108,8 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         { name: "mid-reference", frame: Math.round(T.reference.start + T.reference.duration / 2) },
         { name: "mid-reveal-filter", frame: mid("reveal", WINDOWS.reveal.filter) },
         ...[0.3, 0.6].map((k) => ({ name: `reveal-floor-${k}`, frame: Math.round(T.reveal.start + T.reveal.duration * (WINDOWS.reveal.filter[0] + k * (WINDOWS.reveal.filter[1] - WINDOWS.reveal.filter[0]))) })),
-        { name: "subject-counting", frame: Math.round(T.subject.start + T.subject.duration * 0.82) },
+        { name: "subject-counting", frame: Math.round(T.subject.start + T.subject.duration * (COUNT_UP.neighbour[1] + COUNT_UP.neighbour[2]) / 2) },
+        { name: "reference-lowest", frame: Math.round(T.reference.start + T.reference.duration * 0.6) },
         { name: "title-card", frame: Math.round(T.establish.duration / 2) },
         { name: "conclusion-map", frame: Math.round(T.conclusion.start + T.conclusion.duration * 0.7) },
         { name: "mid-subject-camera", frame: mid("subject", WINDOWS.subject.zoom) },

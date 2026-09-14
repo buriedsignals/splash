@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { buildDirection, loadBeat } from "./build.mjs";
-import { sceneAt, toStage, WINDOWS } from "./scene.mjs";
+import { COUNT_UP, sceneAt, toStage, WINDOWS } from "./scene.mjs";
 
 /**
  * The choreography of BRIEF.md, frame by frame, on the props each direction is actually rendered from: who
@@ -13,9 +13,11 @@ import { sceneAt, toStage, WINDOWS } from "./scene.mjs";
 const beat = loadBeat();
 const DIRECTIONS = ["creme", "nocturne", "rapport"];
 const SIX = ["ISL", "SWE", "NOR", "FIN", "FRA", "CHE"];
+/** The three lowest shares, named as the still names them. */
+const LOWEST = ["context:CYP", "context:MLT", "context:MDA"];
 const EXPECTED_NAMES: Record<string, string[]> = {
   establish: [],
-  reference: [],
+  reference: LOWEST,
   reveal: SIX.map((iso) => `top:${iso}`),
   subject: [
     "close:ALB",
@@ -24,8 +26,8 @@ const EXPECTED_NAMES: Record<string, string[]> = {
     "neighbour:GRC",
     "neighbour:-99:Kosovo",
   ],
-  conclusion: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR"],
-  hold: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR"],
+  conclusion: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR", ...LOWEST],
+  hold: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", "missing:UKR", ...LOWEST],
 };
 const shown = (scene: any) =>
   Object.entries(scene.names)
@@ -76,7 +78,7 @@ for (const id of DIRECTIONS) {
     });
 
     for (const camera of ["overview", "closeUp"] as const)
-      it(`should keep every ${camera} name inside the stage, clear of every other, and against its own country`, () => {
+      it(`should keep every ${camera} name inside the stage, clear of every other, and against its own country or led to it`, () => {
         const names = props.names.filter((n: any) => n.camera === camera);
         for (const n of names) {
           expect(n.x).toBeGreaterThanOrEqual(gap - 1e-6);
@@ -89,9 +91,11 @@ for (const id of DIRECTIONS) {
           );
           const dx = Math.max(n.x - n.seat.x, 0, n.seat.x - n.x - n.width);
           const dy = Math.max(n.y - n.seat.y, 0, n.seat.y - n.y - n.height);
-          // Albania's overview name steps beside its ring, so it may stand the ring's radius further off.
+          // Albania's overview name steps beside its ring, so it may stand the ring's radius further off; a name
+          // set in the sea beside a small country is led to it, and may stand three of its heights off.
           const slack = camera === "overview" && n.role === "odd" ? (props.ring.r / props.cameras.overview.w) * props.stage.width + props.strokes.ring : 0;
-          expect([n.key, Math.hypot(dx, dy) <= n.height + slack + 1e-6]).toEqual([
+          const reach = n.leader && n.role !== "odd" ? 3 * n.height : n.height;
+          expect([n.key, Math.hypot(dx, dy) <= reach + slack + 1e-6]).toEqual([
             n.key,
             true,
           ]);
@@ -196,7 +200,8 @@ for (const id of DIRECTIONS) {
     it("should count Albania's and its neighbours' shares up from zero once the close-up has settled, and land on their values", () => {
       const settled = sceneAt(props, last("subject"));
       expect(settled.countUp).toEqual({ odd: 1, neighbour: 1 });
-      const early = T.subject.start + Math.round(T.subject.duration * 0.8);
+      const [, a, b] = COUNT_UP.neighbour;
+      const early = T.subject.start + Math.round(T.subject.duration * (a + b) / 2);
       const mid = sceneAt(props, early).countUp;
       expect(mid.neighbour).toBeGreaterThan(0);
       expect(mid.neighbour).toBeLessThan(1);

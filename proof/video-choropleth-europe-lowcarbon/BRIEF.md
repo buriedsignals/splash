@@ -45,28 +45,61 @@ No MapLibre, no MapTiler, no key, no proxy.
 The owner (2026-09-14): « Le layout vidéo ne doit pas être comme les autres, genre premier plan le titre en
 premier puis ensuite tout un storytelling ». The video is cut into shots:
 
-1. **The title card** (`establish`) — the eyebrow and the longest title form, the one that names Albania,
-   alone on the direction's ground, as large as the display register draws, wrapped to a reading measure
-   (72 % of the content width, at most four lines), the block centred on the frame's height.
+1. **The title card** (`establish`) — the eyebrow, the longest title form, the one that names Albania, and
+   the still's standfirst under it, alone on the direction's ground; the title as large as the display
+   register draws, wrapped to a reading measure (72 % of the content width, at most four lines), the
+   standfirst in the body register (at most three lines), the block centred on the frame's height.
 2. **The story** (`reference` → `conclusion`) — the map on the whole frame, edge to edge; the camera is the
    viewBox. The count and the key sit in ONE PANEL, seated by measurement where it covers the least land
-   under the overview camera (1.4–2.5 % in the three directions); it comes with the classes and leaves for
-   the close-up. Names are pills at their seats, clear of the panel and of each other.
+   under the overview camera and none of the seven's; it comes with the classes and leaves for the close-up.
+   The map carries **the still's anatomy** (below); the close-up adds the still's callout over its sea.
 3. **The end card** (end of `conclusion`, then `hold`) — the claim, stated once its evidence has been shown,
    and the source on the bottom margin.
+
+## The still's anatomy, redrawn in the frame
+
+The owner (2026-09-14), on the first cut: « Il n'y a qu'un fond de carte et rien d'autre » — and on the
+basemap: « Vectoriel + anatomie statique ». The map words are the still's (`static-choropleth-europe-lowcarbon`),
+set in SVG over the vector map:
+
+- **Names in capitals, haloed.** `area` is the axis register tracked to at least 0.8 px of the still (× k);
+  `feature` — the seven the claim is about — is that at 700 (`mapRegistersOf`, after the still's
+  `mapRegistersFor`). The halo is the still's stroke, `max(2.5, ascent × 0.34)` (× k for the floor), struck
+  in the colour of the country under the word's centre — and it follows that colour frame by frame, since the
+  floor steps countries back under the words.
+- **The ink is measured against every cell the word crosses**, in every state the word is seen in (the six
+  at the floor and at the close, the rest with every class in): the accent walked to 7:1 for a feature, the
+  muted ink to 4.5:1 for an area (the still's `inkFor`). A position no ink reads on is refused.
+- **Whole inside, or led.** A word lies wholly inside its own country (both ends, both quarters, the middle
+  of its line) or stands clear of its seat and is led to it by a line and a dot, the still's rule; the leader
+  is struck on its word's halo so it reads over a dark country. Albania's names are exempt: the ring says
+  which country they name, and the overview name leads from the ring.
+- **Context names**: the three lowest shares — Chypre, Malte, Moldavie — as the still names them.
+- **Seas in italic** (`water`: the axis in italic, untracked, haloed in the sea), searched within two and a
+  half leads of their declared centres, in open water, inside the margins, clear of names and panel; no
+  abbreviation. The still's three seas do not fit the video's camera (the North Sea and the Baltic are too
+  narrow for the word at 36 px, the Mediterranean's centre sits on the bottom margin beside Malta), so the
+  video declares the waters its camera carries — Océan Atlantique, Mer de Norvège, Mer Noire — and keeps
+  whichever the search can hold.
+- **The callout**, the still's sentence (« Albanie, 100,0 %, est le seul du groupe hors du nord-ouest. Ses 3
+  voisins sont tous sous 60 %. ») in the annot register and the accent, set over the close-up's sea where it
+  covers the least land, clear of the ring and of every close-up name.
 
 ## The copy (French)
 
 | slot | text | register |
 | --- | --- | --- |
 | eyebrow | Énergie · Europe | eyebrow |
-| title | the scrolly's three forms, longest first: « Sept pays européens dépassent 94 % d'électricité bas-carbone — six au nord-ouest, et l'Albanie » · « Le bas-carbone européen est au nord-ouest — et en Albanie » · « Le bas-carbone européen, et son exception » — the longest form that holds one line; a form may step its size down, never to or under the next largest register | display |
-| counter | « {n} pays au-dessus de 94 % », n counting 0 → 7 | value |
+| title | the scrolly's three forms, longest first: « Sept pays européens dépassent 94 % d'électricité bas-carbone — six au nord-ouest, et l'Albanie » · « Le bas-carbone européen est au nord-ouest — et en Albanie » · « Le bas-carbone européen, et son exception » — the longest form that holds four lines of the measure; a form may step its size down, never to or under the next largest register | display |
+| standfirst | the still's three forms, longest first — the longest that holds three lines | body |
+| counter | « 40 pays », then « {n} pays au-dessus de {borne} » | value |
 | key | 40 % · 55 % · 70 % · 85 % · 94 % · part bas-carbone de la production · donnée non rapportée | axis |
-| names, north-west | Islande · Suède · Norvège · Finlande · France · Suisse | axis |
-| names, close-up | Albanie · 100 % · Monténégro · 59 % · Macédoine du Nord · 39 % · Grèce · 49 % · Kosovo, hors données — no name but Albania's may sit on Albania's box | value (Albania), axis |
-| names, pull back | the six · Albanie · 100 % · Ukraine · donnée non rapportée | axis — Albania in the figures voice only in its close-up, where it is the whole shot; at the overview a 45 px pill pushed France and Switzerland off their countries |
-| seas | Mer du Nord · Méditerranée · Baltique — drawn at the overview only, and only where the whole word lies over sea and touches no name. At 39 px the scrolly's three sea names, at the scrolly's centres, all run onto land (Denmark, Sweden, Sicily), so none is drawn in any direction | annot |
+| names, north-west | ISLANDE · SUÈDE · NORVÈGE · FINLANDE · FRANCE · SUISSE | feature |
+| names, lowest | CHYPRE · MALTE · MOLDAVIE | area |
+| names, close-up | ALBANIE · 100 % · MONTÉNÉGRO · 59 % · MACÉDOINE DU NORD · 39 % · GRÈCE · 49 % · KOSOVO, HORS DONNÉES — no name but Albania's may sit on Albania's box; the neighbours placed in the order that keeps them nearest their seats | value as a feature (Albania), area |
+| names, pull back | the six · ALBANIE · UKRAINE · the three lowest — the share was counted at the close-up, « donnée non rapportée » is the key's swatch | feature, area |
+| seas | Océan Atlantique · Mer de Norvège · Mer Noire (and the still's Mer du Nord · Mer Méditerranée · Mer Baltique where they fit) | water |
+| callout | the still's sentence, at the close-up | annot |
 | source | « Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · contours Natural Earth 50 m », shortened to the longest of its forms that holds one line | axis |
 
 ## The choreography — the scrolly's six cards, told with what only a video has
@@ -79,10 +112,10 @@ the filter and the count run first, and the six names arrive only once the filte
 | event | card | what the shot says | gesture | what the viewer sees move, in order inside the event | derived value asserted |
 | --- | --- | --- | --- | --- | --- |
 | `establish` | 1 | Europe in 2024, before any value | — (furniture) | Europe's land and sea are drawn from frame 0 at the overview camera, every studied country bare land, Ukraine in the « non rapportée » fill; the eyebrow, title, key frame (label and « non rapportée » swatch) and source come up once and never move again | reported `value.size` = 40; unreported = 1 (Ukraine) |
-| `reference` | 2 | the colour is a class, from under 40 % to 94 % and more | **reveal in order** | the six classes take their fill one after another, < 40 % first, ≥ 94 % last — each class's swatch and its borne arriving with it | class counts low → high = 8 · 6 · 6 · 8 · 5 · 7, summing to 40 |
-| `reveal` | 3 + 4 | above 94 %, only seven remain — six are north or west | **the floor rises** (filter as time), then **name** | a cursor travels the key borne by borne — 40, 55, 70, 85, 94 % — and each class it passes steps back to bare land, its swatch fading with it, while the counter steps down « 40 pays » → « 32 pays au-dessus de 40 % » → 26 → 20 → 12 → « 7 pays au-dessus de 94 % »; once the floor stands at 94 %, Islande, Suède, Norvège, Finlande, France, Suisse are named | counts at or above each borne = 40 · 32 · 26 · 20 · 12 · 7; stepped back = 33; named = 6, each north or west of Albania |
-| `subject` | 5 | the seventh is Albania, 100 %, and its three measured neighbours are all under 60 % | **zoom + name** | the six names leave; every class returns as the camera travels, eased, onto the Balkans, Albania at the centre of the close-up; once the camera has settled: Albania ringed and named, its share **counting up** from 0 to « 100 % », then « Monténégro », « Macédoine du Nord », « Grèce », each share counting up to 59, 39 and 49 %, and « Kosovo, hors données » | Albania ∈ `above` at 100 %; measured neighbours = 3, the highest Monténégro 59.5 % < 60; Kosovo = the one ring-neighbour without a row |
-| `conclusion` | 6 | Europe again, with what was learned still marked | **pull back** + **name** | the close-up names leave; the camera returns to the overview; once it has settled: every class on the map, the six named, Albania ringed and named, « Ukraine · donnée non rapportée » | conclusion camera = establish camera |
+| `reference` | 2 | the colour is a class, from under 40 % to 94 % and more | **reveal in order** | the title card gives way to the map; the panel comes up with « 40 pays »; the six classes take their fill one after another, < 40 % first, ≥ 94 % last — each class's swatch and its borne arriving with it; once the lowest class has landed, CHYPRE, MALTE, MOLDAVIE are named | class counts low → high = 8 · 6 · 6 · 8 · 5 · 7, summing to 40 |
+| `reveal` | 3 + 4 | above 94 %, only seven remain — six are north or west | **the floor rises** (filter as time), then **name** | a cursor travels the key borne by borne — 40, 55, 70, 85, 94 % — and each class it passes steps back to bare land, its swatch fading with it, while the counter steps down « 40 pays » → « 32 pays au-dessus de 40 % » → 26 → 20 → 12 → « 7 pays au-dessus de 94 % »; the three lowest names step back as the floor passes 40 %; once the floor stands at 94 %, Islande, Suède, Norvège, Finlande, France, Suisse are named | counts at or above each borne = 40 · 32 · 26 · 20 · 12 · 7; stepped back = 33; named = 6, each north or west of Albania |
+| `subject` | 5 | the seventh is Albania, 100 %, and its three measured neighbours are all under 60 % | **zoom + name** | the six names leave; every class returns as the camera travels, eased, onto the Balkans, Albania at the centre of the close-up; once the camera has settled: Albania ringed and named, its share **counting up** from 0 to « 100 % », then « Monténégro », « Macédoine du Nord », « Grèce », each share counting up to 59, 39 and 49 %, and « Kosovo, hors données »; once the shares have counted, the still's callout is set over the sea and left four seconds | Albania ∈ `above` at 100 %; measured neighbours = 3, the highest Monténégro 59.5 % < 60; Kosovo = the one ring-neighbour without a row |
+| `conclusion` | 6 | Europe again, with what was learned still marked | **pull back** + **name** | the close-up names and the callout leave; the camera returns to the overview; once it has settled: every class on the map, the six named, Albania ringed and named, UKRAINE and the three lowest named; then the end card | conclusion camera = establish camera |
 | `hold` | — | the claim, readable | — (stillness) | nothing | hold state = conclusion state; hold ≥ 60 frames |
 
 Rules the composition keeps:
@@ -92,7 +125,7 @@ Rules the composition keeps:
   it has settled at the overview. Nothing is named while the camera moves.
 - **The counter stays once counted.** In the scrolly it leaves with the filter at card 5; with no card
   to say « sept », the counter is the only words that state the count, so the video keeps it from
-  `reveal` to the hold.
+  `reference` to the hold.
 - **The camera is eased, the class reveal is linear across the classes in value order**, each class
   easing its own arrival.
 - **Every event but the hold changes the state** (`assertEventStates`).
@@ -102,14 +135,12 @@ Rules the composition keeps:
 - Every word at 30 px or more at 1920 × 1080 — the scrolly's 12–14 px pills become the video
   registers (`videoRegistersOf`, one factor k). The rendered markup of every event's last frame is
   held to `assertTypeFloor`.
-- Names are short pills at each country's seat (its most interior point), kept apart, and kept
-  inside the stage; the pills for one camera are placed once, in Bun, for the full set that camera
-  ever shows, so no name moves when another arrives. A pill that would touch another steps to the
-  nearest clear position that keeps it against its country; at the overview, where a name is wider
-  than most countries, that position also prefers sea and its own land over a neighbour's, a named
-  country's land counted four times, so « Suisse » does not sit on France. In the close-up every
-  country is larger than its name and each name keeps its seat unless another name is in the way. At the
-  overview Albania's ring is kept clear, so its name sits beside the ring rather than over it.
+- Names are placed once per camera, in Bun, for the full set that camera ever shows, so no name moves
+  when another arrives; each box is the word and its halo's reach, kept apart and inside the stage. A
+  name that would touch another steps to the nearest clear position that keeps it against its country,
+  or — led — up to three of its heights off; at the overview that position also prefers sea and its own
+  land over a neighbour's, a named country's land counted four times. At the overview Albania's ring is
+  kept clear, so its name sits beside the ring and leads from it.
 - The first frame is not empty; the hold is at least 60 frames; the whole is at least 12 s.
 - Remotion directly: the still at `--frame=-1` first, then the mp4; `--concurrency=1`; an empty
   `--env-file` on every spawn.

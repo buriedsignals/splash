@@ -6,7 +6,7 @@
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { adjustToContrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { sizeFor } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
@@ -14,9 +14,9 @@ import { registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plateTints, WATER_HUE } from "#shared/map-beat/tints.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
-import { loadSubject, rampFor } from "../static-choropleth-europe-lowcarbon/beat.mjs";
+import { copyOf as stillCopyOf, loadSubject, rampFor } from "../static-choropleth-europe-lowcarbon/beat.mjs";
 import { CLIP_MARGIN, FRAME, unmeasuredNeighboursOf, videoGeometry } from "./geometry.mjs";
-import { layoutFor, pillOf, SLOT_REGISTERS, widthOf } from "./layout.mjs";
+import { haloOf, layoutFor, mapRegistersOf, pillOf, SLOT_REGISTERS, widthOf } from "./layout.mjs";
 import { closeUpViewBox, overviewViewBox, placePills, toStage } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
 import { CHOROPLETH_VIDEO_TIMING } from "./timing-contract.ts";
@@ -28,7 +28,7 @@ export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the composition draws with — `body` is resolved for the ladder's factor, never drawn. */
-export const DRAWN_REGISTERS = ["display", "eyebrow", "value", "axis", "annot"];
+export const DRAWN_REGISTERS = ["display", "eyebrow", "body", "value", "axis", "annot", "area", "feature", "closeFeature", "water"];
 const NB = " ";
 /** The air a pill keeps from another pill and from the stage's edge, × the axis lead. */
 const PILL_GAP = 0.25;
@@ -36,8 +36,14 @@ const PILL_GAP = 0.25;
 const SEA_SAMPLES = 24;
 /** The side, in stage pixels, of the cells a pill's cover of other countries is counted on. */
 const OWNER_CELL = 8;
-/** The order names are placed in, per camera: the subject, the claim, its neighbours, the absence. */
-const ROLE_PRIORITY = ["odd", "top", "neighbour", "missing"];
+/** The order names are placed in, per camera: the subject, the claim, its neighbours, the absence, the context. */
+const ROLE_PRIORITY = ["odd", "top", "neighbour", "missing", "context"];
+/** A sea's name is searched on rings around its declared centre: this many rings, each this × the axis lead
+ *  further out, at `SEA_ANGLES` angles — two and a half leads at most. Further, the word leaves its sea: the
+ *  first search walked « Mer Baltique » into the Norwegian Sea and « Médit. » onto the Black Sea. */
+const SEA_RINGS = 10;
+const SEA_RING_STEP = 0.25;
+const SEA_ANGLES = 16;
 /** A cell of a NAMED country's land hidden under another country's name counts this many times: a word
  *  set on France reads as naming France, so « Suisse » steps beside France's name rather than over France,
  *  and at the close-up the neighbours' names sit around Albania rather than on it. */
@@ -57,13 +63,15 @@ export function loadBeat() {
 }
 
 export function copyOf(subject) {
-  const { value, above, neighbours, unreported, ODD_ONE, FLOOR, BREAKS, french } = subject;
+  const { value, above, neighbours, unreported, ranked, ODD_ONE, FLOOR, BREAKS, french } = subject;
+  const still = stillCopyOf(subject);
+  const upper = (text) => text.toUpperCase();
   const pct = (v) => `${Math.round(v)}${NB}%`;
   const topSix = above.filter((r) => r.iso !== ODD_ONE).map((r) => r.iso);
   const kosovo = unmeasuredNeighboursOf(subject, ODD_ONE);
   if (kosovo.length !== 1 || kosovo[0].name !== "Kosovo")
     throw new Error(`the close-up names one unmeasured neighbour, Kosovo; the rings give ${JSON.stringify(kosovo)}`);
-  const oddText = `${french(ODD_ONE)} · ${pct(value.get(ODD_ONE).lowCarbon)}`;
+  const oddText = upper(`${french(ODD_ONE)} · ${pct(value.get(ODD_ONE).lowCarbon)}`);
   return {
     eyebrow: "Énergie · Europe",
     /** The scrolly's own three forms (`render-directions-scrolly.mjs`). */
@@ -72,6 +80,10 @@ export function copyOf(subject) {
       `Le bas-carbone européen est au nord-ouest — et en Albanie`,
       `Le bas-carbone européen, et son exception`,
     ],
+    /** The still's standfirst ladder, as the still words it. */
+    standfirst: still.limits,
+    /** The still's callout, set over the close-up's sea. */
+    callout: still.callout.lines.join(" "),
     /** THE FLOOR'S STEPS: every reporting country, then how many stand at or above each borne in turn — the
      *  counter the cursor steps through (BRIEF.md). The last one is the claim. */
     /** THE END CARD'S CLAIM, stated once its evidence has been shown — longest form first. */
@@ -91,19 +103,32 @@ export function copyOf(subject) {
       "Source : Ember, Energy Institute (2025), via Our World in Data · contours Natural Earth 50 m",
       "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
     ],
+    /** THE STILL'S ANATOMY: the seven the claim is about set as features, every other name as an area,
+     *  uppercased; the three lowest shares named as the still names them. `klass` picks the ink's floor. */
     names: [
-      ...topSix.map((iso) => ({ key: `top:${iso}`, seat: iso, role: "top", camera: "overview", text: french(iso), slot: "name", accent: true })),
-      { key: `odd:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "overview", text: oddText, slot: "name", accent: true },
-      { key: `missing:${unreported[0].iso}`, seat: unreported[0].iso, role: "missing", camera: "overview", text: `${french(unreported[0].iso)} · donnée non rapportée`, slot: "name", accent: false },
-      { key: `close:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "closeUp", text: oddText, slot: "oddName", accent: true },
-      ...neighbours.map((iso) => ({ key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", text: `${french(iso)} · ${pct(value.get(iso).lowCarbon)}`, slot: "name", accent: false })),
-      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", text: "Kosovo, hors données", slot: "name", accent: false },
+      ...topSix.map((iso) => ({ key: `top:${iso}`, seat: iso, role: "top", camera: "overview", text: upper(french(iso)), slot: "featureName", klass: "feature" })),
+      // At the overview the names are the still's: the country alone — the share was counted at the close-up, and
+      // « donnée non rapportée » is the key's own swatch.
+      { key: `odd:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "overview", text: upper(french(ODD_ONE)), slot: "featureName", klass: "feature" },
+      { key: `missing:${unreported[0].iso}`, seat: unreported[0].iso, role: "missing", camera: "overview", text: upper(french(unreported[0].iso)), slot: "name", klass: "area" },
+      ...ranked.slice(-3).map((r) => ({ key: `context:${r.iso}`, seat: r.iso, role: "context", camera: "overview", text: upper(french(r.iso)), slot: "name", klass: "area" })),
+      { key: `close:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "closeUp", text: oddText, slot: "oddName", klass: "feature" },
+      ...neighbours.map((iso) => ({ key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", text: upper(`${french(iso)} · ${pct(value.get(iso).lowCarbon)}`), slot: "name", klass: "area" })),
+      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", text: upper("Kosovo, hors données"), slot: "name", klass: "area" },
     ],
-    /** The scrolly's three seas, at their declared centres. */
+    /** The still's three seas, each with its ladder of forms, at their declared centres. */
+    // An abbreviation (« Mer du N. ») is the printed plate's last resort; a frame watched from across a room
+    // names the sea in full or not at all.
+    //
+    // THE STILL'S THREE SEAS, AND THE WATERS THE VIDEO'S CAMERA ADDS. The still crops Europe to its plate and names
+    // the three seas that crop can carry; the video's overview runs edge to edge over the whole camera window, and
+    // the open water it shows — the Atlantic, the Norwegian Sea, the Black Sea — is where a name has room. Each is
+    // declared at its own centre; the search keeps it there or drops it.
     waters: [
-      { key: "water:north", text: "Mer du Nord", lon: 3.0, lat: 56.5 },
-      { key: "water:med", text: "Méditerranée", lon: 15.0, lat: 36.0 },
-      { key: "water:baltic", text: "Baltique", lon: 19.5, lat: 58.0 },
+      ...still.waters.map((w, i) => ({ key: `water:${i}`, forms: w.forms.filter((f) => !f.endsWith(".")), lon: w.lon, lat: w.lat })),
+      { key: "water:atlantic", forms: ["Océan Atlantique", "Atlantique"], lon: -17.0, lat: 56.0 },
+      { key: "water:norwegian", forms: ["Mer de Norvège"], lon: 1.0, lat: 67.0 },
+      { key: "water:black", forms: ["Mer Noire"], lon: 34.0, lat: 43.3 },
     ],
   };
 }
@@ -114,10 +139,10 @@ export function textPerRegisterOf(copy) {
   return {
     display: [...copy.title, ...copy.claim].join(" "),
     eyebrow: copy.eyebrow,
-    body: copy.source.join(" "),
-    annot: copy.waters.map((w) => w.text).join(" "),
+    body: copy.standfirst.join(" "),
+    annot: copy.callout,
     value: `${copy.counterSteps.join(" ")} 0123456789 ${bySlot("oddName").join(" ")}`,
-    axis: [...bySlot("name"), ...copy.breaks, copy.unit, copy.missingLabel, ...copy.source].join(" "),
+    axis: [...bySlot("name"), ...bySlot("featureName"), ...copy.waters.flatMap((w) => w.forms), ...copy.breaks, copy.unit, copy.missingLabel, ...copy.source].join(" "),
   };
 }
 
@@ -144,9 +169,9 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, `${id}.md`)), textPerRegisterOf(copy));
   const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
   const scaled = videoRegistersOf(resolved, SIZE);
-  const layout = layoutFor({ registers: scaled, copy, size: SIZE });
-  const registers = layout.registers;
   const k = scaled.axis.fontSize / resolved.axis.fontSize;
+  const layout = layoutFor({ registers: { ...scaled, ...mapRegistersOf(scaled, k) }, copy, size: SIZE, k });
+  const registers = layout.registers;
   const { stage } = layout;
   const gap = PILL_GAP * registers.axis.lead;
 
@@ -174,8 +199,7 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       counter: onGround(accent),
       key: onGround(muted),
       source: onGround(muted),
-      nameAccent: onGround(accent),
-      nameInk: onGround(ink),
+      standfirst: onGround(registers.body.fill ?? muted),
       water: adjustToContrast(WATER_HUE, tints.water, TEXT_CONTRAST_MIN) ?? onGround(ink),
     },
   };
@@ -201,10 +225,12 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   };
 
   // ── names: pills, the two cameras, and every pill placed once per camera ─────────────────────────────
+  // A map word has no pill: its box is the word and the halo's reach around it.
   const pills = copy.names.map((n) => ({
     ...n,
     register: SLOT_REGISTERS[n.slot],
-    ...pillOf(n.text, registers[SLOT_REGISTERS[n.slot]]),
+    halo: haloOf(registers[SLOT_REGISTERS[n.slot]], k),
+    ...pillOf(n.text, registers[SLOT_REGISTERS[n.slot]], haloOf(registers[SLOT_REGISTERS[n.slot]], k) / 2),
     seatAt: shapeOf(n.seat).seat,
     reach: Math.max(shapeOf(n.seat).box.w, shapeOf(n.seat).box.h),
   }));
@@ -235,6 +261,18 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   const land = new Uint8Array(landCols * landRows);
   for (let j = 0; j < landRows; j++)
     for (let i = 0; i < landCols; i++) land[j * landCols + i] = landAt(cameras.overview, (i + 0.5) * PANEL_CELL, (j + 0.5) * PANEL_CELL) ? 1 : 0;
+  /** The seven's own land, which the panel may never cover: nocturne's larger panel first sat over Iceland. */
+  const sevenRings = geometry.shapes.filter((sh) => seven.has(sh.iso)).map((sh) => ({ box: sh.box, rings: ringsOf(sh.path) }));
+  const coversSeven = (box) => {
+    const vb = cameras.overview;
+    for (let sy = box.y; sy <= box.y + box.height; sy += PANEL_CELL / 2)
+      for (let sx = box.x; sx <= box.x + box.width; sx += PANEL_CELL / 2) {
+        const x = vb.x + (sx / stage.width) * vb.w;
+        const y = vb.y + (sy / stage.height) * vb.h;
+        if (sevenRings.some((sh) => x >= sh.box.x && x <= sh.box.x + sh.box.w && y >= sh.box.y && y <= sh.box.y + sh.box.h && sh.rings.some((r) => insideRing(r, x, y)))) return true;
+      }
+    return false;
+  };
   const landShare = (box) => {
     let covered = 0;
     let total = 0;
@@ -250,7 +288,9 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   for (let y = stage.height - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
     for (let x = inset; x + panelLayout.width <= stage.width - inset; x += PANEL_STEP) {
       const share = landShare({ x, y, width: panelLayout.width, height: panelLayout.height });
-      if (!panelAt || share < panelAt.share - 1e-9) panelAt = { x, y, share };
+      if (panelAt && share >= panelAt.share - 1e-9) continue;
+      if (coversSeven({ x, y, width: panelLayout.width, height: panelLayout.height })) continue;
+      panelAt = { x, y, share };
     }
   if (!panelAt) throw new Error(`a ${panelLayout.width}×${panelLayout.height} panel does not fit inside the margins`);
   const panelBox = { x: panelAt.x, y: panelAt.y, width: panelLayout.width, height: panelLayout.height };
@@ -299,6 +339,80 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
   };
   /** Albania's ring, in stage pixels under a camera — the obstacle its own overview name steps beside. */
   const ringPxAt = (vb) => (ringRadius / vb.w) * stage.width + strokes.ring;
+  // ── a map word's ink, measured against the cell it lands on, in every state it is shown in ─────────────────
+  // The still's rule (`rampFor().inkFor`): the halo is struck in the colour of the cell under the word's centre,
+  // and the ink walked to 7:1 for a feature, 4.5:1 for an area, against that cell. A video changes the cell
+  // under a word — the floor steps a neighbour back to bare land — so the one ink is measured against the cell
+  // in every state the name is shown in; the halo follows the cell frame by frame (`ChoroplethFrame.tsx`).
+  const shapeByKey = new Map(shapes.map((sh) => [sh.key, sh]));
+  const everyRing = geometry.shapes.map((sh) => ({ key: sh.iso, box: sh.box, rings: ringsOf(sh.path) }));
+  /** The country under a stage point — every shape, context land included: a word over Kosovo is on land, not on
+   *  the sea — measured on its rings rather than read off a grid's cell. */
+  const ownerExact = (camera, sx, sy) => {
+    const vb = cameras[camera];
+    const x = vb.x + (sx / stage.width) * vb.w;
+    const y = vb.y + (sy / stage.height) * vb.h;
+    return everyRing.find((sh) => x >= sh.box.x && x <= sh.box.x + sh.box.w && y >= sh.box.y && y <= sh.box.y + sh.box.h && sh.rings.some((r) => insideRing(r, x, y)))?.key ?? null;
+  };
+  /** The colour under a country at the end of a state: `classes` every class in, `filtered` the floor at 94 %. */
+  const cellColour = (owner, state) => {
+    if (owner === null) return colours.sea;
+    const sh = shapeByKey.get(owner);
+    if (sh.classIndex === null) return sh.fill;
+    return state === "filtered" && !sh.kept ? colours.land : colours.classFills[sh.classIndex];
+  };
+  /** The states each role is seen in (states.mjs): the six at the floor and at the close; the rest with every class in. */
+  const STATES_SEEN = { top: ["filtered", "classes"], odd: ["classes"], missing: ["classes"], context: ["classes"], neighbour: ["classes"] };
+  const floorOf = (klass) => (klass === "feature" ? 7 : TEXT_CONTRAST_MIN);
+  const inkOn = (klass, cells) => {
+    const base = klass === "feature" ? accent : muted;
+    for (const cell of cells) {
+      const ink = adjustToContrast(base, cell, floorOf(klass));
+      if (ink && cells.every((c) => contrast(ink, c) >= floorOf(klass) - 1e-9)) return ink;
+    }
+    return null;
+  };
+  /** THE STILL'S LEADER RULE (`placementsFor`): a word either lies WHOLLY inside its own country — both ends,
+   *  both quarters and the middle of its line — or leaves the country's seat far enough for a leader to be seen.
+   *  A word half over its country and half over a neighbour, with no leader, names the neighbour: « MOLDAVIE » set
+   *  across Romania. Albania's names are exempt — the ring says which country they name. */
+  const LEADER_GAP = 0.3; // × axis lead
+  const ringsBySeat = new Map(geometry.shapes.map((sh) => [sh.iso, ringsOf(sh.path)]));
+  const seatedOrLed = (camera, key, box) => {
+    const p = pills.find((q) => q.key === key);
+    if (p.role === "odd") return true;
+    const vb = cameras[camera];
+    const own = ringsBySeat.get(p.seat);
+    const cy = box.y + box.height / 2;
+    // The line's ends a tenth in: a coastline's fjord under the last letter's edge is not the word leaving its country.
+    const reach = (0.9 * (box.width - p.halo)) / 2;
+    const whole = [0, -reach / 2, reach / 2, -reach, reach].every((dx) => {
+      const x = vb.x + ((box.x + box.width / 2 + dx) / stage.width) * vb.w;
+      const y = vb.y + (cy / stage.height) * vb.h;
+      return own.some((ring) => insideRing(ring, x, y));
+    });
+    if (whole) return true;
+    const seat = toStage(vb, stage, p.seatAt);
+    const g = LEADER_GAP * registers.axis.lead;
+    return seat.x < box.x - g || seat.x > box.x + box.width + g || seat.y < box.y - g || seat.y > box.y + box.height + g;
+  };
+  /** The ink a name would take with its box at `box`, or null when none reads on the cell under its centre. */
+  // A WORD IS READ ON EVERY CELL IT CROSSES, not only the one under its centre: a close-up name straddling
+  // Kosovo's dark fill and Serbia's light one was set in an ink that vanished over half of it. So the ink is
+  // measured against the cells under nine points along the word's line, in every state it is seen in.
+  const WORD_SAMPLES = 9;
+  const inkAt = (camera, key, box) => {
+    const p = pills.find((q) => q.key === key);
+    const cy = box.y + box.height / 2;
+    const owner = ownerExact(camera, box.x + box.width / 2, cy);
+    const crossed = new Set([owner]);
+    // Albania's name is the exception, as it is for the leader: set over its own fill inside the ring, its halo is that fill.
+    // The line is the one `seatedOrLed` reads: its ends a tenth in, where the halo already carries the last letter.
+    const half = (0.9 * (box.width - p.halo)) / 2;
+    if (p.role !== "odd") for (let i = 0; i < WORD_SAMPLES; i++) crossed.add(ownerExact(camera, box.x + box.width / 2 - half + (2 * half * i) / (WORD_SAMPLES - 1), cy));
+    const cells = [...new Set([...crossed].flatMap((o) => STATES_SEEN[p.role].map((state) => cellColour(o, state))))];
+    return { owner, cells, ink: inkOn(p.klass, cells) };
+  };
   const placed = {};
   for (const camera of ["overview", "closeUp"]) {
     const items = pills
@@ -313,7 +427,8 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
         // At the close-up no other country's name may sit on Albania: the shot is there to show it.
         const avoid = camera === "closeUp" && p.role !== "odd" ? [subjectBoxAt(cameras.closeUp)] : [];
         const slack = camera === "overview" && p.role === "odd" ? ringPxAt(cameras.overview) : 0;
-        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid, slack };
+        const beside = p.role === "odd" ? 0 : LEADER_GAP * registers.axis.lead + 1e-3;
+        return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid, slack, beside };
       });
     // At the overview the ring is smaller than Albania's own pill: a pill centred on the seat would hide the
     // ring entirely, so the ring is kept clear and the name steps beside it. At the close-up the ring
@@ -324,13 +439,61 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     // COVER IS WEIGHED AT THE OVERVIEW ONLY. There a name is wider than most countries and has to choose what
     // it hides; in the close-up every country is larger than its name, and the seat itself is the place —
     // weighing cover there walked « Macédoine du Nord » off North Macedonia onto the sea past Albania.
-    Object.assign(placed, placePills(items, stage, gap, camera === "overview" ? { obstacles, cover: coverFor(camera) } : { obstacles }));
+    const allowed = (box, key) => inkAt(camera, key, box).ink !== null && seatedOrLed(camera, key, box);
+    if (camera === "overview") {
+      Object.assign(placed, placePills(items, stage, gap, { obstacles, cover: coverFor(camera), allowed }));
+      continue;
+    }
+    // THE CLOSE-UP'S NEIGHBOURS ARE PLACED IN THE ORDER THAT KEEPS THEM NEAREST THEIR SEATS. Four names crowd the
+    // top of the shot; placed largest first, Montenegro took the place above Kosovo and Kosovo's name was led
+    // across the whole of Montenegro. Every order of the names after Albania's is tried — twenty-four — and the
+    // one whose names stand the least total distance off their seats wins.
+    const [first, ...rest] = items;
+    const orders = (list) => (list.length <= 1 ? [list] : list.flatMap((x, i) => orders([...list.slice(0, i), ...list.slice(i + 1)]).map((o) => [x, ...o])));
+    let best = null;
+    for (const order of orders(rest)) {
+      let result;
+      try {
+        result = placePills([first, ...order], stage, gap, { obstacles, allowed });
+      } catch {
+        continue;
+      }
+      const off = order.reduce((sum, it) => {
+        const b = result[it.key];
+        return sum + Math.hypot(Math.max(b.x - it.cx, 0, it.cx - b.x - it.width), Math.max(b.y - it.cy, 0, it.cy - b.y - it.height));
+      }, 0);
+      if (!best || off < best.off - 1e-9) best = { off, result };
+    }
+    if (!best) throw new Error("no order of the close-up's names places them all");
+    Object.assign(placed, best.result);
   }
-  const names = pills.map(({ seatAt, slot, reach, ...p }) => ({ ...p, seat: { ...toStage(cameras[p.camera], stage, seatAt) }, ...placed[p.key] }));
+  /** A LEADER, AS THE STILL DRAWS ONE: a word set beside its country rather than over it says which country it
+   *  names with a line from the country's seat — a dot on the seat — to the word's box. Albania's overview name
+   *  leads from its ring instead, and no dot is set inside the ring. */
+  const LEADER_DOT = 0.1; // × axis lead, the dot's radius
+  const leaderOf = (p, at, seat) => {
+    const box = { x: at.x, y: at.y, width: p.width, height: p.height };
+    if (seat.x >= box.x && seat.x <= box.x + box.width && seat.y >= box.y && seat.y <= box.y + box.height) return null;
+    const to = { x: Math.min(Math.max(seat.x, box.x), box.x + box.width), y: Math.min(Math.max(seat.y, box.y), box.y + box.height) };
+    const ringed = p.camera === "overview" && p.role === "odd";
+    const length = Math.hypot(to.x - seat.x, to.y - seat.y);
+    const ringPx = ringPxAt(cameras.overview);
+    if (ringed && length <= ringPx) return null;
+    const from = ringed ? { x: seat.x + ((to.x - seat.x) * ringPx) / length, y: seat.y + ((to.y - seat.y) * ringPx) / length } : seat;
+    return { from, to, dot: ringed ? 0 : LEADER_DOT * registers.axis.lead };
+  };
+  const names = pills.map(({ seatAt, slot, reach, klass, ...p }) => {
+    const at = placed[p.key];
+    const { owner, cells, ink } = inkAt(p.camera, p.key, { ...at, width: p.width, height: p.height });
+    if (!ink) throw new Error(`${p.text} lands on ${owner ?? "the sea"}, where no ${klass} ink reaches ${floorOf(klass)}:1 against ${cells.join(" and ")}`);
+    const seat = toStage(cameras[p.camera], stage, seatAt);
+    return { ...p, klass, seat, ...at, ink, onKey: owner, leader: leaderOf(p, at, seat) };
+  });
 
-  // ── seas: at the overview only, and only where the whole word lies over sea and no name touches it ─────
-  // The scrolly's 12 px sea names sat in open water; at the video's size the same word at the same centre
-  // can run onto land, and a sea's name written across Denmark names the wrong thing.
+  // ── seas: at the overview, searched in open water around their declared centres ─────────────────────────
+  // The still names its seas where its camera can carry them, form by form (`placementsFor`); here the word is
+  // tried on rings around its centre, the longest form first, and kept where the whole word lies over sea,
+  // inside the frame's margins, clear of every name, the panel and the seas already set.
   const rings = geometry.shapes.flatMap((sh) => ringsOf(sh.path));
   const onLand = (x, y) => rings.some((ring) => insideRing(ring, x, y));
   const overSea = (box) => {
@@ -343,29 +506,76 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
       }
     return true;
   };
-  const annot = registers.annot;
-  const waters = copy.waters
-    .map((w) => {
-      const text = w.text;
-      const width = widthOf(text, annot);
-      const band = measureTextBand(text, faceOf(annot));
-      const [ux, uy] = geometry.project([w.lon, w.lat]);
-      const at = toStage(cameras.overview, stage, { x: ux, y: uy });
-      return { key: w.key, text, width, x: at.x - width / 2, y: at.y + (band.ascent - band.descent) / 2, box: { x: at.x - width / 2, y: at.y - band.ascent, width, height: band.ascent + band.descent } };
-    })
-    .filter(({ box }) => {
-      const touches = names
-        .filter((n) => n.camera === "overview")
-        .some((n) => box.x < n.x + n.width + gap && n.x < box.x + box.width + gap && box.y < n.y + n.height + gap && n.y < box.y + box.height + gap);
-      const inside = box.x >= gap && box.y >= gap && box.x + box.width <= stage.width - gap && box.y + box.height <= stage.height - gap;
-      const underPanel = box.x < panelBox.x + panelBox.width + gap && panelBox.x < box.x + box.width + gap && box.y < panelBox.y + panelBox.height + gap && panelBox.y < box.y + box.height + gap;
-      return inside && !touches && !underPanel && overSea(box);
-    });
+  const touches = (a, b) => a.x < b.x + b.width + gap && b.x < a.x + a.width + gap && a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
+  const water = registers.water;
+  const waterHalo = haloOf(water, k, "water");
+  const taken = [...names.filter((n) => n.camera === "overview"), panelBox];
+  const waters = [];
+  for (const w of copy.waters) {
+    const [ux, uy] = geometry.project([w.lon, w.lat]);
+    const centre = toStage(cameras.overview, stage, { x: ux, y: uy });
+    let found = null;
+    for (const text of w.forms) {
+      const width = widthOf(text, water);
+      const band = measureTextBand(text, faceOf(water));
+      const candidates = [{ x: centre.x, y: centre.y, d: 0 }];
+      for (let r = 1; r <= SEA_RINGS; r++)
+        for (let a = 0; a < SEA_ANGLES; a++) {
+          const t = (a / SEA_ANGLES) * 2 * Math.PI;
+          const d = r * SEA_RING_STEP * registers.axis.lead;
+          candidates.push({ x: centre.x + d * Math.cos(t), y: centre.y + d * Math.sin(t), d });
+        }
+      for (const c of candidates) {
+        const box = { x: c.x - width / 2 - waterHalo / 2, y: c.y - band.ascent - waterHalo / 2, width: width + waterHalo, height: band.ascent + band.descent + waterHalo };
+        const inside = box.x >= inset && box.y >= vInset && box.x + box.width <= stage.width - inset && box.y + box.height <= stage.height - vInset;
+        if (!inside || taken.some((t) => touches(box, t)) || !overSea(box)) continue;
+        found = { key: w.key, text, width, x: c.x - width / 2, y: c.y, box };
+        break;
+      }
+      if (found) break;
+    }
+    if (found) {
+      waters.push(found);
+      taken.push(found.box);
+    }
+  }
+
+  // ── the callout: seated on the close-up's sea, clear of every close-up name and of Albania's ring ────────────
+  const { callout } = layout;
+  const closeRingPx = (ringRadius / cameras.closeUp.w) * stage.width + strokes.ring;
+  const closeObstacles = names.filter((n) => n.camera === "closeUp");
+  /** The ring is a circle at the centre of the close-up: a box clears it when its nearest point is outside it. */
+  const clearOfRing = (box) =>
+    Math.hypot(Math.max(box.x - stage.width / 2, 0, stage.width / 2 - box.x - box.width), Math.max(box.y - stage.height / 2, 0, stage.height / 2 - box.y - box.height)) > closeRingPx + gap;
+  const closeLand = new Uint8Array(landCols * landRows);
+  for (let j = 0; j < landRows; j++)
+    for (let i = 0; i < landCols; i++) closeLand[j * landCols + i] = landAt(cameras.closeUp, (i + 0.5) * PANEL_CELL, (j + 0.5) * PANEL_CELL) ? 1 : 0;
+  let calloutAt = null;
+  for (let y = vInset; y + callout.height <= stage.height - vInset; y += PANEL_STEP)
+    for (let x = inset; x + callout.width <= stage.width - inset; x += PANEL_STEP) {
+      const box = { x, y, width: callout.width, height: callout.height };
+      if (closeObstacles.some((o) => touches(box, o)) || !clearOfRing(box)) continue;
+      let covered = 0;
+      let total = 0;
+      for (let j = Math.floor(y / PANEL_CELL); j < Math.ceil((y + box.height) / PANEL_CELL); j++)
+        for (let i = Math.floor(x / PANEL_CELL); i < Math.ceil((x + box.width) / PANEL_CELL); i++) {
+          total++;
+          covered += closeLand[j * landCols + i] ?? 0;
+        }
+      const share = total ? covered / total : 0;
+      if (!calloutAt || share < calloutAt.share - 1e-9) calloutAt = { x, y, share };
+    }
+  if (!calloutAt) throw new Error(`a ${callout.width}×${callout.height} callout finds no place clear of the close-up's names`);
+  // The still sets its callout in the accent (`annot`'s italic, the subject's colour); here it is walked to the text floor on the sea.
+  const calloutInk = adjustToContrast(accent, colours.sea, TEXT_CONTRAST_MIN);
+  if (!calloutInk) throw new Error(`no variant of ${accent} reads on the sea ${colours.sea}`);
 
   const strokeScale = sizeFor(SIZE).typeScale;
   const props = {
     frame: layout.frame,
     stage,
+    /** The frame's margins — what the seas and the callout are held inside. */
+    layoutInset: { x: inset, y: vInset },
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
     titleCard: layout.titleCard,
     endCard: layout.endCard,
@@ -378,9 +588,11 @@ export function buildDirection(id, { subject, geometry, states, copy }) {
     subjectBox: odd.box,
     names,
     waters: waters.map(({ box, ...w }) => w),
+    halos: { water: waterHalo },
+    callout: { ...callout, at: { x: calloutAt.x, y: calloutAt.y }, ink: calloutInk },
     cameras,
     states,
     timing: CHOROPLETH_VIDEO_TIMING,
   };
-  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, droppedWaters: copy.waters.length - waters.length } };
+  return { id, direction, layout, props, report: { k, strokeScale, titleForm: layout.titleCard.form, titleSize: layout.titleCard.register.fontSize, titleLines: layout.titleCard.title.length, claimForm: layout.endCard.form, sourceForm: layout.endCard.source.form, stage, panel: panelBox, panelLand: panelAt.share, calloutLand: calloutAt.share, standfirstForm: layout.titleCard.standfirstForm, waters: waters.map((w) => w.text), droppedWaters: copy.waters.length - waters.length } };
 }

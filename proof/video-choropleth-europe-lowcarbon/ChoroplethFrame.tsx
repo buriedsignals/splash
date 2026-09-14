@@ -26,13 +26,28 @@ type Register = {
 type Line = { text: string; x: number; y: number; width: number };
 type Rect = { x: number; y: number; width: number; height: number };
 type Box = { x: number; y: number; w: number; h: number };
-type Slot = "eyebrow" | "display" | "value" | "axis" | "annot";
+type Slot =
+  | "eyebrow"
+  | "display"
+  | "body"
+  | "value"
+  | "axis"
+  | "annot"
+  | "area"
+  | "feature"
+  | "closeFeature"
+  | "water";
 
 export type ChoroplethFrameProps = {
   frame: { width: number; height: number };
   stage: Rect;
   registers: Record<Slot, Register>;
-  titleCard: { register: Register; eyebrow: Line; title: Line[] };
+  titleCard: {
+    register: Register;
+    eyebrow: Line;
+    title: Line[];
+    standfirst: Line[];
+  };
   endCard: { register: Register; claim: Line[]; source: Line };
   panel: {
     at: { x: number; y: number };
@@ -56,11 +71,10 @@ export type ChoroplethFrameProps = {
     text: Record<
       | "eyebrow"
       | "title"
+      | "standfirst"
       | "counter"
       | "key"
       | "source"
-      | "nameAccent"
-      | "nameInk"
       | "water",
       string
     >;
@@ -87,7 +101,16 @@ export type ChoroplethFrameProps = {
     height: number;
     textX: number;
     baseline: number;
-    accent: boolean;
+    /** The halo's stroke width, the ink measured against every cell the word is seen on, and the country
+     *  under its centre (`null`: the sea) whose colour the halo is struck in, frame by frame. */
+    halo: number;
+    ink: string;
+    onKey: string | null;
+    leader: {
+      from: { x: number; y: number };
+      to: { x: number; y: number };
+      dot: number;
+    } | null;
     x: number;
     y: number;
   }>;
@@ -98,6 +121,15 @@ export type ChoroplethFrameProps = {
     x: number;
     y: number;
   }>;
+  halos: { water: number };
+  callout: {
+    at: { x: number; y: number };
+    width: number;
+    height: number;
+    halo: number;
+    ink: string;
+    lines: Line[];
+  };
   cameras: { overview: Box; closeUp: Box };
   states: Record<string, number>[];
   timing: unknown;
@@ -113,6 +145,7 @@ function Word({
   opacity,
   anchor,
   measured = true,
+  halo,
 }: {
   line: Line;
   register: Register;
@@ -121,6 +154,8 @@ function Word({
   anchor?: "start" | "middle" | "end";
   /** false while a number is still counting: the width Bun measured is the final text's. */
   measured?: boolean;
+  /** A map word's halo: struck in the colour under it, behind the letters. */
+  halo?: { colour: string; width: number };
 }) {
   return (
     <text
@@ -134,6 +169,10 @@ function Word({
       letterSpacing={register.letterSpacing}
       fill={fill}
       opacity={opacity}
+      stroke={halo?.colour}
+      strokeWidth={halo?.width}
+      strokeLinejoin={halo ? "round" : undefined}
+      paintOrder={halo ? "stroke" : undefined}
       data-width={measured ? line.width : undefined}
     >
       {line.text}
@@ -155,6 +194,10 @@ export function ChoroplethFrame(
     endCard,
   } = props;
   const scene = sceneAt(props as never, props.at);
+  const shapeFill = Object.fromEntries(props.shapes.map((s) => [s.key, s.fill]));
+  /** The colour under a map word at this frame — the halo follows the cell as the floor moves. */
+  const cellUnder = (key: string | null) =>
+    key === null ? colours.sea : (scene.fills[key] ?? shapeFill[key]);
   const vb = scene.viewBox;
   const counter = panel.counter[scene.counter.step];
   // The floor's cursor, on the key: between the left edges of the swatches either side of its position.
@@ -237,37 +280,82 @@ export function ChoroplethFrame(
             y: stage.y + w.y,
             width: w.width,
           }}
-          register={r.annot}
+          register={r.water}
           fill={colours.text.water}
           opacity={scene.waters}
+          halo={{ colour: colours.sea, width: props.halos.water }}
         />
       ))}
+      {props.names.map((n) =>
+        n.leader ? (
+          <g key={`leader-${n.key}`} opacity={scene.names[n.key]}>
+            {/* The leader is struck on its word's halo, so a dark ink still reads where it crosses a dark country. */}
+            <line
+              x1={stage.x + n.leader.from.x}
+              y1={stage.y + n.leader.from.y}
+              x2={stage.x + n.leader.to.x}
+              y2={stage.y + n.leader.to.y}
+              stroke={cellUnder(n.onKey)}
+              strokeWidth={3 * strokes.border}
+              strokeLinecap="round"
+            />
+            <line
+              x1={stage.x + n.leader.from.x}
+              y1={stage.y + n.leader.from.y}
+              x2={stage.x + n.leader.to.x}
+              y2={stage.y + n.leader.to.y}
+              stroke={n.ink}
+              strokeWidth={strokes.border}
+            />
+            {n.leader.dot > 0 ? (
+              <circle
+                cx={stage.x + n.leader.from.x}
+                cy={stage.y + n.leader.from.y}
+                r={n.leader.dot}
+                fill={n.ink}
+                stroke={cellUnder(n.onKey)}
+                strokeWidth={strokes.border}
+              />
+            ) : null}
+          </g>
+        ) : null,
+      )}
       {props.names.map((n) => {
         const shown = counted(n);
         return (
-          <g key={n.key} opacity={scene.names[n.key]}>
-            <rect
-              x={stage.x + n.x}
-              y={stage.y + n.y}
-              width={n.width}
-              height={n.height}
-              fill={colours.ground}
-            />
-            <Word
-              line={{
-                text: shown.text,
-                x: stage.x + n.x + n.textX,
-                y: stage.y + n.y + n.baseline,
-                width: n.textWidth,
-              }}
-              register={r[n.register]}
-              fill={n.accent ? colours.text.nameAccent : colours.text.nameInk}
-              opacity={1}
-              measured={shown.final}
-            />
-          </g>
+          <Word
+            key={n.key}
+            line={{
+              text: shown.text,
+              x: stage.x + n.x + n.textX,
+              y: stage.y + n.y + n.baseline,
+              width: n.textWidth,
+            }}
+            register={r[n.register]}
+            fill={n.ink}
+            opacity={scene.names[n.key]}
+            measured={shown.final}
+            halo={{ colour: cellUnder(n.onKey), width: n.halo }}
+          />
         );
       })}
+
+      {/* ── THE CALLOUT: the still's sentence, over the close-up's sea. ── */}
+      <g
+        transform={`translate(${props.callout.at.x} ${props.callout.at.y})`}
+        opacity={scene.callout}
+      >
+        {props.callout.lines.map((line, i) => (
+          <Word
+            key={`callout${i}`}
+            line={line}
+            register={r.annot}
+            fill={props.callout.ink}
+            opacity={1}
+            halo={{ colour: colours.sea, width: props.callout.halo }}
+          />
+        ))}
+      </g>
 
       {/* ── THE PANEL: the count over the key, seated where it covers the least land, with its gestures. ── */}
       <g
@@ -348,6 +436,15 @@ export function ChoroplethFrame(
             line={line}
             register={titleCard.register}
             fill={colours.text.title}
+            opacity={1}
+          />
+        ))}
+        {titleCard.standfirst.map((line, i) => (
+          <Word
+            key={`standfirst${i}`}
+            line={line}
+            register={r.body}
+            fill={colours.text.standfirst}
             opacity={1}
           />
         ))}

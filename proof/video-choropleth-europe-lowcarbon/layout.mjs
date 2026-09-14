@@ -4,11 +4,13 @@
 // premier puis ensuite tout un storytelling ». So the frame is not a header over a map over a key: it is a
 // sequence of shots.
 //
-//   1. THE TITLE CARD — the eyebrow and the title, alone on the direction's ground, as large as the display
-//      register draws, wrapped to a reading measure. The longest title form that names the subject.
+//   1. THE TITLE CARD — the eyebrow, the title and the still's standfirst, alone on the direction's ground,
+//      the title as large as the display register draws, wrapped to a reading measure. The longest title form
+//      that names the subject; the longest standfirst that holds three lines.
 //   2. THE STORY — the map on the whole frame, edge to edge. What the story needs to be read — the count and
 //      the key — sits in one PANEL that comes and goes with its gestures; `build.mjs` seats it where it covers
-//      the least land at the overview camera. The panel is laid out here at its own origin.
+//      the least land at the overview camera. The panel and the close-up's callout are laid out here at their
+//      own origins; the map's words are the still's anatomy, uppercased and haloed (`build.mjs`).
 //   3. THE END CARD — the claim, stated once its evidence has been shown, and the source.
 //
 // Every width is `measureText` on the face the composition embeds, plus the register's tracking; every
@@ -27,19 +29,50 @@ import { EYEBROW_TO_DISPLAY } from "#shared/design-base/register.mjs";
 export const SLOT_REGISTERS = Object.freeze({
   eyebrow: "eyebrow",
   title: "display",
+  standfirst: "body",
   claim: "display",
   counter: "value",
   key: "axis",
   source: "axis",
-  name: "axis",
-  oddName: "value",
-  water: "annot",
+  name: "area",
+  featureName: "feature",
+  oddName: "closeFeature",
+  water: "water",
+  callout: "annot",
 });
+
+/**
+ * THE STILL'S MAP TREATMENTS AT THE VIDEO'S SIZE — `mapRegistersFor` (the still's component) applied to the
+ * video's own registers: `area` is the axis register tracked to at least 0.8 px of the still, carried by the
+ * ladder's factor `k`; `feature` is that at 700; `water` the axis in italic, untracked. `closeFeature` is the
+ * close-up's own name, the value register set as a feature — the one word the shot is about.
+ */
+export function mapRegistersOf(registers, k) {
+  const { axis, value } = registers;
+  const area = { ...axis, letterSpacing: Math.max(Number(axis.letterSpacing ?? 0), 0.8 * k) };
+  return {
+    area,
+    feature: { ...area, fontWeight: 700 },
+    closeFeature: { ...value, fontWeight: 700, letterSpacing: (area.letterSpacing * value.fontSize) / axis.fontSize },
+    water: { ...axis, fontStyle: "italic", letterSpacing: 0, transform: "none" },
+  };
+}
+
+/** THE HALO A MAP WORD IS STRUCK IN — the still's plate: a stroke of `max(2.5, ascent × 0.34)` behind an area
+ *  name, `max(2, ascent × 0.3)` behind a sea's, the floors carried by `k`. */
+export function haloOf(r, k, kind = "area") {
+  const { ascent } = measureTextBand(BAND_PROBE, faceOf(r));
+  return kind === "water" ? Math.max(2 * k, 0.3 * ascent) : Math.max(2.5 * k, 0.34 * ascent);
+}
 
 // ── the rhythm: every gap a multiple of the lead of the register named beside it ───────────────────────
 /** The title card and the end card set their words to a reading measure, not across the whole frame. */
 const CARD_MEASURE = 0.72; // × content width
 const CARD_MAX_LINES = 4;
+const STANDFIRST_MAX_LINES = 3;
+const TITLE_TO_STANDFIRST = 0.9; // × body lead
+/** The callout is set to a narrower measure: it sits on the close-up's sea beside Albania. */
+const CALLOUT_MEASURE = 0.28; // × content width
 const PANEL_PAD = 0.55; // × axis lead
 const COUNTER_TO_KEY = 0.45; // × axis lead
 const CLAIM_TO_SOURCE = 1.2; // × axis lead
@@ -121,6 +154,15 @@ export function cardTextFor(forms, registers, { measure, maxLines = CARD_MAX_LIN
   throw new Error(`no card form wraps into ${maxLines} lines of ${measure}px above ${lowestQuarter / 4}px in ${drawn.fontFamily}`);
 }
 
+/** The longest form that wraps into at most `maxLines` lines of the measure, at the register's own size. */
+function blockFor(forms, r, measure, maxLines) {
+  for (let form = 0; form < forms.length; form++) {
+    const lines = wrap(applyCase(forms[form], r.transform), r, measure);
+    if (lines.length <= maxLines) return { form, lines };
+  }
+  throw new Error(`no form wraps into ${maxLines} lines of ${measure}px in ${r.fontFamily} ${r.fontSize}px`);
+}
+
 /** The longest form that holds one line. */
 function oneLineFor(forms, r, measure) {
   for (let form = 0; form < forms.length; form++) {
@@ -131,13 +173,13 @@ function oneLineFor(forms, r, measure) {
   throw new Error(`no form holds one line of ${measure}px in ${r.fontFamily} ${r.fontSize}px`);
 }
 
-/** A name set as a pill: the word, its padding, one height per register. */
-export function pillOf(text, r) {
+/** A name's box: the word, its padding (a pill's, or the halo's own reach), one height per register. */
+export function pillOf(text, r, pad) {
   const cased = applyCase(text, r.transform);
   const textWidth = widthOf(cased, r);
   const band = bandOf(BAND_PROBE, r);
-  const padX = PILL_PAD_X * r.fontSize;
-  const padY = PILL_PAD_Y * r.fontSize;
+  const padX = pad ?? PILL_PAD_X * r.fontSize;
+  const padY = pad ?? PILL_PAD_Y * r.fontSize;
   return {
     text: cased,
     textWidth,
@@ -150,11 +192,11 @@ export function pillOf(text, r) {
 
 /**
  * @param {{ registers: Record<string, any>, copy: {
- *   eyebrow: string, title: string[], claim: string[], counterSteps: string[], breaks: string[], unit: string,
- *   missingLabel: string, source: string[] }, size: "landscape" }} input
+ *   eyebrow: string, title: string[], standfirst: string[], claim: string[], callout: string, counterSteps: string[],
+ *   breaks: string[], unit: string, missingLabel: string, source: string[] }, size: "landscape", k: number }} input
  *   `registers` from `videoRegistersOf`; `copy` NOT cased — each slot is cased by its own register here.
  */
-export function layoutFor({ registers, copy, size }) {
+export function layoutFor({ registers, copy, size, k }) {
   if (size !== "landscape") throw new Error(`the choropleth video lays out at landscape only, not ${JSON.stringify(size)}`);
   const row = sizeFor(size);
   const frame = { width: row.width, height: row.height };
@@ -163,20 +205,39 @@ export function layoutFor({ registers, copy, size }) {
   const content = frame.width - 2 * inset;
   for (const [name, r] of Object.entries(registers))
     if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
-  const { eyebrow: eyebrowR, value, axis } = registers;
+  const { eyebrow: eyebrowR, value, axis, body, annot } = registers;
   const line = (text, r, x, y, width = widthOf(text, r)) => ({ text, x, y, width });
   const measure = (CARD_MEASURE * content) / (1 + DRAWN_WIDER);
 
-  // ── 1. THE TITLE CARD: eyebrow and title, a block centred on the frame's height, set from the inset ──────
+  // ── 1. THE TITLE CARD: eyebrow, title and standfirst, a block centred on the frame's height ──────────────
   const title = cardTextFor(copy.title, registers, { measure });
   const eyebrowText = applyCase(copy.eyebrow, eyebrowR.transform);
   const eyebrowBand = bandOf(eyebrowText, eyebrowR);
   const titleBand = bandOf(title.lines.map((l) => l.text).join(" "), title.register);
-  const titleBlock = eyebrowBand.ascent + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent + (title.lines.length - 1) * title.register.lead + titleBand.descent;
+  const standfirst = blockFor(copy.standfirst, body, measure, STANDFIRST_MAX_LINES);
+  const standfirstBand = bandOf(standfirst.lines.map((l) => l.text).join(" "), body);
+  const toStandfirst = titleBand.descent + TITLE_TO_STANDFIRST * body.lead + standfirstBand.ascent;
+  const titleBlock =
+    eyebrowBand.ascent + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent + (title.lines.length - 1) * title.register.lead +
+    toStandfirst + (standfirst.lines.length - 1) * body.lead + standfirstBand.descent;
   const titleTop = Math.round((frame.height - titleBlock) / 2);
   const eyebrowLine = line(eyebrowText, eyebrowR, inset, titleTop + eyebrowBand.ascent);
   const firstTitleBaseline = eyebrowLine.y + eyebrowBand.descent + EYEBROW_TO_DISPLAY * eyebrowR.lead + titleBand.ascent;
   const titleLines = title.lines.map((l, i) => line(l.text, title.register, inset, firstTitleBaseline + i * title.register.lead, l.width));
+  const firstStandfirstBaseline = titleLines.at(-1).y + toStandfirst;
+  const standfirstLines = standfirst.lines.map((l, i) => line(l.text, body, inset, firstStandfirstBaseline + i * body.lead, l.width));
+
+  // ── THE CALLOUT: the still's sentence, at its own origin, the halo's reach around it ─────────────────────
+  const calloutHalo = haloOf(annot, k);
+  const calloutText = wrap(applyCase(copy.callout, annot.transform), annot, (CALLOUT_MEASURE * content) / (1 + DRAWN_WIDER));
+  const calloutBand = bandOf(calloutText.map((l) => l.text).join(" "), annot);
+  const calloutLines = calloutText.map((l, i) => line(l.text, annot, calloutHalo, calloutHalo + calloutBand.ascent + i * annot.lead, l.width));
+  const callout = {
+    lines: calloutLines,
+    halo: calloutHalo,
+    width: Math.ceil(2 * calloutHalo + Math.max(...calloutLines.map((l) => l.width)) * (1 + DRAWN_WIDER)),
+    height: Math.ceil(2 * calloutHalo + calloutBand.ascent + (calloutLines.length - 1) * annot.lead + calloutBand.descent),
+  };
 
   // ── 3. THE END CARD: the claim, a block centred on the frame's height; the source on the bottom margin ───
   const claim = cardTextFor(copy.claim, registers, { measure });
@@ -224,7 +285,8 @@ export function layoutFor({ registers, copy, size }) {
     registers,
     /** The story's map: the whole frame. */
     stage: { x: 0, y: 0, width: frame.width, height: frame.height },
-    titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines },
+    titleCard: { form: title.form, register: title.register, eyebrow: eyebrowLine, title: titleLines, standfirst: standfirstLines, standfirstForm: standfirst.form },
+    callout,
     endCard: { form: claim.form, register: claim.register, claim: claimLines, source: sourceLine },
     panel: { width: panelWidth, height: panelHeight, counter, swatches, bornes, unit, missingSwatch, missingLabel },
   };
