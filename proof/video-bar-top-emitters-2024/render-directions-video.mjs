@@ -97,8 +97,11 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
         { name: "first", frame: 0 },
-        { name: "reveal-rising", frame: Math.round(T.reveal.start + T.reveal.duration * 0.4) },
-        ...[0.35, 0.65].map((t) => ({ name: `subject-stack-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.stack[0] + t * (WINDOWS.subject.stack[1] - WINDOWS.subject.stack[0]))) })),
+        { name: "reference-world", frame: Math.round(T.reference.start + T.reference.duration * 0.7) },
+        { name: "reveal-dropping", frame: Math.round(T.reveal.start + T.reveal.duration * 0.35) },
+        { name: "reveal-camera", frame: Math.round(T.reveal.start + T.reveal.duration * 0.85) },
+        { name: "subject-stack", frame: Math.round(T.subject.start + T.subject.duration * 0.6) },
+        { name: "conclusion-tenth", frame: Math.round(T.conclusion.start + T.conclusion.duration * 0.35) },
       ];
       for (const { name, frame } of frames) {
         const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {

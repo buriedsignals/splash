@@ -1,7 +1,7 @@
 /**
- * One frame of « La Chine a émis plus de CO₂ que les cinq pays suivants réunis » — the title card, the ten names, the bars
- * growing from the tenth to the first as each counts its value, then the next five lining up end to end under the first,
- * their sum counting (BRIEF.md).
+ * One frame of « La Chine a émis plus de CO₂ que les cinq pays suivants réunis » — the title card, the world's emissions as
+ * one bar with the ten largest inside it, the ten falling out into their rows, the scale closing onto them, the next five
+ * lining up under China short of its end, then Germany sliding into the gap (BRIEF.md).
  *
  * NOTHING HERE IS MEASURED OR CHOSEN: positions, texts and colours come from `build.mjs`; motion from `sceneAt`.
  */
@@ -19,15 +19,19 @@ export type BarFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; grid: string; column: string; first: string; faded: string; rule: string; text: Record<"eyebrow" | "title" | "name" | "axis" | "first" | "count", string> };
+  colours: { ground: string; grid: string; column: string; first: string; tenth: string; faded: string; rule: string; text: Record<"eyebrow" | "title" | "name" | "axis" | "first" | "count", string> };
   left: number;
-  unit: number;
+  units: { world: number; ten: number };
   seam: number;
+  world: number;
+  worldY: number;
+  worldName: Line;
   pileY: number;
+  gapY: number;
   barH: number;
-  bars: Array<{ value: number; y: number; stacked: number | null; before: number; name: Line }>;
+  bars: Array<{ value: number; y: number; inWorld: number; stacked: number | null; before: number; tenth: boolean; name: Line }>;
   pileNames: Array<Line & { leader: { x1: number; y1: number; x2: number; y2: number } | null }>;
-  firstEnd: number;
+  tenthName: Line;
   rows: { first: number; pile: number };
   combined: number;
   countWidths: Record<string, number>;
@@ -48,7 +52,7 @@ function Text({ line, register, fill, opacity = 1, halo }: { line: Line; registe
   );
 }
 
-const NB = "\u00A0";
+const NB = " ";
 const withUnit = (text: string) => `${text}${NB}Gt`;
 
 export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
@@ -58,38 +62,54 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
   const axisHalo = { colour: colours.ground, width: props.halo.axis };
   const count = (text: string, x: number, y: number) => ({ text, width: props.countWidths[text], x, y });
   const after = (i: number) => i > 0 && props.bars[i].stacked === null;
+  const firstEnd = props.left + props.bars[0].value * scene.unit;
   const sumText = withUnit(valueText(scene.sum));
-  /** The sum stands past the pile's front: the blocks landed, and a block about to land. */
-  const pileFront = Math.max(props.left + scene.sum * props.unit, ...props.bars.map((b, i) => (b.stacked !== null && scene.bars[i].move > 0.5 ? scene.bars[i].x + scene.bars[i].w : 0)));
+  const pileFront = Math.max(props.left + scene.sum * scene.unit, ...props.bars.map((b, i) => (b.stacked !== null && scene.bars[i].move > 0.5 ? scene.bars[i].x + scene.bars[i].w : 0)));
+  const worldGoing = 1 - Math.min(1, scene.bars[0].fall * 3);
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+      <defs>
+        <clipPath id="plot">
+          <rect x={props.left} y={0} width={frame.width - props.left} height={frame.height} />
+        </clipPath>
+      </defs>
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
-        <line x1={props.left} x2={props.left} y1={props.rows.first - props.barH * 0.3} y2={props.bars[props.bars.length - 1].y + props.barH * 1.3} stroke={colours.grid} strokeWidth={props.strokes.grid} />
-        {props.bars.map((b, i) => (
-          <Text key={`name${i}`} line={b.name} register={r.axis} fill={after(i) ? blend(colours.text.name, colours.text.axis, scene.stepBack) : colours.text.name} opacity={1 - scene.bars[i].move} />
-        ))}
+        <line x1={props.left} x2={props.left} y1={props.worldY - props.barH * 0.3} y2={props.bars[props.bars.length - 1].y + props.barH * 1.3} stroke={colours.grid} strokeWidth={props.strokes.grid} />
+        <Text line={props.worldName} register={r.axis} fill={colours.text.name} opacity={worldGoing} />
+        {props.bars.map((b, i) => {
+          const s = scene.bars[i];
+          const out = s.tenth ? 0 : s.move;
+          return <Text key={`name${i}`} line={b.name} register={r.axis} fill={after(i) && !b.tenth ? blend(colours.text.name, colours.text.axis, scene.stepBack) : colours.text.name} opacity={s.landed * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
+        })}
       </g>
 
+      <g clipPath="url(#plot)">
+        {/* The rest of the world: what stays up once the ten have fallen out, running out of the frame as the scale closes. */}
+        {scene.world.restW > 0 ? <rect x={scene.world.restX} y={props.worldY} width={scene.world.restW} height={props.barH} fill={colours.faded} /> : null}
+        {props.bars.map((b, i) => {
+          const s = scene.bars[i];
+          if (!(s.w > 0)) return null;
+          const fill = i === 0 ? colours.first : after(i) && !b.tenth ? blend(colours.column, colours.faded, scene.stepBack) : b.tenth ? blend(blend(colours.column, colours.faded, scene.stepBack), colours.tenth, s.slide) : colours.column;
+          // Inside the world bar, a seam of the ground parts each of the ten from the next.
+          const seam = s.fall < 1 && i > 0 ? props.seam * (1 - s.fall) : 0;
+          return <rect key={`bar${i}`} x={s.x + seam} y={s.y} width={Math.max(0, s.w - seam)} height={props.barH} fill={fill} />;
+        })}
+      </g>
+      <Text line={count(withUnit(valueText(props.world)), props.left + props.world * props.units.world * scene.world.shown + props.countGap, props.worldY + props.barH / 2 + props.valueShift)} register={r.value} fill={colours.text.count} opacity={scene.world.shown >= 1 ? worldGoing : 0} halo={valueHalo} />
       {props.bars.map((b, i) => {
         const s = scene.bars[i];
-        const fill = i === 0 ? colours.first : after(i) ? blend(colours.column, colours.faded, scene.stepBack) : colours.column;
-        return s.w > 0 ? <rect key={`bar${i}`} x={s.x} y={s.y} width={s.w} height={props.barH} fill={fill} /> : null;
-      })}
-      {props.bars.map((b, i) => {
-        const s = scene.bars[i];
-        if (!(s.up > 0)) return null;
-        const text = withUnit(valueText(s.count));
-        const opacity = b.stacked === null ? (after(i) ? 1 - 0.6 * scene.stepBack : 1) : Math.max(0, 1 - s.move * 4);
-        return <Text key={`count${i}`} line={count(text, props.left + s.w + props.countGap, b.y + props.barH / 2 + props.valueShift)} register={r.value} fill={i === 0 ? colours.text.first : colours.text.count} opacity={opacity} halo={valueHalo} />;
+        if (!(s.landed && scene.camera > 0)) return null;
+        const text = withUnit(valueText(b.value));
+        const opacity = scene.camera * (b.stacked !== null ? Math.max(0, 1 - s.move * 4) : b.tenth ? (1 - 0.6 * scene.stepBack) * Math.max(0, 1 - s.slide * 4) : after(i) ? 1 - 0.6 * scene.stepBack : 1);
+        return opacity > 0 ? <Text key={`count${i}`} line={count(text, s.x + s.w + props.countGap, b.y + props.barH / 2 + props.valueShift)} register={r.value} fill={i === 0 ? colours.text.first : colours.text.count} opacity={opacity} halo={valueHalo} /> : null;
       })}
 
-      <line x1={props.firstEnd} x2={props.firstEnd} y1={props.rows.first} y2={props.rows.pile} stroke={colours.rule} strokeWidth={props.strokes.rule} strokeDasharray={props.dash.join(" ")} opacity={scene.stacking} />
+      <line x1={firstEnd} x2={firstEnd} y1={props.rows.first} y2={props.rows.pile} stroke={colours.rule} strokeWidth={props.strokes.rule} strokeDasharray={props.dash.join(" ")} opacity={scene.stacking} />
       {props.pileNames.map((p, j) => {
-        const bar = props.bars.find((b) => b.stacked === j);
-        const landed = bar ? scene.bars[props.bars.indexOf(bar)].move : 0;
-        const opacity = Math.max(0, landed * 4 - 3);
+        const i = props.bars.findIndex((b) => b.stacked === j);
+        const opacity = Math.max(0, scene.bars[i].move * 4 - 3);
         return (
           <g key={`pile${j}`} opacity={opacity}>
             {p.leader ? <line x1={p.leader.x1} y1={p.leader.y1} x2={p.leader.x2} y2={p.leader.y2} stroke={colours.text.axis} strokeWidth={props.strokes.grid} /> : null}
@@ -97,7 +117,8 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
           </g>
         );
       })}
-      <Text line={count(sumText, pileFront + props.countGap, props.pileY + props.barH / 2 + props.valueShift)} register={r.value} fill={colours.text.count} opacity={scene.landed > 0 ? 1 : 0} halo={valueHalo} />
+      {scene.landed > 0 && scene.sumShown > 0 ? <Text line={count(sumText, pileFront + props.countGap, props.pileY + props.barH / 2 + props.valueShift)} register={r.value} fill={colours.text.count} opacity={scene.sumShown} halo={valueHalo} /> : null}
+      <Text line={props.tenthName} register={r.axis} fill={colours.text.name} opacity={Math.max(0, scene.tenth * 4 - 3)} halo={axisHalo} />
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (

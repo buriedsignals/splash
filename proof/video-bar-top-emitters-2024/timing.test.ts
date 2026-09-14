@@ -15,6 +15,6 @@ describe("the shipped bar video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 300, duration: 180 } })).join(" ")).toContain("subject starts at 300");
+    expect(checkTiming(broken({ subject: { start: 360, duration: 180 } })).join(" ")).toContain("subject starts at 360");
   });
 });

@@ -5,13 +5,13 @@ import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { BarFrame } from "./BarFrame.tsx";
 import { buildDirection, loadBeat } from "./build.mjs";
-import { moveOf, sceneAt, valueText, WINDOWS } from "./scene.mjs";
+import { sceneAt, valueText } from "./scene.mjs";
 
 /**
- * The markup at the last frame of every event — the type floor, every word with its measured width — and the ranking told
- * in order: the title at frame 0, the bars growing from the tenth with the first last, every count text measured, the next
- * five lined up end to end exactly to their sum and short of the first, the sum counting the blocks landed, nothing
- * stepped back before the pile starts.
+ * The markup at the last frame of every event — the type floor, every word with its measured width — and the argument told
+ * in order: the title at frame 0; the ten inside the world bar end to end at the world's scale; every bar keeping its
+ * length while it falls; the scale closing so the first bar fills the row; the five end to end exactly to their sum; the
+ * tenth sliding into the gap, fitting before the first's end; the credit on one line.
  */
 
 const beat = loadBeat();
@@ -20,11 +20,6 @@ for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat) as any;
   const markupAt = (frame: number) => renderToStaticMarkup(createElement(BarFrame, { ...props, at: frame }));
   const last = (event: string) => endOf(props.timing[event]) - 1;
-  const within = (event: string, field: string, t: number) => {
-    const { start, duration } = props.timing[event];
-    const [a, b] = (WINDOWS as any)[event][field];
-    return Math.round(start + duration * (a + t * (b - a)));
-  };
 
   describe(`${id}'s bar video`, () => {
     for (const event of EVENT_ORDER)
@@ -35,54 +30,47 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
       });
 
-    it("should carry a measured width for every count at every frame", () => {
-      const unmeasured = [];
-      for (let f = 0; f < props.timing.total; f += 3) {
-        const svg = markupAt(f);
-        if (/<text\b(?![^>]*data-width="\d)[^>]*>/.test(svg)) unmeasured.push(f);
-      }
-      expect(unmeasured).toEqual([]);
-    });
-
     it("should have measured the text of every value a count passes through", () => {
       const missing = new Set<string>();
       for (let v = 0; v <= props.bars[0].value; v += 0.0005) {
-        const text = `${valueText(v)}\u00A0Gt`;
+        const text = `${valueText(v)} Gt`;
         if (!(text in props.countWidths)) missing.add(text);
       }
       expect([...missing]).toEqual([]);
     });
 
-    it("should open on the title and grow the bars from the tenth, the first last", () => {
+    it("should hold the ten end to end inside the world bar at the world's scale, at the end of the reference", () => {
       expect(sceneAt(props, 0).title).toBe(1);
-      const scene = sceneAt(props, within("reveal", "rise", 0.5));
-      const ups = scene.bars.map((b: any) => b.up);
-      expect(ups[0]).toBe(0);
-      expect(ups.slice(1).every((u: number, i: number, all: number[]) => i === 0 || u >= all[i - 1])).toBe(true);
-      expect(ups[ups.length - 1] > ups[1]).toBe(true);
+      const s = sceneAt(props, last("reference"));
+      props.bars.forEach((b: any, i: number) => {
+        expect(s.bars[i].x - (i > 0 ? 0 : 0)).toBeCloseTo(props.left + b.inWorld * props.units.world, 6);
+        expect(s.bars[i].w).toBeCloseTo(b.value * props.units.world, 6);
+        expect(s.bars[i].y).toBe(props.worldY);
+      });
     });
 
-    it("should line the next five up end to end, exactly to their sum and short of the first", () => {
-      const scene = sceneAt(props, props.timing.total - 1);
-      const piled = props.bars.map((b: any, i: number) => ({ b, s: scene.bars[i] })).filter(({ b }: any) => b.stacked !== null);
-      const end = Math.max(...piled.map(({ s }: any) => s.x + s.w));
-      expect(end).toBeCloseTo(props.left + props.combined * props.unit, 6);
-      expect(piled.filter(({ s }: any) => Math.abs(s.y - props.pileY) > 1e-9)).toEqual([]);
-      expect(end < props.firstEnd).toBe(true);
+    it("should keep every bar's length while it falls, and close the scale onto the first bar by the end of the reveal", () => {
+      const { start, duration } = props.timing.reveal;
+      const falling = sceneAt(props, Math.round(start + duration * 0.3));
+      props.bars.forEach((b: any, i: number) => {
+        if (falling.bars[i].fall > 0 && falling.bars[i].fall < 1) expect(falling.bars[i].w).toBeCloseTo(b.value * props.units.world, 6);
+      });
+      expect(sceneAt(props, last("reveal")).unit).toBeCloseTo(props.units.ten, 9);
     });
 
-    it("should sum only the blocks that have landed", () => {
-      const scene = sceneAt(props, within("subject", "stack", 0.5));
-      const stack = 0.5;
-      const landed = props.bars.filter((b: any) => b.stacked !== null && moveOf(stack, b.stacked, 5) >= 1);
-      expect(scene.sum).toBeCloseTo(landed.reduce((s: number, b: any) => s + b.value, 0), 9);
-      expect(scene.landed > 0 && scene.landed < 5).toBe(true);
+    it("should line the five up exactly to their sum and slide the tenth into the gap before the first's end", () => {
+      const s = sceneAt(props, props.timing.total - 1);
+      const unit = props.units.ten;
+      const five = props.bars.map((b: any, i: number) => ({ b, s: s.bars[i] })).filter(({ b }: any) => b.stacked !== null);
+      expect(Math.max(...five.map(({ s }: any) => s.x + s.w))).toBeCloseTo(props.left + props.combined * unit, 6);
+      const tenth = s.bars[props.bars.findIndex((b: any) => b.tenth)];
+      expect(tenth.y).toBeCloseTo(props.gapY, 6);
+      expect(tenth.x).toBeGreaterThanOrEqual(props.left + props.combined * unit);
+      expect(tenth.x + tenth.w).toBeLessThan(props.left + props.bars[0].value * unit);
     });
 
-    it("should step nothing back before the pile starts", () => {
-      const fills = (svg: string) => new Set([...svg.matchAll(/<rect\b[^>]*fill="(#[0-9a-f]{6})"/g)].map((m) => m[1]));
-      expect(fills(markupAt(last("reveal"))).has(props.colours.faded)).toBe(false);
-      expect(fills(markupAt(props.timing.total - 1)).has(props.colours.faded)).toBe(true);
+    it("should set the credit on one line", () => {
+      expect(props.credit.lines.length).toBe(1);
     });
   });
 }

@@ -17,25 +17,30 @@ headline, adding the next countries while they stay under the first. Asserted: t
 1. **The title card** (from frame 0, 1.5 s).
 2. **The story** — ten rows, the names at the left, each count at its bar's end. **Rows, not columns**: under ten columns
    « États-Unis » holds in no line of its slot (the scrolly's own rule: columns only when every name fits).
-3. **No end card** — the video ends on the first bar over the five lined up under it; the credit.
+3. **No end card** — the video ends on the first bar over the five lined up under it and the tenth in the gap; the credit on
+   one line.
 
-## The choreography
+## The choreography — an argument, not a reveal
 
-What only a video can do is **do the addition**: the five countries after China leave their rows and line up end to end
-under it, and the viewer sees the pile stop short of China's end.
+The still ranks the ten. The video **does the arithmetic from the world down**: the world's emissions as one bar, the ten
+largest inside it; the ten falling out into their rows, each keeping its length; the camera closing onto them; the five
+after China lining up under it and stopping short — and the tenth, Germany, sliding into what is left, with room to spare.
 
 | event | what the shot says | gesture | what the viewer sees move | derived value asserted |
 | --- | --- | --- | --- | --- |
 | `establish` | the question | — | the title card | — |
-| `reference` | the ten largest of 2024 | — (furniture) | ten names beside an empty axis | — |
-| `reveal` | from the tenth to the first | **reveal in order + count** | the bars grow one after another from the tenth, each counting its value in Gt; China last, in the accent, to 12,3 Gt | the ranking |
-| `subject` | the next five together are less | **reorder + count** | China's end dropped as a dashed line; the five slide one after another onto the second row, end to end, named under their blocks; their sum counts as each lands, to 11,7 Gt; the four after them step back | the five, 11,7 < 12,3 |
-| `conclusion` | — | — | the credit | — |
+| `reference` | the world's emissions | **reveal** | « Monde » grows as one bar to 38,6 Gt; the ten largest are marked inside it, end to end | the ten under the world |
+| `reveal` | the ten largest | **split + rescale** | the ten fall out of the world into their rows, largest first, keeping their lengths; the scale closes until China fills the row, the rest of the world running out of the frame; each count lands | the ranking |
+| `subject` | the next five together are less | **reorder + count** | China's end dropped as a dashed line; the five slide onto the second row end to end, named under their blocks; their sum counts to 11,7 Gt; the four after step back | the five, 11,7 < 12,3 |
+| `conclusion` | the gap is more than Germany | **compare** | the sum gives way; Germany slides into the gap between the five and China's end, and fits; the credit | 0,57 < 0,64 |
 | `hold` | the addition | — | nothing | hold = conclusion |
 
 ## Write as little as the picture allows
 
-No standfirst, no « les cinq suivants réunis » sentence, no world share: the pile and its sum say it.
+« Monde », the names, the counts. No standfirst, no world share, no « les cinq suivants » sentence, no « écart » label: the
+bars say it.
+
+
 
 ## Directions
 

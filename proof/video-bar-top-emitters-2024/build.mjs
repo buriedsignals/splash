@@ -12,7 +12,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { valueText } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
@@ -38,6 +38,7 @@ export function copyOf(subject) {
   return {
     eyebrow: `Climat${NB}· Monde, 2024`,
     title: [`La ${subject.top[0].name} a émis plus de CO₂ que les ${SPELLED[subject.beaten]} pays suivants réunis`, `La ${subject.top[0].name}, plus que les ${SPELLED[subject.beaten]} suivants réunis`],
+    world: "Monde",
     /** Every count carries the unit: the first bar's so the scale is read at once, the pile's so the two compare. */
     unit: (text) => `${text}${NB}Gt`,
     source: ["Source : Global Carbon Budget 2025, via Our World in Data", "Source : Global Carbon Budget 2025"],
@@ -59,7 +60,7 @@ export function textPerRegisterOf(copy, subject) {
     body: copy.source.join(" "),
     annot: "",
     value: `${copy.unit("12,3")} 0123456789,`,
-    axis: `${subject.top.map((r) => r.name).join(" ")} ${copy.source.join(" ")}`,
+    axis: `${copy.world} ${subject.top.map((r) => r.name).join(" ")} ${copy.source.join(" ")}`,
   };
 }
 
@@ -80,27 +81,34 @@ export function buildDirection(id, { subject, states, copy }) {
   const shift = (band.ascent - band.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
 
-  // THE ROWS: ten, the names at the left, the credit under them; the first bar's count must fit past its end.
+  // THE ROWS: the world on top, then the ten; the names at the left, the credit under them. One scale per camera: the world's,
+  // where the world bar and its count fill the row, and the ten's, where the first bar and its count do.
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };
   const names = subject.top.map((r) => {
     const t = applyCase(r.name, axis.transform);
     return { text: t, width: widthOf(t, axis) };
   });
-  const left = inset + Math.max(...names.map((n) => n.width)) * (1 + DRAWN_WIDER) + gap;
+  const worldName = { text: applyCase(copy.world, axis.transform), width: widthOf(applyCase(copy.world, axis.transform), axis) };
+  const left = inset + Math.max(worldName.width, ...names.map((n) => n.width)) * (1 + DRAWN_WIDER) + gap;
   const plotTop = vInset;
   const plotBottom = creditAt.y - gap;
-  const pitch = (plotBottom - plotTop) / TOP_N;
+  const pitch = (plotBottom - plotTop) / (TOP_N + 1);
   if (!(pitch >= valueBand.ascent + valueBand.descent + gap)) throw new Error(`a row is ${pitch.toFixed(1)}px, too thin for its count`);
-  const firstCount = widthOf(applyCase(copy.unit(valueText(subject.top[0].value)), value.transform), value) * (1 + DRAWN_WIDER);
-  const unit = (stage.width - inset - firstCount - gap - left) / subject.top[0].value;
+  const countOf = (v) => widthOf(applyCase(copy.unit(valueText(v)), value.transform), value) * (1 + DRAWN_WIDER);
+  const room = stage.width - inset - gap - left;
+  // Past the first bar's end stand its count and, on the row below, the tenth's name: the wider of the two is kept free.
+  const tenthRoom = widthOf(applyCase(subject.top[TOP_N - 1].name, axis.transform), axis) * (1 + DRAWN_WIDER);
+  const units = { world: (room - countOf(subject.world)) / subject.world, ten: (room - Math.max(countOf(subject.top[0].value), tenthRoom)) / subject.top[0].value };
   const rowY = (i) => plotTop + i * pitch + (pitch * (1 - BAR_SHARE)) / 2;
   const barH = pitch * BAR_SHARE;
   const seam = Math.max(2 * k, 0.08 * axis.lead);
+  const unit = units.ten;
 
-  // THE PILE along the second row: the largest first; each block named under it in the emptied third row, spread left to
-  // right so no two names touch, a hairline leader where a name had to move off its block.
+  // THE PILE along the United States' row: the largest first; each block named under it in the emptied row below, spread
+  // left to right so no two names touch, a hairline leader where a name had to move off its block — the tenth last, named
+  // the same way once it has slid into the gap.
   const piled = subject.top.slice(1, 1 + subject.beaten);
   let before = 0;
   const pile = piled.map((r, j) => {
@@ -108,21 +116,27 @@ export function buildDirection(id, { subject, states, copy }) {
     before += r.value;
     return at;
   });
-  const pileY = rowY(1);
-  const pileNameBaseline = rowY(2) + barH / 2 + shift;
+  const tenthRow = subject.top[TOP_N - 1];
+  const pileY = rowY(2);
+  const pileNameBaseline = rowY(3) + barH / 2 + shift;
   let cursor = left;
-  const pileNames = piled.map((r, j) => {
+  const blocks = piled.map((r, j) => ({ r, from: pile[j].before }));
+  const pileNames = blocks.map(({ r, from }) => {
     const t = applyCase(r.name, axis.transform);
     const w = widthOf(t, axis);
-    const mid = left + (pile[j].before + r.value / 2) * unit;
+    const mid = left + (from + r.value / 2) * unit;
     const x = Math.max(mid - w / 2, cursor);
     cursor = x + w * (1 + DRAWN_WIDER) + 1.5 * gap;
     const centre = x + (w * (1 + DRAWN_WIDER)) / 2;
     return { text: t, width: w, x, y: pileNameBaseline, leader: Math.abs(centre - mid) > 0.25 * w ? { x1: mid, y1: pileY + barH + gap / 2, x2: centre, y2: pileNameBaseline - band.ascent - gap / 4 } : null };
   });
   if (!(cursor - 1.5 * gap < stage.width - inset)) throw new Error("the pile's names run past the frame");
+  // The tenth, once in the gap, is named on its own row just past the first's end, where the sum stood.
+  const tenthWord = widthOf(applyCase(tenthRow.name, axis.transform), axis);
+  const tenthName = { text: applyCase(tenthRow.name, axis.transform), width: tenthWord, x: left + subject.top[0].value * unit + gap, y: pileY + barH / 2 + shift };
+  if (!(tenthName.x + tenthWord * (1 + DRAWN_WIDER) <= stage.width - inset)) throw new Error("the tenth's name runs past the frame");
 
-  const counts = countTexts(subject.top[0].value);
+  const counts = [...countTexts(subject.top[0].value), valueText(subject.world)];
   const measured = (texts, r) => Object.fromEntries(texts.map((t) => [t, widthOf(applyCase(t, r.transform), r)]));
   const countWidths = measured(counts.map((c) => copy.unit(c)), value);
 
@@ -138,6 +152,8 @@ export function buildDirection(id, { subject, states, copy }) {
     grid,
     column: walked(mix(accent, ground, 0.42), NON_TEXT_CONTRAST_MIN, "a bar"),
     first: walked(accent, NON_TEXT_CONTRAST_MIN, "the first bar"),
+    /** The tenth in the gap is not one of the five: the neutral of the furniture, not the bars' hue. */
+    tenth: walked(mix(ink, ground, 0.45), NON_TEXT_CONTRAST_MIN, "the tenth in the gap"),
     faded: mix(ground, ink, 0.14),
     rule: walked(accent, NON_TEXT_CONTRAST_MIN, "the first's level"),
     text: {
@@ -158,23 +174,34 @@ export function buildDirection(id, { subject, states, copy }) {
     credit: { ...credit, at: creditAt },
     colours,
     left: r1(left),
-    unit,
+    units,
     seam: r1(seam),
+    world: subject.world,
+    worldY: r1(rowY(0)),
+    worldName: { ...worldName, x: left - gap - worldName.width * (1 + DRAWN_WIDER), y: rowY(0) + barH / 2 + shift },
     pileY: r1(pileY),
+    gapY: r1(pileY),
     barH: r1(barH),
-    bars: subject.top.map((r, i) => {
-      const p = i >= 1 && i <= subject.beaten ? pile[i - 1] : null;
-      return {
-        value: r.value,
-        y: r1(rowY(i)),
-        stacked: p ? p.stacked : null,
-        before: p ? p.before : 0,
-        name: { ...names[i], x: left - gap - names[i].width * (1 + DRAWN_WIDER), y: rowY(i) + barH / 2 + shift },
-      };
-    }),
+    bars: (() => {
+      let inWorld = 0;
+      return subject.top.map((r, i) => {
+        const p = i >= 1 && i <= subject.beaten ? pile[i - 1] : null;
+        const bar = {
+          value: r.value,
+          y: r1(rowY(i + 1)),
+          inWorld,
+          stacked: p ? p.stacked : null,
+          before: p ? p.before : 0,
+          tenth: i === TOP_N - 1,
+          name: { ...names[i], x: left - gap - names[i].width * (1 + DRAWN_WIDER), y: rowY(i + 1) + barH / 2 + shift },
+        };
+        inWorld += r.value;
+        return bar;
+      });
+    })(),
     pileNames,
-    firstEnd: r1(left + subject.top[0].value * unit),
-    rows: { first: r1(rowY(0)), pile: r1(pileY) },
+    tenthName,
+    rows: { first: r1(rowY(1)), pile: r1(pileY) },
     combined: subject.combined,
     countWidths,
     countGap: gap,

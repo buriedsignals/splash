@@ -1,22 +1,26 @@
 // THE PICTURE AT ONE FRAME — pure arithmetic, run by the composition in Chrome and by the tests in Bun. Browser-safe.
 //
-//   - RISE: the bars from the tenth to the second grow one after another, each eased (an arrival), its value counting with
-//     its length; the first grows last, on its own field.
-//   - STACK: the next five leave their rows one after another, the largest first, and line up end to end along the second
-//     row, each block landing after the one before; their sum counts the blocks landed; the bars after them step back.
+// THE ARGUMENT, every length on one scale so a bar keeps its length as it travels:
+//   - WORLD: the world's emissions grow as one bar across the top row; the ten largest are marked inside it, end to end.
+//   - DROP: the ten fall out of the world into their rows, the largest first, each keeping its length; what stays up is the
+//     rest of the world.
+//   - CAMERA: the scale closes geometrically from the world's to the first bar's, the rest of the world running out of the
+//     frame; every count stands past its bar's end.
+//   - STACK: the next five leave their rows one after another and line up end to end under the first, their sum counting.
+//   - TENTH: the tenth slides into the gap between the five's end and the first's — and fits.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 
 export const WINDOWS = Object.freeze({
   establish: { title: [-1, 0] },
-  reference: { title: [0, 0.2], furniture: [0.25, 0.8] },
-  reveal: { rise: [0.02, 0.68], first: [0.72, 0.95] },
+  reference: { title: [0, 0.15], furniture: [0.1, 0.4], world: [0.2, 0.9] },
+  reveal: { drop: [0, 0.62], camera: [0.7, 0.98] },
   subject: { stack: [0.05, 0.9] },
-  conclusion: { source: [0, 0.6] },
+  conclusion: { tenth: [0.08, 0.6], source: [0.55, 0.85] },
 });
-const LINEAR = new Set(["rise", "stack"]);
-/** Of the rise, and of the stack, the share one column's own move takes. */
+const LINEAR = new Set(["drop", "stack"]);
+/** Of the drop, and of the stack, the share one bar's own move takes. */
 export const MOVE = 0.3;
 
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
@@ -38,26 +42,34 @@ export const moveOf = (t, k, n) => clamp01((t - (n > 1 ? (k / (n - 1)) * (1 - MO
 /** A count's text at `v`: one decimal from 1, two under — at one decimal the ninth and tenth would both print 0,6. */
 export const valueText = (v) => (v >= 0.995 ? v.toFixed(1) : v.toFixed(2)).replace(".", ",");
 
+const lerp = (a, b, t) => a + (b - a) * t;
+
 /**
- * @param {{ states: any[], timing: any, left: number, unit: number, seam: number, pileY: number,
- *   bars: Array<{ value: number, y: number, stacked: number|null, before: number }> }} props
- *   `stacked`: the bar's place along the pile (0 first) or null; `before`: the values ahead of it along the pile.
+ * @param {{ states: any[], timing: any, left: number, units: { world: number, ten: number }, seam: number,
+ *   world: number, worldY: number, pileY: number, gapY: number,
+ *   bars: Array<{ value: number, y: number, inWorld: number, stacked: number|null, before: number, tenth: boolean }> }} props
+ *   `inWorld`: the values ahead of the bar inside the world bar; `stacked`: its place along the pile or null; `before`: the
+ *   values ahead of it along the pile.
  */
 export function sceneAt(props, frame) {
   const at = (f) => fieldAt(f, frame, props.states, props.timing);
-  const rise = at("rise");
-  const first = at("first");
+  const world = at("world");
+  const drop = at("drop");
+  const camera = at("camera");
   const stack = at("stack");
+  const tenth = at("tenth");
+  const unit = props.units.world * (props.units.ten / props.units.world) ** camera;
   const n = props.bars.length;
   const piled = props.bars.filter((b) => b.stacked !== null).length;
+  const combined = props.bars.filter((b) => b.stacked !== null).reduce((s, b) => s + b.value, 0);
   let landed = 0;
   let sum = 0;
   const bars = props.bars.map((b, i) => {
-    // The first bar grows on its own field; the others from the last to the second.
-    const up = ease(i === 0 ? first : moveOf(rise, n - 1 - i, n - 1));
-    const w = b.value * props.unit * up;
-    let x = props.left;
-    let y = b.y;
+    const fall = ease(moveOf(drop, i, n));
+    // Inside the world bar, a bar shows as far as the world has grown.
+    const grown = clamp01((world * props.world - b.inWorld) / b.value);
+    let x = props.left + lerp(b.inWorld, 0, fall) * unit;
+    let y = lerp(props.worldY, b.y, fall);
     let move = 0;
     if (b.stacked !== null) {
       const raw = moveOf(stack, b.stacked, piled);
@@ -66,23 +78,32 @@ export function sceneAt(props, frame) {
         landed += 1;
         sum += b.value;
       }
-      x = props.left + b.before * props.unit * move;
-      y = b.y + (props.pileY - b.y) * move;
+      x = lerp(x, props.left + b.before * unit, move);
+      y = lerp(y, props.pileY, move);
     }
-    /** A block after the first along the pile gives its start a seam of the ground, so the pile reads as five countries
-     *  and still ends exactly at their sum. */
-    const seam = b.stacked ? props.seam * move : 0;
-    return { x: x + seam, y, w: Math.max(0, w - seam), count: b.value * up, up, move };
+    let slide = 0;
+    if (b.tenth) {
+      slide = ease(tenth);
+      x = lerp(x, props.left + combined * unit, slide);
+      y = lerp(y, props.gapY, slide);
+    }
+    const seam = b.stacked ? props.seam * move : slide > 0 ? props.seam * slide : 0;
+    return { x: x + seam, y, w: Math.max(0, b.value * unit * (fall > 0 ? 1 : grown) - seam), fall, landed: fall >= 1 ? 1 : 0, move, slide };
   });
+  const tenSum = props.bars.reduce((s, b) => s + b.value, 0);
   return {
     title: at("title"),
     furniture: at("furniture"),
+    unit,
+    camera,
+    world: { w: props.world * unit * world, restX: props.left + tenSum * unit, restW: Math.max(0, (props.world * world - tenSum) * unit), shown: world },
     bars,
-    /** The bars after the pile step back as the first block leaves. */
     stepBack: ease(clamp01(stack / MOVE)),
     landed,
     sum,
     stacking: clamp01(stack / 0.05),
+    sumShown: 1 - ease(clamp01(tenth * 4)),
+    tenth,
     source: at("source"),
   };
 }

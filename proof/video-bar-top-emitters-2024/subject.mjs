@@ -44,5 +44,14 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
     beaten += 1;
   }
   if (beaten !== 5) throw new Error(`the title says the next five together; the search stops at ${beaten}`);
-  return { top: top.map((r) => ({ ...r, name: FRENCH[r.country] })), beaten, combined };
+  const worldRow = records.find((r) => r.Code === "OWID_WRL");
+  if (!worldRow) throw new Error("no OWID_WRL row in the frozen data: the video opens on the world total");
+  const world = Number(worldRow[VALUE]) / 1e9;
+  const tenSum = top.reduce((s, r) => s + r.value, 0);
+  if (!(tenSum < world)) throw new Error(`the ten cannot weigh more than the world: ${tenSum} against ${world}`);
+  // THE LAST SHOT: the gap between the first and the next five together is wider than the tenth's whole emissions.
+  const last = top[TOP_N - 1];
+  const gap = first.value - combined;
+  if (!(last.value < gap)) throw new Error(`the video slides ${last.country} into the gap and it fits; the gap is ${gap.toFixed(2)} and ${last.country} ${last.value.toFixed(2)}`);
+  return { top: top.map((r) => ({ ...r, name: FRENCH[r.country] })), beaten, combined, world, gap };
 }
