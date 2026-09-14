@@ -31,6 +31,10 @@ export const CARD_MAX_LINES = 3;
 /** The credit's measure: narrow enough to sit in a corner of the picture. */
 export const CREDIT_MEASURE = 0.28; // × content width
 export const CREDIT_MAX_LINES = 3;
+/** THE CREDIT ON ONE LINE — the rule from 2026-09-14 on: wrapped onto a narrow measure the credit took three lines of the
+ *  picture for nothing (the owner). A beat passes it to `sourceCreditFor`; a form too long for one line of the content
+ *  width gives way to the next, shorter one. The beats validated before it keep the narrow block until they are re-cut. */
+export const CREDIT_ONE_LINE = Object.freeze({ measure: 1, maxLines: 1 });
 // The key's rhythm, × the axis lead.
 const COUNTER_TO_COUNTER = 0.4;
 const COUNTER_TO_KEY = 0.45;
@@ -166,15 +170,16 @@ export function titleCardFor({ registers, eyebrow, title: forms, size, eyebrowTo
 
 /**
  * 3. THE CREDIT — no end card: the video ends on its picture, the source set on it as a credit, the axis voice at
- * the type floor, the first form that holds `CREDIT_MAX_LINES` lines of a narrow measure, laid out at its own
+ * the type floor, the first form that holds `maxLines` lines of `measure` × the content width (`CREDIT_ONE_LINE` for a
+ * beat cut from 2026-09-14 on), laid out at its own
  * origin with the halo's reach around it. The beat seats the box on its picture.
  */
-export function sourceCreditFor({ registers, forms, size, k }) {
+export function sourceCreditFor({ registers, forms, size, k, measure = CREDIT_MEASURE, maxLines = CREDIT_MAX_LINES }) {
   const row = sizeFor(size);
   const content = row.width - 2 * frameInsetFor(size);
   const r = registerAt(registers.axis, row.minTypePx);
   const halo = haloOf(r, k);
-  const block = blockFor(forms, r, (CREDIT_MEASURE * content) / (1 + DRAWN_WIDER), CREDIT_MAX_LINES);
+  const block = blockFor(forms, r, (measure * content) / (1 + DRAWN_WIDER), maxLines);
   const band = bandOf(block.lines.map((l) => l.text).join(" "), r);
   const lines = block.lines.map((l, i) => lineOf(l.text, r, halo / 2, halo / 2 + band.ascent + i * r.lead, l.width));
   return {

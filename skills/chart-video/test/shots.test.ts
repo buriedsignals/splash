@@ -4,6 +4,7 @@ import { frameInsetFor, sizeFor } from "../scripts/sizes.mjs";
 import {
   DRAWN_WIDER,
   keyFor,
+  CREDIT_ONE_LINE,
   sourceCreditFor,
   titleCardFor,
   verticalInsetFor,
@@ -110,6 +111,18 @@ describe("sourceCreditFor", () => {
       expect(
         l.x + measured(l.text, credit.register) * (1 + DRAWN_WIDER),
       ).toBeLessThanOrEqual(credit.width + 0.01);
+  });
+});
+
+describe("sourceCreditFor with CREDIT_ONE_LINE", () => {
+  const forms = [
+    "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · combustibles fossiles et industrie, données gelées",
+    "Source : Ember, Energy Institute, via Our World in Data",
+  ];
+  const credit = sourceCreditFor({ registers, forms, size: "landscape", k: 3, ...CREDIT_ONE_LINE });
+
+  it("should set the credit on one line, the first form that holds one", () => {
+    expect([credit.lines.length, credit.form]).toEqual([1, 1]);
   });
 });
 
