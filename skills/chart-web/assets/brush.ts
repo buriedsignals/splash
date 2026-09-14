@@ -929,7 +929,14 @@ ${scope} .brush-notes p { margin: 0; }
   ${scope} .chart-brush label {
     gap: 0;
     padding: 4px 10px;
-    border: 1px solid ${pill.outline};
+    /* NO PER-OPTION EDGE. This control shipped one for a while and the owner's verdict on the
+       result was « l'encadré gris au filtre c'est moche » — a row of outlined boxes over a plot
+       that is already a thicket of lines reads as a second grid. The shared chrome frames the
+       GROUP and leaves each label bare, which is what every other control in this format does; a
+       pill still says it can be pressed, by its padding, its radius and its hover. Kept
+       transparent rather than removed so the chosen state's own border has something to swap and
+       the row cannot shift sideways by 2px when a reader changes their mind. */
+    border: 1px solid transparent;
     border-radius: 999px;
     line-height: 1.2;
     white-space: nowrap;

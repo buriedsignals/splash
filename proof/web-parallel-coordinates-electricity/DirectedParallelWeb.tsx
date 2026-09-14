@@ -207,10 +207,18 @@ export function DirectedParallelWeb({
   // Both scales run edge to edge of the INSET drawing area, never of the frame — see `MARK_INSET`.
   const x = (i: number) =>
     MARK_INSET + (i / (axes.length - 1)) * (FRAME.width - 2 * MARK_INSET);
+  // THE CEILING LABEL NEEDS ITS OWN BAND, AND THE RAIL HAS TO GIVE IT ONE. The label names the top
+  // of the rail, so it is seated at the top of the rail — which is exactly where the vertex of a
+  // country AT the ceiling is drawn. Measured on the shipped page: four vertices sat UNDER a
+  // ceiling label, overlapping it by 4,1 to 6,3 px, and a disc half-covered by a word reads as a
+  // disc that has been cut off. Nothing was clipped — the frame was fine — the label was simply
+  // standing on the mark. So the rail stops a label's own height short of the frame and the label
+  // sits in the band that opens above it: neither moves onto the other, at any width.
+  const CEILING_BAND = MARK_INSET + 16;
   const y = (axisIndex: number, value: number) =>
     FRAME.height -
     MARK_INSET -
-    (value / axes[axisIndex].ceiling) * (FRAME.height - 2 * MARK_INSET);
+    (value / axes[axisIndex].ceiling) * (FRAME.height - MARK_INSET - CEILING_BAND);
   const path = (l: Line) => l.values.map((v, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(i, v)}`).join(" ");
 
   // NO MARK IS DRAWN ACROSS THE FRAME'S OWN EDGE, and it is checked rather than reasoned about.
