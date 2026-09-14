@@ -33,6 +33,8 @@ export type Country = {
   tile: { x: number; y: number; w: number; h: number };
   value: number | null;
   classIndex: number | null;
+  /** electricity produced, TWh */
+  twh: number;
 };
 type Style = Record<string, string | number>;
 
@@ -49,6 +51,7 @@ export function DirectedCartogramScrolly({
   subjectNote,
   byArea,
   byCountry,
+  byProduction,
   missingNote,
   alt,
   regs,
@@ -71,6 +74,7 @@ export function DirectedCartogramScrolly({
   subjectNote: string;
   byArea: { template: string; value: number };
   byCountry: { template: string; value: number };
+  byProduction: { template: string; value: number };
   missingNote: string;
   alt: string;
   regs: Record<
@@ -126,17 +130,18 @@ export function DirectedCartogramScrolly({
         width,
         height,
         subject,
-        countries: countries.map(({ iso, box, tile, classIndex }) => ({
+        countries: countries.map(({ iso, box, tile, classIndex, twh }) => ({
           iso,
           box,
           tile,
           classIndex,
+          twh: Math.round(twh * 10) / 10,
         })),
         fills: {
           classes: Array.from({ length: classCount }, (_, i) => classFill(i)),
           neutral,
         },
-        ink: { dark: inkOnGround, light: ground },
+        ink: { dark: inkOnGround, light: ground, muted: mutedInk },
       })}
       style={{
         position: "absolute",
@@ -160,6 +165,7 @@ export function DirectedCartogramScrolly({
       >
         {[
           { part: "by-area", counter: byArea },
+          { part: "by-production", counter: byProduction },
           { part: "by-country", counter: byCountry },
         ].map(({ part, counter }) => (
           <span
@@ -297,6 +303,85 @@ export function DirectedCartogramScrolly({
         >
           {missingNote}
         </span>
+        {/* The three means on one rule, 0 to 100 %: laid over the tiles on the card that compares them. */}
+        <div
+          data-part="rule"
+          style={abs({ left: 0, top: 0, width: "100%", opacity: 0 })}
+        >
+          <div
+            style={{
+              position: "relative",
+              margin: "0 auto",
+              width: "min(560px, 86%)",
+              height: "96px",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "47px",
+                height: "2px",
+                background: mutedInk,
+              }}
+            />
+            {[0, 50, 100].map((t) => (
+              <span
+                key={t}
+                style={{
+                  ...regs.axis,
+                  position: "absolute",
+                  left: `${t}%`,
+                  top: "54px",
+                  transform: "translateX(-50%)",
+                  color: mutedInk,
+                  whiteSpace: "nowrap",
+                  opacity: 0.9,
+                }}
+              >
+                {t}
+              </span>
+            ))}
+            {[
+              { counter: byArea, above: true, colour: inkOnGround },
+              { counter: byProduction, above: false, colour: inkOnGround },
+              { counter: byCountry, above: true, colour: accentInk },
+            ].map(({ counter, above, colour }) => (
+              <div key={counter.template}>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${counter.value}%`,
+                    top: "38px",
+                    width: "3px",
+                    height: "20px",
+                    transform: "translateX(-50%)",
+                    background: colour,
+                  }}
+                />
+                <span
+                  style={{
+                    ...regs.value,
+                    ...chip,
+                    position: "absolute",
+                    left: `${counter.value}%`,
+                    top: above ? "34px" : "74px",
+                    transform: above
+                      ? `translate(${counter.value > 62 ? "-15%" : "-85%"}, -100%)`
+                      : "translateX(-50%)",
+                    color: colour,
+                  }}
+                >
+                  {counter.template.replace(
+                    "{n}",
+                    counter.value.toFixed(1).replace(".", ","),
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div
