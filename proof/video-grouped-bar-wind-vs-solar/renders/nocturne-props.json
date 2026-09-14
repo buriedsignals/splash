@@ -98,30 +98,18 @@
     "form": 1,
     "lines": [
       {
-        "text": "Source : Ember, Energy",
+        "text": "Source : Ember, Energy Institute, via Our World in Data",
         "x": 4.493098754882813,
         "y": 26.753108520507812,
-        "width": 424.5599877595901
-      },
-      {
-        "text": "Institute, via Our World in",
-        "x": 4.493098754882813,
-        "y": 62.752616520507814,
-        "width": 473.06995711326596
-      },
-      {
-        "text": "Data",
-        "x": 4.493098754882813,
-        "y": 98.75212452050782,
-        "width": 79.73999648094177
+        "width": 1010.3099389314651
       }
     ],
     "halo": 8.986197509765626,
-    "width": 492,
-    "height": 110,
+    "width": 1040,
+    "height": 38,
     "at": {
       "x": 85,
-      "y": 910
+      "y": 982
     }
   },
   "colours": {
@@ -130,6 +118,10 @@
     "wind": "#53e1c1",
     "solar": "#a7a6b9",
     "faded": "#2e2d5a",
+    "others": [
+      "#414069",
+      "#58587c"
+    ],
     "text": {
       "eyebrow": "#53e1c1",
       "title": "#ffffff",
@@ -146,84 +138,324 @@
       "name": "Suède",
       "wind": 23.49695033401104,
       "solar": 2.416497240778391,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 29.433633459192563
+        },
+        {
+          "source": "Hydropower",
+          "share": 37.531222770839385
+        },
+        {
+          "source": "Coal",
+          "share": 0
+        },
+        {
+          "source": "Gas",
+          "share": 0.06389776357827476
+        },
+        {
+          "source": "Oil",
+          "share": 1.1443508568109206
+        },
+        {
+          "source": "Bioenergy",
+          "share": 5.913447574789427
+        },
+        {
+          "source": "Other renewables",
+          "share": 0
+        },
+        {
+          "source": "Wind",
+          "share": 23.49695033401104
+        },
+        {
+          "source": "Solar",
+          "share": 2.416497240778391
+        }
+      ],
+      "colX": 122.9,
       "windX": 122.9,
       "solarX": 234,
       "label": {
         "text": "Suède",
         "width": 113.90906328048706,
         "x": 173.87880169308983,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     },
     {
       "name": "Allemagne",
       "wind": 28.54896268069921,
       "solar": 14.945865844069436,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 0
+        },
+        {
+          "source": "Hydropower",
+          "share": 4.804532349442529
+        },
+        {
+          "source": "Coal",
+          "share": 21.437932216375334
+        },
+        {
+          "source": "Gas",
+          "share": 15.808786467469101
+        },
+        {
+          "source": "Oil",
+          "share": 4.110969979233453
+        },
+        {
+          "source": "Bioenergy",
+          "share": 10.298594729732455
+        },
+        {
+          "source": "Other renewables",
+          "share": 0.044355732978487473
+        },
+        {
+          "source": "Wind",
+          "share": 28.54896268069921
+        },
+        {
+          "source": "Solar",
+          "share": 14.945865844069436
+        }
+      ],
+      "colX": 414.6,
       "windX": 414.6,
       "solarX": 525.7,
       "label": {
         "text": "Allemagne",
         "width": 201.7646493332863,
         "x": 421.61767533335683,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     },
     {
       "name": "Norvège",
       "wind": 9.292852141811467,
       "solar": 0.33734326268219716,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 0
+        },
+        {
+          "source": "Hydropower",
+          "share": 88.82311756094457
+        },
+        {
+          "source": "Coal",
+          "share": 0
+        },
+        {
+          "source": "Gas",
+          "share": 0.9356501814015656
+        },
+        {
+          "source": "Oil",
+          "share": 0.4582776398701546
+        },
+        {
+          "source": "Bioenergy",
+          "share": 0.15275921329005154
+        },
+        {
+          "source": "Other renewables",
+          "share": 0
+        },
+        {
+          "source": "Wind",
+          "share": 9.292852141811467
+        },
+        {
+          "source": "Solar",
+          "share": 0.33734326268219716
+        }
+      ],
+      "colX": 706.3,
       "windX": 706.3,
       "solarX": 817.3,
       "label": {
         "text": "Norvège",
         "width": 156.32101169357298,
         "x": 736.0061608198803,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     },
     {
       "name": "Pologne",
       "wind": 15.041831280501974,
       "solar": 10.260283523123402,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 0
+        },
+        {
+          "source": "Hydropower",
+          "share": 1.2258889147106669
+        },
+        {
+          "source": "Coal",
+          "share": 54.32256565187079
+        },
+        {
+          "source": "Gas",
+          "share": 11.887055542644667
+        },
+        {
+          "source": "Oil",
+          "share": 2.643504531722054
+        },
+        {
+          "source": "Bioenergy",
+          "share": 4.618870555426446
+        },
+        {
+          "source": "Other renewables",
+          "share": 0
+        },
+        {
+          "source": "Wind",
+          "share": 15.041831280501974
+        },
+        {
+          "source": "Solar",
+          "share": 10.260283523123402
+        }
+      ],
+      "colX": 997.9,
       "windX": 997.9,
       "solarX": 1109,
       "label": {
         "text": "Pologne",
         "width": 153.69986453781127,
         "x": 1028.9834010644279,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     },
     {
       "name": "France",
       "wind": 8.08679554273915,
       "solar": 4.4269998931966255,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 67.72224002278472
+        },
+        {
+          "source": "Hydropower",
+          "share": 12.659760048417532
+        },
+        {
+          "source": "Coal",
+          "share": 0.18156573747730428
+        },
+        {
+          "source": "Gas",
+          "share": 3.221901812097263
+        },
+        {
+          "source": "Oil",
+          "share": 1.6981736622877281
+        },
+        {
+          "source": "Bioenergy",
+          "share": 1.9011000747623625
+        },
+        {
+          "source": "Other renewables",
+          "share": 0.1014632062373171
+        },
+        {
+          "source": "Wind",
+          "share": 8.08679554273915
+        },
+        {
+          "source": "Solar",
+          "share": 4.4269998931966255
+        }
+      ],
+      "colX": 1289.6,
       "windX": 1289.6,
       "solarX": 1400.7,
       "label": {
         "text": "France",
         "width": 125.08838801193237,
         "x": 1334.9558059940339,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     },
     {
       "name": "Suisse",
       "wind": 0.22967972438433076,
       "solar": 7.2221513334184015,
+      "mix": [
+        {
+          "source": "Nuclear",
+          "share": 30.649483220620137
+        },
+        {
+          "source": "Hydropower",
+          "share": 57.34337118795458
+        },
+        {
+          "source": "Coal",
+          "share": 0
+        },
+        {
+          "source": "Gas",
+          "share": 0.3445195865764962
+        },
+        {
+          "source": "Oil",
+          "share": 1.5567181319382417
+        },
+        {
+          "source": "Bioenergy",
+          "share": 1.327038407553911
+        },
+        {
+          "source": "Other renewables",
+          "share": 1.327038407553911
+        },
+        {
+          "source": "Wind",
+          "share": 0.22967972438433076
+        },
+        {
+          "source": "Solar",
+          "share": 7.2221513334184015
+        }
+      ],
+      "colX": 1581.3,
       "windX": 1581.3,
       "solarX": 1692.3,
       "label": {
         "text": "Suisse",
         "width": 116.53020624923705,
         "x": 1630.9015635420483,
-        "y": 887.8942058464406
+        "y": 959.8942058464406
       }
     }
   ],
   "barW": 104.8,
-  "baseline": 844.9,
-  "unit": 22.69123651920907,
+  "colW": 215.8,
+  "units": {
+    "whole": 7.198112645658187,
+    "close": 25.213219570056527
+  },
+  "seam": 6.3,
+  "baseline": 916.9,
+  "unit": 25.213219570056527,
   "left": 85,
   "right": 1835,
   "series": [
@@ -592,77 +824,95 @@
     {
       "title": 1,
       "furniture": 0,
-      "wind": 0,
-      "solar": 0,
+      "mix": 0,
+      "others": 0,
+      "split": 0,
+      "camera": 0,
+      "compare": 0,
       "focus": 0,
       "source": 0
     },
     {
       "title": 0,
       "furniture": 1,
-      "wind": 0,
-      "solar": 0,
+      "mix": 1,
+      "others": 0,
+      "split": 0,
+      "camera": 0,
+      "compare": 0,
       "focus": 0,
       "source": 0
     },
     {
       "title": 0,
       "furniture": 1,
-      "wind": 1,
-      "solar": 1,
+      "mix": 1,
+      "others": 1,
+      "split": 1,
+      "camera": 1,
+      "compare": 0,
       "focus": 0,
       "source": 0
     },
     {
       "title": 0,
       "furniture": 1,
-      "wind": 1,
-      "solar": 1,
-      "focus": 1,
+      "mix": 1,
+      "others": 1,
+      "split": 1,
+      "camera": 1,
+      "compare": 1,
+      "focus": 0,
       "source": 0
     },
     {
       "title": 0,
       "furniture": 1,
-      "wind": 1,
-      "solar": 1,
+      "mix": 1,
+      "others": 1,
+      "split": 1,
+      "camera": 1,
+      "compare": 1,
       "focus": 1,
       "source": 1
     },
     {
       "title": 0,
       "furniture": 1,
-      "wind": 1,
-      "solar": 1,
+      "mix": 1,
+      "others": 1,
+      "split": 1,
+      "camera": 1,
+      "compare": 1,
       "focus": 1,
       "source": 1
     }
   ],
   "timing": {
     "fps": 30,
-    "total": 606,
+    "total": 741,
     "establish": {
       "start": 0,
       "duration": 45
     },
     "reference": {
       "start": 51,
-      "duration": 45
-    },
-    "reveal": {
-      "start": 96,
-      "duration": 270
-    },
-    "subject": {
-      "start": 366,
       "duration": 90
     },
+    "reveal": {
+      "start": 141,
+      "duration": 240
+    },
+    "subject": {
+      "start": 381,
+      "duration": 180
+    },
     "conclusion": {
-      "start": 456,
-      "duration": 60
+      "start": 561,
+      "duration": 90
     },
     "hold": {
-      "start": 516,
+      "start": 651,
       "duration": 90
     }
   },
