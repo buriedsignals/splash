@@ -70,9 +70,9 @@ plot, and leaves again when the reader leaves the option. The reader earns the a
 an option must carry at least two labelled graduations spaced no closer than the axis register's own
 leading — `leadOf`, the widest of the three filed directions (13,20 px at the canonical 1:1 mapping,
 `creme` and `rapport`; `nocturne` is 12,00). That admits hydraulique (peak 206,4 u), nucléaire
-(128,3 u) and solaire (36,2 u), and refuses pétrole (6,4 u), gaz (4,7 u), biomasse (4,8 u), éolien
-(0,8 u) and charbon (0,0 u) — every one of them too thin to hold a second graduation. Five refusals
-the file makes by measuring, before anything is drawn.
+(128,3 u) and solaire (36,2 u), and refuses pétrole (6,4 u), autres renouv. (5,4 u), biomasse
+(4,8 u), gaz (4,7 u), éolien (0,8 u) and charbon (0,0 u) — every one of them too thin to hold a
+second graduation. Six refusals the file makes by measuring, before anything is drawn.
 
 ## What changes in the image
 

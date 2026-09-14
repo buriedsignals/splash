@@ -19,7 +19,7 @@
  * ends instead. Under a chosen option it is SUSPENDED and not broken: that band's floor IS a fixed
  * zero, so a real TWh axis opens in the gutter, graduated across the plot, and closes again when the
  * reader leaves. Which bands are offered is arithmetic — an option must hold two graduations at the
- * axis register's own leading, which admits three of the nine and refuses five as too thin.
+ * axis register's own leading, which admits three of the nine and refuses six as too thin.
  *
  * `a-band-is-named-inside-itself-or-it-is-texture` — the three bands thick enough carry their names
  * where they are thickest, clamped away from both edges. Those names are CARRIED by the control, not

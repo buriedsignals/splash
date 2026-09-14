@@ -87,7 +87,7 @@
 //     spaced closer than the axis register's own leading collide, so an option whose band is too
 //     thin to hold two of them cannot hand back a number, and an option that hands back no number
 //     is a rearrangement. `floorTicks` computes what a band can carry and returns nothing when the
-//     answer is "not enough" — five of this beat's nine bands were refused that way, by measuring,
+//     answer is "not enough" — six of this beat's nine bands were refused that way, by measuring,
 //     before anything was drawn.
 //   - A CARRIED WORD ONE OPTION FORGOT. The words this control moves are NOT hidden by it: they
 //     stay drawn in every state, because "the reader lands on the whole claim with nothing dimmed"
@@ -232,7 +232,7 @@ const NICE_STEPS = [1, 2, 2.5, 5];
  * three pages offer the reader the same control rather than one of them quietly dropping an option.
  *
  * Returns fewer than two graduations for a band too thin to hold an axis, and the beat is expected
- * to read that as "do not offer this option" — which is how five of the nine bands of the beat this
+ * to read that as "do not offer this option" — which is how six of the nine bands of the beat this
  * file was written for came to be refused, by measuring rather than by taste.
  */
 export function floorTicks(

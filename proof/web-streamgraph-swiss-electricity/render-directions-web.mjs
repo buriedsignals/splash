@@ -10,7 +10,7 @@
 // flat is not a list somebody wrote: `floorShear` computes the shear each one needs, `floorTicks`
 // computes the axis it would earn, and a band too thin to hold two graduations at the widest of the
 // three filed directions' own axis leading is NOT OFFERED. On this data that admits three of the
-// nine and refuses five; the refusals are printed, so the reason is on the record rather than in
+// nine and refuses six; the refusals are printed, so the reason is on the record rather than in
 // somebody's head.
 //
 // Usage:  bun proof/web-streamgraph-swiss-electricity/render-directions-web.mjs
