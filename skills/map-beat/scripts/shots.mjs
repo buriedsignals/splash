@@ -32,7 +32,7 @@ export const CARD_MAX_LINES = 3;
 export const CREDIT_MEASURE = 0.28; // × content width
 export const CREDIT_MAX_LINES = 3;
 // The key's rhythm, × the axis lead.
-const COUNTER_TO_COUNTER = 0.15;
+const COUNTER_TO_COUNTER = 0.4;
 const COUNTER_TO_KEY = 0.45;
 const SWATCH_HEIGHT = 0.4;
 const SWATCH_AIR = 0.5; // a swatch is its widest borne plus this
