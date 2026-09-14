@@ -13,107 +13,131 @@
  *
  * WHAT THE WEB ADDS, AND IT IS NOT A TOOLTIP. `chart-beat/references/types/radar.md` does not warn
  * about a decoration on this type; it says the type MISREPORTS -- "a polygon's AREA (the thing a
- * reader's eye actually judges at a glance) is sensitive to axis order and count in a way the
+ * reader's eye actually judges at a glance) is sensitive to axis order AND COUNT in a way the
  * underlying numbers aren't ... this is the type's structural weak point, not a bug to be fixed in
  * code" -- and that the type ships with no mechanical guard at all behind that problem. A still can
- * answer that exactly one way: pick an ordering, state it on the plate, ask to be trusted. That is
+ * answer that exactly one way: pick a set of axes, state it on the plate, ask to be trusted. That is
  * what the static sibling does and it is the honest maximum of a still.
  *
- * So the gesture here is the lie itself, made operable: the reader hands the eight axes round the
- * circle and watches both polygons change size while not one of the sixteen numbers moves. Measured
- * over all 5 040 orderings of these axes, France's polygon spans 0,50 % to 3,45 % of the disc and the
- * ratio of Germany's area to France's spans 0,60 to 6,83 -- the eye's answer to "who covers more" can
- * be turned all the way round by nothing but where the spokes sit. The vocabulary is
- * `skills/chart-web/assets/reorder.ts`; the arithmetic that refuses an ordering which draws the same
- * polygon is there and not here.
+ * THE GESTURE IS THE COUNT, AND IT IS THE OWNER'S SECOND VERDICT MADE STRUCTURAL. This page used to
+ * demonstrate the same finding through the ORDER half: the reader handed the eight axes round the
+ * circle and watched both areas move. He read the result twice and wrote the same sentence twice, the
+ * second time with a warning already on the page: *"Les labels nucleaire, eolien, etc bougent avec les
+ * filtres alors qu'il n'y a pas lieu d'etre."* A row of pills over a chart reads as a FILTER whatever
+ * its legend says, and under a filter a label that moves is a bug, not a finding. So the ordering
+ * gesture is gone from this beat and NOT ONE INTITULE MOVES IN ANY STATE: the eight spokes keep their
+ * angle and their name for good.
  *
- * THE CONTROL SAYS WHAT IT WILL DO BEFORE IT IS PRESSED, and that sentence is not decoration either.
- * The owner read this page and asked *"pourquoi les labels changent d'ordre au filtre ?"* -- the
- * gesture working exactly as designed, and nothing on the page warning him it was about to. A legend
- * names what the reader is CHOOSING; every other sentence this control owns is a counterfactual that
- * does not exist until an option has been taken. So the reserved row under the pills is no longer
- * empty at rest: it carries the warning, one line, between the control and the circle it changes.
+ * What the reader chooses instead is WHICH SOURCES ARE COUNTED IN THE SHAPE -- which is the half of
+ * the catalogue's warning a newsroom actually decides. Nobody shuffles axes at random; everybody
+ * chooses which sources go into a comparison. A source set aside stays drawn, stays named and keeps
+ * both of its vertices exactly where they were -- it did not stop being true -- and the two outlines
+ * simply stop passing through it and close over the rest. On the plate's own eight, Germany's polygon
+ * covers 1,45 times France's. Count only the low-carbon sources and France covers MORE, at 0,83; count
+ * only the dispatchable ones and it covers 1,56 times Germany's. Sixteen numbers, none of them
+ * touched. The vocabulary is `skills/chart-web/assets/count.ts`; the arithmetic that refuses a subset
+ * drawing a shape already on the page is there and not here.
  *
- * THE DRAWING TRAVELS AND THE THINGS THAT ANSWER DO NOT -- the structural decision this component
- * makes on the control's behalf, and it is the second one it has made. The owner's other reading was
- * that the graph "pourrait changer en lerp smooth au lieu de saccader en changement direct". It could
- * not, because every ordering was a whole `<svg>` revealed with `display`, and `display` cannot be
- * transitioned. What CAN be transitioned is a property changing on an element that is ALWAYS
- * rendered, which is the only one of the three triggers CSS has that survived being driven (the other
- * two, and what each measured, are in `reorder.ts`'s own "THE TRAVEL"). So there is now ONE drawing:
- * the rings, the spokes, both areas, sixteen dots and eight names, `aria-hidden` and
- * `pointer-events: none`, whose dots and names move on `transform` and whose areas morph on `d`, both
- * on one clock.
+ * THE CONTROL SAYS WHAT IT WILL DO BEFORE IT IS PRESSED, and that sentence is the one thing kept from
+ * the version this replaces. A legend names what the reader is CHOOSING; every other sentence this
+ * control owns is a counterfactual that does not exist until an option has been taken. So the reserved
+ * row under the pills is not empty at rest: it carries the warning, one line, between the control and
+ * the circle it changes.
  *
- * And the defect that forced four whole `<svg>`s in the first place has NOT gone away, so it is
- * answered rather than forgotten: `interaction.mjs` resolves the mark under a pointer from `cx`/`cy`
- * read once at init, which no CSS transform ever changes, and a `.pt` hidden by `opacity` stays in
- * that hit test and answers for a vertex the reader cannot see. A mark that moves must not be the
- * mark that answers. So every ordering still gets an `<svg>` of its own -- transparent now, holding
- * only the sixteen points that answer and the overlay that resolves them, baked at that ordering's
- * own coordinates, swapped with `display`, out of the hit test and out of the tab order when
- * unchosen. The drawing moves; the answers jump.
+ * THE OUTLINE TRAVELS AND NOTHING ELSE MOVES AT ALL. `count.ts` builds each state's outline with ONE
+ * POINT PER SPOKE -- a counted spoke contributes its own vertex, a set-aside one contributes the point
+ * where the closing chord crosses it -- so every state's path has the same segments in the same order
+ * and a CSS `d` interpolates it. The reader sees the edge peel off the vertex it stops counting while
+ * the vertex stands still. `display` cannot be transitioned, which is why the outline is a property on
+ * an element that is always rendered and not a swap between four drawings.
+ *
+ * AND THE DEFECT THAT FORCED FOUR WHOLE `<svg>`s ON THE PREVIOUS GESTURE IS SIMPLY GONE, which is
+ * worth saying rather than quietly enjoying: `interaction.mjs` resolves the mark under a pointer from
+ * `cx`/`cy` read once at init, and no CSS transform ever changes those. The previous gesture moved its
+ * vertices, so its answers had to be baked per state. This one moves NO vertex -- every dot is at the
+ * same coordinate in every state. What still differs per state is what a vertex SAYS: a set-aside
+ * vertex must not answer as though it counted. So there is still one transparent hit layer per state,
+ * holding the sixteen points that answer, swapped with `display` and therefore out of the hit test and
+ * out of the tab order when unchosen -- but every point in every layer sits at the same place, and the
+ * only thing that changes is the sentence it carries.
+ *
+ * AN AXIS IS DRAWN TWICE AND ONE OF THE TWO IS SHOWN. Being set aside changes a spoke's line, its
+ * name's ink and the fill of its two vertices at once, in three properties on three kinds of element.
+ * `count.ts` refuses to name a colour or a dash, so it swaps between two registers with `display` and
+ * THIS file says -- and measures -- what each register is: the spoke goes dashed, the name goes to a
+ * fade that is still over the text floor against this direction's real ground, and each vertex becomes
+ * an open ring in its own country's colour. The ring is the load-bearing one: a set-aside vertex must
+ * read as PRESENT AND UNCOUNTED, never as removed, because the whole argument is that the number is
+ * still true.
  *
  * AND THE SECOND CHANNEL IS UNCHANGED, on purpose: every vertex still answers with the country, the
  * source, its exact share, the TWh behind it and what the OTHER country has on the same axis. Those
- * sixteen strings are identical in every ordering -- they are the part of this page the reordering
- * cannot touch, which is the editorial point restated on a channel the reader can check.
+ * sixteen readings are identical in every state -- they are the part of this page the count cannot
+ * touch, which is the editorial point restated on a channel the reader can check. What a set-aside
+ * vertex adds is one clause saying it is out of the count.
  *
  * THE ONE PLACE THIS BASE SETS TYPE INSIDE AN SVG, and the reason is the radial geometry. The fluid
  * frame keeps every word in HTML because `preserveAspectRatio="none"` would stretch a `<text>` out of
  * shape. This beat does not stretch -- a radial geometry cannot: an ellipse would make the same share
- * read as two different distances depending on which axis it sat on. So it letterboxes, and that
- * broke the overlay: the `<svg>` shrinks inside its grid cell and centres, while an HTML label
- * positioned in percentages of that CELL does not. Inside the viewBox the labels follow the drawing
- * exactly. The stated cost is that they scale with the graphic instead of holding a fixed pixel size
- * -- the trade this format normally refuses, taken here because the alternative is labels that point
- * at nothing. It is also what lets a spoke's NAME travel with its own vertex: the names are inside
- * the geometry, so they move under the rule that moves the dots and never under a second layout.
+ * read as two different distances depending on which axis it sat on. So it letterboxes, and that broke
+ * the overlay: the `<svg>` shrinks inside its grid cell and centres, while an HTML label positioned in
+ * percentages of that CELL does not. Inside the viewBox the labels follow the drawing exactly. The
+ * stated cost is that they scale with the graphic instead of holding a fixed pixel size -- the trade
+ * this format normally refuses, taken here because the alternative is labels that point at nothing.
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
 import {
-  REORDER_NONE_SLUG,
-  assertReorderDeclaration,
-  assertReorderMotion,
-  reorderChromeCss,
-  reorderCss,
-  reorderMarkLiftCss,
-  reorderMotionCss,
-  reorderNotesForMarkup,
-  reorderOptionsForMarkup,
-  reorderPlatesForMarkup,
-  reorderAreaPaths,
-  reorderReadoutsForMarkup,
-  type ReorderDeclaration,
-  type ReorderMotion,
-} from "../../skills/chart-web/assets/reorder.ts";
+  COUNT_NONE_SLUG,
+  assertCountDeclaration,
+  countChromeCss,
+  countCss,
+  countMarkLiftCss,
+  countNotesForMarkup,
+  countOptionsForMarkup,
+  countOutlineCss,
+  countOutlines,
+  countReadoutsForMarkup,
+  countSlugOf,
+  countStatesForMarkup,
+  type CountDeclaration,
+  type CountGeometry,
+} from "../../skills/chart-web/assets/count.ts";
 
 export const FRAME = { width: 620, height: 440 };
 
-/** This format's own scope selector, and the id prefix the reorder's radios take. The two arguments
- *  `reorder.ts` refuses to guess, for the reason `filter.ts` refuses to guess them. */
+/** This format's own scope selector, and the id prefix the count's radios take. The two arguments
+ *  `count.ts` refuses to guess, for the reason `filter.ts` refuses to guess them. */
 const SCOPE = ".chart-figure";
-const REORDER_ID_PREFIX = "chart-reorder";
+const COUNT_ID_PREFIX = "chart-count";
 
 export type Axis = { key: string; name: string };
-/** One country: its readings on every axis, and the sentence each of those readings answers with.
- *  Keyed by axis, never positional -- an ordering moves the positions and the readings must not
- *  follow them by accident. */
+/** One country: its readings on every axis, and the sentence each of those readings answers with --
+ *  once for the states that count it, once for the states that do not. Keyed by axis, never
+ *  positional. */
 export type Shape = {
   code: string;
   name: string;
   tone: "a" | "b";
   values: Record<string, number>;
   details: Record<string, string>;
+  asideDetails: Record<string, string>;
 };
-export type ReorderPlan = {
+export type CountPlan = {
   label: string;
   noneLabel: string;
   /** What pressing a pill will DO, said in the state the page ships in. */
   noneNote: string;
-  options: { key: string; label: string; announce: string; note: string; readout: string; order: string[]; alt: string }[];
+  options: {
+    key: string;
+    label: string;
+    announce: string;
+    note: string;
+    readout: string;
+    counts: string[];
+    alt: string;
+  }[];
 };
 
 export function DirectedRadarWeb({
@@ -122,7 +146,7 @@ export function DirectedRadarWeb({
   rings,
   ceiling,
   ceilingLabel,
-  reorderPlan,
+  countPlan,
   plateReadout,
   title,
   eyebrow,
@@ -142,7 +166,7 @@ export function DirectedRadarWeb({
   rings: number[];
   ceiling: number;
   ceilingLabel: string;
-  reorderPlan: ReorderPlan;
+  countPlan: CountPlan;
   plateReadout: string;
   title: string;
   eyebrow: string;
@@ -187,12 +211,39 @@ export function DirectedRadarWeb({
     );
   };
 
+  /**
+   * THE SET-ASIDE REGISTER FOR A WORD, MEASURED TWICE AGAINST THE GROUND THIS DIRECTION REALLY PAINTS.
+   *
+   * A spoke out of the count must READ as out of the count and must still be READABLE: it names the
+   * source whose number the page is insisting is still true. So the name is walked toward the ground
+   * and stopped at the LAST step that still clears the text floor — the furthest a fade can honestly
+   * go — and then the step it actually achieved against the counted ink is measured and refused if it
+   * is under 1,4:1. Two independent clamps onto one floor come out identical by construction (1,023:1
+   * was measured that way on this branch); this is one clamp and one measured gap, which cannot.
+   */
+  const fadeOf = (colour: string) => {
+    let faded: string | null = null;
+    for (let t = 5; t <= 90; t += 5) {
+      const step = mix(colour, ground, t / 100);
+      if (contrast(step, ground) < TEXT_CONTRAST_MIN) break;
+      faded = step;
+    }
+    if (!faded || contrast(faded, colour) < 1.4)
+      throw new Error(
+        `${direction.id ?? "this direction"}: no fade of ${colour} toward the ground ${ground} is ` +
+          `both over ${TEXT_CONTRAST_MIN}:1 against that ground and 1.4:1 away from the counted ink ` +
+          `(best ${faded ?? "none"}) — a spoke set aside would either be unreadable or look counted`,
+      );
+    return faded;
+  };
+  const labelAside = fadeOf(label);
+
   const cx = FRAME.width / 2;
   const cy = FRAME.height / 2;
   const R = Math.min(cx, cy) - 70;
-  // THE SPOKES NEVER MOVE. `angle` is a function of the SLOT, not of the axis that happens to sit in
-  // it -- which is the geometric fact the whole control rests on: the frame is fixed and evenly
-  // spaced, and an ordering only changes which name is on which spoke.
+  // THE SPOKES NEVER MOVE AND NEITHER DO THE VERTICES. `angle` is a function of the axis's place in
+  // the declared frame and of nothing else, in every state this page can reach — which is the whole
+  // point of the gesture and the owner's verdict made geometric.
   const angle = (slot: number) => (slot / axes.length) * Math.PI * 2 - Math.PI / 2;
   const at = (slot: number, v: number) => [
     cx + (v / ceiling) * R * Math.cos(angle(slot)),
@@ -204,125 +255,78 @@ export function DirectedRadarWeb({
   const anchorAt = (x: number) => (x > cx + 4 ? "start" : x < cx - 4 ? "end" : "middle");
 
   // ── THE DECLARATION, REFUSED BEFORE ANYTHING IS DRAWN ────────────────────────────────────────
-  // `assertReorderDeclaration` measures every ordering against the shapes it will really produce: an
-  // ordering that is a rotation or a mirror of one already on the page draws the SAME polygon, and an
-  // ordering that moves no series' area has rearranged the names and found nothing. Both are the
-  // control the reader operates while the picture stands still.
-  const declaration: ReorderDeclaration = {
-    label: reorderPlan.label,
-    noneLabel: reorderPlan.noneLabel,
-    noneNote: reorderPlan.noneNote,
+  // `assertCountDeclaration` measures every subset against the outlines it will really produce: a
+  // subset that counts what the plate counts, or what another option counts, draws the same shape; a
+  // subset under three spokes encloses nothing; a subset that moves neither area has set a source
+  // aside and found nothing. All three are the control the reader operates while the picture stands
+  // still.
+  const declaration: CountDeclaration = {
+    label: countPlan.label,
+    noneLabel: countPlan.noneLabel,
+    noneNote: countPlan.noneNote,
     axes,
-    options: reorderPlan.options.map((option) => ({
+    options: countPlan.options.map((option) => ({
       key: option.key,
       label: option.label,
       announce: option.announce,
       note: option.note,
       readout: option.readout,
-      order: option.order,
+      counts: option.counts,
     })),
   };
-  assertReorderDeclaration(
-    declaration,
-    shapes.map((s) => ({ key: s.name, values: s.values })),
-  );
-
-  const plates = reorderPlatesForMarkup(declaration);
-  const options = reorderOptionsForMarkup(declaration, REORDER_ID_PREFIX);
-  const notes = reorderNotesForMarkup(declaration);
-  const readouts = reorderReadoutsForMarkup(declaration, plateReadout);
-  const altOf = new Map<string, string>(reorderPlan.options.map((o) => [o.label, o.alt]));
-  const labelOfSlug = new Map(options.map((o) => [o.slug, o.label]));
-
-  // ── WHERE EVERYTHING TRAVELS ─────────────────────────────────────────────────────────────────
-  // The one drawing is BAKED in the plate's own ordering, so every other ordering is an OFFSET from
-  // it and the plate's own offsets are exactly zero. `reorder.ts` refuses the motion if they are not,
-  // and refuses an ordering missing from this table at all -- a missing entry is not a state that
-  // fails to move, it is a state that silently draws the plate while its words say otherwise.
-  // A DOT IS NAMED BY ITS SPOKE AND NOT BY ITS SOURCE, and that is not a detail — it is what keeps
-  // the drawing coherent while it moves. The two things that travel here travel along DIFFERENT
-  // paths: a `<path>`'s `d` interpolates its point i to the other path's point i, and point i is
-  // SLOT i, so every corner slides along its own spoke as the reading landing on that spoke changes.
-  // A dot named by its SOURCE would fly across the circle to its new spoke instead, and the first
-  // version of this component did exactly that: measured mid-flight, the dots stood up to 5,5 user
-  // units clear of the outline they belong to, and the frame read as a broken drawing. So a dot is
-  // the vertex AT A SPOKE. It interpolates between the same two points its corner does, along the
-  // same line, on the same clock, and the two are never more than rounding apart.
-  const markOf = (code: string, slot: number) => `${code}-slot${slot}`;
-  const nameMoveOf = (key: string) => `axis-${key}`;
-  const slotIn = (order: Axis[], key: string) => order.findIndex((a) => a.key === key);
-  const home: Record<string, [number, number]> = {};
-  for (const shape of shapes)
-    axes.forEach((axis, slot) => {
-      home[markOf(shape.code, slot)] = at(slot, shape.values[axis.key]) as [number, number];
-    });
-  for (const axis of axes)
-    home[nameMoveOf(axis.key)] = at(slotIn(axes, axis.key), NAME_RADIUS) as [number, number];
-
-  const motion: ReorderMotion = {
-    home,
-    moves: {},
-    // Each country's outline is walked spoke by spoke through its OWN vertices. `reorder.ts` builds
-    // the two paths out of these, in every state, so a corner and the dot on it are one arithmetic
-    // done once rather than twice.
-    corners: Object.fromEntries(
-      shapes.map((shape) => [shape.code, axes.map((_, slot) => markOf(shape.code, slot))]),
-    ),
-    anchors: {},
+  const geometry: CountGeometry = {
+    shapes: shapes.map((shape) => ({
+      key: shape.code,
+      vertices: Object.fromEntries(
+        axes.map((axis, slot) => [axis.key, at(slot, shape.values[axis.key]) as [number, number]]),
+      ),
+    })),
   };
-  for (const plate of plates) {
-    const moves: Record<string, [number, number]> = {};
-    const anchors: Record<string, string> = {};
-    for (const shape of shapes)
-      plate.axes.forEach((axis, slot) => {
-        const id = markOf(shape.code, slot);
-        const [x, y] = at(slot, shape.values[axis.key]);
-        const [hx, hy] = home[id];
-        moves[id] = [x - hx, y - hy];
-      });
-    for (const axis of axes) {
-      const id = nameMoveOf(axis.key);
-      const [x, y] = at(slotIn(plate.axes, axis.key), NAME_RADIUS);
-      const [hx, hy] = home[id];
-      moves[id] = [x - hx, y - hy];
-      anchors[id] = anchorAt(x);
-    }
-    motion.moves[plate.slug] = moves;
-    motion.anchors![plate.slug] = anchors;
-  }
-  assertReorderMotion(declaration, motion);
-  const areaPaths = reorderAreaPaths(motion);
+  assertCountDeclaration(declaration, geometry);
 
-  /** Every vertex the drawing shows and a hit plate speaks for -- the keys the lift's generated
+  const states = countStatesForMarkup(declaration);
+  const options = countOptionsForMarkup(declaration, COUNT_ID_PREFIX);
+  const notes = countNotesForMarkup(declaration);
+  const readouts = countReadoutsForMarkup(declaration, plateReadout);
+  const outlines = countOutlines(declaration, geometry);
+  const altOf = new Map<string, string>(
+    countPlan.options.map((o) => [countSlugOf(o.key), o.alt]),
+  );
+  const labelOfSlug = new Map(states.map((s) => [s.slug, s.label]));
+  const vertexOf = (code: string, key: string) =>
+    geometry.shapes.find((s) => s.key === code)!.vertices[key];
+
+  /** Every vertex the drawing shows and a hit layer speaks for — the keys the lift's generated
    *  `:has()` rules are written against, since the class can no longer cross between the two. Named
-   *  by spoke, so the rules need no state: the point that is pointed at lives in the CHOSEN plate,
-   *  and in that plate its spoke is the one the reader has their pointer on. */
-  const marks = shapes.flatMap((shape) => axes.map((_, slot) => markOf(shape.code, slot)));
+   *  by COUNTRY AND AXIS, which is possible here and was not before: a vertex is at one coordinate in
+   *  every state, so one key names one point on the page for good. */
+  const markOf = (code: string, key: string) => `${code}-${countSlugOf(key)}`;
+  const marks = shapes.flatMap((shape) => axes.map((axis) => markOf(shape.code, axis.key)));
 
   const css = [
     // A SECOND LAYER OVER THE SAME GRID CELL, and the split is the point rather than a workaround.
     // `.overlay` is the PLATE's layer: `verify-web.mjs` reads every word in it and requires all of
     // them to be drawn unconditionally, which is exactly right for a plate's own annotation and
-    // exactly wrong for a readout belonging to an ordering nobody has chosen yet.
+    // exactly wrong for a readout belonging to a count nobody has chosen yet.
     `${SCOPE} .chart-plot .option-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
-    reorderChromeCss({ scope: SCOPE }),
-    reorderCss(declaration, { scope: SCOPE, idPrefix: REORDER_ID_PREFIX }),
-    reorderMotionCss(declaration, { scope: SCOPE, idPrefix: REORDER_ID_PREFIX }, motion),
-    reorderMarkLiftCss({ scope: SCOPE, marks }),
+    countChromeCss({ scope: SCOPE }),
+    countCss(declaration, { scope: SCOPE, idPrefix: COUNT_ID_PREFIX }),
+    countOutlineCss(declaration, { scope: SCOPE, idPrefix: COUNT_ID_PREFIX }, geometry),
+    countMarkLiftCss({ scope: SCOPE, marks }),
   ].join("\n\n");
 
   /**
-   * THE DRAWING, AND THERE IS ONLY ONE. Everything a reader looks at is here, baked at the plate's
-   * own coordinates; the stylesheet moves the dots and the names and morphs the two areas. It is
-   * `aria-hidden` and takes no pointer event: it is a picture of the data and not a way to ask it
-   * anything, which is what lets it move at all.
+   * THE DRAWING, AND THERE IS ONLY ONE. Everything a reader looks at is here, at coordinates that do
+   * not depend on the state; the stylesheet swaps each axis's two registers and morphs the two
+   * outlines. It is `aria-hidden` and takes no pointer event: it is a picture of the data and not a
+   * way to ask it anything, which is what lets its outline move at all.
    */
-  const motionSvg = (
+  const drawing = (
     <svg
-      data-reorder-motion=""
       role="presentation"
       aria-hidden="true"
       focusable="false"
+      pointerEvents="none"
       xmlns="http://www.w3.org/2000/svg"
       className="chart"
       viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
@@ -333,26 +337,33 @@ export function DirectedRadarWeb({
       <rect x={0} y={0} width={FRAME.width} height={FRAME.height} fill={ground} />
 
       {/* THE GRID IS CIRCLES. A polygonal grid joining the axes makes a value near an axis look
-          larger than the same value between two. It is also the one part of this drawing an ordering
+          larger than the same value between two. It is also the one part of this drawing the count
           cannot touch, which is why the rings are where the reader's anchor has to be. */}
       {rings.map((r) => (
         <circle key={r} cx={cx} cy={cy} r={(r / ceiling) * R} fill="none" stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />
       ))}
-      {/* The spokes are a function of the SLOT and of nothing else, so they are the same eight lines
-          in every ordering and they are the one thing here that never travels. */}
-      {axes.map((a, i) => {
+
+      {/* EVERY SPOKE TWICE: solid while it is counted, dashed while it is set aside. The line itself
+          never moves and its name never moves — what changes is the register it is drawn in, and the
+          dash costs no contrast at all, which matters because this furniture is already at the
+          grid's own weight and had nowhere to fade to. */}
+      {axes.flatMap((a, i) => {
         const [ex, ey] = at(i, ceiling);
-        return <line key={a.key} x1={cx} y1={cy} x2={ex} y2={ey} stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />;
+        const slug = countSlugOf(a.key);
+        return [
+          <line key={`spoke-in-${a.key}`} data-count-in={slug} x1={cx} y1={cy} x2={ex} y2={ey} stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />,
+          <line key={`spoke-out-${a.key}`} data-count-out={slug} x1={cx} y1={cy} x2={ex} y2={ey} stroke={grid} strokeWidth={1} strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />,
+        ];
       })}
 
-      {/* THE AREA THAT TRAVELS -- one path per country, whose `d` the stylesheet sets per ordering
-          and transitions. Its `d` attribute is the plate's own, which is what an engine that ignores
-          the CSS property would draw; `reorderMotionCss`'s `@supports` pair hides one of the two. */}
+      {/* THE OUTLINE THAT TRAVELS — one path per country, whose `d` the stylesheet sets per state and
+          transitions. Its `d` attribute is the full count's, which is what an engine that ignores the
+          CSS property would draw; `countOutlineCss`'s `@supports` pair hides one of the two. */}
       {shapes.map((s) => (
         <path
           key={`area-${s.code}`}
-          data-reorder-area={s.code}
-          d={areaPaths[REORDER_NONE_SLUG][s.code]}
+          data-count-area={s.code}
+          d={outlines[COUNT_NONE_SLUG][s.code]}
           fill={toneOf(s.tone)}
           fillOpacity={0.16}
           stroke={toneOf(s.tone)}
@@ -361,15 +372,15 @@ export function DirectedRadarWeb({
           vectorEffect="non-scaling-stroke"
         />
       ))}
-      {/* THE AREA THAT DOES NOT -- one baked path per ordering per country, swapped with `display`.
+      {/* THE OUTLINE THAT DOES NOT — one baked path per state per country, swapped with `display`.
           Dead weight in every engine with a CSS `d` property, and the difference between a correct
           picture and a wrong one in any that has none. */}
-      {plates.flatMap((plate) =>
+      {states.flatMap((state) =>
         shapes.map((s) => (
           <path
-            key={`still-${plate.slug}-${s.code}`}
-            data-reorder-still={plate.slug}
-            d={areaPaths[plate.slug][s.code]}
+            key={`still-${state.slug}-${s.code}`}
+            data-count-still={state.slug}
+            d={outlines[state.slug][s.code]}
             fill={toneOf(s.tone)}
             fillOpacity={0.16}
             stroke={toneOf(s.tone)}
@@ -380,63 +391,85 @@ export function DirectedRadarWeb({
         )),
       )}
 
-      {/* THE VISIBLE VERTEX, AND IT IS NOT THE ONE THAT ANSWERS. It carries `data-mark` and the
-          colour it takes when the point that speaks for it is pointed at -- `--mark-active`, measured
-          on the dot's own fill and never on the text ink. A bare `.pt` takes `fill: var(--muted)`
-          under the pointer, the shared stylesheet's default, and `--muted` is the furniture's
-          neutral -- the one this page draws GERMANY in, so hovering a French vertex repainted it in
-          the other country's colour (measured in creme: #61605a against #807e77, 1,32:1 apart, which
-          is to say indistinguishable). The class that used to carry the lift came from
-          `interaction.mjs` and cannot cross into another `<svg>`, so it is a generated `:has()` rule
-          now -- `reorderMarkLiftCss` -- which also makes the lift work with the script absent. */}
+      {/* THE VERTEX, DRAWN TWICE AT ONE COORDINATE, AND NEITHER OF THE TWO IS WHAT ANSWERS. Counted
+          it is a filled disc with a ground halo; set aside it is an OPEN RING in the same country's
+          colour, at the same place, on the same reading. The ring is the load-bearing decision on
+          this page: a source out of the count has not stopped being true, so its vertex must read as
+          present and uncounted rather than as removed, and the outline visibly leaves it behind
+          instead of taking it with it.
+
+          The lift is a generated `:has()` rule — `countMarkLiftCss` — on the fill of one and the
+          stroke of the other, because filling the ring would make it look counted. The class that
+          used to carry it came from `interaction.mjs` and cannot cross into another `<svg>`; as a
+          rule it also works with the script absent. `--mark-active` is measured on the dot's own
+          fill and never on the text ink: a bare `.pt` takes `fill: var(--muted)` under the pointer,
+          the shared stylesheet's default, and `--muted` is the neutral this page draws GERMANY in. */}
       {shapes.flatMap((s) =>
-        axes.map((a, slot) => {
-          const id = markOf(s.code, slot);
-          const [hx, hy] = home[id];
+        axes.map((a) => {
+          const mark = markOf(s.code, a.key);
+          const slug = countSlugOf(a.key);
+          const [vx, vy] = vertexOf(s.code, a.key);
+          const lift = { "--mark-active": liftOf(toneOf(s.tone)) } as React.CSSProperties;
           return (
-            <circle
-              key={id}
-              data-mark={id}
-              data-reorder-move={id}
-              style={{ "--mark-active": liftOf(toneOf(s.tone)) } as React.CSSProperties}
-              cx={hx}
-              cy={hy}
-              r={4.5}
-              fill={toneOf(s.tone)}
-              stroke={ground}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
+            <g key={mark}>
+              <circle
+                data-count-in={slug}
+                data-mark={mark}
+                style={lift}
+                cx={vx}
+                cy={vy}
+                r={4.5}
+                fill={toneOf(s.tone)}
+                stroke={ground}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+              <circle
+                data-count-out={slug}
+                data-mark-edge={mark}
+                style={lift}
+                cx={vx}
+                cy={vy}
+                r={4.5}
+                fill={ground}
+                stroke={toneOf(s.tone)}
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
           );
         }),
       )}
 
-      {/* THE ONLY WORDS THIS BASE SETS INSIDE AN SVG -- see the component header for why. Each name
-          travels with its own vertex, on the same clock, and takes the anchor its destination spoke
-          needs: a name crossing to the other side of the circle has to hang off its spoke the other
-          way or it runs back across the drawing. */}
-      {axes.map((a) => {
-        const id = nameMoveOf(a.key);
-        const [lx, ly] = home[id];
-        return (
-          <text
-            pointerEvents="none"
-            key={`n-${a.key}`}
-            data-reorder-move={id}
-            x={lx}
-            y={ly}
-            fill={label}
-            fontFamily={String(regs.axis.fontFamily)}
-            fontSize={14}
-            fontWeight={regs.axis.fontWeight as number}
-            fontStyle={regs.axis.fontStyle as string}
-            textAnchor={anchorAt(lx)}
-            dominantBaseline="middle"
-          >
+      {/* THE ONLY WORDS THIS BASE SETS INSIDE AN SVG -- see the component header for why. Each name is
+          drawn twice at ONE place: in the counted ink, and in the measured fade a set-aside spoke
+          takes. The coordinates and the anchor are computed once and shared by both, so there is no
+          arithmetic in which the two could land differently -- which is the whole promise this beat
+          now makes to the reader who rejected the last one. */}
+      {axes.flatMap((a, i) => {
+        const [lx, ly] = at(i, NAME_RADIUS);
+        const slug = countSlugOf(a.key);
+        const common = {
+          pointerEvents: "none" as const,
+          x: lx,
+          y: ly,
+          fontFamily: String(regs.axis.fontFamily),
+          fontSize: 14,
+          fontWeight: regs.axis.fontWeight as number,
+          fontStyle: regs.axis.fontStyle as string,
+          textAnchor: anchorAt(lx),
+          dominantBaseline: "middle" as const,
+        };
+        return [
+          <text key={`name-in-${a.key}`} data-count-in={slug} fill={label} {...common}>
             {a.name}
-          </text>
-        );
+          </text>,
+          <text key={`name-out-${a.key}`} data-count-out={slug} fill={labelAside} {...common}>
+            {a.name}
+          </text>,
+        ];
       })}
+
       {/* The ceiling sits just INSIDE its own ring, not above it: above it is where the first axis
           name already is, and the two printed one on top of the other. */}
       <text
@@ -455,49 +488,54 @@ export function DirectedRadarWeb({
   );
 
   /**
-   * ONE ORDERING'S ANSWERS. Transparent, so it draws nothing over the picture underneath; complete,
-   * so `initChart` wires it on its own and the unchosen ones -- `display: none` -- hold no pointer
-   * event, no tab stop and no probe. Every point sits at ITS OWN ordering's real coordinate and never
-   * moves, which is exactly what the travelling drawing could not promise.
+   * ONE STATE'S ANSWERS. Transparent, so it draws nothing over the picture underneath; complete, so
+   * `initChart` wires it on its own and the unchosen ones -- `display: none` -- hold no pointer event,
+   * no tab stop and no probe. Every point sits at the vertex's one and only coordinate; what differs
+   * between layers is the SENTENCE, because a vertex out of the count must not answer as though it
+   * counted.
    */
-  const hitPlate = (plate: { slug: string; isNone: boolean; axes: Axis[] }) => (
-    <svg
-      key={plate.slug}
-      data-reorder-plate={plate.slug}
-      role="group"
-      aria-label={plate.isNone ? title : `${title} — ${labelOfSlug.get(plate.slug)}`}
-      xmlns="http://www.w3.org/2000/svg"
-      className="chart"
-      data-hit="cell"
-      viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
-      preserveAspectRatio="xMidYMid meet"
-    >
-      <desc>{plate.isNone ? alt : (altOf.get(labelOfSlug.get(plate.slug) ?? "") ?? alt)}</desc>
-      {shapes.flatMap((s) =>
-        plate.axes.map((a, i) => {
-          const [px, py] = at(i, s.values[a.key]);
-          const mark = markOf(s.code, i);
-          return (
-            <circle
-              key={mark}
-              className="pt"
-              data-mark-ref={mark}
-              cx={px}
-              cy={py}
-              r={8}
-              fill="transparent"
-              stroke="none"
-              tabIndex={0}
-              role="img"
-              aria-label={s.details[a.key]}
-              data-detail={s.details[a.key]}
-            />
-          );
-        }),
-      )}
-      <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
-    </svg>
-  );
+  const hitLayer = (state: { slug: string; isNone: boolean; counted: string[] }) => {
+    const counted = new Set(state.counted);
+    return (
+      <svg
+        key={state.slug}
+        data-count-plate={state.slug}
+        role="group"
+        aria-label={state.isNone ? title : `${title} — ${labelOfSlug.get(state.slug)}`}
+        xmlns="http://www.w3.org/2000/svg"
+        className="chart"
+        data-hit="cell"
+        viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <desc>{state.isNone ? alt : (altOf.get(state.slug) ?? alt)}</desc>
+        {shapes.flatMap((s) =>
+          axes.map((a) => {
+            const mark = markOf(s.code, a.key);
+            const [vx, vy] = vertexOf(s.code, a.key);
+            const says = counted.has(a.key) ? s.details[a.key] : s.asideDetails[a.key];
+            return (
+              <circle
+                key={mark}
+                className="pt"
+                data-mark-ref={mark}
+                cx={vx}
+                cy={vy}
+                r={8}
+                fill="transparent"
+                stroke="none"
+                tabIndex={0}
+                role="img"
+                aria-label={says}
+                data-detail={says}
+              />
+            );
+          }),
+        )}
+        <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
+      </svg>
+    );
+  };
 
   return (
     <figure
@@ -512,7 +550,8 @@ export function DirectedRadarWeb({
     >
       {/* This beat's own stylesheet, carried inside the figure it styles. The format's shared
           `buildCss` emits the chrome for a FILTER, which this beat does not declare and must not --
-          nothing leaves this picture. A reorder pays its own way. */}
+          nothing leaves this picture, which is the distinction the whole gesture rests on. A count
+          pays its own way. */}
       <style dangerouslySetInnerHTML={{ __html: css }} />
 
       <div className="chart-header">
@@ -534,17 +573,17 @@ export function DirectedRadarWeb({
           keyboard and to a screen reader before this page's stylesheet does anything to it, and
           `aria-label` carries the reading a reader who is not looking at the picture would otherwise
           only get from it. Each accessible name CONTAINS its visible one --
-          `assertReorderDeclaration` refuses the declaration otherwise, because a name that does not
-          is the WCAG 2.5.3 failure. */}
-      <fieldset className="chart-reorder">
-        <legend>{reorderPlan.label}</legend>
+          `assertCountDeclaration` refuses the declaration otherwise, because a name that does not is
+          the WCAG 2.5.3 failure. */}
+      <fieldset className="chart-count">
+        <legend>{countPlan.label}</legend>
         <div className="options">
           {options.map((option) => (
             <label key={option.id}>
               <input
                 id={option.id}
                 type="radio"
-                name="chart-reorder"
+                name="chart-count"
                 value={option.slug}
                 aria-label={option.announce}
                 defaultChecked={option.isNone}
@@ -555,15 +594,14 @@ export function DirectedRadarWeb({
         </div>
       </fieldset>
 
-      {/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW IS NO LONGER EMPTY AT REST. At rest it
-          says what pressing a pill will DO, which is the one thing the legend, the pills and the
-          counterfactuals between them never said until it had already happened -- the owner read this
-          page and had to ask. Choosing an option replaces it with what THAT ordering produced. Every
-          sentence is stacked in one grid cell, so the row is always as tall as the longest of them
-          and the plot underneath never moves. */}
-      <div className="reorder-notes" role="status">
+      {/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW IS NOT EMPTY AT REST. At rest it says
+          what pressing a pill will DO, which is the one thing the legend, the pills and the
+          counterfactuals between them never said until it had already happened. Choosing an option
+          replaces it with what THAT count produced. Every sentence is stacked in one grid cell, so
+          the row is always as tall as the longest of them and the plot underneath never moves. */}
+      <div className="count-notes" role="status">
         {notes.map((note) => (
-          <p data-reorder-note={note.slug} key={note.slug}>{note.text}</p>
+          <p data-count-note={note.slug} key={note.slug}>{note.text}</p>
         ))}
       </div>
 
@@ -578,34 +616,33 @@ export function DirectedRadarWeb({
         <div className="y-axis" />
 
         {/* The drawing FIRST and the answers on top of it: paint order is hit order in SVG, and the
-            chosen plate's own `.hit-area` has to be the thing a pointer lands on. */}
-        {motionSvg}
-        {plates.map(hitPlate)}
+            chosen layer's own `.hit-area` has to be the thing a pointer lands on. */}
+        {drawing}
+        {states.map(hitLayer)}
 
         <div className="overlay" aria-hidden="true" />
 
-        {/* THE ORDERING'S OWN PRODUCT, PRINTED WHERE THE READER'S EYE IS. A reader comparing two
-            polygons is asking which is bigger; the sentence under the control answers that for a
-            reader who is not looking, and this answers it for the one who is. The plate's own
-            readout is here too and is shown by default -- the numbers the options reveal have
-            nothing to be read against otherwise. It sits in the plot's top-left, which the
-            letterboxed circle never reaches at any width. */}
+        {/* THE COUNT'S OWN PRODUCT, PRINTED WHERE THE READER'S EYE IS. A reader comparing two shapes
+            is asking which is bigger; the sentence under the control answers that for a reader who is
+            not looking, and this answers it for the one who is. The full count's own readout is here
+            too and is shown by default -- the numbers the options reveal have nothing to be read
+            against otherwise. It sits in the plot's top-left, which the letterboxed circle never
+            reaches at any width. */}
         <div className="option-layer" aria-hidden="true">
           {readouts.map((readout) => (
             <span
               key={readout.slug}
-              data-reorder-readout={readout.slug}
+              data-count-readout={readout.slug}
               className="note"
               style={{
                 ...regs.annot,
                 color: label,
                 left: 0,
                 top: 0,
-                // WIDE ENOUGH FOR ONE LINE ON A LAPTOP, and measured rather than guessed: two of
-                // the three filed directions set the annotation register in tracked UPPERCASE, where
-                // this sentence ran to three wrapped lines at 26em and read as a block of shouting.
-                // 44em still broke it after "1,92" in nocturne; 58em holds it. The percentage is
-                // what keeps it inside the plot on a phone, where it wraps and should.
+                // WIDE ENOUGH FOR ONE LINE ON A LAPTOP, and measured rather than guessed: two of the
+                // three filed directions set the annotation register in tracked UPPERCASE, where this
+                // sentence ran to three wrapped lines and read as a block of shouting. The percentage
+                // is what keeps it inside the plot on a phone, where it wraps and should.
                 maxWidth: "min(96%, 58em)",
                 whiteSpace: "normal",
               }}

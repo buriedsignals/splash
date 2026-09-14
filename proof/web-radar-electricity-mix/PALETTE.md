@@ -28,14 +28,16 @@ to a different beat and was copied here. The rule it invoked,
 `two-states-of-one-measure-are-one-hue-at-two-chromas`, is not this beat's case: two COUNTRIES are
 not two states of one measure.
 
-## What the page actually paints — four fills, measured in every direction
+## What the page actually paints — five fills, measured in every direction
 
-The delivered drawing carries exactly four distinct fill values, and the same four in all three
-filed directions: the accent-derived tone on France's polygon and its eight vertices, the neutral on
-Germany's, the direction's ink on the nine words set inside the viewBox (eight spoke names and the
-ceiling), and the direction's ground on the plate rectangle. Two further colours are stroked and
-never filled: the ground again, as a one-pixel ring separating a vertex from whatever it sits on,
-and the furniture's grid on the rings and spokes.
+The delivered drawing carries exactly five distinct fill values, and the same five in all three
+filed directions: the accent-derived tone on France's outline and its eight counted vertices, the
+neutral on Germany's, the direction's ink on the nine words set inside the viewBox (eight spoke
+names and the ceiling), a **measured fade of that ink** on the same eight names while their spoke is
+set aside, and the direction's ground on the plate rectangle — which is also what fills a set-aside
+vertex, turning it into an open ring. Two further colours are stroked and never filled: the ground
+again, as a one-pixel ring separating a counted vertex from whatever it sits on, and the furniture's
+grid on the rings and spokes.
 
 | measured against the colour the page really paints | creme | nocturne | rapport |
 | --- | --- | --- | --- |
@@ -65,6 +67,39 @@ fill is a wash at `fill-opacity: 0.16` whose whole job is not to hide what is be
 mark a reader reads is the two-pixel outline**, which is where the floor is measured and cleared.
 Measuring this page's compliance on the interiors would be measuring the wrong shape.
 
+## The set-aside register, and why only one of its three signals is a colour
+
+The gesture this page ships lets a reader take a source OUT OF THE COUNT while leaving it drawn. A
+spoke in that state changes three things at once, and only one of them spends contrast:
+
+- **its line goes dashed.** The spoke is already drawn at the furniture's own grid weight, which is
+  the faintest thing on the plate; there is nowhere below it to fade to. A dash is a register change
+  that costs no contrast at all, and the owner's standing note on this corpus is that dotted lines
+  were never forbidden — the reflex was.
+- **its two vertices become open rings**, filled with the ground and stroked in their own country's
+  colour, at the same coordinate and the same reading. Nothing is weakened: the stroke measures what
+  the filled mark measured, because it IS that colour. The difference a reader sees is SHAPE, and
+  that is deliberate — a source out of the count has not stopped being true, so its vertex must read
+  as present and uncounted, never as removed.
+- **its name fades**, and this is the only measured colour in the gesture. It is the one thing that
+  still has to be READ, because it names the source whose number the page insists is still true.
+
+| measured against the colour the page really paints | creme | nocturne | rapport |
+| --- | --- | --- | --- |
+| a set-aside spoke's name on the ground | 4,74 | 5,16 | 4,74 |
+| **that name against the counted name's ink** | **4,30** | **3,45** | **4,43** |
+| a set-aside French vertex's ring edge on the ground | 6,85 | 10,93 | 7,31 |
+| a set-aside German vertex's ring edge on the ground | 3,95 | 5,16 | 3,95 |
+
+The first row clears the 4,5:1 TEXT floor in every direction, which is the floor a word takes and
+not the 3:1 a mark takes. The second row is the one this corpus has been burned on: it is NOT two
+colours clamped independently onto one floor, which come out identical by construction. The counted
+name is untouched at 17 to 21:1; the set-aside one is walked toward the ground and stopped at the
+LAST step still over the text floor — the furthest an honest fade can go — and the gap between the
+two is then measured and refused under 1,4:1. It measures 3,45 to 4,43, which is a register, not a
+nuance. The two ring rows are the outline colours unchanged, quoted here because a ring is a mark
+and has to clear 3:1 as one.
+
 ## The defect this pass found
 
 A vertex used to take the format's default `.pt` treatment under a pointer: `fill: var(--muted)`.
@@ -79,12 +114,15 @@ ink until it is at least 1,12:1 from where it started and still 3:1 on the groun
 measured, and the component throws rather than ship a lift that clears neither. A French vertex
 lifts to a deeper France and a German one to a deeper grey; the hue never crosses sides.
 
-**And it is delivered by CSS now rather than by the script.** The travel put the visible dot in the
-one drawing and the point that answers in a hit plate, which are two `<svg>`s, and
+**And it is delivered by CSS now rather than by the script.** The visible vertex lives in the one
+drawing and the point that answers lives in a hit layer, which are two `<svg>`s, and
 `interaction.mjs` only carries its class within one. So the lift is a generated `:has()` rule on
-`.chart-plot`, keyed on the point and painting the dot in the value declared on the dot itself —
-which changes no colour and no floor, and adds one thing: `:focus` is in the selector, so a reader
-tabbing the vertices with the script absent now sees the lift too.
+`.chart-plot`, keyed on the point and painting the vertex in the value declared on the vertex itself
+— which changes no colour and no floor, and adds two things: `:focus` is in the selector, so a
+reader tabbing the vertices with the script absent sees the lift too; and a SET-ASIDE vertex lights
+on its ring's **stroke** rather than on a fill, because filling the ring would make it look counted.
+Driven over every vertex in a set-aside state: 16 of 16 light in their own declared `--mark-active`,
+in all three directions.
 
 ## What is not chromatic
 
