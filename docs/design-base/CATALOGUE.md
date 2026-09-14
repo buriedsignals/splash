@@ -18,12 +18,12 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
 | 01 | Area | 1 | ✅ | ◦ | ◦ | ✅ |
-| 02 | Bar and column | 2 | ✅ | ◦ | ◦ | ◦ |
-| 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ◦ |
+| 02 | Bar and column | 2 | ✅ | ◦ | ◦ | ✅ |
+| 03 | Beeswarm | 1 | ✅ | ◦ | ◦ | ✅ |
 | 04 | Box plot | 1 | ✅ | ◦ | ◦ | ✅ |
-| 05 | Bullet | 6 | ✅ | ◦ | ◦ | ◦ |
+| 05 | Bullet | 6 | ✅ | ◦ | ◦ | ✅ |
 | 06 | Bump | 2 | ✅ | ◦ | ◦ | ✅ |
-| 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ◦ |
+| 07 | Calendar heatmap | 5 | ✅ | ◦ | ◦ | ✅ |
 | 08 | Connected scatter | 1 | ✅ | ◦ | ◦ | ✅ |
 | 09 | Diverging bar | 7 | ✅ | ◦ | ◦ | ✅ |
 | 10 | Diverging stacked bar | 3 | ✅ | ◦ | ◦ | ✅ |
@@ -50,14 +50,14 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 31 | Treemap | 1 | ✅ | ◦ | ◦ | ✅ |
 | 32 | Waterfall | 12 | ✅ | ◦ | ◦ | ✅ |
 
-**Charts: 32 of 32 done in static, 28 of 32 in scrolly, 0 in web or video.**
+**Charts: 32 of 32 done in static, 32 of 32 in scrolly, 0 in web or video.**
 
 ## Maps
 
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
-| 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
-| 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ◦ |
+| 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ✅ |
+| 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ✅ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ✅ |
 | 04 | Dot density | 3 | ✅ | ◦ | ◦ | ✅ |
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ✅ |
@@ -65,7 +65,7 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 07 | Locator | 1 | ✅ | ◦ | ◦ | ✅ |
 | 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ✅ |
 
-**Maps: 8 of 8 done in static, 6 of 8 in scrolly, 0 in web or video.**
+**Maps: 8 of 8 done in static, 8 of 8 in scrolly, 0 in web or video.**
 
 ## What is done, beat by beat
 
@@ -112,8 +112,12 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
 | Area | scrolly | `proof/scrolly-world-population` |
+| Bar and column | scrolly | `proof/scrolly-bar-top-emitters-2024` |
+| Beeswarm | scrolly | `proof/scrolly-beeswarm-co2-per-person` |
 | Box plot | scrolly | `proof/scrolly-boxplot-france-co2-decades` |
+| Bullet | scrolly | `proof/scrolly-bullet-low-carbon-share` |
 | Bump | scrolly | `proof/scrolly-bump-emitter-rank` |
+| Calendar heatmap | scrolly | `proof/scrolly-calendar-heatmap-geneva` |
 | Connected scatter | scrolly | `proof/scrolly-connected-scatter-lowcarbon` |
 | Diverging bar | scrolly | `proof/scrolly-diverging-bar-eu-per-capita` |
 | Diverging stacked bar | scrolly | `proof/scrolly-diverging-stacked-electricity` |
@@ -139,6 +143,8 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | Streamgraph | scrolly | `proof/scrolly-streamgraph-swiss-electricity` |
 | Treemap | scrolly | `proof/scrolly-treemap-europe-capacity` |
 | Waterfall | scrolly | `proof/scrolly-germany-electricity-bridge` |
+| Cartogram | scrolly | `proof/scrolly-cartogram-europe-lowcarbon` |
+| Choropleth | scrolly | `proof/scrolly-choropleth-europe-lowcarbon` |
 | Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` |
 | Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` |
 | Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` |
