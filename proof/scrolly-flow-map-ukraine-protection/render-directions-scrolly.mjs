@@ -1,9 +1,11 @@
-// Ukrainians under temporary protection in Europe, rendered once per FILED DIRECTION into a self-contained scrolly
-// page. The `flow map` type in the scrolly format.
+// Ukrainians under temporary protection in Europe, rendered once per FILED DIRECTION into a self-contained
+// scrolly page. The `flow map` type in the scrolly format, on a live MapTiler map (addendum 2026-09-15),
+// matching the validated video beat's own visual treatment (`proof/video-flow-map-ukraine-protection`,
+// `quality/video`, owner 2026-09-15: « comme dans la vidéo »).
 //
 // THE SUBJECT OF `static-flow-map-ukraine-protection`, CHOREOGRAPHED. The flows, the claim and its assertions, the
 // ten drawn bands and the camera fitted to them are the static beat's own; the scroll tells them with its own
-// gestures (`scrolly/references/directed-type-choreography.md`):
+// gestures:
 //
 //   1. Ukraine alone, the total;
 //   2. the first band traced, to Germany;
@@ -12,7 +14,7 @@
 //   5. the 21 countries too small for a band, a dot each;
 //   6. the reading line, the key, the two largest named.
 //
-// Usage:  bun proof/scrolly-flow-map-ukraine-protection/render-directions-scrolly.mjs
+// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-flow-map-ukraine-protection/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
 import { readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
@@ -20,21 +22,26 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { readPalette } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, readPalette } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { cameraFields, mercatorOf, lonLatOf, validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
-import { flowGeometry } from "./flow-geometry.mjs";
+import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
+import { flowMapPlan } from "./plan.mjs";
 import { DirectedFlowMapScrolly } from "./DirectedFlowMapScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+const FALLBACK = join(HERE, "fallback");
 const EYEBROW = "Migrations · Europe";
-const NB = "\u00A0";
+const NB = " ";
 const ORIGIN = "UKR";
 const SUBJECT = "DEU";
 /** The static beat's rule: bands to the ten largest hosts, the camera fitted to them. */
@@ -48,8 +55,9 @@ const NAMES = {
   LVA: ["Lettonie"], EST: ["Estonie"], HRV: ["Croatie"], CYP: ["Chypre"], SVN: ["Slovénie"], ISL: ["Islande"], LUX: ["Luxembourg"],
   MLT: ["Malte"], LIE: ["Liechtenstein"],
 };
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 
-// ── the flows, and the static beat's own assertions ────────────────────────────────────────────
+// ── the flows, and the static beat's own assertions (unchanged) ─────────────────────────────────
 const csv = (await readFile(join(HERE, "data.csv"), "utf8")).trim().split(/\r?\n/);
 const header = csv[0].split(",");
 const at = (n) => header.indexOf(n);
@@ -70,47 +78,99 @@ if (ranked[0].code !== SUBJECT) throw new Error(`the subject is the largest host
 if (!(topTwoShare > 45 && topTwoShare < 55)) throw new Error(`the headline says the two largest hosts take about half; they take ${topTwoShare.toFixed(1)} %`);
 if (!(total > 4e6)) throw new Error(`the headline says over four million; the file totals ${total}`);
 for (const f of ranked.slice(0, DRAWN)) if (NAMES[f.code].length < 2) throw new Error(`${f.code} has a band and no article filed for the cards`);
-
-const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
-const map = flowGeometry(geo, { window: WINDOW, width: 1000 });
-for (const f of flows) if (!map.seats[f.code]) throw new Error(`${f.code} has no seat inside the frame`);
-const origin = map.seats[ORIGIN];
-if (!origin) throw new Error(`the origin ${ORIGIN} has no seat inside the frame`);
 const drawn = ranked.slice(0, DRAWN);
 const drawnShare = (drawn.reduce((s, f) => s + f.people, 0) / total) * 100;
 const rest = ranked.slice(DRAWN);
 
-/** THE BANDS FAN OUT: each bows away from the fan's mean bearing, so two bands leaving on close bearings part
- *  instead of lying on each other. */
+// ── every country's seat, in lon/lat: the mean of its vertices inside the window, in Web Mercator ──
+const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
+function seatsOf(win) {
+  const sums = {};
+  for (const f of geo.features)
+    for (const [lon, lat] of f.geometry.coordinates.flat(2)) {
+      if (!(lon >= win.west && lon <= win.east && lat >= win.south && lat <= win.north)) continue;
+      const [x, y] = mercatorOf([lon, lat]);
+      const s = (sums[f.properties.iso] ??= { x: 0, y: 0, n: 0 });
+      s.x += x;
+      s.y += y;
+      s.n++;
+    }
+  return Object.fromEntries(Object.entries(sums).map(([iso, s]) => [iso, lonLatOf([s.x / s.n, s.y / s.n])]));
+}
+const seats = seatsOf(WINDOW);
+for (const f of flows) if (!seats[f.code]) throw new Error(`${f.code} has no seat inside the frame`);
+const origin = seats[ORIGIN];
+if (!origin) throw new Error(`the origin ${ORIGIN} has no seat inside the frame`);
+
+// ── the camera: the origin and the drawn hosts' seats, padded — the static beat's own box, fitted to a ─────────
+// ── reference stage wide enough for the fan's host names (a symmetric pad; there is no side key column here) ───
+const FOCUS_PAD_X = 0.32;
+const FOCUS_PAD_Y = 0.26;
+const pts = [origin, ...drawn.map((f) => seats[f.code])].map(mercatorOf);
+const bx0 = Math.min(...pts.map((p) => p[0]));
+const bx1 = Math.max(...pts.map((p) => p[0]));
+const by0 = Math.min(...pts.map((p) => p[1]));
+const by1 = Math.max(...pts.map((p) => p[1]));
+const padX = (bx1 - bx0) * FOCUS_PAD_X;
+const padY = (by1 - by0) * FOCUS_PAD_Y;
+const [fx0, fx1, fy0, fy1] = [bx0 - padX, bx1 + padX, by0 - padY, by1 + padY];
+const REFERENCE = { width: 1280, height: Math.round((1280 * (fy1 - fy0)) / (fx1 - fx0)) };
+const ZOOM = Math.log2(REFERENCE.width / ((fx1 - fx0) * 512));
+const CENTER = lonLatOf([(fx0 + fx1) / 2, (fy0 + fy1) / 2]);
+// The fan sits in the upper part of the stage on a phone (a stage taller than the reference), above the resting card.
+const camera = cameraFields({ center: CENTER, zoom: ZOOM, alignY: -1 });
+const cameras = Array.from({ length: 6 }, () => camera);
+
+/** Stage px at the fixed camera, centred on `REFERENCE` — the frame the arcs are sampled and their cumulative
+ *  length measured in, ported from the validated video beat's `map-plan.mjs`. */
+const worldPx = 512 * 2 ** camera.camZoom;
+const project = (lonLat) => {
+  const [x, y] = mercatorOf(lonLat);
+  return [REFERENCE.width / 2 + (x - camera.camX) * worldPx, REFERENCE.height / 2 + (y - camera.camY) * worldPx];
+};
+const unproject = ([x, y]) => lonLatOf([camera.camX + (x - REFERENCE.width / 2) / worldPx, camera.camY + (y - REFERENCE.height / 2) / worldPx]);
+
+// ── the bands: each a bow away from the fan's mean bearing, sampled in stage px, taken back to lon/lat ─────────
+const WIDEST = 18;
+const BAND_FLOOR = 2;
+const NODE_R = 9;
+const DOT_R = 3.2;
+const OTHERS_R = 2.4;
+const originPx = project(origin);
+const topTwo = new Set([ranked[0].code, ranked[1].code]);
 const mean = drawn.reduce((acc, f) => {
-  const [x, y] = map.seats[f.code];
-  const len = Math.hypot(x - origin[0], y - origin[1]);
-  return [acc[0] + (x - origin[0]) / len, acc[1] + (y - origin[1]) / len];
+  const [x, y] = project(seats[f.code]);
+  const len = Math.hypot(x - originPx[0], y - originPx[1]);
+  return [acc[0] + (x - originPx[0]) / len, acc[1] + (y - originPx[1]) / len];
 }, [0, 0]);
-const bandPath = ([x, y]) => {
-  const dx = x - origin[0];
-  const dy = y - origin[1];
+const maxPeople = drawn[0].people;
+const widthOfPeople = (people) => Math.max(BAND_FLOOR, (WIDEST * people) / maxPeople);
+const bandsGeo = drawn.map((f) => {
+  const [sx, sy] = project(seats[f.code]);
+  const dx = sx - originPx[0];
+  const dy = sy - originPx[1];
   const len = Math.hypot(dx, dy);
   const side = Math.sign(mean[0] * dy - mean[1] * dx) || 1;
   const bow = len * 0.14 * side;
-  const cx = (origin[0] + x) / 2 - (dy / len) * bow;
-  const cy = (origin[1] + y) / 2 + (dx / len) * bow;
-  return `M${origin[0]} ${origin[1]}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x} ${y}`;
-};
-
-/** The camera: the origin and the drawn hosts' seats, padded — the static beat's own box. */
-const pts = [origin, ...drawn.map((f) => map.seats[f.code])];
-const fx0 = Math.min(...pts.map((p) => p[0]));
-const fx1 = Math.max(...pts.map((p) => p[0]));
-const fy0 = Math.min(...pts.map((p) => p[1]));
-const fy1 = Math.max(...pts.map((p) => p[1]));
-const padX = (fx1 - fx0) * 0.16;
-const padY = (fy1 - fy0) * 0.22;
-const focus = { x: fx0 - padX, y: fy0 - padY, w: fx1 - fx0 + 2 * padX, h: fy1 - fy0 + 2 * padY };
+  const control = [(originPx[0] + sx) / 2 - (dy / len) * bow, (originPx[1] + sy) / 2 + (dx / len) * bow];
+  const quad = (t) => [(1 - t) ** 2 * originPx[0] + 2 * (1 - t) * t * control[0] + t * t * sx, (1 - t) ** 2 * originPx[1] + 2 * (1 - t) * t * control[1] + t * t * sy];
+  const samples = Array.from({ length: 41 }, (_, i) => quad(i / 40));
+  const cumulative = [0];
+  for (let i = 1; i < samples.length; i++) cumulative.push(cumulative[i - 1] + Math.hypot(samples[i][0] - samples[i - 1][0], samples[i][1] - samples[i - 1][1]));
+  return {
+    code: f.code,
+    name: NAMES[f.code][0],
+    people: f.people,
+    top: topTwo.has(f.code),
+    width: Math.round(widthOfPeople(f.people) * 10) / 10,
+    coordinates: samples.map(unproject),
+    cumulative: cumulative.map((v) => Math.round(v * 100) / 100),
+    seatLonLat: seats[f.code],
+  };
+});
 
 const n0 = (v) => plainSpaces(Math.round(v).toLocaleString("fr-FR"));
 const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
-const thousands = (v) => `${n0(v / 1000)}${NB}k`;
 const [first, second] = drawn;
 console.log(`${flows.length} pays · total ${total} · ${first.code}+${second.code} ${topTwoShare.toFixed(1)} % · ${DRAWN} rubans ${drawnShare.toFixed(1)} %\n`);
 
@@ -131,7 +191,7 @@ const prose = [
   [`Les ${rest.length} autres pays en accueillent ${Math.round(100 - drawnShare)}${NB}% : un point chacun, trop peu pour un ruban.`],
   [`Lecture : les rubans ne sont pas des itinéraires, personne n’a suivi ces courbes. Seule leur largeur est une mesure.`],
 ];
-const source = `Source : Eurostat, bénéficiaires de la protection temporaire (migr_asytpsm), ${month} · contours Natural Earth 50 m, projection équivalente`;
+const source = `Source : Eurostat, bénéficiaires de la protection temporaire (migr_asytpsm), ${month} · fond de carte © MapTiler © OpenStreetMap`;
 const words = {
   unit: `personnes sous protection temporaire, ${when}`,
   totalNote: `${n0(total)} personnes`,
@@ -140,17 +200,6 @@ const words = {
   drawnNote: `${DRAWN} rubans, ${Math.round(drawnShare)}${NB}% des personnes`,
   othersKey: `${rest.length} autres pays, trop petits pour un ruban`,
 };
-const keySizes = [1e6, 1e5].map((people) => ({ people, label: `${n0(people)} personnes` }));
-const bands = drawn.map((f) => ({
-  code: f.code,
-  name: NAMES[f.code][0],
-  people: f.people,
-  seat: map.seats[f.code],
-  d: bandPath(map.seats[f.code]),
-  subject: f.code === SUBJECT,
-  label: `${NAMES[f.code][0]} ${thousands(f.people)}`,
-}));
-const others = rest.map((f) => ({ code: f.code, seat: map.seats[f.code] }));
 const alt =
   `Carte des flux : un ruban part de l’Ukraine vers chacun des ${DRAWN} principaux pays d’accueil, sa largeur étant le nombre de personnes ` +
   `sous protection temporaire en ${when}. ${n0(total)} personnes au total ; l’Allemagne et la Pologne en accueillent ${one(topTwoShare)} %, ` +
@@ -164,75 +213,133 @@ const STATES = [
   { bands: DRAWN, others: 0, pair: 0, key: 0 },
   { bands: DRAWN, others: 1, pair: 0, key: 0 },
   { bands: DRAWN, others: 1, pair: 1, key: 1 },
-];
+].map((state, k) => ({ ...state, ...camera, card: k }));
+
+const otherPts = rest.map((f) => seats[f.code]).filter(Boolean);
+const keySizes = [1e6, 1e5].map((people) => ({ people, label: `${n0(people)} personnes`, px: widthOfPeople(people) }));
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: `${words.unit} ${bands.map((b) => b.label).join(" ")} ${words.drawnNote} ${words.othersKey} ${keySizes.map((k) => k.label).join(" ")}`,
+  axis: `${words.unit} ${bandsGeo.map((b) => b.name).join(" ")} ${words.drawnNote} ${words.othersKey} ${keySizes.map((k) => k.label).join(" ")}`,
   annot: "",
   value: `${words.totalNote} ${words.count} ${words.othersNote} Ukraine 0123456789,`,
 };
 
 const filed = readdirSync(DIRECTIONS)
-  .filter((file) => file.endsWith(".md"))
-  .map((file) => readDirection(join(DIRECTIONS, file)));
+  .filter((f) => f.endsWith(".md"))
+  .map((f) => readDirection(join(DIRECTIONS, f)));
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
-const driver = await readFile(join(HERE, "flow-drive.mjs"), "utf8");
+// ── the live map: its key, its faces, its frozen cards ─────────────────────────────────────────
+const cards = await openLiveMapCards();
+const driver = `${cards.mapScript}\n${await readFile(join(HERE, "flow-drive.mjs"), "utf8")}`;
 const refused = [];
-for (const file of readdirSync(DIRECTIONS).filter((name) => name.endsWith(".md"))) {
-  const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
-  const { ink, muted } = deriveFurniture(direction.ground);
-  const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
-  try {
-    const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["ukraine", "allemagne", "pologne", "dix-rubans", "autres-pays", "lecture"][i], prose: p })),
-      reveal: {
-        element: createElement(DirectedFlowMapScrolly, {
-          land: map.land,
-          width: map.width,
-          height: map.height,
-          focus,
-          origin,
-          originName: "Ukraine",
-          originCode: ORIGIN,
-          bands,
-          others,
-          total,
-          keySizes,
-          words,
-          alt,
-          regs,
+try {
+  for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
+    const id = file.replace(/\.md$/, "");
+    if (ONLY && id !== ONLY) continue;
+    const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+    const { ink, muted } = deriveFurniture(direction.ground);
+    const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
+    try {
+      const tints = plateTints(direction);
+      // A band crosses both land and sea, so its colour is walked to clear both — the validated video's own
+      // formula: an ordinary band the accent, the top two mixed 35 % toward the ink, one hue family.
+      const onBoth = (c, floor, what) => {
+        for (const on of [tints.land, tints.water]) {
+          const w = adjustToContrast(c, on, floor);
+          if (w && contrast(w, tints.land) >= floor - 1e-9 && contrast(w, tints.water) >= floor - 1e-9) return w;
+        }
+        throw new Error(`${what} has no variant that reads at ${floor}:1 on both the land and the sea`);
+      };
+      const colours = {
+        land: tints.land,
+        water: tints.water,
+        band: onBoth(direction.accent, NON_TEXT_CONTRAST_MIN, "a band"),
+        subjectBand: onBoth(mix(direction.accent, ink, 0.35), NON_TEXT_CONTRAST_MIN, "the subject's band"),
+        node: onBoth(ink, NON_TEXT_CONTRAST_MIN, "the node's edge"),
+      };
+
+      const plan = flowMapPlan({
+        tints: { water: tints.water, land: tints.land },
+        colours,
+        cameras,
+        statesForCards: STATES,
+        referenceWidth: REFERENCE.width,
+        referenceHeight: REFERENCE.height,
+        node: { seat: origin, r: NODE_R },
+        bands: bandsGeo,
+        seatDots: bandsGeo.map((b) => ({ code: b.code, seat: b.seatLonLat, top: b.top })),
+        others: otherPts,
+        dotR: DOT_R,
+        othersR: OTHERS_R,
+        hairline: (direction.stroke?.hairline ?? 0.6) * 1,
+      });
+      const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
+      if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
+
+      const renderPage = (fallbacks, shapes) =>
+        renderScrolly({
+          steps: prose.map((p, i) => ({ id: ["ukraine", "allemagne", "pologne", "dix-rubans", "autres-pays", "lecture"][i], prose: p })),
+          reveal: {
+            element: createElement(DirectedFlowMapScrolly, {
+              plan: { ...plan, fallback: shapes },
+              fallbacks,
+              reference: REFERENCE,
+              bands: bandsGeo.map(({ code, name, people, top }) => ({ code, name, people, top })),
+              others: rest.length,
+              total,
+              keySizes,
+              bandColour: colours.band,
+              subjectColour: colours.subjectBand,
+              landColour: colours.land,
+              words,
+              alt,
+              regs,
+              ground: direction.ground,
+              accent: direction.accent,
+              ink,
+              muted,
+            }),
+            states: STATES,
+            driver,
+            apply: "applyFlowState",
+          },
+          vendor: [{ js: cards.maplibreJs, css: cards.maplibreCss }],
+          title,
+          eyebrow: EYEBROW,
+          source,
           ground: direction.ground,
-          accent: direction.accent,
-          ink,
-          muted,
-        }),
+          type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+          lang: "fr",
+          outDir: OUT,
+          name: `${id}.html`,
+        });
+
+      const { outPath } = await renderWithCardImages(cards, {
+        id,
+        plan,
         states: STATES,
-        driver,
-        apply: "applyFlowState",
-      },
-      title,
-      eyebrow: EYEBROW,
-      source,
-      ground: direction.ground,
-      type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
-      lang: "fr",
-      outDir: OUT,
-      name: `${id}.html`,
-    });
-    console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
-  } catch (error) {
-    await rm(join(OUT, `${id}.html`), { force: true });
-    refused.push({ id, why: error.message });
-    console.log(`${id} REFUSED — ${error.message}`);
+        fallbackDir: FALLBACK,
+        stageGround: tints.water,
+        cardOf: (baked) => ({ zoom: baked.zoom }),
+        renderPage,
+        noBake: process.argv.includes("--no-bake"),
+      });
+      console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
+    } catch (error) {
+      await rm(join(OUT, `${id}.html`), { force: true });
+      refused.push({ id, why: error.message });
+      console.log(`${id} REFUSED — ${error.message}`);
+    }
   }
+} finally {
+  await cards.close();
 }
 if (refused.length) {
   console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);

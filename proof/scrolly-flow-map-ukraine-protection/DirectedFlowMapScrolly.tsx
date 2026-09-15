@@ -1,51 +1,43 @@
 /**
- * Ukrainians under temporary protection in Europe, drawn THROUGH the design base as a flow map and CHOREOGRAPHED
- * by the scroll. The `flow map` type in the scrolly format: the subject of `static-flow-map-ukraine-protection` —
- * 4.5 million people, half of them in Germany and Poland — told with the gestures a scroll can make
- * (`scrolly/references/directed-type-choreography.md`): the bands traced out of Ukraine one by one, largest first,
- * the share they carry counted, the countries too small for a band dotted.
+ * Ukrainians under temporary protection in Europe, drawn on a live MapTiler map and CHOREOGRAPHED by the
+ * scroll. The `flow map` type in the scrolly format, matching the validated video beat's own visual treatment
+ * (`proof/video-flow-map-ukraine-protection`, `quality/video`, owner 2026-09-15: « comme dans la vidéo »): the
+ * bands traced out of Ukraine one by one, largest first, the share they carry counted, the countries too small
+ * for a band dotted.
  *
- * THE STATIC PLATE'S RULES ARE THE FLOOR: width is the quantity, and the key states the scale in people; the route
- * is schematic and the basemap furniture — land one step off the ground, the sea the bare ground, no borders; one
- * colour for the field, the subject at full accent and the rest a tint of it; a band whose destination is outside
- * the frame is counted, not drawn.
+ * THE MAP IS A LIVE MAPTILER MAP (flat Web Mercator), its camera fixed at the static plate's own box: every
+ * band is a MapLibre `line` layer over the basemap's own land and sea, `flow-drive.mjs` cutting each to its own
+ * drawn share and positioning the host names, drawn by the beat in French, as HTML labels over the stage.
  *
- * `flow-drive.mjs` fits the camera and traces the bands in the reader's pixels. What is rendered here is the last
- * card's picture, every band whole, for a reader without a script.
+ * UNDER THE LIVE MAP, ONE FROZEN IMAGE PER CARD (`live-map-cards.mjs`). THE MARKUP IS CARD 1; a reader without a
+ * script gets the last card, every band whole.
  */
 
 import type { CSSProperties } from "react";
 import {
   adjustToContrast,
-  contrast,
-  mix,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
-import { SEA_LAND_MIN } from "#shared/map-beat/tints.mjs";
+import {
+  CardImages,
+  noScriptCss,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
-export type Band = {
-  code: string;
-  name: string;
-  people: number;
-  seat: [number, number];
-  d: string;
-  subject: boolean;
-  label: string;
-};
+export type Band = { code: string; name: string; people: number; top: boolean };
 type Style = Record<string, string | number>;
 
 export function DirectedFlowMapScrolly({
-  land,
-  width,
-  height,
-  focus,
-  origin,
-  originName,
-  originCode,
+  plan,
+  fallbacks,
+  reference,
   bands,
   others,
   total,
   keySizes,
+  bandColour,
+  subjectColour,
+  landColour,
   words,
   alt,
   regs,
@@ -54,17 +46,16 @@ export function DirectedFlowMapScrolly({
   ink,
   muted,
 }: {
-  land: string;
-  width: number;
-  height: number;
-  focus: { x: number; y: number; w: number; h: number };
-  origin: [number, number];
-  originName: string;
-  originCode: string;
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  reference: { width: number; height: number };
   bands: Band[];
-  others: { code: string; seat: [number, number] }[];
+  others: number;
   total: number;
   keySizes: { people: number; label: string }[];
+  bandColour: string;
+  subjectColour: string;
+  landColour: string;
   words: {
     unit: string;
     totalNote: string;
@@ -83,13 +74,6 @@ export function DirectedFlowMapScrolly({
   ink: string;
   muted: string;
 }) {
-  /** The land one step off the bare-ground sea: the static plate's 0.075 of the ink as a floor, raised until the
-   *  coast clears `SEA_LAND_MIN` — on `nocturne`'s navy the floor alone does not. */
-  let dose = 0.075;
-  while (contrast(mix(ground, ink, dose), ground) < SEA_LAND_MIN && dose < 0.4)
-    dose += 0.005;
-  const landFill = mix(ground, ink, dose);
-  const flow = mix(accent, ground, 0.38);
   const accentInk =
     adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
   const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
@@ -99,24 +83,35 @@ export function DirectedFlowMapScrolly({
     justifySelf: "end",
     textAlign: "right",
   };
-  const halo = `0 0 3px ${landFill}, 0 0 3px ${landFill}, 0 0 2px ${landFill}`;
+  // A name reads over the band it names as much as over the land: a halo of the land's own tint, not a flat
+  // outline, so it stands clear of whatever passes under it (the static plate's own `halo` treatment).
+  const halo = `0 0 3px ${landColour}, 0 0 3px ${landColour}, 0 0 2px ${landColour}`;
+  const label: CSSProperties = {
+    ...regs.axis,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    whiteSpace: "nowrap",
+    pointerEvents: "none",
+    opacity: 0,
+    textShadow: halo,
+  };
+  const scope = '[data-part="symbols"]';
+  const shapes = shapeSelectionCss(scope, reference);
+  const noScript =
+    noScriptCss(scope, fallbacks.length - 1, []) +
+    `${scope} [data-part="count"],${scope} [data-part="total-note"]{opacity:0!important}`;
 
   return (
     <div
+      data-part="symbols"
       role="img"
       aria-label={alt}
       data-flow={JSON.stringify({
-        focus,
-        origin,
-        originCode,
+        cards: fallbacks.length,
         total,
-        bands: bands.map(({ code, people, seat, subject }) => ({
-          code,
-          people,
-          seat,
-          subject,
-        })),
-        others,
+        originName: "Ukraine",
+        originCode: "UKR",
       })}
       style={{
         position: "absolute",
@@ -129,6 +124,11 @@ export function DirectedFlowMapScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      <noscript
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }}
+      />
+      <style dangerouslySetInnerHTML={{ __html: shapes }} />
       <div
         style={{
           display: "flex",
@@ -166,90 +166,40 @@ export function DirectedFlowMapScrolly({
 
       <div
         data-part="stage"
-        style={{
-          position: "relative",
-          minHeight: 0,
-          overflow: "hidden",
-          background: ground,
-        }}
+        style={{ position: "relative", minHeight: 0, overflow: "hidden" }}
       >
-        <svg
-          data-part="field"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox={`${focus.x} ${focus.y} ${focus.w} ${focus.h}`}
-          preserveAspectRatio="xMidYMid meet"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div
+          data-part="live"
+          style={{ position: "absolute", inset: 0, opacity: 0 }}
+        />
+        <script
+          type="application/json"
+          data-part="plan"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(plan).replace(/</g, "\\u003c"),
           }}
-        >
-          <path d={land} fill={landFill} fillRule="evenodd" />
-          {others.map((o) => (
-            <circle
-              key={o.code}
-              data-other={o.code}
-              cx={o.seat[0]}
-              cy={o.seat[1]}
-              r={2.5}
-              fill={flow}
-            />
-          ))}
-          {bands.map((b) => (
-            <path
-              key={b.code}
-              data-band={b.code}
-              d={b.d}
-              fill="none"
-              stroke={b.subject ? accent : flow}
-              strokeWidth={Math.max(1, (14 * b.people) / bands[0].people)}
-              pathLength={1}
-              strokeDasharray="1 1"
-              strokeLinecap="butt"
-            />
-          ))}
-          <circle
-            data-part="node"
-            cx={origin[0]}
-            cy={origin[1]}
-            r={16}
-            fill={ground}
-            stroke={inkOnGround}
-            strokeWidth={1.5}
-          />
-        </svg>
+        />
         {bands.map((b) => (
           <span
             key={b.code}
-            data-band-label={b.code}
-            style={{
-              ...regs.axis,
-              position: "absolute",
-              left: `${((b.seat[0] - focus.x) / focus.w) * 100}%`,
-              top: `${((b.seat[1] - focus.y) / focus.h) * 100}%`,
-              whiteSpace: "nowrap",
-              color: b.subject ? accentInk : inkOnGround,
-              textShadow: halo,
-            }}
+            data-label={b.code}
+            style={{ ...label, color: b.top ? accentInk : inkOnGround }}
           >
-            {b.label}
+            {b.name}
           </span>
         ))}
         <span
           data-part="node-label"
           style={{
             ...regs.value,
-            position: "absolute",
-            left: `${((origin[0] - focus.x) / focus.w) * 100}%`,
-            top: `${((origin[1] - focus.y) / focus.h) * 100}%`,
-            transform: "translate(-50%, -50%)",
-            whiteSpace: "nowrap",
+            ...label,
             color: inkOnGround,
             fontWeight: 700,
+            transform: "translate(-50%, -50%)",
           }}
         >
-          {originName}
+          Ukraine
         </span>
       </div>
 
@@ -278,8 +228,8 @@ export function DirectedFlowMapScrolly({
               style={{
                 display: "inline-block",
                 width: "34px",
-                height: "8px",
-                background: flow,
+                height: `${k.px}px`,
+                background: bandColour,
               }}
             />
             {k.label}
@@ -301,7 +251,7 @@ export function DirectedFlowMapScrolly({
               width: "5px",
               height: "5px",
               borderRadius: "50%",
-              background: flow,
+              background: bandColour,
             }}
           />
           {words.othersKey}
