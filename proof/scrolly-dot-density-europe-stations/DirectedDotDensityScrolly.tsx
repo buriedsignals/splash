@@ -35,8 +35,12 @@ export function DirectedDotDensityScrolly({
   firstCounter,
   sizes,
   dotColour,
-  ringColour,
-  paleColour,
+  subjectColour,
+  barBack,
+  dotR,
+  ringR,
+  shareSites,
+  shareCapacity,
   words,
   alt,
   regs,
@@ -52,8 +56,12 @@ export function DirectedDotDensityScrolly({
   firstCounter: string;
   sizes: { mw: number; label: string; px: number }[];
   dotColour: string;
-  ringColour: string;
-  paleColour: string;
+  subjectColour: string;
+  barBack: string;
+  dotR: number;
+  ringR: number;
+  shareSites: number;
+  shareCapacity: number;
   words: {
     unit: string;
     count: string;
@@ -101,13 +109,13 @@ export function DirectedDotDensityScrolly({
       data-part="symbols"
       role="img"
       aria-label={alt}
-      data-dots={JSON.stringify({ total })}
+      data-dots={JSON.stringify({ total, shareSites, shareCapacity })}
       style={{
         position: "absolute",
         inset: 0,
         background: ground,
         display: "grid",
-        gridTemplateRows: "auto minmax(0, 1fr) auto",
+        gridTemplateRows: "auto auto minmax(0, 1fr) auto",
         gridTemplateColumns: "minmax(0, 1fr)",
         rowGap: "10px",
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
@@ -163,6 +171,30 @@ export function DirectedDotDensityScrolly({
         </span>
       </div>
 
+      {/* THE SHARE BAR: nuclear's share of the sites, carried with the dots to its share of the power — one bar
+          measuring both counts, matching the validated video beat (owner, 2026-09-15). */}
+      <div
+        data-part="bar"
+        style={{
+          position: "relative",
+          height: "6px",
+          borderRadius: "3px",
+          background: barBack,
+          overflow: "hidden",
+          opacity: 0,
+        }}
+      >
+        <div
+          data-part="bar-fill"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: `${shareSites}%`,
+            background: subjectColour,
+          }}
+        />
+      </div>
+
       <div
         data-part="stage"
         style={{ position: "relative", minHeight: 0, overflow: "hidden" }}
@@ -190,22 +222,38 @@ export function DirectedDotDensityScrolly({
             alignItems: "center",
           }}
         >
-          <span style={keyItem}>{words.dotIs}</span>
+          {/* THE KEY: exactly the video's three symbols — the dot, the ring, one size reference. */}
+          <span style={keyItem}>
+            <span
+              style={{
+                display: "inline-block",
+                width: `${2 * dotR * 1.6}px`,
+                height: `${2 * dotR * 1.6}px`,
+                borderRadius: "50%",
+                background: dotColour,
+              }}
+            />
+            {words.dotIs}
+          </span>
           <span style={keyItem}>
             <span
               style={{
                 position: "relative",
                 display: "inline-block",
-                width: "6px",
-                height: "6px",
+                width: `${2 * ringR}px`,
+                height: `${2 * ringR}px`,
               }}
             >
               <span
                 style={{
                   position: "absolute",
-                  inset: "1px",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: `${2 * dotR * 1.6}px`,
+                  height: `${2 * dotR * 1.6}px`,
                   borderRadius: "50%",
-                  background: dotColour,
+                  background: subjectColour,
                 }}
               />
               <span
@@ -213,51 +261,24 @@ export function DirectedDotDensityScrolly({
                   position: "absolute",
                   inset: 0,
                   borderRadius: "50%",
-                  boxShadow: `0 0 0 1px ${ringColour}`,
+                  boxShadow: `0 0 0 1.2px ${subjectColour}`,
                 }}
               />
             </span>
-            {words.subjectIs}, cerclés
-          </span>
-          <span style={keyItem}>{words.weightIs}</span>
-          <span style={keyItem}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "14px",
-                height: "14px",
-                borderRadius: "50%",
-                background: dotColour,
-              }}
-            />
-            site nucléaire
+            {words.subjectIs}
           </span>
           <span style={keyItem}>
             <span
               style={{
                 display: "inline-block",
-                width: "14px",
-                height: "14px",
+                width: `${sizes[1].px}px`,
+                height: `${sizes[1].px}px`,
                 borderRadius: "50%",
-                background: paleColour,
+                boxShadow: `0 0 0 1.2px ${mutedInk}`,
               }}
             />
-            autre centrale
+            {sizes[1].label}
           </span>
-          {sizes.map((s) => (
-            <span key={s.mw} style={keyItem}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: `${s.px}px`,
-                  height: `${s.px}px`,
-                  borderRadius: "50%",
-                  background: paleColour,
-                }}
-              />
-              {s.label}
-            </span>
-          ))}
         </span>
         <span style={{ ...regs.axis, color: mutedInk }}>{words.limit}</span>
       </div>

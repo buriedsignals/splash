@@ -162,22 +162,24 @@ const STATES = [
 ].map((state, k) => ({ ...state, ...cameras[k], card: k }));
 
 // ── the fuel buckets, most numerous first (arrival order), and the nuclear set ───────────────────
+// SIZED AND BUCKETED EXACTLY AS THE VALIDATED VIDEO BEAT (`proof/video-dot-density-europe-stations`,
+// `quality/video`, owner 2026-09-15: « comme dans la vidéo »): a dot's radius at full weight is
+// `max(floor, R · sqrt(mw / maxMw))`, its buckets grouped by that radius so the area a bucket draws is exactly
+// its members'. Reference width here is 1280 against the video's 1920, so every length is taken at that ratio.
 const maxMw = Math.max(...stations.map((s) => s.mw));
+const VIDEO_REFERENCE_WIDTH = 1920;
+const SCALE = REFERENCE.width / VIDEO_REFERENCE_WIDTH;
+const DOT_R = 2.2 * SCALE;
+const WEIGHT_R = 40 * SCALE;
+const WEIGHT_FLOOR_R = 1.2 * SCALE;
+const RING_R = 3.2 * DOT_R;
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
-const asPoint = (s) => ({ lon: round4(s.lon), lat: round4(s.lat), r: round4(Math.sqrt(s.mw / maxMw)) });
-const buckets = others.map((fuel) => ({ fuel, stations: stations.filter((s) => s.fuel === fuel).map(asPoint) }));
-if (buckets.reduce((a, b) => a + b.stations.length, 0) !== total - nuclear.length) throw new Error("the fuel buckets do not hold every non-nuclear station once");
-const nuclearPoints = nuclear.map(asPoint);
-
-/** THE LARGEST SITE'S SCREEN RADIUS AT A WEIGHT: capped well under the size that fuses a dense cluster (France,
- *  Germany, Benelux) into one mass — measured live against the owner's own reading (2026-09-15). */
-const WEIGHT_LARGEST_PX = 38;
-/** THE STATIC PLATE'S OWN COUNT-DOT RANGE, taken at its low end: the field has to show gaps in its densest
- *  cell, not fuse into a mass. TEXTURE COMES FROM THIS RADIUS, NOT FROM OPACITY: every dot is fully opaque
- *  (owner, 2026-09-15 — a partial-opacity fill next to the fully-opaque weight-mode circles and the nuclear
- *  ring read as an unexplained "some circles have a border and some don't"). */
-const COUNT_RADIUS_PX = 0.9;
-const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW`, px: Math.max(1.2, Math.sqrt(mw / maxMw) * WEIGHT_LARGEST_PX * 2) }));
+const weightRadiusOf = (mw) => Math.max(WEIGHT_FLOOR_R, WEIGHT_R * Math.sqrt(mw / maxMw));
+const asWeighted = (s) => ({ lon: round4(s.lon), lat: round4(s.lat), w: weightRadiusOf(s.mw) });
+const stationsByFuel = Object.fromEntries(others.map((fuel) => [fuel, stations.filter((s) => s.fuel === fuel).map(asWeighted)]));
+if (Object.values(stationsByFuel).reduce((a, list) => a + list.length, 0) !== total - nuclear.length) throw new Error("the fuel groups do not hold every non-nuclear station once");
+const nuclearWeighted = nuclear.map(asWeighted);
+const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW`, px: 2 * Math.max(WEIGHT_FLOOR_R, WEIGHT_R * Math.sqrt(mw / maxMw)) }));
 
 const textPerRegister = {
   display: title.join(" "),
@@ -209,36 +211,33 @@ try {
     const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
     try {
       const tints = plateTints(direction);
-      // MEASURED AGAINST THE BASEMAP'S OWN TINTS (`tints.land`, `tints.water` — what the live sweep actually
-      // paints), not the page ground: a mark sits on the map, never on the header's paper. THE DOT IS THE
-      // DIRECTION'S OWN PALETTE (the accent), pushed only as far as the 3:1 mark floor needs — never pure black:
-      // a field of 8,900 black dots read as a solid mass, not as a density (owner, 2026-09-15). The subject's ring
-      // is the ink instead, thin, so it reads as an outline over the field rather than a second dot colour.
+      // THE VALIDATED VIDEO'S OWN FORMULAS (`build.mjs`, `# colours`): an ordinary station is the accent, walked
+      // to clear the mark floor on the LAND (what it sits on); nuclear is the accent mixed 35% toward the ink —
+      // one hue family, the subject the richer half of it, not a second competing colour. The dot's own edge is
+      // the land tint: the stroke that separates two overlapping discs, a gap rather than a black outline lost
+      // once discs fuse.
+      const walked = (c, on, floor) => adjustToContrast(c, on, floor) ?? c;
       const colours = {
-        dot: adjustToContrast(adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent, tints.water, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
-        ring: adjustToContrast(adjustToContrast(ink, tints.land, NON_TEXT_CONTRAST_MIN) ?? ink, tints.water, NON_TEXT_CONTRAST_MIN) ?? ink,
-        // A PALE TINT OF THE ACCENT, MOSTLY TOWARD THE LAND: ordinary stations at a weight are dust beside the
-        // nuclear discs, not a second strong colour competing with them (owner, 2026-09-15).
-        paleFill: mix(direction.accent, tints.land, 0.72),
-        // THE STROKE THAT SEPARATES TWO OVERLAPPING DISCS reads as the page's own ground — a gap, never a black
-        // outline (which is what a nuclear ring lost in a fused mass looked like) — but is nudged a few percent
-        // off it: the live map's own guard samples the canvas for the page's exact ground colour to catch a
-        // country the tiles never drew, and a stroke drawn in that exact colour is indistinguishable from one.
-        strokeGround: mix(direction.ground, ink, 0.04),
+        land: tints.land,
+        dot: walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN),
+        subject: walked(mix(direction.accent, ink, 0.35), tints.land, NON_TEXT_CONTRAST_MIN),
+        barBack: mix(tints.land, walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN), 0.18),
       };
-      if (contrast(colours.dot, colours.ring) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear ring (${colours.ring}) measure ${contrast(colours.dot, colours.ring).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
-      if (contrast(colours.dot, colours.paleFill) < 1.5) throw new Error(`the nuclear disc (${colours.dot}) and the ordinary pale disc (${colours.paleFill}) measure ${contrast(colours.dot, colours.paleFill).toFixed(2)}:1 apart — the subject would not stand out from the dust`);
+      if (contrast(colours.dot, colours.subject) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear disc (${colours.subject}) measure ${contrast(colours.dot, colours.subject).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
       const plan = dotDensityPlan({
         tints: { water: tints.water, land: tints.land },
-        buckets,
-        nuclear: nuclearPoints,
+        fuels: others,
+        stations: stationsByFuel,
+        nuclear: nuclearWeighted,
         colours,
         cameras,
         statesForCards: STATES,
         referenceWidth: REFERENCE.width,
         referenceHeight: REFERENCE.height,
-        countRadius: COUNT_RADIUS_PX,
-        weightLargestPx: WEIGHT_LARGEST_PX,
+        dotR: DOT_R,
+        ringR: RING_R,
+        hairline: (direction.stroke?.hairline ?? 0.6) * SCALE,
+        ringStroke: (direction.stroke?.rule ?? 1) * SCALE,
       });
       const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
       if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
@@ -255,8 +254,12 @@ try {
               firstCounter,
               sizes,
               dotColour: colours.dot,
-              ringColour: colours.ring,
-              paleColour: colours.paleFill,
+              subjectColour: colours.subject,
+              barBack: colours.barBack,
+              dotR: DOT_R,
+              ringR: RING_R,
+              shareSites,
+              shareCapacity,
               words,
               alt,
               regs,

@@ -44,6 +44,14 @@ export function applyDotState(root, state) {
     zoomNote: zoom,
   };
   showOneNote([[c.counter, notes.counter], [c.subjectNote, notes.subjectNote], [c.weightNote, notes.weightNote], [c.zoomNote, notes.zoomNote]]);
+
+  // THE SHARE BAR: nuclear's share of the sites, carried with the dots to its share of the power — the video's
+  // own reading, `share = shareSites + (shareCapacity - shareSites) · weight`, one bar measuring both counts.
+  const share = c.shareSites + (c.shareCapacity - c.shareSites) * weight;
+  const fillWidth = `${share}%`;
+  if (c.barFill.style.width !== fillWidth) c.barFill.style.width = fillWidth;
+  const barOpacity = String(subject);
+  if (c.bar.style.opacity !== barOpacity) c.bar.style.opacity = barOpacity;
 }
 
 function setUpDots(root) {
@@ -72,6 +80,8 @@ function setUpDots(root) {
     subjectNote: root.querySelector('[data-part="subject-note"]'),
     weightNote: root.querySelector('[data-part="weight-note"]'),
     zoomNote: root.querySelector('[data-part="zoom-note"]'),
+    bar: root.querySelector('[data-part="bar"]'),
+    barFill: root.querySelector('[data-part="bar-fill"]'),
   };
 }
 

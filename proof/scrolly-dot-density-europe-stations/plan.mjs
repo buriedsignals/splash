@@ -1,93 +1,102 @@
-// THE DOT DENSITY SCROLLY AS A MAP PLAN. Every station is a MapLibre circle layer over the basemap's own land and
-// sea, bucketed by FUEL (not by rank: a dot density fills a field fuel by fuel, it does not stage a magnitude
-// largest-first). Each bucket carries TWO layers — a tiny constant-screen-size dot ("count") and one whose radius
-// is its capacity's area ("weight") — and the `weight` state cross-fades between them, so no bound paint ever
-// reads a feature (`circle-radius` on a per-feature expression is set once, in `paint`, never in `bindings`; only
-// `circle-opacity`, a plain number, is bound).
+// THE DOT DENSITY SCROLLY AS A MAP PLAN — matching the validated video beat's visual treatment exactly
+// (`proof/video-dot-density-europe-stations` on `quality/video`, owner 2026-09-15: « comme dans la vidéo »).
 //
-// AT A WEIGHT, THE SUBJECT IS THE FILL, NOT A RING (owner, 2026-09-15, reworking the first live pass: a black
-// outline was lost once discs of up to ~110px fused into one mass). Nuclear draws solid in the accent; every
-// other station a pale tint of it, so solar/wind visibly become dust beside the nuclear discs. Discs are capped
-// well under the field's own fused-mass size (`weightLargestPx`, ~35-40px at the reference stage) and every
-// weight layer is added LARGEST-BUCKET-FIRST, so a big disc never sits over a small one. A thin stroke in the
-// page's own ground colour separates two overlapping discs with a gap, never a black outline.
+// Every bound paint is DATA-CONSTANT (`validateScrollyPlan`): MapLibre relays out a source whenever a
+// data-driven paint changes, so a dot's growth into its weight is not one `["get", …]` radius per fuel. Stations
+// are split by fuel and by the radius they grow to — one layer per (fuel, size bucket), each bucket's radius the
+// root of its members' mean square (its drawn area is exactly theirs), no member differing from it by more than
+// `BUCKET_PX` or `BUCKET_REL` of it. A SINGLE layer per bucket carries the whole journey: its radius grows
+// continuously from the count-mode dot to the bucket's weight radius, bound to `weight`, the area carried
+// linearly (`sqrt((1-w)·r0² + w·r1²)`) — there is no separate "count" and "weight" layer to cross-fade between.
+// Nuclear draws last (on top) and additionally carries a ring that swells to hug the grown disc, its stroke
+// thinning as it grows.
 
 const clamp = (x) => ["max", 0, ["min", 1, x]];
+/** A stepped-back station keeps this much of its ink, never zero — the video's own floor. */
+const STEPPED_BACK = 0.18;
+export const BUCKET_PX = 0.25;
+export const BUCKET_REL = 0.04;
 
-/** How far bucket `i` of `n` has arrived, in `arrive` (0..1): equal slices, most numerous first, the whole
- *  reveal landing inside the single card-1-to-card-2 transition — the technical floor's staggered fill, applied
- *  to fuel order rather than to rank. */
+/** How far bucket `i` of `n` fuels has arrived, in `arrive` (0..1): equal slices, most numerous first. */
 function reachedOf(i, n) {
   return clamp(["-", ["*", { $state: "arrive" }, n], i]);
 }
 
-export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, countRadius, weightLargestPx }) {
-  const points = (stations) => ({
-    type: "FeatureCollection",
-    // LARGEST FIRST WITHIN THE LAYER TOO: a GeoJSON source draws its features in array order, so the biggest
-    // disc is laid down before the small ones that would otherwise disappear under it.
-    features: [...stations]
-      .sort((a, b) => b.r - a.r)
-      .map((s) => ({ type: "Feature", properties: { r: s.r }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })),
-  });
-  const weightRadius = ["max", 0.6, ["*", ["get", "r"], weightLargestPx]];
-  const stepBack = ["-", 1, { $state: "fade" }];
+/** THE SIZE BUCKETS OF ONE FUEL, largest first (a small station is never left under a large one within its own
+ *  fuel). `stations` carry `w`, the radius at full weight, in px. Ported from the video's `map-plan.mjs`. */
+export function bucketsOf(stations) {
+  const sorted = [...stations].sort((a, b) => a.w - b.w);
+  const out = [];
+  let open = null;
+  for (const s of sorted) {
+    if (!open || s.w > open.from + Math.max(BUCKET_PX, BUCKET_REL * open.from)) {
+      open = { from: s.w, members: [] };
+      out.push(open);
+    }
+    open.members.push(s);
+  }
+  return out.map(({ members }) => ({ r1: Math.sqrt(members.reduce((a, s) => a + s.w * s.w, 0) / members.length), members })).reverse();
+}
 
-  const countLayers = [];
-  // Every group's own WEIGHT layer, not yet ordered — sorted by descending max radius below so the group
-  // holding the biggest discs is added (and so drawn) first.
-  const weightGroups = [];
-  buckets.forEach((bucket, i) => {
-    const reached = reachedOf(i, buckets.length);
-    countLayers.push({
-      id: `count-${bucket.fuel}`,
-      type: "circle",
-      data: points(bucket.stations),
-      // EVERY STATION DOT IS ONE TREATMENT: filled, no stroke, fully opaque. Density comes from the RADIUS
-      // (`countRadius`, chosen small), not from opacity.
-      paint: { "circle-radius": countRadius, "circle-color": colours.dot, "circle-opacity": 0 },
-      bindings: { "circle-opacity": ["*", reached, ["-", 1, { $state: "weight" }], stepBack] },
-    });
-    weightGroups.push({
-      maxR: Math.max(0, ...bucket.stations.map((s) => s.r)),
-      layer: {
-        id: `weight-${bucket.fuel}`,
+const points = (members) => ({
+  type: "FeatureCollection",
+  features: members.map((s) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })),
+});
+/** A dot's radius at the frame's weight: its area travels from the dot's to the bucket's, linearly. */
+const grownRadius = (r0, r1) => ["sqrt", ["+", ["*", ["-", 1, { $state: "weight" }], r0 * r0], ["*", { $state: "weight" }, r1 * r1]]];
+
+export function dotDensityPlan({ tints, fuels, stations, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, dotR, ringR, hairline, ringStroke }) {
+  const layers = [];
+  const rings = [];
+  fuels.forEach((fuel, i) => {
+    const reached = reachedOf(i, fuels.length);
+    // Every ordinary dot steps back once the nuclear sites are isolated, but never to nothing — the video's
+    // own floor, so the field is still legible as "everything else" rather than gone.
+    const stepped = ["-", 1, ["*", 1 - STEPPED_BACK, { $state: "fade" }]];
+    const shown = ["*", reached, stepped];
+    // The fill lightens as the dots grow (the outline below is what separates them once they are large);
+    // the outline itself only switches on once growth has started.
+    const fill = ["*", shown, ["-", 1, ["*", 0.45, { $state: "weight" }]]];
+    const edge = ["case", [">", { $state: "weight" }, 0], shown, 0];
+    bucketsOf(stations[fuel]).forEach(({ r1, members }, b) => {
+      layers.push({
+        id: `dot-${fuel}-${b}`,
         type: "circle",
-        data: points(bucket.stations),
-        // ORDINARY STATIONS ARE A PALE TINT OF THE ACCENT AT A WEIGHT — dust beside the nuclear discs, never the
-        // dot's own strong colour: a field of solid strong discs is exactly the fused mass the owner rejected.
-        paint: {
-          "circle-radius": weightRadius,
-          "circle-color": colours.paleFill,
-          "circle-stroke-color": colours.strokeGround,
-          "circle-stroke-width": 0.7,
-          "circle-opacity": 0,
-          "circle-stroke-opacity": 0,
-        },
-        bindings: { "circle-opacity": ["*", reached, { $state: "weight" }, stepBack], "circle-stroke-opacity": ["*", reached, { $state: "weight" }, stepBack] },
+        data: points(members),
+        paint: { "circle-color": colours.dot, "circle-radius": dotR, "circle-opacity": 0, "circle-stroke-color": colours.land, "circle-stroke-width": hairline, "circle-stroke-opacity": 0 },
+        bindings: { "circle-radius": grownRadius(dotR, r1), "circle-opacity": fill, "circle-stroke-opacity": edge },
+      });
+    });
+  });
+  // NUCLEAR DRAWS LAST, ON TOP: the subject, never stepped back, its own fill and its ring — ported from the
+  // video's own layer order (fuels in arrival order, the subject last).
+  const nFill = ["*", { $state: "subject" }, ["-", 1, ["*", 0.45, { $state: "weight" }]]];
+  const nEdge = ["case", [">", { $state: "weight" }, 0], { $state: "subject" }, 0];
+  bucketsOf(nuclear).forEach(({ r1, members }, b) => {
+    const data = points(members);
+    layers.push({
+      id: `dot-nuclear-${b}`,
+      type: "circle",
+      data,
+      paint: { "circle-color": colours.subject, "circle-radius": dotR, "circle-opacity": 0, "circle-stroke-color": colours.land, "circle-stroke-width": hairline, "circle-stroke-opacity": 0 },
+      bindings: { "circle-radius": grownRadius(dotR, r1), "circle-opacity": nFill, "circle-stroke-opacity": nEdge },
+    });
+    // THE RING SWELLS TO HUG THE GROWN DISC as it grows, its stroke thinning — MapLibre strokes OUTSIDE the
+    // radius, so the ring's own radius is the swollen radius less half the (thinning) stroke.
+    const grown = grownRadius(dotR, r1);
+    const halfStroke = ["*", ringStroke / 2, ["-", 1, ["*", 0.4, { $state: "weight" }]]];
+    rings.push({
+      id: `ring-nuclear-${b}`,
+      type: "circle",
+      data,
+      paint: { "circle-color": "rgba(0,0,0,0)", "circle-radius": ringR - ringStroke / 2, "circle-stroke-color": colours.subject, "circle-stroke-width": ringStroke, "circle-stroke-opacity": 0 },
+      bindings: {
+        "circle-radius": ["max", 0, ["-", ["max", ["*", ringR, ["-", 1, { $state: "weight" }]], grown], halfStroke]],
+        "circle-stroke-width": ["*", ringStroke, ["-", 1, ["*", 0.4, { $state: "weight" }]]],
+        "circle-stroke-opacity": { $state: "subject" },
       },
     });
   });
-  weightGroups.push({
-    maxR: Math.max(0, ...nuclear.map((s) => s.r)),
-    layer: {
-      id: "weight-nuclear",
-      type: "circle",
-      data: points(nuclear),
-      // THE SUBJECT'S OWN TREATMENT: solid, in the accent — the fill itself carries the distinction now, not a
-      // ring lost once discs fuse (owner, 2026-09-15).
-      paint: {
-        "circle-radius": weightRadius,
-        "circle-color": colours.dot,
-        "circle-stroke-color": colours.strokeGround,
-        "circle-stroke-width": 0.7,
-        "circle-opacity": 0,
-        "circle-stroke-opacity": 0,
-      },
-      bindings: { "circle-opacity": ["*", { $state: "subject" }, { $state: "weight" }], "circle-stroke-opacity": ["*", { $state: "subject" }, { $state: "weight" }] },
-    },
-  });
-  const weightLayers = weightGroups.sort((a, b) => b.maxR - a.maxR).map((g) => g.layer);
 
   return {
     styleUrl: `https://api.maptiler.com/maps/dataviz/style.json?key=${"__MAPTILER" + "_KEY__"}`,
@@ -99,29 +108,7 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
     referenceHeight,
     warmSamples: 3,
     degreesPerPixel: 1,
-    buckets: buckets.map((b) => ({ fuel: b.fuel, n: b.stations.length })),
-    // WEIGHT LAYERS FIRST (largest-max group first, so every one of them sits UNDER the count layers and under
-    // the nuclear ring below), then the count-mode dots, then the subject's count-mode ring — the three groups
-    // never overlap in when they are visible (`weight`, `1 - weight`), so their relative order inside each
-    // group is what matters, not across groups.
-    layers: [
-      ...weightLayers,
-      ...countLayers,
-      {
-        id: "count-nuclear",
-        type: "circle",
-        data: points(nuclear),
-        paint: { "circle-radius": countRadius, "circle-color": colours.dot, "circle-opacity": 0 },
-        bindings: { "circle-opacity": ["*", { $state: "subject" }, ["-", 1, { $state: "weight" }]] },
-      },
-      // THE RING IS THE SUBJECT'S OWN TREATMENT AT A COUNT ONLY (kept as before): the ink, thin.
-      {
-        id: "ring-nuclear-count",
-        type: "circle",
-        data: points(nuclear),
-        paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colours.ring, "circle-stroke-width": 1, "circle-stroke-opacity": 0 },
-        bindings: { "circle-stroke-opacity": ["*", { $state: "subject" }, ["-", 1, { $state: "weight" }]] },
-      },
-    ],
+    buckets: fuels.map((fuel) => ({ fuel, n: stations[fuel].length })),
+    layers: [...layers, ...rings],
   };
 }
