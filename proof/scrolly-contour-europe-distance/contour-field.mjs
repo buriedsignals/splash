@@ -406,5 +406,8 @@ export function contourField(geo, { study, window: win, width, levels }) {
     seats,
     seatHalfWidths: HALF_WIDTHS,
     raster: { x: r1(rx), y: r1(ry), w: r1(W * cell * scale), h: r1(H * cell * scale), cols: W, rows: H, stepKm: RASTER_KM, data: gzipSync(bytes, { level: 9 }).toString("base64") },
+    /** The transforms back to the measuring projection, unrounded: frame units are `(laea − (x0, frameY0)) · scale`,
+     *  raster cell (gx, gy) is centred on `(x0, y0) + (g + 0.5) · cell` — what a Web Mercator map needs to place them. */
+    projection: { x0: BX0, y0: BY0, frameY0: minY, scale, cell },
   };
 }

@@ -78,11 +78,58 @@ export function sceneAt(props, frame) {
     labels,
     count: countAt(level, props.within, props.deepest),
     /** THE CURVE: traced to the sweep's front — the share of the land the fill has covered, at the distance it has reached. */
-    chart: (() => {
+    chart: props.chart && (() => {
       const { plot, maxKm } = props.chart;
       const km = Math.min(level, maxKm);
       const head = { x: plot.left + ((plot.right - plot.left) * km) / maxKm, y: plot.bottom - ((plot.bottom - plot.top) * (level >= props.deepest ? 100 : shareWithin(km, props.within, props.deepest))) / 100 };
       return { head, shown: level > 0 ? 1 : 0, guides: median };
     })(),
   };
+}
+
+// ── the live map ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The fields the map plan's paints are bound to, besides the camera (`map-plan.mjs`). */
+export const mapFieldsOf = (levels) => ["level", "tint", "summit", ...levels.flatMap(({ level }) => [`line${level}`, `label${level}`])];
+
+/**
+ * THE LIVE MAP AT `frame`, IN NUMBERS: the still camera, and every field a bound paint reads — each line's and each
+ * number's opacity as `sceneAt` decides them, the farthest point's, the sweep's level and presence.
+ */
+export function mapStateAt(props, frame) {
+  const scene = sceneAt(props, frame);
+  const state = { ...props.cameras.whole, level: scene.level, tint: scene.tint, summit: scene.summit };
+  for (const { level } of props.levels) {
+    state[`line${level}`] = scene.lines[level];
+    state[`label${level}`] = scene.labels[level];
+  }
+  return state;
+}
+
+const rgbOf = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+
+/**
+ * THE SWEEP'S TEXELS AT `level`, written into `px` (RGBA, one texel per byte of `bytes`): a texel is filled when its
+ * distance to the sea is under the level, the last `rimKm` in the rim's colour while the front still travels; every
+ * other texel transparent. Returns how many texels it filled.
+ */
+export function paintSweep(px, bytes, { level, stepKm, rimKm, front, tint, rim }) {
+  const [tr, tg, tb] = rgbOf(tint);
+  const [rr, rg, rb] = rgbOf(rim);
+  let filled = 0;
+  for (let i = 0, j = 0; i < bytes.length; i++, j += 4) {
+    const b = bytes[i];
+    const inside = b === 0 ? -1 : level - (b - 1) * stepKm;
+    if (inside < 0) {
+      px[j + 3] = 0;
+      continue;
+    }
+    const edge = front && inside < rimKm;
+    px[j] = edge ? rr : tr;
+    px[j + 1] = edge ? rg : tg;
+    px[j + 2] = edge ? rb : tb;
+    px[j + 3] = 255;
+    filled++;
+  }
+  return filled;
 }

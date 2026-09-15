@@ -74,21 +74,24 @@ type's only other channel — disappears entirely and the labelled lines are all
 
 ## In video
 
-Worked example: `proof/video-contour-europe-distance` (validated 2026-09-14, recut 2026-09-15). The gesture only a video has is **the
-sweep**: the field thresholded at a level that travels linearly in the field's own unit, drawn as a canvas under an SVG
-that paints the sea over it (so the grid's cells never show on the water), its front in a rim colour, each line left
-whole the moment the front reaches it and its number set once the front has moved on, the count read off the field's
-own table. The claim's level (the median) lands as its own gesture; a line within 50 km of it gives way. At the video's
-30 px floor a number is taller than the gap between two lines 100 km apart, so a number sits on its line in a halo of
-the land's colour, at the seat crossing the fewest other lines. Every text the count can show is measured in Bun.
+Worked example: `proof/video-contour-europe-distance` (validated 2026-09-14, recut 2026-09-15; on the live MapTiler map
+2026-09-15, awaiting the owner). **The map is the live MapTiler map** (owner: « comme dans scrolly »): the field stays
+measured in Bun, its lines unprojected to lon/lat as GeoJSON `line` layers, their numbers `symbol` layers, the study land
+a Countries fill beneath the basemap's water and the land outside the measurement the basemap's own land drawn over the
+sweep. The gesture only a video has is **the sweep**: the field resampled onto a Web Mercator grid and mounted as a
+MapLibre `canvas` source beneath the water, thresholded at a level that travels linearly in the field's own unit and
+uploaded once per frame, its front in a rim colour, each line left whole the moment the front reaches it and its number
+set once the front has moved on, the count read off the field's own table. The claim's level (the median) lands as its
+own gesture; a line within 50 km of it gives way. A number sits on its line in a halo of the land's colour, at the seat
+crossing the fewest other lines. Every text the count can show is measured in Bun.
 
 - **The argument measures what the sweep covers**: beside the map, a curve of the share of the land within each
   distance, drawn from the field's own `within` table and traced to the sweep's front — its head at the front's
   distance and the share it has covered — so the steep rise along the coasts and the long flat tail are seen, not
   read. The claim's level lands with dashed guides on the curve. The curve carries no word.
-- **The credit sits on one line**: the Atlantic the land leaves is narrower than a line, so the credit takes the first
-  row from the top whose line crosses no measured land (Greenland is not measured), in an ink that reads on the sea and
-  on that land; the key and the curve stand in the column under it, and the lines' numbers keep clear of all three.
+- **The credit sits on one line over open sea** with « © MapTiler © OpenStreetMap », in the first row of the measured
+  map whose cells are all sea; the key and the curve stand in the column under it, each over at most 3 % land, and the
+  lines' numbers keep clear of all three.
 
 ## The worked example in this tree
 

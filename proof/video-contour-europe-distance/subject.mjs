@@ -37,3 +37,26 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
   const bytes = gunzipSync(Buffer.from(field.raster.data, "base64"));
   return { field, study, MEDIAN, LEVELS, pct, bytes, LAST: Math.ceil(field.deepest) + 6 };
 }
+
+// ── back to the globe: the field was measured in LAEA, the live map is Web Mercator ─────────────────────────────
+const RAD = Math.PI / 180;
+const LAT0 = 52 * RAD;
+const LON0 = 10 * RAD;
+
+/** The inverse of `contour-field.mjs`'s `laea` (the static beat's `unlaea`, written out): a vertex that drifts labels
+ *  the wrong place. */
+export function unlaea([x, yNeg]) {
+  const y = -yNeg;
+  const rho = Math.hypot(x, y);
+  if (rho < 1e-12) return [LON0 / RAD, LAT0 / RAD];
+  const c = 2 * Math.asin(Math.min(1, rho / 2));
+  const lat = Math.asin(Math.cos(c) * Math.sin(LAT0) + (y * Math.sin(c) * Math.cos(LAT0)) / rho);
+  const lon = LON0 + Math.atan2(x * Math.sin(c), rho * Math.cos(LAT0) * Math.cos(c) - y * Math.sin(LAT0) * Math.sin(c));
+  return [lon / RAD, lat / RAD];
+}
+
+/** A point in the field's frame units, as [lon, lat]. */
+export const lonLatOfFrame = (field, [fx, fy]) => {
+  const { x0, frameY0, scale } = field.projection;
+  return unlaea([fx / scale + x0, fy / scale + frameY0]);
+};

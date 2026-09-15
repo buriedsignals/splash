@@ -13,6 +13,29 @@ Same subject, same frozen shapes and study area, same field and the same asserti
 42 % within 100 km, 89 % within 400 km, the farthest point 682 km from the sea, in Belarus. The field is the scrolly's
 `contour-field.mjs`, run once in Bun.
 
+## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
+
+The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+
+- **The field is unchanged** (6 km grid, LAEA, computed in Bun on the frozen shapes); only its drawing moves to MapLibre
+  (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, the sea the direction's ground; the study land a
+  MapTiler Countries fill beneath the basemap's water; the land outside the measurement (Russia) the basemap's own
+  land, the key's « hors mesure » swatch, drawn over the sweep so its edge is the Countries border; each isoline a
+  GeoJSON `line` layer (the field's lines unprojected to lon/lat), each number a `symbol` layer at its seat, the
+  farthest point two `circle` layers and a `symbol`. Every paint is data-constant, bound per frame (`mapStateAt`).
+  The still camera is the static plate's frame fitted "meet" into 1920 × 1080, as on the choropleth pilot.
+- **The sweep is a MapLibre `canvas` source**, chosen over one fill layer per 6 km band: the field resampled in Bun
+  onto a Web Mercator grid (2 stage px a texel), thresholded per frame in the composition and uploaded once per frame
+  (`play()` then `pause()` on a non-animated source, so the map goes idle and `useLiveMap` releases the frame).
+- **The words outside the map** (the count, « hors mesure », the curve, the credit) stay SVG, placed from
+  `measured.json`: the real map measured once at the still camera (`measure.mjs`), its projected seats matching
+  `projectorOf` to a tenth of a pixel. The numbers' seats are chosen in Bun clear of those boxes and wholly over land.
+  The curve narrows to no less than 0.8 of the key's width so that no coast runs under it.
+- **The credit** is one line over open sea, with « © MapTiler © OpenStreetMap ». The sea south of Iceland is ~810 px
+  wide inside the margins: creme and rapport set « Natural Earth · © MapTiler © OpenStreetMap », nocturne (tracked)
+  only « © MapTiler © OpenStreetMap » — provisional, the owner to rule.
+- The key reaches MapTiler only through the local proxy; `no-key.live.test.ts` holds every output to it.
+
 ## The picture — shots, not a page
 
 1. **The title card** (from frame 0, 1.5 s).
@@ -20,7 +43,7 @@ Same subject, same frozen shapes and study area, same field and the same asserti
    which the frame cuts) fainter. At the left, on the Atlantic: the key — the count and « hors mesure » — and under it
    **the curve**: the share of the land within each distance of the sea, 0 to the farthest point, traced by the sweep.
 3. **No end card** — the video ends on every line with its number, the farthest point marked and the curve whole with
-   the median's guides; the credit on one line, in the first row from the top that crosses no measured land.
+   the median's guides; the credit on one line, in the first row from the top over open sea.
 
 ## The choreography
 
