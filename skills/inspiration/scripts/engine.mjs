@@ -1,18 +1,24 @@
 // The only place the inspiration skill starts Engine's `bsig`. It passes arguments as an argv
 // array and data on stdin — never through a shell — and reads Engine's NDJSON control events.
+//
+// The deadline races the read, it never waits for it: a child (or a process it orphans, holding
+// the same pipe open) can keep stdout/stderr open past its own exit, and a caller must not inherit
+// that hang. `SIGKILL` targets the direct child; nothing here assumes it reaps a grandchild too.
 
 import { isAbsolute } from "node:path";
 
 const MAX_OUTPUT_BYTES = 1 << 20;
 const EVENTS = new Set(["progress", "result", "error"]);
 
-async function readBounded(stream) {
+async function readBounded(reader) {
   const chunks = [];
   let total = 0;
-  for await (const chunk of stream) {
-    total += chunk.byteLength;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
     if (total > MAX_OUTPUT_BYTES) throw new Error("Engine output exceeded its bound");
-    chunks.push(chunk);
+    chunks.push(value);
   }
   return Buffer.concat(chunks).toString("utf8");
 }
@@ -41,20 +47,30 @@ export async function runEngine(bsigPath, args, stdin, { timeoutMs }) {
   const child = Bun.spawn([bsigPath, "--json", ...args], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
   child.stdin.write(stdin);
   child.stdin.end();
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    child.kill();
-  }, timeoutMs);
+  const outReader = child.stdout.getReader();
+  const errReader = child.stderr.getReader();
+
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error("Engine timed out"));
+    }, timeoutMs);
+  });
+  deadline.catch(() => {});
+
+  const drain = Promise.all([readBounded(outReader), readBounded(errReader), child.exited]);
+  drain.catch(() => {});
+
   try {
-    const [stdout, , exitCode] = await Promise.all([
-      readBounded(child.stdout),
-      readBounded(child.stderr),
-      child.exited,
-    ]);
-    if (timedOut) throw new Error("Engine timed out");
+    const [stdout, , exitCode] = await Promise.race([drain, deadline]);
     return { exitCode, events: parseEvents(stdout) };
+  } catch (error) {
+    child.kill("SIGKILL");
+    throw error;
   } finally {
     clearTimeout(timer);
+    outReader.cancel().catch(() => {});
+    errReader.cancel().catch(() => {});
   }
 }

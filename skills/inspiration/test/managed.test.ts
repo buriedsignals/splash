@@ -107,13 +107,14 @@ describe("searchWithAccount", () => {
   });
 
   it("should run the Engine operation with the query JSON-encoded when an account is stored", async () => {
+    const rawQuery = '  floods "in" $HOME\nand `rain`  ';
     const subject = 'floods "in" $HOME\nand `rain`';
     const f = fakes({
       status: stored(true),
       run: ran({ ...ACCOUNT, query: subject }),
     });
     const result = await searchWithAccount({
-      query: subject,
+      query: rawQuery,
       env: { SPLASH_BSIG_PATH: BSIG },
       runEngineFn: f.runEngineFn,
       searchFn: f.searchFn,

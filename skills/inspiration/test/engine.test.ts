@@ -7,6 +7,7 @@ import { runEngine } from "../scripts/engine.mjs";
 let dir = "";
 let fake = "";
 let slow = "";
+let flood = "";
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "inspiration-engine-"));
@@ -24,6 +25,12 @@ beforeAll(() => {
   slow = join(dir, "slow");
   writeFileSync(slow, "#!/bin/sh\nsleep 5\n");
   chmodSync(slow, 0o755);
+  flood = join(dir, "flood");
+  writeFileSync(
+    flood,
+    "#!/bin/sh\nhead -c 2000000 /dev/zero | tr '\\0' a\nsleep 5\n",
+  );
+  chmodSync(flood, 0o755);
 });
 
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -54,6 +61,14 @@ describe("runEngine", () => {
     const started = Date.now();
     await expect(runEngine(slow, [], "", { timeoutMs: 200 })).rejects.toThrow(
       /timed out/,
+    );
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  it("should reject output that exceeds its bound without waiting for the child to finish", async () => {
+    const started = Date.now();
+    await expect(runEngine(flood, [], "", { timeoutMs: 5000 })).rejects.toThrow(
+      /exceeded its bound/,
     );
     expect(Date.now() - started).toBeLessThan(3000);
   });
