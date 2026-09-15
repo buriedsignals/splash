@@ -409,6 +409,70 @@ describe("the scrolly map runtime in a browser", () => {
     }
   }, 120_000);
 
+  it("should draw the stage's new size when the stage changes before the reveal, without a window resize", async () => {
+    // THE HEADER SETS ITS TITLE ONCE ITS FACES LOAD, and on a phone that changes the stage's height without
+    // resizing the window. Measured on the choropleth pilot (375 x 812 at 2x): the live map was revealed
+    // with its names 19.5 px below the frozen card's, half the 39 px the stage had changed by.
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const live = root.querySelector("[data-part=live]") as HTMLElement;
+        const w = window as any;
+        const Original = w.maplibregl.Map;
+        const maps: any[] = [];
+        w.maplibregl.Map = function (options: any) {
+          const map = new Original(options);
+          maps.push(map);
+          return map;
+        };
+        let atReveal: { zoom: number; canvas: number } | null = null;
+        new MutationObserver(() => {
+          if (live.style.opacity === "1" && atReveal === null)
+            atReveal = { zoom: maps[0].getZoom(), canvas: maps[0].getCanvas().clientHeight };
+        }).observe(live, { attributes: true, attributeFilter: ["style"] });
+        w.initScrollyMap(root, { ...plan, warmSamples: 400, referenceWidth: 800, referenceHeight: 600 }, { window, warmTimeoutMs: 2000 });
+        root.style.bottom = "auto";
+        root.style.height = "400px";
+        await new Promise<void>((resolve) => {
+          const check = () => (atReveal !== null ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        w.maplibregl.Map = Original;
+        return atReveal;
+      }, plan);
+      expect(result).toEqual({ zoom: expect.closeTo(plan.cameras[0].camZoom + Math.log2(400 / 600), 6), canvas: 400 });
+    } finally {
+      await page.close();
+    }
+  }, 120_000);
+
+  it("should follow the stage's new size once shown, without a window resize or a new state", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = (window as any).initScrollyMap(root, { ...plan, warmSamples: 400, referenceWidth: 800, referenceHeight: 600 }, { window, warmTimeoutMs: 2000 });
+        await new Promise<void>((resolve) => {
+          const check = () => (root.dataset.liveShown ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        root.style.bottom = "auto";
+        root.style.height = "400px";
+        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => handle.map.once("idle", r) && handle.map.triggerRepaint());
+        return { zoom: handle.map.getZoom(), canvas: handle.map.getCanvas().clientHeight };
+      }, plan);
+      expect(result).toEqual({ zoom: expect.closeTo(plan.cameras[0].camZoom + Math.log2(400 / 600), 6), canvas: 400 });
+    } finally {
+      await page.close();
+    }
+  }, 120_000);
+
   it("should show a live map that follows the scroll before the warm has finished", async () => {
     // THE FIRST SCROLL IS READ ON A LIVE MAP, NOT ON THE FROZEN CARDS. Measured on the choropleth pilot
     // (Apple M2 Max, cold profile): the warm took 8 s and the reveal came 11.1 s after the page loaded,

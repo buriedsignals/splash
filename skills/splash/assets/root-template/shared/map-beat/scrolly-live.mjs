@@ -183,7 +183,15 @@ function initScrollyMap(root, plan, options) {
     });
     return map;
   };
+  // THE STAGE CAN CHANGE SIZE WITHOUT THE WINDOW: the header sets its title once its faces load, and on a
+  // phone that moved the stage by 39 px. MapLibre resizes its canvas on a 50 ms throttle, so a paint first
+  // brings the canvas to the stage the zoom shift is read from — or the map is drawn for the old stage.
+  const sizeOf = function () {
+    return container.clientWidth + "x" + container.clientHeight;
+  };
   const paintOn = function (map, state) {
+    const canvas = map.getCanvas();
+    if (canvas.clientWidth !== container.clientWidth || canvas.clientHeight !== container.clientHeight) map.resize();
     const view = shiftedViewOf(state);
     map.jumpTo(view);
     for (const layer of plan.layers)
@@ -197,14 +205,22 @@ function initScrollyMap(root, plan, options) {
   // reveal or a handover puts on screen is a finished frame of the state the reader is on.
   const settle = function (map, done) {
     const seen = handle.last;
+    const size = sizeOf();
     paintOn(map, firstState());
     map.once("idle", function () {
       if (handle.failed) return;
-      if (handle.last !== seen) return settle(map, done);
+      if (handle.last !== seen || sizeOf() !== size) return settle(map, done);
       done();
     });
     map.triggerRepaint();
   };
+
+  // A shown map follows the stage's size as it follows the scroll: repainted on the reader's state so far.
+  if (win.ResizeObserver)
+    new win.ResizeObserver(function () {
+      if (!handle.ready || handle.failed) return;
+      for (const map of handle.maps) paintOn(map, firstState());
+    }).observe(container);
 
   const shownEl = layerOf(false);
   const warmEl = layerOf(true);
