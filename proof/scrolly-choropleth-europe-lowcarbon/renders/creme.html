@@ -1900,9 +1900,18 @@ function initScrollyMap(root, plan, options) {
     if (canvas.clientWidth !== container.clientWidth || canvas.clientHeight !== container.clientHeight) map.resize();
     const view = shiftedViewOf(state);
     map.jumpTo(view);
+    // A PAINT VALUE IS SET ONLY WHEN IT CHANGED: a plan with many bound layers otherwise pays one `setPaintProperty`
+    // per binding per frame for values that did not move (103 per frame on the proportional symbol scrolly).
+    const set = map.__boundValues || (map.__boundValues = {});
     for (const layer of plan.layers)
-      for (const property in layer.bindings || {})
-        map.setPaintProperty(layer.id, property, bindState(layer.bindings[property], state), { validate: false });
+      for (const property in layer.bindings || {}) {
+        const value = bindState(layer.bindings[property], state);
+        const key = layer.id + "\u0000" + property;
+        const text = JSON.stringify(value);
+        if (set[key] === text) continue;
+        set[key] = text;
+        map.setPaintProperty(layer.id, property, value, { validate: false });
+      }
     return view;
   };
   handle.paintOn = paintOn;

@@ -105,7 +105,7 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
  *  gets on each card can be baked: the same plan, the same tints, the card's own camera and the card's
  *  own state applied to every binding. Baked at the size the layout publishes, like `bakePlan`.
  *
- *  `scale` is the device pixel ratio of the bake. `project` is a list of [lon, lat] read back through
+ *  `viewStage` is the stage the view is computed for (default `size`); `scale` is the device pixel ratio of the bake. `project` is a list of [lon, lat] read back through
  *  `map.project` at each card's camera, in CSS pixels of `size`: what a page needs to seat furniture of
  *  its own (a lifted label, a leader) over the fallback image when there is no live map to ask. Each
  *  result carries them as `projected`, with the `zoom` the card was baked at.
@@ -113,10 +113,13 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
  *  The page must define `window.__mountPlan`, and `mountPlan` is not self-contained (it calls
  *  `sourceIdOf`, `beforeIdFor`, `radiusPaintOf`…): inject `scrollyMapScript()` and
  *  `window.__mountPlan = mountPlan`, never `mountPlan.toString()`. The same holds for `bakePlan`. */
-export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
+export async function bakeCards({ page, plan, cameras, size, viewStage = size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
   const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
-  // The same stage view the live runtime draws: cameras are authored for the plan's reference stage.
-  const shiftedView = (k) => stageViewOf(plan, cameras[k], size.width, size.height);
+  // The same stage view the live runtime draws on `viewStage`, the stage the page publishes: cameras are authored for
+  // the plan's reference stage. A card baked LARGER than that stage (to be shown `cover`) keeps that stage's view at its
+  // centre — measured on the proportional symbol scrolly, a phone card baked at 330 × 704 with the view of a 704 px
+  // stage put the bottom-aligned map (`camAlignY`) 23 % of the stage away from the live map at the swap.
+  const shiftedView = (k) => stageViewOf(plan, cameras[k], viewStage.width, viewStage.height);
   // `scale` is the device pixel ratio the card is baked for (2 by default). A 1x screen must be given a 1x
   // bake: a 2x picture drawn at half size renders the map's words thinner than the live 1x canvas that
   // replaces it, and the reader sees the type change at the reveal.

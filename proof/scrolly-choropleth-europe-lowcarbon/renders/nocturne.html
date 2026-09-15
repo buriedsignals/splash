@@ -975,6 +975,23 @@ function stateAt(states, position, reduced) {
   return lerpState(states[i], states[i + 1], ease(p - i));
 }
 
+/** HOW FAST THE PAINTED POSITION CATCHES THE SCROLL: a time constant, in ms. */
+const FOLLOW_MS = 90;
+
+/**
+ * THE PAINTED POSITION FOLLOWS THE SCROLL, IT DOES NOT JUMP TO IT. The scaffold publishes `data-progress` from the
+ * scroll offset, and a scroll offset arrives in steps: measured on the proportional symbol scrolly (2026-09-15), a
+ * 100 px mouse-wheel notch moved it by 0.108 in one frame, so the map's camera jumped 0.39 zoom levels and a band of
+ * stations popped in — the owner's « passages de steps en steps saccadés ». Each frame the painted position covers
+ * the share `1 − e^(−dt/τ)` of what is left, whatever the frame rate, and lands on the scroll once it is within half
+ * a thousandth. A long frame (a background tab) is counted as 100 ms, so it never teleports either.
+ */
+function followProgress(shown, target, dtMs, tauMs = FOLLOW_MS) {
+  const dt = Math.max(0, Math.min(100, dtMs));
+  const next = shown + (target - shown) * (1 - Math.exp(-dt / tauMs));
+  return Math.abs(target - next) < 0.0005 ? target : next;
+}
+
 /** Refuses a state list that cannot be interpolated. A state carrying a string would silently stop
  *  moving, which looks exactly like a page whose script never ran. */
 function assertStates(states, steps) {
@@ -1076,10 +1093,18 @@ function initReveal(root, states, apply) {
   let queued = false;
   let last = -1;
   let resized = true;
+  let shown = null;
+  let shownAt = 0;
 
-  function paint() {
+  function paint(now) {
     queued = false;
-    const position = readProgress(source);
+    const target = readProgress(source);
+    const time = typeof now === "number" ? now : view.performance.now();
+    // The first paint, and a reader who asked for no motion, take the scroll as it is; every other paint follows it.
+    shown = shown === null || reduced.matches ? target : followProgress(shown, target, time - shownAt);
+    shownAt = time;
+    if (shown !== target) schedule();
+    const position = shown;
     if (!resized && Math.abs(position - last) < 0.0005) return;
     last = position;
     const state = stateAt(states, position, reduced.matches);
@@ -1140,9 +1165,11 @@ function lonLatOf([x, y]) {
   return [lon, lat];
 }
 
-function cameraFields({ center, zoom, bearing = 0, pitch = 0 }) {
+/** `alignY` (−1 top … 1 bottom) places the reference ground on a stage taller than it (`stageViewOf`); a camera
+ *  that does not name it carries no `camAlignY` field. */
+function cameraFields({ center, zoom, bearing = 0, pitch = 0, alignY }) {
   const [camX, camY] = mercatorOf(center);
-  return { camX, camY, camZoom: zoom, camBearing: bearing, camPitch: pitch };
+  return { camX, camY, camZoom: zoom, camBearing: bearing, camPitch: pitch, ...(alignY === undefined ? {} : { camAlignY: alignY }) };
 }
 
 function viewOf(state) {
@@ -1167,6 +1194,27 @@ function zoomShiftFor(plan, width, height) {
   if (!(width > 0) || (plan.referenceHeight && !(height > 0))) return 0;
   const ratio = plan.referenceHeight ? Math.min(width / plan.referenceWidth, height / plan.referenceHeight) : width / plan.referenceWidth;
   return Math.log2(ratio);
+}
+
+/** THE CARD'S VIEW ON A REAL STAGE: the zoom shifted by `zoomShiftFor`, and, when a card says `camAlignY`, the
+ *  reference ground placed on a stage TALLER than it (a phone, fitted by its width) — −1 at the top, 0 centred
+ *  (the default), 1 at the bottom. The centre moves by that share of half the spare height, in the plane MapLibre
+ *  moves in, so a field that interpolates between two cards glides. A close-up that centres its subject says
+ *  nothing and stays centred. Needs `referenceHeight`; a stage fitted by its height has no spare height.
+ *
+ *  Why it exists: on the proportional symbol pilot (375 × 812) the centred ground put the station card 1 names
+ *  under the resting card; the SVG beat had held it clear by pinning its whole map. One definition, read by the
+ *  live runtime, its warm and the fallback bake. */
+function stageViewOf(plan, state, width, height) {
+  const view = viewOf(state);
+  const shift = zoomShiftFor(plan, width, height);
+  view.zoom += shift;
+  const align = state.camAlignY ?? 0;
+  if (align && plan && plan.referenceHeight && width > 0 && height > 0) {
+    const spare = height - plan.referenceHeight * 2 ** shift;
+    if (spare > 0) view.center = lonLatOf([state.camX, state.camY - (align * spare) / 2 / (512 * 2 ** view.zoom)]);
+  }
+  return view;
 }
 
 const isToken = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.$state === "string";
@@ -1485,6 +1533,10 @@ function mountPlan(map, plan) {
       },
       beforeIdFor(map, layer),
     );
+    // MAPLIBRE REFUSES AN INVALID LAYER WITH AN `error` EVENT, NOT A THROW, and adds nothing: a layer missing from
+    // every frame with every guard green (the proportional symbol scrolly's station name, 2026-09-15).
+    if (typeof map.getLayer === "function" && !map.getLayer(layer.id))
+      throw new Error(`layer "${layer.id}" was refused by the map and is not drawn — its spec is invalid (see the map's error event)`);
   }
 }
 
@@ -1656,14 +1708,21 @@ function assertNoDoubledBasemap(plan) {
 
 const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
-function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
+// `stageView` turns a camera into the view the stage draws (`stageViewOf`); a number is read as a bare zoom offset.
+function warmScrollyCameras(map, cameras, samples, win, timeoutMs, stageView) {
   const views = [];
-  const shifted = function (view) {
-    view.zoom += zoomOffset || 0;
+  const zoomOffset = typeof stageView === "function" ? 0 : stageView || 0;
+  const shifted = function (camera) {
+    if (typeof stageView === "function") return stageView(camera);
+    const view = viewOf(camera);
+    view.zoom += zoomOffset;
     return view;
   };
+  const shiftOf = function (camera) {
+    return typeof stageView === "function" ? stageView(camera).zoom - camera.camZoom : zoomOffset;
+  };
   for (let i = 0; i < cameras.length; i++) {
-    views.push(shifted(viewOf(cameras[i])));
+    views.push(shifted(cameras[i]));
     if (i + 1 < cameras.length) {
       const ts = [];
       for (let s = 1; s <= samples; s++) ts.push(s / (samples + 1));
@@ -1671,8 +1730,8 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
       // is the widest view that level ever shows, and uniform samples fall past it: on the choropleth
       // pilot (zoom 2.96 → 5.26, three samples) the zoom-3 tiles at the whole map's edges were never
       // fetched, and a slow scrub met 15 frames with a missing tile.
-      const z0 = cameras[i].camZoom + (zoomOffset || 0);
-      const z1 = cameras[i + 1].camZoom + (zoomOffset || 0);
+      const z0 = cameras[i].camZoom + shiftOf(cameras[i]);
+      const z1 = cameras[i + 1].camZoom + shiftOf(cameras[i + 1]);
       if (z0 !== z1)
         for (let level = Math.floor(Math.min(z0, z1)) + 1; level <= Math.max(z0, z1); level++) {
           // A tile level's widest view sits just above its integer, whichever way the travel goes.
@@ -1685,9 +1744,9 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
       });
       for (const t of ts) {
         const mix = {};
-        for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch"])
+        for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch", "camAlignY"])
           mix[k] = (cameras[i][k] ?? 0) + ((cameras[i + 1][k] ?? 0) - (cameras[i][k] ?? 0)) * t;
-        views.push(shifted(viewOf(mix)));
+        views.push(shifted(mix));
       }
     }
   }
@@ -1789,9 +1848,7 @@ function initScrollyMap(root, plan, options) {
   // camera and loaded its tiles on screen in visible stages — the owner's "refresh de la map la première
   // seconde", recorded at 2,436–3,730 ms on the choropleth pilot.
   const shiftedViewOf = function (state) {
-    const view = viewOf(state);
-    view.zoom += handle.zoomOffset();
-    return view;
+    return stageViewOf(plan, state, container.clientWidth, container.clientHeight);
   };
   const makeMap = function (el) {
     const map = new win.maplibregl.Map({
@@ -1839,9 +1896,18 @@ function initScrollyMap(root, plan, options) {
     if (canvas.clientWidth !== container.clientWidth || canvas.clientHeight !== container.clientHeight) map.resize();
     const view = shiftedViewOf(state);
     map.jumpTo(view);
+    // A PAINT VALUE IS SET ONLY WHEN IT CHANGED: a plan with many bound layers otherwise pays one `setPaintProperty`
+    // per binding per frame for values that did not move (103 per frame on the proportional symbol scrolly).
+    const set = map.__boundValues || (map.__boundValues = {});
     for (const layer of plan.layers)
-      for (const property in layer.bindings || {})
-        map.setPaintProperty(layer.id, property, bindState(layer.bindings[property], state), { validate: false });
+      for (const property in layer.bindings || {}) {
+        const value = bindState(layer.bindings[property], state);
+        const key = layer.id + "\u0000" + property;
+        const text = JSON.stringify(value);
+        if (set[key] === text) continue;
+        set[key] = text;
+        map.setPaintProperty(layer.id, property, value, { validate: false });
+      }
     return view;
   };
   handle.paintOn = paintOn;
@@ -1895,7 +1961,7 @@ function initScrollyMap(root, plan, options) {
 
   warmMap.once("load", function () {
     const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
-    warmScrollyCameras(warmMap, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
+    warmScrollyCameras(warmMap, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, shiftedViewOf).then(function (warm) {
       // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the layers a
       // failed mount may never have added — but a live layer nobody finished painting is worse than the
       // fallback plate underneath it.

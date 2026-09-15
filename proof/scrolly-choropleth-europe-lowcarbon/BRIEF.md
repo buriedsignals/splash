@@ -89,3 +89,13 @@ Each direction keeps its own palette and faces.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs`.
+
+## Since the pilot (2026-09-15)
+
+- **The scroll is followed, not jumped to**: the painted position eases toward the scroll (`reveal.mjs`, τ = 90 ms);
+  on a wheel trace the map's zoom per frame fell from 0.47 to 0.10 levels.
+- **A paint value is set only when it changed** (`scrolly-live.mjs`).
+- **The frozen card images and their page machinery are shared** (`skills/scrolly/scripts/live-map-cards*.mjs`):
+  card images byte-identical after the port; the bake records carry each image's digest.
+- **Every page opened from disk has a live map**: each render writes `renders/<id>.local.html` with the key from the
+  environment (git-ignored); the committed page keeps the placeholder.

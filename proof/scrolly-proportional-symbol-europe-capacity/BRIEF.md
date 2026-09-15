@@ -35,11 +35,15 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
   takes the radius the SVG beat gave it at the whole-map camera on a 1280 × 800 page (27.8 px). Every other camera and
   stage takes it through one zoom interpolation set at mount, growing by 2^(0.35 · Δzoom) — the SVG's gentle close-up
   growth. No frame sets a radius.
-- **Largest first, with constant bindings**: the stations are split into rank bands (1, 2–10, 11–100, 101–193,
-  194–1,000, the rest), each into nuclear and not; a band's opacity climbs as the count passes its ranks. The plate's
-  cut (193 stations of 400 MW or more) is a band edge.
-- **The counter is the scroll's own**: it reads the count the reader has reached and the running share of the power,
-  from a cumulative sum computed in node.
+- **Largest first, with constant bindings**: the stations are split into 41 rank buckets (each of the ten largest
+  alone, then ten per decade; the plate's cut, 193, and 1,000 are edges), each into nuclear and not. Between two
+  cards each bucket fades in over its own staggered stretch, 45 % of the transition, overlapping its neighbours, so
+  circles arrive one after another (a bucket's fade: 133 ms before, 617 ms median on a wheel trace). The stroke thins
+  from 1.3 to 0.8 between 500 and 2,000 stations.
+- **The scroll is followed, not jumped to**: the painted position eases toward the scroll (`reveal.mjs`, τ = 90 ms),
+  so a wheel notch never moves the camera or the paint in one frame.
+- **The counter counts what is drawn**: the same staggered arrivals, and the running share of the power from a
+  cumulative sum computed in node.
 - **The key states the scale at the camera the reader sees**, by the same radius rule, and grows with the close-up as
   the circles do; each key circle sits in a box of fixed height, so it never moves the stage.
 - **The whole map holds every station**: the window runs north to 71.2° N; the circle sizes and the phone's close-up
@@ -50,6 +54,9 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
   coordinates, a hundred stations are under 2 % of the sites and over a third of the power, most of them nuclear,
   nuclear is under 1 % of the sites and over 30 % of the power, the cut carries over half of it; the named station
   and every French nuclear site are in their card's view on a desktop and a phone stage.
+
+- **Every page opened from disk has a live map**: each render writes `renders/<id>.local.html` with the key from the
+  environment (git-ignored); the committed page keeps the placeholder.
 
 ## Directions
 

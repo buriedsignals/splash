@@ -185,9 +185,10 @@ export async function renderWithCardImages(
   const draft = await renderPage(blank.fallbacks, blank.shapes);
   // A local copy left from an earlier render never outlives a page this render refuses.
   rmSync(localPageOf(draft.outPath), { force: true });
-  const sizes = bakeSizesFor(await cards.measureStages(draft.outPath), aspects);
+  const stages = await cards.measureStages(draft.outPath);
+  const sizes = bakeSizesFor(stages, aspects);
   const variants = variantsOf(SCALES);
-  const planHash = planHashOf({ plan, sizes, stageGround, scales: SCALES, style: cards.unkeyedStyle, maplibre: cards.maplibreVersion, trunk: cards.trunkDigest });
+  const planHash = planHashOf({ plan, sizes, stages, stageGround, scales: SCALES, style: cards.unkeyedStyle, maplibre: cards.maplibreVersion, trunk: cards.trunkDigest });
   const recordPath = join(fallbackDir, `${id}.json`);
   const pathOf = (k, shape, scale, ext) => join(fallbackDir, cardImageName(id, k, shape, scale, ext));
   let record = await readRecord(recordPath);
@@ -215,6 +216,7 @@ export async function renderWithCardImages(
           plan: { ...cards.keyed(plan), style: cards.keyed(cards.styleDoc) },
           cameras: plan.cameras,
           size: sizes[shape],
+          viewStage: stages[shape],
           glyphsUrl: cards.styleDoc.glyphs,
           tints: plan.tints,
           keepLabels: [],
