@@ -18,7 +18,7 @@
 // (`seats.json`), each card carries its camera, and one frozen image per card is baked from the same plan
 // under the live map (`fallback/`). The page carries `__MAPTILER_KEY__`; the key is substituted at delivery.
 //
-// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-choropleth-europe-lowcarbon/render-directions-scrolly.mjs
+// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-choropleth-europe-lowcarbon/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
 import { readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
@@ -50,6 +50,7 @@ const NB = "\u00A0";
 const BOUNDS = [[-25, 34], [42, 68]];
 const FRAME = { width: 1000, height: 760 };
 const FALLBACK = join(HERE, "fallback");
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 
 /** The view the join is asserted at: a desktop stage. */
 const JOIN_VIEW = { width: 1168, height: 566 };
@@ -273,6 +274,7 @@ try {
 try {
   for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     const id = file.replace(/\.md$/, "");
+    if (ONLY && id !== ONLY) continue;
     const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
     const { ink, muted, grid } = deriveFurniture(direction.ground);
     const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
@@ -384,6 +386,7 @@ try {
         cardOf: (baked) => ({ odd: baked.projected[0].map((v) => Math.round(v * 10) / 10), zoom: baked.zoom }),
         blankCard: { odd: [0, 0], zoom: 0 },
         renderPage,
+        noBake: process.argv.includes("--no-bake"),
       });
       console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")} · faces ${fonts.axis} / ${fonts.annot}`);
     } catch (error) {

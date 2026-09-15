@@ -18,7 +18,7 @@
 // `skills/scrolly/scripts/live-map-cards-bake.mjs`). The page carries `__MAPTILER_KEY__`; the key is substituted at
 // delivery.
 //
-// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-proportional-symbol-europe-capacity/render-directions-scrolly.mjs [--only creme]
+// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-proportional-symbol-europe-capacity/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
 import { readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
@@ -208,8 +208,16 @@ const STATES = [
   { level: Math.log10(cutCount), largest: 0, subject: 0, zoom: 0, cut: 1 },
 ].map((state, k) => ({ ...state, ...cameras[k], card: k }));
 
-/** THE RANK BANDS a layer each (`plan.mjs`): the plate's cut is a band edge, so card 6 keeps exactly its stations. */
-const EDGES = [1, 10, 100, cutCount, 1000, total];
+/** THE RANK BUCKETS, a layer each (`plan.mjs`), TEN TO A DECADE: every one of the ten largest alone, then buckets a
+ *  quarter wider each, so as the count climbs the circles arrive nearly one by one, each bucket fading in over its own
+ *  ranks. The plate's cut and 1,000 are bucket edges, so card 6 keeps exactly its stations. */
+const EDGES = [...new Set([
+  ...Array.from({ length: 10 }, (_, i) => i + 1),
+  ...Array.from({ length: 29 }, (_, i) => Math.round(10 ** (1 + (i + 1) / 10))).filter((e) => e > 10 && e < total),
+  cutCount,
+  1000,
+  total,
+])].sort((a, b) => a - b);
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
 const bands = EDGES.map((to, i) => {
   const from = i === 0 ? 1 : EDGES[i - 1] + 1;
@@ -319,6 +327,7 @@ try {
         stageGround: tints.water,
         cardOf: (baked) => ({ zoom: baked.zoom }),
         renderPage,
+        noBake: process.argv.includes("--no-bake"),
       });
       console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")} · face ${fonts.annot}`);
     } catch (error) {

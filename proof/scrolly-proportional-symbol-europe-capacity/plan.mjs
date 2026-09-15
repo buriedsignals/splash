@@ -4,7 +4,7 @@
 //
 // "LARGEST FIRST" WITHOUT READING A FEATURE IN A BINDING. A binding that reads feature data makes MapLibre re-lay
 // out the whole source on every scroll frame (`validateScrollyPlan` refuses it). So the stations are split into
-// rank bands — the largest, 2–10, 11–100, 101 to the plate's cut, the cut to 1,000, the rest — and each band
+// rank buckets — each of the ten largest alone, then ten buckets to a decade, the plate's cut and 1,000 as edges — and each
 // into nuclear and not, one layer and one GeoJSON source each. A band's opacity climbs as the count the reader
 // has scrolled to passes through its ranks; every binding is a number of the state.
 //
@@ -27,8 +27,9 @@ const ease = (t) => ["case", ["<", t, 0.5], ["*", 2, t, t], ["-", 1, ["/", ["^",
 export const count = ["^", 10, { $state: "level" }];
 const subject = clamp({ $state: "subject" });
 const travel = ease(clamp({ $state: "zoom" }));
-/** The stroke the field is drawn with: thinner once more than a thousand stand, as the SVG drew it. */
-const baseWidth = ["case", [">", count, 1000], 0.8, 1.3];
+/** The stroke the field is drawn with: thinner as it fills, as the SVG drew it past a thousand stations — but eased
+ *  from 500 to 2,000 stations, so the whole field never changes weight in one frame. */
+const baseWidth = ["interpolate", ["linear"], { $state: "level" }, Math.log10(500), 1.3, Math.log10(2000), 0.8];
 
 /** THE LARGEST STATION'S SCREEN RADIUS AT A ZOOM, in CSS px: `largestPx` at `anchorZoom`, grown by 2^(GROWTH · Δz). */
 export const largestRadiusAt = (largestPx, anchorZoom, zoom) => largestPx * 2 ** (GROWTH * (zoom - anchorZoom));
