@@ -1070,16 +1070,52 @@ describe("vendor scripts", () => {
     name: "vendor-test.html",
   };
 
-  it("should inline a vendor script in the head, before the reveal driver runs", async () => {
+  it("should put vendor CSS in the head after the charset, and vendor JS at the end of the body before the reveal driver", async () => {
     const { outPath } = await renderScrolly({
       ...baseArgs,
       name: "vendor-probe.html",
       vendor: [{ css: ".vendor-probe{}", js: "window.__vendorProbe = 1;" }],
+      reveal: {
+        element: createElement("div", null, "the one picture"),
+        states: [{ shown: 0 }, { shown: 1 }],
+        driver: "function applyProbe(root, state) { root.style.opacity = String(state.shown); }",
+        apply: "applyProbe",
+      },
     });
     const html = readFileSync(outPath, "utf8");
     const head = html.slice(0, html.indexOf("</head>"));
-    expect(head).toContain("window.__vendorProbe = 1;");
-    expect(head).toContain(".vendor-probe{}");
+    expect(head.indexOf(".vendor-probe{}")).toBeGreaterThan(head.indexOf('<meta name="viewport"'));
+    const js = html.indexOf("window.__vendorProbe = 1;");
+    expect(js).toBeGreaterThan(html.indexOf("</article>"));
+    expect(js).toBeLessThan(html.indexOf("initReveal("));
+  });
+
+  it("should keep the charset declaration inside the first 1024 bytes when a vendor asset is large", async () => {
+    // A browser only honours <meta charset> within the first 1024 bytes. With MapLibre's 800 KB inlined
+    // first in the head, the pilot's pages carried it at byte ~1,126,934 and fell back to sniffing.
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-large.html",
+      vendor: [{ css: `.big{content:"${"x".repeat(200_000)}"}`, js: `window.__big = "${"y".repeat(900_000)}";` }],
+    });
+    const html = readFileSync(outPath, "utf8");
+    expect(Buffer.byteLength(html.slice(0, html.indexOf("<meta charset")), "utf8")).toBeLessThan(1024);
+  });
+
+  it("should strip source map comments from inlined vendor assets, whose maps the page never carries", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-sourcemap.html",
+      vendor: [
+        {
+          css: ".m{}\n/*# sourceMappingURL=maplibre-gl.css.map */",
+          js: "window.__m = 1;\n//# sourceMappingURL=maplibre-gl.js.map",
+        },
+      ],
+    });
+    const html = readFileSync(outPath, "utf8");
+    expect(html).toContain("window.__m = 1;");
+    expect(html).not.toContain("sourceMappingURL");
   });
 
   it("should refuse a vendor script that closes its own script tag", async () => {

@@ -152,9 +152,17 @@ async function renderScrolly({
   for (const v of vendor)
     if (/<\/script/i.test(v.js ?? "") || (/<\/style/i.test(v.css ?? "")))
       throw new Error("a vendor asset contains a closing script or style tag and cannot be inlined");
-  const vendorHead = vendor
-    .map((v) => `${v.css ? `<style>${v.css}</style>` : ""}${v.js ? `<script>${v.js}</script>` : ""}`)
-    .join("\n");
+  // A VENDOR ASSET IS SPLIT ACROSS THE PAGE. Its CSS goes in the head AFTER the charset, viewport and
+  // title, and its JS at the end of the body, just before the reveal driver that calls it: a browser only
+  // honours <meta charset> within the first 1024 bytes, and MapLibre's bundle first in the head pushed
+  // it to byte ~1,126,934 on the choropleth pilot. Source map comments are dropped — the page never
+  // carries the maps, and a reader's devtools would request them from wherever the page is served.
+  const withoutSourceMaps = (text) =>
+    text.replace(/^[ \t]*\/\/[#@] sourceMappingURL=.*$/gm, "").replace(/\/\*[#@] sourceMappingURL=[^*]*\*\//g, "");
+  const vendorParts = {
+    css: vendor.map((v) => (v.css ? `<style>${withoutSourceMaps(v.css)}</style>` : "")).filter(Boolean).join("\n"),
+    js: vendor.map((v) => (v.js ? `<script>${withoutSourceMaps(v.js)}</script>` : "")).filter(Boolean).join("\n"),
+  };
 
   const frameHtml = steps
     .map((step, i) => {
@@ -218,14 +226,13 @@ initReveal(document.querySelector('[data-reveal="visual"]'), ${JSON.stringify(re
   // a woff2 cut to those characters. `assertFontsEmbedded` refuses a page that names a family,
   // weight or character it does not carry: a reader's machine is never asked to supply one.
   const baseCss = buildCss({ ground, ...furniture, proseLane, fontStack: dominantFontStack(frameHtml) });
-  const page = (css, vh = "") => `<!doctype html>
+  const page = (css, assets = { css: "", js: "" }) => `<!doctype html>
 <html lang="${lang}">
 <head>
-${vh}
 <meta charset="utf-8">
 <title>${escapeHtml(titleForms[0])}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
+${assets.css ? `${assets.css}\n` : ""}<style>
 ${css}
 </style>
 </head>
@@ -252,7 +259,7 @@ ${inlineScript}
 <script>
 ${inlineEmbedExit}
 </script>
-${revealScript}</body>
+${assets.js ? `${assets.js}\n` : ""}${revealScript}</body>
 </html>
 `;
 
@@ -260,7 +267,7 @@ ${revealScript}</body>
   const faces = await embeddedWebFaces(fontRequestsInHtml(draftForScanning).requests, displayableTextOf(draftForScanning));
   const htmlForAssertion = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(htmlForAssertion);
-  const html = page(`${fontFaceCss(faces)}\n${baseCss}`, vendorHead);
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`, vendorParts);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
