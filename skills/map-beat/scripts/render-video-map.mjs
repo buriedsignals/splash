@@ -40,6 +40,10 @@ const PACKAGE_ROOT = resolve(HERE, "../../..");
  * asks the caller to build the props file only after — the same ordering constraint that shapes the
  * whole function.
  *
+ * `frame` (still mode only) picks which frame to render, defaulting to the last one (`-1`) when
+ * omitted — a moving camera can be inspected at any frame this way, not just the final one.
+ * `cacheDir` is passed straight through to `startMapTilerProxy`.
+ *
  * Returns `{ path, seconds, proxyCounts }` — `path` is the rendered still or mp4, `seconds` is how
  * long the `remotion` spawn took, `proxyCounts` is every request the proxy answered during the
  * render, keyed `<kind> <status>` with no query string.
@@ -52,6 +56,8 @@ export async function renderVideoMap({
   name,
   mapTilerKey,
   mode,
+  frame,
+  cacheDir,
 }) {
   if (mode !== "still" && mode !== "mp4")
     throw new Error(
@@ -60,7 +66,7 @@ export async function renderVideoMap({
 
   await mkdir(outDir, { recursive: true });
 
-  const proxy = startMapTilerProxy({ key: mapTilerKey });
+  const proxy = startMapTilerProxy({ key: mapTilerKey, cacheDir });
   const envFileDir = await mkdtemp(join(tmpdir(), "video-map-env-"));
   try {
     const envFile = join(envFileDir, "empty.env");
@@ -74,7 +80,7 @@ export async function renderVideoMap({
         : join(outDir, `${name}.mp4`);
     const args =
       mode === "still"
-        ? ["still", entry, composition, outputPath, "--frame=-1", `--props=${propsPath}`]
+        ? ["still", entry, composition, outputPath, `--frame=${frame ?? -1}`, `--props=${propsPath}`]
         : ["render", entry, composition, outputPath, `--props=${propsPath}`];
 
     const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");

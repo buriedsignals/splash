@@ -2,13 +2,19 @@
 //
 // Renderer A (spec §4.3, spike task-4-report.md): the plan's layers are mounted onto a real
 // MapLibre map, drawn from a real MapTiler style and real tiles — not baked into a plate and
-// replayed. The map is created once per composition instance, at the plan's own camera; the camera
-// never moves after that (`fitBoundsOptions: { animate: false }`), and every frame after the first
-// calls the caller's `paint(map, frame)` to change paint/layout properties only. Measured pixel-
-// identical to the baked still (to rounding) under `--gl=swangle` — the software rasteriser that
-// render is MANDATED to use (`render-video-map.mjs` passes it on every spawn); the GPU path
-// (`--gl=angle`) is faster but introduces anti-aliasing noise a still-comparison guard cannot
-// tolerate, and is not deterministic across two runs the way swangle measured.
+// replayed. The map is created once per composition instance, at the plan's own boot camera
+// (`bootOptionsOf`): a fixed plan's `bounds` never moves after that (`fitBoundsOptions: { animate:
+// false }`); a moving-camera plan's `view` is only the first frame's position, and every frame after
+// the first calls the caller's `paint(map, frame)`, which is free to `jumpTo` a new camera as well as
+// change paint/layout properties. A fixed plan is measured pixel-identical to the baked still (to
+// rounding) under `--gl=swangle` — the software rasteriser that render is MANDATED to use
+// (`render-video-map.mjs` passes it on every spawn); the GPU path (`--gl=angle`) is faster but
+// introduces anti-aliasing noise a still-comparison guard cannot tolerate, and is not deterministic
+// across two runs the way swangle measured.
+//
+// A frame is only released once `settleFrame` sees BOTH an idle map AND every tile loaded
+// (`areTilesLoaded()`) — MapLibre can go idle with a tile still in flight, and releasing that frame to
+// Remotion bakes the half-loaded tile into the output.
 //
 // `mount` and `transform` are injected rather than imported from `#shared/map-beat/*`: a skill asset
 // may not import out of its own skill (`no-cross-skill-imports.test.ts`), so the proof composition —
@@ -24,9 +30,14 @@ import { cancelRender, continueRender, delayRender } from "remotion";
 import maplibregl from "maplibre-gl";
 
 /** The plan this file needs to know about, and nothing more — the rest of a real plan (`layers`,
- *  `style`, …) is opaque to this file and handled entirely by the injected `mount`. */
+ *  `style`, …) is opaque to this file and handled entirely by the injected `mount`. A `view` boots a
+ *  moving camera at its first center/zoom, ready for `paint(map, frame)` to `jumpTo` on every later
+ *  frame; a `bounds` boots a fixed camera framed once and never moved. */
 export interface LiveMapPlan {
-  camera: { bounds: maplibregl.LngLatBoundsLike };
+  camera: {
+    bounds?: maplibregl.LngLatBoundsLike;
+    view?: { center: [number, number]; zoom: number };
+  };
   [key: string]: unknown;
 }
 
@@ -54,11 +65,40 @@ function sanitizedError(err: unknown): Error {
   return new Error(withoutQueryStrings(message));
 }
 
-function waitIdle(map: maplibregl.Map): Promise<void> {
-  return new Promise((resolve) => {
-    map.once("idle", () => resolve());
-    map.triggerRepaint();
-  });
+/** The map constructor's boot options for `plan.camera`: a moving-camera plan's `view` wins over a
+ *  fixed plan's `bounds` (a plan can carry both while migrating), boots the fixed plan unanimated and
+ *  unpadded (matching the baked plate's own framing), and refuses a plan with neither. */
+export function bootOptionsOf(plan: LiveMapPlan) {
+  const camera = plan.camera as {
+    view?: { center: [number, number]; zoom: number };
+    bounds?: maplibregl.LngLatBoundsLike;
+  };
+  if (camera?.view)
+    return { center: camera.view.center, zoom: camera.view.zoom };
+  if (camera?.bounds)
+    return {
+      bounds: camera.bounds,
+      fitBoundsOptions: { padding: 0 as const, animate: false as const },
+    };
+  throw new Error("a live map plan needs camera.view or camera.bounds");
+}
+
+/** Waits for the map to go idle, and while a tile is still loading waits for idle again — up to
+ *  `attempts` times — before refusing to release the frame. A frame handed to Remotion with a tile
+ *  still in flight bakes a half-loaded tile into the output; better to fail the render than ship
+ *  that. */
+export async function settleFrame(
+  map: Pick<maplibregl.Map, "once" | "triggerRepaint" | "areTilesLoaded">,
+  { attempts = 5 } = {},
+): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise<void>((resolve) => {
+      map.once("idle", () => resolve());
+      map.triggerRepaint();
+    });
+    if (map.areTilesLoaded()) return;
+  }
+  throw new Error("a frame was released with a tile still loading");
 }
 
 export function useLiveMap({
@@ -106,15 +146,15 @@ export function useLiveMap({
         attributionControl: false,
         fadeDuration: 0,
         preserveDrawingBuffer: true,
-        bounds: plan.camera.bounds,
-        fitBoundsOptions: { padding: 0, animate: false },
+        ...bootOptionsOf(plan),
       });
       map.on("error", (e) => cancelRender(sanitizedError(e?.error ?? e)));
       await new Promise<void>((resolve) =>
         map.once("style.load", () => resolve()),
       );
+      map.setProjection({ type: "mercator" });
       mount(map, plan);
-      await waitIdle(map);
+      await settleFrame(map);
       mapRef.current = map;
       setReady(true);
     })().catch((err) => cancelRender(sanitizedError(err)));
@@ -128,13 +168,15 @@ export function useLiveMap({
       timeoutInMilliseconds: HANDLE_TIMEOUT_MS,
     });
     paint(map, frame);
-    waitIdle(map).then(() => {
-      continueRender(handle);
-      if (!booted.current) {
-        booted.current = true;
-        continueRender(boot);
-      }
-    });
+    settleFrame(map)
+      .then(() => {
+        continueRender(handle);
+        if (!booted.current) {
+          booted.current = true;
+          continueRender(boot);
+        }
+      })
+      .catch((err) => cancelRender(sanitizedError(err)));
   }, [frame, ready]);
 
   return container;
