@@ -91,6 +91,36 @@ describe.skipIf(!key)("per-card fallback bake", () => {
     expect([head.readUInt32BE(0), head.readUInt32BE(4)]).toEqual([800, 600]);
   }, 120_000);
 
+  it("should bake at the scale it is given, so a 1x screen gets a 1x picture", async () => {
+    // A reader on a 1x screen saw the frozen card's words (a 2x bake, downscaled, thin) turn heavier the
+    // moment the live 1x canvas replaced them — the owner's "les fonts changent dans les premières
+    // secondes". The page offers both bakes through srcset.
+    const style = await (
+      await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)
+    ).json();
+    const page = await browser.newPage();
+    const js = readFileSync(require.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
+    await page.setContent(
+      `<div id="map" style="position:absolute;inset:0"></div><script>${js}</script><script>window.__mountPlan=()=>{}</script>`,
+    );
+    const cameras = [cameraFields({ center: [10, 50], zoom: 3 })];
+    const out = await bakeCards({
+      page,
+      plan: { style, layers: [] },
+      cameras,
+      size: { width: 400, height: 300 },
+      glyphsUrl: style.glyphs,
+      tints: { water: "#aaccee", land: "#f4f1ea" },
+      keepLabels: [],
+      statesForCards: cameras,
+      outDir: mkdtempSync(join(tmpdir(), "cards-")),
+      stem: "probe",
+      scale: 1,
+    });
+    const head = readFileSync(out[0].png).subarray(16, 24);
+    expect([head.readUInt32BE(0), head.readUInt32BE(4)]).toEqual([400, 300]);
+  }, 120_000);
+
   it("should read back each card's pixel for the points it is asked to project, at the fitted zoom", async () => {
     const style = await (
       await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)

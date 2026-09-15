@@ -104,11 +104,11 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
 /** ONE FALLBACK PER CARD. A scrolly's cameras are authored, so the picture a reader without a live map
  *  gets on each card can be baked: the same plan, the same tints, the card's own camera and the card's
  *  own state applied to every binding. Baked at the size the layout publishes, like `bakePlan`. */
-/** `project` is a list of [lon, lat] read back through `map.project` at each card's camera, in CSS
+/** `scale` is the device pixel ratio of the bake. `project` is a list of [lon, lat] read back through `map.project` at each card's camera, in CSS
  *  pixels of `size`: what a page needs to seat furniture of its own (a lifted label, a leader) over
  *  the fallback image when there is no live map to ask. Each result carries them as `projected`,
  *  with the `zoom` the card was baked at. */
-export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [] }) {
+export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
   const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
   // The same zoom shift the live runtime applies: cameras are authored for the plan's reference stage.
   const shiftedView = (k) => {
@@ -116,7 +116,10 @@ export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, k
     view.zoom += zoomShiftFor(plan, size.width, size.height);
     return view;
   };
-  await page.setViewport({ ...size, deviceScaleFactor: 2 });
+  // `scale` is the device pixel ratio the card is baked for (2 by default). A 1x screen must be given a 1x
+  // bake: a 2x picture drawn at half size renders the map's words thinner than the live 1x canvas that
+  // replaces it, and the reader sees the type change at the reveal.
+  await page.setViewport({ ...size, deviceScaleFactor: scale });
   await page.evaluate(
     async (style, plan, first) => {
       const map = new maplibregl.Map({ container: "map", style, ...first, interactive: false, attributionControl: false, fadeDuration: 0 });
