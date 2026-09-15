@@ -117,7 +117,7 @@ other export yet.
 | Parallel coordinates | static | `proof/static-parallel-coordinates-electricity-mix` |
 | Pictogram | static | `proof/static-pictogram-europe-lowcarbon` |
 | Choropleth | static | `proof/static-choropleth-europe-lowcarbon` |
-| Choropleth | video | `proof/video-choropleth-europe-lowcarbon` — validated by the owner 2026-09-14 |
+| Choropleth | video | `proof/video-choropleth-europe-lowcarbon` — live MapTiler map (pilot, awaiting the owner, 2026-09-15) |
 | Dot density | static | `proof/static-dot-density-europe-stations` |
 | Dot density | video | `proof/video-dot-density-europe-stations` — validated by the owner 2026-09-14 |
 | Flow map | static | `proof/static-flow-map-ukraine-protection` |

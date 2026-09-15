@@ -21,24 +21,31 @@ bff3f146..e67f8787) was rejected by the owner as a static poster; this version r
 Six of them are north or west of the seventh — and the seventh is Albania, whose every measured
 neighbour is under 60 %.**
 
-## Data, shapes and modules: read, not copied
+## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-- The subject: `loadSubject({ dir: "../static-choropleth-europe-lowcarbon" })`
-  (`proof/static-choropleth-europe-lowcarbon/beat.mjs`) — the frozen `data.csv` and
-  `shapes.geojson` (byte-identical to the scrolly's copies), the claim asserted on load: seven above
-  `FLOOR` 94, Albania among them, its measured neighbours under 60, the other six north or west.
-- The map: the scrolly's vector geometry — `cameraFor` and `choroplethGeometry`
-  (`proof/scrolly-choropleth-europe-lowcarbon/choropleth-geometry.mjs`) on the static plate's bake
-  bounds and 1000 × 760 camera. Its rings are CLAMPED to the margin; the video clips them first
-  (Sutherland–Hodgman, the contour beat's `clipRing`) so no clamped ring can fold over the west.
-- The camera and the reveal arithmetic: `fitViewBox`, `clamp01`, `lerp`, `ease`
-  (`skills/scrolly/assets/reveal.mjs`); the painting rules of `choropleth-drive.mjs` (fill = class ×
-  reveal × filter, names at each country's most interior seat, a later name stepping clear of an
-  earlier one) re-expressed as a pure function of the frame, because the drive reads the DOM.
-- The colours: `rampFor` (class fills, the missing fill — the scrolly's own construction) and
-  `plateTints` (sea, bare land); inks walked to the text floor from the direction.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
 
-No MapLibre, no MapTiler, no key, no proxy.
+- **The plan** is the validated scrolly pilot's own (`plan.mjs`, `seats.json`, copied byte-identical from
+  `quality/scrolly` fdec7bbd and pinned in `shared/map-beat/COPIED-FROM.json`): MapTiler dataviz style, flat Web
+  Mercator, every country of the world drawn by the basemap, the class fills read from MapTiler Countries and drawn
+  beneath the basemap's water, one fill layer per class, the six, Albania and three seas as map symbol layers,
+  Albania's ring a circle layer, the regions' borders (Countries level 1) arriving with the close-up. `map-plan.mjs`
+  gives it the video's cameras (the static plate's frame fitted on both axes of 1920 × 1080; the close-up 2.3 zoom
+  levels in, centred on Albania), colours and faces.
+- **The frame drives it** as the scroll drives the pilot: `mapStateAt(props, frame)` is a camera in Web Mercator
+  numbers (centre and zoom linear in the eased travel) and the bound fields `classes`, `filter`, `top`, `zoom`, `odd`.
+  `useLiveMap` (`skills/map-beat/assets/live-map.ts`) mounts the map once, `jumpTo`s and sets the bound paints each
+  frame, and releases a frame only once the map is idle with every tile loaded.
+- **The words outside the map** (the panel, the close-up's labels and gauges, the credit) stay SVG, placed in Bun from
+  `measured.json`: the real map measured once per fixed camera (`measure.mjs` → `measureLiveMap`), projected seats and
+  a grid of cell colours; a plan changed since the measurement is refused.
+- **The key** reaches the map only through the local proxy (`skills/map-beat/scripts/maptiler-proxy.mjs`), which keeps
+  a keyless tile cache outside the repository; `no-key.live.test.ts` holds every output to it. Renders use
+  `--gl=swangle --concurrency=1` and an empty `--env-file` (`renderVideoMap`).
+- **The credit** carries MapTiler's attribution on one line. The spec's form (« Source : Ember, via Our World in Data ·
+  © MapTiler © OpenStreetMap ») is wider than the open sea the whole map leaves: creme and rapport set « Ember, via
+  OWID · © MapTiler © OpenStreetMap », nocturne (tracked) « Ember · © MapTiler © OpenStreetMap » — provisional, the
+  owner to rule.
 
 ## The picture — shots, not a page (1920 × 1080)
 
