@@ -145,7 +145,9 @@ export function useLiveMap({
         interactive: false,
         attributionControl: false,
         fadeDuration: 0,
-        preserveDrawingBuffer: true,
+        // MapLibre 5 reads the WebGL context's attributes here, not at the top level: without it the drawing buffer
+        // is cleared after compositing and a capture of the canvas comes back blank.
+        canvasContextAttributes: { preserveDrawingBuffer: true },
         ...bootOptionsOf(plan),
       });
       map.on("error", (e) => cancelRender(sanitizedError(e?.error ?? e)));
