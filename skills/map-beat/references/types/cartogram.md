@@ -85,10 +85,14 @@ six neighbours instead of four.
 
 ## In video
 
-Worked example: `proof/video-cartogram-europe-lowcarbon` (validated 2026-09-14, recut 2026-09-15). The gesture only a
-video has is **the morph**: the map in an equal-area projection (the ink a country takes is its territory), then every
-country travelling from its shape's box into its equal tile — an affine map per country, the shape giving way to the
-tile's rect in the last third.
+Worked example: `proof/video-cartogram-europe-lowcarbon` (validated 2026-09-14, recut 2026-09-15, on MapTiler
+2026-09-15). The gesture only a video has is **the morph**: every country travelling from its shape's box into its equal
+tile — an affine map per country, the shape giving way to the tile's rect in the last third.
+
+- **Geography is the live map; the tiles are not.** While the form shows geography it is the live MapTiler map (flat
+  Web Mercator, class fills from Countries beneath the water, the focus as bound opacities). Before anything moves, SVG
+  shapes projected with the measured camera rise over the fills and the fills leave; the morph is SVG, and a ground
+  rect rises with it, so the tiles end on no basemap. The equal-area claim moves to the balance's true-area weights.
 
 - **The argument is a balance**, because a cartogram's claim is about what counts as one. Beside the map, a 0–100 %
   beam carries every country as a column at its share, its height its weight — its share of the territory on the map

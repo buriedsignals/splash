@@ -17,7 +17,7 @@ const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(CartogramFrame, { ...(props as any), at: frame }));
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(CartogramFrame, { ...(props as any), at: frame, liveMap: () => null }));
 
   describe(`${id}'s drawn markup`, () => {
     for (const event of EVENT_ORDER)

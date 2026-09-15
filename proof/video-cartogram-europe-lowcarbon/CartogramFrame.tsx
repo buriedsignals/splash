@@ -2,18 +2,23 @@
  * One frame of « Par pays 65,1 % ; au km² 44,9 % » — a video in SHOTS: the title card, then the map that becomes
  * the cartogram with its key standing on the Atlantic, ending on the cartogram with its credit (BRIEF.md).
  *
+ * THE MAP IS THE CALLER'S while the countries are geography (`liveMap`: the live MapTiler map in the composition — the
+ * class fills, the hollow country, the borders, the widest country's name, each a MapLibre layer; nothing in the Bun
+ * tests). Over it, one SVG: the same countries projected at the map's camera, which rise over the map's fills and then
+ * morph into their tiles as a ground rect rises over the basemap; the balance, the key, the codes, the credit, the title.
+ *
  * NOTHING HERE IS MEASURED OR CHOSEN. Every word is drawn at the coordinates `build.mjs` measured in Bun, in the
  * register its slot names, and carries that width (`data-width`); every colour comes from the direction through
  * `colours`; what moves at this frame is `sceneAt`.
  */
 
-import type { Ref } from "react";
-import { sceneAt } from "./scene.mjs";
+import type { ReactNode, Ref } from "react";
+import { blend, sceneAt } from "./scene.mjs";
 
 type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
 type Line = { text: string; x: number; y: number; width: number };
 type Rect = { x: number; y: number; width: number; height: number };
-type Slot = "display" | "eyebrow" | "value" | "axis" | "area" | "code" | "source";
+type Slot = "display" | "eyebrow" | "value" | "axis" | "code" | "source";
 
 export type CartogramFrameProps = {
   frame: { width: number; height: number };
@@ -29,6 +34,8 @@ export type CartogramFrameProps = {
     bornes: Line[];
     missingSwatch: Rect;
     missingLabel: Line;
+    /** What the measured map paints under each word, blended to the ground as the basemap leaves. */
+    halos: { bornes: string[]; missing: string };
   };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[]; width: number; height: number };
   /** The balance: a 0–100 % beam, its bins, the columns' full height, the pivots' texts. */
@@ -47,12 +54,10 @@ export type CartogramFrameProps = {
     liveBaseline: number;
   };
   widest: string;
-  widestName: { text: string; textWidth: number; textX: number; baseline: number; x: number; y: number; ink: string; halo: number; haloColour: string };
   colours: {
     ground: string;
-    sea: string;
+    beamHalo: string;
     neutral: string;
-    context: string;
     border: string;
     classFills: string[];
     missingEdge: string;
@@ -67,7 +72,8 @@ export type CartogramFrameProps = {
     classIndex: number | null;
     code: { text: string; width: number; x: number; y: number; ink: string };
   }>;
-  context: Array<{ key: string; path: string }>;
+  camera: Record<string, number>;
+  mapPlan: { layers: Array<{ id: string; bindings?: Record<string, unknown> }> } & Record<string, unknown>;
   states: Record<string, number>[];
   timing: unknown;
 };
@@ -96,26 +102,22 @@ function Word({ line, register, fill, opacity = 1, anchor, halo, measured = true
   );
 }
 
-export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
+export function CartogramFrame(props: CartogramFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
   const { frame, registers: r, colours, strokes, legend: key, credit, titleCard, beam } = props;
   const scene = sceneAt(props as never, props.at);
   const dash = strokes.missingDash.join(" ");
 
   return (
-    <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
-      <rect width={frame.width} height={frame.height} fill={colours.ground} />
-
-      {/* ── THE STORY: the map, then the tiles. ── */}
-      <g opacity={scene.map}>
-        <rect width={frame.width} height={frame.height} fill={colours.sea} />
-        {props.context.map((c) => (
-          <path key={c.key} d={c.path} fill={colours.context} stroke={colours.ground} strokeWidth={strokes.border} strokeLinejoin="round" />
-        ))}
-      </g>
+    <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.ground }}>
+    {props.liveMap(props.at)}
+    <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+      {/* ── THE STORY: the live map under this SVG; the basemap fading out as the countries leave geography. ── */}
+      <rect width={frame.width} height={frame.height} fill={colours.ground} opacity={scene.basemapOut} />
       {props.countries.map((c) => {
         const s = scene.countries[c.iso];
         const missing = c.classIndex === null;
         const fill = missing ? colours.ground : s.fill;
+        if (s.shape === 0 && s.tile === 0) return null;
         return (
           <g key={c.iso} opacity={s.opacity}>
             <g transform={s.transform}>
@@ -128,13 +130,6 @@ export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef
       {props.countries.map((c) => (
         <Word key={`code-${c.iso}`} line={{ text: c.code.text, x: c.code.x, y: c.code.y, width: c.code.width }} register={r.code} fill={c.code.ink} opacity={scene.codes} anchor="middle" />
       ))}
-      <Word
-        line={{ text: props.widestName.text, x: props.widestName.x + props.widestName.textX, y: props.widestName.y + props.widestName.baseline, width: props.widestName.textWidth }}
-        register={r.area}
-        fill={props.widestName.ink}
-        opacity={scene.widest}
-        halo={{ colour: props.widestName.haloColour, width: props.widestName.halo }}
-      />
 
       {/* ── THE BALANCE: every country a column at its share, its height its weight; the pivots under the means. ── */}
       <g opacity={scene.furniture}>
@@ -154,7 +149,7 @@ export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef
         return (
           <g key={`pivot${i}`} opacity={pivot.opacity}>
             <path d={`M${pivot.x} ${beam.y}L${pivot.x - beam.pivotSize / 2} ${beam.y + beam.pivotSize}L${pivot.x + beam.pivotSize / 2} ${beam.y + beam.pivotSize}Z`} fill={fill} />
-            <Word line={{ text, x, y: baseline, width }} register={r.value} fill={fill} halo={{ colour: scene.keyGround, width: key.valueHalo }} />
+            <Word line={{ text, x, y: baseline, width }} register={r.value} fill={fill} halo={{ colour: scene.beamGround, width: key.valueHalo }} />
           </g>
         );
       })}
@@ -165,10 +160,10 @@ export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef
           <rect key={`swatch${i}`} x={s.x} y={s.y} width={s.width} height={s.height} fill={colours.classFills[i]} opacity={scene.swatches[i]} />
         ))}
         {key.bornes.map((line, i) => (
-          <Word key={`borne${i}`} line={line} register={r.axis} fill={colours.text.key} opacity={scene.swatches[i]} halo={{ colour: scene.keyGround, width: key.halo }} />
+          <Word key={`borne${i}`} line={line} register={r.axis} fill={colours.text.key} opacity={scene.swatches[i]} halo={{ colour: blend(key.halos.bornes[i], colours.ground, scene.morph), width: key.halo }} />
         ))}
         <rect x={key.missingSwatch.x} y={key.missingSwatch.y} width={key.missingSwatch.width} height={key.missingSwatch.height} fill={colours.ground} stroke={colours.missingEdge} strokeWidth={strokes.border} strokeDasharray={dash} />
-        <Word line={key.missingLabel} register={r.axis} fill={colours.text.key} halo={{ colour: scene.keyGround, width: key.halo }} />
+        <Word line={key.missingLabel} register={r.axis} fill={colours.text.key} halo={{ colour: blend(key.halos.missing, colours.ground, scene.morph), width: key.halo }} />
       </g>
 
       {/* ── NO END CARD: the credit on the cartogram the video ends on. ── */}
@@ -187,5 +182,6 @@ export function CartogramFrame(props: CartogramFrameProps & { at: number; svgRef
         ))}
       </g>
     </svg>
+    </div>
   );
 }

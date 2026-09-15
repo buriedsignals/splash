@@ -14,7 +14,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { areaOf, laea } from "../scrolly-cartogram-europe-lowcarbon/cartogram-geometry.mjs";
+import { areaOf } from "../scrolly-cartogram-europe-lowcarbon/cartogram-geometry.mjs";
 import { clipRing } from "../video-choropleth-europe-lowcarbon/geometry.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -90,36 +90,18 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
 const r1 = (v) => Math.round(v * 10) / 10;
 
 /**
- * THE MAP AND THE TILES, IN STAGE PIXELS.
+ * THE SHAPES AND THE TILES, IN STAGE PIXELS.
+ *
+ * The shapes are projected with the LIVE MAP'S OWN CAMERA (`project`, Web Mercator at the measured camera), so the SVG
+ * shape a country morphs from lies where MapLibre fills it when the overlay takes over from the map.
  *
  * @param {ReturnType<typeof loadSubject>} subject
- * @param {{ mapBox: {x:number,y:number,w:number,h:number}, tileBox: {x:number,y:number,w:number,h:number},
+ * @param {{ project: (lonLat: number[]) => number[], tileBox: {x:number,y:number,w:number,h:number},
  *           stage: {width:number,height:number}, margin: number }} frame
- *   `mapBox`: where the window is fitted (the map runs past it to the frame's edges); `tileBox`: where the grid is
- *   centred; `margin`: how far past the stage the rings are kept.
+ *   `tileBox`: where the grid is centred; `margin`: how far past the stage the rings are kept.
  */
-export function cartogramGeometry(subject, { mapBox, tileBox, stage, margin }) {
+export function cartogramGeometry(subject, { project, tileBox, stage, margin }) {
   const { geo, placed } = subject;
-  const [west, south, east, north] = WINDOW;
-  const edge = [];
-  for (let t = 0; t <= 40; t++) {
-    const lon = west + ((east - west) * t) / 40;
-    const lat = south + ((north - south) * t) / 40;
-    edge.push(laea(lon, south), laea(lon, north), laea(west, lat), laea(east, lat));
-  }
-  const minX = Math.min(...edge.map((p) => p[0]));
-  const maxX = Math.max(...edge.map((p) => p[0]));
-  // The vertical extent is the land's, not the box's: the box's southern corners sweep far below Cyprus.
-  const inBox = [];
-  for (const f of geo.features)
-    for (const poly of f.geometry.coordinates)
-      for (const ring of poly) for (const [lon, lat] of ring) if (lon >= west && lon <= east && lat >= south && lat <= north) inBox.push(laea(lon, lat));
-  const minY = Math.min(...inBox.map((p) => p[1]));
-  const maxY = Math.max(...inBox.map((p) => p[1]));
-  const scale = Math.min(mapBox.w / (maxX - minX), mapBox.h / (maxY - minY));
-  const offX = mapBox.x + (mapBox.w - (maxX - minX) * scale) / 2;
-  const offY = mapBox.y + (mapBox.h - (maxY - minY) * scale) / 2;
-  const toStage = ([x, y]) => [offX + (x - minX) * scale, offY + (y - minY) * scale];
   const clip = { x0: -margin, x1: stage.width + margin, y0: -margin, y1: stage.height + margin };
 
   const byIso = new Map();
@@ -128,7 +110,7 @@ export function cartogramGeometry(subject, { mapBox, tileBox, stage, margin }) {
     const held = byIso.get(iso) ?? { iso, rings: [] };
     for (const poly of f.geometry.coordinates)
       for (const ring of poly) {
-        const cut = clipRing(ring.map(([lon, lat]) => toStage(laea(lon, lat))), clip);
+        const cut = clipRing(ring.map(project), clip);
         if (cut.length < 3) continue;
         const kept = [cut[0]];
         for (const p of cut.slice(1)) {

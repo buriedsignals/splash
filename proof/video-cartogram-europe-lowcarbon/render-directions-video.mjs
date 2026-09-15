@@ -1,13 +1,22 @@
-// « Par pays 65,1 % ; au km² 44,9 % » — rendered as video once per filed direction: the scrolly's picture told
-// in time (BRIEF.md). Everything is measured and asserted in Bun (`build.mjs`); the markup of every event's last
-// frame is held to the type floor; the faces are embedded; Remotion renders the still at the last frame, then
-// the mp4. An EMPTY `--env-file` on every `remotion` spawn.
+// « Par pays 65,1 % ; au km² 44,9 % » — rendered as video once per filed direction: the scrolly's picture told in time
+// (BRIEF.md), its geography on the live MapTiler map until the countries leave it for their tiles.
 //
-// Usage:  bun proof/video-cartogram-europe-lowcarbon/render-directions-video.mjs [--only <id>] [--still] [--look <dir>]
+// Everything is measured and asserted HERE, in Bun, before Chrome is started (`build.mjs`): the subject and
+// its derived values, the map plan, the direction's registers at the video size, the overlay placed from the
+// measured map, the states. Then the markup of every event's last frame is rendered in Bun and held to the
+// type floor, the faces are embedded, and Remotion renders the live MapTiler map under the overlay through
+// the local key proxy (`renderVideoMap`: `--gl=swangle`, `--concurrency=1`): the still at the last frame,
+// then the mp4. The key stays in this process; the page reaches MapTiler through the proxy, and the tiles are
+// cached outside the repository.
+//
+// An EMPTY `--env-file` on every `remotion` spawn: Remotion otherwise injects the repository's `.env` into
+// the render page (`splash/test/a-video-render-hides-the-env.test.ts`).
+//
+// Usage:  set -a && . ./.env && set +a && bun proof/video-cartogram-europe-lowcarbon/render-directions-video.mjs [--only <id>] [--still] [--look <dir>]
 
 import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { createElement } from "react";
@@ -17,10 +26,14 @@ import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { composeDirections, report as reportComposition } from "#shared/design-base/compose.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
+import { DEFAULT_CACHE_DIR } from "../../skills/map-beat/scripts/maptiler-proxy.mjs";
+import { throughProxy } from "../../skills/map-beat/scripts/measure-live-map.mjs";
+import { renderVideoMap } from "../../skills/map-beat/scripts/render-video-map.mjs";
 import { wantedOf, writeRenderProps } from "../../skills/map-beat/scripts/video-faces.mjs";
 import { buildDirection, DIRECTIONS, loadBeat, ROOT, SIZE, textPerRegisterOf } from "./build.mjs";
 import { CartogramFrame } from "./CartogramFrame.tsx";
-import { WINDOWS } from "./scene.mjs";
+import { HANDOVER, WINDOWS } from "./scene.mjs";
 
 const HERE = import.meta.dirname;
 const OUT = join(HERE, "renders");
@@ -36,11 +49,13 @@ if (only !== null && !filedIds.includes(only))
   throw new Error(`--only takes one of the filed directions (${filedIds.join(", ")}), got ${JSON.stringify(only)}`);
 const stillOnly = args.includes("--still");
 /** `--look <dir>`: instead of the deliverables, render the frames a reviewer looks at into <dir> — the
- *  last frame of every event, and the middle of each camera move. */
+ *  last frame of every event, the handover from the map to the shapes, and the morph. */
 const lookAt = args.indexOf("--look");
 const lookDir = lookAt === -1 ? null : args[lookAt + 1];
 if (lookAt !== -1 && !lookDir) throw new Error("--look takes a directory");
 
+const key = mapTilerKeyIn(process.env);
+if (!key) throw new Error("no MapTiler key in the environment: run with the worktree's .env loaded (set -a && . ./.env && set +a)");
 const beat = loadBeat();
 const { subject } = beat;
 const textPerRegister = textPerRegisterOf(beat.copy);
@@ -57,7 +72,7 @@ console.log(
 export function assertEventFramesReadable(props, id) {
   for (const event of EVENT_ORDER) {
     const frame = Math.min(endOf(props.timing[event]), props.timing.total) - 1;
-    assertTypeFloor(renderToStaticMarkup(createElement(CartogramFrame, { ...props, at: frame })), SIZE, { what: `${id} at the end of ${event} (frame ${frame})` });
+    assertTypeFloor(renderToStaticMarkup(createElement(CartogramFrame, { ...props, at: frame, liveMap: () => null })), SIZE, { what: `${id} at the end of ${event} (frame ${frame})` });
   }
 }
 
@@ -72,7 +87,7 @@ const refused = [];
 await mkdir(OUT, { recursive: true });
 for (const id of filedIds.filter((i) => only === null || i === only)) {
   const outputs = [`${id}.mp4`, `${id}-final-frame.png`, `${id}-props.json`].map((f) => join(OUT, f));
-  const envDir = await mkdtemp(join(tmpdir(), "video-cartogram-env-"));
+  const scratch = await mkdtemp(join(tmpdir(), "video-cartogram-props-"));
   try {
     const built = buildDirection(id, beat);
     const { props, report, direction } = built;
@@ -84,12 +99,12 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
     );
     assertEventFramesReadable(props, id);
 
-    const auditPath = join(OUT, `${id}-props.json`);
-    const propsPath = await writeRenderProps({ props, wanted: wantedOf(props.registers), auditPath });
-    const envFile = join(envDir, "empty.env");
-    await writeFile(envFile, "");
-    const binary = join(ROOT, "node_modules/.bin/remotion");
+    // The audit copy: the props as built, no proxy origin, no key.
+    await writeRenderProps({ props, wanted: wantedOf(props.registers), auditPath: join(OUT, `${id}-props.json`) });
+    // The render copy: the plan pointed at this render's proxy, written to a temp file and never committed.
+    const buildProps = (origin) => writeRenderProps({ props: { ...props, mapPlanProxied: throughProxy(props.mapPlan, origin) }, wanted: wantedOf(props.registers), auditPath: join(scratch, "audit.json") });
     const entry = relative(ROOT, join(HERE, "index.ts"));
+    const common = { entry, composition: COMPOSITION, buildProps, mapTilerKey: key, cacheDir: DEFAULT_CACHE_DIR };
 
     if (lookDir) {
       await mkdir(lookDir, { recursive: true });
@@ -97,50 +112,30 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
       const mid = (event, [a, b]) => Math.round(T[event].start + T[event].duration * (a + b) / 2);
       const frames = [
         ...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })),
-        { name: "first", frame: 0 },
         { name: "mid-reference", frame: mid("reference", WINDOWS.reference.classes) },
-        { name: "reveal-pivot", frame: mid("reveal", WINDOWS.reveal.area) },
-        ...[0.3, 0.55, 0.8].map((t) => ({ name: `morph-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.morph[0] + t * (WINDOWS.subject.morph[1] - WINDOWS.subject.morph[0]))) })),
-        { name: "conclusion-credit", frame: mid("conclusion", WINDOWS.conclusion.source) },
+        { name: "handover", frame: mid("subject", HANDOVER) },
+        ...[0.1, 0.3, 0.55, 0.8].map((t) => ({ name: `morph-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.morph[0] + t * (WINDOWS.subject.morph[1] - WINDOWS.subject.morph[0]))) })),
       ];
-      for (const { name, frame } of frames) {
-        const run = spawnSync(binary, ["still", entry, COMPOSITION, join(lookDir, `${id}-${String(frame).padStart(3, "0")}-${name}.png`), `--frame=${frame}`, `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {
-          cwd: ROOT,
-          stdio: "ignore",
-        });
-        if (run.status !== 0) throw new Error(`remotion still exited with ${run.status} at frame ${frame}`);
-      }
-      await rm(auditPath, { force: true });
+      for (const { name, frame } of frames) await renderVideoMap({ ...common, outDir: lookDir, name: `${id}-${String(frame).padStart(3, "0")}-${name}`, mode: "still", frame });
+      await rm(join(OUT, `${id}-props.json`), { force: true });
       console.log(`  -> ${frames.length} frames in ${lookDir}`);
       continue;
     }
 
-    const still = join(OUT, `${id}-final-frame.png`);
-    const started = Date.now();
-    const stillRun = spawnSync(binary, ["still", entry, COMPOSITION, still, "--frame=-1", `--props=${propsPath}`, "--timeout=180000", `--env-file=${envFile}`], {
-      cwd: ROOT,
-      stdio: "inherit",
-    });
-    if (stillRun.status !== 0) throw new Error(`remotion still exited with ${stillRun.status}`);
-    assertDeliveredSize(readPngSize(await readFile(still)), SIZE, { what: `renders/${id}-final-frame.png` });
-    console.log(`  -> renders/${id}-final-frame.png (${Math.round((Date.now() - started) / 1000)}s)`);
+    const still = await renderVideoMap({ ...common, outDir: OUT, name: id, mode: "still" });
+    assertDeliveredSize(readPngSize(await readFile(still.path)), SIZE, { what: `renders/${id}-final-frame.png` });
+    console.log(`  -> renders/${id}-final-frame.png (${still.seconds}s)`);
     if (stillOnly) continue;
 
-    const movie = join(OUT, `${id}.mp4`);
-    const movieStarted = Date.now();
-    const movieRun = spawnSync(binary, ["render", entry, COMPOSITION, movie, `--props=${propsPath}`, "--concurrency=1", "--timeout=180000", `--env-file=${envFile}`], {
-      cwd: ROOT,
-      stdio: "inherit",
-    });
-    if (movieRun.status !== 0) throw new Error(`remotion render exited with ${movieRun.status}`);
-    assertDeliveredSize(mp4Size(movie), SIZE, { what: `renders/${id}.mp4` });
-    console.log(`  -> renders/${id}.mp4 (${Math.round((Date.now() - movieStarted) / 1000)}s)\n`);
+    const movie = await renderVideoMap({ ...common, outDir: OUT, name: id, mode: "mp4" });
+    assertDeliveredSize(mp4Size(movie.path), SIZE, { what: `renders/${id}.mp4` });
+    console.log(`  -> renders/${id}.mp4 (${movie.seconds}s) · ${Object.entries(movie.proxyCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`);
   } catch (error) {
     for (const path of outputs) await rm(path, { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   } finally {
-    await rm(envDir, { recursive: true, force: true });
+    await rm(scratch, { recursive: true, force: true });
   }
 }
 

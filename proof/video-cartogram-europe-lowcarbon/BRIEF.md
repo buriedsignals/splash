@@ -19,11 +19,34 @@ the country mean and the area-weighted mean are both true, twenty points apart, 
 takes 73 % of these countries' drawn territory at 35.9 %, and drags the area reading down. Asserted in `subject.mjs`:
 the gap exceeds 15 points, and the country taking the most room is below the country mean.
 
+## The map: the live MapTiler map while the countries are geography (2026-09-15)
+
+The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`;
+the cartogram under the scrolly addendum's §5: a live map while the form shows geography, no basemap once it leaves it.
+
+- **The plan** (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, every country drawn by the basemap; the
+  classes read from MapTiler Countries beneath the basemap's water, one fill layer per class and role (Russia apart,
+  so the focus never touches it; the others stepped back by a bound opacity), each over the neutral it had before its
+  class arrived; Ukraine hollow with a dashed edge; every national border; « RUSSIE · 36 % » a symbol layer. One
+  camera: the window fitted "meet" in the content box. The equal-area claim is carried by the balance, whose weights
+  are still the true areas.
+- **The frame drives it** (`scene.mjs`, `mapStateAt`): the camera and the bound fields, from the same
+  `geographyAt` the SVG reads. `useLiveMap` releases a frame only once every tile is loaded.
+- **The handover** (subject, 8–14 %): once the others are back and the name gone, the SVG shapes — Natural Earth
+  projected with the live camera, tested to lie on the measured fills — rise over the map, then the fills leave under
+  them; only then does the morph start. A ground rect rises with the morph, so the tiles end on no basemap. Two small
+  seams: the basemap's lakes (Ladoga, Finland's) and Crimea (Countries: Ukraine; Natural Earth: Russia) change at the
+  handover.
+- **Placed from `measured.json`** (`measure.mjs`, one frame after reference; stale plan refused): the key, in the top
+  quarter over no studied country (Iceland stands in its column, so it keeps to Greenland and the sea, each word
+  haloed in what lies under it); the balance's halos; Russia's name on its own fill. Credit « Ember, via OWID ·
+  © MapTiler © OpenStreetMap », on the ground at the end. The key reaches MapTiler only through the proxy;
+  `no-key.live.test.ts`.
+
 ## The picture — shots, not a page (1920 × 1080)
 
 1. **The title card** (`establish`, from frame 0, 1.5 s) — the eyebrow and a short title.
-2. **The story** — the map on the whole frame, Lambert azimuthal equal-area (so the ink a country takes IS its
-   territory), then the same countries as equal tiles. At the left, on the Atlantic, in no plate: the class key at
+2. **The story** — the live map on the whole frame (below, « The map »), then the same countries as equal tiles. At the left, on the Atlantic, in no plate: the class key at
    the top, and under it **the balance** — a 0–100 % beam on which every country is a column at its share, its
    height its weight; the tile grid is laid out to its right, so neither moves nor covers a tile.
 3. **No end card** — the video ends on the cartogram, the balance struck at both means, the credit on one line in
@@ -64,7 +87,7 @@ ticks — the pivots say where it stands.
 | key | 40 % · 60 % · 75 % · 94 % · sans donnée | axis |
 | subject | RUSSIE · 36 % | area (the still's map treatment) |
 | tiles | the 41 codes, ISL … CYP | tile: the axis voice, as large as the tiles hold, never under 30 px |
-| credit | the longest one-line form that holds the bottom-left corner, down to « Source : Ember, via Our World in Data » | axis at the type floor |
+| credit | the longest one-line form that holds the bottom-left corner: « Ember, via OWID · © MapTiler © OpenStreetMap », else « Ember · © MapTiler © OpenStreetMap » | axis at the type floor |
 
 ## Video constraints
 

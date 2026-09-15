@@ -1,9 +1,15 @@
-// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the key and where it stands, the map's
-// shapes and the tiles they travel to, every colour and the states. The runner renders what this returns; the
-// tests read the same object, so what is asserted is what is drawn.
+// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the live map's plan and its camera, the key
+// and where it stands on the MEASURED map, the shapes projected at that camera and the tiles they travel to, every
+// colour and the states. The runner renders what this returns; the tests read the same object, so what is asserted is
+// what is drawn.
+//
+// The map is MapTiler's, drawn live under the overlay (`DirectedCartogramVideo.tsx`). What it paints under a box is not
+// computed here: `measure.mjs` read it once on the real map and froze it in `measured.json`, with the digest of the plan
+// it was read on. A plan that changed since is refused.
 //
 // Runs in Bun only.
 
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
@@ -15,6 +21,10 @@ import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.m
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
 import { haloOf, keyFor, pillOf, registerAt, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf, bandOf, BAND_PROBE, CREDIT_ONE_LINE, DRAWN_WIDER } from "../../skills/map-beat/scripts/shots.mjs";
+import { cellAt, countOf, near, nearestOf } from "../video-locator-zaporizhzhia/build.mjs";
+export { cellAt, nearestOf };
+import { cameraOf, mapPlanFor, mapSeatsOf, projectorOf, unprojectorOf, withName } from "./map-plan.mjs";
+import { planDigestOf } from "./measure.mjs";
 import { meanText } from "./scene.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
@@ -31,8 +41,6 @@ const NB = "\u00A0";
 const MAP_MARGIN = 200;
 /** The step, in stage pixels, of the positions the key and the credit are tried at. */
 const SEAT_STEP = 10;
-/** The side, in stage pixels, of the cells the key's cover of land is sampled on. */
-const LAND_CELL = 12;
 /** A tile's code keeps this share of its register's size as breath on either side. */
 const CODE_BREATH = 0.15;
 /** Between the key and the grid, × the axis lead. */
@@ -48,7 +56,7 @@ const KEY_ZONE = 0.25;
 
 export function loadBeat() {
   const subject = loadSubject();
-  return { subject, states: statesFor(), copy: copyOf(subject) };
+  return { subject, states: statesFor(), copy: copyOf(subject), mapSeats: mapSeatsOf() };
 }
 
 const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace(/[\u202F\u00A0\u2009]/g, " ");
@@ -65,12 +73,11 @@ export function copyOf(subject) {
     breaks: BREAKS.map((b) => `${b}${NB}%`),
     missingLabel: "sans donnée",
     widestName: `${NAMES[widest]} · ${Math.round(share.get(widest))}${NB}%`.toUpperCase(),
+    // One line, with the map's attribution: the longest form the tiles' free corner holds is set.
     source: [
-      "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · fonds Natural Earth 50 m",
-      "Source : Ember, Energy Institute, via Our World in Data · Natural Earth",
-      "Source : Ember, via Our World in Data · Natural Earth",
-      "Source : Ember, via Our World in Data",
-    ].map((form) => form.replace(" · ", `${NB}· `)),
+      `Ember, via OWID · ©${NB}MapTiler ©${NB}OpenStreetMap`,
+      `Ember · ©${NB}MapTiler ©${NB}OpenStreetMap`,
+    ].map((form) => form.replaceAll(" · ", `${NB}· `)),
     codes: subject.placed.map((p) => p.iso),
   };
 }
@@ -89,7 +96,19 @@ export function textPerRegisterOf(copy) {
 
 // ── geometry helpers ─────────────────────────────────────────────────────────────────────────────────────
 
-function insideRing(ring, x, y) {
+// ── the measured map ─────────────────────────────────────────────────────────────────────────────────────
+
+const MEASURED = join(HERE, "measured.json");
+let measuredCache = null;
+/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+export function readMeasured() {
+  if (measuredCache) return measuredCache;
+  if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
+  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  return measuredCache;
+}
+
+export function insideRing(ring, x, y) {
   let hit = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const [xi, yi] = ring[i];
@@ -102,7 +121,11 @@ const touches = (a, b, gap = 0) => a.x < b.x + b.width + gap && b.x < a.x + a.wi
 
 // ── one direction ──────────────────────────────────────────────────────────────────────────────────────────
 
-export function buildDirection(id, { subject, states, copy }) {
+
+/**
+ * @param {{ measured?: any }} [options]  `measured: null` builds the plan and the camera only — what `measure.mjs` reads.
+ */
+export function buildDirection(id, { subject, states, copy }, { measured = undefined } = {}) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, `${id}.md`)), textPerRegisterOf(copy));
   const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
   const scaled = videoRegistersOf(resolved, SIZE);
@@ -123,13 +146,17 @@ export function buildDirection(id, { subject, states, copy }) {
   const key = keyFor({ registers, k, counters: [], breaks: copy.breaks, missingLabel: copy.missingLabel });
   const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE, measure: CREDIT_MEASURE });
 
-  // ── the map and the tiles ────────────────────────────────────────────────────────────────────────────────
-  // The window is fitted to the frame's content box and the map runs past it to the frame's edges. The grid is
-  // laid out to the right of the key, so the key stands in one place for the whole story and covers no tile.
+  // ── the camera, the shapes and the tiles ─────────────────────────────────────────────────────────────────
+  // The window is fitted "meet" to the frame's content box and the map runs past it to the frame's edges; the shapes
+  // are projected at that camera. The grid is laid out to the right of the key, so the key stands in one place for the
+  // whole story and covers no tile.
   const content = { x: inset, y: vInset, w: stage.width - 2 * inset, h: stage.height - 2 * vInset };
   const gutter = KEY_GUTTER * registers.axis.lead;
   const tileBox = { x: inset + key.width + gutter, y: vInset, w: stage.width - inset - (inset + key.width + gutter), h: stage.height - 2 * vInset };
-  const geometry = cartogramGeometry(subject, { mapBox: content, tileBox, stage, margin: MAP_MARGIN });
+  const camera = cameraOf(content);
+  const project = projectorOf(camera, stage);
+  const unproject = unprojectorOf(camera, stage);
+  const geometry = cartogramGeometry(subject, { project, tileBox, stage, margin: MAP_MARGIN });
 
   // ── colours, every one from the direction (the still's rules) ─────────────────────────────────────────────
   const { ground, accent } = direction;
@@ -144,33 +171,36 @@ export function buildDirection(id, { subject, states, copy }) {
   const high = mix(accent, ink, 0.3);
   const classCount = subject.BREAKS.length + 1;
   const classFills = Array.from({ length: classCount }, (_, i) => mix(low, high, i / (classCount - 1)));
-  const sea = plateTints(direction).water;
-  /** A word read on both grounds the key stands on — the sea on the map, the ground under the tiles. */
-  const readsOnBoth = (colour, floor = TEXT_CONTRAST_MIN) => {
-    for (const on of [sea, ground]) {
-      const walked = adjustToContrast(colour, on, floor);
-      if (walked && contrast(walked, sea) >= floor - 1e-9 && contrast(walked, ground) >= floor - 1e-9) return walked;
+  const { water: sea, land } = plateTints(direction);
+  /** A word read on every ground the key and the balance stand on — the sea and the land on the map, the ground under
+   *  the tiles. */
+  const readsOnAll = (colour, floor = TEXT_CONTRAST_MIN) => {
+    const on = [sea, land, ground];
+    for (const base of on) {
+      const walked = adjustToContrast(colour, base, floor);
+      if (walked && on.every((g) => contrast(walked, g) >= floor - 1e-9)) return walked;
     }
-    throw new Error(`no variant of ${colour} reads at ${floor}:1 on both ${sea} and ${ground}`);
+    throw new Error(`no variant of ${colour} reads at ${floor}:1 on ${on.join(", ")}`);
   };
   const mutedEdge = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
   const colours = {
     ground,
     sea,
+    land,
     neutral: floorOnGround(mix(ground, ink, 0.22), "the neutral country"),
-    context: mix(ground, ink, 0.07),
     border: grid,
     classFills,
     missingEdge: mutedEdge,
     text: {
       eyebrow: adjustToContrast(registers.eyebrow.fill ?? accent, ground, TEXT_CONTRAST_MIN),
       title: adjustToContrast(registers.display.fill ?? ink, ground, TEXT_CONTRAST_MIN),
-      count: readsOnBoth(accent),
-      key: readsOnBoth(muted),
+      count: readsOnAll(accent),
+      key: readsOnAll(muted),
       source: adjustToContrast(muted, ground, TEXT_CONTRAST_MIN),
     },
   };
   for (const [slot, c] of Object.entries(colours.text)) if (!c) throw new Error(`the ${slot} has no ink that reads on ${ground}`);
+  const strokes = { border: (direction.stroke?.hairline ?? 0.6) * k, missingDash: [3 * k, 2 * k] };
 
   // ── the tiles' codes: the axis voice, as large as every tile holds, never under the floor ───────────────────
   const tile = geometry.countries[0].tile;
@@ -203,27 +233,44 @@ export function buildDirection(id, { subject, states, copy }) {
     };
   });
 
-  // ── the key: at the left margin, where it covers the least land on the map ──────────────────────────────────
-  const allRings = [...geometry.countries, ...geometry.context].flatMap((c) => c.rings);
-  const landAt = (x, y) => allRings.some((ring) => insideRing(ring, x, y));
-  const landShare = (box) => {
-    let covered = 0;
-    let total = 0;
-    for (let y = box.y + LAND_CELL / 2; y < box.y + box.height; y += LAND_CELL)
-      for (let x = box.x + LAND_CELL / 2; x < box.x + box.width; x += LAND_CELL) {
-        total++;
-        if (landAt(x, y)) covered++;
-      }
-    return total ? covered / total : 0;
+  const mapPlan = mapPlanFor({ countries, widest: subject.widest, colours, strokes, camera });
+  /** What the live map's drive reads (`scene.mjs`, `mapStateAt`): it needs no overlay. */
+  const drive = { camera, colours, states, timing: CARTOGRAM_VIDEO_TIMING };
+  if (measured === null) return { props: { mapPlan, ...drive } };
+  measured ??= readMeasured();
+  if (measured.planDigest?.[id] !== planDigestOf(mapPlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
+  if (measured.size.width !== stage.width || measured.size.height !== stage.height)
+    throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
+  const { grid: cells, projected } = measured.cameras[id].whole;
+  const measuredSea = cellAt(cells, ...projected.sea);
+  if (!near(measuredSea, sea)) throw new Error(`${id}: the measured sea ${measuredSea} is not the direction's water tint ${sea}`);
+  const seaIn = countOf(cells, (c) => near(c, measuredSea));
+  /** What the measured map mostly paints under a box, for a halo: the sea, or the land. */
+  const groundUnder = (box) => {
+    const { count, total } = seaIn(box);
+    return { halo: count >= total / 2 ? sea : land, land: total ? 1 - count / total : 0 };
   };
+
+  /** The cells the measured map paints as a studied country — neither the basemap's sea nor its land. */
+  const studiedIn = countOf(cells, (c) => ![sea, land].includes(nearestOf(c, [sea, land, colours.neutral, ...classFills])));
+
+  // ── the key: at the left margin, in the top quarter, over no studied country and the least land ─────────────────
+  // In Web Mercator Iceland stands in the key's column and Greenland above it: the key keeps clear of Iceland and may
+  // stand partly on Greenland, which is context, so the balance under it keeps its height.
   let keyAt = null;
   for (let y = vInset; y <= vInset + KEY_ZONE * stage.height; y += SEAT_STEP) {
-    const share = landShare({ x: inset, y, width: key.width, height: key.height });
+    const box = { x: inset, y, width: key.width, height: key.height };
+    if (studiedIn(box).count) continue;
+    const { land: share } = groundUnder(box);
     if (!keyAt || share < keyAt.share - 1e-9) keyAt = { x: inset, y, share };
   }
+  if (!keyAt) throw new Error(`${id}: the key finds no place in the top quarter clear of every studied country`);
   const keyBox = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
+  /** Each word of the key haloed in what the measured map paints under it. */
+  const axisBand = bandOf(BAND_PROBE, registers.axis);
+  const haloUnderLine = (line) => groundUnder({ x: keyBox.x + line.x, y: keyBox.y + line.y - axisBand.ascent, width: line.width, height: axisBand.ascent + axisBand.descent }).halo;
 
-  // ── the widest country's name, on the map: inside its drawn shape, clear of the key ────────────────────────
+  // ── the widest country's name, on the map: inside its projected shape, clear of the key ────────────────────
   const widest = countries.find((c) => c.iso === subject.widest);
   const widestRings = geometry.countries.find((c) => c.iso === subject.widest).rings;
   const name = pillOf(copy.widestName, area, haloOf(area, k) / 2);
@@ -241,6 +288,9 @@ export function buildDirection(id, { subject, states, copy }) {
     }
   if (!nameAt) throw new Error(`« ${copy.widestName} » finds no place wholly inside ${subject.widest}`);
   const widestFill = classFills[widest.classIndex];
+  const nameCentre = [nameAt.x + name.width / 2, nameAt.y + name.height / 2];
+  const underName = nearestOf(cellAt(cells, ...nameCentre), [sea, land, colours.neutral, ...classFills]);
+  if (underName !== widestFill) throw new Error(`${id}: the measured map paints ${underName} under « ${copy.widestName} », not ${subject.widest}'s ${widestFill}`);
   const widestInk = adjustToContrast(muted, widestFill, TEXT_CONTRAST_MIN);
   if (!widestInk) throw new Error(`no ink reads « ${copy.widestName} » on ${widestFill}`);
 
@@ -290,32 +340,32 @@ export function buildDirection(id, { subject, states, copy }) {
     liveTexts: valueTexts(copy.means.country, tenths),
     liveBaseline,
   };
+  const pivotBand = { x: block.x, y: beamY, width: block.width, height: liveBaseline + valueBand.descent - beamY };
 
-  const drawn = { display: titleCard.register, eyebrow: registers.eyebrow, value: registers.value, axis: registers.axis, area, code: codeR, source: sourceRegister };
+  const drawn = { display: titleCard.register, eyebrow: registers.eyebrow, value: registers.value, axis: registers.axis, code: codeR, source: sourceRegister };
   const props = {
     frame: { width: stage.width, height: stage.height },
     stage,
     registers: drawn,
     titleCard,
     // `legend`, not `key`: React keeps `key` for itself and never hands it to the component.
-    legend: { ...key, counters: undefined, at: { x: keyBox.x, y: keyBox.y } },
+    legend: { ...key, counters: undefined, at: { x: keyBox.x, y: keyBox.y }, halos: { bornes: key.bornes.map(haloUnderLine), missing: haloUnderLine(key.missingLabel) } },
     beam,
     credit: { ...credit, at: creditAt },
     widest: subject.widest,
-    widestName: { ...name, x: nameAt.x, y: nameAt.y, ink: widestInk, halo: haloOf(area, k), haloColour: widestFill },
-    colours,
-    strokes: { border: (direction.stroke?.hairline ?? 0.6) * k, missingDash: [3 * k, 2 * k] },
+    ...drive,
+    colours: { ...colours, beamHalo: groundUnder(pivotBand).halo },
+    strokes,
     countries,
-    context: geometry.context.map(({ rings, ...c }) => c),
     layoutInset: { x: inset, y: vInset },
-    states,
-    timing: CARTOGRAM_VIDEO_TIMING,
+    mapPlan: withName(mapPlan, { at: unproject(nameCentre), text: applyCase(copy.widestName, area.transform), register: area, ink: widestInk, halo: haloOf(area, k), haloColour: widestFill }),
   };
   delete props.legend.counters;
   return {
     id,
     direction,
     props,
+    nameBox: { x: nameAt.x, y: nameAt.y, width: name.width, height: name.height },
     report: { k, titleForm: titleCard.form, titleSize: titleCard.register.fontSize, sourceForm: credit.form, keyLand: keyAt.share, codeSize: codeR.fontSize, tile: { w: tile.w, h: tile.h }, year: YEAR },
   };
 }
