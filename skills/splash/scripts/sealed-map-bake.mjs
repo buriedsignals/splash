@@ -494,7 +494,9 @@ export async function captureMap({
           interactive: false,
           attributionControl: false,
           fadeDuration: 0,
-          preserveDrawingBuffer: true,
+          // maplibre-gl 5 reads WebGL context attributes only from `canvasContextAttributes`; a top-level
+          // `preserveDrawingBuffer` is ignored there, and a capture reads a cleared buffer.
+          canvasContextAttributes: { preserveDrawingBuffer: true },
           bounds,
           fitBoundsOptions: { padding: 0, animate: false },
         });

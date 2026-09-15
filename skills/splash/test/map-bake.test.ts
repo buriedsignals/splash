@@ -111,6 +111,15 @@ function fakeCapture(counter: { count: number }) {
 }
 
 describe("managed declarative map bake", () => {
+  test("asks maplibre-gl 5 for a preserved drawing buffer through canvasContextAttributes", async () => {
+    // The bake inlines node_modules maplibre-gl, which is 5.x: a top-level `preserveDrawingBuffer` is not
+    // an option there any more and is dropped without a word.
+    const source = await readFile(join(import.meta.dirname, "../scripts/sealed-map-bake.mjs"), "utf8");
+    const code = source.replace(/\/\/.*$/gm, "");
+    expect(code).toContain("canvasContextAttributes: { preserveDrawingBuffer: true }");
+    expect(code.match(/preserveDrawingBuffer/g)).toHaveLength(1);
+  });
+
   test("materialises one immutable digest-addressed bake and reuses it idempotently", async () => {
     const value = await fixture();
     const counter = { count: 0 };
