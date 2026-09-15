@@ -184,6 +184,33 @@ describe("createInspirationService", () => {
     expect(f.directCalls).toEqual([]);
   });
 
+  it("should say it took too long when Engine reports its own operation timeout", async () => {
+    const f = fakes({
+      status: stored(true),
+      run: {
+        exitCode: 1,
+        events: [
+          {
+            event: "error",
+            message: 'execpolicy: "splash-operation" exceeded its 45s timeout',
+          },
+        ],
+      },
+    });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    const result = await service.search("floods");
+    expect(result).toEqual({
+      ok: false,
+      reason: "engine-failed",
+      detail: "it took too long",
+    });
+    expect(f.directCalls).toEqual([]);
+  });
+
   it("should report unreadable run output without a second search", async () => {
     const f = fakes({
       status: stored(true),
@@ -271,6 +298,45 @@ describe("createInspirationService", () => {
     await service.search("   ");
     expect(f.engineCalls).toEqual([]);
     expect(f.directCalls).toEqual([{ query: "   " }]);
+  });
+
+  it("should search directly, without asking Engine, when the subject is only a next-line character", async () => {
+    const f = fakes({ status: stored(true) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    const query = "\u0085";
+    await service.search(query);
+    expect(f.engineCalls).toEqual([]);
+    expect(f.directCalls).toEqual([{ query }]);
+  });
+
+  it("should search directly, without asking Engine, when the subject contains a NUL", async () => {
+    const f = fakes({ status: stored(true) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    const query = "flood\u0000maps";
+    await service.search(query);
+    expect(f.engineCalls).toEqual([]);
+    expect(f.directCalls).toEqual([{ query }]);
+  });
+
+  it("should strip a trailing next-line character from the subject sent to Engine", async () => {
+    const f = fakes({ status: stored(true), run: ran(ACCOUNT) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    await service.search("flood maps\u0085");
+    expect(JSON.parse(f.engineCalls[1].stdin)).toEqual({
+      parameters: { query: "flood maps" },
+    });
   });
 
   it("should keep the status check and the run within a client's patience", async () => {

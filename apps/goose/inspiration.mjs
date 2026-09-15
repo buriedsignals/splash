@@ -24,9 +24,11 @@ function terminal(outcome) {
 }
 
 // Every `engine-failed` reaches the journalist as one of exactly two sentences — never Engine's own
-// raw text, which can carry a remedy meant for a shell, not for a reading journalist.
+// raw text, which can carry a remedy meant for a shell, not for a reading journalist. The second
+// pattern matches execpolicy's own timeout wording (e.g. `exceeded its 45s timeout`).
 function engineFailureDetail(message) {
-  return typeof message === "string" && /timed out/i.test(message)
+  return typeof message === "string" &&
+    (/timed out/i.test(message) || /exceeded its .* timeout/i.test(message))
     ? "it took too long"
     : "Indicator Labs reported an error";
 }
@@ -49,8 +51,14 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
   }
 
   async function search(query) {
-    const subject = typeof query === "string" ? query.trim() : "";
-    if (!subject || subject.length > MAX_QUERY_LENGTH) return searchFn({ query });
+    // Trimmed the way Go's strings.TrimSpace trims: JS whitespace plus U+0085 (NEL), which JS's own
+    // trim() leaves alone. A subject Engine would refuse — empty, too long, or carrying a NUL — never
+    // reaches Engine; it takes the same direct, anonymous path.
+    const subject =
+      typeof query === "string" ? query.replace(/^[\s\u0085]+|[\s\u0085]+$/g, "") : "";
+    if (!subject || subject.length > MAX_QUERY_LENGTH || subject.includes("\u0000")) {
+      return searchFn({ query });
+    }
     if (!(await accountStored())) return searchFn({ query });
 
     let outcome;
