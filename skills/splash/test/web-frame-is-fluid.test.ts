@@ -25,11 +25,9 @@
  *      format with a different frame contract and a chantier of their own; a guard that failed them
  *      here would be asserting a rule nobody has yet decided applies to them.
  *   2. TWO WIDTHS. A frame that fills at 1600 and 3440 and breaks at 900 is not caught.
- *   3. IT SAYS NOTHING ABOUT HEIGHT, AND THERE IS NO LONGER ANYTHING TO SAY. This used to read
- *      "`.chart-figure`'s window-fit clamp (`max-height: 100dvh`) is the other half of the frame
- *      rule"; that clamp was removed when the owner refused the empty side gutters it produced, and
- *      a figure taller than the window is now the accepted cost. The height that remains is a
- *      consequence of the width, and `chart-web/scripts/verify-web.mjs` measures it there.
+ *   3. IT SAYS NOTHING ABOUT HEIGHT. `.chart-figure`'s window-fit clamp (`max-height: 100dvh`) is
+ *      the other half of the frame rule and is verified by `chart-web/scripts/verify-web.mjs`,
+ *      not here.
  *   4. IT SAYS NOTHING ABOUT WHAT IS INSIDE. A figure that fills the window and draws its chart in
  *      the left third passes. `FRAME_PAD_PX` and the plot's own grid are the shared stylesheet's
  *      job.
