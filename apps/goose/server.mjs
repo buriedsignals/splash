@@ -16,6 +16,7 @@ import {
   ENGINE_SPLASH_CONTRACT_MIN,
   textSummary,
 } from "./contract.mjs";
+import { createInspirationService } from "./inspiration.mjs";
 import { createRecommendationService } from "./recommendation.mjs";
 import { renderAppHtml } from "./resources/render.mjs";
 import {
@@ -93,7 +94,7 @@ async function readStableProfile(story) {
   return profile;
 }
 
-export function createServer({ statusProvider, studio, onToolCall = () => {} } = {}) {
+export function createServer({ statusProvider, studio, onToolCall = () => {}, inspiration } = {}) {
   if (!statusProvider || typeof statusProvider.read !== "function")
     throw new Error("Splash MCP requires a status provider");
   if (
@@ -133,6 +134,31 @@ export function createServer({ statusProvider, studio, onToolCall = () => {} } =
       }
     },
   );
+  if (inspiration) {
+    server.registerTool(
+      "search_inspiration",
+      {
+        title: "Search inspiration",
+        description:
+          "Search the infoviz.design gallery once for what newsrooms have already published on a subject. Pass only the journalist's subject, never a credential. Uses the journalist's Infoviz account when Indicator Labs has one. Show the returned text to the journalist as it is.",
+        inputSchema: exactObject({ query: z.string().min(1).max(1000) }),
+      },
+      async ({ query }) => {
+        onToolCall("search_inspiration");
+        try {
+          const result = await inspiration.search(query);
+          return textResult(inspiration.format(result), { inspiration: result });
+        } catch {
+          return {
+            isError: true,
+            ...textResult("The inspiration search could not run. Nothing was searched.", {
+              inspiration: { ok: false, reason: "unreachable" },
+            }),
+          };
+        }
+      },
+    );
+  }
   return server;
 }
 
@@ -288,6 +314,10 @@ export async function main() {
   const server = createServer({
     statusProvider: dependencies.statusProvider,
     studio: dependencies.studio,
+    inspiration: createInspirationService({
+      bsigPath: process.env.SPLASH_BSIG_PATH,
+      invokeEngineFn: invokeEngine,
+    }),
   });
   await server.connect(new StdioServerTransport());
   wireShutdown(server, dependencies.studio);

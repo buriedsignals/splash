@@ -22,7 +22,9 @@ function statusFixture() {
         { id: "dependencies", status: "pass", detail: "ok" },
         { id: "newsroom-profile", status: "missing", detail: "missing" },
       ],
-      blockers: [{ id: "newsroom-profile", status: "missing", detail: "missing" }],
+      blockers: [
+        { id: "newsroom-profile", status: "missing", detail: "missing" },
+      ],
     },
     keyList: {
       ok: true,
@@ -33,15 +35,20 @@ function statusFixture() {
   });
 }
 
-async function fixture(studio = {
-  async start() {
-    return { status: "ready", studioUrl: "http://127.0.0.1:9/#secret-studio" };
+async function fixture(
+  studio = {
+    async start() {
+      return {
+        status: "ready",
+        studioUrl: "http://127.0.0.1:9/#secret-studio",
+      };
+    },
+    async openLocally() {
+      return { ok: true, status: "opened" };
+    },
+    close() {},
   },
-  async openLocally() {
-    return { ok: true, status: "opened" };
-  },
-  close() {},
-}) {
+) {
   const calls: string[] = [];
   const server = createServer({
     statusProvider: { read: async () => structuredClone(statusFixture()) },
@@ -61,7 +68,8 @@ async function fixture(studio = {
     },
   });
   const client = new Client({ name: "splash-studio-test", version: "0.1.0" });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   await client.connect(clientTransport);
   close.push(
@@ -82,7 +90,10 @@ describe("production Splash MCP studio opener", () => {
 
   it("opens the studio in the browser without leaking the capability URL", async () => {
     const { client, calls } = await fixture();
-    const opened = await client.callTool({ name: "open_splash", arguments: {} });
+    const opened = await client.callTool({
+      name: "open_splash",
+      arguments: {},
+    });
     const wire = JSON.stringify(opened);
     expect(opened.isError).not.toBe(true);
     expect(opened.structuredContent).toMatchObject({
@@ -112,7 +123,7 @@ describe("production Splash MCP studio opener", () => {
     expect(html).toContain('data-route="credentials"');
     expect(html).toContain('data-route="design"');
     expect(html).not.toContain("/api/setup/start");
-    expect(html).toContain('data-story-only>Graphics</button>');
+    expect(html).toContain("data-story-only>Graphics</button>");
     expect(html).toContain('id="choose-title">Graphics</h2>');
     expect(html).toContain("Choose folder…");
     expect(html).toContain("Starting a new story?");
@@ -130,16 +141,30 @@ describe("production Splash MCP studio opener", () => {
     const exits: number[] = [];
     const studio = {
       async start() {},
-      async openLocally() { return { ok: true, status: "opened" }; },
-      close() { closes.push("close"); },
+      async openLocally() {
+        return { ok: true, status: "opened" };
+      },
+      close() {
+        closes.push("close");
+      },
     };
     const server = createServer({
-      statusProvider: { async read() { return compatibleStatus(); } },
+      statusProvider: {
+        async read() {
+          return compatibleStatus();
+        },
+      },
       studio,
     });
     const stdin = new EventEmitter();
     const signals = new EventEmitter();
-    wireShutdown(server, studio, { stdin: stdin as never, exit: (code) => { exits.push(code); }, signals: signals as never });
+    wireShutdown(server, studio, {
+      stdin: stdin as never,
+      exit: (code) => {
+        exits.push(code);
+      },
+      signals: signals as never,
+    });
     stdin.emit("end");
     await new Promise((resolve) => setTimeout(resolve, 400));
     expect(closes).toEqual(["close"]);
@@ -160,7 +185,11 @@ describe("production Splash MCP studio opener", () => {
     await chmod(engine, 0o755);
     const checkout = join(import.meta.dirname, "..", "..", "..");
     const child = Bun.spawn(
-      [process.execPath, "--no-env-file", join(checkout, "apps", "goose", "server.mjs")],
+      [
+        process.execPath,
+        "--no-env-file",
+        join(checkout, "apps", "goose", "server.mjs"),
+      ],
       {
         cwd: checkout,
         env: {
@@ -201,5 +230,107 @@ describe("production Splash MCP studio opener", () => {
     });
     expect(stdout).not.toContain("running on stdio");
     expect(stderr).toContain("running on stdio");
+  });
+});
+
+describe("search_inspiration tool", () => {
+  async function inspirationFixture(search: (query: string) => Promise<any>) {
+    const calls: string[] = [];
+    const queries: string[] = [];
+    const server = createServer({
+      statusProvider: { read: async () => structuredClone(statusFixture()) },
+      studio: {
+        start: async () => ({}),
+        openLocally: async () => ({ ok: true }),
+        close() {},
+      },
+      onToolCall(name: string) {
+        calls.push(name);
+      },
+      inspiration: {
+        search: async (query: string) => {
+          queries.push(query);
+          return search(query);
+        },
+        format: (result: any) =>
+          result.ok ? `list for ${result.query}` : `failed: ${result.reason}`,
+      },
+    });
+    const client = new Client({
+      name: "splash-inspiration-test",
+      version: "0.1.0",
+    });
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    close.push(
+      async () => client.close(),
+      async () => server.close(),
+    );
+    return { client, calls, queries };
+  }
+
+  it("should be listed beside open_splash", async () => {
+    const { client } = await inspirationFixture(async () => ({
+      ok: true,
+      query: "floods",
+      items: [],
+    }));
+    const { tools } = await client.listTools();
+    expect(tools.map((tool) => tool.name).sort()).toEqual([
+      "open_splash",
+      "search_inspiration",
+    ]);
+    const tool = tools.find((t) => t.name === "search_inspiration")!;
+    expect(tool.description).toMatch(/never a credential/i);
+  });
+
+  it("should return the formatted text and the structured result", async () => {
+    const result = {
+      ok: true,
+      query: "floods",
+      items: [],
+      quota: { limit: 10, remaining: 9, resetsAt: null },
+    };
+    const { client, calls, queries } = await inspirationFixture(
+      async () => result,
+    );
+    const answer = await client.callTool({
+      name: "search_inspiration",
+      arguments: { query: "floods" },
+    });
+    expect(answer.isError).not.toBe(true);
+    expect(answer.content).toEqual([{ type: "text", text: "list for floods" }]);
+    expect(answer.structuredContent).toEqual({ inspiration: result });
+    expect(calls).toEqual(["search_inspiration"]);
+    expect(queries).toEqual(["floods"]);
+  });
+
+  it("should reject unknown fields before searching", async () => {
+    const { client, queries } = await inspirationFixture(async () => ({
+      ok: true,
+      query: "x",
+      items: [],
+    }));
+    const answer = await client.callTool({
+      name: "search_inspiration",
+      arguments: { query: "floods", token: "secret-token-123" },
+    });
+    expect(answer.isError).toBe(true);
+    expect(queries).toEqual([]);
+    expect(JSON.stringify(answer)).not.toContain("secret-token-123");
+  });
+
+  it("should say nothing was searched when the service throws", async () => {
+    const { client } = await inspirationFixture(async () => {
+      throw new Error("boom");
+    });
+    const answer = await client.callTool({
+      name: "search_inspiration",
+      arguments: { query: "floods" },
+    });
+    expect(answer.isError).toBe(true);
+    expect(JSON.stringify(answer.content)).toContain("Nothing was searched");
   });
 });
