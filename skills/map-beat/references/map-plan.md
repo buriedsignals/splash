@@ -51,6 +51,13 @@ anything. It used to trust the file, which holds only while the writer and the r
 — a plan reaching a renderer from a second beat, from an older `--plan` file, or from a hand edit
 would have been mounted unchecked. A plan is a FILE; whoever draws from it validates it.
 
+**A layer may say where it goes** (2026-09-15). By default `mountPlan` adds every plan layer above the
+style's own. `beneath: "water"` inserts it before the style's first water fill, found by the rule the style
+sweep tints water by (`styleDecisionFor`), and refuses, naming the layer, when the style has none. A
+choropleth filled from MapTiler Countries uses it: that tileset's coast is generalised per zoom, and beneath
+the basemap's water it is hidden under the sea (spec §1.3, the two coastlines), while inland borders stay
+Countries geometry. Its outline layer goes beneath too, since a polygon's outline traces its coast.
+
 **And the web renderer is now ON it** (2026-09-13). `skills/map-web/assets/live-map.mjs` already read
 this shape, with its three radius strategies — a value-encoding circle held fixed in screen pixels, a
 point whose ground footprint doubles per zoom level, a pin that does not move — but it read it from

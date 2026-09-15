@@ -5,6 +5,8 @@
 // — but an ARRAY of expressions is neither, and the layer renders nothing at all. No warning, no
 // error, just an empty layer that looks like a data problem for an hour.
 
+import { styleDecisionFor } from "./style.mjs";
+
 /** Property names whose value is a pair of numbers, and which therefore cannot be assembled from two
  *  expressions. */
 const PAIR_PROPERTIES = ["text-offset", "icon-offset", "text-translate", "icon-translate"];
@@ -201,6 +203,26 @@ export function sourceIdOf(layer) {
  *
  *  A layer that reads a VECTOR source must name its source layer: without one MapLibre adds a layer
  *  that matches no feature and draws nothing, silently — the empty-layer shape again. */
+/**
+ * WHERE A PLAN LAYER GOES IN THE BASEMAP'S STACK. By default above every style layer. `beneath: "water"`
+ * puts it before the style's first water fill, found by the rule the style sweep tints water by
+ * (`styleDecisionFor`), so the basemap's own sea draws the coast over it.
+ *
+ * THE TWO COASTLINES (spec §1.3). A choropleth filled from MapTiler Countries carries that tileset's
+ * coast, generalised per zoom, on top of the basemap's finer one: measured on the choropleth pilot, the
+ * fills stood 1.5–3.6 CSS px over the basemap's sea at the Norwegian fjords, Dalmatia and the Aegean.
+ * Beneath the water, the coarser coast is hidden under the sea and the inland borders are unchanged.
+ */
+export function beforeIdFor(map, layer) {
+  if (layer.beneath === undefined) return undefined;
+  if (layer.beneath !== "water")
+    throw new Error(`layer "${layer.id}" asks to be drawn beneath "${layer.beneath}"; a plan layer can only go beneath "water"`);
+  const water = map.getStyle().layers.find((l) => styleDecisionFor(l).tint === "water");
+  if (!water)
+    throw new Error(`layer "${layer.id}" is drawn beneath the basemap's water, and the style has no water fill to go beneath`);
+  return water.id;
+}
+
 export function mountPlan(map, plan) {
   for (const layer of plan.layers) {
     const id = sourceIdOf(layer);
@@ -214,16 +236,19 @@ export function mountPlan(map, plan) {
   for (const layer of plan.layers) {
     const paint = { ...(layer.paint || {}) };
     if (layer.radius) paint["circle-radius"] = radiusPaintOf(layer, plan, cameraScale(plan, map));
-    map.addLayer({
-      id: layer.id,
-      type: layer.type,
-      source: sourceIdOf(layer),
-      ...(layer.sourceLayer ? { "source-layer": layer.sourceLayer } : {}),
-      ...(layer.filter ? { filter: layer.filter } : {}),
-      ...(layer.minzoom === undefined ? {} : { minzoom: layer.minzoom }),
-      ...(layer.maxzoom === undefined ? {} : { maxzoom: layer.maxzoom }),
-      ...(layer.layout ? { layout: layer.layout } : {}),
-      ...(Object.keys(paint).length ? { paint } : {}),
-    });
+    map.addLayer(
+      {
+        id: layer.id,
+        type: layer.type,
+        source: sourceIdOf(layer),
+        ...(layer.sourceLayer ? { "source-layer": layer.sourceLayer } : {}),
+        ...(layer.filter ? { filter: layer.filter } : {}),
+        ...(layer.minzoom === undefined ? {} : { minzoom: layer.minzoom }),
+        ...(layer.maxzoom === undefined ? {} : { maxzoom: layer.maxzoom }),
+        ...(layer.layout ? { layout: layer.layout } : {}),
+        ...(Object.keys(paint).length ? { paint } : {}),
+      },
+      beforeIdFor(map, layer),
+    );
   }
 }
