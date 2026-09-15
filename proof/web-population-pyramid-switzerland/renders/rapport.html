@@ -129,33 +129,123 @@ body {
   position: relative;
   width: 100%;
   display: grid;
-  grid-template-columns: var(--y-gutter) 1fr;
+  /* THREE COLUMNS, THE THIRD NORMALLY EMPTY. The format has always had a left gutter and an
+     x-axis band; a beat whose marks END somewhere meaningful (the bump's final ranks) also needs a
+     right gutter, and it used to get one by declaring an IMPLICIT third column of its own. That was
+     invisible to this stylesheet, and invisible is exactly what '--track-w' below cannot afford:
+     the cell's own slack is measured from the track, and a track 127px narrower than assumed moved
+     the bump's left gutter 63.5px off the drawing it labels. Declared here, defaulting to nothing,
+     it costs a beat that has no end gutter exactly zero. */
+  grid-template-columns: var(--y-gutter) 1fr var(--end-gutter, 0px);
   grid-template-rows: 1fr var(--x-axis-h);
   /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
      flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
      inline style, from the real geometry), so in a window with room the shape is exactly what it
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
-     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
-     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     give the height back. A flatter plot is a real cost and it USED to be paid by the drawing:
+     preserveAspectRatio="none" followed the box down and the geometry went with it.
+     THAT REASONING IS NOW OVERTURNED, AND THE COMMENT IT REPLACES IS QUOTED SO THE COST IS MET
+     RATHER THAN LOST: "A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
-     chart the reader has seen.
+     chart the reader has seen." That held for a CURVE. It does not hold for a scatter, a
+     pictogram, an arrowhead or a proportional symbol: a LENGTH in the plane may follow the
+     stretch, because it is a distance and it belongs to the plane, but a SHAPE never may. The
+     format already knew this for TEXT (which is why every word lives in HTML outside the viewBox)
+     and for STROKES (vector-effect="non-scaling-stroke"); it had never written it down for filled
+     shapes. The owner read it off a render before any guard did: "les cercles sont pas parfaits
+     tout comme les fleches, on dirait que c'est etire" -- measured on the connected scatter at
+     1512x860, a 1420x564 cell for an 820x460 viewBox, 1.41x wider than tall.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
      min-height:auto, which would otherwise refuse to shrink this box below its content size and
-     re-open the overflow this whole rule exists to close. */
+     re-open the overflow this whole rule exists to close. It is ALSO the worst stretcher of the
+     two: the pictogram measured 2.15x at 375x812, where this floor pins the height while the
+     width collapses -- worse than any wide-and-short window, and out of reach of any fix aimed at
+     the clamp alone. */
   flex: 0 1 auto;
   min-height: 120px;
+
+  /* THE CELL CARRIES THE VIEWBOX'S OWN RATIO, AT EVERY WINDOW SIZE, WHICH IS WHAT MAKES
+     preserveAspectRatio="none" UNIFORM AND THEREFORE HARMLESS.
+     Not a letterbox: switching the <svg> to "meet" would shift every HTML overlay positioned in %
+     of the cell (the price the radar already paid by pulling its text inside the viewBox). The
+     cell is made exact instead, and then the stretch has nothing left to stretch.
+     WHY THE ASPECT-RATIO STAYS ON THIS ELEMENT. It looks as though the cell could simply carry
+     'aspect-ratio: W / H' and the gutters be forgotten. It cannot: container-type: size implies
+     contain: size, so a size container's own size must come from somewhere other than its
+     contents. This box takes its height from its width (the inline aspect-ratio the component
+     sets, gutters included), the grid then hands the plot cell a box definite in BOTH axes, and
+     the min() pair below is what absorbs, with ONE mechanism, all three causes of anisotropy: the
+     fixed-pixel gutters that only make the cell exactly W:H at one single width (~2 % drift at
+     1464px), the height clamp, and the min-height floor.
+     The numbers are the beat's own, read off the <svg> it just drew -- never typed here. */
+  container-type: size;
+  --track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px));
+  --track-h: calc(100cqh - var(--x-axis-h));
+  --cell-w: min(var(--track-w), calc(var(--track-h) * 780 / 420));
+  --cell-h: min(var(--track-h), calc(var(--track-w) * 420 / 780));
+  /* Half of whatever the cell did not take, in each axis. The cell is CENTRED in its track, so a
+     wide-and-short window gets even side margins and a legible drawing rather than a squashed one
+     -- and the gutters travel with it (below), because an axis label that stays glued to the
+     track's edge while the plot it labels moves is a worse defect than the one being fixed. */
+  --cell-slack-x: calc((var(--track-w) - var(--cell-w)) / 2);
+  --cell-slack-y: calc((var(--track-h) - var(--cell-h)) / 2);
 }
-.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
-svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* BOTH GUTTERS FOLLOW THE CELL. Each is the cell's own height, so a label at 'top: 62%' lands on
+   the same 62 % of the geometry it names; each translate carries it across whatever slack the cell
+   left, so it stays flush against the drawing's own edge instead of the track's. */
+.chart-plot .y-axis {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  height: var(--cell-h);
+  min-height: 0;
+  margin-block: auto;
+  transform: translateX(var(--cell-slack-x));
+}
+.chart-plot .end-axis {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
+  height: var(--cell-h);
+  min-height: 0;
+  margin-block: auto;
+  transform: translateX(calc(0px - var(--cell-slack-x)));
+}
+/* Every box that SHARES the plot cell takes the cell's exact size and centres in the track: the
+   geometry itself, the HTML overlay that annotates it, and any layer a beat adds over both (the
+   tree's own convention names one '...-layer' -- 'option-layer', 'verdict-layer', 'cell-layer').
+   min-width/min-height: 0 overrides a grid item's automatic minimum size, which would otherwise
+   refuse to let a box carrying intrinsic geometry shrink below it. */
+svg.chart,
+.chart-plot .overlay,
+.chart-plot > [class*="-layer"] {
+  grid-column: 2;
+  grid-row: 1;
+  width: var(--cell-w);
+  height: var(--cell-h);
+  min-width: 0;
+  min-height: 0;
+  margin: auto;
+}
+svg.chart { display: block; }
 /* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
    svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
    mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
    driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
    never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
    correct: none of them is a control. */
-.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
-.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+.chart-plot .overlay { position: relative; pointer-events: none; }
+/* The x-axis band is the y-axis's mirror: the cell's width, and lifted by whatever vertical slack
+   the cell left above it, so the tick under a mark stays under that mark. */
+.chart-plot .x-axis {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  width: var(--cell-w);
+  min-width: 0;
+  margin-inline: auto;
+  transform: translateY(calc(0px - var(--cell-slack-y)));
+}
 
 .axis-label {
   position: absolute;
@@ -250,19 +340,24 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
   gap: 4px 12px;
   align-items: center;
   font-size: var(--filter-size);
+  /* A fieldset's default min-inline-size is min-content and a flex item's default min-width is auto,
+     so a row of pills simply grows to its content and takes the DOCUMENT with it — measured at
+     1351px wide in a 375px window on proof/web-slope-europe-lowcarbon. Both are load-bearing. */
+  min-inline-size: 0;
+  min-width: 0;
 }
 /* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
+   into the fieldset's border — inside a flex container the float itself does nothing. Without it
+   the legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
 .chart-figure .chart-fold legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-.chart-figure .chart-fold .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-figure .chart-fold .options { display: inline-flex; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-width: 0; }
 .chart-figure .chart-fold label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-fold input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is chosen,
-   so choosing one never moves the plot underneath it. role="status" is on the container rather than
-   on each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
+   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
+   container rather than on each note: the notes come and go by display, and a live region that
+   itself comes and goes announces nothing. */
 .chart-figure .fold-notes {
   flex: 0 0 auto;
   margin: 4px 0 0;
@@ -275,17 +370,23 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 @supports selector(:has(*)) {
   .chart-figure .chart-fold .options {
     gap: 0;
-    padding: 2px;
+    padding: 3px;
     border: 1px solid var(--grid);
     border-radius: 999px;
   }
+  /* THE RING IS PAID FOR OUT OF THE PADDING. A transparent 1,5px edge at rest and an accent one when
+     chosen means the pill's outer box is the same either way, so the row cannot shift sideways when
+     a reader changes their mind. min-height rather than arithmetic on the direction's own font size
+     is what keeps the 24x24 target real in every direction (WCAG 2.2 SC 2.5.8). */
   .chart-figure .chart-fold label {
     gap: 0;
-    padding: 5px 10px;
+    min-height: 24px;
+    padding: 4px 10px;
+    border: 1.5px solid transparent;
     border-radius: 999px;
     line-height: 1.2;
     white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
   }
   .chart-figure .chart-fold label input {
     position: absolute;
@@ -298,11 +399,22 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
     -webkit-appearance: none;
     border-radius: 999px;
   }
+  /* THREE DISTINCT STATES, AND NO TWO OF THEM ARE THE SAME CUE. Hover darkens the words and nothing
+     else. Chosen fills the capsule, rings it and darkens the words. Focus draws an outline OUTSIDE
+     the box, in ink, so a chosen pill that is also focused shows both and neither is mistaken for
+     the other. Order matters and is the whole mechanism: hover and chosen weigh the same, so the
+     later rule is what a hovered chosen pill takes. */
   .chart-figure .chart-fold label:hover { color: var(--ink); }
-  /* ink-on-ground, never the accent: the accent is what the argument is drawn in on this page, and a
-     control that borrowed it would make the one colour that means something also mean "you clicked
-     here". */
-  .chart-figure .chart-fold label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  /* NOT A SLAB OF INK — see this file's header for the three refusals and the three measured cues.
+     An opaque color-mix and not a translucency: what the page paints behind the words is exactly the
+     colour measured against them. Where color-mix is not understood the declaration drops and the
+     ring and the darkened words still separate the chosen option, which is the same posture the
+     @supports wrapper already takes. */
+  .chart-figure .chart-fold label:has(input:checked) {
+    background: color-mix(in srgb, var(--accent) 22%, var(--ground));
+    border-color: var(--accent);
+    color: var(--ink);
+  }
   .chart-figure .chart-fold label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
 }
 
