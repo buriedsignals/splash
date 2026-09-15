@@ -458,6 +458,70 @@ longer has to leave the `viewBox` to survive, because the cell no longer distort
 into the HTML layer is now a choice about what answers a pointer, not a defence against the
 stretch.
 
+## The surplus width goes into the DRAWING'S OWN FRAME, or it stays margin
+
+The cell carries its own `viewBox`'s ratio and the figure is capped at the window's height. Those
+two rules together have a consequence that is not a defect and cannot be argued away: **on a wide,
+short window a drawing whose frame is near-square is HEIGHT-bound, and the width it does not take is
+margin.** Measured on the restored layout at 1512 × 860, `rapport`: the proportional-symbol map drew
+**735px inside a 1464px track** — half the page, empty on both sides.
+
+There are exactly three places that surplus can go, and two of them are closed:
+
+- **stretch the cell** — refused by the section above: on a map it is a false geography, and it is
+  the defect the owner read off a render before any guard did;
+- **give it to a column of furniture beside the drawing** — built, measured, and refused by the
+  owner on the render: *"tu as perdu le layout qu'on avait avant … Le tout c'est de garder le
+  layout, la hauteur de base qu'on se donnait."* The header moves, the base height goes, the display
+  register ends up set at a column measure. The arrangement worked and the page it produced was not
+  the page;
+- **give it to the drawing's own frame.** The beat's `viewBox` takes a wider ratio and the drawing
+  is COMPOSED for that box. Nothing is stretched, nothing moves, the height budget is untouched.
+
+**It is a property of the TYPE, not of the page.** The beat declares it and the trunk writes the
+declaration into the stylesheet, where `assertFrameExtension` reads it back against the `<svg>` the
+same page draws:
+
+```js
+await renderWeb({
+  component, props, outDir, name,
+  frame: { extends: true, base: { width: 900, height: 684 }, maxRatio: 1.5, why: "…" },
+});
+```
+
+**What extends.** A map: the projected plan continues past the subject, so the geographic window
+opens and shows more of the surroundings AT THE SAME SCALE — never a zoom, which would change what a
+millimetre is worth, and never a stretch. And any type one of whose axes is a continuum that can be
+aired out — line, area, streamgraph, gantt, dot strip, connected scatter, calendar: a wider box puts
+more room between readings, which is what the reader is being asked to compare.
+
+**What does not.** A type whose ratio its message imposes. Radial types (radar, pie) — an ellipse
+makes the radius lie. Area encodings (treemap, marimekko) — the area IS the datum. A pictogram — a
+grid of square icons. For these nothing changes: the base frame, the base height, the surplus left
+as margin. The owner said so in the same breath: *"pour les charts qui peuvent pas s'étendre
+garde-le comme ça."*
+
+**The list above is a STARTING POINT, not a truth.** Each beat declares its own and argues it in one
+sentence, which the page then carries; a type that cannot say why it may extend does not extend.
+
+**Two bounds, and the tighter one wins.**
+
+1. *The layout's bound.* A frame may open while the drawing is still height-bound. The moment it
+   opens far enough to become WIDTH-bound, the figure stops using the window's height and the
+   surplus simply moves from the sides to the bottom — a worse trade, since the side margin was
+   symmetric and the bottom one is not. Measured on the diverging stacked bar at 1512 × 860: its own
+   base frame (880/372 = 2.366) already leaves only **46px of a 1290px track**, and widening it to
+   1240/372 closes those 46px while opening **140px of unused page under the figure**. That beat is
+   already at its bound.
+2. *The subject's bound.* For a map this is editorial and it is usually the tighter of the two: the
+   window may open only as far as the beat's own study set reaches. A frame that opens onto land the
+   data does not cover invites the reading "nothing here", which is a different sentence from "not
+   counted here".
+
+Past the bound the surplus is margin again, and it needs no rule of its own: the cell already
+`min()`s against the track, so a drawing narrower than its track is centred and its gutters travel
+with it.
+
 ## Nothing clipped — and the one edge this format does not protect
 
 **An SVG clips to its `viewBox`.** No `overflow: visible` is set, and setting one would only move

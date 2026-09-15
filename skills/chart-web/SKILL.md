@@ -182,6 +182,21 @@ sees. **What this does not claim** is that the beat USES the window — at 375 �
 draws a 153px plot in an 812px window, because height follows width. Fitting and filling are two
 rules and only the first is settled.
 
+**And what filling costs, once fitting is settled.** A drawing whose frame is near-square is
+HEIGHT-bound on a wide, short window, and the width it does not take is margin: measured on the
+proportional-symbol map at 1512 × 860, 735px of drawing inside a 1464px track. Stretching the cell is
+refused (a false geography) and so is moving the furniture into a column beside the drawing — built,
+measured, and refused by the owner on the render: *"tu as perdu le layout qu'on avait avant … le
+tout c'est de garder le layout, la hauteur de base qu'on se donnait, et juste étendre lorsque c'est
+possible."* What is left is the drawing's own frame: the beat declares `frame: { extends, base,
+maxRatio, why }` to `renderWeb`, the trunk writes the declaration into the stylesheet and
+`assertFrameExtension` holds it against the `<svg>` the same page draws. A map opens its geographic
+window at the SAME scale; a type whose axis is a continuum gets more room between readings; a radial,
+an area encoding or a grid of square icons declares itself FIXED and keeps its margin. A beat that
+declares nothing renders byte for byte the page it rendered before. See `web-discipline.md`, "The
+surplus width goes into the DRAWING'S OWN FRAME, or it stays margin", for the two bounds and the
+measurements.
+
 **The filter's own control.** The first shipped filter was three default radio dots with a bare word
 beside each, which reads as an unfinished form under a finished chart. It is now a segmented control
 — three options in one rounded track, the chosen one inverted to ink-on-ground — layered ON TOP of

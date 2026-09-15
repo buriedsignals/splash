@@ -143,7 +143,7 @@ const OUTPUT_NAME = "rainfall.html";
  * composition — so every web beat shares one implementation of the colour rule and the
  * text-measurement rule, never a copy per story.
  */
-async function renderWeb({ component, props, outDir, name }) {
+async function renderWeb({ component, props, outDir, name, frame = null }) {
   const furniture = deriveFurniture(props.ground);
 
   // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
@@ -212,6 +212,10 @@ async function renderWeb({ component, props, outDir, name }) {
     // The plot cell's ratio, taken from the geometry this component actually drew rather than from
     // anything the beat declares twice. See `plotViewBoxOf`.
     plot: plotViewBoxOf(markup, name ?? "this beat"),
+    // WHAT THE BEAT SAYS ABOUT ITS OWN FRAME — extendable or fixed, at what bound, and why. A beat
+    // that declares nothing emits nothing and is guarded on nothing: the thirty-odd beats that have
+    // never been asked the question keep exactly the page they had. See `frameNoteCss`.
+    frame,
     filter: props.filter ?? null,
     entrance: declaresEntrance,
     fontStack: stack,
@@ -251,6 +255,7 @@ ${inlineScript}
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
   assertPlotCellIsItsViewBox(html, name ?? "this beat");
+  assertFrameExtension(html, frame, name ?? "this beat");
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -346,6 +351,123 @@ function assertPlotCellIsItsViewBox(html, name = "this beat") {
         `<svg class="chart"> declares ${width}/${height} (${want.toFixed(4)}). The cell must carry ` +
         `its own viewBox's ratio exactly, or preserveAspectRatio="none" stretches the drawing by ` +
         `the difference.`,
+    );
+}
+
+/**
+ * THE FRAME A BEAT DECLARES, AND WHY IT IS A PROPERTY OF THE TYPE RATHER THAN OF THE PAGE.
+ *
+ * The layout holds the drawing inside the window's height and gives the cell the ratio of its own
+ * viewBox, so on a wide, short window a near-square drawing is HEIGHT-BOUND and the width it does
+ * not take stays margin. That surplus has exactly three places it could go, and two of them are
+ * refused on a render: stretching the cell (a false geography, and the defect this whole series
+ * began with) and a column of furniture beside the drawing (refused by the owner: "tu as perdu le
+ * layout qu'on avait avant"). The third is the drawing itself: THE BEAT'S OWN FRAME TAKES A WIDER
+ * RATIO AND THE DRAWING IS COMPOSED FOR IT. A map opens its geographic window and shows more
+ * surroundings AT THE SAME SCALE; a type whose axis is a continuum gets more room between readings.
+ *
+ * Which types may is not a fact about this file. Radial types (radar, pie) and area-encoded types
+ * (treemap, marimekko, pictogram) have a ratio their message imposes; for them nothing changes and
+ * the surplus stays margin — "garde-le comme ça". So the beat DECLARES, in one sentence, and this
+ * function writes the declaration into the page it is a claim about:
+ *
+ *   frame: { extends: true, base: { width, height }, maxRatio: 1.5, why: "…" }
+ *
+ * THE BOUND IS NOT ONE NUMBER FOR EVERYTHING. A frame that keeps opening becomes an illegible
+ * frieze, and each type reaches that at its own ratio; a map reaches it sooner still, when the
+ * window opens onto land the beat's own study set does not cover. Past the bound the surplus goes
+ * back to being margin, and it does so with no rule of its own: the cell already min()s against the
+ * track, so a drawing narrower than its track is centred with its gutters travelling beside it.
+ *
+ * A beat that declares nothing gets nothing — no note, no guard, no change. That is deliberate:
+ * this question is asked of a beat when it is re-rendered, not retro-fitted to pages nobody looked
+ * at.
+ */
+function frameNoteCss(frame, plot, name = "this beat") {
+  if (!frame) return "";
+  const { width, height } = assertPlotGeometry(plot);
+  const base = frame.base ?? {};
+  const baseW = Number(base.width);
+  const baseH = Number(base.height);
+  if (!Number.isFinite(baseW) || !Number.isFinite(baseH) || baseW <= 0 || baseH <= 0)
+    throw new Error(
+      `${name}: a frame declaration needs the type's own base box ({ base: { width, height } }) — ` +
+        `the composition the type has when nothing is extended. Without it "extended" names no ` +
+        `quantity and the bound below has nothing to be a bound ON. Given ${JSON.stringify(base)}.`,
+    );
+  const extends_ = frame.extends === true;
+  const why = typeof frame.why === "string" ? frame.why.trim() : "";
+  if (why.length < 40)
+    throw new Error(
+      `${name}: a frame declaration must ARGUE itself in a sentence — extendable or fixed, and why ` +
+        `this type's own message survives (or does not survive) a wider box. A type that cannot ` +
+        `say why it may extend does not extend. Given ${JSON.stringify(frame.why ?? null)}.`,
+    );
+  const bound = extends_ ? Number(frame.maxRatio) : baseW / baseH;
+  if (extends_ && (!Number.isFinite(bound) || bound < baseW / baseH))
+    throw new Error(
+      `${name}: an extendable frame must declare a maxRatio at least its own base ratio ` +
+        `(${(baseW / baseH).toFixed(3)}); it declared ${JSON.stringify(frame.maxRatio ?? null)}. ` +
+        `Beyond the bound the drawing is a frieze and the surplus width belongs back in the margin.`,
+    );
+  return `/* THE FRAME — ${extends_ ? "EXTENDS" : "FIXED"} · base ${baseW}/${baseH} (${(baseW / baseH).toFixed(3)}) · drawn ${width}/${height} (${(width / height).toFixed(3)}) · bound ${bound.toFixed(3)}
+   ${why}
+   Past the bound the surplus width is margin again, with no rule of its own: the cell below carries
+   this page's own viewBox ratio and min()s against the track, so a drawing narrower than its track
+   is centred and its gutters travel with it. Nothing is ever stretched to fill. */`;
+}
+
+/**
+ * THE GUARD, ON THE WRITTEN PAGE RATHER THAN ON THE INTENTION — the frame's half.
+ *
+ * `frameNoteCss` above refuses a declaration that is malformed, which is a check on what was PASSED
+ * IN. This one re-reads the document about to be written and holds the note against the `<svg>` the
+ * same document draws, so a page whose note and whose geometry disagree is refused here rather than
+ * delivered with a sentence that describes a different picture.
+ */
+function assertFrameExtension(html, frame, name = "this beat") {
+  const note = /\/\* THE FRAME — (EXTENDS|FIXED) · base ([\d.]+)\/([\d.]+) \([\d.]+\) · drawn ([\d.]+)\/([\d.]+) \([\d.]+\) · bound ([\d.]+)/.exec(html);
+  if (!frame) {
+    if (note)
+      throw new Error(
+        `${name}: the page carries a frame note but the render was handed no frame declaration. ` +
+          `The note is the claim the guard reads; one that nothing declared cannot be held to a bound.`,
+      );
+    return;
+  }
+  if (!note)
+    throw new Error(
+      `${name}: the beat declares a frame (${frame.extends ? "extendable" : "fixed"}) and the ` +
+        `written page says nothing about it. A declaration the artifact does not carry is a ` +
+        `declaration nothing can be checked against.`,
+    );
+  const { width, height } = plotViewBoxOf(html, name);
+  const baseRatio = Number(note[2]) / Number(note[3]);
+  const bound = Number(note[6]);
+  if (Number(note[4]) !== width || Number(note[5]) !== height)
+    throw new Error(
+      `${name}: the frame note says the page is drawn ${note[4]}/${note[5]} while its ` +
+        `<svg class="chart"> declares ${width}/${height}. The note describes a different picture ` +
+        `than the one being written.`,
+    );
+  const drawn = width / height;
+  if (drawn < baseRatio - 1e-6)
+    throw new Error(
+      `${name}: the page is drawn at ${drawn.toFixed(3)}, NARROWER than the type's own base frame ` +
+        `${baseRatio.toFixed(3)}. Extending opens the frame; it never closes it, and a narrower box ` +
+        `gives the surplus width back to the margin for nothing.`,
+    );
+  if (note[1] === "FIXED" && drawn > baseRatio + 1e-6)
+    throw new Error(
+      `${name}: the frame is declared FIXED and the page is drawn at ${drawn.toFixed(3)} against a ` +
+        `base of ${baseRatio.toFixed(3)}. A type whose ratio its message imposes — a radial, an ` +
+        `area encoding, a grid of square icons — is drawn at that ratio and leaves the rest as margin.`,
+    );
+  if (drawn > bound + 1e-6)
+    throw new Error(
+      `${name}: the page is drawn at ${drawn.toFixed(3)}, past the bound of ${bound.toFixed(3)} this ` +
+        `beat declared for its own type. Past the bound the drawing stops being a chart and becomes ` +
+        `a frieze, and the width belongs back in the margin.`,
     );
 }
 
@@ -537,8 +659,11 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, plot, filter = null, entrance = false, fontStack = "sans-serif" }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, filter = null, entrance = false, fontStack = "sans-serif" }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
+  // The beat's own answer to "may this frame open?", written into the page above the rule the
+  // answer is about. Empty for a beat that has not been asked. See `frameNoteCss`.
+  const frameNote = frameNoteCss(frame, plot, "this beat");
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -572,7 +697,7 @@ body {
   font-family: ${fontStack};
 }
 
-/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+${frameNote ? `${frameNote}\n` : ""}/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
    .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
    no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
    (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
@@ -878,4 +1003,13 @@ if (import.meta.main) {
   console.log(`web beat → ${outPath}  [${readings} readings]`);
 }
 
-export { render, renderWeb, SEED, buildCss, plotViewBoxOf, assertPlotCellIsItsViewBox };
+export {
+  render,
+  renderWeb,
+  SEED,
+  buildCss,
+  plotViewBoxOf,
+  assertPlotCellIsItsViewBox,
+  frameNoteCss,
+  assertFrameExtension,
+};
