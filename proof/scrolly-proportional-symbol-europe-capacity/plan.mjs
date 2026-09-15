@@ -49,7 +49,6 @@ export function proportionalPlan({ tints, bands, colours, fonts, largest, camera
   const reached = (band) => clamp(["/", ["-", count, band.from - 1], band.to - band.from + 1]);
   const ring = (inset) => radiusExpression(radius.largestPx, radius.anchorZoom, inset);
   const others = [];
-  const halos = [];
   const nuclear = [];
   for (const band of bands) {
     if (band.others.length)
@@ -61,29 +60,16 @@ export function proportionalPlan({ tints, bands, colours, fonts, largest, camera
         // Every other station steps back while nuclear is isolated.
         bindings: { "circle-stroke-opacity": ["*", reached(band), ["-", 1, ["*", 0.8, subject]], 0.9], "circle-stroke-width": baseWidth },
       });
-    if (band.nuclear.length) {
-      // A nuclear site stands whatever its rank once nuclear is isolated.
-      const shown = ["max", reached(band), subject];
-      halos.push({
-        id: `band-${band.from}-${band.to}-nuclear-halo`,
-        type: "circle",
-        data: points(band.nuclear),
-        paint: { "circle-radius": ring(1.7), "circle-opacity": 0, "circle-stroke-color": tints.land, "circle-stroke-width": 3.4, "circle-stroke-opacity": 0 },
-        bindings: { "circle-stroke-opacity": ["*", shown, subject] },
-      });
+    if (band.nuclear.length)
+      // A NUCLEAR SITE STANDS WHATEVER ITS RANK once nuclear is isolated, in the same accent and the same fine stroke as
+      // every other card (owner, 2026-09-15): it is isolated by the others stepping back, not by a heavier mark.
       nuclear.push({
         id: `band-${band.from}-${band.to}-nuclear`,
         type: "circle",
         data: points(band.nuclear),
         paint: { "circle-radius": ring(0.65), "circle-opacity": 0, "circle-stroke-color": colours.circle, "circle-stroke-width": 1.3, "circle-stroke-opacity": 0 },
-        // In the circle's hue among the others, in the ink when isolated.
-        bindings: {
-          "circle-stroke-opacity": shown,
-          "circle-stroke-color": ["interpolate", ["linear"], subject, 0, colours.circle, 1, colours.subject],
-          "circle-stroke-width": ["+", baseWidth, ["*", ["-", 1.8, baseWidth], subject]],
-        },
+        bindings: { "circle-stroke-opacity": ["max", reached(band), subject], "circle-stroke-width": baseWidth },
       });
-    }
   }
   // THE LARGEST STATION NAMED BESIDE ITS CIRCLE: to its west, clear of the stage's east edge on a phone, pushed out
   // by the circle's own radius at every zoom (a paint translate, so it follows the zoom continuously).
@@ -123,6 +109,6 @@ export function proportionalPlan({ tints, bands, colours, fonts, largest, camera
     radius,
     warmSamples: 3,
     degreesPerPixel: 1,
-    layers: [...others, ...halos, ...nuclear, name],
+    layers: [...others, ...nuclear, name],
   };
 }

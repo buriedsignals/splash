@@ -101,10 +101,13 @@ const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits
 const [, inFocus] = COUNTRY[focus];
 
 // ── the cameras, from the beat's own facts ─────────────────────────────────────────────────────
-/** THE STUDY WINDOW THE SVG BEAT FRAMED: Iceland to Cyprus, Portugal to western Russia. Its north edge stops at 68° N,
- *  where Web Mercator's stretch would otherwise shrink the whole map by a quarter for 43 small northern stations; none
- *  of the plate's cut lies above it. */
-const BOUNDS = { west: -24.6, east: 45, south: 34.5, north: 68 };
+/** THE STUDY WINDOW: Iceland to Cyprus, Portugal to western Russia, as the SVG beat framed it, and north to the
+ *  northernmost station (71.0° N), so the 43 small northern stations above 68° N are in the whole map too (owner,
+ *  2026-09-15). A phone's view does not change with the north edge: its map is fitted by width and sits at the bottom
+ *  of the stage, where only the south edge places it. */
+const BOUNDS = { west: -24.6, east: 45, south: 34.5, north: 71.2 };
+const northernmost = Math.max(...stations.map((s) => s.lat));
+if (!(northernmost < BOUNDS.north)) throw new Error(`the whole map's north edge (${BOUNDS.north}° N) cuts off a station at ${northernmost}° N`);
 const [bx0, by1] = mercatorOf([BOUNDS.west, BOUNDS.south]);
 const [bx1, by0] = mercatorOf([BOUNDS.east, BOUNDS.north]);
 /** The reference stage is the window itself, 1280 px wide: every stage keeps the whole window in view (`zoomShiftFor`
@@ -112,6 +115,11 @@ const [bx1, by0] = mercatorOf([BOUNDS.east, BOUNDS.north]);
 const REFERENCE = { width: 1280, height: Math.round((1280 * (by1 - by0)) / (bx1 - bx0)) };
 const WHOLE_ZOOM = Math.log2(REFERENCE.width / ((bx1 - bx0) * 512));
 const WHOLE_CENTER = lonLatOf([(bx0 + bx1) / 2, (by0 + by1) / 2]);
+/** THE WINDOW THE OWNER APPROVED THE CIRCLE SIZES AND THE CLOSE-UP ON (north edge 68° N, 2026-09-15): the close-up and
+ *  the radius anchor are fitted to it, so growing the window north leaves a phone's cards and every circle's size at a
+ *  given zoom as they were; a desktop, fitted by height, draws every card 0.22 zoom levels further out. */
+const APPROVED_WINDOW_NORTH = 68;
+const approvedHeight = (1280 * (by1 - mercatorOf([BOUNDS.east, APPROVED_WINDOW_NORTH])[1])) / (bx1 - bx0);
 /** THE CLOSE-UP CENTRES THE FOCUS COUNTRY'S NUCLEAR SITES ON BOTH AXES, no padding: their box, one and a half times
  *  over (the SVG's `boxAround(…, 1.5)`), fitted into the reference. */
 const focusSites_ = nuclear.filter((s) => s.country === focus).map((s) => mercatorOf([s.lon, s.lat]));
@@ -119,7 +127,8 @@ const fx0 = Math.min(...focusSites_.map((p) => p[0]));
 const fx1 = Math.max(...focusSites_.map((p) => p[0]));
 const fy0 = Math.min(...focusSites_.map((p) => p[1]));
 const fy1 = Math.max(...focusSites_.map((p) => p[1]));
-const CLOSE_ZOOM = Math.log2(Math.min(REFERENCE.width / ((fx1 - fx0) * 1.5 * 512), REFERENCE.height / ((fy1 - fy0) * 1.5 * 512)));
+// Fitted into the approved window's reference, whose zoom shift is the phone's: a phone's close-up is unchanged.
+const CLOSE_ZOOM = Math.log2(Math.min(REFERENCE.width / ((fx1 - fx0) * 1.5 * 512), approvedHeight / ((fy1 - fy0) * 1.5 * 512)));
 const CLOSE_CENTER = lonLatOf([(fx0 + fx1) / 2, (fy0 + fy1) / 2]);
 /** ON A PHONE THE WHOLE WINDOW SITS AT THE BOTTOM OF THE STAGE (`camAlignY: 1`), so the station card 1 names stands
  *  below the resting card, not under it; a desktop stage is fitted by its height and has no room to move. */
@@ -128,13 +137,15 @@ const closeUp = cameraFields({ center: CLOSE_CENTER, zoom: CLOSE_ZOOM, alignY: 0
 const cameras = [whole, whole, whole, closeUp, whole, whole];
 
 /** THE RADIUS THE SVG BEAT GAVE THE LARGEST STATION AT THE WHOLE-MAP CAMERA, on the stage its page published at
- *  1280 × 800 (1168 × 536, measured on 2026-09-15): `clamp(12, 30, width / 42)`. Every other stage and camera takes
- *  it through one zoom interpolation (`plan.mjs`). */
+ *  1280 × 800 (1168 × 536, measured on 2026-09-15): `clamp(12, 30, width / 42)`, anchored at the zoom that stage drew
+ *  the window to 68° N at — the circle sizes the owner approved, kept when the window grew north to hold every station
+ *  (a desktop now draws the largest at 26.4 px, a phone unchanged at 21.9 px). Every other stage and camera takes it
+ *  through one zoom interpolation (`plan.mjs`). */
 const SVG_DESKTOP_STAGE = { width: 1168, height: 536 };
 const referencePlan = { referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height };
 const radius = {
   largestPx: Math.max(12, Math.min(30, SVG_DESKTOP_STAGE.width / 42)),
-  anchorZoom: WHOLE_ZOOM + zoomShiftFor(referencePlan, SVG_DESKTOP_STAGE.width, SVG_DESKTOP_STAGE.height),
+  anchorZoom: WHOLE_ZOOM + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: approvedHeight }, SVG_DESKTOP_STAGE.width, SVG_DESKTOP_STAGE.height),
   growth: 0.35,
 };
 
@@ -240,7 +251,6 @@ try {
       const tints = plateTints(direction);
       const colours = {
         circle: adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
-        subject: adjustToContrast(ink, tints.land, TEXT_CONTRAST_MIN) ?? ink,
       };
       const fonts = {
         annot: await cards.faceOf(regs.annot, "annot"),

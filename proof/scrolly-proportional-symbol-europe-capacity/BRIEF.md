@@ -25,7 +25,7 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
 | 1 | the largest station, Zaporizhzhia: 6,000 MW, 1.3 % of the power alone | **reveal by datum** | one circle, named; the counter reads 1 station · 0.01 % of the sites · 1.3 % of the power |
 | 2 | the ten largest: 0.1 % of the sites, 9.7 % of the power | **count** | nine more circles; the counter climbs |
 | 3 | the hundred largest: 1.1 % of the sites, 43 % of the power, 65 of them nuclear | **count** | ninety more circles |
-| 4 | nuclear alone: 72 sites, 0.8 %, 34.4 % of the power; France holds 19 | **filter + zoom** | the nuclear sites in the ink, the rest stepping back, the camera centred on France's |
+| 4 | nuclear alone: 72 sites, 0.8 %, 34.4 % of the power; France holds 19 | **filter + zoom** | the nuclear sites in the accent's fine stroke, the rest stepping back, the camera centred on France's |
 | 5 | every station, to the 8,900th: the field closes | **count** | thousands of small circles fill the west |
 | 6 | the plate's cut: 193 stations of 400 MW or more, 2.2 % of the sites, 54.5 % of the power; the reading line | **pull back** | the static plate, its key and its cut |
 
@@ -40,8 +40,10 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
   cut (193 stations of 400 MW or more) is a band edge.
 - **The counter is the scroll's own**: it reads the count the reader has reached and the running share of the power,
   from a cumulative sum computed in node.
-- **The key states the scale at the whole-map camera** on the reader's stage, by the same radius rule; its circles
-  fade while the camera travels onto the close-up, where they would no longer be true.
+- **The key states the scale at the camera the reader sees**, by the same radius rule, and grows with the close-up as
+  the circles do; each key circle sits in a box of fixed height, so it never moves the stage.
+- **The whole map holds every station**: the window runs north to 71.2° N; the circle sizes and the phone's close-up
+  stay fitted to the window the owner approved (to 68° N), so on a phone nothing changed.
 - **A phone keeps the largest station clear of the resting card**: on a stage taller than the study window the whole
   map sits at the bottom of the stage (`camAlignY: 1`); the close-up centres France's nuclear sites on both axes.
 - **Every sentence is asserted**: the largest station is the Ukrainian 6,000 MW nuclear site at Zaporizhzhia's
@@ -51,5 +53,4 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
 
 ## Directions
 
-`creme` — `renders/creme.html`, from `render-directions-scrolly.mjs` (live map). `nocturne` and `rapport` are still the
-SVG pages until the owner has seen creme.
+`creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs` (live map).

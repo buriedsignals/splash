@@ -12,7 +12,7 @@
  * and the cut below it.
  *
  * THE STATIC PLATE'S RULES ARE THE FLOOR: area proportional to capacity, the key's circles computed from the same
- * radius at the whole-map camera they are read with; hollow circles, so a large one never erases the small ones under it; the
+ * radius at the camera the reader is on; hollow circles, so a large one never erases the small ones under it; the
  * basemap gives up its contrast; the cut is printed with its reason.
  *
  * UNDER THE LIVE MAP, ONE FROZEN IMAGE PER CARD (`live-map-cards.mjs`). THE MARKUP IS CARD 1; a reader without a
@@ -107,8 +107,9 @@ export function DirectedProportionalScrolly({
       '[data-part="cut"]',
     ]) + `${scope} [data-part="counter"]{opacity:0!important}`;
   // The key's ring is inset by 1.5 px, so its centre line sits on the map's ring: a diameter of 2·r + 1.5.
-  // EACH CIRCLE SITS CENTRED IN A BOX OF FIXED SIZE: the driver resizes it for the stage, and a key row that grew
-  // with it would shrink the stage the map's zoom is read from.
+  // EACH CIRCLE SITS CENTRED IN A BOX OF FIXED HEIGHT: the driver sizes the circle for the camera and the box's width
+  // for the widest camera, and a key row that grew with the circle would shrink the stage the map's zoom is read
+  // from.
   const swatch = (mw: number) =>
     `${2 * firstSwatchPx * Math.sqrt(mw / maxMw) + 1.5}px`;
 

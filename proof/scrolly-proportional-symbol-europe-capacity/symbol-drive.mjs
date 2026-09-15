@@ -21,7 +21,6 @@ export function applySymbolState(root, state) {
   const c = root.__symbols;
   applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  const easeTravel = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
 
   // LIVE MEANS A LIVE MAP IS ON SCREEN (`ready`): once it is the picture, no card image stays under it.
@@ -31,19 +30,33 @@ export function applySymbolState(root, state) {
     if (img.style.opacity !== opacity) img.style.opacity = opacity;
   });
 
-  // THE KEY STATES THE SCALE AT THE WHOLE-MAP CAMERA ON THIS STAGE, the camera it is read with, by the same radius
-  // rule as the map's own circles (`plan.radius`); a frozen card image is shown at that same scale (`cover`). While
-  // the camera travels onto the close-up its circles would no longer be true, so they fade with the travel.
+  // THE KEY STATES THE SCALE AT THE CAMERA THE READER SEES, by the same radius rule as the map's own circles
+  // (`plan.radius`): the live map's zoom, or the frozen card's zoom and the `cover` scale its image is shown at. It
+  // grows with the close-up exactly as the circles do (owner, 2026-09-15).
   const width = c.stage.clientWidth;
   const height = c.stage.clientHeight;
-  const whole = stageViewOf(c.plan, c.plan.cameras[0], width, height);
+  let zoom;
+  let scale = 1;
+  if (shownLive) zoom = c.handle.map.getZoom();
+  else {
+    const shown = c.fallbacks.find((img) => Number(img.dataset.fallback) === card && img.getClientRects().length > 0);
+    const shape = c.plan.fallback[shown ? shown.dataset.shape : "wide"];
+    zoom = shape.cards[card].zoom;
+    scale = Math.max(width / shape.size.width, height / shape.size.height);
+  }
   const r = c.plan.radius;
-  const largestPx = r.largestPx * 2 ** (r.growth * (whole.zoom - r.anchorZoom));
-  const travel = easeTravel(clamp(state.zoom));
+  const radiusAt = (z) => r.largestPx * 2 ** (r.growth * (z - r.anchorZoom));
+  const largestPx = radiusAt(zoom) * scale;
+  // EACH CIRCLE'S BOX IS AS WIDE AS ITS WIDEST CAMERA ON THIS STAGE and keeps the height it was rendered with, so a
+  // circle that grows never moves a label nor the stage the map's zoom is read from; it overflows its row upward
+  // and downward instead.
+  const widest = Math.max(...c.plan.cameras.map((camera) => radiusAt(stageViewOf(c.plan, camera, width, height).zoom)));
   for (const swatch of c.sizeSwatches) {
-    const d = `${2 * largestPx * Math.sqrt(Number(swatch.dataset.mw) / c.maxMw) + 1.5}px`;
+    const share = Math.sqrt(Number(swatch.dataset.mw) / c.maxMw);
+    const d = `${2 * largestPx * share + 1.5}px`;
     if (swatch.style.width !== d) Object.assign(swatch.style, { width: d, height: d });
-    swatch.style.opacity = String(1 - travel);
+    const box = `${2 * widest * share + 1.5}px`;
+    if (swatch.parentElement.style.width !== box) swatch.parentElement.style.width = box;
   }
 
   // The counter: the stations standing, their share of the sites and of the power.
