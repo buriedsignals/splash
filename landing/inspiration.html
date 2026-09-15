@@ -1314,6 +1314,7 @@
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
   const TOKEN_KEY = 'infoviz.token';
+  const INDICATOR_LABS_ACCEPTS_INFOVIZ = false; // flipped when an Indicator Labs release stores INFOVIZ_TOKEN (spec 2b-2)
 
   const PER_PAGE = 10;
   /* SIX, NOT THREE. Three was the right number under a hero that took the
@@ -1360,6 +1361,7 @@
     $('acct').hidden = !account;
     $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
     $('aemail').title = account ? account.email : '';
+    $('acopy').hidden = !INDICATOR_LABS_ACCEPTS_INFOVIZ;
     $('acopied').hidden = true;
   };
 
@@ -1888,11 +1890,12 @@
      whose protected prompt keeps it in the operating system's credential store. */
   let copiedTimer = 0;
   $('acopy').addEventListener('click', async () => {
+    if (!INDICATOR_LABS_ACCEPTS_INFOVIZ) return;
     if (!account) return;
     const note = $('acopied');
     try {
       await navigator.clipboard.writeText(account.token);
-      note.textContent = 'Copied. Paste it in Indicator Labs → Connected services → Infoviz → Enter token…';
+      note.textContent = 'Copied. Paste it in Indicator Labs → Connected services → Infoviz account → Enter token…';
     } catch {
       note.textContent = 'Your browser refused the clipboard.';
     }
