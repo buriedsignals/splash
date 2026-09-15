@@ -5,6 +5,7 @@
 
 import { join } from "node:path";
 import { transformStyle } from "./style.mjs";
+import { bindState, viewOf } from "./scrolly.mjs";
 
 /** The shape MapLibre asks a glyph endpoint for, with the two placeholders it substitutes itself.
  *  A fontstack is a name with spaces in it, so it arrives percent-encoded. */
@@ -98,4 +99,51 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
   );
   await page.screenshot({ path: outPath });
   return { png: outPath, camera };
+}
+
+/** ONE FALLBACK PER CARD. A scrolly's cameras are authored, so the picture a reader without a live map
+ *  gets on each card can be baked: the same plan, the same tints, the card's own camera and the card's
+ *  own state applied to every binding. Baked at the size the layout publishes, like `bakePlan`. */
+export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem }) {
+  const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
+  // The same zoom shift the live runtime applies: cameras are authored for `plan.referenceWidth`.
+  const shiftedView = (k) => {
+    const view = viewOf(cameras[k]);
+    view.zoom += plan.referenceWidth ? Math.log2(size.width / plan.referenceWidth) : 0;
+    return view;
+  };
+  await page.setViewport({ ...size, deviceScaleFactor: 2 });
+  await page.evaluate(
+    async (style, plan, first) => {
+      const map = new maplibregl.Map({ container: "map", style, ...first, interactive: false, attributionControl: false, fadeDuration: 0 });
+      await new Promise((r) => map.once("style.load", r));
+      if (plan.projection) map.setProjection({ type: plan.projection });
+      window.__mountPlan(map, plan);
+      window.__cardsMap = map;
+      await new Promise((r) => (map.loaded() ? r() : map.once("idle", r)));
+    },
+    style,
+    plan,
+    shiftedView(0),
+  );
+  const out = [];
+  for (let k = 0; k < cameras.length; k++) {
+    const paints = [];
+    for (const layer of plan.layers)
+      for (const property in layer.bindings || {}) paints.push([layer.id, property, bindState(layer.bindings[property], statesForCards[k])]);
+    await page.evaluate(
+      async (view, paints) => {
+        const map = window.__cardsMap;
+        map.jumpTo(view);
+        for (const [id, property, value] of paints) map.setPaintProperty(id, property, value);
+        await new Promise((r) => map.once("idle", r));
+      },
+      shiftedView(k),
+      paints,
+    );
+    const png = join(outDir, `${stem}-${k + 1}.png`);
+    await page.screenshot({ path: png });
+    out.push({ png, card: k });
+  }
+  return out;
 }
