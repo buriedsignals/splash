@@ -13,7 +13,8 @@
 // Usage:  bun proof/web-choropleth-europe-lowcarbon/render-directions-web.mjs
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,7 +32,12 @@ import {
   classOf,
   classingCounts,
 } from "../../skills/map-web/assets/classing.ts";
-import { DirectedChoroplethWeb } from "./DirectedChoroplethWeb.tsx";
+import {
+  assertClassingReachesTheLayers,
+  liveChoroplethPlan,
+  liveChoroplethScript,
+} from "../../skills/map-web/assets/live-choropleth.ts";
+import { CHANGE_MS, DirectedChoroplethWeb, choroplethRamp } from "./DirectedChoroplethWeb.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -58,6 +64,38 @@ const NAMES = {
   ROU: "Roumanie", RUS: "Russie", SRB: "Serbie", SVK: "Slovaquie", SVN: "Slovénie",
   ESP: "Espagne", SWE: "Suède", CHE: "Suisse", TUR: "Turquie", UKR: "Ukraine", GBR: "Royaume-Uni",
 };
+
+/** THE JOIN, WRITTEN DOWN — and it is the trap `types/choropleth.md` names by hand.
+ *
+ *  This beat's data and its frozen shapes are keyed on ISO A3. MapTiler's Countries tileset, which
+ *  the live map paints from, is keyed on `iso_a2`. A code that does not match paints NOTHING, and a
+ *  country that is painted nothing looks exactly like a country outside the study — a legitimate
+ *  class already in the legend, in a tint a reader accepts without thinking about it.
+ *
+ *  So the table is here rather than inferred, it is checked against `NAMES` below (every A3 has an
+ *  A2, every A2 is distinct), and `liveChoroplethPlan` refuses anything that is not two capitals.
+ *  The last mile — that MapTiler actually carries a level-0 polygon for each of them at this camera
+ *  — cannot be checked without the network and is measured in the live drive instead. */
+const ISO2 = {
+  ALB: "AL", AUT: "AT", BLR: "BY", BEL: "BE", BIH: "BA", BGR: "BG", HRV: "HR", CYP: "CY",
+  CZE: "CZ", DNK: "DK", EST: "EE", FIN: "FI", FRA: "FR", DEU: "DE", GRC: "GR", HUN: "HU",
+  ISL: "IS", IRL: "IE", ITA: "IT", LVA: "LV", LTU: "LT", LUX: "LU", MLT: "MT", MDA: "MD",
+  MNE: "ME", NLD: "NL", MKD: "MK", NOR: "NO", POL: "PL", PRT: "PT", ROU: "RO", RUS: "RU",
+  SRB: "RS", SVK: "SK", SVN: "SI", ESP: "ES", SWE: "SE", CHE: "CH", TUR: "TR", UKR: "UA",
+  GBR: "GB",
+};
+for (const code of Object.keys(NAMES))
+  if (!/^[A-Z]{2}$/.test(ISO2[code] ?? ""))
+    throw new Error(`${code} (${NAMES[code]}) has no ISO A2 code, so the live map would paint it nothing and a reader would read it as a country outside the study`);
+if (new Set(Object.values(ISO2)).size !== Object.keys(NAMES).length)
+  throw new Error("two countries share one ISO A2 code: one of them would take the other's colour, silently");
+const A3_OF = Object.fromEntries(Object.entries(ISO2).map(([a3, a2]) => [a2, a3]));
+/** THE COUNTRIES MAPTILER'S TILES DO NOT CARRY AT EVERY ZOOM THIS PAGE OPENS AT. Measured at
+ *  375x812, where the camera fits this study set at zoom 1,40: at that tile zoom the Countries
+ *  tileset has NO feature for Malta at all — not its level-0 polygon and not its level-1 councils —
+ *  and a reporting country left the map with nothing red anywhere. It is drawn from this beat's own
+ *  frozen `shapes.geojson` instead, at every zoom. */
+const OWN_SHAPES = ["MLT"];
 
 const plain = (s) => plainSpaces(s);
 const fr = (v, d = 1) =>
@@ -248,7 +286,11 @@ function classingCountsFor(breaks) {
   return counts;
 }
 
-const classingReadings = ranked.map(([code, r]) => ({ key: code, value: r.share }));
+/** KEYED ON ISO A2, not on the A3 this beat's file is frozen in — because the key has to be the one
+ *  BOTH halves of the page speak: the table's `data-mark`, and MapTiler's `iso_a2`. A vocabulary
+ *  that spoke A3 on one side and A2 on the other would be the join failure wearing the costume of a
+ *  guard that passes. */
+const classingReadings = ranked.map(([code, r]) => ({ key: ISO2[code], value: r.share }));
 const classing = {
   label: "Règle de classement",
   classes: CLASSES,
@@ -263,28 +305,111 @@ const COUNTS = classingCounts(classing, classingReadings);
  *  invisible to the markup and to a unit test alike. */
 const CLASSING_INDEX = buildClassingIndex(classing, classingReadings);
 
-// ── THE CAMERA IS THE PLATE'S ─────────────────────────────────────────────────────────────────
+// ── THE CAMERA IS THE PLATE'S, AND THE PLATE IS THE SHAPE THE PAGE DELIVERS ───────────────────
 //
 // The equal-area camera in `camera.ts` is still this beat's own, and this file still prints it: it
-// is what MEASURES. It no longer PLACES anything. What places every mark is the baked MapTiler
-// plate's own recorded camera — `frameCorners`, read back with `map.unproject()` after the camera
-// settled, not the nominal bounds handed to `fitBounds`, which fitBounds widens to keep the frame's
-// aspect. Longitude is linear in pixel-x under Web Mercator; latitude is not, and needs the inverse
-// Mercator formula, because pixel-y is linear in Mercator-y.
+// is what MEASURES. It no longer PLACES anything. What places every mark is MapTiler — the live map
+// reprojects the Countries tiles itself, and the baked plate under it is the same window fitted the
+// same way, so the plate and the live map are one camera rather than two pictures that agree.
 //
-// THE COST, STATED. Web Mercator inflates the north: at 60° a shape draws about twice the area it
-// holds. This beat's headline is a COUNT of countries above a stated break, and a count survives the
-// inflation untouched — but the eye still weights a class by the page it covers, so the caveat no
-// longer claims an equal-area reading and says instead what the reader is looking at.
+// THE FIGURE FILLS THE WIDTH, AND THE PAGE SCROLLS — the third term of the trio, measured.
+//
+// *"la map doit prendre toute la largeur quitte à afficher plus de map."* A live map has no viewBox,
+// so it takes whatever box the layout hands it. What the layout hands it is the question, and it has
+// exactly one free number: the plot's HEIGHT. Width is the figure's, by the ruling. So the box's
+// ratio IS `trackWidth / trackHeight`, and a subject that is near-square once projected occupies
+// `1/ratio` of the width no matter which camera draws it.
+//
+// MEASURED, on this beat, at 1512x860. Holding the document inside the window leaves the plot about
+// 550 px of height under 1464 px of width — a 2,7:1 box — and fitting this study set into a 2,7:1 box
+// shows about 179° of longitude for a study 65° wide. It was baked and looked at: Europe sits in the
+// middle third with Greenland, Canada and Siberia around it. That is not "plus de map", it is a world
+// map with the subject in it, and it is WORSE than the defect being repaired.
+//
+// So the height is kept and the page scrolls. At 1464 px of width and the beat's own 1600/1216 plate,
+// the map is drawn 1464 x 1112 and the document runs past the window — the same arrangement the
+// proportional-symbol beat already ships (document 1513 px at 1512x860), and the third choice of the
+// trio `FULL-WIDTH-BRIEF.md` records the owner taking: stretch the drawing (refused, it is a false
+// geography), shrink it with empty gutters (refused, this is that refusal), or let it run past the
+// fold and scroll (chosen). Europe is drawn 1112 px wide here against 760 px on the page the owner
+// refused: the width is filled AND the subject got bigger, which is the whole point.
+//
+// THE COST OF MERCATOR, MEASURED. Web Mercator inflates the north. On this beat's own frozen shapes
+// at this camera, with Russia set aside (81 % of the drawn land, and only partly in frame): Norway,
+// Sweden and Finland cover 31,5 % of the land drawn and hold 16,5 % of the land that is there; per
+// km² against France = 1, Norway ×2,57, Finland ×2,58, Iceland ×2,64, Sweden ×2,29. The headline is a
+// COUNT of countries and a count survives that untouched — the picture does not, so the caveat says
+// it in the reader's own words rather than leaving the reader to read ink as area.
 //
 // ONE PLATE PER FILED DIRECTION, baked in that direction's own tints. The three share a camera by
 // construction, and that is asserted below rather than assumed: three plates that disagreed about
 // where 10°E is would put the same country in three places and nothing here would notice.
-const PLATE_SIZE = "1600x1216";
+/** The plate's own pixel box — the beat's composition, and about 1,1x the width the page draws it
+ *  at, so the fallback is not soft where a reader with no key is looking at nothing else. */
+// ── THE READINGS ──────────────────────────────────────────────────────────────────────────────
+//
+// THIS FILE NO LONGER PROJECTS A COASTLINE. Every mark inside the map is a MapLibre layer over
+// MapTiler's own Countries tiles, joined by `iso_a2`, so the geometry the page used to carry as 41
+// SVG paths is now the provider's — generalised per zoom, which is what makes the reader's zoom
+// worth having. `shapes.geojson` is still read, for one thing only: the study set's own box, which
+// is what the camera is asked to hold and what `assertCameraReachesBounds` refuses a plate for
+// cropping.
+const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
+const studySet = new Map();
+for (const f of geo.features) {
+  const code = f.properties.iso ?? f.properties.code ?? f.properties.ISO_A3 ?? f.properties.iso_a3;
+  if (!code || !NAMES[code]) continue;
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  // THE COUNTRY'S OWN LARGEST PART, which is a measurement rather than a list of exceptions: France
+  // reaches Réunion, the Netherlands Curaçao, Norway Svalbard, Portugal the Azores. A box fitted to
+  // all of them draws the Atlantic with Europe as a stamp.
+  let best = null;
+  for (const poly of polys) {
+    const ring = poly[0];
+    const xs = ring.map((p) => p[0]);
+    const ys = ring.map((p) => p[1]);
+    const box = { west: Math.min(...xs), east: Math.max(...xs), south: Math.min(...ys), north: Math.max(...ys) };
+    const span = (box.east - box.west) * (box.north - box.south);
+    if (!best || span > best.span) best = { ...box, span };
+  }
+  if (best) studySet.set(code, best);
+}
+/** The box the CAMERA is asked to hold: every country's own largest part except the one the frame
+ *  never held whole (see `CONTINENTAL` below — Russia's largest part reaches 180°E, and a box fitted
+ *  to it would be a world map). This is the number the frame is measured against. */
+const held = (code) => !CONTINENTAL.includes(code);
+const CONTINENTAL = ["RUS"];
+const heldBoxes = [...studySet].filter(([code]) => held(code)).map(([, b]) => b);
+const STUDY = {
+  west: Math.min(...heldBoxes.map((b) => b.west)),
+  east: Math.max(...heldBoxes.map((b) => b.east)),
+  south: Math.min(...heldBoxes.map((b) => b.south)),
+  north: Math.max(...heldBoxes.map((b) => b.north)),
+};
+/** THE ONE COUNTRY THIS FRAME DOES NOT HOLD WHOLE is declared above, rather than discovered here.
+ *  Every OTHER country the map counts must be inside the frame, and this is the refusal that says
+ *  so — the counterpart to the bake's own `assertCameraReachesBounds`, which compares the frame
+ *  against the TYPED box and therefore passes a box too small for the study by construction. */
+
+const PLATE_FRAME = [1600, 1216];
+const PLATE_SIZE = PLATE_FRAME.join("x");
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // THE CACHE IS KEYED ON THE FRAME, because a cached plate is the one way a camera change ships
+  // without being drawn: measured while mutating the bake's own declared window — the runner stayed
+  // green because nothing re-baked, and the page kept the camera of a file that no longer said so.
+  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) {
+    const cached = JSON.parse(readFileSync(join(dir, "geometry.json"), "utf8"));
+    const b = cached.bounds ?? [[0, 0], [0, 0]];
+    const holds =
+      b[0][0] <= STUDY.west && b[1][0] >= STUDY.east && b[0][1] <= STUDY.south && b[1][1] >= STUDY.north;
+    if (cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && holds) return;
+    console.log(
+      `the ${id} plate was baked at ${cached.frame?.width}x${cached.frame?.height} on ` +
+        `${JSON.stringify(cached.bounds)}, which ${holds ? "is the wrong frame" : "no longer holds the study set"} — re-baking…`,
+    );
+  }
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -330,41 +455,127 @@ const CORNERS = plateFacts.frameCorners;
 if (!CORNERS || !(FRAME?.width > 0))
   throw new Error("this plate predates the camera facts: re-bake it with bake.mjs");
 const CAMERA_ASPECT = FRAME.width / FRAME.height;
-const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
-const Y_NORTH = mercY(CORNERS.north);
-const Y_SOUTH = mercY(CORNERS.south);
-/** Into the drawing's own unit box: x over the frame's WIDTH on both axes, so one scale serves both
- *  and nothing is sheared. */
-const project = ([lon, lat]) => {
-  const px = ((lon - CORNERS.west) / (CORNERS.east - CORNERS.west)) * FRAME.width;
-  const py = ((mercY(lat) - Y_NORTH) / (Y_SOUTH - Y_NORTH)) * FRAME.height;
-  return [px / FRAME.width, py / FRAME.width];
+const width = SIZE;
+const height = Math.round((SIZE * FRAME.height) / FRAME.width);
+
+/** THE WINDOW THE CAMERA WAS ASKED TO HOLD, which is what this is measured against — never the frame
+ *  it ended up with. `fitBounds` widens the frame on whichever axis does not bind, so a declared
+ *  window too SMALL for the study set is forgiven by its own overshoot: at this beat's 1,32:1 frame
+ *  the longitude overshoots by 22° and would hide a north edge typed 3° short. */
+const ASKED = {
+  west: plateFacts.bounds[0][0],
+  south: plateFacts.bounds[0][1],
+  east: plateFacts.bounds[1][0],
+  north: plateFacts.bounds[1][1],
 };
+const outside = [...studySet].filter(
+  ([code, b]) =>
+    !CONTINENTAL.includes(code) &&
+    (b.west < ASKED.west || b.east > ASKED.east || b.south < ASKED.south || b.north > ASKED.north),
+);
+if (outside.length)
+  throw new Error(
+    `the camera's declared window cuts ${outside.length} of the ${studySet.size} countries this map ` +
+      `counts: ` +
+      `${outside.map(([c]) => `${NAMES[c]} (${JSON.stringify(studySet.get(c))})`).join(", ")}, ` +
+      `against a declared window of ${JSON.stringify(ASKED)}. A ` +
+      `choropleth's subject is not a cloud of points that can be too small inside its frame, it is a ` +
+      `set of shapes a frame can slice — and a sliced country under a title that counts countries is ` +
+      `a picture disagreeing with its own sentence.`,
+  );
 
-// ── the shapes ────────────────────────────────────────────────────────────────────────────────
-const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
-const width = CAMERA_ASPECT >= 1 ? SIZE : SIZE * CAMERA_ASPECT;
-const height = CAMERA_ASPECT >= 1 ? SIZE / CAMERA_ASPECT : SIZE;
-const toPx = ([ux, uy]) => [ux * SIZE, uy * SIZE];
-
-/** A ring is thinned by dropping vertices closer than half a drawn pixel to the last one kept.
- *  A ring too small to thin is kept WHOLE: the first version of this rule made Malta vanish, and a
- *  choropleth with a country silently absent is the failure every reference sheet warns about. */
-const MIN_STEP = 0.5;
-const thin = (ring) => {
-  const out = [];
-  for (const p of ring) {
-    const q = toPx(project(p));
-    const last = out[out.length - 1];
-    if (!last || Math.hypot(q[0] - last[0], q[1] - last[1]) >= MIN_STEP) out.push(q);
+// ── WHAT WEB MERCATOR COSTS THIS SUBJECT, MEASURED HERE RATHER THAN ASSERTED ──────────────────
+//
+// A choropleth is read by AREA and a flat MapLibre map is Web Mercator, which inflates the north.
+// The owner has chosen the flat map knowing the trade (2026-09-15: « oui une carte MapLibre plate
+// pas un globe »), so this is a COST the page carries, not a defect to fix — and a cost a page
+// carries is a cost it states. The number goes into the caveat, so it is derived here and never
+// typed: the drawn area is the shoelace of each ring at the plate's own Mercator camera, the true
+// area is the same ring on the sphere.
+//
+// RUSSIA IS SET ASIDE, and that is a measurement too: it is 81 % of the land this frame draws and
+// only a slice of it is inside the frame at all, so every share computed with it in is a share of
+// Russia. The argument is about the other forty.
+const RAD = Math.PI / 180;
+const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * RAD) / 2));
+const toFramePx = ([lon, lat]) => [
+  ((lon - CORNERS.west) / (CORNERS.east - CORNERS.west)) * FRAME.width,
+  ((mercY(lat) - mercY(CORNERS.north)) / (mercY(CORNERS.south) - mercY(CORNERS.north))) * FRAME.height,
+];
+const shoelace = (ring) => {
+  let sum = 0;
+  for (let i = 0; i < ring.length; i += 1) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[(i + 1) % ring.length];
+    sum += x1 * y2 - x2 * y1;
   }
-  return out.length >= 4 ? out : ring.map((p) => toPx(project(p)));
+  return Math.abs(sum) / 2;
 };
+const EARTH_KM = 6371.0088;
+const sphericalArea = (ring) => {
+  let sum = 0;
+  for (let i = 0; i < ring.length; i += 1) {
+    const [l1, p1] = ring[i];
+    const [l2, p2] = ring[(i + 1) % ring.length];
+    sum += (l2 - l1) * RAD * (2 + Math.sin(p1 * RAD) + Math.sin(p2 * RAD));
+  }
+  return Math.abs((sum * EARTH_KM * EARTH_KM) / 2);
+};
+const inFrame = ([lon, lat]) =>
+  lon >= CORNERS.west && lon <= CORNERS.east && lat >= CORNERS.south && lat <= CORNERS.north;
+const areas = new Map();
+for (const f of geo.features) {
+  const code = f.properties.iso;
+  if (!NAMES[code] || code === "RUS") continue;
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  let page = 0;
+  let real = 0;
+  for (const poly of polys) {
+    const ring = poly[0];
+    if (!ring.some(inFrame)) continue;
+    page += shoelace(ring.map(toFramePx));
+    real += sphericalArea(ring);
+  }
+  if (page > 0) areas.set(code, { page, real });
+}
+const PAGE_TOTAL = [...areas.values()].reduce((s, a) => s + a.page, 0);
+const REAL_TOTAL = [...areas.values()].reduce((s, a) => s + a.real, 0);
+const NORTH = ["NOR", "SWE", "FIN"];
+const NORTH_PAGE_SHARE = (NORTH.reduce((s, c) => s + areas.get(c).page, 0) / PAGE_TOTAL) * 100;
+const NORTH_TRUE_SHARE = (NORTH.reduce((s, c) => s + areas.get(c).real, 0) / REAL_TOTAL) * 100;
+const weightOf = (code) =>
+  (areas.get(code).page / PAGE_TOTAL) / (areas.get(code).real / REAL_TOTAL);
+if (!(NORTH_PAGE_SHARE > NORTH_TRUE_SHARE))
+  throw new Error(
+    `the caveat tells the reader Web Mercator inflates the north, and on this camera it measures ` +
+      `${NORTH_PAGE_SHARE.toFixed(1)} % of the page against ${NORTH_TRUE_SHARE.toFixed(1)} % of the ` +
+      `ground — the sentence would be false`,
+  );
+
+/** Those countries' own polygons, keyed the way the live map's expressions key everything else. */
+const SMALL_SHAPES = {
+  type: "FeatureCollection",
+  features: geo.features
+    .filter((f) => OWN_SHAPES.includes(f.properties.iso))
+    .map((f) => ({ type: "Feature", properties: { iso_a2: ISO2[f.properties.iso] }, geometry: f.geometry })),
+};
+if (SMALL_SHAPES.features.length !== OWN_SHAPES.length)
+  throw new Error(
+    `${OWN_SHAPES.join(", ")} must be drawn from this beat's own shapes and ` +
+      `${SMALL_SHAPES.features.length} of ${OWN_SHAPES.length} were found in shapes.geojson`,
+  );
+
+/** THE NARROWEST COUNTRY THE MAP COUNTS, which is what the reader's zoom CEILING is derived from:
+ *  a reader may come in until this one is big enough to point at, and no closer. Measured off the
+ *  frozen shapes rather than named, so a change to the study set moves the ceiling with it. */
+const SMALLEST = [...studySet]
+  .map(([code, b]) => ({ name: NAMES[code], spanDeg: b.east - b.west }))
+  .sort((a, b) => a.spanDeg - b.spanDeg)[0];
 
 /** WHAT A COUNTRY'S ANSWER SAYS ABOUT THE FOUR RULES AT ONCE, and it is the only reading on the page
  *  that does not depend on which rule is in force — which is exactly why it can be baked into a
- *  string `interaction.mjs` reads once. The class a country is in right now cannot be: it would be
- *  a lie under three rules out of four. */
+ *  string. The class a country is in right now cannot be: it would be a lie under three rules out
+ *  of four. */
 const stabilityOf = (code) => {
   const seen = [...new Set(RULES.map((rule) => classOf(readingsByCode.get(code).share, rule.breaks)))].sort();
   if (seen.length === 1) return `même palier sous les ${RULES.length} règles`;
@@ -372,39 +583,38 @@ const stabilityOf = (code) => {
   return `palier ${list.slice(0, -1).join(", ")} ou ${list[list.length - 1]} sur ${CLASSES} selon la règle`;
 };
 
-const shapes = [];
-for (const f of geo.features) {
-  const code = f.properties.iso ?? f.properties.code ?? f.properties.ISO_A3 ?? f.properties.iso_a3;
-  if (!code || !NAMES[code]) continue;
-  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
-  const rings = polys.map((p) => thin(p[0])).filter((r) => r.length >= 3);
-  if (!rings.length) continue;
-  const path = rings
-    .map((r) => `M ${r.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L ")} Z`)
-    .join(" ");
-  // The hit seat: the centre of the LARGEST ring's bounding box, nudged onto a vertex-free interior
-  // point by averaging that ring — good enough for a target a reader aims at, and never outside the
-  // frame.
-  const biggest = rings.reduce((a, b) => (b.length > a.length ? b : a));
-  const cx = biggest.reduce((s, p) => s + p[0], 0) / biggest.length;
-  const cy = biggest.reduce((s, p) => s + p[1], 0) / biggest.length;
-  const reading = readingsByCode.get(code) ?? null;
-  const rank = reading ? ranked.findIndex(([c]) => c === code) + 1 : null;
-  shapes.push({
+// EVERY COUNTRY THE MAP DRAWS, in the order the table prints them: by share, the reading the page is
+// about, with the country that has no reading last. The `detail` is what a POINTER answers, and it
+// carries only what the table does NOT print — the TWh, the rank's own wording and the four-rule
+// stability — so hovering is never the table read out loud again.
+const readings = [
+  ...ranked.map(([code, r], i) => ({
     code,
+    iso2: ISO2[code],
     name: NAMES[code],
-    path,
-    cx,
-    cy,
-    classed: Boolean(reading),
-    detail: reading
-      ? `${NAMES[code]} · ${fr(reading.share)} % de son électricité est bas-carbone en ${YEAR} · ` +
-        `${fr(reading.low, 0)} TWh bas-carbone sur ${fr(reading.total, 0)} · ${rank}e sur ` +
-        `${ranked.length} · ${stabilityOf(code)}`
-      : `${NAMES[code]} · aucune production publiée pour ${YEAR} dans ce fichier — dessiné en creux, ` +
+    classed: true,
+    sharePc: pc(r.share),
+    rank: `${i + 1}`,
+    detail:
+      `${NAMES[code]} · ${fr(r.share)} % de son électricité est bas-carbone en ${YEAR} · ` +
+      `${fr(r.low, 0)} TWh bas-carbone sur ${fr(r.total, 0)} · ${i + 1}e sur ${ranked.length} · ` +
+      `${stabilityOf(code)}`,
+  })),
+  ...Object.keys(NAMES)
+    .filter((code) => !readingsByCode.has(code))
+    .map((code) => ({
+      code,
+      iso2: ISO2[code],
+      name: NAMES[code],
+      classed: false,
+      sharePc: "—",
+      rank: "—",
+      detail:
+        `${NAMES[code]} · aucune production publiée pour ${YEAR} dans ce fichier — dessiné en creux, ` +
         `hors de toutes les règles de classement, jamais rangé dans le palier le plus bas`,
-  });
-}
+    })),
+];
+const shapes = readings;
 
 // ── THE CLAIM, ASSERTED ───────────────────────────────────────────────────────────────────────
 if (!(topStated.length >= 5 && topStated.length <= 9))
@@ -437,7 +647,23 @@ console.log(
 );
 console.log(
   `camera qui MESURE (inchangé) : LAEA 52N 10E, fenêtre ${WINDOW.west}..${WINDOW.east}E ` +
-    `${WINDOW.south}..${WINDOW.north}N · aspect ${MEASURE_ASPECT.toFixed(2)}:1\n`,
+    `${WINDOW.south}..${WINDOW.north}N · aspect ${MEASURE_ASPECT.toFixed(2)}:1`,
+);
+// WHAT THE FULL WIDTH COSTS, PRINTED EVERY TIME. A near-square study fitted into a wide box is
+// bound by its height, so the surplus width is bought in longitude — and the number is large enough
+// that nobody should have to rediscover it by looking.
+console.log(
+  `ce que le cadre montre : ${(CORNERS.east - CORNERS.west).toFixed(0)}° de longitude pour un jeu ` +
+    `d'étude large de ${(STUDY.east - STUDY.west).toFixed(0)}° ` +
+    `(${((CORNERS.east - CORNERS.west) / (STUDY.east - STUDY.west)).toFixed(2)}×, Russie mise à ` +
+    `part) · à hauteur de fenêtre (2,7:1) le même jeu d'étude en demanderait environ 179°`,
+);
+console.log(
+  `ce que Mercator coûte (Russie mise à part) : Norvège+Suède+Finlande ` +
+    `${NORTH_PAGE_SHARE.toFixed(1)} % de la terre dessinée pour ${NORTH_TRUE_SHARE.toFixed(1)} % ` +
+    `de la terre réelle · par km² contre la France = 1 : ` +
+    `${NORTH.map((c) => `${NAMES[c]} ×${(weightOf(c) / weightOf("FRA")).toFixed(2)}`).join(" · ")} · ` +
+    `Islande ×${(weightOf("ISL") / weightOf("FRA")).toFixed(2)}\n`,
 );
 
 const facts = beatFacts(
@@ -453,16 +679,26 @@ console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(n
 // derived and both are true with nothing touched: seven countries clear the stated 94 %, and the
 // darkest band of the same map holds thirteen under equal intervals and under Fisher-Jenks.
 const title = `${topStated.length} pays au-dessus de ${STATED[STATED.length - 1]} % — ou ${topEqual.length}, selon la coupure`;
+// THE CAVEAT NAMES THE COST OF THE PROJECTION IN NUMBERS, because a reader who is not told reads
+// ink as area. The three shares are measured on this beat's own frozen shapes at this camera, with
+// Russia set aside — see the header of `DirectedChoroplethWeb.tsx` for the full table.
 const caveat =
   `Part bas-carbone — nucléaire et renouvelables — de l'électricité produite en ${YEAR}. ` +
-  `Fond MapTiler en Web Mercator : le titre compte des PAYS, pas des surfaces.`;
+  `Carte MapTiler plate, en Web Mercator : le nord est gonflé — la Norvège, la Suède et la ` +
+  `Finlande couvrent ${fr(NORTH_PAGE_SHARE, 0)} % de la terre dessinée pour ` +
+  `${fr(NORTH_TRUE_SHARE, 0)} % de la terre réelle. Le titre compte des PAYS, pas des surfaces.`;
 const claimNote =
   `Au-dessus de ${STATED[STATED.length - 1]} % : ${namesOf(topStated).join(", ")}. ` +
   `${missing > 1 ? `${missing} pays sont dessinés` : `L'${NAMES.UKR}, sans donnée pour ${YEAR}, est dessinée`} ` +
   `en creux et hors des règles : le palier le plus bas est un pays à ${pc(RANGE_MIN)}.`;
 const readingLine =
   `Lecture : une carte n'est pas des nombres, c'est une partition de nombres. Changez la règle qui ` +
-  `la coupe : les ${N} pays se re-teintent sans bouger. Survolez-en un pour sa part exacte.`;
+  `la coupe : les ${N} pays se re-teintent sans bouger. Le tableau ci-dessous suit la même règle, ` +
+  `avec ou sans JavaScript.`;
+// SHOWN ONLY ONCE THE LIVE MAP IS UP, so it never describes a map a reader cannot move.
+const liveHint =
+  `La carte est vivante : molette ou boutons pour zoomer, glisser pour déplacer, flèches du clavier ` +
+  `une fois la carte au focus. Survolez un pays pour sa part exacte, ses TWh et son rang.`;
 const source = `Source : Ember / Energy Institute, Statistical Review of World Energy (2025), via Our World in Data · ${YEAR} · fond MapTiler`;
 
 const interaction = {
@@ -481,6 +717,16 @@ const interaction = {
         "plus foncée et combien des 40 ont changé de palier.",
     },
     {
+      question: "Et si je veux les quarante, sans la carte — ou sans JavaScript ?",
+      gesture: "open-the-full-table",
+      changes:
+        "Les 41 lignes s'ouvrent sous la carte, dans l'ordre des parts, chacune avec sa pastille de " +
+        "palier. Cette pastille suit la règle choisie en CSS pur : c'est là que le geste éditorial " +
+        "survit quand la carte, elle, ne peut pas — un fond MapLibre n'est atteignable par aucune " +
+        "feuille de style, donc la moitié carte du geste est du script et la moitié tableau n'en " +
+        "est pas.",
+    },
+    {
       question: "Ce pays-là, il vaut combien exactement, et est-ce qu'il change de couleur selon la règle ?",
       gesture: "ask-a-mark",
       changes:
@@ -491,11 +737,14 @@ const interaction = {
   ],
 };
 
+const TABLE_CAPTION = `Les ${N} lectures, et le palier que la règle choisie leur donne`;
+const COLUMNS = ["Pays", "Part bas-carbone", "Rang", "Palier"];
+
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source}`,
-  axis: `${classing.rules.flatMap((r) => r.bounds).join(" ")} pas de donnée ${classing.label} ${classing.rules.map((r) => `${r.label} ${r.announce}`).join(" ")}`,
+  body: `${caveat} ${readingLine} ${source} ${liveHint}`,
+  axis: `${classing.rules.flatMap((r) => r.bounds).join(" ")} pas de donnée ${classing.label} ${classing.rules.map((r) => `${r.label} ${r.announce}`).join(" ")} ${TABLE_CAPTION} ${COLUMNS.join(" ")}`,
   annot: `${claimNote} ${classing.rules.map((r) => r.note ?? "").join(" ")}`,
   value: ranked.map(([, r]) => fr(r.share)).join(" "),
 };
@@ -507,34 +756,101 @@ const BEAT_FACTS = { evidenceLevels: CLASSES };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
+// ── WHAT THE SECOND LAYER IS MADE OF, READ ONCE ──────────────────────────────────────────────
+//
+// MapLibre and its stylesheet are INLINED into every page rather than linked: a `<script src>` would
+// trade the payload for a SECOND third-party host, and inlining keeps the count at one —
+// api.maptiler.com. `style.mjs` travels as SOURCE with its `export` keywords stripped, because a
+// page script cannot import: the sweep that decides what a basemap layer becomes is stated once, in
+// that file, and applied twice — to the style document the plate is baked from, and to the live
+// style in the reader's browser.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
+const MAPLIBRE_CSS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css"), "utf8");
+const STYLE_MODULE = (
+  await readFile(join(HERE, "..", "..", "skills", "map-web", "assets", "style.mjs"), "utf8")
+).replace(/^export /gm, "");
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const base = readDirection(join(DIRECTIONS, file));
   const direction = resolveDirectionFamilies(base, textPerRegister);
   const plate = `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`;
+  // The colour the plate's LAND was baked in — what the page actually paints behind every country,
+  // and the only honest thing to measure the lightest class against.
+  const tints = plateTints(base);
+  const furniture = deriveFurniture(base.ground);
+  // ONE DERIVATION OF THE RAMP, READ BY BOTH HALVES. The component draws the table's swatches from
+  // it and this file builds the live map's per-rule fill expressions from the SAME array — a second
+  // derivation is precisely the "half the beat re-shades and the other half keeps the rule before
+  // it" defect, now able to happen across two mechanisms instead of inside one.
+  const { ramp, activeRamp } = choroplethRamp({
+    ground: base.ground,
+    accent: base.accent,
+    ink: furniture.ink,
+    plateLand: tints.land,
+    tones: CLASSES,
+  });
+  const live = {
+    style: plateFacts.style,
+    tints,
+    // THE LIVE CAMERA FITS THE BEAT'S OWN DECLARED WINDOW, which is the box the plate was baked by
+    // fitting — so the fallback and the live map are ONE camera rather than two that agree today.
+    studyBounds: {
+      west: plateFacts.bounds[0][0],
+      south: plateFacts.bounds[0][1],
+      east: plateFacts.bounds[1][0],
+      north: plateFacts.bounds[1][1],
+    },
+    frame: FRAME,
+    degreesPerPixel: plateFacts.degreesPerPixel,
+    studied: ranked.map(([code]) => ISO2[code]),
+    missing: readings.filter((r) => !r.classed).map((r) => r.iso2),
+    smallShapes: SMALL_SHAPES,
+    rules: classing.rules.map((rule, i) => ({
+      key: rule.key,
+      fillByCode: Object.fromEntries(ranked.map(([code]) => [ISO2[code], ramp[CLASSING_INDEX.get(ISO2[code])[i]]])),
+      activeByCode: Object.fromEntries(ranked.map(([code]) => [ISO2[code], activeRamp[CLASSING_INDEX.get(ISO2[code])[i]]])),
+    })),
+    defaultKey: classing.defaultKey,
+    border: { studied: mix(base.ground, furniture.ink, 0.35), other: mix(tints.land, furniture.ink, 0.18), width: 0.8 },
+    details: Object.fromEntries(readings.map((r) => [r.iso2, r.detail])),
+    locale: { title: "Carte", zoomIn: "Zoomer", zoomOut: "Dézoomer" },
+    changeMs: CHANGE_MS,
+    smallest: SMALLEST,
+  };
   try {
     await renderWeb({
       component: DirectedChoroplethWeb,
       props: {
         plate,
-        // The colour the plate's LAND was baked in — what the page actually paints behind every
-        // country, and the only honest thing to measure the lightest class against.
-        plateLand: plateTints(base).land,
-        shapes,
-        readings: classingReadings,
+        plateLand: tints.land,
+        readings,
+        classingReadings,
         classing,
         missingLabel: "pas de donnée",
+        livePlan: liveChoroplethPlan(live),
+        liveScript: liveChoroplethScript(live, {
+          scope: ".chart-figure",
+          styleModule: STYLE_MODULE,
+          classingName: "chart-stack",
+        }),
+        liveHint,
+        maplibreCss: MAPLIBRE_CSS,
+        maplibreJs: MAPLIBRE_JS,
+        tableCaption: TABLE_CAPTION,
+        columns: COLUMNS,
         aspect: CAMERA_ASPECT,
         size: SIZE,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
         alt:
-          `Une carte d'Europe sur fond MapTiler, chaque pays teinté selon la part ` +
-          `bas-carbone de son électricité en ${YEAR}. Les teintes les plus foncées forment un arc au ` +
-          `nord et à l'ouest — ${namesOf(topStated).join(", ")} — et une tache isolée dans ` +
-          `les Balkans. Le centre et l'est de la carte restent clairs. ${missing} pays sont dessinés ` +
-          `en creux, faute de donnée. Une commande à quatre positions recoupe les mêmes lectures ` +
-          `selon quatre règles de classement.`,
+          `Une carte d'Europe sur fond MapTiler, chaque pays teinté selon la part bas-carbone de son ` +
+          `électricité en ${YEAR}. Les teintes les plus foncées forment un arc au nord et à l'ouest — ` +
+          `${namesOf(topStated).join(", ")} — et une tache isolée dans les Balkans. Le centre et ` +
+          `l'est de la carte restent clairs. ${missing} pays est dessiné en creux, faute de donnée. ` +
+          `Une commande à quatre positions recoupe les mêmes lectures selon quatre règles de ` +
+          `classement, et la carte elle-même se zoome et se déplace avec les contrôles de MapTiler.`,
         interaction,
         direction,
         ground: direction.ground,
@@ -545,7 +861,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     });
     // The page is read back from disk, not from the string the renderer happened to return — the
     // file a reader opens is the only artefact any of these refusals is about.
-    assertOneClassing(await readFile(join(OUT, `${id}.html`), "utf8"), classing, CLASSING_INDEX, {
+    const written = await readFile(join(OUT, `${id}.html`), "utf8");
+    assertOneClassing(written, classing, CLASSING_INDEX, { where: `renders/${id}.html` });
+    // THE SAME QUESTION, ASKED OF THE OTHER HALF. `assertOneClassing` holds the MARKUP against the
+    // index; this holds the LIVE PLAN against the same index. Neither can see the other's mechanism,
+    // and the crossing between them is exactly where this architecture can put one partition on the
+    // map and a different one in the table.
+    assertClassingReachesTheLayers(written, live, CLASSING_INDEX, ramp, plateFacts.style, {
       where: `renders/${id}.html`,
     });
     console.log(`${id} -> renders/${id}.html`);

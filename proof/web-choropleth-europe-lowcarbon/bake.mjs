@@ -27,17 +27,29 @@ import puppeteer from "puppeteer";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Europe, near-square once projected (geo-discipline.md rule 12) — the same bounds
-// `map-beat`'s own choropleth seed uses, because this beat's study set is the same shape of
-// continent (holds Iceland whole, per that skill's own recorded defect fix).
-/** THE CAMERA HOLDS THE STUDY SET, and the study set reaches further east than a Europe-shaped box
- *  does: Cyprus sits at 33°E and Ukraine's eastern border at 40°. A bake that stopped at 33 cropped
- *  both, and `assertCameraReachesBounds` below is what turns that into a refusal rather than a plate
- *  nobody checked. Iceland at 24°W sets the west edge. */
+// Europe, near-square once projected (geo-discipline.md rule 12).
+/** THE CAMERA HOLDS THE STUDY SET, and the study set is measured rather than eyeballed: each
+ *  country's own LARGEST PART, which drops Réunion, Curaçao, Svalbard and the Azores without any of
+ *  them being named. That box is −24,48..44,82°E, 34,57..71,09°N — Iceland west, TURKEY east (44,82°, further
+ *  than Ukraine's 40,13°), Cyprus south, Nordkapp north — and the numbers below hold it with a hair
+ *  to spare. The east edge is where the first version of this window was three degrees short, and it
+ *  was found by measuring the declared WINDOW rather than the frame: the frame overshoots longitude
+ *  by 22° at this aspect, so it hid a window too small for its own study set.
+ *
+ *  WHAT CHANGED, AND WHY IT WAS A DEFECT. The north edge was 68°, typed. Norway reaches 71,09°N and
+ *  is one of the seven countries the headline counts, so the plate cut the top off a country the
+ *  title names — and nothing was red, because `assertCameraReachesBounds` compares the frame against
+ *  the TYPED box: a box too small for the study passes by construction.
+ *
+ *  RUSSIA IS THE ONE COUNTRY THIS FRAME DOES NOT HOLD WHOLE, and that is editorial rather than
+ *  accidental: its largest part reaches 180°E and 77,7°N, so a frame that held it would be a world
+ *  map with Europe in one corner. The page draws European Russia, says so, and the study-set guard
+ *  in `render-directions-web.mjs` names it as the single declared exception instead of quietly
+ *  widening for it. */
 const BEAT = {
   bounds: [
-    [-25, 34],
-    [42, 68],
+    [-24.5, 34.5],
+    [44.9, 71.2],
   ],
   style: "dataviz-light",
 };

@@ -63,11 +63,34 @@ Measured: 1,46 / 1,43 / 1,43 / 1,42 in creme, 1,40 / 1,43 / 1,43 / 1,44 in rappo
 CURRENT rule gave it — which is the whole reason the pointer keeps working when the reader re-cuts
 the map.
 
+## One ramp, painted twice, derived once
+
+Since 2026-09-15 the map is LIVE: the classes are MapLibre `fill` layers over MapTiler's own
+Countries tiles, and the table of forty readings under the map keeps the same partition in generated
+CSS. So this ramp is now painted by two mechanisms that cannot see each other — a paint expression
+in a JSON plan, and a stylesheet — and that is a new way for half a beat to answer one rule while
+the other half answers the rule before it.
+
+It is derived ONCE. `choroplethRamp` in the beat's own component returns the four colours and their
+four pointed-at answers; the component draws the table from them and the runner builds the live
+plan's `["match", ["get","iso_a2"], …]` expressions from the same array.
+`assertClassingReachesTheLayers` then reads the WRITTEN page back and holds the plan's expressions
+against the same index the markup carries — rebuilding what each country should wear from the index
+and this ramp rather than from the object the plan was built out of, because comparing a variable
+with itself is not a check. A mutation that gave one country the wrong class in the plan alone passed
+the first version of that guard, green.
+
+The land the ramp is anchored on is the same colour in both layers, and that too is asserted rather
+than assumed: the plate records the two tints it was baked in, the live style is repainted with those
+same two, and `assertLiveStyleAnswered` refuses a sweep that matched nothing.
+
 ## The one country with no reading
 
 Ukraine has no published 2024 production, so it is drawn hollow: no fill of its own, the plate's own
 land showing through, a dotted edge so it cannot be read as a country outside the frame, and its own
-name in the legend. It is handed to no rule as a number it is not, and it is never dropped into the
+name in the legend. It still ANSWERS: a hollow country is a line, and a line answers a pointer only
+within a pixel or two of its stroke, so an invisible fill carries its hit area — measured by driving
+a pointer into the middle of Ukraine and getting the previous country's answer back. It is handed to no rule as a number it is not, and it is never dropped into the
 lowest class — the lowest class is a reading, and Ukraine has none.
 
 ## Everything else is a step off the ground

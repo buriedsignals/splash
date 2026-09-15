@@ -444,6 +444,7 @@ export function classingCss(
     fillOf,
     activeOf,
     changeMs,
+    property,
   }: {
     scope: string;
     idPrefix: string;
@@ -455,12 +456,27 @@ export function classingCss(
      *  `no-preference`: the travel is the reading here, so a reader who asked for no motion gets
      *  the new partition instantly rather than not at all. */
     changeMs: number;
+    /**
+     * THE PROPERTY THE CLASS IS PAINTED WITH — `fill` for an SVG shape, `background-color` for a box.
+     *
+     * It was `fill`, always, because this vocabulary was written for a map drawn as SVG paths. Once
+     * the map became MapLibre layers, the only thing left for a stylesheet to re-shade was the
+     * reading TABLE's swatches, and a swatch in a table is an HTML box. Measured in Chrome while
+     * making that move: with the swatch as an SVG `<rect>`, both rules matched the element
+     * (`el.matches()` true for the `:has()` one, higher specificity) and `getComputedStyle().fill`
+     * still returned the DEFAULT rule's colour after the radio changed — while an HTML sibling
+     * carrying the same attribute updated in the same recalculation. An inherited SVG presentation
+     * property re-shaded by a `:has()` on a distant ancestor is not somewhere to stake a beat's
+     * editorial gesture, so the caller names the property and the box takes `background-color`.
+     */
+    property?: string;
   },
 ): string {
   if (!declaration) return "";
   if (!Number.isFinite(changeMs) || changeMs < 0)
     throw new Error(`classing: changeMs must be a non-negative number, got ${changeMs}`);
 
+  const paintProperty = property ?? "fill";
   const defaultSlug = classingSlugOf(declaration.defaultKey);
   const lines: string[] = [
     `/* The classing this beat declared: ${declaration.rules.length} rules over`,
@@ -474,14 +490,14 @@ export function classingCss(
   const paint = (on: string, slug: string) => {
     for (let klass = 0; klass < declaration.classes; klass += 1)
       lines.push(
-        `${on} [data-classing~="${classingToken(slug, klass)}"] { fill: ${fillOf(klass)}; --mark-active: ${activeOf(klass)}; }`,
+        `${on} [data-classing~="${classingToken(slug, klass)}"] { ${paintProperty}: ${fillOf(klass)}; --mark-active: ${activeOf(klass)}; }`,
       );
   };
 
   // The state the page opens in, and the only state an engine without `:has()` ever draws.
   paint(scope, defaultSlug);
   lines.push(`${scope} [data-classing-bound="${defaultSlug}"] { opacity: 1; visibility: visible; }`);
-  lines.push(`${scope} [data-mark].mark-active { fill: var(--mark-active); }`);
+  lines.push(`${scope} [data-mark].mark-active { ${paintProperty}: var(--mark-active); }`);
 
   for (const rule of declaration.rules) {
     const slug = classingSlugOf(rule.key);
@@ -489,7 +505,7 @@ export function classingCss(
     lines.push(`${on} [data-classing-bound] { opacity: 0; visibility: hidden; }`);
     paint(on, slug);
     lines.push(`${on} [data-classing-bound="${slug}"] { opacity: 1; visibility: visible; }`);
-    lines.push(`${on} [data-mark].mark-active { fill: var(--mark-active); }`);
+    lines.push(`${on} [data-mark].mark-active { ${paintProperty}: var(--mark-active); }`);
     if (rule.note !== null) lines.push(`${on} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
 
@@ -500,7 +516,7 @@ export function classingCss(
   // the travel on the way back out, where it reads as the shape returning to its class.
   lines.push(
     `@media (prefers-reduced-motion: no-preference) {`,
-    `  ${scope} [data-classing] { transition: fill ${changeMs}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
+    `  ${scope} [data-classing] { transition: ${paintProperty} ${changeMs}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
     `  ${scope} [data-classing].mark-active { transition: none; }`,
     `  ${scope} [data-classing-bound] { transition: opacity ${changeMs}ms ease, visibility ${changeMs}ms; }`,
     `}`,
