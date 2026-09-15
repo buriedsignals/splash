@@ -6,7 +6,7 @@
 //
 // Rulings it carries: the scroll pilots and nothing else does (`interactive: false`, no controls);
 // MapLibre animates nothing (`fadeDuration: 0`, `jumpTo`, paint set per frame); the projection is the
-// owner's globe; every card camera and the samples between them are warmed through MapLibre's own
+// plan's, flat Web Mercator by default; every card camera and the samples between them are warmed through MapLibre's own
 // tile cache before the live layer is revealed; the per-card fallback images stay underneath.
 
 const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
@@ -103,20 +103,10 @@ function initScrollyMap(root, plan, options) {
   if (!container) return null;
 
   const glyphsUrl = registerEmbeddedGlyphs(win.maplibregl, plan.glyphs);
-  const map = new win.maplibregl.Map({
-    container: container,
-    style: plan.styleUrl,
-    ...viewOf(plan.cameras[0]),
-    interactive: false,
-    attributionControl: false,
-    fadeDuration: 0,
-    maxTileCacheSize: 800,
-    canvasContextAttributes: { preserveDrawingBuffer: !!(options && options.preserveDrawingBuffer) },
-  });
   // Cameras are authored for `plan.referenceWidth` (and `plan.referenceHeight`, when a plan names
   // one); a smaller stage sees the same ground `zoomShiftFor` levels further out, so a phone — and a
   // wide, short desktop — keeps the card's whole subject in view.
-  const handle = { map: map, plan: plan, root: root, ready: false, pending: null, failed: false };
+  const handle = { map: null, maps: [], plan: plan, root: root, ready: false, pending: null, last: null, failed: false };
   handle.zoomOffset = function () {
     return zoomShiftFor(plan, container.clientWidth, container.clientHeight);
   };
@@ -135,65 +125,144 @@ function initScrollyMap(root, plan, options) {
     handle.failed = true;
     root.dataset.liveError = message;
   };
+  const firstState = function () {
+    return handle.last || handle.pending || { ...plan.cameras[0], ...(plan.statesForCards && plan.statesForCards[0]) };
+  };
 
-  map.once("style.load", function () {
-    try {
-      if (plan.projection) map.setProjection({ type: plan.projection });
-      if (glyphsUrl) map.setGlyphs(glyphsUrl);
-      assertLiveStyleAnswered(applyLiveStyle(map, { tints: plan.tints, keepLabels: (plan.keepLabels || []).map((s) => new RegExp(s, "i")) }), plan.styleName || plan.styleUrl);
-      mountPlan(map, plan);
-      disableBoundTransitions(map, plan);
-    } catch (err) {
-      fail((err && err.message) || "the live style failed to mount");
-    }
-  });
-
-  map.once("load", function () {
-    const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
-    warmScrollyCameras(map, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
-      root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
-      // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the
-      // layers a failed mount may never have added — but a live layer nobody finished painting is
-      // worse than the fallback plate underneath it, so neither `ready` nor the reveal happens.
-      if (handle.failed) return;
-      // THE CAMERA IS RESTORED BEFORE THE REVEAL, NOT AFTER. The warm's own last `jumpTo` leaves
-      // the camera on the last card; revealing before this would show a reader the wrong end of the
-      // beat for one frame. `ready` is set first because `applyScrollyMap` itself gates on it —
-      // otherwise this call would only queue itself back into `pending`.
-      //
-      // `plan.cameras` carries pure camera fields (`cameraFields`'s own output) — no bound field a
-      // layer's `bindings` might read, like `reveal`. The per-card STATE those bindings need lives in
-      // `plan.statesForCards`, when a beat has any: the first card's camera, overlaid with the first
-      // card's full state so a binding resolves to what card 1 actually paints rather than throwing.
+  // TWO MAPS, BECAUSE THE WARM AND THE READER CANNOT SHARE ONE CAMERA. The warm walks every card's
+  // camera through MapLibre's own tile cache, which moves the camera, so it cannot run on the map the
+  // reader is looking at. It used to run on the only map, hidden until it finished — and measured on
+  // the choropleth pilot (Apple M2 Max, cold profile) that was 8 s of warm and a reveal 11.1 s after
+  // the page loaded: a reader's first scroll stepped through the frozen card images and never saw a
+  // class arrive, while the second pass read well.
+  //
+  // So the SHOWN map is revealed as soon as its first view is drawn and follows the scroll from then
+  // on, and the WARM map runs the warm hidden beside it. When the warm is done the warm map takes the
+  // reader's current state, draws it, and replaces the shown one — so the guarantee the guards hold
+  // (no missing tile after `data-live-warm`) is still about the map on screen.
+  const layerOf = function (hidden) {
+    const el = root.ownerDocument.createElement("div");
+    el.style.cssText = "position:absolute;inset:0;" + (hidden ? "opacity:0;pointer-events:none" : "");
+    container.appendChild(el);
+    return el;
+  };
+  const makeMap = function (el) {
+    const map = new win.maplibregl.Map({
+      container: el,
+      style: plan.styleUrl,
+      ...viewOf(plan.cameras[0]),
+      interactive: false,
+      attributionControl: false,
+      fadeDuration: 0,
+      maxTileCacheSize: 800,
+      canvasContextAttributes: { preserveDrawingBuffer: !!(options && options.preserveDrawingBuffer) },
+    });
+    map.once("style.load", function () {
       try {
+        // A flat Web Mercator map unless the plan names another projection (owner's ruling, addendum §7.1).
+        map.setProjection({ type: plan.projection || "mercator" });
+        if (glyphsUrl) map.setGlyphs(glyphsUrl);
+        assertLiveStyleAnswered(applyLiveStyle(map, { tints: plan.tints, keepLabels: (plan.keepLabels || []).map((s) => new RegExp(s, "i")) }), plan.styleName || plan.styleUrl);
+        mountPlan(map, plan);
+        disableBoundTransitions(map, plan);
+      } catch (err) {
+        fail((err && err.message) || "the live style failed to mount");
+      }
+    });
+    map.on("error", function (event) {
+      fail((event && event.error && event.error.message) || "map error");
+    });
+    return map;
+  };
+  const paintOn = function (map, state) {
+    const view = viewOf(state);
+    view.zoom += handle.zoomOffset();
+    map.jumpTo(view);
+    for (const layer of plan.layers)
+      for (const property in layer.bindings || {})
+        map.setPaintProperty(layer.id, property, bindState(layer.bindings[property], state), { validate: false });
+    return view;
+  };
+  handle.paintOn = paintOn;
+
+  const shownEl = layerOf(false);
+  const warmEl = layerOf(true);
+  const shown = makeMap(shownEl);
+  const warmMap = makeMap(warmEl);
+  let replaced = false;
+
+  // THE SHOWN MAP: revealed once its first view is drawn, on the reader's state so far. `plan.cameras`
+  // carries pure camera fields; the per-card STATE a binding needs lives in `plan.statesForCards`, so
+  // card 1's full state is overlaid when no scroll has happened yet.
+  shown.once("load", function () {
+    shown.once("idle", function () {
+      if (handle.failed || replaced) return;
+      try {
+        handle.map = shown;
+        handle.maps = [shown];
         handle.ready = true;
-        applyScrollyMap(handle, handle.pending || { ...plan.cameras[0], ...(plan.statesForCards && plan.statesForCards[0]) });
+        applyScrollyMap(handle, firstState());
         handle.pending = null;
         container.style.opacity = "1";
-        if (options && options.onReady) options.onReady(map);
+        root.dataset.liveShown = String(Math.round(win.performance.now()));
+        if (options && options.onShown) options.onShown(shown);
+      } catch (err) {
+        fail((err && err.message) || "the live map failed to restore its first camera");
+      }
+    });
+    // The first idle only comes once something renders.
+    shown.triggerRepaint();
+  });
+
+  warmMap.once("load", function () {
+    const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
+    warmScrollyCameras(warmMap, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
+      // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the layers a
+      // failed mount may never have added — but a live layer nobody finished painting is worse than the
+      // fallback plate underneath it.
+      if (handle.failed) {
+        root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
+        return;
+      }
+      try {
+        // THE WARM MAP TAKES THE READER'S STATE BEFORE IT IS SHOWN, and follows the scroll alongside
+        // the shown map until it has drawn it, so the swap never shows the warm's last camera.
+        paintOn(warmMap, firstState());
+        handle.maps = handle.ready ? [handle.map, warmMap] : [warmMap];
+        warmMap.once("idle", function () {
+          if (handle.failed) return;
+          paintOn(warmMap, firstState());
+          replaced = true;
+          warmEl.style.opacity = "1";
+          warmEl.style.pointerEvents = "";
+          handle.map = warmMap;
+          handle.maps = [warmMap];
+          handle.ready = true;
+          handle.pending = null;
+          container.style.opacity = "1";
+          shown.remove();
+          shownEl.remove();
+          root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
+          if (options && options.onReady) options.onReady(warmMap);
+        });
+        warmMap.triggerRepaint();
       } catch (err) {
         fail((err && err.message) || "the live map failed to restore its first camera");
       }
     });
   });
 
-  map.on("error", function (event) {
-    fail((event && event.error && event.error.message) || "map error");
-  });
   return handle;
 }
 
 function applyScrollyMap(handle, state) {
   if (!handle) return;
+  handle.last = state;
   if (!handle.ready) {
     handle.pending = state;
     return;
   }
-  const view = viewOf(state);
-  view.zoom += handle.zoomOffset();
-  handle.map.jumpTo(view);
-  for (const layer of handle.plan.layers)
-    for (const property in layer.bindings || {})
-      handle.map.setPaintProperty(layer.id, property, bindState(layer.bindings[property], state), { validate: false });
-  handle.root.dataset.liveView = view.center[0].toFixed(4) + "," + view.center[1].toFixed(4) + "@" + view.zoom.toFixed(3);
+  let view = null;
+  for (const map of handle.maps) view = handle.paintOn(map, state);
+  if (view) handle.root.dataset.liveView = view.center[0].toFixed(4) + "," + view.center[1].toFixed(4) + "@" + view.zoom.toFixed(3);
 }

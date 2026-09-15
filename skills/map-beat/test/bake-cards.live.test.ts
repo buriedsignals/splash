@@ -76,7 +76,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
     ];
     const out = await bakeCards({
       page,
-      plan: { style, layers: [], projection: "globe" },
+      plan: { style, layers: [] },
       cameras,
       size: { width: 400, height: 300 },
       glyphsUrl: style.glyphs,
@@ -112,7 +112,6 @@ describe.skipIf(!key)("per-card fallback bake", () => {
       plan: {
         style,
         layers: [],
-        projection: "globe",
         referenceWidth: 400,
         referenceHeight: 600,
       },

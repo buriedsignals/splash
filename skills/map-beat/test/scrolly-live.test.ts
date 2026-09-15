@@ -108,7 +108,6 @@ const STATES_FOR_CARDS = [
 
 const plan = {
   styleUrl: `data:application/json,${encodeURIComponent(JSON.stringify(style))}`,
-  projection: "globe",
   tints: { water: "#aaccee", land: "#f4f1ea" },
   warmSamples: 1,
   cameras: CAMERAS,
@@ -242,7 +241,8 @@ describe("the scrolly map runtime in a browser", () => {
             .opacity,
         };
       }, plan);
-      expect(result.projection).toBe("globe");
+      // A plan that names no projection is a flat Web Mercator map (the owner's ruling, addendum §7.1).
+      expect(result.projection).toBe("mercator");
       expect(result.center[0]).toBeCloseTo(20, 4);
       expect(result.center[1]).toBeCloseTo(41, 4);
       expect(result.zoom).toBeCloseTo(6, 6);
@@ -252,6 +252,28 @@ describe("the scrolly map runtime in a browser", () => {
       // first, and uniform samples alone left it cold — 15 frames with a missing tile on the choropleth pilot.
       expect(result.warm?.startsWith("5:")).toBe(true);
       expect(result.live).toBe("1");
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
+  it("should set the projection the plan names", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 400, height: 300 });
+      await loadRuntime(page);
+      const projection = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = await new Promise<any>((resolve) => {
+          const h = (window as any).initScrollyMap(
+            root,
+            { ...plan, projection: "globe", referenceWidth: 400 },
+            { window, onReady: () => resolve(h), warmTimeoutMs: 2000 },
+          );
+        });
+        return handle.map.getProjection()?.type;
+      }, plan);
+      expect(projection).toBe("globe");
     } finally {
       await page.close();
     }
@@ -341,6 +363,55 @@ describe("the scrolly map runtime in a browser", () => {
       await page.close();
     }
   }, 60_000);
+
+  it("should show a live map that follows the scroll before the warm has finished", async () => {
+    // THE FIRST SCROLL IS READ ON A LIVE MAP, NOT ON THE FROZEN CARDS. Measured on the choropleth pilot
+    // (Apple M2 Max, cold profile): the warm took 8 s and the reveal came 11.1 s after the page loaded,
+    // so a reader's first scroll stepped through frozen card images and never saw a class arrive. A long
+    // warm (many samples) is used here so the check lands while it is still running.
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const live = root.querySelector("[data-part=live]") as HTMLElement;
+        const handle = (window as any).initScrollyMap(
+          root,
+          { ...plan, warmSamples: 400, referenceWidth: 800 },
+          { window, warmTimeoutMs: 2000, preserveDrawingBuffer: true },
+        );
+        await new Promise<void>((resolve) => {
+          const check = () => (live.style.opacity === "1" || root.dataset.liveWarm !== undefined ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        const warmDoneAtShow = root.dataset.liveWarm !== undefined;
+        handle.apply({ ...plan.cameras[0], reveal: 0.5 });
+        await new Promise((r) => handle.map.once("idle", r));
+        const map = handle.map;
+        const p = map.project([20, 42.5]);
+        const canvas = map.getCanvas();
+        const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+        const px = new Uint8Array(4);
+        gl.readPixels(Math.round(p.x * devicePixelRatio), canvas.height - Math.round(p.y * devicePixelRatio), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        return {
+          warmDoneAtShow,
+          warmStillRunning: root.dataset.liveWarm === undefined,
+          shown: live.style.opacity,
+          red: px[0],
+        };
+      }, plan);
+      expect(result.warmDoneAtShow).toBe(false);
+      expect(result.warmStillRunning).toBe(true);
+      expect(result.shown).toBe("1");
+      // Black at 0.5 over the style's water polygon, tinted #aaccee (red 170): halfway is 85 — neither
+      // the bare tint nor the full fill.
+      expect(result.red).toBeGreaterThan(75);
+      expect(result.red).toBeLessThan(95);
+    } finally {
+      await page.close();
+    }
+  }, 120_000);
 
   it("should reveal on card 1's own state when no scroll state is ever applied before ready", async () => {
     const page = await browser.newPage();

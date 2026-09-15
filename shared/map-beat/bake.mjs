@@ -121,7 +121,8 @@ export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, k
     async (style, plan, first) => {
       const map = new maplibregl.Map({ container: "map", style, ...first, interactive: false, attributionControl: false, fadeDuration: 0 });
       await new Promise((r) => map.once("style.load", r));
-      if (plan.projection) map.setProjection({ type: plan.projection });
+      // A flat Web Mercator map unless the plan names another projection (owner's ruling, addendum §7.1).
+      map.setProjection({ type: plan.projection || "mercator" });
       window.__mountPlan(map, plan);
       window.__cardsMap = map;
       await new Promise((r) => (map.loaded() ? r() : map.once("idle", r)));
