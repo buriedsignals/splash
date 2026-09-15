@@ -117,7 +117,10 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
         source: countries,
         sourceLayer: LAYER,
         filter: ["all", ["==", ["get", LEVEL], 0], ["match", ["get", ISO], missing.map((m) => m.iso2), true, false]],
-        paint: { "fill-color": missingFill },
+        // NO COLOUR BEFORE THE CLASSES: the neutral of a country with no reading arrives with the first class
+        // (owner, 2026-09-15: « on l'affiche qu'après, sinon ça fait bizarre »), and the filter leaves it.
+        paint: { "fill-color": missingFill, "fill-opacity": 0 },
+        bindings: { "fill-opacity": clamp(["*", { $state: "classes" }, classFills.length]) },
       },
       {
         id: "borders",

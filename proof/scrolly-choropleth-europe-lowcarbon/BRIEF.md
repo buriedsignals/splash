@@ -50,11 +50,19 @@ Each direction keeps its own palette and faces.
   keeps the reference ground on both axes (`zoomShiftFor`): a phone is fitted by its width, a desktop by its height, so
   Iceland, Malta and Cyprus stay in the frame (Cyprus 7 px above the bottom edge at 1168 × 563, as on the plate).
   Names show only at rest or once the camera has arrived, as the SVG driver decided.
-- **One frozen image per card** (`fallback/<direction>-<card>.png`, 1168 × 566 at 2x, the stage at 1280 × 800), baked
-  from the same plan with the card's camera and state, shown `object-fit: cover` (cropped on other stages, never
-  stretched) when there is no key, no script, or until the live map's first view is drawn; re-baked only when the plan's hash
-  changes (`fallback/<direction>.json`, which also carries Albania's pixel seat per card for the chip). The committed
-  pages carry `__MAPTILER_KEY__`.
+- **One frozen image per card, at two densities** (`fallback/<direction>-<card>.webp` at 2x and
+  `fallback/<direction>@1x-<card>.webp` at 1x, 1168 × 566, the stage at 1280 × 800), baked from the same plan with the
+  card's camera and state, shown `object-fit: cover` (cropped on other stages, never stretched) when there is no key, no
+  script, or until the live map's first view is drawn; re-baked only when the plan's hash changes
+  (`fallback/<direction>.json`, which also carries Albania's pixel seat per card for the chip). A 1x screen gets the 1x
+  bake, so the map's words keep their weight when the live 1x canvas replaces the picture. The density is chosen by a
+  `<picture>` media query (`min-resolution: 1.5dppx`), not by `srcset`'s `2x`: Chrome treats an inlined data URI as
+  already cached and always takes the densest candidate. The bakes are written by the browser as PNG and kept as
+  lossless WebP (`cwebp -lossless`, the same pixels in about 40 % of the bytes): a page with both densities weighs
+  2.6 MB, against 3.5 MB with the 2x PNGs alone. The committed pages carry `__MAPTILER_KEY__`.
+- **The first paint is card 1.** The markup is card 1's state (its image, no counter, no key), because the page's
+  scripts come after megabytes of images and a browser paints before they run; a reader without a script gets the last
+  card, with its counter and key, through `<noscript>` rules.
 - **The first scroll is read on a live map.** The runtime shows a live map as soon as it has drawn the reader's state at
   the stage's own camera with every tile of that view loaded (about 2.5–3 s after load on an Apple M2 Max, cold profile;
   no visible refresh at the reveal or at the handover, recorded frame by frame) and runs the camera warm on a second, hidden map that replaces it once

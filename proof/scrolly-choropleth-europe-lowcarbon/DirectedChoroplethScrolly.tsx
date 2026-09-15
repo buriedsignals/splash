@@ -13,6 +13,11 @@
  * UNDER THE LIVE MAP, ONE FROZEN IMAGE PER CARD, baked from the same plan at the card's own camera and
  * state. Without a key, without a script, or while the live map warms, the reader sees those; the last
  * card's image is the one shown when no script runs. They are fitted `cover`, never stretched.
+ *
+ * THE MARKUP IS CARD 1, THE NO-JS PICTURE IS THE LAST CARD. The page is megabytes of inlined images and its
+ * scripts come after them, so a browser paints the markup before the driver has run: that first paint
+ * must already be card 1's picture (`first`), not the last card's words, counter and key flashing away.
+ * A reader without a script gets the last card through the `<noscript>` rules below.
  */
 
 import type { CSSProperties } from "react";
@@ -26,6 +31,7 @@ type Style = Record<string, string | number>;
 
 export function DirectedChoroplethScrolly({
   plan,
+  first,
   fallbacks,
   classFills,
   missingFill,
@@ -44,7 +50,8 @@ export function DirectedChoroplethScrolly({
   water,
 }: {
   plan: Record<string, unknown>;
-  fallbacks: string[];
+  first: { card: number; classes: number; filter: number };
+  fallbacks: { x1: string; x2: string }[];
   classFills: string[];
   missingFill: string;
   breaks: string[];
@@ -72,9 +79,15 @@ export function DirectedChoroplethScrolly({
     position: "absolute",
     ...extra,
   });
+  const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const scope = '[data-part="choropleth"]';
+  const noScript =
+    `${scope} [data-fallback]{opacity:0!important}` +
+    `${scope} [data-fallback="${fallbacks.length - 1}"],${scope} [data-part="key"],${scope} [data-class-swatch],${scope} [data-part="top-count"]{opacity:1!important}`;
 
   return (
     <div
+      data-part="choropleth"
       role="img"
       aria-label={alt}
       style={{
@@ -88,6 +101,11 @@ export function DirectedChoroplethScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      {/* Not a box: shown without a script it would take the grid's first row from the counter. */}
+      <noscript
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }}
+      />
       <div
         data-part="count-panel"
         style={{ display: "flex", justifyContent: "flex-end" }}
@@ -96,7 +114,12 @@ export function DirectedChoroplethScrolly({
           data-part="top-count"
           data-template={topCount.template}
           data-value={topCount.value}
-          style={{ ...regs.value, color: accentInk, whiteSpace: "nowrap" }}
+          style={{
+            ...regs.value,
+            color: accentInk,
+            whiteSpace: "nowrap",
+            opacity: first.filter,
+          }}
         >
           {topCount.template.replace("{n}", String(topCount.value))}
         </span>
@@ -113,20 +136,25 @@ export function DirectedChoroplethScrolly({
           background: water.water,
         }}
       >
+        {/* EACH CARD AT THE READER'S DENSITY, chosen by a media query and not by `srcset`'s `2x`: Chrome
+            treats an inlined data URI as already cached and so always takes the densest candidate, which
+            gave a 1x screen the 2x bake anyway (measured 2026-09-15). */}
         {fallbacks.map((src, k) => (
-          <img
-            key={k}
-            data-fallback={k}
-            src={src}
-            alt=""
-            style={abs({
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: k === fallbacks.length - 1 ? 1 : 0,
-            })}
-          />
+          <picture key={k}>
+            <source media="(min-resolution: 1.5dppx)" srcSet={src.x2} />
+            <img
+              data-fallback={k}
+              src={src.x1}
+              alt=""
+              style={abs({
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: k === first.card ? 1 : 0,
+              })}
+            />
+          </picture>
         ))}
         <div data-part="live" style={abs({ inset: 0, opacity: 0 })} />
         <script
@@ -175,6 +203,7 @@ export function DirectedChoroplethScrolly({
           flexWrap: "wrap",
           alignItems: "flex-start",
           gap: "6px 16px",
+          opacity: clamp(first.classes * classCount),
         }}
       >
         <div
@@ -189,7 +218,12 @@ export function DirectedChoroplethScrolly({
             <div
               key={`c${i}`}
               data-class-swatch={i}
-              style={{ position: "relative", height: "12px", background: fill }}
+              style={{
+                position: "relative",
+                height: "12px",
+                background: fill,
+                opacity: clamp(first.classes * classCount - i),
+              }}
             >
               {i < breaks.length && (
                 <span

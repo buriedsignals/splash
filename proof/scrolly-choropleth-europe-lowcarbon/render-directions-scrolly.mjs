@@ -22,6 +22,7 @@
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -385,11 +386,18 @@ try {
       // The page behind the bake is the STAGE's own ground (the water tint): whatever the canvas leaves
       // transparent shows it, never a white page.
       const stageGround = tints.water;
-      const planHash = createHash("sha256").update(JSON.stringify({ plan, size: FALLBACK_SIZE, stageGround })).digest("hex");
+      // TWO BAKES PER CARD, 2x AND 1x, chosen by the page's `<picture>` media query: a 1x screen shown the 2x picture at half size
+      // reads the map's words thinner than the live 1x canvas that replaces them, and the type changes at
+      // the reveal (recorded on 2026-09-15, the owner's "les fonts changent").
+      const SCALES = [2, 1];
+      const planHash = createHash("sha256").update(JSON.stringify({ plan, size: FALLBACK_SIZE, stageGround, scales: SCALES })).digest("hex");
       const recordPath = join(FALLBACK, `${id}.json`);
-      const pngOf = (k) => join(FALLBACK, `${id}-${k + 1}.png`);
+      const stemOf = (scale) => (scale === 2 ? id : `${id}@1x`);
+      const pngOf = (k, scale) => join(FALLBACK, `${stemOf(scale)}-${k + 1}.png`);
+      const webpOf = (k, scale) => join(FALLBACK, `${stemOf(scale)}-${k + 1}.webp`);
       let record = existsSync(recordPath) ? JSON.parse(await readFile(recordPath, "utf8")) : null;
-      if (!record || record.planHash !== planHash || STATES.some((_, k) => !existsSync(pngOf(k)))) {
+      const unbaked = (k, scale) => !existsSync(webpOf(k, scale)) && !existsSync(pngOf(k, scale));
+      if (!record || record.planHash !== planHash || STATES.some((_, k) => SCALES.some((scale) => unbaked(k, scale)))) {
         await mkdir(FALLBACK, { recursive: true });
         const page = await mapPage();
         try {
@@ -397,19 +405,22 @@ try {
             document.documentElement.style.background = ground;
             document.body.style.background = ground;
           }, stageGround);
-          const baked = await bakeCards({
-            page,
-            plan: { ...keyed(plan), style: keyed(styleDoc) },
-            cameras,
-            size: FALLBACK_SIZE,
-            glyphsUrl: styleDoc.glyphs,
-            tints: plan.tints,
-            keepLabels: [],
-            statesForCards: STATES,
-            outDir: FALLBACK,
-            stem: id,
-            project: [plan.oddSeat],
-          });
+          let baked;
+          for (const scale of SCALES)
+            baked = await bakeCards({
+              page,
+              plan: { ...keyed(plan), style: keyed(styleDoc) },
+              cameras,
+              size: FALLBACK_SIZE,
+              glyphsUrl: styleDoc.glyphs,
+              tints: plan.tints,
+              keepLabels: [],
+              statesForCards: STATES,
+              outDir: FALLBACK,
+              stem: stemOf(scale),
+              project: [plan.oddSeat],
+              scale,
+            });
           record = { planHash, size: FALLBACK_SIZE, cards: baked.map((b) => ({ odd: b.projected[0].map((v) => Math.round(v * 10) / 10), zoom: b.zoom })) };
           await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`);
           console.log(`${id}: baked ${baked.length} card images`);
@@ -417,13 +428,28 @@ try {
           await page.close();
         }
       }
-      const fallbacks = await Promise.all(STATES.map(async (_, k) => toDataUri(await readFile(pngOf(k)), "image/png")));
+      // THE BAKES TRAVEL AS LOSSLESS WEBP: the same pixels as the PNG the browser wrote, in about 40 % of its
+      // bytes, so the page carrying both densities weighs less than it did carrying the 2x PNGs alone.
+      for (const [k] of STATES.entries())
+        for (const scale of SCALES) {
+          if (!existsSync(pngOf(k, scale))) continue;
+          try {
+            execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", "-exact", pngOf(k, scale), "-o", webpOf(k, scale)]);
+          } catch (error) {
+            throw new Error(`cwebp could not encode ${pngOf(k, scale)} (brew install webp): ${error.message}`);
+          }
+          await rm(pngOf(k, scale));
+        }
+      const fallbacks = await Promise.all(
+        STATES.map(async (_, k) => ({ x1: toDataUri(await readFile(webpOf(k, 1)), "image/webp"), x2: toDataUri(await readFile(webpOf(k, 2)), "image/webp") })),
+      );
 
       const { outPath } = await renderScrolly({
         steps: prose.map((p, i) => ({ id: ["pays", "classes", "sept", "nord-ouest", "albanie", "retour"][i], prose: p })),
         reveal: {
           element: createElement(DirectedChoroplethScrolly, {
             plan: { ...plan, fallback: { size: record.size, cards: record.cards } },
+            first: STATES[0],
             fallbacks,
             classFills,
             missingFill,
