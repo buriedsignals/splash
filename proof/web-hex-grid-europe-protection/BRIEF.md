@@ -161,3 +161,44 @@ trois états — c'est la conséquence directe du choix de bouger les valeurs et
 pâle passe le plancher non-texte de justesse (3,13 · 3,06 · 3,14 pour 1), les crans voisins se
 séparent de 1,33 à 1,49, et **la case hors du compte a quitté la rampe** : elle est le fond, parce
 qu'il n'y a aucune place légale entre 3,0 et la classe 1 à 4,19.
+
+## L'architecture, refaite le 2026-09-15 — le geste est le même, la carte est vivante
+
+Le propriétaire a validé `proof/web-choropleth-europe-lowcarbon/` comme **le patron** de toute carte
+web. Ce beat dessinait ses cases en SVG au-dessus d'une image ; il les dessine désormais en
+**couches MapLibre sur les tuiles MapTiler**. `skills/map-web/assets/live-hex.ts` est la moitié du
+patron propre à ce type. **Le geste n'a pas changé** : le lecteur tient le GRAIN, et `pool.ts` reste
+le vocabulaire.
+
+**La grille est construite en MÈTRES de Web Mercator puis dé-projetée en lon/lat.** C'est la seule
+chose qui garde les 32 cases rigoureusement congruentes : une grille posée en DEGRÉS serait dessinée
+plus haute au nord qu'au sud, et six arêtes égales est tout l'achat du type. L'ancrage est un
+**siège**, pas une géolocalisation — la disposition imite l'Europe, donc la grille s'assoit sur
+l'Europe, et la vraie côte qui apparaît autour d'elle est exactement ce que la fiche du type appelle
+*la géographie qu'un cartogramme sacrifie*.
+
+**Le coût de Mercator sur CE sujet, mesuré et imprimé dans le chapô** : les cases restent égales —
+elles sont égales en mètres de Mercator — mais **le sol sous la case la plus au nord est dessiné
+2,1 fois plus grand que sous la plus au sud**.
+
+**Ce que l'architecture coûte au geste.** Aucune feuille de style n'atteint une couche MapLibre, donc
+la moitié CARTE du grain est du script (`setPaintProperty` + `setLayoutProperty`, sur des expressions
+construites à la construction depuis les MÊMES classes mises en commun que le balisage). Ce qu'un
+lecteur sans JavaScript garde : l'image figée, la légende — **identique sous les trois grains**, ce
+qui est toute la distinction de ce vocabulaire d'avec `classing.ts` — la phrase dérivée, et un
+**tableau des 32 lectures** dont le taux ET la pastille suivent le grain en CSS pur. Le geste a
+déménagé de l'image vers le tableau ; il n'a pas disparu. `assertPoolReachesTheLayers` est la garde
+du croisement entre les deux moitiés.
+
+**Les libellés sont des couches `symbol` DANS LES FONTES DE LA PAGE**, ce qui est une mesure et non un
+compromis : MapTiler ne sert que 18 familles et répond **200 avec Noto Sans** pour tout autre nom
+(83 352 octets, rien ne le signale) ; 17 des 18 sont des Google Fonts, et les trois directions filées
+se résolvent justement sur Open Sans, Montserrat et Merriweather. Le runner **sonde** la pile de
+glyphes et refuse la sentinelle Noto plutôt que de lui faire confiance.
+
+**Deux couches, toujours.** Sous la carte vivante, une image figée **photographiée depuis la carte
+vivante de CETTE page** — pas un second pipeline. C'est ce qui reste quand la clé expire, quand les
+tuiles tombent, quand il n'y a pas de réseau, et c'est ce qu'est toujours l'artefact commité : **la
+clé n'entre dans aucun fichier du dépôt**, le rendu porte `__MAPTILER_KEY__`, et le runner écrit EN
+PLUS `renders/<direction>.local.html` avec la vraie clé (ignoré par git) — c'est ce fichier-là que le
+propriétaire ouvre.

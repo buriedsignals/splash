@@ -438,12 +438,18 @@ export function poolCss(
     fillOf,
     unsetFill,
     ms,
+    property = "fill",
   }: {
     scope: string;
     idPrefix: string;
     fillOf: (klass: number) => string;
     unsetFill: string;
     ms: number;
+    /** WHICH PROPERTY THE CLASS IS WORN AS, and it is the shape of the mark that decides it — not a
+     *  preference. An SVG shape wears its class as `fill`; an HTML box wears it as
+     *  `background-color`. The default is `fill`, so every page written before a beat drew its marks
+     *  as MapLibre layers is emitted byte for byte as it was. */
+    property?: string;
   },
 ): string {
   if (!declaration) return "";
@@ -453,28 +459,28 @@ export function poolCss(
     `/* The grain this beat declared: ${declaration.grains.length} windows over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-pool] { fill: ${unsetFill}; }`,
+    `${scope} [data-pool] { ${property}: ${unsetFill}; }`,
     `${scope} [data-pool-figure] { display: none; }`,
     `${scope} [data-pool-seam] { opacity: 0; }`,
     `${scope} [data-stack-note] { display: none; }`,
   ];
   const emitFills = (at: string, slug: string) => {
     for (let klass = 0; klass < classCount; klass += 1)
-      lines.push(`${at} [data-pool~="${poolToken(slug, klass)}"] { fill: ${fillOf(klass)}; }`);
+      lines.push(`${at} [data-pool~="${poolToken(slug, klass)}"] { ${property}: ${fillOf(klass)}; }`);
   };
   emitFills(scope, defaultSlug);
   lines.push(
     `${scope} [data-pool-figure="${defaultSlug}"] { display: inline; }`,
     `${scope} [data-pool-seam="${defaultSlug}"] { opacity: 1; }`,
     `@media (prefers-reduced-motion: no-preference) {`,
-    `  ${scope} [data-pool] { transition: fill ${ms}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
+    `  ${scope} [data-pool] { transition: ${property} ${ms}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
     `  ${scope} [data-pool-seam] { transition: opacity ${ms}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
     `}`,
   );
   for (const grain of declaration.grains) {
     const slug = poolSlugOf(grain.key);
     const at = `${scope}:has(#${poolOptionId(idPrefix, slug)}:checked)`;
-    lines.push(`${at} [data-pool] { fill: ${unsetFill}; }`);
+    lines.push(`${at} [data-pool] { ${property}: ${unsetFill}; }`);
     emitFills(at, slug);
     lines.push(
       `${at} [data-pool-figure] { display: none; }`,
@@ -523,7 +529,7 @@ ${scope} [data-pool-seam] { pointer-events: none; fill: none; }`;
 export function assertOnePool(
   html: string,
   declaration: PoolDeclaration | null | undefined,
-  { where = "this page" }: { where?: string } = {},
+  { where = "this page", property = "fill" }: { where?: string; property?: string } = {},
 ): void {
   if (!declaration) return;
   const slugs = declaration.grains.map((grain) => poolSlugOf(grain.key));
@@ -570,8 +576,8 @@ export function assertOnePool(
 
   // AND THE BLANKETS MUST COME FIRST, WHICH IS A SEPARATE FACT FROM THEIR BEING PRESENT. Two
   // attribute selectors score identically; source order is the entire mechanism.
-  const blanketFill = html.search(/\[data-pool\]\s*\{\s*fill:/);
-  const firstFill = html.search(/\[data-pool~="[^"]*"\]\s*\{\s*fill:/);
+  const blanketFill = html.search(new RegExp(`\\[data-pool\\]\\s*\\{\\s*${property}:`));
+  const firstFill = html.search(new RegExp(`\\[data-pool~="[^"]*"\\]\\s*\\{\\s*${property}:`));
   if (firstFill >= 0 && firstFill < blanketFill)
     throw new Error(
       `${where}: the stylesheet sets a class's own fill BEFORE the blanket that resets them all. ` +
@@ -594,12 +600,12 @@ export function assertOnePool(
           "drawn on top of every other and every attribute is still perfectly correct.",
       );
     const at = `:has\\(#[\\w-]*${slug}:checked\\)`;
-    if (!new RegExp(`${at} \\[data-pool\\] \\{ fill:`).test(html))
+    if (!new RegExp(`${at} \\[data-pool\\] \\{ ${property}:`).test(html))
       throw new Error(
         `${where}: choosing ${JSON.stringify(slug)} would leave the grain before it painted under ` +
           "it — the option's own blanket is missing, and the two states would be drawn on top of each other",
       );
-    if (!new RegExp(`${at} \\[data-pool~="${slug}-c\\d+"\\] \\{ fill:`).test(html))
+    if (!new RegExp(`${at} \\[data-pool~="${slug}-c\\d+"\\] \\{ ${property}:`).test(html))
       throw new Error(`${where}: choosing ${JSON.stringify(slug)} would paint no class at all`);
     if (!new RegExp(`${at} \\[data-pool-figure="${slug}"\\]`).test(html))
       throw new Error(`${where}: choosing ${JSON.stringify(slug)} would print no number`);

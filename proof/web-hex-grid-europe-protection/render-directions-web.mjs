@@ -1,24 +1,34 @@
 // twin/proof/web-hex-grid-europe-protection/render-directions-web.mjs
 //
 // Ukrainians under temporary protection per 1 000 inhabitants, one hexagon per host country.
-// Rendered once per FILED DIRECTION into a self-contained interactive page.
+// Rendered once per FILED DIRECTION into a self-contained interactive page whose marks are MapLibre
+// layers over MapTiler's own tiles — the pattern the owner validated on
+// `proof/web-choropleth-europe-lowcarbon/` on 2026-09-15.
 //
 // THE LAYOUT IS DESIGNED, NOT DERIVED, and the page says so. It is CHECKED BOTH WAYS: every code in
-// the layout has a reading and every reading has a cell — a hand-drawn layout is the one thing here a
-// reader cannot check against the source, so nothing else about it is left unchecked.
+// the layout has a reading and every reading has a cell.
+//
+// THE GRID IS BUILT IN WEB MERCATOR METRES and unprojected to lon/lat, which is the one thing that
+// keeps thirty-two congruent hexagons congruent on the screen. A grid laid out in DEGREES would be
+// drawn taller in the north than in the south, and six equal edges is the whole purchase of the type.
 //
 // WHAT THE WEB ADDS is the GRAIN: over how many cells a cell adds up its own numerator and its own
-// denominator before it divides. `skills/map-web/assets/pool.ts` is the vocabulary and `BRIEF.md`
-// argues it; everything this file does with it is derived from the frozen files and asserted here
-// before anything is drawn.
+// denominator before it divides. `skills/map-web/assets/pool.ts` is the vocabulary,
+// `skills/map-web/assets/live-hex.ts` is the live layer, and `BRIEF.md` argues both.
 //
 // Usage:  bun proof/web-hex-grid-europe-protection/render-directions-web.mjs
 
-import { readdirSync } from "node:fs";
-import { readFile, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/chart-beat/colour.mjs";
+import puppeteer from "puppeteer";
+import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
+import { deriveFurniture, measureText } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
@@ -33,19 +43,32 @@ import {
   poolSlugOf,
   pooledValues,
 } from "../../skills/map-web/assets/pool.ts";
-import { DirectedHexGridWeb } from "./DirectedHexGridWeb.tsx";
+import {
+  NOTO_SENTINEL_BYTES,
+  assertPoolReachesTheLayers,
+  liveHexPlan,
+  liveHexScript,
+} from "../../skills/map-web/assets/live-hex.ts";
+import { DirectedHexGridWeb, POOL_MS, hexRamp } from "./DirectedHexGridWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+const FALLBACK_DIR = join(HERE, "fallback");
 const EYEBROW = "Migrations · Europe";
 const ORIGIN = "UKR";
 const RADIUS = 44;
 const BREAKS = [5, 10, 20, 30];
-/** A hairline's worth of room outside the outermost hexagon, in the geometry's own units. The
- *  polygons carry a 2px NON-SCALING stroke, so half of it is painted outside the shape at every
- *  scale; two units is more than that at every width this page has been driven at. */
 const PAD = 3;
+/** The published MapTiler style. One style for the three directions, repainted in each direction's
+ *  own two tints by `style.mjs` — `the-basemap-gives-up-its-contrast` cannot be satisfied by picking
+ *  between two published styles, so the geography is MapTiler's and the palette is the beat's. */
+const MAP_STYLE = "dataviz-light";
+/** THE REVIEW WINDOW, and the stage it leaves. The owner judges at 1512 x 860; the format's figure
+ *  caps at the window, so the map box is the full figure width and whatever height the header, the
+ *  control, the key and the notes leave. Measured on the validated pattern: 1464 x 519,6. */
+const REVIEW_WINDOW = { width: 1512, height: 860, scale: 2 };
+const STAGE = { width: 1464, height: 520 };
 
 /** This beat's own copy of the designed layout — odd rows offset by half a cell, which is what makes
  *  every neighbour an EDGE neighbour. Duplicated rather than imported from the static sibling: a
@@ -68,9 +91,8 @@ const NAMES = {
 };
 
 /** THE THIRD GRAIN'S BLOCKS, named the way a reader already holds Europe. They are an EDITORIAL
- *  partition and the page says so: the point of the control is precisely that a grouping is a
- *  choice somebody made, so a grouping presented as natural would defeat it. Checked both ways
- *  below — every host is in exactly one block and every block names only hosts. */
+ *  partition and the page says so: the point of the control is precisely that a grouping is a choice
+ *  somebody made. Checked both ways below. */
 const REGIONS = {
   Nordiques: ["ISL", "NOR", "SWE", "FIN", "DNK"],
   Baltes: ["EST", "LVA", "LTU"],
@@ -132,7 +154,7 @@ for (const code of hosts)
   if (!regionOf[code])
     throw new Error(
       `${NAMES[code]} has a reading and sits in no block. A grain that leaves a cell out sets its ` +
-        `colour by no rule, so it would keep whatever the state before it painted.`,
+        `colour by no rule, so it would keep the one the state before it painted.`,
     );
 
 // ── THE CLAIM, ASSERTED ───────────────────────────────────────────────────────────────────────
@@ -158,13 +180,7 @@ const klassLabel = (i) =>
   i === 0 ? `moins de ${BREAKS[0]}` : i === BREAKS.length ? `${BREAKS[BREAKS.length - 1]} et plus` : `${BREAKS[i - 1]}–${BREAKS[i]}`;
 const classes = Array.from({ length: BREAKS.length + 1 }, (_, i) => ({ label: klassLabel(i) }));
 
-// ── the geometry, derived from what the cells actually occupy ─────────────────────────────────
-//
-// THE FRAME IS THE CELLS' OWN EXTENT, NOT A FORMULA ABOUT THE GRID. The premier jet took the frame
-// from `(columns + 0.5) * dx`, which is the width the widest row WOULD have if every row were full;
-// on a hand-drawn layout with holes in it that is a guess, and a guess about a frame is how cells
-// end up outside one. Here the outermost vertices are measured, the drawing is shifted so the
-// leftmost and topmost sit at `PAD`, and every hexagon is then asserted to be inside the viewBox.
+// ── the grid, in its own units, derived from what the cells actually occupy ───────────────────
 const DX = RADIUS * Math.sqrt(3);
 const DY = RADIUS * 1.5;
 const HALF_W = DX / 2;
@@ -174,28 +190,86 @@ const minX = Math.min(...seats.map((s) => rawX(s) - HALF_W));
 const maxX = Math.max(...seats.map((s) => rawX(s) + HALF_W));
 const minY = Math.min(...seats.map((s) => rawY(s) - RADIUS));
 const maxY = Math.max(...seats.map((s) => rawY(s) + RADIUS));
-const width = Number((maxX - minX + PAD * 2).toFixed(1));
-const height = Number((maxY - minY + PAD * 2).toFixed(1));
+const gridW = Number((maxX - minX + PAD * 2).toFixed(2));
+const gridH = Number((maxY - minY + PAD * 2).toFixed(2));
 const centreOf = (s) => ({
-  cx: Number((rawX(s) - minX + PAD).toFixed(1)),
-  cy: Number((rawY(s) - minY + PAD).toFixed(1)),
+  cx: Number((rawX(s) - minX + PAD).toFixed(2)),
+  cy: Number((rawY(s) - minY + PAD).toFixed(2)),
 });
 for (const s of seats) {
   const { cx, cy } = centreOf(s);
-  if (cx - HALF_W < 0 || cx + HALF_W > width || cy - RADIUS < 0 || cy + RADIUS > height)
-    throw new Error(
-      `${NAMES[s.code]}'s hexagon runs outside the ${width} x ${height} frame ` +
-        `(x ${(cx - HALF_W).toFixed(1)}..${(cx + HALF_W).toFixed(1)}, y ${(cy - RADIUS).toFixed(1)}..` +
-        `${(cy + RADIUS).toFixed(1)}). A cell nobody can see is a cell the title still counts.`,
-    );
+  if (cx - HALF_W < 0 || cx + HALF_W > gridW || cy - RADIUS < 0 || cy + RADIUS > gridH)
+    throw new Error(`${NAMES[s.code]}'s hexagon runs outside the ${gridW} x ${gridH} grid box.`);
 }
-console.log(`frame ${width} x ${height} · ${seats.length} hexagons, all inside\n`);
+
+// ── THE GRID, PLACED ON THE EARTH — in Web Mercator METRES, never in degrees ──────────────────
+//
+// A hex cartogram has no geography: its geometry IS the data. But the pattern the owner validated
+// draws every mark as a MapLibre layer over MapTiler's tiles, so the grid has to be handed over as
+// lon/lat. Building it in METRES and unprojecting is what keeps the thirty-two cells congruent: one
+// degree of latitude is NOT one degree of longitude on a Mercator screen, and a grid laid out in
+// degrees would be stretched taller in the north — six equal edges is the whole purchase of this
+// type, so it is the one thing that may not be traded for convenience.
+//
+// The anchor is a SEATING, not a geolocation, and the page says so: the grid sits over Europe
+// because the layout is arranged like Europe, and the real coastline showing around it is exactly
+// what the type sheet says a cartogram gives up.
+const EARTH_R = 6378137;
+const ANCHOR = { lon: 14.5, lat: 53.5 };
+/** Metres of Web Mercator per grid unit, chosen so the grid spans a Europe-sized box (~57° of
+ *  longitude). One number, and every cell is the same size in metres by construction. */
+const M_PER_UNIT = 8700;
+const mercX = (lon) => (EARTH_R * lon * Math.PI) / 180;
+const mercY = (lat) => EARTH_R * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+const lonOf = (x) => (x / EARTH_R) * (180 / Math.PI);
+const latOf = (y) => (2 * Math.atan(Math.exp(y / EARTH_R)) - Math.PI / 2) * (180 / Math.PI);
+const X0 = mercX(ANCHOR.lon) - (gridW / 2) * M_PER_UNIT;
+const Y0 = mercY(ANCHOR.lat) + (gridH / 2) * M_PER_UNIT;
+const geo = (cx, cy) => [
+  Number(lonOf(X0 + cx * M_PER_UNIT).toFixed(6)),
+  Number(latOf(Y0 - cy * M_PER_UNIT).toFixed(6)),
+];
+const STUDY = {
+  west: geo(0, 0)[0],
+  east: geo(gridW, 0)[0],
+  north: geo(0, 0)[1],
+  south: geo(0, gridH)[1],
+};
+const vertexOf = (cx, cy, i) => {
+  const a = (Math.PI / 180) * (60 * i - 30);
+  return [cx + RADIUS * Math.cos(a), cy + RADIUS * Math.sin(a)];
+};
+const ringOf = (s) => {
+  const { cx, cy } = centreOf(s);
+  const ring = Array.from({ length: 6 }, (_, i) => geo(...vertexOf(cx, cy, i)));
+  return [...ring, ring[0]];
+};
+console.log(
+  `grille ${gridW} x ${gridH} unités · ${seats.length} hexagones · fenêtre ` +
+    `${fr(STUDY.west, 2)}°..${fr(STUDY.east, 2)}° E, ${fr(STUDY.south, 2)}°..${fr(STUDY.north, 2)}° N\n`,
+);
+
+// ── WHAT MERCATOR COSTS THIS SUBJECT, measured on the grid this page really draws ─────────────
+//
+// The cells are equal ON THE SCREEN by construction — they are equal in Mercator metres. What is not
+// equal is the GROUND under them: a Mercator map inflates area by 1/cos²(lat), so the seat at the
+// top of the grid stands over less real land than the seat at the bottom, by a factor this beat
+// measures and prints rather than buries.
+const centreLat = (s) => geo(centreOf(s).cx, centreOf(s).cy)[1];
+const northSeat = seats.reduce((a, s) => (centreLat(s) > centreLat(a) ? s : a));
+const southSeat = seats.reduce((a, s) => (centreLat(s) < centreLat(a) ? s : a));
+const inflate = (lat) => 1 / Math.cos((lat * Math.PI) / 180);
+const MERCATOR_COST = (inflate(centreLat(northSeat)) / inflate(centreLat(southSeat))) ** 2;
+const mercatorNote = plain(
+  `Carte MapTiler plate, en Web Mercator : les cases restent rigoureusement égales — elles sont ` +
+    `construites en mètres de Mercator, c'est l'achat du type — mais la terre sous elles ne l'est ` +
+    `pas. Sous la case la plus au nord (${NAMES[northSeat.code]}, ${fr(centreLat(northSeat))}° N) ` +
+    `le sol est dessiné ${fr(MERCATOR_COST)} fois plus grand que sous la plus au sud ` +
+    `(${NAMES[southSeat.code]}, ${fr(centreLat(southSeat))}° N).`,
+);
+console.log(`${mercatorNote}\n`);
 
 // ── the grain ─────────────────────────────────────────────────────────────────────────────────
-//
-// The six edge directions of an odd-row-offset pointy-top grid, in the order the hexagon's own
-// vertices are wound (edge `e` runs from vertex `e` to vertex `e + 1`, vertex `i` at 60i − 30°), so
-// one table serves both the neighbour lookup and the block outline.
 const EDGE_DIRS = {
   even: [[0, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0]],
   odd: [[0, 1], [1, 1], [1, 0], [0, -1], [-1, 0], [-1, 1]],
@@ -221,11 +295,7 @@ const pool = {
   unit: plain("pour 1 000 habitants"),
   scale: 1000,
   breaks: BREAKS,
-  cells: hosts.map((code) => ({ code, numerator: people[code], denominator: inhabitants[code] })).map((c) => ({
-    key: c.code,
-    numerator: c.numerator,
-    denominator: c.denominator,
-  })),
+  cells: hosts.map((code) => ({ key: code, numerator: people[code], denominator: inhabitants[code] })),
   grains: [
     {
       key: "pays",
@@ -251,7 +321,6 @@ const pool = {
   ],
 };
 
-// The two sentences the control owes the reader, derived from the frozen file rather than typed.
 const classesUnder = (grain) => {
   const values = pooledValues(pool, grain);
   return new Map([...values].map(([k, v]) => [k, klassOf(v)]));
@@ -308,73 +377,67 @@ console.log(
     `${fr(meanOfRates)}\n`,
 );
 
-// ── the block outline, one path per grain ─────────────────────────────────────────────────────
+// ── the block outline, as lon/lat segments tagged with their grain ────────────────────────────
 //
 // A segment is drawn on every edge that separates two cells this grain does NOT pool together. A
 // grain that is a MOVING WINDOW rather than a partition has no such edge set at all — the windows
-// overlap — and `poolPartitionOf` says so by returning `null`; it gets an empty path rather than an
-// invented boundary, which keeps the element set identical in every state so `opacity` can travel.
-const vertexOf = (cx, cy, i) => {
-  const a = (Math.PI / 180) * (60 * i - 30);
-  return [cx + RADIUS * Math.cos(a), cy + RADIUS * Math.sin(a)];
-};
-const seams = pool.grains.map((grain) => {
+// overlap — and `poolPartitionOf` says so by returning `null`. Every grain's segments live in ONE
+// source and it is `line-opacity` that moves, so the feature set never changes between states.
+const seamFeatures = [];
+for (const grain of pool.grains) {
   const partition = poolPartitionOf(grain);
   const slug = poolSlugOf(grain.key);
-  if (!partition) return { slug, d: "" };
+  if (!partition) continue;
   const blockOf = (code) => partition.get(code) ?? null;
-  const parts = [];
   for (const s of seats) {
     const mine = blockOf(s.code);
-    // A block of one cell is the cell itself, and its outline is the ground-coloured stroke the
-    // polygon already carries. Drawing it again in ink would be new ink for no new fact.
     if (mine === null || grain.windows.find((w) => w.cell === s.code).with.length < 2) continue;
     const { cx, cy } = centreOf(s);
     for (let edge = 0; edge < 6; edge += 1) {
       const n = neighbourAcross(s, edge);
       if (n && blockOf(n.code) === mine) continue;
-      const [x0, y0] = vertexOf(cx, cy, edge);
-      const [x1, y1] = vertexOf(cx, cy, edge + 1);
-      parts.push(`M${x0.toFixed(1)} ${y0.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}`);
+      seamFeatures.push({
+        grain: slug,
+        line: [geo(...vertexOf(cx, cy, edge)), geo(...vertexOf(cx, cy, edge + 1))],
+      });
     }
   }
-  return { slug, d: parts.join("") };
-});
+}
 console.log(
-  `outlines · ${seams.map((s) => `${s.slug}: ${s.d ? `${s.d.split("M").length - 1} segments` : "none (a window has no boundary)"}`).join(" · ")}\n`,
+  `contours · ${pool.grains
+    .map((g) => {
+      const slug = poolSlugOf(g.key);
+      const n = seamFeatures.filter((f) => f.grain === slug).length;
+      return `${slug}: ${n ? `${n} segments` : "aucun (une fenêtre n'a pas de frontière)"}`;
+    })
+    .join(" · ")}\n`,
 );
 
-// ── the cells the component draws ─────────────────────────────────────────────────────────────
+// ── the cells ─────────────────────────────────────────────────────────────────────────────────
 const cells = seats.map((s) => {
-  const { cx, cy } = centreOf(s);
-  if (s.code === ORIGIN)
-    return {
-      code: s.code,
-      name: NAMES[s.code],
-      cx,
-      cy,
-      isOrigin: true,
-      figures: [{ slug: "origine", text: plain("origine"), klass: 0, isDefault: true }],
-      detail: plain(
-        `${NAMES[s.code]} · pays d'origine — la carte compte les personnes qui en sont parties, pas ` +
-          `celles qui y sont, et aucun regroupement ne l'inclut`,
-      ),
-    };
-  const figures = poolFiguresForMarkup(pool, s.code, (v) => fr(v));
+  const isOrigin = s.code === ORIGIN;
+  const figures = isOrigin
+    ? pool.grains.map((g, i) => ({ slug: poolSlugOf(g.key), text: plain("origine"), klass: 0, isDefault: i === 0 }))
+    : poolFiguresForMarkup(pool, s.code, (v) => fr(v));
   return {
     code: s.code,
     name: NAMES[s.code],
-    cx,
-    cy,
-    isOrigin: false,
+    isOrigin,
+    ring: ringOf(s),
     figures,
-    detail: plain(
-      `${NAMES[s.code]} · seul ${fr(rate(s.code))} pour 1 000 · avec ses voisines ` +
-        `${fr(valueUnder(pool.grains[1], s.code))} · ${regionOf[s.code]} ` +
-        `${fr(valueUnder(pool.grains[2], s.code))} · ${count(people[s.code])} personnes pour ` +
-        `${count(inhabitants[s.code])} habitants · ` +
-        `${byRate.indexOf(s.code) + 1}e par habitant, ${byCount.indexOf(s.code) + 1}e en nombre absolu`,
-    ),
+    people: isOrigin ? plain("—") : count(people[s.code]),
+    detail: isOrigin
+      ? plain(
+          `${NAMES[s.code]} · pays d'origine — la carte compte les personnes qui en sont parties, pas ` +
+            `celles qui y sont, et aucun regroupement ne l'inclut`,
+        )
+      : plain(
+          `${NAMES[s.code]} · seul ${fr(rate(s.code))} pour 1 000 · avec ses voisines ` +
+            `${fr(valueUnder(pool.grains[1], s.code))} · ${regionOf[s.code]} ` +
+            `${fr(valueUnder(pool.grains[2], s.code))} · ${count(people[s.code])} personnes pour ` +
+            `${count(inhabitants[s.code])} habitants · ` +
+            `${byRate.indexOf(s.code) + 1}e par habitant, ${byCount.indexOf(s.code) + 1}e en nombre absolu`,
+        ),
   };
 });
 
@@ -395,8 +458,8 @@ const title = `Par habitant, ce n'est pas l'${NAMES[biggest]} : la ${NAMES[subje
 const caveat =
   `Une case par pays d'accueil, toutes de la même taille : la carte abandonne la surface et achète ` +
   `ce qu'un choroplèthe des mêmes données ne peut pas donner — chaque pays également visible. Six ` +
-  `voisins, tous par une arête. Ce que la planche fixe a dû trancher pour vous est en dessous : ` +
-  `à quelle échelle une case met sa valeur en commun.`;
+  `voisins, tous par une arête. ${mercatorNote} Ce que la planche fixe a dû trancher pour vous est ` +
+  `en dessous : à quelle échelle une case met sa valeur en commun.`;
 const claimNote =
   `En nombre absolu l'ordre s'inverse : ${NAMES[biggest]} ${count(people[biggest])} personnes ` +
   `(${byRate.indexOf(biggest) + 1}e par habitant), ${NAMES[subject]} ${count(people[subject])} ` +
@@ -405,20 +468,29 @@ const readingLine =
   `Lecture : changez le grain et les mêmes 32 cases, aux mêmes 32 places et sous la même légende, ` +
   `disent autre chose — ${hoodMoved} sur ${hosts.length} changent de classe d'un grain à l'autre. ` +
   `Mise en commun sur toute l'Europe, la protection vaut ${fr(wholeRate)} pour 1 000 quand la ` +
-  `moyenne des ${hosts.length} taux vaut ${fr(meanOfRates)}. Survolez, touchez ou tabulez une case ` +
-  `pour lire ses trois taux d'un coup, les personnes, la population qui les divise et son rang ` +
-  `dans LES DEUX classements.`;
-const source = `Source : Eurostat, migr_asytpsm — bénéficiaires de la protection temporaire, ${month} · population 2023, via Our World in Data`;
+  `moyenne des ${hosts.length} taux vaut ${fr(meanOfRates)}. Survolez une case pour lire ses trois ` +
+  `taux d'un coup, les personnes, la population qui les divise et son rang dans LES DEUX classements.`;
+const liveHint = plain(
+  `Carte vivante : zoomez avec les boutons de MapTiler, la molette ou les touches + et −, ` +
+    `déplacez-la en la faisant glisser ou avec les flèches du clavier, et survolez une case pour la ` +
+    `lire. Le tableau sous la carte porte les mêmes lectures, et il change de grain sans JavaScript.`,
+);
+const source = `Source : Eurostat, migr_asytpsm — bénéficiaires de la protection temporaire, ${month} · population 2023, via Our World in Data · fond de carte MapTiler`;
 const alt =
-  `Une grille d'hexagones disposés à peu près comme l'Europe, un par pays d'accueil, tous de la ` +
-  `même taille et teintés selon le nombre d'Ukrainiens sous protection pour 1 000 habitants. Chaque ` +
-  `case porte le code du pays et son taux. Les cases les plus foncées sont en Europe centrale — la ` +
+  `Une grille d'hexagones disposés à peu près comme l'Europe, posée sur un fond de carte MapTiler ` +
+  `où l'on voit les vraies côtes autour d'elle. Un hexagone par pays d'accueil, tous de la même ` +
+  `taille et teintés selon le nombre d'Ukrainiens sous protection pour 1 000 habitants. Chaque case ` +
+  `porte le code du pays et son taux. Les cases les plus foncées sont en Europe centrale — la ` +
   `${NAMES[subject]} à ${fr(rate(subject))} en tête — tandis que l'${NAMES[biggest]}, la plus ` +
   `grande en nombre absolu, n'est qu'à ${fr(rate(biggest))}. La case de l'${NAMES[ORIGIN]} est ` +
   `neutre : c'est le pays d'origine. Un choix sous le titre change l'échelle à laquelle une case ` +
   `met sa valeur en commun — le pays seul, le pays avec ses voisines, ou le bloc régional — et ` +
   `${hoodMoved} cases sur ${hosts.length} changent de classe sans qu'aucune ne bouge : ` +
-  `${NAMES[swing.code]} passe de ${fr(swing.from)} à ${fr(swing.to)}.`;
+  `${NAMES[swing.code]} passe de ${fr(swing.from)} à ${fr(swing.to)}. La carte se zoome, se ` +
+  `déplace et se survole avec les contrôles de MapTiler.`;
+
+const TABLE_CAPTION = plain(`Les ${seats.length} cases, leur taux au grain choisi et ce qu'il compte`);
+const COLUMNS = ["Pays", "Taux au grain choisi", "Personnes", "Classe"];
 
 const interaction = {
   earns: plain(
@@ -440,6 +512,17 @@ const interaction = {
       ),
     },
     {
+      question: plain("Et les 32 lectures en toutes lettres, elles sont où ?"),
+      gesture: "open-the-full-table",
+      changes: plain(
+        `Les ${seats.length} lignes s'ouvrent sous la carte, chacune avec son taux au grain choisi, ` +
+          `les personnes qu'il compte et sa pastille de classe. Cette pastille ET ce taux suivent le ` +
+          `grain en CSS pur : c'est là que le geste survit quand la carte, elle, ne peut pas — ` +
+          `aucune feuille de style n'atteint une couche MapLibre, donc la moitié carte du geste est ` +
+          `du script et la moitié tableau n'en est pas.`,
+      ),
+    },
+    {
       question: plain("Cette case-là, c'est qui, et combien fait-elle aux trois grains ?"),
       gesture: "ask-a-mark",
       changes: plain(
@@ -455,8 +538,8 @@ const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
   body: `${caveat} ${readingLine} ${source}`,
-  axis: `${classes.map((c) => c.label).join(" ")} ${NAMES[ORIGIN]} origine ${seats.map((s) => s.code).join(" ")}`,
-  annot: `${claimNote} ${pool.label} ${pool.grains.map((g) => `${g.label} ${g.announce} ${g.note ?? ""}`).join(" ")}`,
+  axis: `${classes.map((c) => c.label).join(" ")} ${NAMES[ORIGIN]} origine ${seats.map((s) => s.code).join(" ")} ${TABLE_CAPTION} ${COLUMNS.join(" ")} ${seats.map((s) => NAMES[s.code]).join(" ")} Zoomer Dézoomer Carte`,
+  annot: `${claimNote} ${liveHint} ${pool.label} ${pool.grains.map((g) => `${g.label} ${g.announce} ${g.note ?? ""}`).join(" ")}`,
   value: cells.flatMap((c) => c.figures.map((f) => f.text)).join(" "),
 };
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
@@ -464,15 +547,10 @@ for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(tex
 // ── NO MAGNITUDE THIS PAGE PRINTS MAY ROUND TO NOTHING ────────────────────────────────────────
 //
 // Found by looking, not by reasoning: hovering Iceland answered *"4 800 personnes pour 0 millions
-// d'habitants"*. Its 393 396 inhabitants had been divided by a million and rounded, and on the one
-// country small enough for that to matter the sentence told the reader the denominator was zero —
-// on a page whose whole subject is that the denominator is what changes. The divisions are gone and
-// the populations are printed as they are frozen; this refuses the next one rather than trusting
-// that it will be noticed. A scale word next to a zero is the shape of the defect, so that is what
-// is searched for, in every string the reader can actually read.
+// d'habitants"*, on a page whose whole subject is that the denominator is what changes.
 const ROUNDED_TO_NOTHING = /\b0\s+(millions?|milliers?|milliards?)\b/;
 const spokenWords = [
-  title, caveat, claimNote, readingLine, alt, pool.label,
+  title, caveat, claimNote, readingLine, alt, liveHint, pool.label, mercatorNote,
   ...pool.grains.flatMap((g) => [g.label, g.announce, g.note ?? ""]),
   ...cells.flatMap((c) => [c.detail, ...c.figures.map((f) => f.text)]),
 ];
@@ -483,7 +561,7 @@ for (const said of spokenWords) {
       `a sentence this page says out loud reads ${JSON.stringify(hit[0])}: ` +
         `${JSON.stringify(said.slice(Math.max(0, hit.index - 60), hit.index + 60))}. A quantity ` +
         `divided into a scale it is smaller than prints as none, and a reader is told a real ` +
-        `population is zero. Print the figure at a scale it survives, never at a smaller size.`,
+        `population is zero.`,
     );
 }
 
@@ -493,59 +571,303 @@ const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
+// ── WHAT THE SECOND LAYER IS MADE OF, READ ONCE ───────────────────────────────────────────────
+//
+// MapLibre and its stylesheet are INLINED into every page rather than linked: a `<script src>` would
+// trade the payload for a SECOND third-party host, and inlining keeps the count at one —
+// api.maptiler.com. `style.mjs` travels as SOURCE with its `export` keywords stripped, because a
+// page script cannot import.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
+const MAPLIBRE_CSS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css"), "utf8");
+const STYLE_MODULE = (
+  await readFile(join(HERE, "..", "..", "skills", "map-web", "assets", "style.mjs"), "utf8")
+).replace(/^export /gm, "");
+
+const KEY = process.env.MAPTILER_KEY ?? process.env.REMOTION_MAPTILER_KEY ?? process.env.VITE_MAPTILER_KEY ?? "";
+const PLACEHOLDER = `__MAPTILER${"_KEY__"}`;
+const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
+const BLANK_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+/** THE FONTSTACK A CELL LABEL IS DRAWN IN, and it is PROBED rather than assumed.
+ *
+ *  MapTiler Cloud serves eighteen families and answers **200 with Noto Sans** for every other name —
+ *  the same 83 352 bytes, with nothing at all to say so. Seventeen of the eighteen are Google Fonts
+ *  and `resolve-families.mjs` resolves this tree's registers onto Google Fonts, so the map's type
+ *  and the page's type can be the SAME face rather than cousins: measured on the three filed
+ *  directions, every family a label here needs (Open Sans, Montserrat, Merriweather) is one MapTiler
+ *  serves. The silent fallback is the failure mode, so the sentinel size is what is refused. */
+const variantFor = (weight) => (weight >= 600 ? "Bold" : weight >= 500 ? "Medium" : "Regular");
+const probed = new Map();
+async function servedStack(family, weight, what) {
+  const stack = `${family} ${variantFor(weight)}`;
+  if (!KEY) return stack;
+  if (probed.has(stack)) {
+    if (probed.get(stack)) return stack;
+  } else {
+    const url = new URL(`https://api.maptiler.com/fonts/${encodeURIComponent(stack)}/0-255.pbf`);
+    url.searchParams.set("key", KEY);
+    const response = await fetch(url);
+    const bytes = response.ok ? (await response.arrayBuffer()).byteLength : 0;
+    probed.set(stack, response.ok && bytes !== NOTO_SENTINEL_BYTES);
+    if (probed.get(stack)) return stack;
+  }
+  throw new Error(
+    `MapTiler does not serve the fontstack ${JSON.stringify(stack)} for ${what}: it answered with ` +
+      `the ${NOTO_SENTINEL_BYTES}-byte Noto Sans range every unknown family gets, and nothing in ` +
+      `MapLibre would ever say so. The cell labels would silently be in a face this page does not ` +
+      `carry, beside a legend that is.`,
+  );
+}
+
+/**
+ * PHOTOGRAPH THE PAGE'S OWN LIVE MAP, and write it where the page will embed it.
+ *
+ * The key is substituted into a copy under the system temp directory, never beside the page and
+ * never inside the repository. It REFUSES rather than writing something: a frozen picture taken from
+ * a map that never loaded is a picture of the failure it exists to replace, and it would ship
+ * looking like a success.
+ */
+async function bakeFallback(pagePath, outFile, id) {
+  if (!KEY)
+    throw new Error(
+      "the frozen fallback is photographed from this page's own live map, so it needs a MapTiler " +
+        "key in the environment (MAPTILER_KEY). Without one the page would ship with a blank second " +
+        "layer, which is the defect this bake exists to close.",
+    );
+  const html = (await readFile(pagePath, "utf8")).split(PLACEHOLDER).join(KEY);
+  const dir = mkdtempSync(join(tmpdir(), "mw-fallback-"));
+  const keyed = join(dir, `${id}.local.html`);
+  await writeFile(keyed, html);
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({
+      width: REVIEW_WINDOW.width,
+      height: REVIEW_WINDOW.height,
+      deviceScaleFactor: REVIEW_WINDOW.scale,
+    });
+    await page.goto(`file://${keyed}`, { waitUntil: "networkidle0", timeout: 120000 });
+    await page.waitForFunction(() => document.documentElement.classList.contains("mw-live"), { timeout: 120000 });
+    await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const map = window.__mwMap;
+          if (map.loaded() && map.areTilesLoaded()) return resolve();
+          map.once("idle", resolve);
+        }),
+    );
+    await new Promise((r) => setTimeout(r, 600));
+    const box = await page.$(".map-layer");
+    if (!box) throw new Error("the page carries no live map box to photograph");
+    await mkdir(dirname(outFile), { recursive: true });
+    const png = `${outFile}.png`;
+    const shot = await box.boundingBox();
+    await box.screenshot({ path: png });
+    const encode = spawnSync("cwebp", ["-quiet", "-q", "92", png, "-o", outFile], { stdio: "inherit" });
+    if (encode.status !== 0) throw new Error(`cwebp exited with ${encode.status} baking ${id}'s fallback`);
+    rmSync(png, { force: true });
+    console.log(
+      `fallback ${id} → ${outFile.replace(`${HERE}/`, "")} · ${Math.round(shot.width)}x${Math.round(shot.height)} CSS px`,
+    );
+    return { width: Math.round(shot.width), height: Math.round(shot.height) };
+  } finally {
+    await browser.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** The two tints a basemap is allowed on a directed page, neither invented: the sea takes a little
+ *  of the accent, the land takes a step off the ground toward the ink. */
+const plateTints = (d) => ({
+  water: mix(d.ground, d.accent, 0.16),
+  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
+});
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const name = `${id}.html`;
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+  const base = readDirection(join(DIRECTIONS, file));
+  const direction = resolveDirectionFamilies(base, textPerRegister);
   try {
-    const { outPath } = await renderWeb({
-      component: DirectedHexGridWeb,
-      props: {
-        cells,
-        pool,
-        seams,
-        classes,
-        originLabel: `${NAMES[ORIGIN]} · origine`,
-        radius: RADIUS,
-        width, height,
-        title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote, alt,
-        interaction,
-        direction,
-        ground: direction.ground,
-        accent: direction.accent,
-      },
-      outDir: OUT,
-      name,
+    const tints = plateTints(base);
+    const furniture = deriveFurniture(base.ground);
+    // ONE DERIVATION OF THE RAMP, READ BY BOTH HALVES: the component draws the table's swatches from
+    // it and this file builds the live map's per-grain expressions from the SAME arrays.
+    const { ramp, activeRamp, inkRamp, origin, seamInk } = hexRamp({
+      ground: base.ground,
+      accent: base.accent,
+      ink: furniture.ink,
+      plateLand: tints.land,
+      plateWater: tints.water,
+      tones: classes.length,
     });
-    // READ THE WRITTEN PAGE BACK. Several of this vocabulary's refusals can only be made here: a
-    // cell drawn with a token no grain generates, a blanket emitted after the rules it is supposed
-    // to outrank, and a stylesheet that forgot to emit its own rules at all — the mutation
-    // `descend.ts` records, where every attribute stayed perfectly correct and the page shipped
-    // every state drawn on top of every other.
-    const html = await readFile(outPath, "utf8");
-    assertOnePool(html, pool, { where: name });
-    // ONE GEOMETRY, AND THEREFORE NOTHING THAT CAN MOVE. The whole gesture rests on the cells being
-    // drawn once for every state; a page that had grown a second set of polygons would be a page
-    // where a state COULD move one, whatever this beat's arithmetic says.
-    const polygons = [...html.matchAll(/<polygon\b[^>]*\spoints="([^"]*)"/g)].map((m) => m[1]);
-    if (polygons.length !== cells.length || new Set(polygons).size !== cells.length)
+
+    const axisReg = direction.registers.axis;
+    const valueReg = direction.registers.value;
+    const CODE_SIZE = { fontSize: 13, fontWeight: axisReg.weight ?? 500, fontFamily: axisReg.family };
+    const VALUE_SIZE = { fontSize: 14, fontWeight: valueReg.weight ?? 700, fontFamily: valueReg.family };
+
+    // ── A CELL TOO NARROW TO HOLD ITS OWN CODE IS A REFUSAL, not a smaller type size ───────────
+    //
+    // The type sheet's own rule, carried from the static sibling and re-derived for a live map: the
+    // label is drawn by MapLibre at a FIXED pixel size, so what it has to fit inside is the cell's
+    // width AT THE PUBLISHED FRAMING — the tightest the reader ever sees it, since the zoom floor is
+    // that framing. `fitBounds` with no padding fits the grid box into the stage, and the grid is
+    // linear in Mercator metres, so the scale is one number.
+    const pxPerUnit = Math.min(STAGE.width / gridW, STAGE.height / gridH);
+    const cellWidthPx = DX * pxPerUnit;
+    const cellHeightPx = 2 * RADIUS * pxPerUnit;
+    const widthOf = (text, size) => measureText(text, size);
+    const codeOwes = Math.max(...cells.map((c) => widthOf(c.code, CODE_SIZE))) + 6;
+    const valueOwes = Math.max(...cells.flatMap((c) => c.figures.map((f) => widthOf(f.text, VALUE_SIZE)))) + 6;
+    if (cellWidthPx < codeOwes || cellWidthPx < valueOwes)
       throw new Error(
-        `${name}: the page draws ${polygons.length} polygons at ${new Set(polygons).size} distinct ` +
-          `geometries for ${cells.length} cells. One cell, one polygon, every state — that is the ` +
-          `whole reason nothing on this map can move.`,
+        `at the published framing a hexagon is ${cellWidthPx.toFixed(1)} px wide and it has to hold ` +
+          `a code that owes ${codeOwes.toFixed(1)} and a number that owes ${valueOwes.toFixed(1)}. ` +
+          `A grid nobody can read cell by cell is a pattern, not a map — and the answer is a bigger ` +
+          `cell or a shorter label, never a smaller type size.`,
       );
-    console.log(`${id} -> renders/${name}`);
+    // AND THE TWO LABELS MAY NOT TOUCH EACH OTHER. They are stacked at one place, offset in ems of
+    // their own size, so the only pair that can collide is a cell's own code and its own number.
+    const CODE_OFFSET_EM = -0.55;
+    const VALUE_OFFSET_EM = 0.8;
+    const codeBottom = CODE_OFFSET_EM * CODE_SIZE.fontSize + CODE_SIZE.fontSize * 0.5;
+    const valueTop = VALUE_OFFSET_EM * VALUE_SIZE.fontSize - VALUE_SIZE.fontSize * 0.5;
+    if (!(codeBottom < valueTop))
+      throw new Error(
+        `a cell's code and its number overlap: the code ends at ${codeBottom.toFixed(1)} px below ` +
+          `the seat's centre and the number starts at ${valueTop.toFixed(1)}.`,
+      );
+    const stackedHeight = VALUE_OFFSET_EM * VALUE_SIZE.fontSize + VALUE_SIZE.fontSize - CODE_OFFSET_EM * CODE_SIZE.fontSize;
+    if (stackedHeight > cellHeightPx)
+      throw new Error(
+        `a cell is ${cellHeightPx.toFixed(1)} px tall at the published framing and its two labels ` +
+          `stack to ${stackedHeight.toFixed(1)} px. A label that leaves its own seat belongs to the ` +
+          `cell beside it as far as a reader can tell.`,
+      );
+
+    const live = {
+      style: MAP_STYLE,
+      tints,
+      studyBounds: STUDY,
+      cells: cells.map((c) => ({
+        code: c.code,
+        ring: c.ring,
+        isOrigin: c.isOrigin,
+        figures: Object.fromEntries(c.figures.map((f) => [f.slug, { text: f.text, klass: f.klass }])),
+      })),
+      seams: seamFeatures,
+      slugs: pool.grains.map((g) => poolSlugOf(g.key)),
+      defaultSlug: poolSlugOf(pool.grains[0].key),
+      ramp,
+      activeRamp,
+      inkRamp,
+      origin: { ...origin, text: plain("origine") },
+      cellEdge: base.ground,
+      seam: { ink: seamInk, width: 2.5 },
+      labels: {
+        code: { font: await servedStack(axisReg.family, CODE_SIZE.fontWeight, "a cell's code"), size: CODE_SIZE.fontSize, offsetEm: CODE_OFFSET_EM },
+        value: { font: await servedStack(valueReg.family, VALUE_SIZE.fontWeight, "a cell's number"), size: VALUE_SIZE.fontSize, offsetEm: VALUE_OFFSET_EM },
+      },
+      details: Object.fromEntries(cells.map((c) => [c.code, c.detail])),
+      locale: { title: "Carte", zoomIn: "Zoomer", zoomOut: "Dézoomer" },
+      changeMs: POOL_MS,
+    };
+
+    const pageOf = (plate, box) =>
+      renderWeb({
+        component: DirectedHexGridWeb,
+        props: {
+          cells,
+          pool,
+          classes,
+          originLabel: `${NAMES[ORIGIN]} · origine`,
+          plate,
+          plateLand: tints.land,
+          plateWater: tints.water,
+          aspect: box.width / box.height,
+          size: box.width,
+          livePlan: liveHexPlan(live),
+          liveScript: liveHexScript(live, {
+            scope: ".chart-figure",
+            styleModule: STYLE_MODULE,
+            poolName: "mw-stack",
+          }),
+          liveHint,
+          maplibreCss: MAPLIBRE_CSS,
+          maplibreJs: MAPLIBRE_JS,
+          tableCaption: TABLE_CAPTION,
+          columns: COLUMNS,
+          title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote, alt,
+          interaction,
+          direction,
+          ground: direction.ground,
+          accent: direction.accent,
+        },
+        outDir: OUT,
+        name: `${id}.html`,
+      });
+
+    const stamp = createHash("sha256")
+      .update(JSON.stringify(liveHexPlan(live)))
+      .update(JSON.stringify(REVIEW_WINDOW))
+      .digest("hex")
+      .slice(0, 16);
+    const image = join(FALLBACK_DIR, `${id}.webp`);
+    const stampFile = join(FALLBACK_DIR, `${id}.sha`);
+    let record = null;
+    if (existsSync(image) && existsSync(stampFile)) {
+      try {
+        const kept = JSON.parse(readFileSync(stampFile, "utf8"));
+        if (kept.stamp === stamp) record = kept;
+      } catch (err) {
+        record = null;
+      }
+    }
+    if (!record) {
+      // A DRAFT FIRST, with nothing under the live map, because the thing being photographed is the
+      // live map on THIS page rather than a second rendering of the same plan somewhere else.
+      await pageOf(BLANK_PNG, STAGE);
+      const shot = await bakeFallback(join(OUT, `${id}.html`), image, id);
+      await mkdir(FALLBACK_DIR, { recursive: true });
+      record = { stamp, ...shot };
+      await writeFile(stampFile, `${JSON.stringify(record)}\n`);
+    }
+    const plate = `data:image/webp;base64,${(await readFile(image)).toString("base64")}`;
+    const { outPath } = await pageOf(plate, record);
+    // THE KEYED COPY FOR REVIEW, beside the page and git-ignored. The owner: « non, comme pour les
+    // scrolly il faut toujours une clé sinon ça sert à rien ». The COMMITTED page keeps the
+    // placeholder, because this repository is public.
+    if (KEY) {
+      const html = await readFile(outPath, "utf8");
+      if (!html.includes(PLACEHOLDER))
+        throw new Error("the rendered page carries no delivery placeholder to substitute a key into");
+      await writeFile(localPageOf(outPath), html.split(PLACEHOLDER).join(KEY));
+    }
+    // READ THE WRITTEN PAGE BACK. The file a reader opens is the only artefact any of these refusals
+    // is about.
+    const written = await readFile(join(OUT, `${id}.html`), "utf8");
+    assertOnePool(written, pool, { where: `renders/${id}.html`, property: "background-color" });
+    // THE SAME QUESTION, ASKED OF THE OTHER HALF. `assertOnePool` holds the MARKUP against the pooled
+    // classes; this holds the LIVE PLAN against the same pooled classes. Neither can see the other's
+    // mechanism, and the crossing between them is exactly where this architecture can put one
+    // grouping on the map and a different one in the table.
+    assertPoolReachesTheLayers(written, live, pool, ramp, MAP_STYLE, { where: `renders/${id}.html` });
+    console.log(`${id} -> renders/${id}.html`);
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
     // A refused direction must not leave its previous render on disk to be mistaken for this one.
-    await rm(join(OUT, name), { force: true });
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
   }
 }
 if (refused.length) {
   console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
-  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
-  // previous render on disk to be mistaken for this one.
   process.exitCode = 1;
 }

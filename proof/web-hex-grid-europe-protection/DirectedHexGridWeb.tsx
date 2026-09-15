@@ -1,85 +1,47 @@
 /**
  * Ukrainians under temporary protection per 1 000 inhabitants, one hexagon per host country — drawn
- * as a hex cartogram THROUGH the design base and delivered as an interactive page.
+ * as a hex cartogram ON A LIVE MAPTILER MAP and delivered as an interactive page.
  *
  * ONE UNIT, ONE CELL, ALL CELLS EQUAL. The map gives up area and buys what a choropleth of the same
  * data cannot give: every country equally visible. On a subject whose units are countries rather
  * than land, that is the honest trade, and the caveat states both halves of it.
  *
- * WHAT THE HEXAGON BUYS OVER THE SQUARE: six neighbours, every one of them edge-sharing. A square
- * grid touches diagonally, so a reader has to decide whether corner contact counts as adjacency; a
- * hexagon has no corners to argue about. That is why the odd rows are offset by half a cell — and
- * it is also what makes this page's second grain expressible at all.
- *
  * ─────────────────────────────────────────────────────────────────────────────────────────────
- * WHAT THE WEB ADDS, AND WHY IT IS THIS AND NOT A ZOOM, A PAN OR A TOOLTIP.
+ * THE ARCHITECTURE, CHANGED 2026-09-15 — AND THE GESTURE, KEPT.
  *
- * A zoom is the lazy answer on a map and here it is not even that: there is no geography to frame.
- * What a hex grid hides is **the binning itself**. Its own type sheet says so twice — *"the
- * aggregate mode silently changes what the same shade of colour MEANS, and the map doesn't tell the
- * reader which mode it's in"*, and *"cell size and aggregate mode are both invisible from the final
- * image alone"*. The sheet's cartogram reading says the cells are *"not arbitrary at all"*, which is
- * true OF THE CELL and false OF THE GROUPING: a rate is a quotient of two sums, and the moment two
- * cells are put in common the quotient of the sums stops being the mean of the quotients.
+ * This beat used to draw its cells as SVG polygons over a baked plate. The owner validated
+ * `proof/web-choropleth-europe-lowcarbon/` as THE pattern for every web map: every mark a MapLibre
+ * layer over MapTiler's own tiles, the map taking the whole width of the figure, zoom / pan / hover
+ * from MapTiler rather than from a collision test of ours, a flat Web Mercator projection, and a
+ * frozen second layer underneath because MapTiler invalidates ALL of an account's keys at 100 % of
+ * its spending limit. `skills/map-web/assets/live-hex.ts` is this type's half of that pattern.
  *
- * So the control is the GRAIN — over how many cells a cell adds up its own numerator and its own
- * denominator — and the same frozen file says three different things under it:
+ * The GESTURE is untouched: the reader holds the GRAIN — over how many cells a cell adds up its own
+ * numerator and its own denominator before it divides. `pool.ts` is still the vocabulary.
  *
  *   le pays        LIE 23,9   LTU 17,5   CZE 36,1     5 classes drawn
  *   le voisinage   LIE  1,8   LTU 26,6   CZE 22,0     4 classes drawn, 21 of 31 cells change class
  *   la région      LIE  4,3   LTU 18,3   CZE 18,0     3 classes drawn, 21 of 31 cells change class
  *
- * Liechtenstein drops twenty-two points and three classes because its forty thousand inhabitants are
- * pooled with France's sixty-eight million, sitting beside it in the drawing. Lithuania gains nine.
- * Pooled over the whole continent the rate is 9,68 per thousand where the mean of the thirty-one
- * rates is 12,24 — two true numbers answering two different questions. A still can pick one grain,
- * print it in the caveat and ask to be trusted; a video or a scrolly can play the three in the
- * author's order, once. This is a back-and-forth, not a sequence.
- *
- * `pool.ts` is the vocabulary, written for this beat in `skills/map-web/assets/` and argued in
- * `BRIEF.md` against the three that already existed there. Native radios plus CSS generated at build
- * time: no script, no listener, and the complete plate WITH a working control when JavaScript is off.
- *
- * ─────────────────────────────────────────────────────────────────────────────────────────────
- * WHAT MOVES: NOTHING, AND THAT IS A MEASUREMENT RATHER THAN AN INTENTION.
- *
- * A cell's seat is a function of the drawn grid and of NO grain, so the three states are the same
- * polygons at the same places with different fills — the runner asserts that the `points` attribute
- * is identical across the three states rather than trusting the arithmetic. This is why the owner's
- * fourth arbitration is honoured here instead of excused: `fill` is a real CSS property on an element
- * that is always rendered, so it interpolates, and the colour runs from one grain's class to the
- * next over 420 ms.
- *
- * It is available ONLY because the gesture changes the aggregation WINDOW and not the TESSELLATION.
- * Between two different tessellations a cell has nowhere continuous to travel to and the honest move
- * would be to say so; this page never has to, because there is one tessellation in every state.
- *
- * THE KEY DOES NOT CHANGE EITHER, and that is the choice that separates this gesture from the
- * choropleth's. `classing.ts` holds the values still and moves the bounds; this holds the bounds
- * still and moves the values. So the five swatches and the five printed ranges are the same in all
- * three states, and a reader who has learnt the key once never re-learns it.
- *
- * NO WORD MOVES. A cell's CODE is furniture: written once, identical in every state. Its NUMBER is
- * three `<text>` stacked at ONE place and the stylesheet reveals one — digits change, nothing travels.
- * The type sheet's own rule decides that it is the code and not the name: *"the unit's code sits
- * inside its own cell, and a cell too narrow to hold it is a refusal, not a smaller type size."* The
- * premier jet drew `Liechtenstein` at 13px inside a 76-unit hexagon and its labels overlapped their
- * neighbours'; this file measures every label against its own cell and against every other label,
- * and refuses rather than shrink.
- *
- * THE BLOCK OUTLINE is the one thing that appears, and only at `la région`. It is always in the DOM
- * and it is its `opacity` that moves, so it interpolates too. At `le pays` there is no group of more
- * than one cell to outline. At `le voisinage` there is none either, for the reason that IS the
- * gesture: a neighbourhood is not a partition but a moving window — Czechia is in its own and in
- * five others' — and a window has no boundary. `poolPartitionOf` returns `null` there rather than
- * inventing blocks, and the derived sentence tells the reader which kind they are looking at.
+ * WHAT THE ARCHITECTURE COST THE GESTURE, stated rather than discovered. No stylesheet reaches a
+ * MapLibre layer, so the map's half of the grain is now SCRIPT: one `setPaintProperty` and one
+ * `setLayoutProperty` per grain, over expressions built at BUILD time from the same pooled classes
+ * the markup carries. What a reader with no script keeps is the frozen picture, the legend — which
+ * is IDENTICAL under every grain, this vocabulary's whole distinction from `classing.ts` — the
+ * derived sentence, and the value table below, whose own rate and swatch still re-shade under the
+ * grain in pure CSS. The gesture moved from the picture to the table; it did not disappear.
  *
  * THE POINTER'S ANSWER DOES NOT CHANGE WITH THE GRAIN, deliberately. Every cell answers with all
  * three of its values at once, plus the people, the population that divides them and its rank in
- * BOTH rankings — a reading that is true in every state. A reader who hovers gets the whole
- * comparison without pressing anything; a reader who presses gets it map-wide. It also keeps this
- * page to ONE set of `.pt`: `interaction.mjs` resolves the pointed mark from `cx`/`cy` read once at
- * init, and three stacked answering layers at identical coordinates would answer for each other.
+ * BOTH rankings — a reading that is true in every state. And there is ONE copy of that string: the
+ * table's row carries `data-detail`, and the live map reads it off the row rather than shipping a
+ * second copy inside the plan.
+ *
+ * NOTHING MOVES. A cell's seat is a function of the drawn grid and of no grain, so the three states
+ * are the same polygons at the same places with different fills, and `fill-color` interpolates over
+ * the beat's own 420 ms (the owner's fourth arbitration honoured by construction). The block outline
+ * is in the source under every grain and it is its `line-opacity` that moves, so it interpolates too.
+ * A reader who drags the map moves everything, and they can see exactly why.
  *
  * `the-key-prints-its-breaks-in-the-data-s-units` — the key names its classes in people per 1 000.
  * `a-sequential-grid-is-one-hue-cluster` — one hue, monotone in lightness, in all three states.
@@ -92,7 +54,6 @@ import {
   TEXT_CONTRAST_MIN,
   NON_TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
-import { measureText } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters, figureVars, inkOnFill } from "#shared/design-base/web.mjs";
 import { controlChromeCss } from "../../skills/chart-web/assets/control-chrome.ts";
 import {
@@ -102,37 +63,141 @@ import {
   poolNotesForMarkup,
   poolOptionsForMarkup,
 } from "../../skills/map-web/assets/pool.ts";
+import { liveHexCss } from "../../skills/map-web/assets/live-hex.ts";
 
 /** The id stem the format's own discovery contract looks for. `interaction-plan.ts` reads a
- *  toggling control off `id="mw-stack-<slug>"` plus `data-stack-note="<slug>"`; a third spelling
- *  would be invisible to the guard written to hold it, so this beat speaks the one that exists. */
+ *  toggling control off `id="mw-stack-<slug>"` plus `data-stack-note="<slug>"`. */
 export const POOL_ID_PREFIX = "mw-stack";
 export const SCOPE = ".chart-figure";
-/** How long a cell's colour takes to run from one grain's class to the next. The one transition on
- *  the geometry, and the only one the owner's fourth arbitration can be met with here. */
+/** How long a cell's colour takes to run from one grain's class to the next — given to the map's
+ *  paint transition AND to the table's swatches, so the two halves cross together. */
 export const POOL_MS = 420;
+/** What a pointed-at cell must differ from its own resting fill by. The owner refused a FIXED dose
+ *  at 1,104:1, so the dose is searched until a measured separation rather than typed. */
+export const ACTIVE_SEPARATION_MIN = 1.25;
+/** What the seat outside the count must differ from every class by. 1,1:1 is not a threshold
+ *  anybody can defend as "visible"; it is the line under which two fills are the SAME fill with
+ *  rounding, which is the state this beat once shipped in. */
+export const ORIGIN_SEPARATION_MIN = 1.5;
+
+/**
+ * ONE DERIVATION OF THE RAMP, READ BY BOTH HALVES — the component draws the table's swatches from it
+ * and the runner builds the live map's per-grain fill expressions from the SAME arrays. A second
+ * derivation is precisely the "half the beat re-shades and the other half keeps the grain before it"
+ * defect, now able to happen across two mechanisms instead of inside one.
+ *
+ * AND IT IS FLOORED AGAINST BOTH GROUNDS. The cells used to sit on the page's own `--ground`; they
+ * now sit on MapTiler's land and water, repainted in this direction's plate tints. A class legible
+ * on the paper and invisible on the sea is a class that disappears for the cells over the Atlantic,
+ * so the harder of the two is what the floor is taken against.
+ */
+export function hexRamp({
+  ground,
+  accent,
+  ink,
+  plateLand,
+  plateWater,
+  tones,
+}: {
+  ground: string;
+  accent: string;
+  ink: string;
+  plateLand: string;
+  plateWater: string;
+  tones: number;
+}) {
+  const grounds = [ground, plateLand, plateWater];
+  const worst = (colour: string) => Math.min(...grounds.map((g) => contrast(colour, g)));
+  const floorAgainstGround = (colour: string, what: string) => {
+    let out = colour;
+    for (const g of grounds) {
+      if (contrast(out, g) >= NON_TEXT_CONTRAST_MIN) continue;
+      const lifted = adjustToContrast(out, g, NON_TEXT_CONTRAST_MIN);
+      if (!lifted)
+        throw new Error(`${what} cannot be told from the ground it sits on in this direction's colours.`);
+      out = lifted;
+    }
+    if (worst(out) < NON_TEXT_CONTRAST_MIN)
+      throw new Error(`${what} measures ${worst(out).toFixed(2)}:1 against the palest ground it is drawn on.`);
+    return out;
+  };
+  const low = floorAgainstGround(mix(accent, ground, 0.88), "the lowest class of the ramp");
+  const high = mix(accent, ink, 0.3);
+  const ramp = Array.from({ length: tones }, (_, i) => mix(low, high, tones > 1 ? i / (tones - 1) : 0.5));
+  /** DARKENED FROM ITS OWN FILL, and the dose is searched. A cell's answer to a pointer is the cell
+   *  itself (the owner's second arbitration); a single typed dose measured 1,104:1 on nocturne. */
+  const darken = (fill: string, what: string) => {
+    for (let t = 4; t <= 60; t += 2) {
+      const tried = mix(fill, ink, t / 100);
+      if (contrast(tried, fill) >= ACTIVE_SEPARATION_MIN) return tried;
+    }
+    for (let t = 4; t <= 60; t += 2) {
+      const tried = mix(fill, ground, t / 100);
+      if (contrast(tried, fill) >= ACTIVE_SEPARATION_MIN) return tried;
+    }
+    throw new Error(`${what} cannot be darkened from its own fill by a step a reader can see.`);
+  };
+  const activeRamp = ramp.map((fill, i) => darken(fill, `class ${i}`));
+  const inkRamp = ramp.map((fill) =>
+    inkOnFill(fill, { ink, ground }, contrast, adjustToContrast, TEXT_CONTRAST_MIN),
+  );
+  /** THE SEAT OUTSIDE THE COUNT IS THE GROUND, NOT A SIXTH TINT. It used to be `mix(ground, ink,
+   *  0.16)` put through the same floor as class 0, and two colours floored INDEPENDENTLY on the same
+   *  floor against the same ground come out the same colour by construction: measured 1,007:1 on
+   *  creme, 1,001:1 on nocturne, 1,011:1 on rapport. The key then offered a swatch for "moins de 5"
+   *  and a swatch for "Ukraine · origine" in one colour, teaching a reader that a country nobody
+   *  counted is a country with the lowest rate. There is no room inside the ramp — class 0 sits at
+   *  the 3,0 floor and class 1 is a visible step above — so the honest place for a unit that was
+   *  never measured is OUTSIDE the ramp: the ground itself, an empty seat with a floored outline. */
+  const originFill = ground;
+  const originEdge = floorAgainstGround(mix(ground, ink, 0.45), "the outline of the seat that stands outside the count");
+  const edge = floorAgainstGround(mix(ground, ink, 0.3), "the outline of a legend swatch");
+  const origin = {
+    fill: originFill,
+    active: darken(originFill, "the seat that stands outside the count"),
+    ink: inkOnFill(originFill, { ink, ground }, contrast, adjustToContrast, TEXT_CONTRAST_MIN),
+    edge: originEdge,
+  };
+  ramp.forEach((fill, i) => {
+    const seen = contrast(originFill, fill);
+    if (seen < ORIGIN_SEPARATION_MIN)
+      throw new Error(
+        `the seat that stands outside the count and the class ${i} measure ${seen.toFixed(3)}:1 ` +
+          `against each other (floor ${ORIGIN_SEPARATION_MIN}). The key would offer two swatches in ` +
+          `one colour and tell the reader that a country nobody counted is a country with the ` +
+          `lowest rate.`,
+      );
+  });
+  return { ramp, activeRamp, inkRamp, origin, edge, seamInk: mix(ink, ground, 0.12) };
+}
 
 export type Cell = {
   code: string;
   name: string;
-  cx: number;
-  cy: number;
-  /** The origin country: drawn, named, and outside the measure. */
   isOrigin: boolean;
   detail: string;
-  /** One printed number per grain, in the beat's own format. Stacked at one place. */
+  people: string;
+  /** One printed number per grain, in the beat's own format. Stacked at one place in the table. */
   figures: { slug: string; text: string; klass: number; isDefault: boolean }[];
 };
 
 export function DirectedHexGridWeb({
   cells,
   pool,
-  seams,
   classes,
   originLabel,
-  radius,
-  width,
-  height,
+  plate,
+  plateLand,
+  plateWater,
+  aspect,
+  size,
+  livePlan,
+  liveScript,
+  liveHint,
+  maplibreCss,
+  maplibreJs,
+  tableCaption,
+  columns,
   title,
   eyebrow,
   caveat,
@@ -145,15 +210,24 @@ export function DirectedHexGridWeb({
   accent,
   ink,
   muted,
+  grid,
 }: {
   cells: Cell[];
   pool: any;
-  seams: { slug: string; d: string }[];
   classes: { label: string }[];
   originLabel: string;
-  radius: number;
-  width: number;
-  height: number;
+  plate: string;
+  plateLand: string;
+  plateWater: string;
+  aspect: number;
+  size: number;
+  livePlan: Record<string, unknown>;
+  liveScript: string;
+  liveHint: string;
+  maplibreCss: string;
+  maplibreJs: string;
+  tableCaption: string;
+  columns: string[];
   title: string;
   eyebrow: string;
   caveat: string;
@@ -166,140 +240,20 @@ export function DirectedHexGridWeb({
   accent: string;
   ink: string;
   muted: string;
+  grid: string;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
+  const width = aspect >= 1 ? size : size * aspect;
+  const height = aspect >= 1 ? size / aspect : size;
 
-  /** A COLOUR THAT CANNOT BE TOLD FROM THE GROUND IS A CELL THAT IS NOT THERE. The palest class and
-   *  the origin's neutral are both lifted to the non-text floor against the direction's own ground
-   *  before anything is drawn, and a direction where no lift reaches it is refused rather than
-   *  corrected somewhere else. Carried from the static sibling, which earned it. */
-  const floorAgainstGround = (colour: string, what: string) => {
-    if (contrast(colour, ground) >= NON_TEXT_CONTRAST_MIN) return colour;
-    const lifted = adjustToContrast(colour, ground, NON_TEXT_CONTRAST_MIN);
-    if (!lifted)
-      throw new Error(`${what} cannot be told from the ground it sits on in this direction's colours.`);
-    return lifted;
-  };
-  const low = floorAgainstGround(mix(accent, ground, 0.88), "the lowest class of the ramp");
-  const high = mix(accent, ink, 0.3);
-  const classFill = (i: number) => mix(low, high, classes.length > 1 ? i / (classes.length - 1) : 0.5);
-  /** THE SEAT OUTSIDE THE COUNT IS THE GROUND, NOT A SIXTH TINT — and that is a correction, made
-   *  here by measuring the delivered page rather than by reading the code.
-   *
-   *  It used to be `mix(ground, ink, 0.16)` put through `floorAgainstGround`, exactly as the lowest
-   *  class is. Two colours floored INDEPENDENTLY on the same floor against the same ground come out
-   *  the same colour by construction, and they did: the origin against class 0 measured **1.007:1
-   *  on creme, 1.001:1 on nocturne, 1.011:1 on rapport**. On the map a reader could still tell them
-   *  apart, because the origin cell prints the word `origine` where the others print a number — but
-   *  the KEY could not. It offered a swatch for "moins de 5" and a swatch for "Ukraine · origine"
-   *  in the same colour, which is a key that teaches a reader something false.
-   *
-   *  There is no room to separate them inside the ramp: class 0 sits at 3,13:1 against the ground
-   *  and the floor is 3,0, so nothing legal fits below it, and anything a visible step above it
-   *  collides with class 1 at 4,19:1. The honest place for a unit that was never measured is
-   *  therefore OUTSIDE the ramp altogether — the ground itself, an empty seat, with an outline that
-   *  clears the non-text floor so the seat is still a seat. The refusal below holds it there. */
-  const originFill = ground;
-  const edge = floorAgainstGround(mix(ground, ink, 0.3), "the outline of a legend swatch");
-  const originEdge = floorAgainstGround(
-    mix(ground, ink, 0.45),
-    "the outline of the seat that stands outside the count",
-  );
-  /** The block outline at `la région`, and it is measured against the class fills it crosses rather
-   *  than against the ground: it is drawn ON the cells, never beside them. */
-  const seamInk = mix(ink, ground, 0.12);
-  const inkFor = (fill: string) =>
-    inkOnFill(fill, { ink, ground }, contrast, adjustToContrast, TEXT_CONTRAST_MIN);
-  const classInk = classes.map((_, i) => inkFor(classFill(i)));
-  const originInk = inkFor(originFill);
-  /** THE SEAT OUTSIDE THE COUNT MUST BE TELLABLE FROM EVERY CLASS, measured against the colours this
-   *  direction really paints. 1,1:1 is not a threshold anybody can defend as "visible"; it is the
-   *  line under which two fills are the SAME fill with rounding, which is the state this beat
-   *  shipped in and which no guard would have named. */
-  const ORIGIN_SEPARATION_MIN = 1.5;
-  classes.forEach((k, i) => {
-    const seen = contrast(originFill, classFill(i));
-    if (seen < ORIGIN_SEPARATION_MIN)
-      throw new Error(
-        `the seat that stands outside the count and the class ${JSON.stringify(k.label)} measure ` +
-          `${seen.toFixed(3)}:1 against each other (floor ${ORIGIN_SEPARATION_MIN}). The key would ` +
-          `offer two swatches in one colour and tell the reader that a country nobody counted is ` +
-          `a country with the lowest rate.`,
-      );
+  const { ramp, origin, edge } = hexRamp({
+    ground,
+    accent,
+    ink,
+    plateLand,
+    plateWater,
+    tones: classes.length,
   });
-
-  const hex = (cx: number, cy: number) =>
-    Array.from({ length: 6 }, (_, i) => {
-      const a = (Math.PI / 180) * (60 * i - 30);
-      return `${(cx + radius * Math.cos(a)).toFixed(1)} ${(cy + radius * Math.sin(a)).toFixed(1)}`;
-    }).join(" ");
-
-  // ── the two refusals this type owes its own labels ─────────────────────────────────────────
-  /** THE STACK WITHOUT ITS QUOTES, for the SVG attributes and for the measurement that sizes the
-   *  cell against them. A register's `fontFamily` is a CSS string and carries `"Open Sans"` with its
-   *  quotes inside it; `measureText` splices that straight into `font-family="..."` on its probe,
-   *  where the inner quote closes the attribute and resvg refuses the whole document — *"invalid
-   *  attribute at 1:101 cause expected space not 'O'"*, which is the parser standing on the `O` of
-   *  `Open`. Dropping the quotes leaves the same stack and legal CSS, since a family name made of
-   *  identifiers needs none, and it keeps the double-quoted spelling the typeface census reads (an
-   *  attribute opened on a single quote is invisible to both scanners). Same fix, same reason, as
-   *  `proof/web-slope-europe-lowcarbon/DirectedSlopeWeb.tsx`. */
-  const plainStack = (stack: unknown) => String(stack).replace(/"/g, "");
-  const CODE_SIZE = { fontSize: 13, fontWeight: 600, fontFamily: plainStack(regs.axis.fontFamily) };
-  const VALUE_SIZE = { fontSize: 14, fontWeight: 700, fontFamily: plainStack(regs.value.fontFamily) };
-  const CODE_DY = -radius * 0.16;
-  const VALUE_DY = radius * 0.34;
-  /** A pointy-top hexagon is `radius * √3` wide at its own centre line, and every label here sits
-   *  inside the middle half of it, where the full width is available. */
-  const cellWidth = radius * Math.sqrt(3);
-  const widthOf = (text: string, size: any) => measureText(text, size);
-
-  const codeOwes = Math.max(...cells.map((c) => widthOf(c.code, CODE_SIZE))) + 6;
-  const valueOwes = Math.max(
-    ...cells.flatMap((c) => c.figures.map((f) => widthOf(f.text, VALUE_SIZE))),
-  ) + 6;
-  if (cellWidth < codeOwes || cellWidth < valueOwes)
-    throw new Error(
-      `a hexagon is ${cellWidth.toFixed(1)} units wide and it has to hold a code that owes ` +
-        `${codeOwes.toFixed(1)} and a number that owes ${valueOwes.toFixed(1)}. A grid nobody can ` +
-        `read cell by cell is a pattern, not a map — and the answer is a bigger cell or a shorter ` +
-        `label, never a smaller type size.`,
-    );
-
-  /** NO LABEL MAY TOUCH ANOTHER LABEL. The premier jet drew each country's full French name in a
-   *  76-unit cell and they ran into each other; measuring is the only way to know, so every box is
-   *  built and every pair is compared. A number is measured at its WIDEST grain, because the reader
-   *  chooses the grain and the widest one has to fit too. */
-  type Box = { what: string; x0: number; x1: number; y0: number; y1: number };
-  const boxes: Box[] = [];
-  for (const cell of cells) {
-    const codeW = widthOf(cell.code, CODE_SIZE);
-    boxes.push({
-      what: `${cell.code} code`,
-      x0: cell.cx - codeW / 2,
-      x1: cell.cx + codeW / 2,
-      y0: cell.cy + CODE_DY - CODE_SIZE.fontSize * 0.5,
-      y1: cell.cy + CODE_DY + CODE_SIZE.fontSize * 0.5,
-    });
-    const valueW = Math.max(...cell.figures.map((f) => widthOf(f.text, VALUE_SIZE)));
-    boxes.push({
-      what: `${cell.code} value`,
-      x0: cell.cx - valueW / 2,
-      x1: cell.cx + valueW / 2,
-      y0: cell.cy + VALUE_DY - VALUE_SIZE.fontSize * 0.5,
-      y1: cell.cy + VALUE_DY + VALUE_SIZE.fontSize * 0.5,
-    });
-  }
-  for (let i = 0; i < boxes.length; i += 1)
-    for (let j = i + 1; j < boxes.length; j += 1) {
-      const a = boxes[i];
-      const b = boxes[j];
-      if (a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1)
-        throw new Error(
-          `the label "${a.what}" overlaps the label "${b.what}" — a hex grid whose names collide is ` +
-            `a grid a reader cannot read country by country, which is the only thing this type buys.`,
-        );
-    }
 
   const options = poolOptionsForMarkup(pool, POOL_ID_PREFIX);
   const notes = poolNotesForMarkup(pool);
@@ -307,8 +261,7 @@ export function DirectedHexGridWeb({
   const css = [
     // THE CHROME IS NOT COPIED. `control-chrome.ts` is the one place a directed control is drawn —
     // the pill rail, the chosen pill's wash and ring, the reserved note row — and a local variant
-    // would be the only one left ugly when the shared drawing is next changed. What is passed as
-    // `extra` is the only layer this vocabulary has ever owned.
+    // would be the only one left ugly when the shared drawing is next changed.
     controlChromeCss({
       scope: SCOPE,
       name: "pool",
@@ -318,27 +271,46 @@ export function DirectedHexGridWeb({
         stacked: true,
         why:
           "The two sentences wrap to two and three lines at 375px on this beat's own words, and a " +
-          "revealed sentence that grows its row pushes the whole grid down — the movement the " +
+          "revealed sentence that grows its row pushes the whole map down — the movement the " +
           "owner's first arbitration refuses. Stacked in one cell, the row is always as tall as " +
           "the longest sentence and the map never moves.",
       },
       extra: poolFigureCss({ scope: SCOPE }),
     }),
+    // THE GESTURE'S SCRIPT-FREE HALF. The map's cells are MapLibre layers now and no stylesheet
+    // reaches one, so what these rules re-shade is the TABLE: each row's swatch and each row's
+    // printed rate follow the grain in pure CSS, exactly as the cells do with script.
     poolCss(pool, {
       scope: SCOPE,
       idPrefix: POOL_ID_PREFIX,
-      fillOf: classFill,
-      // THE BLANKET IS THE NEUTRAL, not a class. A cell whose token no rule sets is then painted
-      // exactly like the country that is outside the measure — while still printing a number, which
-      // is a contradiction a reader can see and a guard can name.
-      unsetFill: originFill,
+      fillOf: (klass) => ramp[klass],
+      // THE BLANKET IS THE NEUTRAL, not a class: a swatch whose token no rule sets is painted exactly
+      // like the country outside the measure — while its row still prints a number, which is a
+      // contradiction a reader can see and a guard can name.
+      unsetFill: origin.fill,
+      // A SWATCH IS AN HTML BOX, so the class it wears is its BACKGROUND. Measured on the sibling
+      // pattern: as an SVG `<rect>` its re-shading depended on a `:has()` invalidation reaching an
+      // inherited presentation property, and that went stale in Chrome while an HTML sibling
+      // carrying the same attribute updated in the same recalculation.
+      property: "background-color",
       ms: POOL_MS,
     }),
-    // The block outline is ink over the cells, never a second ramp. Its weight is set here because
-    // it is this beat's geometry and not the vocabulary's.
-    `${SCOPE} [data-pool-seam] { stroke: ${seamInk}; stroke-width: 2.5; stroke-linejoin: round; }`,
+    liveHexCss({ scope: SCOPE }),
     // The answer is five readings long and the format's tooltip box is 220px wide.
     `#tooltip { max-width: min(460px, 100vw - 32px); }`,
+    // THE TABLE IS THE GESTURE WITHOUT SCRIPT, so it is a real table and not a grid of divs.
+    `${SCOPE} .mw-table { width: 100%; border-collapse: collapse; margin: 6px 0 0; }`,
+    `${SCOPE} .mw-table th, ${SCOPE} .mw-table td { text-align: left; padding: 2px 10px 2px 0; border-bottom: 1px solid ${grid}; white-space: nowrap; }`,
+    `${SCOPE} .mw-table td.num { text-align: right; }`,
+    // A ROW HEADING IS STILL A HEADING to a screen reader and still a plain cell to the eye: the
+    // browser's own bold would make thirty-two country names the heaviest ink on the page. Named
+    // literally, because the font machine cannot resolve `inherit` into a weight to cut.
+    `${SCOPE} .mw-table th.rowhead { font-weight: ${regs.axis.fontWeight}; }`,
+    `${SCOPE} .mw-table .sw { display: block; width: 14px; height: 14px; box-sizing: border-box; border: 1px solid ${edge}; }`,
+    `${SCOPE} .mw-table .sw.origin { border-color: ${origin.edge}; }`,
+    `${SCOPE} details.mw-readings { margin: 8px 0 0; }`,
+    `${SCOPE} details.mw-readings > summary { cursor: pointer; }`,
+    `${SCOPE} .mw-scroll { max-height: 40vh; overflow: auto; }`,
   ].join("\n\n");
 
   return (
@@ -349,13 +321,15 @@ export function DirectedHexGridWeb({
         ["--accent" as string]: accent,
         ["--ink" as string]: ink,
         ["--muted" as string]: muted,
+        ["--grid" as string]: grid,
         ...figureVars(regs),
       }}
     >
-      {/* This beat's own stylesheet, carried inside the figure it styles. The format's shared
-          `buildCss` emits the chrome for a FILTER, which this beat does not declare and must not:
-          nothing leaves this picture in any state, and a control that hid cells would be a filter
-          wearing this one's pills. */}
+      {/* MapLibre's own stylesheet, INLINED rather than linked: a `<link>` would trade the payload
+          for a SECOND third-party host, and the honest reading of the live-map ruling keeps the
+          count at one — api.maptiler.com. */}
+      <style dangerouslySetInnerHTML={{ __html: maplibreCss }} />
+      {/* This beat's own stylesheet, carried inside the figure it styles. */}
       <style dangerouslySetInnerHTML={{ __html: css }} />
 
       <div className="chart-header">
@@ -367,8 +341,7 @@ export function DirectedHexGridWeb({
       {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>`: a radio group to the
           keyboard and to a screen reader before this page's stylesheet does anything to it, and
           `aria-label` carries what a reader who is not looking at the map would otherwise only get
-          from it. Each accessible name CONTAINS its visible one — WCAG 2.5.3, refused in
-          `assertPoolDeclaration` rather than remembered. */}
+          from it. Each accessible name CONTAINS its visible one — WCAG 2.5.3. */}
       <fieldset className="chart-pool">
         <legend>{pool.label}</legend>
         <div className="options">
@@ -388,21 +361,17 @@ export function DirectedHexGridWeb({
         </div>
       </fieldset>
 
-      {/* THE SENTENCE THE CONTROL OWES THE READER — what the pooling did, in words, for a reader who
-          is not looking at the map. Its row is reserved whether or not an option is chosen, so
-          choosing one never moves the grid underneath it. The default reveals none: it is not a
-          counterfactual, it is the claim the title makes. */}
+      {/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
+          chosen, so choosing one never moves the map underneath it. The default reveals none: it is
+          not a counterfactual, it is the claim the title makes. */}
       <div className="pool-notes" role="status">
         {notes.map((note) => (
           <p key={note.slug} data-stack-note={note.slug} style={{ ...regs.annot, margin: 0 }}>{note.text}</p>
         ))}
       </div>
 
-      {/* THE KEY, AND IT IS THE SAME KEY IN ALL THREE STATES. The type sheet asks for the bin's own
-          numeric range printed next to each colour, in the deliverable's own number format, because
-          a sequential ramp compresses adjacent classes under a colour-vision-deficiency simulation
-          even when it is built correctly. Holding the bounds still and moving the values is what
-          lets one key serve every grain. */}
+      {/* THE KEY, AND IT IS THE SAME KEY IN ALL THREE STATES. Holding the bounds still and moving the
+          values is exactly what lets one key serve every grain — a reader learns it once. */}
       <div
         style={{
           display: "flex",
@@ -415,12 +384,12 @@ export function DirectedHexGridWeb({
       >
         {classes.map((k, i) => (
           <span key={k.label} style={{ ...regs.axis, display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 14, height: 14, background: classFill(i), display: "inline-block", border: `1px solid ${edge}` }} />
+            <span style={{ width: 14, height: 14, background: ramp[i], display: "inline-block", border: `1px solid ${edge}` }} />
             {k.label}
           </span>
         ))}
         <span style={{ ...regs.axis, display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 14, height: 14, background: originFill, display: "inline-block", border: `1px solid ${originEdge}` }} />
+          <span style={{ width: 14, height: 14, background: origin.fill, display: "inline-block", border: `1px solid ${origin.edge}` }} />
           {originLabel}
         </span>
       </div>
@@ -430,134 +399,105 @@ export function DirectedHexGridWeb({
         style={{
           ["--y-gutter" as string]: "0px",
           ["--x-axis-h" as string]: "0px",
+          // The aspect-ratio is the box's BASIS, not its law: the format makes `.chart-plot` the one
+          // shrinkable item under the figure's `max-height`, so this box takes the width it is given
+          // and the height the window leaves. The two layers then COVER it; neither is stretched.
           aspectRatio: `${width} / ${height}`,
         }}
       >
         <div className="y-axis" />
+        {/* THE FROZEN SECOND LAYER, photographed from THIS page's own live map. It is the whole
+            picture when the key has lapsed, when the tiles are down, and when there is no script —
+            and it is what the COMMITTED artifact always is, because the key never enters a file in
+            this repository. */}
         <svg
-          role="group"
+          role="img"
           aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
-          data-hit="cell"
           viewBox={`0 0 ${width} ${height}`}
-          // A hexagon stretched is not a hexagon, and six equal edges are the whole point. This is
-          // also why this beat is exempt from the format's own `preserveAspectRatio="none"`: the
-          // cell's scaleX and scaleY are equal by construction here rather than by luck.
-          preserveAspectRatio="xMidYMid meet"
+          // COVER, never stretch and never letterbox: `slice` is SVG's `object-fit: cover`.
+          preserveAspectRatio="xMidYMid slice"
+          data-plate=""
         >
           <desc>{alt}</desc>
-          <rect x={0} y={0} width={width} height={height} fill={ground} />
-
-          {/* THE CELLS. One polygon per country, drawn ONCE for all three grains: the `points` are a
-              function of the grid and of no grain, so the states differ in `fill` and in nothing
-              else. The default grain's fill is also a presentation attribute, which any generated
-              rule outranks — so the page degrades to the static plate if its stylesheet is ever
-              lost, and the control still wins whenever it is not. */}
-          {cells.map((c) => (
-            <polygon
-              key={c.code}
-              points={hex(c.cx, c.cy)}
-              {...(c.isOrigin ? {} : poolAttrsFor(pool, c.code))}
-              fill={c.isOrigin ? originFill : classFill(c.figures[0].klass)}
-              stroke={c.isOrigin ? originEdge : ground}
-              strokeWidth={2}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-
-          {/* THE BLOCK OUTLINE, one path per grain, always in the DOM. A grain that is a moving
-              window rather than a partition has no boundary and gets an empty path — an element
-              that is there and draws nothing, so the element set never changes and `opacity` is
-              free to interpolate. */}
-          {seams.map((seam) => (
-            <path key={seam.slug} data-pool-seam={seam.slug} d={seam.d} fill="none" vectorEffect="non-scaling-stroke" />
-          ))}
-
-          {/* ONE ANSWERING LAYER, NOT THREE. Every cell answers with all three of its pooled values
-              at once, so the reading is true in every state and `interaction.mjs` — which resolves
-              the pointed mark from coordinates read once at init — can never answer for the wrong
-              one. */}
-          {cells.map((c) => (
-            <circle
-              key={`hit-${c.code}`}
-              className="pt"
-              cx={c.cx}
-              cy={c.cy}
-              r={radius * 0.9}
-              fill="transparent"
-              stroke="none"
-              tabIndex={0}
-              role="img"
-              aria-label={c.detail}
-              data-detail={c.detail}
-            />
-          ))}
-          <rect className="hit-area" x={0} y={0} width={width} height={height} fill="transparent" pointerEvents="all" />
-
-          {cells.map((c) => (
-            <g key={`t-${c.code}`}>
-              {/* THE CODE IS FURNITURE. Written once, identical in every state, and the type sheet's
-                  own rule — a cell too narrow to hold it is a refusal, not a smaller type size. */}
-              <text
-                pointerEvents="none"
-                x={c.cx}
-                y={c.cy + CODE_DY}
-                fill={c.isOrigin ? originInk : classInk[c.figures[0].klass]}
-                fontFamily={CODE_SIZE.fontFamily}
-                fontSize={CODE_SIZE.fontSize}
-                fontWeight={CODE_SIZE.fontWeight}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {c.code}
-              </text>
-              {/* THE NUMBER: one `<text>` per grain at ONE place, the stylesheet reveals one. Digits
-                  cannot interpolate and this does not pretend they can — what it refuses to do is
-                  let a span travel to say so. The origin has no number in any state. */}
-              {c.isOrigin ? (
-                <text
-                  pointerEvents="none"
-                  x={c.cx}
-                  y={c.cy + VALUE_DY}
-                  fill={originInk}
-                  fontFamily={VALUE_SIZE.fontFamily}
-                  fontSize={VALUE_SIZE.fontSize}
-                  fontWeight={VALUE_SIZE.fontWeight}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >
-                  {c.figures[0].text}
-                </text>
-              ) : (
-                c.figures.map((figure) => (
-                  <text
-                    key={figure.slug}
-                    data-pool-figure={figure.slug}
-                    pointerEvents="none"
-                    x={c.cx}
-                    y={c.cy + VALUE_DY}
-                    fill={classInk[figure.klass]}
-                    fontFamily={VALUE_SIZE.fontFamily}
-                    fontSize={VALUE_SIZE.fontSize}
-                    fontWeight={VALUE_SIZE.fontWeight}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {figure.text}
-                  </text>
-                ))
-              )}
-            </g>
-          ))}
+          <image href={plate} x={0} y={0} width={width} height={height} preserveAspectRatio="none" />
         </svg>
-        <div className="overlay" aria-hidden="true" />
+        {/* THE LIVE MAP'S BOX — empty and invisible until MapLibre says it has drawn. It takes the
+            plot's whole track rather than the cell inside it, which IS the ruling: a live map has no
+            viewBox to be bound by, so it fills the width the figure has. */}
+        <div className="map-layer" aria-hidden="true" />
         <div className="x-axis" />
       </div>
 
-      <p className="chart-reading" style={{ ...regs.annot, margin: "6px 0 0" }}>{claimNote}</p>
+      <p className="chart-reading" style={{ ...regs.annot, margin: "8px 0 0" }}>{claimNote}</p>
+      {/* SHOWN ONLY WHEN THE LIVE MAP IS UP. With no script, no key or no tiles, a sentence about
+          dragging a map that cannot be dragged is a dead control. */}
+      <p className="live-hint" hidden style={{ ...regs.annot, margin: "4px 0 0" }}>{liveHint}</p>
       <p className="chart-reading" style={{ ...regs.body, margin: "6px 0 0" }}>{reading}</p>
-      <p className="chart-source" style={{ ...regs.body, margin: "4px 0 0" }}>{source}</p>
+
+      {/* EVERY READING, AS TEXT, WITH AND WITHOUT SCRIPT — AND THE GRAIN WITH IT. Each row's rate and
+          swatch carry the vocabulary, so the three grains re-measure the table in pure CSS even when
+          the map cannot. A native `<details>`: it opens with the keyboard and it opens with no
+          script. It is also the one copy of what a pointer answers — the live map reads `data-detail`
+          off the row rather than shipping a second copy inside the plan. */}
+      <details className="mw-readings">
+        <summary style={{ ...regs.axis }}>{tableCaption}</summary>
+        <div className="mw-scroll">
+          <table className="mw-table" style={{ ...regs.axis }}>
+            <thead>
+              <tr>
+                {columns.map((column, i) => (
+                  <th key={column} scope="col" className={i > 0 && i < columns.length - 1 ? "num" : undefined}>
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {cells.map((c) => (
+                <tr key={c.code} data-mark={c.code} data-detail={c.detail}>
+                  <th scope="row" className="rowhead">{c.name}</th>
+                  <td className="num">
+                    {/* EVERY GRAIN'S NUMBER AT ONE PLACE, and the stylesheet reveals one. Digits
+                        cannot interpolate and this does not pretend they can — what it refuses to do
+                        is let a span travel to say so. */}
+                    {c.isOrigin
+                      ? c.figures[0].text
+                      : c.figures.map((figure) => (
+                          <span key={figure.slug} data-pool-figure={figure.slug}>{figure.text}</span>
+                        ))}
+                  </td>
+                  <td className="num">{c.people}</td>
+                  <td>
+                    {/* THE SWATCH CARRIES NO COLOUR OF ITS OWN: an inline `style` beats every author
+                        rule, so the default colour is a RULE (`poolCss` emits it for the opening
+                        grain) and the cascade has only rules to compare. */}
+                    <span
+                      className={c.isOrigin ? "sw origin" : "sw"}
+                      {...(c.isOrigin ? {} : poolAttrsFor(pool, c.code))}
+                      {...(c.isOrigin ? { style: { background: origin.fill } } : {})}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
+
+      {/* THE PLAN THE LIVE LAYER READS, as `application/json` — which is also what the font machine
+          reads when it decides which characters this page can display, so MapLibre's own control
+          names and every cell label are cut into the embedded faces like every other word. */}
+      <script
+        id="mw-live-plan"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(livePlan) }}
+      />
+      <script dangerouslySetInnerHTML={{ __html: maplibreJs }} />
+      <script dangerouslySetInnerHTML={{ __html: liveScript }} />
     </figure>
   );
 }
