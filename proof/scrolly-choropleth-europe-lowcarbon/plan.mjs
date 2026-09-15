@@ -143,7 +143,6 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
       },
       wordLayer("top-names", words.top, fonts.axis, fonts.axisSize, fonts.axisTracking, fonts.topInk, fonts.topHalo, ["*", { $state: "top" }, atRest]),
       wordLayer("neighbour-names", neighbours, fonts.axis, fonts.axisSize, fonts.axisTracking, fonts.ink, tints.land, ["*", { $state: "odd" }, arrived]),
-      wordLayer("missing-name", missing, fonts.axis, fonts.axisSize, fonts.axisTracking, fonts.ink, tints.land, ["*", { $state: "missing" }, atRest]),
     ],
   };
 }

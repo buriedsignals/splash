@@ -12,7 +12,6 @@
 //   top        the six countries of the north-west named                                          0..1
 //   zoom       the travel from Europe onto Albania and its neighbours                             0..1
 //   odd        Albania ringed and named, its neighbours named with their shares                    0..1
-//   missing    the reporting country with no reading named                                        0..1
 //   card       the nearest card, for its frozen image                                              0..5
 //   camX camY camZoom camBearing camPitch   the card's camera (`shared/map-beat/scrolly.mjs`)
 

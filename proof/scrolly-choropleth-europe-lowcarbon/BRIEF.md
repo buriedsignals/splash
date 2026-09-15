@@ -21,7 +21,7 @@ Each direction keeps its own palette and faces.
 | 3 | above 94 %, only seven remain | **filter + count** | every country under the floor steps back to bare land; "7 pays au-dessus de 94 %" counts |
 | 4 | six are north or west | **name** | Iceland, Sweden, Norway, Finland, France, Switzerland named |
 | 5 | the seventh is Albania, 100 %, and its three neighbours are all under 60 % | **zoom + name** | the camera travels onto the Balkans; Albania ringed, Montenegro, North Macedonia and Greece named with their shares |
-| 6 | Ukraine has no reported production; Russia and Turkey coloured on their national share | **pull back** | Europe again, every class, the seven and Ukraine named |
+| 6 | Ukraine has no reported production; Russia and Turkey coloured on their national share | **pull back** | Europe again, every class, the six named and Albania ringed; Ukraine in the neutral of the key, with no word on the map (owner, 2026-09-15) |
 
 ## Precision
 
@@ -42,7 +42,8 @@ Each direction keeps its own palette and faces.
   of the file, written by `seats.mjs`). Faces are the ones MapTiler really serves, each compared with the Noto Sans
   fallback at render: creme Open Sans Medium (axis) / Merriweather Italic (seas), rapport Open Sans Regular / Open Sans
   Bold, nocturne Montserrat Regular / Montserrat Medium. The six names take the accent walked to 7:1 on the top class
-  they sit on, with a halo in that fill; the close-up and Ukraine names a halo in the land tint.
+  they sit on, with a halo in that fill; the close-up names a halo in the land tint. No word names Ukraine on the map: the key's "donnée non rapportée"
+  swatch names its neutral fill, and card 6 says it.
 - **Cameras from the beat's own facts**, authored for a reference stage of 1280 × 973: the whole map is the static
   plate's own fit (bounds [-25, 34] → [42, 68] in 1000 × 760, scaled to 1280 wide, centred on the bounds' Mercator
   middle, 8.5° E 54.4° N); the close-up comes 2.3 levels in, centred on Albania's seat on both axes, no padding. A stage
@@ -54,8 +55,9 @@ Each direction keeps its own palette and faces.
   stretched) when there is no key, no script, or until the live map's first view is drawn; re-baked only when the plan's hash
   changes (`fallback/<direction>.json`, which also carries Albania's pixel seat per card for the chip). The committed
   pages carry `__MAPTILER_KEY__`.
-- **The first scroll is read on a live map.** The runtime shows a live map as soon as its first view is drawn (3.0 s
-  after load on an Apple M2 Max, cold profile) and runs the camera warm on a second, hidden map that replaces it once
+- **The first scroll is read on a live map.** The runtime shows a live map as soon as it has drawn the reader's state at
+  the stage's own camera with every tile of that view loaded (about 2.5–3 s after load on an Apple M2 Max, cold profile;
+  no visible refresh at the reveal or at the handover, recorded frame by frame) and runs the camera warm on a second, hidden map that replaces it once
   warm (12.9 s). Before, the only map stayed hidden through the warm (reveal at 11.1 s) and a first scroll stepped
   through the frozen card images without a class ever arriving.
 - **The live guards** (`skills/scrolly/scripts/verify-live-map-scrolly.mjs`) hold on 1280 × 800 and 375 × 812 in all

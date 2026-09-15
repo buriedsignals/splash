@@ -11,7 +11,7 @@
 //   3. filter to the floor: only the seven above 94 % keep their colour, counted;
 //   4. the six of the north-west named;
 //   5. the camera travels onto the Balkans: Albania ringed, its neighbours named with their shares;
-//   6. back to Europe, every class, the country with no reading named.
+//   6. back to Europe, every class; the country with no reading keeps the key's neutral and no word on the map.
 //
 // THE MAP IS A LIVE MAPTILER GLOBE DRIVEN BY A PLAN (`plan.mjs`, addendum 2026-09-15 §2–§3): the class
 // fills join MapTiler Countries by ISO A2, the names are symbol layers at the beat's frozen seats
@@ -187,7 +187,6 @@ const names = [
   ...topSix.map((iso) => ({ iso, text: french(iso), role: "top" })),
   { iso: ODD_ONE, text: `${french(ODD_ONE)} · ${pct0(value.get(ODD_ONE))}`, role: "odd" },
   ...neighbours.map((iso) => ({ iso, text: `${french(iso)} · ${pct0(value.get(iso))}`, role: "neighbour" })),
-  { iso: unreported[0], text: `${french(unreported[0])} · donnée non rapportée`, role: "missing" },
 ];
 const WATERS = [
   { text: "Mer du Nord", seat: [3.0, 56.5] },
@@ -202,12 +201,12 @@ const alt =
   `a ${neighbours.length} voisins tous sous ${CEILING} %.`;
 
 const STATES = [
-  { classes: 0, filter: 0, top: 0, zoom: 0, odd: 0, missing: 0 },
-  { classes: 1, filter: 0, top: 0, zoom: 0, odd: 0, missing: 0 },
-  { classes: 1, filter: 1, top: 0, zoom: 0, odd: 0, missing: 0 },
-  { classes: 1, filter: 1, top: 1, zoom: 0, odd: 0, missing: 0 },
-  { classes: 1, filter: 0, top: 0, zoom: 1, odd: 1, missing: 0 },
-  { classes: 1, filter: 0, top: 1, zoom: 0, odd: 1, missing: 1 },
+  { classes: 0, filter: 0, top: 0, zoom: 0, odd: 0 },
+  { classes: 1, filter: 0, top: 0, zoom: 0, odd: 0 },
+  { classes: 1, filter: 1, top: 0, zoom: 0, odd: 0 },
+  { classes: 1, filter: 1, top: 1, zoom: 0, odd: 0 },
+  { classes: 1, filter: 0, top: 0, zoom: 1, odd: 1 },
+  { classes: 1, filter: 0, top: 1, zoom: 0, odd: 1 },
 ].map((state, k) => ({ ...state, ...cameras[k], card: k }));
 
 const textPerRegister = {
@@ -366,7 +365,9 @@ try {
         top: above.map(iso2Of),
         odd: nameAt(names.find((n) => n.role === "odd")),
         neighbours: names.filter((n) => n.role === "neighbour").map(nameAt),
-        missing: names.filter((n) => n.role === "missing").map(nameAt),
+        // Ukraine keeps its neutral fill (the key's "donnée non rapportée" swatch names it) and no word on the
+        // map: the owner ruled the in-map label out on 2026-09-15; card 6's sentence says it.
+        missing: unreported.map((iso) => ({ iso2: iso2Of(iso) })),
         waters: WATERS,
         words: { top: names.filter((n) => n.role === "top").map(nameAt) },
         cameras,
