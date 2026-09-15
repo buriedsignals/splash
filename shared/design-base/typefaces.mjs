@@ -770,6 +770,53 @@ export async function subsetWebFace(bytes, codePoints) {
 
 const STYLES = new Set(["normal", "italic"]);
 
+const familyCoverage = new Map();
+
+/**
+ * EVERY CODE POINT A FAMILY CAN SET, read off the family's own `cmap` — the table the browser and
+ * the rasteriser both consult, and the only answer that is not somebody's claim.
+ *
+ * It reads the UPRIGHT 400, on the same premise `glyph-coverage.mjs` states beside this file: a
+ * family's character set is a property of its design, and Google serves the same set across a
+ * family's weights. The file is the one `typefaceFile` already fetched for the static side, so on
+ * any machine that has rendered this family once the question costs no network at all. It is the
+ * WHOLE family, which is why it is read rather than the woff2 subsets the web path embeds: a subset
+ * can only say what is in that subset, and every character that reaches this question is by
+ * definition outside the two the page already carries.
+ *
+ * `null` when the family has no fetchable file — Google serves `Helvetica` to a browser as woff2
+ * and to a rasteriser as a kit URL with no `.ttf` on it, so the question genuinely has no answer
+ * here. A caller that cannot know must not claim; it falls through and lets the fetch say.
+ */
+function familyCodePoints(family) {
+  if (familyCoverage.has(family)) return familyCoverage.get(family);
+  let covered = null;
+  try {
+    covered = new Set(fontCodePoints(readFileSync(typefaceFile(family, 400))));
+  } catch {
+    covered = null;
+  }
+  familyCoverage.set(family, covered);
+  return covered;
+}
+
+/**
+ * THE ONE REFUSAL FOR "THIS FAMILY CANNOT SET THIS CHARACTER", whatever found it out.
+ *
+ * It names the character twice — as a code point somebody can look up and as the character itself —
+ * and the family and the face, because the two honest fixes are editorial and they are the two it
+ * names: set the character from a face that has it, or change the word. Nothing is written, so a
+ * page never ships a glyph it cannot draw.
+ */
+function cannotSet(family, served, points, because) {
+  return new Error(
+    `"${family}" ${served.weight} ${served.style} cannot set ` +
+      `${points.map((cp) => `${hex(cp)} (${JSON.stringify(String.fromCodePoint(cp))})`).join(", ")} — ` +
+      `${because}. The page would draw them in a fallback with nothing to say so, so nothing was ` +
+      `written: change the character or change the family.`,
+  );
+}
+
 /**
  * THE TWO SUBSETS THAT ARE A SAFETY NET, AND WHY EVERYTHING ELSE IS ASKED FOR BY CHARACTER.
  *
@@ -963,24 +1010,48 @@ export async function embeddedWebFaces(wanted, text) {
     // does not have (U+2191 is one) reaches this branch instead of shipping as a silent fallback.
     const leftover = required.filter((cp) => !settable.has(cp));
     if (leftover.length > 0) {
+      // THE FAMILY'S OWN cmap IS ASKED BEFORE GOOGLE IS — because Google answers the question with a
+      // TRANSPORT ERROR and this file is supposed to answer it with an editorial fact.
+      //
+      // Measured 2026-09-15, one character at a time, against every family on the ladders: css2
+      // answers `text=→` for Open Sans with HTTP 200 and a perfectly formed stylesheet, one
+      // `@font-face`, a `unicode-range`, a kit URL — and Open Sans's cmap has no U+2192. The kit URL
+      // that stylesheet points at then returns **400** with a 1664-byte error page. Same for `ᵉ`,
+      // `ʳ` and `←` on Open Sans, `ʳ` on Montserrat and on Merriweather; `₂` on Open Sans, which the
+      // face DOES carry, returns 200 and 804 bytes. So the 400 is Google's way of saying "this face
+      // has no glyph for what you asked for" — it is not a malformed request, not an encoding fault
+      // and not a length limit.
+      //
+      // Downloaded first, that 400 surfaced as `cannot download …/l/font?kit=… 400` out of
+      // `woff2Bytes`, which names neither the character nor the family and reads like a network
+      // fault. It is the exact class of opaque answer this file exists to end, and it stopped seven
+      // beats from rendering at all. The cmap is ground truth and is already on disk, so it is read
+      // here and the refusal below is the one the design base always meant to raise.
+      const covered = familyCodePoints(family);
+      const absent = covered ? leftover.filter((cp) => !covered.has(cp)) : [];
+      if (absent.length > 0) throw cannotSet(family, served, absent, "the face has no glyph for them");
+
       const chars = leftover.map((cp) => String.fromCodePoint(cp)).join("");
-      const extras = fetchWebFaces(family, { spec, text: chars, keep: (f) => f.style === served.style });
+      // AND ANY OTHER UNSATISFIABLE KIT REQUEST IS NAMED TOO. The cmap covers the cause that was
+      // measured; a fetch that fails for a reason nobody has measured yet must still say which
+      // characters and which family were being asked for, rather than hand up a bare curl exit.
+      let extras;
+      try {
+        extras = fetchWebFaces(family, { spec, text: chars, keep: (f) => f.style === served.style });
+      } catch (cause) {
+        throw cannotSet(family, served, leftover, `Google Fonts refused the request for them: ${cause.message}`);
+      }
       if (extras.length === 0)
-        throw new Error(
-          `"${family}" cannot set ${leftover.map(hex).join(", ")} — Google Fonts served no subset ` +
-            `for them. Those characters would fall through to whatever the reader's machine happens ` +
-            `to have.`,
-        );
+        throw cannotSet(family, served, leftover, "Google Fonts served no subset for them");
       const digest = createHash("sha256").update(leftover.join(",")).digest("hex").slice(0, 12);
       for (const face of extras) await carry(face, `extras-${digest}`);
       const still = leftover.filter((cp) => !settable.has(cp));
       if (still.length > 0)
-        throw new Error(
-          `"${family}" ${served.weight} ${served.style} still cannot set ` +
-            `${still.map((cp) => `${hex(cp)} (${JSON.stringify(String.fromCodePoint(cp))})`).join(", ")} ` +
-            `after asking Google for exactly those characters. The face has no glyph for them, so ` +
-            `the page would draw them in a fallback with nothing to say so — change the character ` +
-            `or change the family.`,
+        throw cannotSet(
+          family,
+          served,
+          still,
+          "the face still has no glyph for them after asking Google for exactly those characters",
         );
     }
   }

@@ -238,7 +238,7 @@ export function DirectedDivergingStackedWeb({
       </div>
 
       <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>
-        {`← ${sideLabels.left} · ${neutralLabel} · ${sideLabels.right} →`}
+        {`À gauche, ${sideLabels.left} · au centre, ${neutralLabel} · à droite, ${sideLabels.right}`}
       </p>
       <p className="chart-reading" style={{ ...regs.body, margin: "4px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>

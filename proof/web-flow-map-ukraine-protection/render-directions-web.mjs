@@ -12,7 +12,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
@@ -250,7 +250,7 @@ for (const f of flows) {
     label: w >= 10 ? f.name : null,
     detail:
       `${f.name} · ${n0(f.people)} personnes sous protection en ${month} · ` +
-      `${fr((f.people / total) * 100)} % du total · ${flows.indexOf(f) + 1}ᵉ destination · ` +
+      `${fr((f.people / total) * 100)} % du total · ${flows.indexOf(f) + 1}e destination · ` +
       `${fr(rate)} pour 1 000 habitants`,
   });
 }
@@ -336,6 +336,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
+    // A refused direction must not leave its previous render on disk to be mistaken for this one.
+    await rm(join(OUT, `${id}.html`), { force: true });
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render on disk to be mistaken for this one.
+  process.exitCode = 1;
+}

@@ -270,7 +270,7 @@ export function lineReading(
       ? "no change"
       : `${direction} ${fmt(Math.abs(delta))} ${UNIT} (${fmt(Math.abs(pctChange))}%)`;
   const detail =
-    `${line.name} · ${periodLabels.p1990} ${fmt(line.v1990)} ${UNIT} → ` +
+    `${line.name} · ${periodLabels.p1990} ${fmt(line.v1990)} ${UNIT} to ` +
     `${periodLabels.p2024} ${fmt(line.v2024)} ${UNIT} · ${magnitude}`;
   return {
     d: "",
@@ -474,7 +474,7 @@ export function SlopeWeb({
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
-          fontFamily="Helvetica, Arial, sans-serif"
+          fontFamily={'"Open Sans", Helvetica, Arial, sans-serif'}
         >
           {/* `role="group"`, not `role="img"` — MEASURED, not reasoned. The claim this comment used
               to make ("that role would flatten every descendant into one opaque image, silencing the

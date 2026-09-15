@@ -10,7 +10,7 @@
 // Usage:  bun proof/web-cartogram-europe-lowcarbon/render-directions-web.mjs
 
 import { readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
@@ -152,7 +152,7 @@ const tiles = seats.map((s) => {
     detail: r
       ? `${NAMES[s.code]} · ${fr(r.share)} % bas-carbone en ${YEAR} · palier ${klassLabel(klass)} · ` +
         `${fr(r.low, 0)} TWh bas-carbone sur ${fr(r.total, 0)} · ` +
-        `${ranked.findIndex(([c]) => c === s.code) + 1}ᵉ sur ${ranked.length}`
+        `${ranked.findIndex(([c]) => c === s.code) + 1}e sur ${ranked.length}`
       : `${NAMES[s.code]} · aucune production publiée pour ${YEAR} — case en creux, jamais rangée dans le palier le plus bas`,
   };
 });
@@ -226,6 +226,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
+    // A refused direction must not leave its previous render on disk to be mistaken for this one.
+    await rm(join(OUT, `${id}.html`), { force: true });
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render on disk to be mistaken for this one.
+  process.exitCode = 1;
+}

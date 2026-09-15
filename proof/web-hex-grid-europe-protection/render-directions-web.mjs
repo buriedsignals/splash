@@ -10,7 +10,7 @@
 // Usage:  bun proof/web-hex-grid-europe-protection/render-directions-web.mjs
 
 import { readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
@@ -100,7 +100,7 @@ const biggest = byCount[0];
 console.log(
   `${hosts.length} pays d'accueil · par habitant : ${NAMES[subject]} ${fr(rate(subject))} pour 1 000 · ` +
     `en nombre : ${NAMES[biggest]} ${count(people[biggest])} (${fr(rate(biggest))} pour 1 000, ` +
-    `${byRate.indexOf(biggest) + 1}ᵉ) · dernier ${NAMES[byRate[byRate.length - 1]]} ` +
+    `${byRate.indexOf(biggest) + 1}e) · dernier ${NAMES[byRate[byRate.length - 1]]} ` +
     `${fr(rate(byRate[byRate.length - 1]))}\n`,
 );
 console.table(byRate.slice(0, 6).map((c, i) => ({ rang: i + 1, pays: NAMES[c], "pour 1000": fr(rate(c)), personnes: count(people[c]) })));
@@ -145,7 +145,7 @@ const cells = seats.map((s) => {
     detail:
       `${NAMES[s.code]} · ${fr(v)} Ukrainiens sous protection pour 1 000 habitants · ` +
       `${count(people[s.code])} personnes pour ${count(inhabitants[s.code] / 1e6)} millions ` +
-      `d'habitants · ${byRate.indexOf(s.code) + 1}ᵉ par habitant, ${byCount.indexOf(s.code) + 1}ᵉ en ` +
+      `d'habitants · ${byRate.indexOf(s.code) + 1}e par habitant, ${byCount.indexOf(s.code) + 1}e en ` +
       `nombre absolu`,
   };
 });
@@ -165,8 +165,8 @@ const caveat =
   `compte ; un hexagone n'a pas de coin à discuter.`;
 const claimNote =
   `En nombre absolu l'ordre s'inverse : ${NAMES[biggest]} ${count(people[biggest])} personnes ` +
-  `(${byRate.indexOf(biggest) + 1}ᵉ par habitant), ${NAMES[subject]} ${count(people[subject])} ` +
-  `(1ʳᵉ par habitant). Aucun des deux chiffres n'est le plus vrai — ils répondent à deux questions.`;
+  `(${byRate.indexOf(biggest) + 1}e par habitant), ${NAMES[subject]} ${count(people[subject])} ` +
+  `(1re par habitant). Aucun des deux chiffres n'est le plus vrai — ils répondent à deux questions.`;
 const readingLine =
   `Lecture : survolez, touchez ou tabulez une case pour lire le taux, le nombre de personnes, la ` +
   `population qui le divise et son rang dans LES DEUX classements.`;
@@ -219,6 +219,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
+    // A refused direction must not leave its previous render on disk to be mistaken for this one.
+    await rm(join(OUT, `${id}.html`), { force: true });
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render on disk to be mistaken for this one.
+  process.exitCode = 1;
+}

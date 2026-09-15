@@ -213,6 +213,12 @@ export function RankingWeb({
         ["--category-weight" as string]: frame.category.fontWeight,
         ["--value-size" as string]: `${frame.value.fontSize}px`,
         ["--value-weight" as string]: frame.value.fontWeight,
+        // The format's own stylesheet sets `.end-label` from `--label-size` / `--label-weight`,
+        // and a figure that leaves either undefined ships a rule no weight can be read out of —
+        // `assertFontsEmbedded` refuses it, because an unresolved weight is a face nobody chose.
+        // This beat's end label is the printed value at a bar's end, so it is the value register.
+        ["--label-size" as string]: `${frame.value.fontSize}px`,
+        ["--label-weight" as string]: frame.value.fontWeight,
       }}
     >
       {/* A fixed row of air under the header: the top row's own name and value sit at the plot's
@@ -260,7 +266,7 @@ export function RankingWeb({
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
-          fontFamily="Helvetica, Arial, sans-serif"
+          fontFamily={'"Open Sans", Helvetica, Arial, sans-serif'}
         >
           {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
               was measured and is not what Chrome does, and `group` names the graphic without

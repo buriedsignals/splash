@@ -9,7 +9,7 @@
 // Usage:  bun proof/web-diverging-stacked-electricity/render-directions-web.mjs
 
 import { readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
@@ -176,6 +176,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
+    // A refused direction must not leave its previous render on disk to be mistaken for this one.
+    await rm(join(OUT, `${id}.html`), { force: true });
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render on disk to be mistaken for this one.
+  process.exitCode = 1;
+}
