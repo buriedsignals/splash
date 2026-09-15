@@ -130,7 +130,7 @@ describe("formatInspiration", () => {
         reason: "unreachable",
         detail: "timed out after 15000ms",
       }),
-    ).toBe("infoviz.design could not be reached (timed out after 15000ms).");
+    ).toBe("The Infoviz gallery could not be reached (timed out after 15000ms).");
   });
 
   it("should report an unexpected answer with its status", () => {
@@ -141,7 +141,7 @@ describe("formatInspiration", () => {
         status: 503,
       }),
     ).toBe(
-      "infoviz.design answered with status 503, so there is no list to show.",
+      "The Infoviz gallery answered with status 503, so there is no list to show.",
     );
   });
 

@@ -44,6 +44,10 @@ describe("searchInspiration", () => {
     });
   });
 
+  it("should ask the gallery at its Splash address", () => {
+    expect(INFOVIZ_API).toBe("https://splash-inspiration.buriedsignals.com");
+  });
+
   it("should send one POST with the trimmed subject and its own user agent", async () => {
     const calls: { url: string; init: any }[] = [];
     const fetchFn = async (url, init) => {

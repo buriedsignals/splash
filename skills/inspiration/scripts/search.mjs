@@ -1,9 +1,9 @@
-// One search against the infoviz.design gallery, one honest answer. The gallery rations searches
-// per address, so this file never retries and never rephrases: it sends the journalist's subject
-// once, under one deadline that covers the request and its body, and returns either the list or
-// the reason there is none. It never throws.
+// One search against the Infoviz gallery, served for Splash at splash-inspiration.buriedsignals.com,
+// one honest answer. The gallery rations searches per address, so this file never retries and never
+// rephrases: it sends the journalist's subject once, under one deadline that covers the request and
+// its body, and returns either the list or the reason there is none. It never throws.
 
-export const INFOVIZ_API = "https://infoviz.design";
+export const INFOVIZ_API = "https://splash-inspiration.buriedsignals.com";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 export const MAX_QUERY_LENGTH = 1000;
 

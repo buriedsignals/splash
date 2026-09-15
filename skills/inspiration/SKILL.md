@@ -1,6 +1,6 @@
 ---
 name: inspiration
-description: Use when a journalist wants to see what newsrooms have already published on a subject — before a story exists, during one, or with no intention of producing anything — by searching the infoviz.design gallery once and showing the raw list (title, newsroom, date, link) with the searches left today. Needs no story directory, opens no gate, produces nothing.
+description: Use when a journalist wants to see what newsrooms have already published on a subject — before a story exists, during one, or with no intention of producing anything — by searching the Infoviz gallery once and showing the raw list (title, newsroom, date, link) with the searches left today. Needs no story directory, opens no gate, produces nothing.
 ---
 
 # inspiration — what newsrooms already made of a subject
@@ -8,7 +8,7 @@ description: Use when a journalist wants to see what newsrooms have already publ
 ## Overview
 
 A journalist often wants to look before they build: how did other newsrooms show floods, an
-election night, a heatwave? The infoviz.design gallery indexes thousands of published charts, maps
+election night, a heatwave? The Infoviz gallery indexes thousands of published charts, maps
 and interactives. This skill asks it once and puts the answer in front of the journalist as a
 plain numbered list — the title linked to the original, the newsroom, the date — followed by how
 many searches are left today.
@@ -64,7 +64,7 @@ Five rules shape it:
 2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`,
    which runs the search as `bsig run splash inspiration-search` when an Infoviz account is stored and
    directly otherwise; without that tool, `cli.mjs` searches anonymously.
-3. **Ask once.** `POST https://infoviz.design/api/graphics/examples` with `{"query": subject}`, read
+3. **Ask once.** `POST https://splash-inspiration.buriedsignals.com/api/graphics/examples` with `{"query": subject}`, read
    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 4. **Keep what can be opened.** An item needs a title and an http(s) link; newsroom (`source`), date
    and image become null when missing.
@@ -114,7 +114,7 @@ console.log(formatInspiration(result));
 | --- | --- | --- |
 | How long one search may run, request and body together | `15000` ms | `DEFAULT_TIMEOUT_MS`, `search.mjs` (override via `searchInspiration({timeoutMs})`) |
 | The longest subject sent to the gallery | `1000` characters | `MAX_QUERY_LENGTH`, `search.mjs` |
-| Which gallery is asked | `https://infoviz.design` | `INFOVIZ_API`, `search.mjs` (override via `searchInspiration({apiBase})`) |
+| Which gallery is asked | `https://splash-inspiration.buriedsignals.com` | `INFOVIZ_API`, `search.mjs` (override via `searchInspiration({apiBase})`) |
 
 ## Files
 

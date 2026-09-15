@@ -56,9 +56,9 @@ function formatFailure(result) {
       return `The gallery's daily limit is reached${perDay}. It resets at ${reset}.`;
     }
     case "unexpected-response":
-      return `infoviz.design answered with status ${result.status}, so there is no list to show.`;
+      return `The Infoviz gallery answered with status ${result.status}, so there is no list to show.`;
     case "unreachable":
-      return `infoviz.design could not be reached (${result.detail}).`;
+      return `The Infoviz gallery could not be reached (${result.detail}).`;
     default:
       return "The search did not complete.";
   }
