@@ -105,12 +105,30 @@ export type LiveSymbolMark = {
   label: string | null;
 };
 
+/** THE PROVIDER'S OWN GEOGRAPHY, KEPT AND RE-INKED — what `shared/map-beat/tints.mjs`'s
+ *  `basemapGeography` derives from one direction. Optional, and absent it nothing changes: a beat
+ *  whose own marks carry the countries (a choropleth fills all forty) wants the bare sweep. A beat
+ *  whose marks do NOT carry them — a fan of bands, a scatter of circles — leaves the ground with no
+ *  coast, no frontier and no name on it, which is what this brings back. Every regular expression
+ *  travels as `{ source, flags }`: a plan is a file, and `JSON.stringify` flattens a RegExp to `{}`. */
+export type LiveBasemapGeography = {
+  keepLabels: { source: string; flags: string }[];
+  keepTextures: { source: string; flags: string }[];
+  ink: {
+    match: { source: string; flags: string };
+    layout?: Record<string, unknown>;
+    paint?: Record<string, unknown>;
+  }[];
+};
+
 export type LiveSymbolsDeclaration = {
   /** The MapTiler style the plate was baked from. The live map loads the same one. */
   style: string;
   /** The two tints the live style is repainted with — the sea, and the ground every mark is measured
    *  against. */
   tints: { water: string; land: string };
+  /** See `LiveBasemapGeography`. Absent, the basemap is swept bare. */
+  basemap?: LiveBasemapGeography;
   /** What the camera fits to at runtime: the beat's own declared window, the same one the bake
    *  fitted, so the frozen photograph and the live map are ONE camera and not two that agree today. */
   studyBounds: { west: number; east: number; south: number; north: number };
@@ -477,6 +495,7 @@ export function liveSymbolsPlan(
     styleName: d.style,
     projection: "mercator",
     tints: d.tints,
+    basemap: d.basemap ?? null,
     studyBounds: d.studyBounds,
     reviewBox: d.reviewBox,
     changeMs: d.changeMs,
@@ -549,6 +568,12 @@ export function liveSymbolsScript(
       "live-symbols: the style sweep is handed in by the beat (the source of " +
         "`skills/map-web/assets/style.mjs`, with its `export` keywords stripped) because a page " +
         "script cannot import. What it was given does not define `applyLiveStyle`.",
+    );
+  if (d.basemap && !/function\s+applyBasemapInk/.test(styleModule))
+    throw new Error(
+      "this beat keeps part of the provider's geography and re-inks it, which `applyBasemapInk` does. " +
+        "The style module it was handed does not define it — the page would keep the countries in " +
+        "MapTiler's own colours and nothing would report it.",
     );
   if (/\bexport\s/.test(styleModule))
     throw new Error(
@@ -710,7 +735,22 @@ export function liveSymbolsScript(
     // The trunk's own sweep, ASSERTED rather than assumed: a sweep that re-tinted nothing did not
     // find the style it was written against, and the reader would keep the provider's own water with
     // nothing to say so.
-    assertLiveStyleAnswered(applyLiveStyle(map, { tints: PLAN.tints }), PLAN.styleName || PLAN.styleUrl);
+    // WHAT THE SWEEP KEEPS, AND WHAT IT IS RE-INKED IN. A beat carrying no countries in its own
+    // marks names the provider geography it keeps, and the ink it keeps it in; a beat that names
+    // nothing gets the bare sweep exactly as before this field existed.
+    var GEO = PLAN.basemap || { keepLabels: [], keepTextures: [], ink: [] };
+    function reOf(r) { return new RegExp(r.source, r.flags); }
+    assertLiveStyleAnswered(
+      applyLiveStyle(map, {
+        tints: PLAN.tints,
+        keepLabels: (GEO.keepLabels || []).map(reOf),
+        keepTextures: (GEO.keepTextures || []).map(reOf)
+      }),
+      PLAN.styleName || PLAN.styleUrl
+    );
+    // AND IT IS ASSERTED THE SAME WAY: a rule that reached no layer would leave the frontier in
+    // MapTiler's own pink under a map painted in the direction's, with nothing red anywhere.
+    assertBasemapInkAnswered(applyBasemapInk(map, GEO.ink || []), PLAN.styleName || PLAN.styleUrl);
     scale = cameraScale();
     mountLayers();
     paintLaw(currentSlug());

@@ -26,7 +26,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import puppeteer from "puppeteer";
 import { fileURLToPath } from "node:url";
-import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
+import { contrast, mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
@@ -34,6 +34,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
+import { basemapGeography } from "#shared/map-beat/tints.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 // The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
 // nice-number ladder, not three fractions of a total. Its own header records why — a legend over
@@ -684,8 +685,8 @@ const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
  */
 const FACE_FOR_WEIGHT = (weight) => (Number(weight) >= 600 ? "Bold" : "Regular");
 const probed = new Map();
-async function labelFontFor(direction) {
-  const spec = direction.registers.value;
+async function labelFontFor(direction, register = "value") {
+  const spec = direction.registers[register];
   const stack = [`${spec.family} ${FACE_FOR_WEIGHT(spec.weight)}`, `${spec.family} Regular`];
   if (!KEY) return stack;
   for (const face of stack) {
@@ -810,6 +811,18 @@ for (const file of DIRECTION_FILES) {
   const live = {
     style: plateFacts.style,
     tints,
+    /** THE GROUND CARRIES THE COUNTRIES, BECAUSE THE CIRCLES DO NOT.
+     *
+     *  The owner's verdict on the page this replaces: « les cartes ne sont pas stylisées derrière et
+     *  les labels ne sont pas bien stylisés ». The choropleth sibling never had this problem — its
+     *  own marks fill all forty countries, so the marks ARE the geography. Forty-one circles are not
+     *  a geography: they sit on a pale blob with no coast, no frontier and no name, and a reader
+     *  cannot tell which country a circle is in. So the frontiers, the country names and the seas
+     *  come back — re-inked by `basemapGeography` in this direction's own palette, measured against
+     *  the LAND and the WATER the basemap paints rather than the page ground behind them, and held
+     *  under `BORDER_MAX` so the ground stays context. `basemap` is filled in below, once the face
+     *  it sets its names in has been probed against Noto's own bytes. */
+    basemap: null,
     studyBounds: STUDY,
     reviewBox: REVIEW_BOX,
     marks: symbols.map((s) => ({
@@ -859,6 +872,24 @@ for (const file of DIRECTION_FILES) {
     // THE MAP'S OWN LABEL FACE, probed rather than named: MapTiler answers 200 with Noto Sans for a
     // family it does not serve, so this is the only place the substitution can be caught.
     live.paint.labelFont = await labelFontFor(direction);
+    live.basemap = basemapGeography({
+      ground: base.ground,
+      land: tints.land,
+      water: tints.water,
+      ink: furniture.ink,
+      // THE FURNITURE REGISTER, not the register a mark's own answer is set in: a country's name on
+      // the ground is furniture, and it must not arrive in the same face at the same weight as the
+      // 41 labels the beat prints on its own circles.
+      font: await labelFontFor(direction, "axis"),
+    });
+    const markOnLand = contrast(live.paint.ring, tints.land);
+    console.log(
+      `${id} · fond : frontière ${live.basemap.measured.borderOnLand.toFixed(2)}:1 sur la terre, ` +
+        `noms de pays ${live.basemap.measured.countryOnLand.toFixed(2)}:1 sur la terre / ` +
+        `${live.basemap.measured.countryOnWater.toFixed(2)}:1 sur la mer / ` +
+        `${live.basemap.measured.countryOnHalo.toFixed(2)}:1 sur leur halo — l'anneau d'un symbole, ` +
+        `lui, lit ${markOnLand.toFixed(2)}:1 sur la même terre`,
+    );
 
     const stamp = createHash("sha256")
       .update(JSON.stringify(liveSymbolsPlan(live)))

@@ -29,13 +29,15 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import puppeteer from "puppeteer";
 import { fileURLToPath } from "node:url";
-import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
+import { contrast, mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
+import { basemapGeography } from "#shared/map-beat/tints.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
@@ -721,6 +723,39 @@ const PLACEHOLDER = `__MAPTILER${"_KEY__"}`;
 const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
 
 /**
+ * THE FACE THE BASEMAP'S OWN NAMES ARE DRAWN IN, and it is not a CSS stack.
+ *
+ * MapLibre does not draw with a system font: it reads signed distance fields served by the style,
+ * and MapTiler answers 200 WITH NOTO SANS for every family it does not have — `shared/map-beat/
+ * glyphs.mjs` measured `Futura Medium`, `Avenir Next`, `Georgia` and `Zzz Fictive Regular` all
+ * returning the same 83 352-byte file. So a map that asks for the wrong name is set in a typeface
+ * nobody chose and nothing reports it.
+ *
+ * The register is `axis`, because a country's name on the ground is FURNITURE — the same register
+ * this beat's key rungs and its table headings are set in — and never the register a mark's own
+ * answer is set in. The design base's ladders head that register with Open Sans and Montserrat,
+ * both of which MapTiler serves, so the name on the map and the word beside it are one design: one
+ * served as glyphs, one embedded as a file. The face suffix is required (a bare family is the
+ * fallback again), and the bytes are PROBED against Noto's own whenever a key is present.
+ */
+const FACE_FOR_WEIGHT = (weight) => (Number(weight) >= 600 ? "Bold" : "Regular");
+const probed = new Map();
+async function labelFontFor(direction) {
+  const spec = direction.registers.axis;
+  const stack = [`${spec.family} ${FACE_FOR_WEIGHT(spec.weight)}`, `${spec.family} Regular`];
+  if (!KEY) return stack;
+  for (const face of stack) {
+    if (probed.has(face)) continue;
+    const fallback = probed.get("__noto") ?? (await maptilerGlyphs("Noto Sans Regular", "0-255", KEY));
+    probed.set("__noto", fallback);
+    assertNotFallback(await maptilerGlyphs(face, "0-255", KEY), fallback, face);
+    probed.set(face, true);
+    console.log(`glyphes MapTiler : « ${face} » servie, et ce ne sont pas les octets de Noto Sans`);
+  }
+  return stack;
+}
+
+/**
  * PHOTOGRAPH THE PAGE'S OWN LIVE MAP, and write it where the page will embed it.
  *
  * The key is substituted into a copy under the system temp directory, never beside the page and
@@ -801,9 +836,39 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     land: tints.land,
     opacity: RIBBON_OPACITY,
   });
+  /** THE GROUND CARRIES THE COUNTRIES, BECAUSE THE BANDS DO NOT.
+   *
+   *  The owner's verdict on the page this replaces: « la carte derrière ne donne aucune notion des
+   *  pays et peu détaillé ». The choropleth sibling never had this problem — its own marks fill all
+   *  forty countries, so the marks ARE the geography and a swept basemap loses nothing. A fan of 31
+   *  bands carries no country at all, and the same sweep left a pale blob a reader could not place
+   *  a single destination on. So the frontiers, the country names and the seas come back — re-inked
+   *  in this direction's own palette by `basemapGeography`, never in MapTiler's.
+   *
+   *  AND THEY STAY QUIETER THAN THE FAN. Every colour is measured against the LAND and the WATER
+   *  the basemap actually paints — not against the page ground behind them, which is the mistake
+   *  this repository has already paid for twice — and the frontier is capped under `BORDER_MAX`,
+   *  which the line printed below holds against the ribbon's own contrast on the same land. */
+  const geography = basemapGeography({
+    ground: base.ground,
+    land: tints.land,
+    water: tints.water,
+    ink: furniture.ink,
+    font: await labelFontFor(direction),
+  });
+  const ribbonOnLand = contrast(inks.active, tints.land);
+  console.log(
+    `${id} · fond : frontière ${geography.measured.borderOnLand.toFixed(2)}:1 sur la terre, ` +
+      `noms de pays ${geography.measured.countryOnLand.toFixed(2)}:1 sur la terre / ` +
+      `${geography.measured.countryOnWater.toFixed(2)}:1 sur la mer / ` +
+      `${geography.measured.countryOnHalo.toFixed(2)}:1 sur leur halo — la bande, elle, lit ` +
+      `${ribbonOnLand.toFixed(2)}:1 sur la même terre`,
+  );
+
   const live = {
     style: plateFacts.style,
     tints,
+    basemap: geography,
     // THE LIVE CAMERA FITS THE BEAT'S OWN DECLARED WINDOW, which is the box the plate was baked by
     // fitting — so the frozen image and the live map are ONE camera rather than two that agree today.
     studyBounds: { west: ASKED.west, south: ASKED.south, east: ASKED.east, north: ASKED.north },

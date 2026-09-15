@@ -49,7 +49,7 @@ const BEAT = {
     [-19.6, 34.0],
     [34.5, 66.0],
   ],
-  style: "dataviz-light",
+  style: "dataviz",
 };
 
 const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";

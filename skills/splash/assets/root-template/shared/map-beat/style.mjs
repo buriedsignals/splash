@@ -144,3 +144,62 @@ export function assertNoDoubledBasemap(plan) {
           `marks what belongs to its study; it does not redraw the ground`,
       );
 }
+
+/**
+ * THE PROVIDER'S OWN GEOGRAPHY, KEPT AND RE-INKED IN THE BEAT'S PALETTE.
+ *
+ * WHY THIS EXISTS, AND WHAT IT COST TO LEARN. The sweep above hides every line and every word, and
+ * that is right for a beat whose OWN marks carry the countries — a choropleth fills all forty, so
+ * the marks ARE the geography. It is wrong for a beat whose marks do not: a fan of bands and a
+ * scatter of circles leave the ground carrying nothing, and a reader is handed a pale blob with no
+ * coast, no frontier and no name on it. Two beats shipped that way and the owner read them side by
+ * side: « la carte derrière ne donne aucune notion des pays ».
+ *
+ * THE RULE, STATED ONCE: when a beat's own marks do not carry the countries, the basemap must.
+ *
+ * Which is not the same as handing the reader MapTiler's cartography. The kept layers are re-inked
+ * here — border, country name, city name, sea name — from colours the beat MEASURED against its own
+ * direction, so the ground is context in the beat's palette rather than a provider's default
+ * showing through. `keepLabels` / `keepTextures` decide WHAT survives the sweep; this decides what
+ * it looks like afterwards, and it runs after the sweep for that reason.
+ *
+ * A rule is a PATTERN and never an id list — MapTiler renames layers between style versions, and a
+ * list fails silently when it does. It travels as `{ source, flags }` because a plan is JSON and
+ * `JSON.stringify` flattens a RegExp to `{}`.
+ *
+ * Returns what each rule reached, so `assertBasemapInkAnswered` can refuse a rule that reached
+ * nothing — a rule matching no layer is the exact silence this trunk exists to end: the basemap
+ * keeps the provider's pink frontier under a beat painted navy, and nothing reports it.
+ */
+export function applyBasemapInk(map, rules) {
+  const layers = [...map.getStyle().layers];
+  const reached = [];
+  for (const rule of rules || []) {
+    // NEVER THE `g` FLAG: `RegExp.prototype.test` with `g` keeps `lastIndex` between calls, so the
+    // same pattern would match every OTHER layer it was tried against.
+    const re = new RegExp(rule.match.source, (rule.match.flags || "").replace(/g/g, ""));
+    let count = 0;
+    for (const layer of layers) {
+      if (!re.test(layer.id) || !map.getLayer(layer.id)) continue;
+      const layout = rule.layout || {};
+      for (const key of Object.keys(layout)) map.setLayoutProperty(layer.id, key, layout[key]);
+      const paint = rule.paint || {};
+      for (const key of Object.keys(paint)) map.setPaintProperty(layer.id, key, paint[key]);
+      count += 1;
+    }
+    reached.push({ rule: re.source, layers: count });
+  }
+  return reached;
+}
+
+/** A RULE THAT REACHED NO LAYER DID NOT FIND THE STYLE IT WAS WRITTEN AGAINST, and the beat would
+ *  ship a basemap in somebody else's colours with nothing red anywhere. */
+export function assertBasemapInkAnswered(reached, styleName) {
+  const silent = (reached || []).filter((r) => r.layers === 0).map((r) => r.rule);
+  if (silent.length === 0) return reached;
+  throw new Error(
+    `the style "${styleName}" carries no layer matching ${silent.map((s) => JSON.stringify(s)).join(", ")}: ` +
+      `the basemap geography this beat kept would stay in the provider's own ink while every mark over ` +
+      `it is painted in the direction's. Either the layer was renamed or the style was changed`,
+  );
+}
