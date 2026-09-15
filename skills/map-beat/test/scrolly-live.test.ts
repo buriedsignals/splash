@@ -257,6 +257,38 @@ describe("the scrolly map runtime in a browser", () => {
     }
   }, 60_000);
 
+  it("should set a bound paint value only when it changed", async () => {
+    // 103 setPaintProperty calls per frame on the proportional symbol scrolly for values that had not moved.
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const calls = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = await new Promise<any>((resolve) => {
+          const h = (window as any).initScrollyMap(root, { ...plan, referenceWidth: 800 }, { window, onReady: () => resolve(h), warmTimeoutMs: 2000 });
+        });
+        const map = handle.map;
+        let count = 0;
+        const set = map.setPaintProperty.bind(map);
+        map.setPaintProperty = (...a: unknown[]) => {
+          count++;
+          return set(...a);
+        };
+        const state = { ...plan.cameras[1], reveal: 0.4 };
+        (window as any).applyScrollyMap(handle, state);
+        const first = count;
+        (window as any).applyScrollyMap(handle, { ...state });
+        const same = count - first;
+        (window as any).applyScrollyMap(handle, { ...state, reveal: 0.5 });
+        return { first, same, changed: count - first - same, opacity: map.getPaintProperty("square", "fill-opacity") };
+      }, plan);
+      expect(calls).toEqual({ first: calls.first, same: 0, changed: 1, opacity: 0.5 });
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
   it("should set the projection the plan names", async () => {
     const page = await browser.newPage();
     try {
