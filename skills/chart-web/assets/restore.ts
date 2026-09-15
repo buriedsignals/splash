@@ -1,0 +1,950 @@
+// twin/skills/chart-web/assets/restore.ts
+//
+// ANOTHER THING A READER CAN DO TO A PICTURE WITHOUT A SCRIPT, AND IT IS THE SAME MECHANISM.
+//
+// `filter.ts` says what may LEAVE the picture. `stack.ts` says what may MOVE in it. `level.ts` says
+// what it may be MEASURED AGAINST. `withdraw.ts` says what may be TAKEN OUT of a sum. `fold.ts`
+// says what may be LAID OVER what is drawn. `brush.ts` says which SPAN of an axis is chosen.
+// `trace.ts` says what may be FOLLOWED through an image, `follow.ts` what may be followed through
+// its ORDERED STEPS. `hold.ts` says which factor of a product may be HELD STILL. `descend.ts` says
+// what may BECOME THE WHOLE. `floor.ts` says what the picture may STAND ON. `cutoff.ts` says where
+// the claim's own line is drawn on a value axis. `reorder.ts` says what the same numbers look like
+// somewhere else in a cycle. `count.ts` says which members of a fixed frame are counted in.
+// `aim.ts` says WHERE a displacement points. `weigh.ts` says what a mark is WORTH. `benchmark.ts`
+// says what the verdict is measured against. `datum.ts` says where a diverging ZERO sits.
+// `qualify.ts` says what the axis even COUNTS. `side.ts` says which SIDE of an ordered scale each
+// rung counts on. This file says **WHAT A DELIBERATELY DEFORMED MAP GIVES BACK OF THE GEOGRAPHY IT
+// TRADED AWAY** — one set of equal cells, and a reader who can put each of them back where its
+// country really is, and then at the size its country really has. Native radio inputs plus CSS
+// generated at build time (`:checked` and `:has()` on the enclosing figure, no listener, no state,
+// not one byte of JavaScript), because that is the only kind of control this format can promise
+// still works with the script absent.
+//
+// WHY A CARTOGRAM NEEDS THIS AND NO OTHER MAP TYPE MAY HAVE IT.
+//
+// Seven of the eight map types in this tree make the same promise, and it is the promise the common
+// brief states in one line: A PLACE DOES NOT MOVE. A map mark carries a position that is DATA, not
+// a layout decision, so a gesture that displaces a country is a gesture that lies — unless the
+// reader asked for exactly that. The cartogram is the one named exception: it deforms IN ORDER TO
+// MEASURE, trading recognisable geography for a quantity, and its own reference sheet says the
+// grid variant "gives up EVERY positional reference a reader might use to relocate their own
+// region". So it is also the one type for which the owner's first ruling — nothing moves without
+// the reader seeing why — is satisfied BY THE MOVEMENT ITSELF, on one condition: the movement has
+// to be the reader's own gesture and never a side effect of something else.
+//
+// What a cartogram hides is therefore not a class bound or a sub-dominant flow. It is the
+// geography it sacrificed, and that sacrifice is in two separable pieces which this file keeps
+// separate on purpose:
+//
+//   THE PLACE — where each region really is, in the beat's own camera.
+//   THE SIZE  — what each region really weighs on a map drawn at one scale.
+//
+// Handing them back one at a time is what turns an assertion into a demonstration: on the beat this
+// file was written for, giving back the PLACE does not move the headline average by a thousandth,
+// and giving back the SIZE drops it twenty points onto the choropleth's own figure. A reader who
+// does both in that order has proved, with their own hand, that a tile cartogram's distortion is a
+// distortion of WEIGHT and not of position.
+//
+// WHY THE TRAVEL IS EXPRESSIBLE HERE, WHICH `side.ts` COULD NOT ALLOW.
+//
+// `side.ts` established the mechanism and refuses, at its core, any state that RESIZES a band:
+// there is no continuous path between two rectangles of different widths that a reader could read
+// as the same band, so a cut may only translate. That refusal is correct there and would be wrong
+// here, because a cell is a SQUARE and a stage gives it ONE side. Going from one square to another
+// square is a SIMILARITY — `translate() scale()`, uniform, one path, no morph and nothing
+// approximated — and a reader reads a square that grows as the same square. The squareness is not
+// checked, it is structural: a stage declares a centre and a single side, so there is nowhere to
+// write a second factor and nothing that can flatten a country into a lozenge.
+//
+// WHAT A BEAT DECLARES. One object, or nothing at all:
+//
+//     restore: {
+//       label: "Ce que la carte rend",          // the <legend> — the beat's own words
+//       frame: { width: 1104, height: 828 },    // the viewBox every place must live inside
+//       tiles: [                                // every cell, once, with what its NAME needs
+//         { key: "FRA", label: "France", nameWidth: 58.2, nameHeight: 30, lift: "fill" },
+//         …
+//       ],
+//       stages: [
+//         {
+//           key: "pays",                        // the FIRST stage is the default, and it IS the
+//           label: "une case par pays",         // picture the page ships. It carries no note: it
+//           announce: "une case par pays — …",  // is not a counterfactual, it is the claim.
+//           places: [ { key: "FRA", cx: 318, cy: 502, side: 84, areaShare: 0.0244 }, … ],
+//         },
+//         …
+//       ],
+//     }
+//
+// WHAT IS REFUSED, AND WHY EACH ONE IS A PICTURE THAT WOULD LIE.
+//
+//   - A PLACE THAT LEAVES THE FRAME. A cell half outside the viewBox is a reading the reader cannot
+//     take. No sibling vocabulary has a frame to leave: a band lives on an axis, a cell lives on a
+//     sheet of paper.
+//   - SIDES THAT DO NOT SAY THE AREA THE STAGE DECLARES. Every stage states, per cell, the share of
+//     the drawing that cell's square claims to carry, and `side² / Σside²` is checked against it.
+//     This is the "the drawing and the reading are two readings of one arithmetic" refusal in a
+//     map's own units, and it is the exact way a page comes to print 44,9 % over a drawing that
+//     does not draw it.
+//   - A NAME ON A CELL THAT CANNOT HOLD IT. The static sibling's own rule — "the tile has to hold
+//     its own name", measured on the tile that is DRAWN and never on the pitch it sits on, which
+//     once shipped a 15px tile against a 16.4px floor. Under a control that rule is made once PER
+//     STAGE, not once per page, and on a value-by-area stage it bites hard: the smallest square on
+//     the beat this was written for is 1,9 units across.
+//   - A NAME TAKEN OFF A CELL THAT COULD HOLD IT. The other half, and it is what makes the rule
+//     structural rather than declared: this file DERIVES which names are drawn, from the sides and
+//     the overlaps, and `assertOneRestore` refuses a written page that draws a different set. An
+//     author does not get to quietly extinguish an inconvenient label.
+//   - A DEFAULT STAGE THAT CANNOT NAME EVERY CELL. Forty anonymous squares is the failure the type
+//     sheet files as this variant's own; the page a reader gets with no script is the default, and
+//     it has to be a map rather than a pattern.
+//   - A STAGE THAT MOVES NOTHING. Not one cell displaced or resized past the floor: that is the
+//     default under a second name, which `directed-interaction.md` refuses.
+//   - A CELL A STAGE DOES NOT PLACE, OR PLACES TWICE, OR PLACES WITHOUT BEING DECLARED. There is
+//     ONE drawing and every stage has to say where all of it goes.
+//   - A STAGE WITH NO SENTENCE, A DEFAULT THAT CARRIES ONE, AND AN ACCESSIBLE NAME THAT DOES NOT
+//     CONTAIN ITS VISIBLE LABEL (WCAG 2.5.3) — the conventions every sibling vocabulary holds.
+//   - AND, READ BACK OFF THE WRITTEN PAGE (`assertOneRestore`): a half-tagged cell, a drawing that
+//     also answers, a drawing that is not `aria-hidden`, a stage with no hit plate, a vocabulary
+//     that emits no rules, the blanket rule emitted AFTER the default plate's reveal, and cells
+//     with no `transition` — which would make them jump.
+//
+// AND WHAT MOVES IS NOT WHAT ANSWERS. `interaction.mjs` resolves the mark under a pointer from
+// `cx`/`cy` read ONCE at init, which no CSS transform ever updates. So the drawing is `aria-hidden`
+// and takes no pointer event, and each stage gets its own transparent HIT PLATE whose points are
+// baked at that stage's own coordinates and never move. The honest cost, stated rather than hidden
+// and inherited from `reorder.ts` and `side.ts`: for the flight's duration the plate is already at
+// the destination, so a reader who points MID-FLIGHT is answered about the cell that is ARRIVING.
+// Nothing is ever answered from a place no cell will occupy.
+
+import { controlChromeCss } from "./control-chrome.ts";
+
+/** One cell of the map, declared once for the whole page — there is only ever one drawing. */
+export type RestoreTile = {
+  key: string;
+  /** What the cell is called, for messages. Never used to derive an id. */
+  label: string;
+  /** How wide the cell's own name block is, in the frame's user units, measured in the register it
+   *  is actually drawn in. The caller measures it, because only the caller knows which typeface the
+   *  direction resolved to; this file only decides what follows from the number. */
+  nameWidth: number;
+  /** How tall that same block is, ascent to descent over however many lines it takes. */
+  nameHeight: number;
+  /** How the cell lights under a pointer. `fill` for a cell that has ink to darken; `stroke` for a
+   *  cell drawn OUTSIDE the ramp — a missing reading is hollow, and a hollow cell has no fill to
+   *  darken from, so it answers on its edge. That distinction belongs to maps: no chart vocabulary
+   *  has a mark whose whole meaning is that it carries no value. */
+  lift: "fill" | "stroke";
+};
+
+/** Where one cell sits in one stage, and what its square claims to be worth. */
+export type RestorePlace = {
+  key: string;
+  /** The centre, in the frame's user units. */
+  cx: number;
+  cy: number;
+  /** ONE side. A cell is a square in every stage, and this is where that is made structural rather
+   *  than checked: there is no second number to write. */
+  side: number;
+  /** The share of the whole drawing this square claims to carry, in [0, 1]. Checked against the
+   *  sides themselves. */
+  areaShare: number;
+};
+
+/** One position of the control. The first declared is the default and carries no `note`. */
+export type RestoreStage = {
+  key: string;
+  /** The visible pill text. */
+  label: string;
+  /** The accessible name, which must CONTAIN the visible label (WCAG 2.5.3). */
+  announce: string;
+  /** The sentence this stage reveals. The default has none: it is the claim, not a counterfactual. */
+  note?: string;
+  places: RestorePlace[];
+};
+
+/** What a beat declares when it wants a map that can be put back. Absent/`null` means it wants none. */
+export type RestoreDeclaration = {
+  label: string;
+  frame: { width: number; height: number };
+  tiles: RestoreTile[];
+  stages: RestoreStage[];
+};
+
+/** Breath between a name and the edge of the cell that holds it, in user units. A name flush against
+ *  a 1px edge is a name the eye reads as touching the neighbour. */
+export const RESTORE_NAME_BREATH = 6;
+
+/** Below this, in user units, a cell has not moved and has not been resized. One thousandth of the
+ *  frame is under a rendered pixel at every width this format ships at. */
+export const RESTORE_STILL_FLOOR = 0.5;
+
+/** How long a cell takes to reach its place. A JUDGEMENT, and a knob: slow enough that the eye can
+ *  follow forty-one squares travelling at once, short enough that it is not an animation the reader
+ *  waits out. Longer than `side.ts`'s 420 ms because the distance is a whole plate rather than a
+ *  bar's width, and because a scale and a translation run together here. */
+export const RESTORE_TRAVEL_MS = 560;
+
+/** One clock for everything that moves, so the cells and their names arrive together. */
+export const RESTORE_TRAVEL_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** A CSS-id-safe slug, derived from a KEY and never from a label. */
+export function restoreSlugOf(key: string): string {
+  const slug = String(key)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!slug) throw new Error(`restore: the key ${JSON.stringify(key)} slugs to nothing`);
+  return slug;
+}
+
+/** The radio id for a stage's slug. One function, three readers. */
+export function restoreOptionId(idPrefix: string, slug: string): string {
+  return `${idPrefix}-${slug}`;
+}
+
+/** The key naming ONE CELL for good — the `data-mark` the format's own contract is keyed on. */
+export function restoreMarkOf(key: string): string {
+  return String(key);
+}
+
+/** The attributes the one travelling square carries. */
+export function restoreCellAttrs(key: string): {
+  "data-restore-cell": string;
+  "data-mark": string;
+} {
+  return {
+    "data-restore-cell": restoreMarkOf(key),
+    "data-mark": restoreMarkOf(key),
+  };
+}
+
+/** The attributes the cell's name group carries. Translated, NEVER scaled: a cell may grow by a
+ *  factor of five, and a name that grew with it would be a typeface deformed by a datum. */
+export function restoreNameAttrs(key: string): { "data-restore-name": string } {
+  return { "data-restore-name": restoreMarkOf(key) };
+}
+
+/** The attributes one stage's transparent HIT PLATE carries. */
+export function restorePlateAttrs(slug: string): {
+  "data-restore-plate": string;
+} {
+  return { "data-restore-plate": slug };
+}
+
+/**
+ * THE DRAW ORDER, AND IT IS ONE ORDER FOR THE WHOLE PAGE.
+ *
+ * There is a single drawing, so the DOM order is fixed once and every stage inherits it. Largest
+ * behind, smallest in front, ordered by the biggest side a cell ever takes — which is the only
+ * order under which a value-by-area stage stays readable at all: with Russia at 455 units and Malta
+ * at 1,9, the other order hides forty cells behind one.
+ *
+ * THE TIE-BREAK IS NOT COSMETIC, AND IT WAS FOUND BY LOOKING AT A RENDER. Ranking on the biggest
+ * side alone left twenty-seven of this beat's forty-one cells tied — every cell whose value-by-area
+ * square is SMALLER than the grid cell peaks at the same 84 units — so the order among them fell
+ * back to the alphabet, and the value-by-area stage drew France behind Albania. Between two cells
+ * that peak alike, the one that is bigger at its smallest goes behind; the key breaks what is left,
+ * so the order is deterministic and two runs of the same beat write the same bytes. Measured: the
+ * fix moved the stage's clear cells from 17 to 20 of 41 and the names it can draw from 10 to 11.
+ */
+export function restoreDrawOrder(declaration: RestoreDeclaration): string[] {
+  const biggest = new Map<string, number>();
+  const smallest = new Map<string, number>();
+  for (const stage of declaration.stages)
+    for (const place of stage.places) {
+      biggest.set(place.key, Math.max(biggest.get(place.key) ?? 0, place.side));
+      smallest.set(place.key, Math.min(smallest.get(place.key) ?? Infinity, place.side));
+    }
+  return declaration.tiles
+    .map((tile) => tile.key)
+    .sort(
+      (a, b) =>
+        (biggest.get(b) ?? 0) - (biggest.get(a) ?? 0) ||
+        (smallest.get(b) ?? 0) - (smallest.get(a) ?? 0) ||
+        (a < b ? -1 : a > b ? 1 : 0),
+    );
+}
+
+const placeIndex = (stage: RestoreStage) => new Map(stage.places.map((p) => [p.key, p]));
+
+const overlaps = (
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+) => Math.abs(ax - bx) < (aw + bw) / 2 && Math.abs(ay - by) < (ah + bh) / 2;
+
+/**
+ * HOW MANY CELLS A STAGE LEAVES CLEAR — a cell nothing drawn in front of it covers.
+ *
+ * This is the PRICE a stage charges, and the beat prints it. It is font-free on purpose: it is a
+ * fact about squares, so it is the same number in all three directions, which is what lets a runner
+ * write it into a sentence once instead of three times.
+ */
+export function restoreClearOf(
+  declaration: RestoreDeclaration,
+): { slug: string; clear: string[] }[] {
+  const order = restoreDrawOrder(declaration);
+  return declaration.stages.map((stage) => {
+    const at = placeIndex(stage);
+    const clear: string[] = [];
+    for (let i = 0; i < order.length; i += 1) {
+      const me = at.get(order[i]);
+      if (!me) continue;
+      let covered = false;
+      for (let j = i + 1; j < order.length && !covered; j += 1) {
+        const other = at.get(order[j]);
+        if (other)
+          covered = overlaps(
+            me.cx,
+            me.cy,
+            me.side,
+            me.side,
+            other.cx,
+            other.cy,
+            other.side,
+            other.side,
+          );
+      }
+      if (!covered) clear.push(order[i]);
+    }
+    return { slug: restoreSlugOf(stage.key), clear };
+  });
+}
+
+/**
+ * WHICH NAMES A STAGE DRAWS, DERIVED AND NEVER DECLARED.
+ *
+ * Two conditions, both about the cell that is actually drawn at this stage:
+ *
+ *   1. the cell can HOLD the name — its side covers the name's own width and height plus breath;
+ *   2. nothing drawn IN FRONT of the cell covers the name's box.
+ *
+ * Deriving it rather than taking it from the declaration is what turns "the tile has to hold its
+ * own name" from a convention into a refusal: an author cannot keep a name on a 1,9-unit square,
+ * and cannot take one off a square that could carry it to tidy a picture up. `assertOneRestore`
+ * reads the written page back against this answer.
+ */
+export function restoreNamesOf(
+  declaration: RestoreDeclaration,
+): { slug: string; named: string[] }[] {
+  const order = restoreDrawOrder(declaration);
+  const tiles = new Map(declaration.tiles.map((t) => [t.key, t]));
+  return declaration.stages.map((stage) => {
+    const at = placeIndex(stage);
+    const named: string[] = [];
+    for (let i = 0; i < order.length; i += 1) {
+      const me = at.get(order[i]);
+      const tile = tiles.get(order[i]);
+      if (!me || !tile) continue;
+      const room = me.side - RESTORE_NAME_BREATH;
+      if (!(tile.nameWidth <= room && tile.nameHeight <= room)) continue;
+      let covered = false;
+      for (let j = i + 1; j < order.length && !covered; j += 1) {
+        const other = at.get(order[j]);
+        if (other)
+          covered = overlaps(
+            me.cx,
+            me.cy,
+            tile.nameWidth,
+            tile.nameHeight,
+            other.cx,
+            other.cy,
+            other.side,
+            other.side,
+          );
+      }
+      if (!covered) named.push(order[i]);
+    }
+    return { slug: restoreSlugOf(stage.key), named };
+  });
+}
+
+/**
+ * THE TRAVEL'S OWN ARITHMETIC — where each cell goes, relative to the drawing as it is written.
+ *
+ * The one drawing is written at the DEFAULT stage's coordinates, so every displacement and every
+ * scale below is measured from there. A stage's transform is `translate(dx, dy) scale(k)` with
+ * `transform-box: fill-box` and the origin at the square's own centre, so the square's centre lands
+ * on the stage's centre and the square grows about it. That is a similarity, which is an exact
+ * continuous path between two squares — the reason this type may resize at all, argued in the
+ * header.
+ */
+export function restoreTravelOf(declaration: RestoreDeclaration): {
+  slug: string;
+  moves: { key: string; dx: number; dy: number; k: number }[];
+}[] {
+  const first = placeIndex(declaration.stages[0]);
+  return declaration.stages.map((stage) => ({
+    slug: restoreSlugOf(stage.key),
+    moves: stage.places.map((place) => {
+      const home = first.get(place.key);
+      if (!home)
+        throw new Error(
+          `restore travel: the stage ${JSON.stringify(stage.label)} places ${JSON.stringify(place.key)} ` +
+            "and the default stage places no such cell. The drawing is written once, at the default " +
+            "stage's coordinates; a cell with no home has nowhere to travel from.",
+        );
+      return {
+        key: place.key,
+        dx: place.cx - home.cx,
+        dy: place.cy - home.cy,
+        k: place.side / home.side,
+      };
+    }),
+  }));
+}
+
+/**
+ * Everything that can be refused before a single element is written.
+ *
+ * `where` is quoted into every message so a runner rendering three directions says which one.
+ */
+export function assertRestoreDeclaration(
+  declaration: RestoreDeclaration | null | undefined,
+  where = "this beat",
+): void {
+  if (!declaration) return;
+  const { frame, tiles, stages } = declaration;
+  if (!frame || !(frame.width > 0) || !(frame.height > 0))
+    throw new Error(`${where}: restore needs a frame with a positive width and height`);
+  if (!Array.isArray(tiles) || tiles.length === 0)
+    throw new Error(`${where}: restore declares no cells, so there is no map to give back`);
+  if (!Array.isArray(stages) || stages.length < 2)
+    throw new Error(
+      `${where}: restore declares ${stages?.length ?? 0} stage(s). A control with one position is a ` +
+        "picture with a pill drawn over it.",
+    );
+
+  const keys = new Set<string>();
+  for (const tile of tiles) {
+    if (keys.has(tile.key))
+      throw new Error(`${where}: the cell ${JSON.stringify(tile.key)} is declared twice`);
+    keys.add(tile.key);
+    if (!(tile.nameWidth >= 0) || !(tile.nameHeight >= 0))
+      throw new Error(
+        `${where}: the cell ${JSON.stringify(tile.key)} declares no measured size for its own name. ` +
+          "Whether a cell can hold its name is the rule this type turns on, and it cannot be guessed.",
+      );
+    if (tile.lift !== "fill" && tile.lift !== "stroke")
+      throw new Error(
+        `${where}: the cell ${JSON.stringify(tile.key)} lights as ${JSON.stringify(tile.lift)}. A cell ` +
+          "either has ink to darken (`fill`) or is drawn outside the ramp and answers on its edge " +
+          "(`stroke`) — there is no third way for a mark to say it was pointed at.",
+      );
+  }
+
+  const slugs = new Set<string>();
+  stages.forEach((stage, index) => {
+    const slug = restoreSlugOf(stage.key);
+    if (slugs.has(slug)) throw new Error(`${where}: two stages slug to ${JSON.stringify(slug)}`);
+    slugs.add(slug);
+    if (!stage.label?.trim()) throw new Error(`${where}: a stage carries no visible label`);
+    if (!stage.announce?.includes(stage.label))
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.label)} announces itself as ` +
+          `${JSON.stringify(stage.announce)}, which does not contain its visible label. A reader who ` +
+          "says what they see and a reader who hears the name have to be talking about the same pill " +
+          "(WCAG 2.5.3).",
+      );
+    if (index === 0 && stage.note)
+      throw new Error(
+        `${where}: the default stage ${JSON.stringify(stage.label)} reveals a sentence. The default is ` +
+          "not a counterfactual — it is the claim the title already states.",
+      );
+    if (index > 0 && !stage.note?.trim())
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.label)} reveals no sentence. A reader who is not ` +
+          "looking at the plate has to be told what the stage gave back.",
+      );
+
+    const seen = new Set<string>();
+    let sumSquares = 0;
+    for (const place of stage.places) {
+      if (!keys.has(place.key))
+        throw new Error(
+          `${where}: the stage ${JSON.stringify(stage.label)} places the undeclared cell ${JSON.stringify(place.key)}`,
+        );
+      if (seen.has(place.key))
+        throw new Error(
+          `${where}: the stage ${JSON.stringify(stage.label)} places ${JSON.stringify(place.key)} twice`,
+        );
+      seen.add(place.key);
+      if (!Number.isFinite(place.cx) || !Number.isFinite(place.cy) || !(place.side > 0))
+        throw new Error(
+          `${where}: the cell ${JSON.stringify(place.key)} has no finite square in ${JSON.stringify(stage.label)}`,
+        );
+      const half = place.side / 2;
+      if (
+        place.cx - half < -1e-6 ||
+        place.cx + half > frame.width + 1e-6 ||
+        place.cy - half < -1e-6 ||
+        place.cy + half > frame.height + 1e-6
+      )
+        throw new Error(
+          `${where}: in ${JSON.stringify(stage.label)} the cell ${JSON.stringify(place.key)} runs from ` +
+            `(${(place.cx - half).toFixed(1)}, ${(place.cy - half).toFixed(1)}) to ` +
+            `(${(place.cx + half).toFixed(1)}, ${(place.cy + half).toFixed(1)}) in a ` +
+            `${frame.width} x ${frame.height} frame. A place the reader cannot see is not a place, and ` +
+            "a square clipped by the viewBox no longer draws the area it claims.",
+        );
+      sumSquares += place.side * place.side;
+    }
+    if (seen.size !== keys.size)
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.label)} places ${seen.size} of ${keys.size} cells. ` +
+          "There is ONE drawing and every stage has to say where all of it goes.",
+      );
+
+    // THE SIDES MUST SAY THE AREA THE STAGE DECLARES. The drawing and the reading are two readings
+    // of one arithmetic, or they are two arithmetics and the page prints a figure it does not draw.
+    let shareSum = 0;
+    for (const place of stage.places) {
+      if (!(place.areaShare >= 0))
+        throw new Error(
+          `${where}: ${JSON.stringify(place.key)} declares no area share in ${JSON.stringify(stage.label)}`,
+        );
+      shareSum += place.areaShare;
+    }
+    if (Math.abs(shareSum - 1) > 1e-6)
+      throw new Error(
+        `${where}: the area shares of ${JSON.stringify(stage.label)} sum to ${shareSum.toFixed(6)}, not 1`,
+      );
+    for (const place of stage.places) {
+      const drawn = (place.side * place.side) / sumSquares;
+      if (Math.abs(drawn - place.areaShare) > 1e-9)
+        throw new Error(
+          `${where}: in ${JSON.stringify(stage.label)} the cell ${JSON.stringify(place.key)} is drawn at ` +
+            `${(drawn * 100).toFixed(6)} % of the plate and declares ${(place.areaShare * 100).toFixed(6)} %. ` +
+            "A cartogram's square IS its number; a square that draws one share and reports another is " +
+            "the exact way a page comes to print an average over a drawing that does not carry it.",
+        );
+    }
+  });
+
+  // EVERY STAGE BUT THE DEFAULT MOVES SOMETHING.
+  const travel = restoreTravelOf(declaration);
+  for (const stage of travel.slice(1)) {
+    const live = stage.moves.some(
+      (m) =>
+        Math.abs(m.dx) > RESTORE_STILL_FLOOR ||
+        Math.abs(m.dy) > RESTORE_STILL_FLOOR ||
+        Math.abs(m.k - 1) * (declaration.stages[0].places.find((p) => p.key === m.key)?.side ?? 0) >
+          RESTORE_STILL_FLOOR,
+    );
+    if (!live)
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.slug)} moves and resizes nothing past ` +
+          `${RESTORE_STILL_FLOOR} user units. That is the default's picture under a second name, which ` +
+          "`directed-interaction.md` refuses.",
+      );
+  }
+
+  // THE DEFAULT PLATE MUST BE A MAP AND NOT A PATTERN. Forty anonymous squares is the failure this
+  // variant's own type sheet files; the default is also the page a reader with no script receives.
+  const named = restoreNamesOf(declaration);
+  const missing = declaration.tiles
+    .map((t) => t.key)
+    .filter((key) => !named[0].named.includes(key));
+  if (missing.length)
+    throw new Error(
+      `${where}: the default stage cannot name ${missing.length} of its ${declaration.tiles.length} ` +
+        `cells (${missing.slice(0, 6).join(", ")}${missing.length > 6 ? ", …" : ""}). A reader has to be ` +
+        "able to say which country a cell is, or the geography it preserves is decoration — and the " +
+        "default is the plate a reader with no script gets.",
+    );
+}
+
+/** The stages a component draws, in reading order: the default first. */
+export function restoreStagesForMarkup(
+  declaration: RestoreDeclaration | null | undefined,
+  idPrefix: string,
+): {
+  slug: string;
+  id: string;
+  label: string;
+  announce: string;
+  isDefault: boolean;
+}[] {
+  if (!declaration) return [];
+  return declaration.stages.map((stage, index) => {
+    const slug = restoreSlugOf(stage.key);
+    return {
+      slug,
+      id: restoreOptionId(idPrefix, slug),
+      label: stage.label,
+      announce: stage.announce,
+      isDefault: index === 0,
+    };
+  });
+}
+
+/** The sentences the control owes. The default gets none. */
+export function restoreNotesForMarkup(
+  declaration: RestoreDeclaration | null | undefined,
+): { slug: string; text: string }[] {
+  if (!declaration) return [];
+  return declaration.stages
+    .filter((stage) => stage.note)
+    .map((stage) => ({
+      slug: restoreSlugOf(stage.key),
+      text: stage.note as string,
+    }));
+}
+
+/**
+ * THE CELL THE POINTED POINT SPEAKS FOR, LIT ACROSS THE SPLIT between the drawing and the hit
+ * plate. `interaction.mjs` carries `.mark-active` with `svg.querySelectorAll` INSIDE one `<svg>`,
+ * and there are four here. The mechanism is `count.ts`'s and `side.ts`'s, reused rather than
+ * re-invented, including its finding that `:focus` in the selector gives a keyboard reader the lift
+ * the script used to be the only source of.
+ *
+ * THE ONE THING THIS FILE ADDS, AND IT IS A MAP'S OWN. A cell drawn OUTSIDE the ramp — the reading
+ * this tree's treatment `a-missing-cell-is-drawn-as-missing` requires to be hollow — has no fill to
+ * darken from. Painting one on hover would turn "no reading" into a class under the reader's
+ * pointer, which is the single thing that treatment exists to prevent. So a hollow cell lights on
+ * its STROKE. No chart vocabulary needs this: no chart has a mark whose whole meaning is the
+ * absence of a value.
+ */
+export function restoreMarkLiftCss({
+  scope,
+  tiles,
+}: {
+  scope: string;
+  tiles: { key: string; lift: "fill" | "stroke" }[];
+}): string {
+  if (tiles.length === 0) return "";
+  const when = (key: string, state: string) =>
+    `${scope} .chart-plot:has(.pt[data-mark-ref="${key}"]${state})`;
+  const lines: string[] = [
+    `/* The cell the pointed point speaks for, lit across the drawing/hit-plate split, in the dose`,
+    `   the beat sought against that cell's OWN painted fill (--mark-active, set on the cell). A cell`,
+    `   drawn outside the ramp has no fill to darken and lights on its edge instead. */`,
+  ];
+  for (const tile of tiles) {
+    const property = tile.lift === "stroke" ? "stroke" : "fill";
+    lines.push(
+      `${when(tile.key, ".pt-active")} [data-mark="${tile.key}"],`,
+      `${when(tile.key, ":focus")} [data-mark="${tile.key}"] { ${property}: var(--mark-active); }`,
+    );
+  }
+  return lines.join("\n");
+}
+
+/**
+ * THE STYLESHEET, AND IT IS THE WHOLE MECHANISM. Pure CSS: `:has()` on the scope plus `:checked` on
+ * a real radio. No script runs, so the control works with JavaScript off exactly as with it on —
+ * and the empty string returned for a beat with no declaration is what makes "no dead CSS" literal,
+ * exactly as `filterCss`, `floorCss` and `sideCss` do.
+ *
+ * WHAT `display` SWAPS IS NEVER THE PICTURE: the cells are ONE drawing and they TRAVEL. What is
+ * swapped is the transparent hit plates, the line of average and the revealed sentence.
+ *
+ * THE SELECTORS ARE ORDERED, NOT WEIGHTED. `svg.chart[data-restore-plate]` and
+ * `svg.chart[data-restore-plate="<slug>"]` score identically, so which wins is source order and
+ * nothing else; every blanket is emitted FIRST and the default's reveal after it. A sankey on this
+ * branch rendered green with zero ribbons lit for getting exactly this backwards.
+ *
+ * NO SELECTOR HERE IS GROUPED, for the defect `stack.ts` records at length: a descendant prefix
+ * binds to the first selector of a group only.
+ *
+ * EVERY TRANSITION IS EMITTED LAST, INSIDE `@media (prefers-reduced-motion: no-preference)`, where
+ * `reduce` cannot reach it — and the declarations that SET the geometry are outside that query, so
+ * a reader who asks for no motion gets the new picture already in place rather than no picture.
+ *
+ * IT EMITS `data-stack-note` AND `data-stack-total`, WHICH IS NOT A COPY-PASTE SLIP. Those two
+ * strings are the FORMAT'S DISCOVERY CONTRACT for a control that moves the picture, owes the reader
+ * a sentence and prints a figure on the plot: `interaction-plan.ts` reads the sentence off
+ * `data-stack-note`, and `verify-web.mjs`'s "every argument-bearing word is drawn unconditionally"
+ * excludes exactly `[data-stack-total]`. `side.ts`, `aim.ts` and `qualify.ts` all make the same
+ * choice for the same reason.
+ */
+export function restoreCss(
+  declaration: RestoreDeclaration | null | undefined,
+  {
+    scope,
+    idPrefix,
+    travelMs = RESTORE_TRAVEL_MS,
+  }: { scope: string; idPrefix: string; travelMs?: number },
+): string {
+  if (!declaration) return "";
+  const round = (n: number) => Number(n.toFixed(3));
+  const travel = restoreTravelOf(declaration);
+  const names = new Map(restoreNamesOf(declaration).map((s) => [s.slug, new Set(s.named)]));
+  const defaultSlug = travel[0].slug;
+
+  const lines: string[] = [
+    `/* What this map gives back: ${declaration.stages.length} stages over ${JSON.stringify(declaration.label)}.`,
+    `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
+    `   narrows with, and the reason this control needs no script and survives one being blocked.`,
+    `   The cells are ONE drawing and they TRAVEL; what display still swaps is the transparent hit`,
+    `   plates, the line of average and the revealed sentence. */`,
+    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-total] { display: none; }`,
+    `${scope} svg.chart[data-restore-plate] { display: none; }`,
+    `${scope} svg.chart[data-restore-plate="${defaultSlug}"] { display: block; }`,
+    `${scope} [data-stack-total="${defaultSlug}"] { display: block; }`,
+    `/* A transform has to EXIST on the element at rest for a transition to have anything to run`,
+    `   from, so the default stage's own place is written as a translation of zero and a scale of`,
+    `   one rather than left unsaid. \`fill-box\` puts the origin at the square's OWN centre, which`,
+    `   is what makes the change of size a similarity about the cell rather than about the corner`,
+    `   of the viewBox. Generated here and never inline: an inline transform wins against every`,
+    `   rule below it, and the cells would stand still while the picture around them changed. */`,
+    `${scope} [data-restore-cell] { transform-box: fill-box; transform-origin: center; transform: translate(0px, 0px) scale(1); }`,
+    `/* The name TRAVELS with its cell and is never scaled by it. */`,
+    `${scope} [data-restore-name] { transform: translate(0px, 0px); opacity: 1; }`,
+  ];
+  for (const key of declaration.tiles.map((t) => t.key))
+    if (!names.get(defaultSlug)?.has(key))
+      lines.push(`${scope} [data-restore-name="${key}"] { opacity: 0; }`);
+
+  for (const stage of travel) {
+    const on = `${scope}:has(#${restoreOptionId(idPrefix, stage.slug)}:checked)`;
+    lines.push(
+      `${on} svg.chart[data-restore-plate] { display: none; }`,
+      `${on} svg.chart[data-restore-plate="${stage.slug}"] { display: block; }`,
+      `${on} [data-stack-total] { display: none; }`,
+      `${on} [data-stack-total="${stage.slug}"] { display: block; }`,
+    );
+    const named = names.get(stage.slug) ?? new Set<string>();
+    for (const move of stage.moves) {
+      const still =
+        Math.abs(move.dx) <= 1e-6 && Math.abs(move.dy) <= 1e-6 && Math.abs(move.k - 1) <= 1e-9;
+      if (!still)
+        lines.push(
+          `${on} [data-restore-cell="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
+          `${on} [data-restore-name="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px); }`,
+        );
+      // The opacity rule is emitted for EVERY cell of every stage, not only for the ones that
+      // change: the base rule above is written for the DEFAULT stage's answer, and a cell the
+      // default hides but this stage shows needs to be told so.
+      lines.push(
+        `${on} [data-restore-name="${move.key}"] { opacity: ${named.has(move.key) ? 1 : 0}; }`,
+      );
+    }
+    const note = declaration.stages.find((s) => restoreSlugOf(s.key) === stage.slug)?.note;
+    if (note) lines.push(`${on} [data-stack-note="${stage.slug}"] { display: revert; }`);
+  }
+
+  lines.push(
+    `@media (prefers-reduced-motion: no-preference) {`,
+    `  /* ONE CLOCK. The square crosses and grows on one transform, and its name crosses on another;`,
+    `     same duration, same easing, so a cell and the word naming it arrive together. */`,
+    `  ${scope} [data-restore-cell] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
+    `  ${scope} [data-restore-name] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
+    `}`,
+  );
+  return lines.join("\n");
+}
+
+/**
+ * Reads the WRITTEN PAGE back, which is the only place these refusals can be made.
+ *
+ * `filter.ts` earned the half-tagged one; `descend.ts` earned the "the vocabulary emitted no rules"
+ * one by mutation, because dropping the stylesheet call left every plate drawn on top of every
+ * other while every attribute-level check stayed green; `weigh.ts` earned the ordering one.
+ *
+ * Three are this page's own shape: a drawing that could answer would answer from where its cells
+ * USED to be; a stage with no travel rule is a stage whose cells jump; and a page that draws a
+ * different set of names from the one `restoreNamesOf` derives has quietly overruled the rule that
+ * a cell has to hold its own name.
+ */
+export function assertOneRestore(
+  html: string,
+  declaration: RestoreDeclaration | null | undefined,
+  where = "this page",
+): void {
+  if (!declaration) return;
+  const slugs = declaration.stages.map((stage) => restoreSlugOf(stage.key));
+
+  const tags = String(html).match(/<[a-zA-Z][^>]*\sdata-restore-cell="[^"]*"[^>]*>/g) ?? [];
+  if (tags.length === 0)
+    throw new Error(
+      `${where}: not one element carries \`data-restore-cell\`. The pills would be drawn over a ` +
+        "picture they cannot reach — the same fact `filter.ts` refuses as an option that tags nothing.",
+    );
+  const drawn = new Set<string>();
+  for (const tag of tags) {
+    const cell = /\sdata-restore-cell="([^"]*)"/.exec(tag);
+    const mark = /\sdata-mark="([^"]*)"/.exec(tag);
+    if (!cell || !mark || cell[1] !== mark[1])
+      throw new Error(
+        `${where}: the cell ${JSON.stringify(cell?.[1] ?? "?")} carries ` +
+          `${mark ? `data-mark="${mark[1]}"` : "no data-mark"}. A cell tagged for the travel and not ` +
+          "for the format's own mark contract is lit by nothing when a reader points at it, and a " +
+          "cell tagged the other way round travels nowhere.",
+      );
+    drawn.add(cell[1]);
+  }
+  for (const tile of declaration.tiles)
+    if (!drawn.has(tile.key))
+      throw new Error(
+        `${where}: the cell ${JSON.stringify(tile.key)} is declared and the page draws none. A ` +
+          "country with a reading and no square is a figure the reader is asked to take on trust.",
+      );
+
+  // THE DRAWING MUST NOT ANSWER, AND IT MUST NOT BE OFFERED TWICE TO A SCREEN READER.
+  for (const chunk of String(html)
+    .split(/<svg\b/)
+    .slice(1)) {
+    const close = chunk.indexOf(">");
+    const head = close < 0 ? chunk : chunk.slice(0, close);
+    const ends = chunk.indexOf("</svg>");
+    const body = ends < 0 ? chunk : chunk.slice(0, ends);
+    if (!/\sdata-restore-cell="/.test(body)) continue;
+    if (/class="pt"/.test(body))
+      throw new Error(
+        `${where}: the <svg> that draws the travelling cells also carries the points that answer. ` +
+          "`interaction.mjs` resolves the mark under a pointer from coordinates read ONCE at init, " +
+          "which no CSS transform ever updates, so every one of those points would answer for the " +
+          "place its cell has left. The drawing and the hit plates are separate <svg>s on purpose.",
+      );
+    if (!/aria-hidden="true"/.test(head))
+      throw new Error(
+        `${where}: the <svg> that draws the travelling cells is not \`aria-hidden\`. It is a picture ` +
+          "of the data and not a way to ask it anything — the hit plates carry the readings, and a " +
+          "screen reader offered both would meet every country twice.",
+      );
+  }
+
+  for (const slug of slugs) {
+    if (!String(html).includes(`data-restore-plate="${slug}"`))
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(slug)} is declared and the page carries no hit plate ` +
+          "for it, so nothing answers a pointer while it is chosen",
+      );
+    if (!new RegExp(`#[\\w-]*${slug}:checked`).test(String(html)))
+      throw new Error(
+        `${where}: nothing in the page's stylesheet reveals the stage ${JSON.stringify(slug)}. A ` +
+          "vocabulary a beat brings with it has to emit its own rules: without them every plate is " +
+          "drawn on top of every other and every attribute is still perfectly correct.",
+      );
+  }
+
+  for (const slug of slugs.slice(1))
+    if (
+      !new RegExp(
+        `#[\\w-]*${slug}:checked\\)\\s\\[data-restore-cell="[^"]+"\\]\\s*\\{\\s*transform:\\s*translate\\(`,
+      ).test(String(html))
+    )
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(slug)} moves no cell. Every stage but the default gives ` +
+          "back a piece of the geography the grid took, so a stage whose stylesheet displaces nothing " +
+          "is drawing the default's picture under a second name.",
+      );
+
+  if (!/\[data-restore-cell\]\s*\{\s*transition:\s*transform\s/.test(String(html)))
+    throw new Error(
+      `${where}: the cells carry no transition, so they JUMP between stages. A cartogram is the one ` +
+        "map type allowed to move a country, and only because the reader is doing the moving — a jump " +
+        "is a country teleporting, which reads as the bug the owner refused twice. The transition " +
+        "belongs inside `@media (prefers-reduced-motion: no-preference)`, never outside it.",
+    );
+
+  // THE NAME HAS TO BE ON THE PLATE BEFORE A RULE CAN REVEAL IT. The check below reads the
+  // STYLESHEET, and that stylesheet is generated from the same `restoreNamesOf` call it is then
+  // compared against: the two agree by construction, and neither of them ever looks at the
+  // drawing. An author who deletes the label ELEMENT keeps every `opacity: 1` rule and loses the
+  // label — which is the inconvenient-label refusal in the one form it would really be committed.
+  // Measured, not imagined: removing a single `<g data-restore-name>` from a beat's component
+  // rendered green until this loop existed.
+  const nameTags = String(html).match(/<[a-zA-Z][^>]*\sdata-restore-name="[^"]*"[^>]*>/g) ?? [];
+  const drawnNames = new Set<string>();
+  for (const tag of nameTags) {
+    const key = /\sdata-restore-name="([^"]*)"/.exec(tag);
+    if (key) drawnNames.add(key[1]);
+  }
+  for (const tile of declaration.tiles)
+    if (!drawnNames.has(tile.key))
+      throw new Error(
+        `${where}: the cell ${JSON.stringify(tile.key)} is named by the geometry and the page draws ` +
+          "no `data-restore-name` group for it. The stage rules would reveal a label that is not " +
+          "there, and the one refusal this vocabulary makes that no sibling can — a name taken off " +
+          "a square that could carry it — would be satisfied by a stylesheet talking to itself.",
+      );
+  for (const key of drawnNames)
+    if (!declaration.tiles.some((tile) => tile.key === key))
+      throw new Error(
+        `${where}: the page draws a name for ${JSON.stringify(key)}, which the declaration never ` +
+          "names. A label with no cell behind it travels nowhere and is measured against nothing.",
+      );
+
+  // THE NAMES DRAWN ARE THE NAMES DERIVED. The stylesheet is the page's own answer to "which cells
+  // can hold their name in this stage"; if it disagrees with `restoreNamesOf`, the rule that a cell
+  // has to hold its own name has been overruled somewhere between the two.
+  for (const stage of restoreNamesOf(declaration)) {
+    const named = new Set(stage.named);
+    const on = new RegExp(
+      `#[\\w-]*${stage.slug}:checked\\)\\s\\[data-restore-name="([^"]+)"\\]\\s*\\{\\s*opacity:\\s*([01])\\s*;`,
+      "g",
+    );
+    const seen = new Map<string, number>();
+    for (const hit of String(html).matchAll(on)) seen.set(hit[1], Number(hit[2]));
+    for (const tile of declaration.tiles) {
+      const want = named.has(tile.key) ? 1 : 0;
+      const got = seen.get(tile.key);
+      if (got === undefined)
+        throw new Error(
+          `${where}: the stage ${JSON.stringify(stage.slug)} says nothing about the name of ` +
+            `${JSON.stringify(tile.key)}. Whether a cell keeps its name is this type's own rule and it ` +
+            "is answered per stage, never once per page.",
+        );
+      if (got !== want)
+        throw new Error(
+          `${where}: in the stage ${JSON.stringify(stage.slug)} the name of ${JSON.stringify(tile.key)} ` +
+            `is drawn at opacity ${got} and the geometry says ${want}. A name kept on a square too ` +
+            "small for it is unreadable; a name taken off a square that could carry it is an author " +
+            "tidying an inconvenient label away.",
+        );
+    }
+  }
+
+  const blanket = String(html).search(/svg\.chart\[data-restore-plate\]\s*\{\s*display:\s*none/);
+  if (blanket < 0)
+    throw new Error(
+      `${where}: the stylesheet carries no blanket rule hiding the hit plates, so all ${slugs.length} ` +
+        "answer at once. This is the rule that must be emitted FIRST, before the default plate's own — " +
+        "two attribute selectors score identically and source order is the whole mechanism.",
+    );
+  const reveal = String(html).search(
+    new RegExp(`svg\\.chart\\[data-restore-plate="${slugs[0]}"\\]\\s*\\{\\s*display:`),
+  );
+  if (reveal >= 0 && reveal < blanket)
+    throw new Error(
+      `${where}: the stylesheet reveals the default hit plate BEFORE the blanket rule that hides them ` +
+        "all. Two attribute selectors score identically, so source order is the whole mechanism — and " +
+        "an engine without `:has()`, which is the only engine the base pair ever decides anything for, " +
+        "would have every plate answering at once.",
+    );
+}
+
+/**
+ * The control's own chrome, emitted ONLY for a beat that declared a map it can give back.
+ *
+ * ONE DRAWING, IN ONE PLACE. `control-chrome.ts` carries the drawing and the measurements behind
+ * it; what is left here is the only thing that was ever this control's own — how many lines of
+ * sentence to reserve, and that the sentences are STACKED in one grid cell, because a row that
+ * grows when a sentence is revealed pushes the plot down under the reader's hands.
+ */
+export function restoreChromeCss({ scope }: { scope: string }): string {
+  return controlChromeCss({
+    scope,
+    name: "restore",
+    notes: {
+      stacked: true,
+      reserve: "3em",
+      why:
+        "Two lines at the frame's own width, which is what the longer of this beat's two revealed " +
+        "sentences takes there, measured in Chrome rather than guessed; stacked in one cell so the " +
+        "tallest is always what the row is, and choosing a stage never moves the plot under the " +
+        "reader's pointer while forty-one cells are in the air.",
+    },
+  });
+}
