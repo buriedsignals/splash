@@ -1,30 +1,30 @@
 /**
  * Europe's low-carbon electricity, drawn THROUGH the design base as a map that becomes a cartogram under
- * the reader's scroll. The `cartogram` type in the scrolly format: the subject of
- * `static-cartogram-europe-lowcarbon` — the country mean against the area-weighted mean — told with the
- * gesture its claim is about (`scrolly/references/directed-type-choreography.md`): every country starts
- * as its territory and ends as one equal tile.
+ * the reader's scroll. The `cartogram` type in the scrolly format, on a LIVE MAPTILER MAP while the form
+ * shows geography, the tiles outside it once it leaves (addendum 2026-09-15 §5): the country mean against
+ * the area-weighted mean, told with the gesture its claim is about — every country starts as its territory,
+ * live, and ends as one equal tile.
  *
  * THE STATIC PLATE'S RULES ARE THE FLOOR: one ramp between the direction's own poles in five classes with
  * breaks in %; the lowest class and every tile floored against the ground; the country with no reading
  * hollow with a dashed edge, outside the ramp; every tile carries its own name; the layout is designed,
  * not derived, and said to be.
  *
- * ONE COORDINATE SPACE. The map and the tile grid share the SVG's viewBox (`cartogram-geometry.mjs`), and
- * it is fitted uniformly — a country is never stretched on one axis. Each country is a group holding its
- * shape and a rect drawn in the shape's own box; `cartogram-drive.mjs` moves the group from that box onto
- * its tile, fading the shape into the rect. Names are HTML, placed on the tiles in the reader's pixels.
- * What is rendered here is the last card's picture, which is what a reader without a script gets.
+ * ONE COORDINATE SPACE. The map's camera and the SVG's tile grid share the same frame (`plan.mjs`'s
+ * `cartogramGeometry`, projected with the live map's own camera) — a country's shape lies exactly where the
+ * map already draws it. Each country is a group holding its shape and a rect drawn in the shape's own box;
+ * `cartogram-drive.mjs` fades the group in over the map (the handover), then moves it onto its tile, fading
+ * the shape into the rect. Names are HTML, placed on the tiles in the reader's pixels. UNDER THE LIVE MAP,
+ * ONE FROZEN IMAGE PER CARD (`live-map-cards.mjs`); what is rendered here is the last card's picture, which
+ * is what a reader without a script gets.
  */
 
 import type { CSSProperties } from "react";
 import {
-  adjustToContrast,
-  contrast,
-  mix,
-  NON_TEXT_CONTRAST_MIN,
-  TEXT_CONTRAST_MIN,
-} from "#shared/chart-beat/colour.mjs";
+  CardImages,
+  noScriptCss,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
 export type Country = {
   iso: string;
@@ -37,11 +37,20 @@ export type Country = {
   twh: number;
 };
 type Style = Record<string, string | number>;
+type Colours = {
+  ground: string;
+  sea: string;
+  land: string;
+  neutral: string;
+  classFills: string[];
+  text: { ink: string; muted: string; accent: string };
+};
 
 export function DirectedCartogramScrolly({
+  plan,
+  fallbacks,
+  reference,
   countries,
-  context,
-  seaFill,
   width,
   height,
   breaks,
@@ -55,16 +64,12 @@ export function DirectedCartogramScrolly({
   missingNote,
   alt,
   regs,
-  pad,
-  stroke,
-  ground,
-  accent,
-  ink,
-  muted,
+  colours,
 }: {
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  reference: { width: number; height: number };
   countries: Country[];
-  context: string[];
-  seaFill: string;
   width: number;
   height: number;
   breaks: string[];
@@ -81,35 +86,12 @@ export function DirectedCartogramScrolly({
     "display" | "eyebrow" | "body" | "axis" | "annot" | "value",
     Style
   >;
-  pad: number;
-  stroke: { rule?: number; hairline?: number };
-  ground: string;
-  accent: string;
-  ink: string;
-  muted: string;
+  colours: Colours;
 }) {
-  const floor = (colour: string, what: string) => {
-    if (contrast(colour, ground) >= NON_TEXT_CONTRAST_MIN) return colour;
-    const lifted = adjustToContrast(colour, ground, NON_TEXT_CONTRAST_MIN);
-    if (!lifted)
-      throw new Error(
-        `${what} cannot be told from the ground: nothing clears ${NON_TEXT_CONTRAST_MIN}:1 against ${ground}`,
-      );
-    return lifted;
-  };
-  const low = floor(mix(accent, ground, 0.9), "the lowest class of the ramp");
-  const high = mix(accent, ink, 0.3);
+  const { ground } = colours;
+  const { ink: inkOnGround, muted: mutedInk, accent: accentInk } = colours.text;
   const classCount = breaks.length + 1;
-  const classFill = (i: number) =>
-    mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
-  /** The tile a class has not reached yet: one neutral, floored, so an equal tile still reads as a country. */
-  const neutral = floor(mix(ground, ink, 0.22), "the neutral tile");
-  const contextFill = mix(ground, ink, 0.07);
-  const mutedInk = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
-  const accentInk =
-    adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
-  const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
-  const hairline = stroke.hairline ?? 0.6;
+  const classFill = (i: number) => colours.classFills[i];
   const abs = (extra: CSSProperties): CSSProperties => ({
     position: "absolute",
     ...extra,
@@ -122,11 +104,23 @@ export function DirectedCartogramScrolly({
   if (!countries.some((c) => c.iso === subject))
     throw new Error(`the subject ${subject} has no tile`);
 
+  const scope = '[data-part="symbols"]';
+  const shapeCss = shapeSelectionCss(scope, reference);
+  // Without a script the fallback images stop at the map (only two are ever baked — see `render-directions-
+  // scrolly.mjs`); the SVG tiles are forced to their SSR'd resting position (box already mapped fully onto
+  // tile) and shown over them instead, so a no-script reader still gets the cartogram, not the map.
+  const noScript =
+    noScriptCss(scope, fallbacks.length - 1, ['[data-part="key"]']) +
+    `${scope} [data-part="count-panel"]{opacity:0!important}` +
+    `${scope} [data-country]{opacity:1!important}${scope} [data-part="tile"]{opacity:1!important}`;
+
   return (
     <div
+      data-part="symbols"
       role="img"
       aria-label={alt}
       data-cartogram={JSON.stringify({
+        cards: fallbacks.length,
         width,
         height,
         subject,
@@ -137,10 +131,6 @@ export function DirectedCartogramScrolly({
           classIndex,
           twh: Math.round(twh * 10) / 10,
         })),
-        fills: {
-          classes: Array.from({ length: classCount }, (_, i) => classFill(i)),
-          neutral,
-        },
         ink: { dark: inkOnGround, light: ground, muted: mutedInk },
       })}
       style={{
@@ -154,6 +144,11 @@ export function DirectedCartogramScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      <noscript
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }}
+      />
+      <style dangerouslySetInnerHTML={{ __html: shapeCss }} />
       <div
         data-part="count-panel"
         style={{
@@ -177,7 +172,6 @@ export function DirectedCartogramScrolly({
               ...regs.value,
               color: part === "by-country" ? accentInk : inkOnGround,
               whiteSpace: "nowrap",
-
             }}
           >
             {counter.template.replace(
@@ -188,8 +182,25 @@ export function DirectedCartogramScrolly({
         ))}
       </div>
 
-      {/* THE MAP FILLS ITS ROW, gutter to gutter (`cartogram-drive.mjs`, `fitViewBox`). */}
-      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden" }}>
+      {/* THE MAP FILLS ITS OWN ROW, gutter to gutter (`cartogram-drive.mjs`, `fitViewBox`). The live map
+          sits under the SVG countries; a frozen image per card sits under both, for a reader without a
+          script or a key. */}
+      <div
+        data-part="stage"
+        style={{ position: "relative", minHeight: 0, overflow: "hidden" }}
+      >
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div
+          data-part="live"
+          style={{ position: "absolute", inset: 0, opacity: 0 }}
+        />
+        <script
+          type="application/json"
+          data-part="plan"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(plan).replace(/</g, "\\u003c"),
+          }}
+        />
         <svg
           data-part="field"
           xmlns="http://www.w3.org/2000/svg"
@@ -199,41 +210,34 @@ export function DirectedCartogramScrolly({
         >
           <defs>
             <clipPath id="cartogram-window">
-              <rect x={-890} y={-490} width={width + 1780} height={height + 980} />
+              <rect
+                x={-890}
+                y={-490}
+                width={width + 1780}
+                height={height + 980}
+              />
             </clipPath>
           </defs>
           <g clipPath="url(#cartogram-window)">
-            {/* The map's sea, in the tint the sibling plates are baked in; it gives way to the ground as the
-                countries become tiles, which float on the ground as on the static plate. */}
-            <rect data-part="sea" x={-890} y={-490} width={width + 1780} height={height + 980} fill={seaFill} />
-            <g data-part="context" style={{ opacity: 0 }}>
-              {context.map((d, i) => (
-                <path
-                  key={`k${i}`}
-                  d={d}
-                  fill={contextFill}
-                  stroke={ground}
-                  strokeWidth={hairline}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
-            </g>
             {countries.map((c) => {
               const missing = c.value === null;
-              const fill = missing ? ground : classFill(c.classIndex ?? 0);
+              const fill = missing
+                ? colours.neutral
+                : classFill(c.classIndex ?? 0);
               // The rect is drawn in the shape's own box; at the end of the morph that box IS the tile.
               return (
                 <g
                   key={c.iso}
                   data-country={c.iso}
                   transform={`translate(${c.tile.x - c.box.x * (c.tile.w / c.box.w)} ${c.tile.y - c.box.y * (c.tile.h / c.box.h)}) scale(${c.tile.w / c.box.w} ${c.tile.h / c.box.h})`}
+                  style={{ opacity: 0 }}
                 >
                   <path
                     data-part="shape"
                     d={c.path}
                     fill={fill}
                     stroke={missing ? mutedInk : ground}
-                    strokeWidth={missing ? 1 : hairline}
+                    strokeWidth={missing ? 1 : 0.6}
                     strokeDasharray={missing ? "3 2" : undefined}
                     vectorEffect="non-scaling-stroke"
                     style={{ opacity: 0 }}
@@ -266,6 +270,7 @@ export function DirectedCartogramScrolly({
               top: 0,
               transform: "translate(-50%, -50%)",
               whiteSpace: "nowrap",
+              opacity: 0,
               color:
                 c.value === null
                   ? mutedInk
