@@ -11,6 +11,7 @@
 // Usage:  bun proof/web-proportional-symbol-europe-capacity/render-directions-web.mjs
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync, readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -34,14 +35,15 @@ import {
   assertAreaScaleDeclaration,
   assertOneAreaScale,
 } from "../../skills/map-web/assets/area-scale.ts";
-// The window a reader may move, and the bounds it moves inside — a map vocabulary, not a gesture:
-// it adds nothing to what this beat argues. Its ceiling is DERIVED below from the subject the claim
-// is about, so the framing can never be zoomed past the country the headline names.
+// THE SECOND LAYER: a real MapTiler map under this beat's own drawing, carrying MapLibre's own
+// controls. The owner's ruling, in his words — *"utilise les vrais controls de maptiler pas des
+// controls extérieurs"* — and R1's before it. Its ceiling is DERIVED below from the subject the
+// claim is about, so the framing can never be zoomed past the country the headline names.
 import {
-  assertNavigateDeclaration,
-  assertOneNavigation,
-  maxScaleOf,
-} from "../../skills/map-web/assets/navigate.ts";
+  assertLiveBasemapDeclaration,
+  assertOneLiveBasemap,
+  maxZoomHeadroomOf,
+} from "../../skills/map-web/assets/live-basemap.ts";
 import { DirectedSymbolMapWeb } from "./DirectedSymbolMapWeb.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
@@ -363,7 +365,7 @@ const land = geo.features
 // where inside France its centre of gravity falls can always still see the whole of France around
 // it, and past that the map would be showing terrain this beat holds no datum for.
 //
-// `navigate.ts` recomputes the ceiling from these two numbers and refuses a beat that types one.
+// `live-basemap.ts` recomputes the ceiling from these two numbers and refuses a beat that types one.
 const subjectShape = geo.features.filter((f) => f.properties.name === biggest.country);
 if (subjectShape.length === 0)
   throw new Error(
@@ -383,45 +385,55 @@ const subjectSpan = (() => {
   for (const f of subjectShape) walk(f.geometry.coordinates);
   return east - west;
 })();
-const navigate = {
-  label: "La fenêtre",
+/** THE MAP'S OWN ACCESSIBLE DESCRIPTION, and the last sentence is the promise this arrangement
+ *  makes about the beat's own claim: the window moves, the scale of the areas does not. Every glyph
+ *  of it is in the markup and it is declared here, once, so the register census below cuts the
+ *  page's faces for it. */
+const LIVE_HINT =
+  "Carte interactive : glissez-la pour la déplacer, pincez ou utilisez les boutons plus et moins " +
+  "pour zoomer, les flèches du clavier la déplacent une fois qu'elle a le focus. Cercles, " +
+  "étiquettes et légende gardent leur taille à l'écran : la carte s'approche, l'échelle des aires " +
+  "ne change pas.";
+
+/** THE LIVE LAYER'S DECLARATION. The floor is the published framing — the plot cell carries the
+ *  plate's own ratio, so the recorded corners fit the container exactly and there is only ONE
+ *  window at that floor. The ceiling is the subject the headline names, measured above, and
+ *  `live-basemap.ts` recomputes it from these two numbers and refuses a beat that types one. */
+const liveFor = (d) => ({
+  style: plateFacts.style,
+  corners: CORNERS,
   view: { width, height },
   subject: { label: NAMES[biggest.country], width: subjectSpan },
-  // Doubling and halving: the one step a reader does not have to learn, and the one that keeps the
-  // ceiling two presses away rather than five.
-  step: 2,
-  // An eighth of the window per press — far enough that something new comes into view, near enough
-  // that the landmarks a reader was using are still on screen when it lands.
-  pan: 0.125,
-  controls: {
-    in: { label: "Zoom avant", announce: "Zoom avant — rapprocher la carte" },
-    out: { label: "Zoom arrière", announce: "Zoom arrière — éloigner la carte" },
-    home: {
-      label: "Revenir au cadrage publié",
-      announce: "Revenir au cadrage publié — celui de la carte telle qu'elle est parue",
-    },
+  // THE LIVE STYLE IS PAINTED IN WHAT THE READER IS ALREADY LOOKING AT, not in whatever the plate's
+  // own background happens to be. The water is the plate's own baked tint; the LAND is the tint of
+  // the vector path drawn OVER the plate, which is the ground a reader actually sees and which the
+  // live map replaces. Painting the live land with the plate's own 7 % step would have made the
+  // swap on `load` a visible flash of a colour nothing on this page was ever drawn in.
+  tints: { water: plateTints(d).water, land: mix(d.ground, deriveFurniture(d.ground).ink, 0.1) },
+  // MAPLIBRE'S OWN CONTROLS, NAMED IN THIS PAGE'S OWN LANGUAGE. The library ships English defaults
+  // and nothing warns you: a French beat would hand a screen reader "Zoom in".
+  locale: {
+    title: "Carte de la capacité bas-carbone européenne",
+    zoomIn: "Zoom avant",
+    zoomOut: "Zoom arrière",
   },
-  // THE HINT IS ALSO THE MAP'S OWN ACCESSIBLE DESCRIPTION. The script points the svg's
-  // `aria-describedby` at this row, so the reader who has just tabbed onto the map is told the
-  // keys before they press one — and the last sentence is the promise this navigation makes about
-  // the beat's own claim: the window moves, the scale of the areas does not.
-  hint: {
-    before: "Agrandissement ",
-    // TRIMMED AGAINST A PHONE, NOT AGAINST TASTE. The first version ran to six lines at 375px and
-    // pushed the map below the fold on its own; this one says the same three things — how to move
-    // it, which keys, and what does NOT change — in four.
-    after:
-      " fois. Glissez la carte pour la déplacer ; au clavier, les flèches la déplacent, plus et " +
-      "moins zooment, zéro revient au cadrage publié. Cercles, étiquettes et légende gardent leur " +
-      "taille : la carte s'approche, l'échelle des aires ne change pas.",
-  },
-};
-assertNavigateDeclaration(navigate, "web-proportional-symbol-europe-capacity");
-console.log(
-  `fenêtre : plancher ${fr(1)} (le cadrage publié) · plafond ${fr(maxScaleOf(navigate), 2)} = ` +
-    `${fr(width, 0)} unités de dessin sur ${fr(subjectSpan, 0)} pour ${NAMES[biggest.country]} · ` +
-    `pas ${fr(navigate.step, 0)} · déplacement ${fr(navigate.pan * 100, 1)} % de la fenêtre\n`,
-);
+  hint: LIVE_HINT,
+});
+/** ONE DECLARATION PER FILED DIRECTION, refused here rather than at the render: the three differ
+ *  only in their two tints, and a tint that stopped clearing its own step off the ground would
+ *  otherwise be found by looking at a picture. */
+for (const file of DIRECTION_FILES) {
+  const id = file.replace(/\.md$/, "");
+  const decl = liveFor(readDirection(join(DIRECTIONS, file)));
+  assertLiveBasemapDeclaration(decl, `web-proportional-symbol-europe-capacity (${id})`);
+  console.log(
+    `carte vivante ${id} : style ${decl.style} · plancher = le cadrage publié · plafond ` +
+      `+${fr(maxZoomHeadroomOf(decl), 2)} niveaux de zoom = ${fr(width, 0)} unités de dessin sur ` +
+      `${fr(subjectSpan, 0)} pour ${NAMES[biggest.country]} · mer ${decl.tints.water} · terre ` +
+      `${decl.tints.land}`,
+  );
+}
+console.log("");
 
 const facts = beatFacts(
   rows.map((r) => ({ key: r.country, label: NAMES[r.country], value: r.mw })),
@@ -468,12 +480,12 @@ const interaction = {
       question: `Où exactement, dans son propre pays, ce cercle est-il posé ?`,
       gesture: "zoom-and-pan",
       changes:
-        `La fenêtre se resserre sur le dessin — le viewBox, jamais la projection : la caméra reste ` +
-        `celle du beat et aucun lieu ne se déplace. Les cercles, les étiquettes et les traits ` +
-        `gardent leur taille à l'écran, donc la légende de taille dit toujours vrai et deux ` +
-        `étiquettes ne peuvent que s'éloigner l'une de l'autre. On ne peut pas dézoomer sous le ` +
-        `cadrage publié ni pousser la géographie hors du cadre, et le contrôle de retour dit en ` +
-        `toutes lettres où il ramène.`,
+        `Le fond de carte devient une vraie carte MapTiler, avec les contrôles de MapLibre ` +
+        `eux-mêmes : glisser, molette, pincement, clavier. Le dessin du beat suit la caméra par son ` +
+        `viewBox, donc aucun cx ni cy ne change et aucun lieu ne se déplace. Les cercles, les ` +
+        `étiquettes et les traits gardent leur taille à l'écran, donc la légende de taille dit ` +
+        `toujours vrai et deux étiquettes ne peuvent que s'éloigner l'une de l'autre. On ne peut ni ` +
+        `dézoomer sous le cadrage publié ni pousser la géographie hors du cadre.`,
     },
     {
       question: `Que vaut ce cercle-là, et de quoi est-il fait ?`,
@@ -490,12 +502,11 @@ const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
   body:
-    `${caveat} ${readingLine} ${source} ${scale.label} ${scale.options.map((o) => o.label).join(" ")} ` +
-    `${navigate.label} ${Object.values(navigate.controls).map((c) => c.label).join(" ")}`,
+    `${caveat} ${readingLine} ${source} ${scale.label} ${scale.options.map((o) => o.label).join(" ")}`,
   axis: keySizes.map((k) => k.label).join(" "),
   annot:
     `${claimNote} ${scale.options.filter((o) => o.note).map((o) => o.note).join(" ")} ` +
-    `${navigate.hint.before} ${navigate.hint.after}`,
+    `${LIVE_HINT}`,
   value: symbols.filter((s) => s.labelled).map((s) => `${s.name} ${s.figure}`).join(" "),
 };
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
@@ -505,10 +516,30 @@ const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 
+// ── WHAT THE SECOND LAYER IS MADE OF, READ ONCE ──────────────────────────────────────────────
+//
+// MapLibre and its stylesheet are INLINED into every page rather than linked. A `<script src>`
+// would trade the payload for a SECOND third-party host; inlining keeps the count at one —
+// api.maptiler.com — which is the honest reading of R1, and it is the same trade
+// `skills/map-web/scripts/render-web.mjs` already makes for the mapgen corpus.
+//
+// `style.mjs` travels as SOURCE, with its `export` keywords stripped, because a page script cannot
+// import: the sweep that decides what a basemap layer becomes is stated once, in that file, and
+// applied twice — to the style document the plate is baked from, and to the live style in the
+// browser. The alternative is what this trunk already paid for once: two rulebooks that agree only
+// until somebody edits one of them.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
+const MAPLIBRE_CSS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css"), "utf8");
+const STYLE_MODULE = (
+  await readFile(join(HERE, "..", "..", "skills", "map-web", "assets", "style.mjs"), "utf8")
+).replace(/^export /gm, "");
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+  const live = liveFor(direction);
   const plate = `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`;
   const name = `${id}.html`;
   try {
@@ -516,7 +547,11 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       component: DirectedSymbolMapWeb,
       props: {
         plate,
-        symbols, keySizes, scale, navigate, land,
+        symbols, keySizes, scale, land,
+        live,
+        maplibreCss: MAPLIBRE_CSS,
+        maplibreJs: MAPLIBRE_JS,
+        styleModule: STYLE_MODULE,
         aspect: CAMERA_ASPECT,
         size: SIZE,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
@@ -527,7 +562,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           `${topFive.slice(1).map((r) => NAMES[r.country]).join(", ")}. Ces cinq cercles couvrent ` +
           `${fr(topShare, 0)} % de la capacité du continent ; le reste de la carte est un semis de ` +
           `petits cercles. Un contrôle au-dessus de la carte change la loi qui transforme une ` +
-          `capacité en taille de cercle, sans déplacer aucun pays.`,
+          `capacité en taille de cercle, sans déplacer aucun pays. La carte elle-même est vivante : ` +
+          `elle se déplace et se zoome avec les contrôles de MapTiler, sans que la taille des ` +
+          `cercles change.`,
         interaction,
         direction,
         ground: direction.ground,
@@ -544,11 +581,12 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     const written = await readFile(outPath, "utf8");
     try {
       assertOneAreaScale(written, scale, name);
-      // THE SAME HALF, FOR THE WINDOW. Every refusal here is a way the navigation ships with every
-      // attribute correct and lies in a browser: a rail that draws itself with the script absent, a
-      // hit target counter-scaled about anything but its own centre, a mark that grows with the
-      // zoom while the key beside it does not.
-      assertOneNavigation(written, navigate, name);
+      // THE SAME HALF, FOR THE SECOND LAYER. Every refusal here is a way the live map ships with
+      // every attribute correct and lies in a browser: a fallback plate deleted, a plate hidden by
+      // a rule no script conditions, a mark counter-scaled about anything but its own centre, a
+      // mark that grows with the zoom while the key beside it does not, a bespoke rail left
+      // standing beside MapTiler's own controls.
+      assertOneLiveBasemap(written, live, name);
     } catch (error) {
       await rm(outPath, { force: true });
       throw error;

@@ -35,15 +35,16 @@ Lambert azimuthal equal-area measures (`camera.ts`); the baked MapTiler plate's 
 place. **The gesture below changes no camera and moves no place.** Not one circle's `cx`/`cy`
 changes in any state of this page.
 
-**And the navigation added since is not that gesture and does not become it.** This brief used to
+**And the LIVE BASEMAP added since is not that gesture and does not become it.** This brief used to
 say a zoom and a pan "were available and are refused here", on the ground that they cost the
 framing the camera argued for and that eight map types would all reach for the same one. The first
-half was answered rather than overruled — the window is bounded so that it cannot be zoomed out
-past the published framing or pushed off the geography, and the return control is named in words —
-and the second half was never an argument against a reader being able to look closer, only against
-a beat calling that its editorial gesture. The owner asked for it twice, in his own words, and it
-is a SUPPLEMENT: the page a reader without JavaScript receives is the same complete plate it was,
-with no dead control on it, and the exponent below is still the only thing this beat argues.
+half was answered rather than overruled — the camera is bounded so that it cannot be zoomed out
+past the published framing or pushed off the geography — and the second half was never an argument
+against a reader being able to look closer, only against a beat calling that its editorial gesture.
+The owner asked for it three times, in his own words, and the third time he named the mechanism:
+*"utilise les vrais controls de maptiler pas des controls extérieurs"*. It is a SUPPLEMENT: the
+page a reader without JavaScript receives is the same complete plate it was, with no dead control
+on it, and the exponent below is still the only thing this beat argues.
 
 ## The interaction, written before the code
 
@@ -128,60 +129,106 @@ continent, its station count and the water-and-atom / wind-and-sun split — the
 has no room for. Both controls are declared in `interaction`, and the render refuses the page if
 either ships without a declaration or is declared without shipping.
 
-## The window the reader may move
+## The basemap the reader may move, and it is a real one
 
-**`skills/map-web/assets/navigate.ts`** — a second new map vocabulary, and the shared one: what a
-reader may do to the WINDOW. Zoom, zoom out, drag, arrow keys, and a return named in words. It is
-wired here first and belongs to every map type after it.
+**`skills/map-web/assets/live-basemap.ts`** — a second new map vocabulary, and the shared one: the
+BASEMAP IS ALIVE. Under this beat's own drawing there is a real MapTiler map carrying MapLibre's
+own `NavigationControl`, its own drag, its own wheel, its own pinch and its own keyboard. It is
+wired here first and belongs to every map type that HAS a basemap.
 
-**The window IS the `<svg>`'s own `viewBox`, and that is the whole answer to the trap this tree has
-paid for twice.** `interaction.mjs` resolves the mark under a pointer from `cx`/`cy` read ONCE at
-initialisation, and no CSS transform updates those. The radar answered it by keeping every vertex
-at the same coordinate in every state; the diverging stacked bar answered it by baking one hit
-plate per state at that state's own coordinates. Neither transfers literally to a CONTINUOUS
-navigation — there is no finite set of states to bake a plate for — but the principle under both
-does: **what answers must be at coordinates that are still true.** So the coordinates are made
-invariant and the movement is put into the coordinate system itself. `getScreenCTM()` is derived
-from the viewBox at the moment it is called, so the client → user-space mapping is live for free
-while every `cx` and `cy` on the page is the byte it was at build time. Measured rather than
-assumed, on a probe page: `getScreenCTM()` carries a CSS transform on the `<svg>` and on an
-ANCESTOR of it, and does NOT carry one on an inner `<g>` — which is why the mechanism is the
-viewBox and not a transform over the drawing.
+**This replaces a rail of bespoke buttons, and the replacement is the owner's own instruction.** The
+rail (`navigate.ts`) moved the `<svg>`'s viewBox from three buttons of ours over a baked plate. He
+refused it in one line — *"utilise les vrais controls de maptiler pas des controls extérieurs"* —
+and the machinery for the alternative already existed and had already been ruled on: R1
+(2026-08-10), *"la carte doit rester interactive tout le temps sinon il n'y a pas d'intérêt d'être
+sur le web si on peut pas naviguer dedans"*, and the two layers `skills/map-web/assets/live-map.mjs`
+answered it with. The directed `proof/web-*` map beats were built plate-only and silently dropped
+that; this is the regression closed, on one beat, for him to validate before it reaches the other
+seven.
 
-**What must not follow the window is counter-scaled about its own centre.** Every symbol, every
-label and every hit target sits in a `data-nav-fixed` group whose `transform-origin` is that mark's
-own `cx cy`; `--nav-inverse` scales it by 1/k. The centre is the FIXED POINT of a scale about
-itself, so the coordinate the resolver compares against does not move by construction rather than
-by care, and the vocabulary refuses a page where any transform between the `<svg>` and a `.pt` is
+**TWO LAYERS, and layer 1 is untouched.** Layer 1 is the SSR'd beat exactly as it rendered: the
+baked plate as a data URI, the marks, the labels, the key, the whole editorial gesture in generated
+CSS with no script at all. Layer 2 is a live MapTiler map revealed ONLY on `map.on("load")`. A style
+failure, a tile failure, a rotated key, no network at all: layer 1 stands. That last case is not
+decoration — MapTiler invalidates ALL of an account's keys at 100 % of its spending limit, so the
+failure mode is every published article's map going blank at once. **Measured on the committed
+artifact**, which carries the delivery placeholder rather than a key and therefore never boots:
+`mw-live` false, the three `[data-plate]` elements `inline`, and all three scale laws working.
+
+**ONLY THE BASEMAP IS SWAPPED, and that is a better arrangement than the one it copies.**
+`live-map.mjs` swaps the WHOLE fallback away and re-draws the marks as MapLibre layers with an HTML
+overlay for the labels — one mark, two halves, two mechanisms, which is the defect its own header
+names twice. This beat cannot afford it anyway: the exponent control is `:checked` plus generated
+CSS over SSR'd SVG, and no stylesheet can reach a MapLibre circle layer. So the marks, the labels,
+the hit targets and the key stay ONE drawing in ONE `<svg>`, in both layers, and what moves is the
+window.
+
+**The window IS the `<svg>`'s own `viewBox` — now driven by the live camera instead of by buttons.**
+That is the whole answer to the trap this tree has paid for three times. `interaction.mjs` resolves
+the mark under a pointer from `cx`/`cy` read ONCE at initialisation, and no CSS transform updates
+those. The radar answered it by keeping every vertex at the same coordinate in every state; the
+diverging stacked bar by baking one hit plate per state. Neither transfers to a CONTINUOUS camera,
+but the principle under both does: **what answers must be at coordinates that are still true.** The
+plate was baked through `map.project()`, so its frame is linear in Web Mercator, and a live MapLibre
+camera at zero bearing and zero pitch is too — the visible rectangle is an EXACT affine image of the
+drawing's box, computed from `map.unproject()` on two corners. Not one `cx`, not one `cy`, not one
+label anchor changes, and `getScreenCTM()` is derived from the viewBox at the moment it is called.
+
+**What must not follow the plane is counter-scaled about its own centre.** Every symbol, every label
+and every hit target sits in a `data-map-fixed` group whose `transform-origin` is that mark's own
+`cx cy`; `--live-inverse` scales it by the window's own fraction. The centre is the FIXED POINT of a
+scale about itself, so the coordinate the resolver compares against does not move by construction
+rather than by care, and the vocabulary refuses a page where any such group is scaled about
 anything else.
 
-**On this type the counter-scale is not a style rule.** The key is drawn outside the plate's
-coordinate system, in the cell's own CSS pixels. A zoom that enlarged the marks would leave the key
-stating a scale the map is no longer drawn in — which is, to the tenth of a factor, the defect this
-beat had just finished repairing. Measured on the emitted page at 1280×860: France's mark is
-125,94px across at 1,0 and 125,94px at 4,0, and the three swatches are 90,78 / 64,19 / 40,59px in
-both. The same counter-scale is what keeps the labels honest: they keep the size the register set
-and their anchors travel with the zoom, so the distance between any two is multiplied by the scale
-and a zoom can only ever RESOLVE an overlap, never create one. 0 overlapping pairs at 1,0 and at
-4,0, measured on real client rectangles.
+**On this type the counter-scale is not a style rule.** This is `live-map.mjs`'s `camera` radius
+behaviour, and on a proportional symbol map it is not a preference: a circle encodes a VALUE, so it
+holds its SCREEN size as the reader zooms, because the same number must not mean two things at two
+zooms. The key is drawn outside the plate's coordinate system, in the cell's own CSS pixels; a mark
+that grew with the camera would leave the key stating a scale the map is no longer drawn in — which
+is, to the tenth of a factor, the defect this beat had just finished repairing. **Measured on the
+emitted page at 1512×860**: France's mark is 149,60px across at the published framing, at zoom +1,0,
+at zoom +1,50 after a wheel, after a drag, and after the return; the three swatches are
+107,88 / 76,27 / 48,24px in every one of those states. And the key is EXACTLY true, not merely
+stable: 149,60 × √(50/96) = 107,9px, against a measured 107,88px.
 
-**The two bounds are derived, not typed.** The FLOOR is the published framing: the window keeps the
-view box's ratio and is clamped inside the camera's box, so at scale 1 exactly one window fits and
-it is the one the newsroom published — zooming out past the argued frame and panning off it are the
-same clamp rather than two rules that could disagree. Measured: forty arrow presses into the
-north-west corner land on `0 0 225 171`, sixty into the south-east on `675 513 225 171`, and ten
-presses of zoom out land on `0 0 900 684` exactly. The CEILING is a country: 900 drawing units
-divided by the 170 units the subject of the claim occupies, **5,30**, so the window is never
-narrower than France and a reader who has come close enough to see where inside it the
-capacity-weighted centre falls can always still see the whole country around it.
+**ONE BASEMAP, NOT TWO.** The beat draws a vector `land` path over the plate, which is the doubled
+basemap `style.mjs`'s own `assertNoDoubledBasemap` refuses — invisible only because the plate and
+the path were captured through the same camera, and false the moment a reader zooms past the plate's
+own pixel density. Live, the water backstop, the plate image and that path all carry `data-plate`
+and give way to MapTiler's own ground, tinted by the SAME `styleDecisionFor` the bake used. Two
+applications of one rulebook, never two rulebooks — and `style.mjs` travels into the page as source
+so there cannot be a second copy of its regexes.
+
+**ONE RESOLVER, AND THE POINTER GOES TO THE MAP.** The drawing sits over the canvas, so with its own
+pointer-events on it would swallow every drag and every wheel before MapLibre saw one — a map you
+can only pan where you are not pointing is not a map with native controls. So the whole drawing
+gives up the pointer while live and the map receives everything natively; the hover is kept by
+RELAYING the pointer's own client position onto the drawing's `.hit-area`, which is the one resolver
+`interaction.mjs` already has. Nothing is resolved twice and no second set of coordinates exists.
+A tap relays the `click` rather than the `pointerdown`, because the document-level pointerdown
+clears the box and would arrive after it.
+
+**The two bounds are derived, not typed.** The FLOOR is the published framing: the plot cell carries
+the plate's own ratio by construction, so the recorded corners fit the container exactly and there
+is only ONE window at that floor — the one the newsroom published. `maxBounds` then makes zooming
+out past the argued frame and pushing the geography off it the same clamp rather than two rules that
+could disagree. (`live-map.mjs` warns that `maxBounds` cropped a claim by raising the minimum zoom;
+here the plate's box and the container's box are the same box, so it cannot.) Measured: floor
+3,7622, fitted 3,7627, and twelve presses of MapTiler's own zoom-out land back on a viewBox of
+`0,29 0 899,71 684` with every mark at its resting size. The CEILING is a country: 900 drawing units
+divided by the 170 the subject of the claim occupies, **+2,41 zoom levels — a factor of 5,30** — so
+the window is never narrower than France.
 
 **The cost, said rather than found.** The key is furniture pinned to the CELL, not to the map, so a
-reader who pans can bring a mark or a label underneath it; it stays legible (it is opaque, in the
-ground, with its own edge) and the reader can pan back out. A key that moved to get out of the way
-would be exactly the label the owner refused twice for moving with no visible reason. And the plate
-is baked: past roughly its own pixel density the sea tint softens. On this beat the land is a
-vector path drawn over the plate, so the geography a reader actually reads stays sharp at 5,30 and
-only the water does not.
+reader who pans can bring a mark or a label underneath it; it stays legible (opaque, in the ground,
+with its own edge) and the reader can pan back. A key that moved to get out of the way would be
+exactly the label the owner refused twice for moving with no visible reason. Inlining MapLibre and
+its stylesheet roughly doubles the page — 688 KB to 1,56 MB on nocturne — and that is the stated
+price of R1: a `<script src>` would trade the payload for a SECOND third-party host, and one
+(api.maptiler.com) is the honest reading of the ruling. And `data-hit="cell"` resolves to the
+NEAREST centre, so at the ceiling a pointer far from every visible mark still answers about one;
+that is the beat's own design, unchanged, and it is louder when few marks are on screen.
 
 ## The vocabulary
 
@@ -233,43 +280,61 @@ Driven in a real browser, on the emitted HTML:
 - **Every family a text node names is embedded**, and **the chosen pill is a wash and a ring** —
   both by the verifier above.
 
-**The navigation, driven in a real browser on the emitted page.**
+**The live basemap, driven in a real browser on the emitted page** (nocturne, 1512×860, a real
+MapTiler key substituted into a scratch copy that never goes near the repository — the committed
+artifact carries the placeholder and is verified separately, below).
 
-- **The trap, at every mark that is on screen**: 41/41 at the published framing, 20/20 after one
-  zoom, **7/7 after a zoom of 4,0 AND a drag**, 41/41 after the return — each probe a real pointer
-  moved onto the mark's own live client position, answered by that mark's own reading.
-- **Script off, all three directions**: the rail and its sentence compute to `display: none` and
-  0px of height, the map carries no `tabindex`, the viewBox is the published `0 0 900 684`,
-  `--nav-inverse` is 1, and a Tab walk goes straight from the law's radios to the marks — no dead
-  control on the screen and none in the tab order. (`[hidden]` is a UA rule and the chrome's own
-  `display: flex` is an author rule, so the vocabulary emits the author rule that makes the
-  attribute real, and refuses a page without it.)
-- **Keyboard alone**: arrows pan, `+`/`-` zoom, `0` returns; the map's own keydown answers only
-  when the map ITSELF is focused, so the 41 marks keep the arrow walk they already had. Reaching
-  the return control by forward Tab from the map costs **46 stops** (the 41 marks sit between), two
-  by Shift-Tab, and none at all with `0` — which is why the keys are in the map's own accessible
-  description.
-- **`prefers-reduced-motion`**: 5 distinct frames during a flight under `no-preference`, 1 under
-  `reduce`, both landing on the same window. The displacement stays and only the animation goes.
-  **This shipped wrong first**: the resting `--nav-travel-ms: 0` was emitted AFTER the query that
-  raises it, and two rules of equal specificity are settled by order, so every reader got zero.
-  Caught by counting frames, not by looking; there is now a refusal for the order.
-- **The focus ring shipped wrong too**: a plain mouse drag left `:focus-visible` false and the
-  outline 5px wide — Chrome's own `outline: auto` on `:focus`, which this page had never turned
-  off. The map came away from a DRAG wearing the ring that means "the keyboard is here".
-- **The format's own verifier**, re-run on the navigated page: 92/82/82 checks pass in
-  creme/nocturne/rapport, with the same two creme typeface false negatives named above and nothing
-  else. (The six "the drawing takes the whole track" failures the committed render carried are gone
-  — the trunk's width-driven cell landed under this work.)
+- **The controls are MapTiler's own**: two buttons, `maplibregl-ctrl-zoom-in` and
+  `maplibregl-ctrl-zoom-out`, named "Zoom avant" and "Zoom arrière" through MapLibre's own `locale`.
+  **0 buttons of ours anywhere on the page.**
+- **Every gesture is native and every one answers**: a real click on the native zoom-in (3,7627 →
+  4,7627), a real wheel (→ 5,2659), a real ten-step mouse drag (centre 8,50°E → 13,06°E), and the
+  keyboard on MapLibre's own canvas (ArrowRight moved the centre 1,83° east; `+` zoomed to 6,00).
+  The viewBox follows each one exactly: `0,15 0 899,71 684` → `225,07 171 449,85 342` →
+  `345,37 251,36 317,40 241,30`.
+- **The trap, at every mark that is on screen AND in the window**: **40/40** at the published
+  framing, **6/6** after one zoom, **5/5 after a zoom of 5,27 AND a drag**, **10/10** after the
+  return — each probe a real pointer moved onto the mark's own live client position, answered by
+  that mark's own reading. (The first run of this probe scored 10/41 and the defect was in the
+  PROBE: the figure is taller than a 860px window by the full-width arbitrage, so a mark can be on
+  the map and off the screen. Named because a probe that measures nothing looks exactly like a page
+  that answers nothing.)
+- **The key stays true at every zoom**, which on this type is the whole reason the counter-scale
+  exists: France 149,60px and the swatches 107,88 / 76,27 / 48,24px in all five camera states, and
+  149,60 × √(50/96) = 107,9px against a measured 107,88px.
+- **The editorial gesture is untouched by the live layer**: the three laws measured through the live
+  map give France-against-Grèce area ratios of **24,46 / 598,26 / 8,43** — the same three numbers
+  this brief states — with the key re-scaling under each, and identical on the committed unkeyed
+  page (24,46 / 598,25 / 8,43).
+- **Script off, all three directions**: the viewBox is the published `0 0 900 684`, `--live-inverse`
+  is 1, the three `[data-plate]` elements are `inline`, the live box is `visibility: hidden` with
+  **0 canvases and 0 MapLibre controls**, the hint computes to `display: none` and 0px of height,
+  the map carries no `tabindex`, and the tab order is **44 stops: 3 radios and 41 marks** — no dead
+  control on the screen and none in the tab order.
+- **The delivery placeholder is substituted exactly once**, in the plan's own JSON and not in the
+  script — the script assembles its sentinel from two halves, which is the trap `live-map.mjs`
+  records (a literal would be rewritten to the key itself and every delivered map would refuse to
+  boot).
+- **`prefers-reduced-motion`** is MapLibre's own: the library checks it in `Camera.easeTo` and
+  disables the flight. Nothing here emits a second clock — `[data-map-fixed]` carries
+  `transition: none` and the refusal for it — because the camera and the viewBox move in one frame.
+- **The format's own verifier**: **92/82/82 checks pass** in creme/nocturne/rapport, and the
+  failures are **identical in kind and smaller in size than on the render committed before this
+  work**: five "the whole beat is inside the window" (the accepted cost of the width-driven cell —
+  overflow 2040/835/742/636/425px against the baseline's 2041/850/757/651/454px) plus the two creme
+  typeface false negatives already named above. No new failure.
 
-**The vocabulary's refusals, by mutation.** Twelve mutations on `navigate.ts` — the ceiling
-collapsing to 1 · an announce dropping its own visible words (WCAG 2.5.3) · a return named in one
-word · a first press that lands on the ceiling · an arrow press that throws the window away · a
-rail shipped visible · the `[hidden]` rule dropped · a hit target counter-scaled about the frame's
-corner instead of its own centre · the counter-scale dropped so a mark grows with the zoom · a
-second clock given to the marks · the two travel rules emitted the wrong way round · a script that
-never writes the viewBox — each run through the real runner; **all twelve go red AND exit
-non-zero**, and none stayed green.
+**The vocabulary's refusals, by mutation.** Sixteen mutations on `live-basemap.ts` and the beat that
+calls it, each breaking one thing it claims to refuse, each run through the REAL runner: a subject
+as wide as the whole drawing (no ceiling left) · a typed zoom ceiling · a basemap whose sea and
+ground are one colour · MapLibre's own controls left unnamed · an accessible description of three
+words · the fallback plate untagged · the plate hidden with no script to replace it · the plate
+never hidden at all · a mark counter-scaled about the frame's corner instead of its own centre · the
+counter-scale dropped so a mark grows with the zoom · a second clock given to the marks · no resting
+value for the counter-scale · a script that never writes the window · MapTiler's own control never
+added · a bespoke rail shipped beside it · `mw-live` baked into the markup · the live style applied
+without asserting it answered · the style sweep handed in with its `export` keywords intact. **All
+go red AND exit non-zero.**
 
 Ten mutations on `area-scale.ts`, each breaking one thing
 `area-scale.ts` claims to refuse, each run through the real runner; all ten go red AND exit

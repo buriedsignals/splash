@@ -72,12 +72,11 @@ import {
   type AreaScaleDeclaration,
 } from "../../skills/map-web/assets/area-scale.ts";
 import {
-  navigateChromeSpec,
-  navigateControlsForMarkup,
-  navigateCss,
-  navigateScript,
-  type NavigateDeclaration,
-} from "../../skills/map-web/assets/navigate.ts";
+  liveBasemapCss,
+  liveBasemapPlan,
+  liveBasemapScript,
+  type LiveBasemapDeclaration,
+} from "../../skills/map-web/assets/live-basemap.ts";
 
 /** One country's mark. The RADIUS IS NOT HERE: it is derived from the scale declaration below, so
  *  the size the page draws and the size the stylesheet re-scales cannot come from two places. */
@@ -108,18 +107,16 @@ const TRAVEL_MS = 380;
  *  text. The beat names which countries are labelled (its claim names five); this is the check that
  *  its choice fits inside the ink, made here because this is where the type size lives. */
 const LABEL_MIN_RADIUS = 22;
-/** How long the window takes to travel under a button or an arrow. Shorter than the law's own
- *  380ms because a framing is a place and not an argument: a reader pressing zoom twice should not
- *  be waiting on the first press. A drag never uses it — it follows the finger — and
- *  `prefers-reduced-motion: reduce` sets it to zero, which removes the flight and not the arrival. */
-const NAV_TRAVEL_MS = 260;
 
 export function DirectedSymbolMapWeb({
   plate,
   symbols,
   keySizes,
   scale,
-  navigate,
+  live,
+  maplibreCss,
+  maplibreJs,
+  styleModule,
   land,
   aspect,
   size,
@@ -141,9 +138,20 @@ export function DirectedSymbolMapWeb({
   keySizes: KeySize[];
   /** The scale laws this beat hands the reader (`map-web/assets/area-scale.ts`). */
   scale: AreaScaleDeclaration;
-  /** What the reader may do to the WINDOW (`map-web/assets/navigate.ts`) — a supplement over a page
-   *  that is already complete, never a door in front of it. */
-  navigate: NavigateDeclaration;
+  /** THE SECOND LAYER (`map-web/assets/live-basemap.ts`): a real MapTiler map under this beat's own
+   *  drawing, carrying MapLibre's own controls — the owner's ruling, and R1's. It is a supplement
+   *  over a page that is already complete, never a door in front of it: with no script, no network
+   *  or no key the baked plate below stands exactly as it does today. */
+  live: LiveBasemapDeclaration;
+  /** MapLibre's own stylesheet and library, inlined rather than linked. A `<script src>` would
+   *  trade the payload for a SECOND third-party host; inlining keeps the count at one —
+   *  api.maptiler.com — which is the honest reading of R1. */
+  maplibreCss: string;
+  maplibreJs: string;
+  /** `skills/map-web/assets/style.mjs`'s own source, `export` keywords stripped: the sweep that
+   *  decides what a basemap layer becomes, stated once and applied twice (the bake, and the live
+   *  style here). */
+  styleModule: string;
   land: string;
   /** The baked MapTiler basemap for THIS direction, already a data URI. */
   plate: string;
@@ -253,8 +261,6 @@ export function DirectedSymbolMapWeb({
   const scaleOptions = areaScaleOptionsForMarkup(scale, STACK_ID_PREFIX);
   const scaleNotes = areaScaleNotesForMarkup(scale);
   const chrome = areaScaleChromeSpec();
-  const navChrome = navigateChromeSpec();
-  const navControls = navigateControlsForMarkup(navigate);
   /** The counter-scale's own origin, per mark: the mark's OWN centre, in the drawing's units. It is
    *  inline because it is a different number on every element, and it is the one number that makes
    *  the counter-scale safe — the centre is the fixed point of a scale about itself, so `cx`/`cy`,
@@ -272,18 +278,12 @@ export function DirectedSymbolMapWeb({
     // height measured on this page's own longest sentence.
     controlChromeCss({ scope: SCOPE, ...chrome }),
     areaScaleCss(scale, { scope: SCOPE, idPrefix: STACK_ID_PREFIX, travelMs: TRAVEL_MS }),
-    // THE WINDOW'S OWN CHROME AND ITS COUNTER-SCALE. `navigate.ts` derives the pill from
-    // `control-chrome.ts`'s own emitted declarations rather than drawing a second one, and emits
-    // the rule that keeps a symbol, a label and a stroke from growing with the zoom — which on this
-    // type is not a style rule: the size key is drawn outside the plate's coordinates, so a mark
-    // that grew with the window would leave the key stating a scale the map is no longer in.
-    // The chrome is called HERE and handed in: `navigate.ts` lives inside a skill and may not
-    // import across to `chart-web`, and this beat is under `proof/` and may import from both.
-    navigateCss(navigate, {
-      scope: SCOPE,
-      chrome: controlChromeCss({ scope: SCOPE, ...navChrome }),
-      travelMs: NAV_TRAVEL_MS,
-    }),
+    // THE LIVE LAYER'S OWN RULES, and the counter-scale that keeps this type honest under a zoom.
+    // On a proportional symbol map that counter-scale is not a style preference: the size key is
+    // drawn OUTSIDE the plate's coordinate system, in the cell's own pixels, so a mark that grew
+    // with the camera would leave the key stating a scale the map is no longer drawn in — which is,
+    // to the tenth of a factor, the defect this beat had just finished repairing.
+    liveBasemapCss(live, { scope: SCOPE }),
     // THE ANSWER, AS A GENERATED RULE. `--mark-active` is what the format's own stylesheet reads off
     // the mark; setting it inline on 41 circles would be 41 inline declarations beating every
     // generated rule on a page built out of generated rules.
@@ -294,10 +294,14 @@ export function DirectedSymbolMapWeb({
     // filed directions, which is why it may sit there at all. It is opaque in the GROUND rather
     // than translucent: a key drawn through the basemap it calibrates is a key read against a
     // different colour in each of its three rows.
-    // Every swatch is sized off `--cell-w`, the plot's own measurement of the cell it shares, so a
-    // circle in the key is the size a mark of that value is on the map beside it — at every window
-    // size, with no breakpoint and no second opinion about scale anywhere on the page.
-    `${SCOPE} .key-layer { position: relative; pointer-events: none; }`,
+    // Every swatch is sized off the KEY LAYER'S OWN INLINE SIZE, which the format's `-layer` rule
+    // makes the plot cell exactly — so a circle in the key is the size a mark of that value has on
+    // the map beside it, at every window size, with no breakpoint and no second opinion about scale
+    // anywhere on the page. It reads that size as a container query unit rather than off a custom
+    // property the trunk happens to publish: `--cell-w` was the trunk's own name for this number
+    // and the trunk is in the middle of replacing it, and a swatch sized from a property that
+    // stopped existing is a key with no circles in it and no error.
+    `${SCOPE} .key-layer { position: relative; pointer-events: none; container-type: inline-size; }`,
     `${SCOPE} .key { position: absolute; left: 2.5%; bottom: 3%; display: flex; flex-direction: column;` +
       ` align-items: flex-start; gap: 2px; padding: 5px 7px; background: ${ground};` +
       ` border: 1px solid ${grid}; border-radius: 3px; }`,
@@ -365,40 +369,16 @@ export function DirectedSymbolMapWeb({
         ))}
       </div>
 
-      {/* THE WINDOW, AND IT IS A SUPPLEMENT. The rail ships `hidden` and the script is what takes
-          it off, so a reader with no JavaScript gets the published plate with nothing dead on it —
-          not a button, not a tab stop, not a cursor that promises a drag. Real `<button>`s, because
-          zoom is a momentary action and not a state: the three are reachable by Tab, named in words
-          (an icon-only return is refused by `assertNavigateDeclaration`), and the return names
-          where it goes rather than drawing an arrow at it. */}
-      <fieldset className={`chart-${navChrome.name}`} hidden>
-        <legend>{navigate.label}</legend>
-        <div className="options">
-          {navControls.map((control) => (
-            <button
-              key={control.action}
-              type="button"
-              className="nav-pill"
-              data-nav-do={control.action}
-              aria-label={control.announce}
-            >
-              {control.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      {/* WHERE THE READER IS, IN WORDS AND IN A NUMBER. At scale 1 exactly one window fits inside
-          the camera's box, so `1,0` and "the framing the newsroom published" are the same fact —
-          which is why the return control is dead exactly when this reads 1,0. Both halves of the
-          sentence are in the markup and only the FIGURE is written by the script: a word a script
-          composed would be a glyph no embedded face was cut for. */}
-      <div className={`${navChrome.name}-notes`} id="nav-hint" role="status" hidden>
-        <p style={{ ...regs.annot, margin: 0 }}>
-          {navigate.hint.before}
-          <span className="nav-readout" data-nav-readout>1,0</span>
-          {navigate.hint.after}
-        </p>
+      {/* WHAT THE MAP IS, ONCE IT IS ALIVE — and nothing at all before that. The rail of bespoke
+          buttons this replaces was refused in one line: *"utilise les vrais controls de maptiler
+          pas des controls extérieurs"*. There is no button here any more; the controls are
+          MapLibre's own, added by the script to the live map, so with the script absent the page
+          carries no control of ours at all — not a dead one, not a tab stop, not a cursor that
+          promises a drag. This sentence ships `hidden` for the same reason, and the script is what
+          takes it off: a description of dragging a map that cannot be dragged is the same lie in
+          words. Every glyph of it is in the markup, so the page's cut faces were made for it. */}
+      <div className="live-hint" id="mw-hint" role="status" hidden>
+        <p style={{ ...regs.annot, margin: 0 }}>{live.hint}</p>
       </div>
 
       <div
@@ -410,6 +390,12 @@ export function DirectedSymbolMapWeb({
         }}
       >
         <div className="y-axis" />
+        {/* LAYER 2: AN EMPTY BOX, AND THE SCRIPT IS WHAT PUTS A MAP IN IT. It is a `-layer` child,
+            the format's own mechanism for a box that shares the plot cell exactly, so the live
+            camera is fitted into the SAME rectangle the plate was baked into and the swap on
+            `load` moves nothing. It comes BEFORE the drawing in the DOM so it paints behind it,
+            and it is `visibility: hidden` until the map is actually up. */}
+        <div className="map-layer" id="mw-map" />
         <svg
           role="group"
           aria-label={title}
@@ -431,15 +417,21 @@ export function DirectedSymbolMapWeb({
             </clipPath>
           </defs>
           <g clipPath="url(#camera)">
-          <rect x={0} y={0} width={width} height={height} fill={water} />
+          <rect data-plate="" x={0} y={0} width={width} height={height} fill={water} />
           {/* THE BASEMAP IS MAPTILER'S GEOGRAPHY, baked once per filed direction in that
               direction's own tints. The rect above is a backstop; the plate covers the box exactly,
               so `none` here is an identity and not a shear — the plot box carries the plate's own
               aspect, and the trunk now holds the plot CELL to that same ratio (this beat's cell
               measured 2,107 before that sweep: on a map an anisotropy is not a style defect, it is
               a false geography, and every circle on this page was an ellipse). */}
-          <image href={plate} x={0} y={0} width={width} height={height} preserveAspectRatio="none" />
-          <path d={land} fill={landFill} stroke={landEdge} strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+          {/* …AND BOTH GIVE WAY TO THE LIVE MAP, which is why they carry `data-plate`. Keeping
+              them under a live basemap would be the doubled basemap `style.mjs`'s own
+              `assertNoDoubledBasemap` refuses: two datasets that do not draw the same coast, offset
+              by a hair. They are invisible as a pair here only because the plate and this path were
+              captured through the same camera — which stops being true the moment the reader
+              zooms past the plate's own pixel density. */}
+          <image data-plate="" href={plate} x={0} y={0} width={width} height={height} preserveAspectRatio="none" />
+          <path data-plate="" d={land} fill={landFill} stroke={landEdge} strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
 
           {/* THE MARKS. Drawn ONCE, at the default law's radius, largest first so a small symbol is
               never buried under a large one. Every other state is a uniform `scale()` about each
@@ -456,7 +448,7 @@ export function DirectedSymbolMapWeb({
               // the fill box); the window's own factor is a different question with a different
               // clock, so it goes on a group about the mark's own centre and the two compose by
               // nesting instead of fighting over one property.
-              <g key={s.key} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
+              <g key={s.key} data-map-fixed="" style={fixedAt(s.cx, s.cy)}>
                 <circle
                   data-symbol={s.key}
                   data-mark={s.key}
@@ -482,7 +474,7 @@ export function DirectedSymbolMapWeb({
               The pointer never depends on it anyway — `data-hit="cell"` resolves to the nearest
               CENTRE, and no centre moves. */}
           {symbols.map((s) => (
-            <g key={`hit-${s.key}`} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
+            <g key={`hit-${s.key}`} data-map-fixed="" style={fixedAt(s.cx, s.cy)}>
               <circle
                 className="pt"
                 data-mark-ref={s.key}
@@ -520,7 +512,7 @@ export function DirectedSymbolMapWeb({
               // because every label's anchor travels with the zoom while none of them grows, the
               // distance between any two is multiplied by the scale. A zoom on this page can
               // therefore only ever RESOLVE an overlap and can never create one.
-              <g key={`l-${s.key}`} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
+              <g key={`l-${s.key}`} data-map-fixed="" style={fixedAt(s.cx, s.cy)}>
               <text
                 pointerEvents="none"
                 x={s.cx}
@@ -572,8 +564,8 @@ export function DirectedSymbolMapWeb({
                   <svg
                     viewBox={`0 0 ${keyBox * 2} ${boxH * 2}`}
                     style={{
-                      width: `calc(var(--cell-w) * ${keyBox * 2} / ${width})`,
-                      height: `calc(var(--cell-w) * ${boxH * 2} / ${width})`,
+                      width: `${(((keyBox * 2) / width) * 100).toFixed(4)}cqw`,
+                      height: `${(((boxH * 2) / width) * 100).toFixed(4)}cqw`,
                     }}
                   >
                     <circle
@@ -602,12 +594,23 @@ export function DirectedSymbolMapWeb({
       <p className="chart-reading" style={{ ...regs.body, margin: "6px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
 
-      {/* THE ONE SCRIPT THIS PAGE ADDS, and it is added LAST — after everything it wires, so it
-          needs no readiness dance of its own, and after the plate, so the page a reader sees is
-          complete before a line of it runs. It writes the svg's own `viewBox` and one custom
-          property, and nothing else on the page: no coordinate is recomputed and no word is
-          composed. */}
-      <script dangerouslySetInnerHTML={{ __html: navigateScript(navigate, { scope: SCOPE }) }} />
+      {/* THE SECOND LAYER, ADDED LAST — after everything it wires, so it needs no readiness dance
+          of its own, and after the plate, so the page a reader sees is COMPLETE before a line of it
+          runs. The plan travels as JSON rather than baked into the script, because the font machine
+          reads `application/json` payloads when it decides which characters this page can display
+          (a word only a live map ever prints is in no text node and in no attribute).
+          MapLibre is inlined rather than linked: a `<script src>` would trade the payload for a
+          SECOND third-party host, and one — api.maptiler.com — is the honest reading of R1. */}
+      <script
+        type="application/json"
+        id="mw-live-plan"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(liveBasemapPlan(live)).replace(/</g, "\\u003c") }}
+      />
+      <style dangerouslySetInnerHTML={{ __html: maplibreCss }} />
+      <script dangerouslySetInnerHTML={{ __html: maplibreJs }} />
+      <script
+        dangerouslySetInnerHTML={{ __html: liveBasemapScript(live, { scope: SCOPE, styleModule }) }}
+      />
     </figure>
   );
 }
