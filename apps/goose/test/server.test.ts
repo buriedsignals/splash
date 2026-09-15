@@ -284,6 +284,7 @@ describe("search_inspiration tool", () => {
     ]);
     const tool = tools.find((t) => t.name === "search_inspiration")!;
     expect(tool.description).toMatch(/never a credential/i);
+    expect(tool.description).toStartWith("Search the Infoviz gallery once");
   });
 
   it("should return the formatted text and the structured result", async () => {
