@@ -19,8 +19,7 @@ treatment. What the journalist does with the list is theirs.
 
 Five rules shape it:
 
-1. **One search per request.** The gallery rations searches per address (five a day without an
-   account). The skill sends the journalist's own subject once. It never rephrases, never retries
+1. **One search per request.** The gallery rations searches per day and per address. The skill sends the journalist's own subject once. It never rephrases, never retries
    with other words, and never runs a second query to "improve" the list.
 2. **The raw list, unedited, shown whole.** No ranking, no summary, no grouping by technique, no
    truncating and no picking highlights — every item the gallery returned is shown, exactly as it
