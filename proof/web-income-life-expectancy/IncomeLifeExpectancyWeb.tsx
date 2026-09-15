@@ -306,11 +306,11 @@ export function IncomeLifeExpectancyWeb({
 
       {/* A narrowed view is a partial view and the title states the whole cloud, so every narrowed
           option prints its own count against the total, both numbers off the beat's frozen data. */}
-      {filterNotes.map((note) => (
-        <p className="filter-note" data-filter-note={note.slug} key={note.slug}>
-          {note.text}
-        </p>
-      ))}
+      <div className="filter-notes" role="status">
+        {filterNotes.map((note) => (
+          <p data-filter-note={note.slug} key={note.slug}>{note.text}</p>
+        ))}
+      </div>
 
       {/* Both axes stated explicitly — the scatter doctrine's own rule: "a bare number axis on a
           scatter is close to unreadable... unlike a bar chart's shared baseline there is no other

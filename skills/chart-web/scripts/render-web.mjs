@@ -66,6 +66,7 @@ import {
   filterNotes,
   filterOptionsForMarkup,
 } from "../assets/filter.ts";
+import { controlChromeCss } from "../assets/control-chrome.ts";
 import { assertInteractionPlan } from "../assets/interaction-plan.ts";
 import {
   ChartWebSeed,
@@ -78,6 +79,25 @@ import {
  *  Declared once here so the stylesheet, the markup's ids and the guard all read one pair. */
 const FILTER_SCOPE = ".chart-figure";
 const FILTER_ID_PREFIX = "chart-filter";
+
+/** THE ONE KNOB THIS TRUNK CHROME CANNOT SET, AND WHY IT SETS NOTHING.
+ *
+ *  A vocabulary reserves a measured number of lines under its control so that choosing an option
+ *  never pushes the plot down. This chrome cannot: it is emitted once for EVERY beat that declares a
+ *  filter, and those beats' sentences are not one length. Measured on the three that declare one
+ *  today: `web-income-life-expectancy` writes 38 characters ("Showing Africa — 49 of 164
+ *  countries."), the seed 39, and `web-heatmap-europe-electricity` 215 — one sentence that sets on
+ *  a single 18px line at 1512 and at 375, and another that wraps to four lines at 1512 and to nine
+ *  at 375. Any single number here would be right for one of them and wrong for the other, which is
+ *  worse than none: an over-reserve is dead space under every filter beat in the corpus, and an
+ *  under-reserve is the defect the reserve exists to stop, still present and now also lying.
+ *
+ *  So `null` — the row costs nothing until a sentence appears, which is exactly what this chrome
+ *  has always done. What it buys instead, and did not have before, is the live region: the notes now
+ *  sit in one `.filter-notes` container carrying `role="status"`, so a narrowed view is ANNOUNCED
+ *  rather than merely drawn. Reserving it per beat needs a per-beat knob and is recorded, not
+ *  smuggled in under a number nobody measured. */
+const FILTER_NOTE_RESERVE = null;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -382,103 +402,58 @@ const PLOT_FLOOR_PX = 120;
  * reference rule and every piece of furniture carry no `data-filter` at all, so the frame a reader
  * is comparing against never moves when the marks inside it do.
  */
-const FILTER_CHROME_CSS = `
-/* The filter this beat declared. Native radios in a real <fieldset>: reachable and operable from
-   the keyboard with no help from this stylesheet or the inline script, and the hiding rules
-   (generated per option by filter.ts) are PURE CSS — :checked plus :has() on the enclosing figure —
-   so the control works identically with the inline script absent. */
-.chart-filter { flex: 0 0 auto; }
-.chart-filter {
-  margin: 12px 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
+/**
+ * THE FILTER'S CHROME WAS THE TWENTY-FIRST COPY OF A DRAWING THAT NOW HAS ONE HOME.
+ *
+ * Every vocabulary in `assets/` used to carry its own forty lines of fieldset, legend, pill rail and
+ * reserved note row, and this block — the one `filter.ts` and `hold.ts` borrow, because neither has
+ * a chrome of its own — was the twenty-first. `control-chrome.ts` now draws all of them. What was
+ * lost by leaving it behind was not theoretical: for as long as it stayed, every beat with a FILTER
+ * would have kept the solid ink capsule the owner refused three times while every other control on
+ * the same corpus had been redrawn, which is a worse page than the defect.
+ *
+ * WHAT CHANGED IN THE DRAWING, beyond the shared file's own reversal (the chosen option is a 22 %
+ * wash of the direction's accent, a full-strength ring and darkened words, not `--ink` on
+ * `--ground`): the sentence row is RESERVED. It used to be `.filter-note` paragraphs with no
+ * container and no reserve, so revealing one pushed the plot down by its own height, and it carried
+ * no `role="status"` — a narrowed view announced nothing. The notes now sit in one
+ * `.filter-notes` live region, exactly as the other twenty controls' do.
+ *
+ * ONE OVERTURN FROM THE BLOCK THIS REPLACES, CARRIED FORWARD RATHER THAN DROPPED. The old comment
+ * ended with four dimming rules and the sentence that filtering "only ever dims, never removes,
+ * which is what keeps every point reachable and every hover/focus answer honest". That was
+ * overturned before this rewrite and stays overturned, for two reasons worth meeting again:
+ *
+ *   - **Dimming cannot satisfy what a filter is for.** A datum at `opacity: 0.2` is still on the
+ *     page, still in the tab order, still answers a hover with its own value. "Everything that
+ *     value drew disappears together" is not expressible as an opacity; the label left behind after
+ *     its mark was hidden (B6.18b) is the same defect one shade lighter.
+ *   - **Two formats cannot mean two things by one word.** `map-web` has always removed. A
+ *     vocabulary vendored into both that dimmed in one and removed in the other would be one name
+ *     over two behaviours, which is the thing this whole rework exists to end.
+ *
+ * What the dimming was protecting is kept by a different mechanism: the axis, the grid, the
+ * reference rule and every piece of furniture carry no `data-filter` at all, so the frame a reader
+ * is comparing against never moves when the marks inside it do.
+ *
+ * The rules that decide WHAT is hidden are still not here: they are generated per option by
+ * `filter.ts`'s `filterCss`, over `[data-filter]`, so no element type is ever named twice.
+ */
+function filterChromeCss() {
+  return controlChromeCss({
+    scope: FILTER_SCOPE,
+    name: "filter",
+    notes: {
+      // 8px UNDER the row, not the module's default of nothing. The top y-axis label hangs half a
+      // line above the plot (`.axis-label.y` is `translateY(-50%)` at `top: 0`), so a sentence with
+      // no clearance below it is overprinted by "950 mm" — seen in the render, not reasoned about.
+      // The block this replaced spent the same 8px on the paragraph itself; it is spent on the row
+      // now, so it is there whether or not a sentence is showing.
+      margin: "4px 0 8px",
+      reserve: FILTER_NOTE_RESERVE,
+    },
+  });
 }
-/* float:left is not a layout instruction here -- inside a flex container float is ignored
-   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
-   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
-   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
-   above can lay it out on the same line as the options. Without it the browser puts the legend on
-   a row of its own -- verified in the render, and worth ~20px of the vertical budget the
-   window-fit rule above is spending. */
-.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-.chart-filter input { cursor: pointer; margin: 0; }
-
-/* THE NARROWING NOTE — the reader-facing consequence, and it is not optional. A filtered view is a
-   PARTIAL view while the title above it states the whole claim, so every narrowed option reveals
-   one sentence counting what is shown against what the beat draws ("Showing Above 8 t — 4 of 27
-   countries."). Both numbers are derived from the beat's own frozen data by filter.ts's
-   filterNotes(), never typed. The unfiltered option reveals nothing, because it IS the claim.
-   Hidden by default and revealed by the same :checked mechanism that narrows the marks, so it
-   works with JavaScript off. */
-.filter-note {
-  margin: 0 0 8px;
-  font-size: var(--source-size);
-  color: var(--muted);
-  flex: 0 0 auto;
-}
-
-/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
-   above rather than replacing them. The owner's read of the first shipped filter was that plain
-   radios read as a placeholder, and they did: default blue dots with a bare word beside each,
-   indistinguishable from an unfinished form.
-   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
-   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
-   change is its parent <label>), so an engine without :has() could not draw a checked pill at
-   all -- and rather than leave such an engine with identical unlit pills and a hidden input, the
-   entire block is dropped there and the reader gets the plain native radios above, which state
-   their own checked-ness without any help. That is the same engine in which this format's hiding
-   rules could not work either, so the fallback is not a second design to maintain -- it is the
-   design this format already had.
-   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
-   reserved for the subject (visual-system.md), and a control that borrowed it would make the one
-   colour that means something in this frame also mean "you clicked here". ink/ground is the
-   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
-   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
-   change between states -- a bolder checked label is wider, and the unchecked pills beside it
-   would shift sideways every time the reader changed their mind.
-   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
-   background is overridden by the OS and the checked state loses its only signal. Nothing else in
-   this format honours forced colours either (the chart is SVG with explicit fills, which that mode
-   does not touch), so handling it here alone would be a half-measure -- see
-   references/web-discipline.md. */
-@supports selector(:has(*)) {
-  .chart-filter .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  .chart-filter label {
-    gap: 0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  .chart-filter label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  .chart-filter label:hover { color: var(--ink); }
-  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
 
 /**
  * THE ENTRANCE — the whole of it, and it is emitted ONLY for a beat that declared layers.
@@ -571,7 +546,7 @@ function buildCss({ ground, accent, ink, muted, grid, plot, filter = null, entra
   // weight in every delivered file because the stylesheet was written for one beat and handed to
   // every beat. `filterChrome` is now the whole cost and it is an empty string without a
   // declaration, which is what makes "removable" literal.
-  const filterChrome = filter ? FILTER_CHROME_CSS : "";
+  const filterChrome = filter ? filterChromeCss() : "";
   const filterRules = filterCss(filter, { scope: FILTER_SCOPE, idPrefix: FILTER_ID_PREFIX });
   // THE SAME GATE THE FILTER PAYS, for the same reason. `entrance` is not a flag a runner sets: it
   // is read back off the SSR'd markup by `renderWeb` below — true only when the beat's own

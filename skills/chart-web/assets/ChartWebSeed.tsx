@@ -697,12 +697,16 @@ export function ChartWebSeed({
           that narrows the marks. A filtered view is a partial view while the title above states the
           whole claim; this is the sentence that stops the two contradicting each other silently.
           Both of its numbers come from the beat's own frozen data (`filterNotes`), so nobody can
-          edit the count and not the total. */}
-      {filterNotes.map((note) => (
-        <p className="filter-note" data-filter-note={note.slug} key={note.slug}>
-          {note.text}
-        </p>
-      ))}
+          edit the count and not the total.
+          ONE CONTAINER, and it carries the live region rather than each sentence: the notes come
+          and go by `display`, and a live region that itself comes and goes announces nothing. This
+          is the shape every other control in `assets/` already had — the filter was the last one
+          styling its paragraphs loose. */}
+      <div className="filter-notes" role="status">
+        {filterNotes.map((note) => (
+          <p data-filter-note={note.slug} key={note.slug}>{note.text}</p>
+        ))}
+      </div>
 
       <div
         className="chart-plot"

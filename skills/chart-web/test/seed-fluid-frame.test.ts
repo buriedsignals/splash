@@ -30,6 +30,7 @@ import {
   buildCss,
   plotViewBoxOf,
 } from "../scripts/render-web.mjs";
+import { controlChromeCss } from "../assets/control-chrome.ts";
 
 const HERE = import.meta.dirname;
 
@@ -501,7 +502,18 @@ describe("the filter — declared by the beat, default view complete, native con
     );
   });
 
-  it("should paint the checked pill from the derived furniture, never a literal colour", () => {
+  /**
+   * REWRITTEN, AND THE CLAUSE IT REPLACES IS QUOTED SO THE REVERSAL IS MET RATHER THAN LOST. This
+   * test used to require `background: var(--ink); color: var(--ground)` and to FORBID the accent,
+   * on the reasoning that "the accent stays reserved for the subject — a control that borrowed it
+   * would make the one colour that means something in this frame also mean 'you clicked here'".
+   * That reasoning is sound about a MARK and it is overruled about FURNITURE by the owner's own
+   * arbitration, which he made on three different beats in three different words: « le fait
+   * d'utiliser du noir au filtre et vu qu'il y a plein de traits c'est peu lisible », « l'encadré
+   * gris au filtre c'est moche », « la colorisation des filtres n'est pas lisible avec le texte ».
+   * The contrast was never the defect — white on black measures 21,0:1 — the WEIGHT was.
+   */
+  it("should paint the chosen pill as a wash, a ring and darker words, never a slab of ink", () => {
     const css = buildCss({ plot: FRAME,
       filter: SEED_FILTER,
       ground: "#FFFFFF",
@@ -512,11 +524,94 @@ describe("the filter — declared by the beat, default view complete, native con
     });
     const at = css.indexOf(".chart-filter label:has(input:checked)");
     const checkedRule = css.slice(at, css.indexOf("}", at));
-    expect(checkedRule).toContain("background: var(--ink)");
-    expect(checkedRule).toContain("color: var(--ground)");
-    // The accent stays reserved for the subject — a control that borrowed it would make the one
-    // colour that means something in this frame also mean "you clicked here".
-    expect(checkedRule).not.toContain("var(--accent)");
+    expect(checkedRule).toContain(
+      "background: color-mix(in srgb, var(--accent) 22%, var(--ground))",
+    );
+    expect(checkedRule).toContain("border-color: var(--accent)");
+    expect(checkedRule).toContain("color: var(--ink)");
+    // The slab is gone, and the test says so in the terms the defect was reported in.
+    expect(checkedRule).not.toContain("background: var(--ink)");
+    // Still no literal colour anywhere: every value is a custom property the direction filed.
+    expect(checkedRule).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+  });
+
+  /**
+   * THE TWENTY-FIRST COPY CANNOT COME BACK.
+   *
+   * `filter.ts` and `hold.ts` have no chrome of their own: they borrow this one, and for as long as
+   * it was written out here it was the twenty-first byte-for-byte copy of a drawing that now has
+   * one home. Equality against the module's own output — not a list of properties — is what makes a
+   * local edit here impossible to make quietly, which is the whole failure mode: twenty copies held
+   * together by the eye, and the eye had already let two of them drift to a flex value the owner
+   * had arbitrated against.
+   */
+  it("should be the shared control chrome itself, not a copy of it", () => {
+    const css = buildCss({ plot: FRAME,
+      filter: SEED_FILTER,
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    expect(css).toContain(
+      controlChromeCss({
+        scope: ".chart-figure",
+        name: "filter",
+        // The same two arguments the renderer passes, restated rather than imported: the equality
+        // then fails if EITHER the module's drawing or this format's use of it drifts. `reserve:
+        // null` because this one chrome serves every filter beat and their sentences run from 38
+        // characters to 215 — see `FILTER_NOTE_RESERVE` for why no single number is defensible.
+        notes: { margin: "4px 0 8px", reserve: null },
+      }),
+    );
+  });
+
+  /**
+   * BOTH OF LOT 2's MEASURED FINDINGS, CHECKED ON THIS COPY TOO. One of twenty carried
+   * `min-inline-size: 0`, and this copy was not it: a `<fieldset>` defaults to
+   * `min-inline-size: min-content` and a flex item to `min-width: auto`, so a rail that cannot wrap
+   * takes the DOCUMENT with it (1351px in a 375px window, measured on
+   * proof/web-slope-europe-lowcarbon). Latent rather than live on the three beats that declare a
+   * filter — the seed and the heatmap both measured 375/375 at 375px before this change, because
+   * their rails happen to fit — and closed by construction now.
+   *
+   * The other finding, `flex: 0 0 auto` on the options row, this copy did NOT carry: it declared no
+   * flex at all, which computes to the `0 1 auto` the owner arbitrated for. Asserted anyway, since
+   * "correct by default" is exactly how fourteen of the twenty were correct.
+   */
+  it("should let the options row shrink, and never push the document wider than the window", () => {
+    const css = buildCss({ plot: FRAME,
+      filter: SEED_FILTER,
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    const fieldset = css.slice(
+      css.indexOf(".chart-filter {"),
+      css.indexOf("\n}", css.indexOf(".chart-filter {")),
+    );
+    expect(fieldset).toContain("min-inline-size: 0");
+    expect(fieldset).toContain("min-width: 0");
+    const options = css.slice(
+      css.indexOf(".chart-filter .options {"),
+      css.indexOf("}", css.indexOf(".chart-filter .options {")),
+    );
+    expect(options).toContain("flex: 0 1 auto");
+    expect(options).not.toContain("flex: 0 0 auto");
+    expect(options).toContain("min-width: 0");
+  });
+
+  /** The sentence is announced, not merely drawn — and it is announced from ONE container, because
+   *  the notes come and go by `display` and a live region that itself comes and goes announces
+   *  nothing. This is the shape every other control in `assets/` already had. */
+  it("should put the narrowing sentences in one live region", () => {
+    const markup = renderSeed();
+    expect(markup).toContain('<div class="filter-notes" role="status">');
+    expect(markup).toContain('<p data-filter-note=');
+    expect(markup).not.toContain('class="filter-note"');
   });
 
   it("should never gate the reference rule — a level, not a reading — behind the filter", () => {

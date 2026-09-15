@@ -203,11 +203,11 @@ export function DirectedHeatmapWeb({
           whole claim; and this is where the band's DERIVED reading lives — what the survivors still
           cover, and how few of them it takes — which is the only channel those numbers are on. The
           unfiltered option reveals none, because it is not a subset: it is the claim. */}
-      {notes.map((note) => (
-        <p className="filter-note" data-filter-note={note.slug} key={note.slug}>
-          {note.text}
-        </p>
-      ))}
+      <div className="filter-notes" role="status">
+        {notes.map((note) => (
+          <p data-filter-note={note.slug} key={note.slug}>{note.text}</p>
+        ))}
+      </div>
 
       <div
         className="chart-plot"
