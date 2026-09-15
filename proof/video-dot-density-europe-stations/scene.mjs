@@ -78,3 +78,27 @@ export function sceneAt(props, frame) {
     bar: { share: props.shareSites + (props.shareCapacityExact - props.shareSites) * weight, shown: at("named") },
   };
 }
+
+// ── the live map ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The fields the map plan's paints are bound to, besides the camera (`map-plan.mjs`). */
+export const mapFieldsOf = (fuels) => ["weight", "named", ...fuels.flatMap((_, i) => [`fill${i}`, `edge${i}`])];
+
+/**
+ * THE LIVE MAP AT `frame`, IN NUMBERS: the still camera, the weight every radius grows with, the rings' presence, and
+ * for each fuel (in arrival order) its dots' fill and outline opacity — arrived, stepped back unless it is the subject,
+ * the fill lightening and the outline set once the dots grow.
+ *
+ * @param {{ cameras: { whole: any }, subjectFuel: string } & Parameters<typeof sceneAt>[0]} props
+ */
+export function mapStateAt(props, frame) {
+  const scene = sceneAt(props, frame);
+  const state = { ...props.cameras.whole, weight: scene.weight, named: scene.named };
+  props.fuels.forEach(({ fuel }, i) => {
+    const stepped = fuel === props.subjectFuel ? 1 : 1 - (1 - STEPPED_BACK) * scene.focus;
+    const shown = scene.shown[fuel] * stepped;
+    state[`fill${i}`] = shown * (1 - 0.45 * scene.weight);
+    state[`edge${i}`] = scene.weight > 0 ? shown : 0;
+  });
+  return state;
+}

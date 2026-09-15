@@ -1,8 +1,13 @@
-// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the key and where it stands, the land, every
-// station's place and weight, the colours and the states.
+// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the colours, the live map's plan and its still
+// camera, every station's weight, the key and the credit placed on the MEASURED map, and the states.
+//
+// The map is MapTiler's, drawn live under the overlay (`DirectedDotDensityVideo.tsx`). Where the sea is under a box is
+// not computed here: `measure.mjs` read it once on the real map and froze it in `measured.json`, with the digest of
+// the plan it was read on. A plan that changed since is refused.
 //
 // Runs in Bun only.
 
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
@@ -15,8 +20,10 @@ import { plateTints } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
 import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
+import { camerasOf, mapPlanFor, mapSeatsOf, projectorOf } from "./map-plan.mjs";
+import { planDigestOf } from "./measure.mjs";
 import { statesFor } from "./states.mjs";
-import { dotGeometry, loadSubject, SUBJECT } from "./subject.mjs";
+import { loadSubject, SUBJECT } from "./subject.mjs";
 import { DOT_VIDEO_TIMING } from "./timing-contract.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -26,8 +33,8 @@ export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const SEAT_STEP = 10;
-const LAND_CELL = 12;
-const MAP_MARGIN = 200;
+/** Two measured cells are one colour when no channel differs by more than this — the tolerance of a cell's mean. */
+const SAME_CELL = 3;
 /** A station at the overview: the static plate's rule, a point that reads as texture in the densest region. */
 const DOT_R = 2.2; // px
 /** The largest station's radius once every dot has its weight: area ∝ capacity. */
@@ -44,9 +51,17 @@ const BAR_GAP = 0.3;
 const TO_SYMBOLS = 0.45;
 const SYMBOL_GAP = 0.35;
 
+/** The stage's content box: the frame the whole-map camera fits. */
+export function contentOf() {
+  const { width, height } = sizeFor(SIZE);
+  const inset = frameInsetFor(SIZE);
+  const vInset = verticalInsetFor(SIZE);
+  return { x: inset, y: vInset, w: width - 2 * inset, h: height - 2 * vInset };
+}
+
 export function loadBeat() {
   const subject = loadSubject();
-  return { subject, states: statesFor(), copy: copyOf(subject) };
+  return { subject, states: statesFor(), copy: copyOf(subject), cameras: camerasOf(subject, contentOf()), mapSeats: mapSeatsOf(subject) };
 }
 
 const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
@@ -54,6 +69,7 @@ const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximum
 
 export function copyOf(subject) {
   const { total, nuclear, shareSites, shareCapacity } = subject;
+  const attribution = `©${NB}MapTiler ©${NB}OpenStreetMap`;
   return {
     eyebrow: "Énergie · Europe",
     title: [`${nuclear} réacteurs sur ${n0(total)} centrales bas-carbone — et un tiers de la puissance`, `${nuclear} sites nucléaires, un tiers de la puissance bas-carbone`],
@@ -64,7 +80,8 @@ export function copyOf(subject) {
     dot: "une centrale",
     ring: "nucléaire",
     reference: `${n0(REFERENCE_MW)}${NB}MW`,
-    source: ["Source : WRI Global Power Plant Database v1.3.0 · contours Natural Earth 50 m", "Source : WRI Global Power Plant Database · Natural Earth", "Source : WRI Global Power Plant Database"].map((f) => f.replace(" · ", `${NB}· `)),
+    // One line, over open sea, with the map's attribution: the longest form the measured sea holds is set.
+    source: [`Source${NB}: WRI Global Power Plant Database · ${attribution}`, `WRI Global Power Plant Database · ${attribution}`, `WRI · ${attribution}`, attribution].map((f) => f.replaceAll(" · ", `${NB}· `)),
     shareCapacity: Number(shareCapacity.toFixed(1)),
   };
 }
@@ -80,18 +97,47 @@ export function textPerRegisterOf(copy) {
   };
 }
 
-function insideRing(ring, x, y) {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-}
 const touches = (a, b, gap = 0) => a.x < b.x + b.width + gap && b.x < a.x + a.width + gap && a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
 
-export function buildDirection(id, { subject, states, copy }) {
+// ── the measured map ─────────────────────────────────────────────────────────────────────────────────
+
+const MEASURED = join(HERE, "measured.json");
+let measuredCache = null;
+/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+export function readMeasured() {
+  if (measuredCache) return measuredCache;
+  if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
+  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  return measuredCache;
+}
+/** The measured colour of the cell under a stage point. */
+export const cellAt = (grid, x, y) => grid.colours[Math.min(grid.rows - 1, Math.max(0, Math.floor(y / grid.cell))) * grid.cols + Math.min(grid.cols - 1, Math.max(0, Math.floor(x / grid.cell)))];
+export const near = (a, b, tolerance = SAME_CELL) => [1, 3, 5].every((k) => Math.abs(Number.parseInt(a.slice(k, k + 2), 16) - Number.parseInt(b.slice(k, k + 2), 16)) <= tolerance);
+/** HOW MANY CELLS OF A KIND a box covers, in constant time: a summed-area table over the grid. */
+export function countOf(grid, kind) {
+  const { cols, rows } = grid;
+  const sums = new Float64Array((cols + 1) * (rows + 1));
+  for (let j = 0; j < rows; j++)
+    for (let i = 0; i < cols; i++) sums[(j + 1) * (cols + 1) + i + 1] = (kind(grid.colours[j * cols + i]) ? 1 : 0) + sums[j * (cols + 1) + i + 1] + sums[(j + 1) * (cols + 1) + i] - sums[j * (cols + 1) + i];
+  return (box) => {
+    const i0 = Math.max(0, Math.floor(box.x / grid.cell));
+    const i1 = Math.min(cols - 1, Math.floor((box.x + box.width) / grid.cell)) + 1;
+    const j0 = Math.max(0, Math.floor(box.y / grid.cell));
+    const j1 = Math.min(rows - 1, Math.floor((box.y + box.height) / grid.cell)) + 1;
+    const at = (i, j) => sums[j * (cols + 1) + i];
+    return { count: at(i1, j1) - at(i0, j1) - at(i1, j0) + at(i0, j0), total: (i1 - i0) * (j1 - j0) };
+  };
+}
+
+// ── one direction ────────────────────────────────────────────────────────────────────────────────────
+
+/** A station's radius once every dot has its weight: area ∝ capacity, never under the floor. */
+export const weightRadiusOf = (mw, maxMw) => Math.max(WEIGHT_FLOOR_R, WEIGHT_R * Math.sqrt(mw / maxMw));
+
+/**
+ * @param {{ measured?: any }} [options]  `measured: null` builds the plan and the camera only — what `measure.mjs` reads.
+ */
+export function buildDirection(id, { subject, states, copy, cameras }, { measured = undefined } = {}) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, `${id}.md`)), textPerRegisterOf(copy));
   const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
   const registers = videoRegistersOf(resolved, SIZE);
@@ -115,31 +161,6 @@ export function buildDirection(id, { subject, states, copy }) {
   });
   if (!credits.length) throw new Error("no form of the source holds one line");
   const sourceRegister = credits[0].register;
-
-  // ── the map: the window fitted to the frame's content box, the land running past it to the frame's edges ─────
-  const content = { x: inset, y: vInset, w: stage.width - 2 * inset, h: stage.height - 2 * vInset };
-  const geometry = dotGeometry(subject, { box: content, stage, margin: MAP_MARGIN });
-  const landAt = (x, y) => geometry.rings.some((ring) => insideRing(ring, x, y));
-  const dotsIn = (box) => geometry.dots.some((d) => d.x >= box.x - 3 && d.x <= box.x + box.width + 3 && d.y >= box.y - 3 && d.y <= box.y + box.height + 3);
-  const weightOf = (mw) => Math.max(WEIGHT_FLOOR_R, WEIGHT_R * Math.sqrt(mw / subject.maxMw));
-  /** Whether any station's disc, at its largest (its weight, or the dot and its ring), touches the box. */
-  const discsIn = (box) =>
-    geometry.dots.some((d) => {
-      const r = Math.max(weightOf(d.mw), 3.2 * DOT_R) + 2;
-      const nx = Math.min(Math.max(d.x, box.x), box.x + box.width);
-      const ny = Math.min(Math.max(d.y, box.y), box.y + box.height);
-      return Math.hypot(d.x - nx, d.y - ny) < r;
-    });
-  const landShare = (box) => {
-    let covered = 0;
-    let total = 0;
-    for (let y = box.y + LAND_CELL / 2; y < box.y + box.height; y += LAND_CELL)
-      for (let x = box.x + LAND_CELL / 2; x < box.x + box.width; x += LAND_CELL) {
-        total++;
-        if (landAt(x, y)) covered++;
-      }
-    return total ? covered / total : 0;
-  };
 
   // ── colours ─────────────────────────────────────────────────────────────────────────────────────────────────
   const { ground, accent } = direction;
@@ -166,10 +187,46 @@ export function buildDirection(id, { subject, states, copy }) {
       count: onSea(accent, "a count"),
       subject: onSea(subjectInk, "the nuclear count"),
       key: onSea(muted, "the key"),
-      source: [sea, land].map((on) => adjustToContrast(muted, on, TEXT_CONTRAST_MIN)).find((c) => c && contrast(c, sea) >= TEXT_CONTRAST_MIN && contrast(c, land) >= TEXT_CONTRAST_MIN),
+      // The credit stands on the open sea.
+      source: onSea(muted, "the credit"),
     },
   };
   if (contrast(sea, land) < 1.05) throw new Error(`the land ${land} cannot be told from the sea ${sea}`);
+  const strokes = { hairline: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k };
+
+  // ── the live map: every station at its place, split by fuel and by the size it grows to ──────────────────────
+  const fuels = subject.arrival.map((fuel) => ({ fuel, n: subject.byFuel[fuel].n }));
+  const stations = Object.fromEntries(fuels.map(({ fuel }) => [fuel, subject.stations.filter((s) => s.fuel === fuel).map((s) => ({ lon: s.lon, lat: s.lat, mw: s.mw, w: weightRadiusOf(s.mw, subject.maxMw) }))]));
+  const mapPlan = mapPlanFor({ fuels, stations, colours, strokes, dotR: DOT_R, ringR: 3.2 * DOT_R, cameras });
+  /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
+  const drive = { cameras, fuels, subjectFuel: SUBJECT, total: subject.total, shareCapacity: copy.shareCapacity, shareCapacityExact: subject.shareCapacity, shareSites: subject.shareSites, states, timing: DOT_VIDEO_TIMING };
+  if (measured === null) return { props: { mapPlan, ...drive } };
+  measured ??= readMeasured();
+  if (measured.planDigest?.[id] !== planDigestOf(mapPlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
+  if (measured.size.width !== stage.width || measured.size.height !== stage.height)
+    throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
+  const { grid, projected } = measured.cameras[id].whole;
+  const measuredSea = cellAt(grid, ...projected.atlantic);
+  if (!near(measuredSea, sea)) throw new Error(`${id}: the measured sea ${measuredSea} is not the plate's sea ${sea}`);
+  /** Not sea: the land, and every station drawn over the sea (the measured frame is the last, every dot at its weight). */
+  const landIn = countOf(grid, (c) => !near(c, measuredSea));
+  const landShare = (box) => {
+    const { count, total } = landIn(box);
+    return total ? count / total : 0;
+  };
+  const project = projectorOf(cameras.whole, stage);
+  const dots = subject.stations.map((s) => {
+    const [x, y] = project([s.lon, s.lat]);
+    return { x, y, fuel: s.fuel, mw: s.mw };
+  });
+  /** Whether any station's disc, at its largest (its weight, or the dot and its ring), touches the box. */
+  const discsIn = (box) =>
+    dots.some((d) => {
+      const r = Math.max(weightRadiusOf(d.mw, subject.maxMw), 3.2 * DOT_R) + 2;
+      const nx = Math.min(Math.max(d.x, box.x), box.x + box.width);
+      const ny = Math.min(Math.max(d.y, box.y), box.y + box.height);
+      return Math.hypot(d.x - nx, d.y - ny) < r;
+    });
 
   // ── the key: three counts, then the dot, the ring and the size reference ────────────────────────────────────
   const pad = haloOf(axis, k) / 2;
@@ -220,7 +277,7 @@ export function buildDirection(id, { subject, states, copy }) {
     referenceR: refR,
     bar: { x: pad, y: barY, width: widest, height: BAR_H * axis.lead },
   };
-  // At the left margin, the height whose box holds no station and the least land.
+  // At the left margin, the height whose box holds no station and the least measured land.
   let keyAt = null;
   for (let ky = vInset; ky + key.height <= stage.height - vInset; ky += SEAT_STEP) {
     const box = { x: inset, y: ky, width: key.width, height: key.height };
@@ -232,16 +289,14 @@ export function buildDirection(id, { subject, states, copy }) {
   if (!keyAt) throw new Error(`a ${key.width}×${key.height} key finds no place at the left margin clear of every station`);
   const keyBox = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
 
-  // ── the credit: one line, in the lowest, leftmost corner clear of the key and of every station at its weight ────
-  // One line is wider than the Atlantic under the key, so it may cross land where no station stands (North Africa), in
-  // an ink that reads on the sea and on the land.
+  // ── the credit: one line over open sea, in the lowest, leftmost corner clear of the key and every station ─────
   let creditAt = null;
   let credit = null;
   for (const form of credits) {
     search: for (let cy = stage.height - vInset - form.height; cy >= vInset; cy -= SEAT_STEP)
       for (let cx = inset; cx + form.width <= stage.width - inset; cx += SEAT_STEP) {
         const box = { x: cx, y: cy, width: form.width, height: form.height };
-        if (touches(box, keyBox, gap) || discsIn(box)) continue;
+        if (landIn(box).count || touches(box, keyBox, gap) || discsIn(box)) continue;
         creditAt = { x: cx, y: cy };
         break search;
       }
@@ -251,12 +306,7 @@ export function buildDirection(id, { subject, states, copy }) {
       break;
     }
   }
-  if (!creditAt) throw new Error(`no one-line form of the source finds a corner clear of the key and every station`);
-
-  // ── the stations: the subject drawn last, so a nuclear dot is never under a common one ──────────────────────
-  const fuels = subject.arrival.map((fuel) => ({ fuel, n: subject.byFuel[fuel].n }));
-  const dots = [...geometry.dots].sort((a, b) => (a.fuel === SUBJECT) - (b.fuel === SUBJECT) || b.mw - a.mw);
-  const byFuel = Object.fromEntries(fuels.map(({ fuel }) => [fuel, dots.filter((d) => d.fuel === fuel).map((d) => ({ x: d.x, y: d.y, w: Math.round(Math.max(WEIGHT_FLOOR_R, WEIGHT_R * Math.sqrt(d.mw / subject.maxMw)) * 10) / 10 }))]));
+  if (!creditAt) throw new Error(`${id}: no one-line form of the source finds open sea clear of the key and every station on the measured map`);
 
   const props = {
     frame: stage,
@@ -265,21 +315,13 @@ export function buildDirection(id, { subject, states, copy }) {
     legend: { ...key, at: { x: keyBox.x, y: keyBox.y } },
     credit: { ...credit, at: creditAt },
     colours,
-    strokes: { hairline: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k },
-    land: geometry.land,
-    fuels,
-    subjectFuel: SUBJECT,
-    stations: byFuel,
+    strokes,
     dotR: DOT_R,
     ringR: 3.2 * DOT_R,
-    total: subject.total,
-    shareCapacity: copy.shareCapacity,
-    shareCapacityExact: subject.shareCapacity,
-    shareSites: subject.shareSites,
     copyTexts: { nuclear: copy.nuclear },
     layoutInset: { x: inset, y: vInset },
-    states,
-    timing: DOT_VIDEO_TIMING,
+    mapPlan,
+    ...drive,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, keyLand: keyAt.share, dots: dots.length } };
+  return { id, direction, props, dots, report: { k, titleForm: titleCard.form, sourceText: credit.lines[0].text, keyLand: keyAt.share, dots: dots.length, layers: mapPlan.layers.length } };
 }

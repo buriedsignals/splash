@@ -2,12 +2,15 @@
  * One frame of « 72 réacteurs sur 8 900 centrales bas-carbone » — the title card, then the stations arriving fuel by
  * fuel, the 72 named, every dot growing into its weight, ending on the weighted map (BRIEF.md).
  *
+ * THE MAP IS THE CALLER'S (`liveMap`: the live MapTiler map in the composition — the land and every station, each fuel
+ * and size a MapLibre layer; nothing in the Bun tests). Over it, one SVG: the key, the credit and the title card.
+ *
  * NOTHING HERE IS MEASURED OR CHOSEN: positions, sizes, texts and colours come from `build.mjs`; motion from `sceneAt`.
  * The count texts the frame can show were each measured in Bun; the frame draws one of them.
  */
 
-import type { Ref } from "react";
-import { radiusAt, sceneAt } from "./scene.mjs";
+import type { ReactNode, Ref } from "react";
+import { sceneAt } from "./scene.mjs";
 
 type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
 type Line = { text: string; x: number; y: number; width: number };
@@ -35,10 +38,10 @@ export type DotFrameProps = {
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
   colours: { ground: string; sea: string; land: string; dot: string; back: string; subject: string; text: Record<"eyebrow" | "title" | "count" | "subject" | "key" | "source", string> };
   strokes: { hairline: number; ring: number };
-  land: string[];
   fuels: Array<{ fuel: string; n: number }>;
   subjectFuel: string;
-  stations: Record<string, Array<{ x: number; y: number; w: number }>>;
+  cameras: { whole: Record<string, number> };
+  mapPlan: { layers: Array<{ id: string; bindings?: Record<string, unknown> }> } & Record<string, unknown>;
   dotR: number;
   ringR: number;
   total: number;
@@ -58,40 +61,17 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
 }
 
 
-export function DotFrame(props: DotFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
+export function DotFrame(props: DotFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
   const { frame, registers: r, colours, strokes, legend: key, credit, titleCard } = props;
   const scene = sceneAt(props as never, props.at);
   const stationsText = key.stationTexts[String(scene.stations)];
   const powerText = key.powerTexts[String(scene.power)];
-  const radius = (w: number) => radiusAt(props.dotR, w, scene.weight);
   const bar = key.bar;
 
   return (
-    <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
-      <rect width={frame.width} height={frame.height} fill={colours.sea} />
-      {props.land.map((d, i) => (
-        <path key={`land${i}`} d={d} fill={colours.land} stroke={colours.sea} strokeWidth={strokes.hairline} strokeLinejoin="round" />
-      ))}
-
-      {/* ── THE STATIONS, fuel by fuel, the subject last. ── */}
-      {props.fuels.map(({ fuel }) => {
-        const isSubject = fuel === props.subjectFuel;
-        const fill = isSubject ? colours.subject : colours.dot;
-        const stepped = isSubject ? 1 : 1 - (1 - 0.18) * scene.focus;
-        return (
-          <g key={fuel} opacity={scene.shown[fuel] * stepped} fill={fill} fillOpacity={scene.weight > 0 ? 1 - 0.45 * scene.weight : 1} stroke={scene.weight > 0 ? colours.land : "none"} strokeWidth={strokes.hairline}>
-            {props.stations[fuel].map((s, i) => (
-              <circle key={i} cx={s.x} cy={s.y} r={radius(s.w)} />
-            ))}
-          </g>
-        );
-      })}
-      {/* The ring closes onto the disc as it grows: at its weight a nuclear station is outlined, not ringed twice. */}
-      <g fill="none" stroke={colours.subject} strokeWidth={strokes.ring * (1 - 0.4 * scene.weight)} opacity={scene.named}>
-        {props.stations[props.subjectFuel].map((s, i) => (
-          <circle key={`ring${i}`} cx={s.x} cy={s.y} r={Math.max(props.ringR * (1 - scene.weight), radius(s.w))} />
-        ))}
-      </g>
+    <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.sea }}>
+      {props.liveMap(props.at)}
+      <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
 
       {/* ── THE KEY: the three counts, the dot, the ring, the size reference. ── */}
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
@@ -129,6 +109,7 @@ export function DotFrame(props: DotFrameProps & { at: number; svgRef?: Ref<SVGSV
           <Word key={`title${i}`} line={line} register={titleCard.register} fill={colours.text.title} />
         ))}
       </g>
-    </svg>
+      </svg>
+    </div>
   );
 }

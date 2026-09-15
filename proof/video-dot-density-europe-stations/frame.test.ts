@@ -4,21 +4,22 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { contrast } from "#shared/chart-beat/colour.mjs";
 import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
-import { buildDirection, loadBeat, REFERENCE_MW } from "./build.mjs";
+import { buildDirection, loadBeat, REFERENCE_MW, weightRadiusOf } from "./build.mjs";
 import { DotFrame } from "./DotFrame.tsx";
 import { radiusAt, sceneAt, WINDOWS } from "./scene.mjs";
 
 /**
  * The markup at the last frame of every event — the type floor, every word with its measured width — and the claim
  * told in order: the title at frame 0, every station in at the end of reference, the 72 named at reveal, every dot at
- * its weight at the end, area proportional to capacity.
+ * its weight at the end, area proportional to capacity. The map is not drawn here (`liveMap: () => null`): its layers
+ * are held in `map-plan.test.ts`.
  */
 
 const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
-  const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(DotFrame, { ...(props as any), at: frame }));
+  const { props, dots } = buildDirection(id, beat);
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(DotFrame, { ...(props as any), at: frame, liveMap: () => null }));
   const last = (event: string) => endOf((props.timing as any)[event]) - 1;
 
   describe(`${id}'s dot density video`, () => {
@@ -48,8 +49,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     it("should end with every dot at its weight — area proportional to capacity — and the power count exact", () => {
       const end = sceneAt(props as any, props.timing.total - 1);
       expect([end.weight, end.power, end.source]).toEqual([1, props.shareCapacity, 1]);
-      const all = Object.values(props.stations).flat() as Array<{ w: number }>;
-      const largest = Math.max(...all.map((d) => d.w));
+      const largest = Math.max(...beat.subject.stations.map((s) => weightRadiusOf(s.mw, beat.subject.maxMw)));
       expect(props.legend.referenceR / largest).toBeCloseTo(Math.sqrt(REFERENCE_MW / beat.subject.maxMw), 2);
     });
 
@@ -75,18 +75,18 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(radiusAt(2, 20, 0.5) ** 2).toBeCloseTo((4 + 400) / 2, 9);
     });
 
-    it("should set the credit on one line, in an ink that reads on the sea and the land", () => {
+    it("should set the credit on one line, in an ink that reads on the sea", () => {
       expect(props.credit.lines.length).toBe(1);
-      for (const on of [props.colours.sea, props.colours.land]) expect(contrast(props.colours.text.source, on)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(props.colours.text.source, props.colours.sea)).toBeGreaterThanOrEqual(4.5);
     });
 
     it("should keep the key and the credit clear of every station", () => {
       const inside = (b: any) => (d: any) => d.x >= b.x && d.x <= b.x + b.w && d.y >= b.y && d.y <= b.y + b.h;
       const key = { x: props.legend.at.x, y: props.legend.at.y, w: props.legend.width, h: props.legend.height };
       const credit = { x: props.credit.at.x, y: props.credit.at.y, w: props.credit.width, h: props.credit.height };
-      const all = Object.values(props.stations).flat();
-      expect(all.filter(inside(key))).toEqual([]);
-      expect(all.filter(inside(credit))).toEqual([]);
+      expect(dots.length).toBe(beat.subject.total);
+      expect(dots.filter(inside(key))).toEqual([]);
+      expect(dots.filter(inside(credit))).toEqual([]);
     });
   });
 }

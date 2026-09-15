@@ -75,8 +75,12 @@ composition types no word. The key and the credit are seated clear of every disc
 
 Recut 2026-09-15: the growth carries each dot's **area** linearly (not its radius), and **one bar in the key measures
 both readings** — the subject's share of the weights, a sliver while every unit counts one, widening to its share of the
-quantity as the dots grow, the first share ticked. The credit sits on one line in the lowest corner clear of every disc,
-over land with no unit if it must, in an ink that reads on sea and land.
+quantity as the dots grow, the first share ticked. The credit sits on one line in the lowest corner clear of every disc.
+
+On the live MapTiler map (2026-09-15, awaiting the owner): the units are GeoJSON `circle` layers split by kind × the
+radius they grow to (a bucket's radius the root of its members' mean square), so the growth is one data-constant
+expression per layer bound to the frame's weight — a `["get", …]` radius would relay out the source every frame. The
+camera holds every unit; the key and the credit stand on the measured open sea, clear of every disc at its largest.
 
 ## The worked example in this tree
 
