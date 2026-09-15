@@ -37,7 +37,7 @@ describe("frameNoteCss — what a declaration must say before it is written down
     expect(note).toContain("THE FRAME — EXTENDS");
     expect(note).toContain("base 900/684 (1.316)");
     expect(note).toContain("drawn 900/600 (1.500)");
-    expect(note).toContain("bound 1.500");
+    expect(note).toContain("bound 1.500000");
     expect(note).toContain(WHY);
   });
 
@@ -85,7 +85,7 @@ describe("frameNoteCss — what a declaration must say before it is written down
   it("should give a FIXED frame its own base as its bound, with no maxRatio to declare", () => {
     const note = frameNoteCss({ extends: false, base: BASE, why: WHY }, BASE);
     expect(note).toContain("THE FRAME — FIXED");
-    expect(note).toContain("bound 1.316");
+    expect(note).toContain("bound 1.315789");
   });
 });
 

@@ -410,7 +410,13 @@ function frameNoteCss(frame, plot, name = "this beat") {
         `(${(baseW / baseH).toFixed(3)}); it declared ${JSON.stringify(frame.maxRatio ?? null)}. ` +
         `Beyond the bound the drawing is a frieze and the surplus width belongs back in the margin.`,
     );
-  return `/* THE FRAME — ${extends_ ? "EXTENDS" : "FIXED"} · base ${baseW}/${baseH} (${(baseW / baseH).toFixed(3)}) · drawn ${width}/${height} (${(width / height).toFixed(3)}) · bound ${bound.toFixed(3)}
+  // THE BOUND IS WRITTEN AT SIX DECIMALS WHILE THE TWO RATIOS BESIDE IT ARE WRITTEN AS PAIRS, and
+  // that is not fussiness: the guard below re-reads this note and compares the page's own ratio
+  // against it, so a bound rounded for reading is a bound the page can fail against itself.
+  // Measured the first time this ran: the radar's 620/440 wrote `bound 1.409`, the page drew
+  // 1.4090909, and all three directions were refused for exceeding their own frame by four
+  // ten-millionths. Six decimals leaves a rounding error under the 1e-6 the guard allows.
+  return `/* THE FRAME — ${extends_ ? "EXTENDS" : "FIXED"} · base ${baseW}/${baseH} (${(baseW / baseH).toFixed(3)}) · drawn ${width}/${height} (${(width / height).toFixed(3)}) · bound ${bound.toFixed(6)}
    ${why}
    Past the bound the surplus width is margin again, with no rule of its own: the cell below carries
    this page's own viewBox ratio and min()s against the track, so a drawing narrower than its track
