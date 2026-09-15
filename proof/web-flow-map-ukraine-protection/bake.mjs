@@ -1,5 +1,7 @@
-// The bake for the dot-density (population) beat: one Europe camera, one basemap capture, every
-// study country's shape projected to pixel space.
+// The bake for the WEB flow-map beat: one Europe camera, one basemap capture per filed direction.
+//
+// This is the beat's own copy — the static sibling carries the same arithmetic and neither imports
+// the other, which is the rule this tree keeps between beats.
 //
 // Same two defects fixed here as `map-quake-density/bake.mjs` and
 // `mapmore-flow-danube/bake.mjs` both had to fix tonight: `dataviz-light` paints water GREY
@@ -13,7 +15,7 @@
 // restyles, so a re-bake months later is a different picture under the same marks. The render calls
 // this bake only when the beat's own plate folder is empty.
 //
-//   bun proof/mapmore-dot-population/bake.mjs --size 860x760   # → proof/mapmore-dot-population/plate
+//   bun proof/web-flow-map-ukraine-protection/bake.mjs --size 1600x1216   # → .../plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -24,21 +26,28 @@ import puppeteer from "puppeteer";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Europe, near-square once projected (geo-discipline.md rule 12) — the same bounds
-// `map-beat`'s own choropleth seed uses, because this beat's study set is the same shape of
-// continent (holds Iceland whole, per that skill's own recorded defect fix).
-/** THE CAMERA HOLDS THE STUDY SET, and the study set reaches further east than a Europe-shaped box
- *  does: Cyprus sits at 33°E and Ukraine's eastern border at 40°. A bake that stopped at 33 cropped
- *  both, and `assertCameraReachesBounds` below is what turns that into a refusal rather than a plate
- *  nobody checked. Iceland at 24°W sets the west edge. */
-/** THE ORIGIN MUST NOT SIT ON THE FRAME'S EDGE. Every band leaves from one point, so a camera that
- *  stops just past it crushes the fan against the margin and puts the origin's own name on top of the
- *  nearest destination's. The box reaches 48°E — past Ukraine's own eastern border — to give the
- *  node its air. */
+// Europe, near-square once projected (geo-discipline.md rule 12).
+/** THE CAMERA HOLDS THE STUDY SET, and the study set is MEASURED rather than eyeballed: the largest
+ *  study set is THE FAN: every sampled point of every band, both ends and the bowed middle. That box
+ *  is -18,57..33,45°E, 34,92..65,00°N, and the numbers below hold it with a degree to spare.
+ *  `render-directions-web.mjs` re-derives it from the frozen shapes and REFUSES a window that cuts
+ *  any band — which is the guard `assertCameraReachesBounds` cannot be, since that one compares the
+ *  frame against the TYPED box and so passes a box too small for the study by construction.
+ *
+ *  WHY THE FAN AND NOT THE COUNTRIES, WHICH IS WHAT THE CHOROPLETH SIBLING HOLDS. A choropleth's
+ *  subject is a set of shapes a frame can slice, so it must hold every country whole. A flow map's
+ *  subject is the bands; the country is furniture. Measured: holding the countries whole reaches
+ *  Nordkapp at 71,09°N, which no band comes within six degrees of, and cost 207° of drawn longitude
+ *  at the delivered box against 153° for the fan — fifty-four degrees of ocean with nothing in it.
+ *
+ *  WHAT CHANGED ON 2026-09-15, AND WHY THE OLD WINDOW WAS A DEFECT. It was 34..68°N, -25..48°E: it
+ *  cut nothing, because the frame overshoots, but it reached 8° east of anything drawn to give the
+ *  origin node "air". The node gets its air from the overshoot instead — a near-square window in a
+ *  3:1 box triples the longitude — and the reader moves the camera themselves now. */
 const BEAT = {
   bounds: [
-    [-25, 34],
-    [48, 68],
+    [-19.6, 34.0],
+    [34.5, 66.0],
   ],
   style: "dataviz-light",
 };

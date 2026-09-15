@@ -1,14 +1,21 @@
 /**
- * THE CAMERA THIS BEAT PUBLISHES, AND WHY IT IS NOT WEB MERCATOR.
+ * THE CAMERA THIS BEAT MEASURES WITH — AND, SINCE 2026-09-15, THE ONE IT DOES NOT DRAW IN.
  *
  * Lambert azimuthal equal-area, centred at 52° N 10° E — EPSG:3035, the projection the European
  * Environment Agency and Eurostat publish continental statistics in.
  *
- * A CHOROPLETH IS READ BY AREA. The eye weights a class by how much of the page it covers, so a
- * projection that inflates the north inflates the argument. In Web Mercator, Norway, Sweden and
- * Finland are stretched by about a factor of two at their own latitudes — three of the seven
- * countries this beat is about. An equal-area projection is not a refinement here; it is the
- * difference between a map that supports the sentence and one that manufactures it.
+ * WHAT THE PAGE DRAWS IN IS WEB MERCATOR, because the owner has ruled that a directed web map is a
+ * flat live MapTiler map (« oui une carte MapLibre plate pas un globe ») and MapTiler reprojects the
+ * bands itself. This file no longer PLACES anything. It stays because it is what MEASURES: the
+ * runner prints both cameras on every render, and it is against an equal-area ground that the cost
+ * of the flat one is stated rather than buried.
+ *
+ * WHAT THAT COST IS ON A FAN, AND IT IS NOT THE COST A CHOROPLETH PAYS. A choropleth is read by
+ * AREA, so Mercator's inflation of the north inflates its argument directly. A flow map's argument
+ * rides on WIDTH, which is drawn in screen pixels and is therefore untouched. What Mercator
+ * stretches here is the LENGTH OF THE ARMS: measured on this beat's own seats, the band to Iceland
+ * is drawn about 1,41 times longer per real kilometre than the band to Cyprus, so a reader reads the
+ * northern destinations as further away than they are. The page's caveat carries the number.
  *
  * This file is this beat's own copy. The static sibling carries the same arithmetic and neither
  * imports the other: a beat is readable and renderable on its own, which is the rule this tree keeps
