@@ -31,7 +31,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import { bakePlan, assertRangesServed, rangesNeededBy } from "#shared/map-beat/bake.mjs";
-import { mountPlan, validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
 import { validatePlan } from "#shared/map-beat/plan.mjs";
 import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
 import { assertNotFallback, maptilerGlyphs, DEFAULT_RANGES } from "#shared/map-beat/glyphs.mjs";
@@ -300,10 +301,11 @@ async function bake() {
     { waitUntil: "load" },
   );
   await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
-  /** `mountPlan` runs INSIDE the page, so the trunk's own source has to reach the browser. Injected
-   *  by its own text rather than reimplemented here — it closes over nothing, which is what makes
-   *  that safe, and what makes a second copy of it unnecessary. */
-  await page.addScriptTag({ content: `window.__mountPlan = ${mountPlan.toString()};` });
+  /** `mountPlan` runs INSIDE the page, so the trunk's own source has to reach the browser. It does not
+   *  stand alone — it calls `sourceIdOf`, `beforeIdFor`, `radiusPaintOf` and the style sweep — so its
+   *  own `toString()` threw `sourceIdOf is not defined` in the page. The trunk is injected whole, as
+   *  the scrolly pilot's bake page does, and never reimplemented here. */
+  await page.addScriptTag({ content: `${await scrollyMapScript()}\nwindow.__mountPlan = mountPlan;` });
 
   await mkdir(outDir, { recursive: true });
   const platePath = join(outDir, "plate.png");
