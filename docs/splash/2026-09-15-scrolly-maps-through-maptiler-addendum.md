@@ -89,7 +89,8 @@ d'ensemble. Malte n'a de polygone de niveau 0 qu'à partir de la tuile z4 (ses c
 Kosovo (`XK`) est un pays à part entière, sans ligne dans les données, donc une terre neutre. **Countries dessine une
 côte plus généralisée que le fond** : posées au-dessus, ses surfaces débordaient de 1,5 à 3,6 px sur la mer. Une couche
 du plan peut donc dire `beneath: "water"` : les remplissages et les frontières passent sous l'eau du fond, dont la côte
-reste seule visible (débord résiduel 0 à 0,2 px). Les frontières intérieures restent celles de Countries, anguleuses en
+reste seule visible (débord résiduel de 0,01 à 0,55 px ; le maximum, au Monténégro, est l'anneau de l'Albanie qui
+croise la côte, ailleurs 0,01 à 0,19 px). Les frontières intérieures restent celles de Countries, anguleuses en
 gros plan (segments de 10 à 20 px) ; un niveau de tuiles plus fin est possible, à environ quatre fois les requêtes.
 *Reste à mesurer : la correspondance de ses codes régionaux avec ceux des données (NUTS, ISO 3166-2), pour S2.*
 
