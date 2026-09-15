@@ -37,7 +37,10 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
       id: `weight-${bucket.fuel}`,
       type: "circle",
       data: points(bucket.stations),
-      paint: { "circle-radius": weightRadius, "circle-color": colours.weightFill, "circle-opacity": 0 },
+      // AN ORDINARY DOT STAYS THE SAME COLOUR AT A WEIGHT AS AT A COUNT — no second, weaker neutral: a colour
+      // diluted toward the land to look "faint" reads as mud once it sits ON the land (measured, owner 2026-09-15:
+      // a grey at 3.09:1 against land, barely over the mark floor and easily lost under overlapping circles).
+      paint: { "circle-radius": weightRadius, "circle-color": colours.dot, "circle-opacity": 0 },
       bindings: { "circle-opacity": ["*", reached, { $state: "weight" }, stepBack] },
     });
   });
@@ -51,9 +54,12 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
   layers.push({
     id: "weight-nuclear",
     type: "circle",
+    // THE FAINT FILL UNDER THE SUBJECT'S RING IS THE RING'S OWN STRONG COLOUR AT LOW ALPHA, never a colour
+    // pre-diluted toward the land: diluting the hex first is what turned the ordinary dots' weight-fill to mud
+    // (see `weight-${fuel}`, above); alpha keeps the hue legible while still reading as "faint" under the ring.
     data: points(nuclear),
-    paint: { "circle-radius": weightRadius, "circle-color": colours.weightFill, "circle-opacity": 0 },
-    bindings: { "circle-opacity": ["*", { $state: "subject" }, { $state: "weight" }] },
+    paint: { "circle-radius": weightRadius, "circle-color": colours.ring, "circle-opacity": 0 },
+    bindings: { "circle-opacity": ["*", { $state: "subject" }, { $state: "weight" }, 0.4] },
   });
   layers.push({
     id: "ring-nuclear-count",

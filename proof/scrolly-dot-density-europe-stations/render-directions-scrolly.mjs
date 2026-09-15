@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, readPalette, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, NON_TEXT_CONTRAST_MIN, readPalette } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -203,11 +203,13 @@ try {
     const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
     try {
       const tints = plateTints(direction);
+      // MEASURED AGAINST THE BASEMAP'S OWN TINTS (`tints.land`, `tints.water` — what the live sweep actually
+      // paints), not the page ground: a mark sits on the map, never on the header's paper (owner, 2026-09-15).
       const colours = {
-        dot: adjustToContrast(mix(ink, direction.ground, 0.15), tints.land, NON_TEXT_CONTRAST_MIN) ?? ink,
-        weightFill: adjustToContrast(mix(direction.accent, tints.land, 0.75), tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
-        ring: adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+        dot: adjustToContrast(adjustToContrast(ink, tints.land, NON_TEXT_CONTRAST_MIN) ?? ink, tints.water, NON_TEXT_CONTRAST_MIN) ?? ink,
+        ring: adjustToContrast(adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent, tints.water, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
       };
+      if (contrast(colours.dot, colours.ring) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear ring (${colours.ring}) measure ${contrast(colours.dot, colours.ring).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
       const plan = dotDensityPlan({
         tints: { water: tints.water, land: tints.land },
         buckets,
