@@ -73,6 +73,11 @@ grows to an area proportional to its quantity**, the ring closing onto the disc,
 size reference landing in the key. Every text a count can show is measured in Bun and keyed by its number, so the
 composition types no word. The key and the credit are seated clear of every disc at its largest, not only of the dots.
 
+Recut 2026-09-15: the growth carries each dot's **area** linearly (not its radius), and **one bar in the key measures
+both readings** — the subject's share of the weights, a sliver while every unit counts one, widening to its share of the
+quantity as the dots grow, the first share ticked. The credit sits on one line in the lowest corner clear of every disc,
+over land with no unit if it must, in an ink that reads on sea and land.
+
 ## The worked example in this tree
 
 `proof/static-dot-density-europe-stations` — a **directed** beat of this type: written by hand under the doctrine, taken through a

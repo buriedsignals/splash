@@ -3,8 +3,9 @@
 //   - ARRIVAL: the fuels one after another over the reference, each easing in over its own slice; the station count
 //     is the stations arrived, stepped to the hundred until the last.
 //   - FOCUS: the others step back; the nuclear keep their ink and gain their ring. The 72's count lands with it.
-//   - WEIGHT: every dot's radius travels from the dot's to the radius whose area is proportional to its capacity; the
-//     power count climbs with it.
+//   - WEIGHT: every dot's AREA travels from the dot's to the area proportional to its capacity; the power count climbs
+//     with it, and the bar's nuclear segment widens from the share of the sites to the share of the power — the weights
+//     carried from one each to their capacity, on one bar.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
@@ -46,7 +47,14 @@ export function arrivedAt(arrive, fuels) {
   return { shown, count };
 }
 
-/** @param {{ states: any[], timing: any, fuels: Array<{ fuel: string, n: number }>, total: number, shareCapacity: number }} props */
+/** A dot's radius at `t` of its growth: its area carried linearly from the dot's to its weight's. */
+export function radiusAt(dotR, weightR, t) {
+  if (t <= 0) return dotR;
+  if (t >= 1) return weightR;
+  return Math.sqrt((1 - t) * dotR * dotR + t * weightR * weightR);
+}
+
+/** @param {{ states: any[], timing: any, fuels: Array<{ fuel: string, n: number }>, total: number, shareCapacity: number, shareSites: number }} props */
 export function sceneAt(props, frame) {
   const at = (f) => fieldAt(f, frame, props.states, props.timing);
   const arrive = at("arrive");
@@ -66,5 +74,7 @@ export function sceneAt(props, frame) {
     stationsShown: clamp01(arrive * 8),
     named: at("named"),
     powerShown: clamp01(weight * 6),
+    /** The nuclear share of the weights, in %: of the sites, then carried with the dots to the share of the power. */
+    bar: { share: props.shareSites + (props.shareCapacityExact - props.shareSites) * weight, shown: at("named") },
   };
 }

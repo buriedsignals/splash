@@ -7,7 +7,7 @@
  */
 
 import type { Ref } from "react";
-import { sceneAt } from "./scene.mjs";
+import { radiusAt, sceneAt } from "./scene.mjs";
 
 type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
 type Line = { text: string; x: number; y: number; width: number };
@@ -29,6 +29,8 @@ export type DotFrameProps = {
     powerTexts: Record<string, Measured>;
     nuclearText: Measured;
     referenceR: number;
+    /** The nuclear share on one 0–100 % bar. */
+    bar: { x: number; y: number; width: number; height: number };
   };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
   colours: { ground: string; sea: string; land: string; dot: string; back: string; subject: string; text: Record<"eyebrow" | "title" | "count" | "subject" | "key" | "source", string> };
@@ -41,6 +43,8 @@ export type DotFrameProps = {
   ringR: number;
   total: number;
   shareCapacity: number;
+  shareCapacityExact: number;
+  shareSites: number;
   states: Record<string, number>[];
   timing: unknown;
 };
@@ -59,7 +63,8 @@ export function DotFrame(props: DotFrameProps & { at: number; svgRef?: Ref<SVGSV
   const scene = sceneAt(props as never, props.at);
   const stationsText = key.stationTexts[String(scene.stations)];
   const powerText = key.powerTexts[String(scene.power)];
-  const radius = (w: number) => props.dotR + (w - props.dotR) * scene.weight;
+  const radius = (w: number) => radiusAt(props.dotR, w, scene.weight);
+  const bar = key.bar;
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -92,6 +97,11 @@ export function DotFrame(props: DotFrameProps & { at: number; svgRef?: Ref<SVGSV
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
         <Word line={{ ...stationsText, ...key.rows.stations }} register={r.value} fill={colours.text.count} opacity={scene.stationsShown} halo={{ colour: colours.sea, width: key.valueHalo }} />
         <Word line={{ ...key.nuclearText, ...key.rows.nuclear }} register={r.value} fill={colours.text.subject} opacity={scene.named} halo={{ colour: colours.sea, width: key.valueHalo }} />
+        <g opacity={scene.bar.shown}>
+          <rect x={bar.x} y={bar.y} width={bar.width} height={bar.height} fill={colours.back} />
+          <rect x={bar.x} y={bar.y} width={(bar.width * scene.bar.share) / 100} height={bar.height} fill={colours.subject} />
+          <line x1={bar.x + (bar.width * props.shareSites) / 100} x2={bar.x + (bar.width * props.shareSites) / 100} y1={bar.y - 0.4 * bar.height} y2={bar.y + 1.4 * bar.height} stroke={colours.subject} strokeWidth={strokes.hairline * 1.5} />
+        </g>
         <Word line={{ ...powerText, ...key.rows.power }} register={r.value} fill={colours.text.subject} opacity={scene.powerShown} halo={{ colour: colours.sea, width: key.valueHalo }} />
         <circle cx={key.symbols.dot.cx} cy={key.symbols.dot.cy} r={props.dotR * 1.6} fill={colours.dot} />
         <Word line={key.symbols.dot.label} register={r.axis} fill={colours.text.key} halo={{ colour: colours.sea, width: key.halo }} />

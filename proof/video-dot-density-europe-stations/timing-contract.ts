@@ -2,25 +2,27 @@
  * The timing contract for « 72 réacteurs sur 8 900 centrales bas-carbone » (BRIEF.md, « The choreography »).
  *
  * - `establish`: 45 frames. THE TITLE CARD from frame 0.
- * - `reference`: 150 frames. The land, then the seven fuels arriving one after another, the count climbing to 8 900.
- * - `reveal`: 100 frames. The others step back, the 72 ringed, their count.
- * - `subject`: 170 frames. The others return and every dot grows to its capacity over about three seconds; the power
- *   count climbs to 34,4 %.
- * - `conclusion`: 60 frames. The credit.
- * - `hold`: 90 frames: the weighted map the video ends on.
+ * - `reference`: 120 frames. The land, then the seven fuels arriving one after another, the count climbing to 8 900.
+ * - `reveal`: 75 frames. The others step back, the 72 ringed, their count, and their sliver of the bar: 0,8 %.
+ * - `subject`: 150 frames. The others return and every dot grows to its capacity over three seconds; the bar's
+ *   nuclear segment widens with them to 34,4 %.
+ * - `conclusion`: 54 frames. The credit.
+ * - `hold`: 60 frames: the weighted map the video ends on.
  *
- * Total: 639 frames, 21.3 seconds at 30 fps.
+ * The owner (2026-09-15): « ajuste mieux ton rythme pour rendre ça plus dynamique ».
+ *
+ * Total: 522 frames, 17.4 seconds at 30 fps.
  */
 
 import type { BeatTiming } from "#shared/chart-video/timing.ts";
 
 export const DOT_VIDEO_TIMING: BeatTiming = {
   fps: 30,
-  total: 639,
+  total: 522,
   establish: { start: 0, duration: 45 },
-  reference: { start: 51, duration: 150 },
-  reveal: { start: 207, duration: 100 },
-  subject: { start: 313, duration: 170 },
-  conclusion: { start: 489, duration: 60 },
-  hold: { start: 549, duration: 90 },
+  reference: { start: 51, duration: 120 },
+  reveal: { start: 174, duration: 75 },
+  subject: { start: 252, duration: 150 },
+  conclusion: { start: 408, duration: 54 },
+  hold: { start: 462, duration: 60 },
 };

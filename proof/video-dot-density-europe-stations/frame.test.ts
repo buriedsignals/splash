@@ -1,11 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { contrast } from "#shared/chart-beat/colour.mjs";
 import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { buildDirection, loadBeat, REFERENCE_MW } from "./build.mjs";
 import { DotFrame } from "./DotFrame.tsx";
-import { sceneAt } from "./scene.mjs";
+import { radiusAt, sceneAt, WINDOWS } from "./scene.mjs";
 
 /**
  * The markup at the last frame of every event — the type floor, every word with its measured width — and the claim
@@ -50,6 +51,33 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       const all = Object.values(props.stations).flat() as Array<{ w: number }>;
       const largest = Math.max(...all.map((d) => d.w));
       expect(props.legend.referenceR / largest).toBeCloseTo(Math.sqrt(REFERENCE_MW / beat.subject.maxMw), 2);
+    });
+
+    it("should set the nuclear share on one bar: 0,8 % of the sites once named, growing with the dots to 34,4 % of the power", () => {
+      const T = props.timing as any;
+      const reveal = sceneAt(props as any, last("reveal"));
+      expect(reveal.bar.shown).toBe(1);
+      expect(reveal.bar.share).toBeCloseTo(beat.subject.shareSites, 9);
+      expect(sceneAt(props as any, last("reference")).bar.shown).toBe(0);
+      const [a, b] = (WINDOWS as any).subject.weight;
+      const mid = sceneAt(props as any, Math.round(T.subject.start + T.subject.duration * (a + b) / 2));
+      expect(mid.weight).toBeGreaterThan(0.3);
+      expect(mid.weight).toBeLessThan(0.7);
+      expect(mid.bar.share).toBeCloseTo(beat.subject.shareSites + (beat.subject.shareCapacity - beat.subject.shareSites) * mid.weight, 9);
+      expect(sceneAt(props as any, T.total - 1).bar.share).toBeCloseTo(beat.subject.shareCapacity, 9);
+      const bar = (props.legend as any).bar;
+      expect(bar.width).toBeGreaterThan(8 * props.registers.axis.lead);
+    });
+
+    it("should grow every dot's area, not its radius, in proportion to the weight", () => {
+      expect(radiusAt(2, 20, 0)).toBe(2);
+      expect(radiusAt(2, 20, 1)).toBe(20);
+      expect(radiusAt(2, 20, 0.5) ** 2).toBeCloseTo((4 + 400) / 2, 9);
+    });
+
+    it("should set the credit on one line, in an ink that reads on the sea and the land", () => {
+      expect(props.credit.lines.length).toBe(1);
+      for (const on of [props.colours.sea, props.colours.land]) expect(contrast(props.colours.text.source, on)).toBeGreaterThanOrEqual(4.5);
     });
 
     it("should keep the key and the credit clear of every station", () => {

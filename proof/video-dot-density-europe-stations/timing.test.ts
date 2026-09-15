@@ -12,6 +12,7 @@ describe("the shipped dot density video timing", () => {
   it("should hold the title card no longer than a second and a half, and the final frame at least 60 frames", () => {
     expect(T.establish.duration).toBeLessThanOrEqual(T.fps * 1.5);
     expect(T.hold.duration).toBeGreaterThanOrEqual(60);
+    expect(T.total).toBeLessThanOrEqual(T.fps * 22);
   });
 
   it("should give the growth into weight at least three seconds", () => {
@@ -19,6 +20,6 @@ describe("the shipped dot density video timing", () => {
   });
 
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 250, duration: 170 } })).join(" ")).toContain("subject starts at 250");
+    expect(checkTiming(broken({ subject: { start: 200, duration: 150 } })).join(" ")).toContain("subject starts at 200");
   });
 });

@@ -13,7 +13,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { statesFor } from "./states.mjs";
 import { dotGeometry, loadSubject, SUBJECT } from "./subject.mjs";
@@ -38,6 +38,9 @@ const WEIGHT_FLOOR_R = 1.2; // px
 export const REFERENCE_MW = 1000;
 // The key's rhythm, × the axis lead.
 const ROW_GAP = 0.15;
+/** The nuclear share's bar: its thickness and the air around it, × the axis lead. */
+const BAR_H = 0.45;
+const BAR_GAP = 0.3;
 const TO_SYMBOLS = 0.45;
 const SYMBOL_GAP = 0.35;
 
@@ -61,7 +64,7 @@ export function copyOf(subject) {
     dot: "une centrale",
     ring: "nucléaire",
     reference: `${n0(REFERENCE_MW)}${NB}MW`,
-    source: ["Source : WRI Global Power Plant Database v1.3.0 · contours Natural Earth 50 m", "Source : WRI Global Power Plant Database · Natural Earth"].map((f) => f.replace(" · ", `${NB}· `)),
+    source: ["Source : WRI Global Power Plant Database v1.3.0 · contours Natural Earth 50 m", "Source : WRI Global Power Plant Database · Natural Earth", "Source : WRI Global Power Plant Database"].map((f) => f.replace(" · ", `${NB}· `)),
     shareCapacity: Number(shareCapacity.toFixed(1)),
   };
 }
@@ -102,7 +105,16 @@ export function buildDirection(id, { subject, states, copy }) {
   const gap = 0.25 * axis.lead;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  /** The credit on one line, in every form that holds one — the longest that finds a corner is set. */
+  const credits = copy.source.flatMap((form) => {
+    try {
+      return [sourceCreditFor({ registers, forms: [form], size: SIZE, k, ...CREDIT_ONE_LINE })];
+    } catch {
+      return [];
+    }
+  });
+  if (!credits.length) throw new Error("no form of the source holds one line");
+  const sourceRegister = credits[0].register;
 
   // ── the map: the window fitted to the frame's content box, the land running past it to the frame's edges ─────
   const content = { x: inset, y: vInset, w: stage.width - 2 * inset, h: stage.height - 2 * vInset };
@@ -154,7 +166,7 @@ export function buildDirection(id, { subject, states, copy }) {
       count: onSea(accent, "a count"),
       subject: onSea(subjectInk, "the nuclear count"),
       key: onSea(muted, "the key"),
-      source: onSea(muted, "the credit"),
+      source: [sea, land].map((on) => adjustToContrast(muted, on, TEXT_CONTRAST_MIN)).find((c) => c && contrast(c, sea) >= TEXT_CONTRAST_MIN && contrast(c, land) >= TEXT_CONTRAST_MIN),
     },
   };
   if (contrast(sea, land) < 1.05) throw new Error(`the land ${land} cannot be told from the sea ${sea}`);
@@ -172,7 +184,13 @@ export function buildDirection(id, { subject, states, copy }) {
   const valueBand = bandOf(BAND_PROBE, value);
   const axisBand = bandOf(BAND_PROBE, axis);
   let y = pad;
+  let barY = 0;
   const rows = ["stations", "nuclear", "power"].map((name, i) => {
+    // The bar stands between the nuclear count and the power count: the sliver of the sites, then the share of the power.
+    if (name === "power") {
+      barY = y + BAR_GAP * axis.lead;
+      y = barY + BAR_H * axis.lead + BAR_GAP * axis.lead - ROW_GAP * axis.lead;
+    }
     y += (i ? ROW_GAP * axis.lead : 0) + valueBand.ascent;
     const at = { x: pad, y };
     y += valueBand.descent;
@@ -200,6 +218,7 @@ export function buildDirection(id, { subject, states, copy }) {
     halo: haloOf(axis, k),
     valueHalo: haloOf(value, k),
     referenceR: refR,
+    bar: { x: pad, y: barY, width: widest, height: BAR_H * axis.lead },
   };
   // At the left margin, the height whose box holds no station and the least land.
   let keyAt = null;
@@ -213,16 +232,26 @@ export function buildDirection(id, { subject, states, copy }) {
   if (!keyAt) throw new Error(`a ${key.width}×${key.height} key finds no place at the left margin clear of every station`);
   const keyBox = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
 
-  // ── the credit: the lowest, leftmost sea corner that holds it, clear of the key and of every station ─────────
+  // ── the credit: one line, in the lowest, leftmost corner clear of the key and of every station at its weight ────
+  // One line is wider than the Atlantic under the key, so it may cross land where no station stands (North Africa), in
+  // an ink that reads on the sea and on the land.
   let creditAt = null;
-  search: for (let cy = stage.height - vInset - credit.height; cy >= vInset; cy -= SEAT_STEP)
-    for (let cx = inset; cx + credit.width <= stage.width - inset; cx += SEAT_STEP) {
-      const box = { x: cx, y: cy, width: credit.width, height: credit.height };
-      if (touches(box, keyBox, gap) || landShare(box) > 0.03 || discsIn(box)) continue;
-      creditAt = { x: cx, y: cy };
-      break search;
+  let credit = null;
+  for (const form of credits) {
+    search: for (let cy = stage.height - vInset - form.height; cy >= vInset; cy -= SEAT_STEP)
+      for (let cx = inset; cx + form.width <= stage.width - inset; cx += SEAT_STEP) {
+        const box = { x: cx, y: cy, width: form.width, height: form.height };
+        if (touches(box, keyBox, gap) || discsIn(box)) continue;
+        creditAt = { x: cx, y: cy };
+        break search;
+      }
+    if (creditAt) {
+      const { register, ...rest } = form;
+      credit = rest;
+      break;
     }
-  if (!creditAt) throw new Error(`a ${credit.width}×${credit.height} credit finds no sea corner`);
+  }
+  if (!creditAt) throw new Error(`no one-line form of the source finds a corner clear of the key and every station`);
 
   // ── the stations: the subject drawn last, so a nuclear dot is never under a common one ──────────────────────
   const fuels = subject.arrival.map((fuel) => ({ fuel, n: subject.byFuel[fuel].n }));
@@ -245,6 +274,8 @@ export function buildDirection(id, { subject, states, copy }) {
     ringR: 3.2 * DOT_R,
     total: subject.total,
     shareCapacity: copy.shareCapacity,
+    shareCapacityExact: subject.shareCapacity,
+    shareSites: subject.shareSites,
     copyTexts: { nuclear: copy.nuclear },
     layoutInset: { x: inset, y: vInset },
     states,
