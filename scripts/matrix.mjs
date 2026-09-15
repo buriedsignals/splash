@@ -66,13 +66,17 @@ export function readBeats() {
     const brief = join(dir, "BRIEF.md");
     if (existsSync(brief)) {
       const text = readFileSync(brief, "utf8");
-      type = typeName(/\*\*Type:\*\*\s*([^.]+)/.exec(text)?.[1] || "");
+      // French typography puts a space before the colon (`**Type :**`), and two beats in this
+      // corpus are written in French. Spacing is not semantics here either: a beat whose label is
+      // spelt the French way was read as having NO TYPE AT ALL, so it vanished from every row of
+      // this table and of the type survey while still sitting on disk with its artifacts.
+      type = typeName(/\*\*Type\s*:\*\*\s*([^.]+)/.exec(text)?.[1] || "");
       // Tolerant on spacing and emphasis, strict on meaning. The corpus writes this label three
       // ways — `**Medium/format:**`, `**Medium / format:**`, and with the value itself bolded
       // (`chart / **static**`). The first draft of this reader matched only the first spelling and
       // silently reported two real static beats as missing, which is how a generated table lies
       // more convincingly than a hand-written one: it looks measured. Spacing is not semantics.
-      medium = (/\*\*Medium\s*\/\s*format:\*\*\s*([^.]+)/.exec(text)?.[1] || "")
+      medium = (/\*\*Medium\s*\/\s*format\s*:\*\*\s*([^.]+)/.exec(text)?.[1] || "")
         .toLowerCase()
         .replace(/\*/g, "");
     }
