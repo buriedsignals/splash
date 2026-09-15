@@ -53,8 +53,23 @@ produite par le rendu statique du même plan. Sans clé, sans script ou si MapTi
 voit ces images. La page commitée porte `__MAPTILER_KEY__` ; `deliver` substitue la clé à la livraison. Aucune clé dans
 un fichier commité.
 
-**2.6 La caméra chauffée.** Toutes les caméras du beat sont parcourues avant de révéler la couche vivante
-(`warmCameras`, déjà mesuré sur le Danube). Garde : un défilement rapide ne laisse aucune image avec une tuile manquante.
+*Mesuré sur le pilote (choroplèthe, 2026-09-15) :* les images sont cuites à la taille réelle de la scène, mesurée sur
+la page rendue, en deux formats (large 1 280 × 800, haut 375 × 812) et deux densités (1x, 2x), en WebP sans perte ; la
+page choisit le format par le rapport de la scène et la densité par l'écran. Aux tailles mesurées, le passage de
+l'image à la carte vivante change au plus 0,01 % des pixels de la scène ; aux autres tailles les mots restent alignés à
+moins de 1,4 px (un mot à 2,7 px sur un 414 × 896 en 1x). Le balisage de la page est l'état de la carte 1 ; un
+`<noscript>` rend la dernière carte au lecteur sans script. Poids d'une page : 2,6 à 2,9 Mo.
+
+**2.6 La caméra chauffée.** Toutes les caméras du beat sont parcourues, ainsi que la vue qui franchit chaque niveau
+entier de zoom (`warmCameras`, déjà mesuré sur le Danube). Garde : un défilement rapide ne laisse aucune image avec une
+tuile manquante.
+
+*Mesuré sur le pilote :* attendre la fin du chauffage avant de montrer la carte la cachait 11,1 s à froid (M2 Max) et
+le lecteur défilait sur les images gelées, qui changent d'un bloc. Désormais une carte visible démarre à la caméra
+décalée de la scène et n'apparaît qu'une fois l'état du lecteur dessiné, tuiles chargées (3,0 s à froid) ; le chauffage
+(27 vues, 9,5 s) tourne sur une seconde carte cachée qui prend le relais sans changement visible. Une liaison de peinture
+qui lit une propriété d'objet (`get`, `feature-state`…) recharge toutes les tuiles à chaque image : `validateScrollyPlan`
+la refuse, et un beat pose une couche par classe.
 
 ---
 
@@ -67,8 +82,16 @@ entier : aucun extrait gelé, aucune fenêtre. Un pays sans donnée est une terr
 redessiner une côte Natural Earth par-dessus celle d'OpenMapTiles (le halo de §1.3 de la spec). Elle se branche sur des
 polygones **issus des mêmes tuiles** et joints aux données par code ISO. Le jeu **MapTiler Countries**
 (`https://docs.maptiler.com/schema/countries/`) porte des unités administratives du niveau 0 (pays) au niveau 4, avec
-leur code ISO A2 et un identifiant par unité, prévues pour être jointes à des données. *Reste à mesurer avant le plan :
-son coût en requêtes et la correspondance de ses codes régionaux avec ceux des données (NUTS, ISO 3166-2).*
+leur code ISO A2 et un identifiant par unité, prévues pour être jointes à des données.
+
+*Mesuré sur le pilote :* couche `administrative` (z0–11), champs `level` et `iso_a2` ; 10 requêtes Countries à la vue
+d'ensemble. Malte n'a de polygone de niveau 0 qu'à partir de la tuile z4 (ses conseils de niveau 1 en dessous) ; le
+Kosovo (`XK`) est un pays à part entière, sans ligne dans les données, donc une terre neutre. **Countries dessine une
+côte plus généralisée que le fond** : posées au-dessus, ses surfaces débordaient de 1,5 à 3,6 px sur la mer. Une couche
+du plan peut donc dire `beneath: "water"` : les remplissages et les frontières passent sous l'eau du fond, dont la côte
+reste seule visible (débord résiduel 0 à 0,2 px). Les frontières intérieures restent celles de Countries, anguleuses en
+gros plan (segments de 10 à 20 px) ; un niveau de tuiles plus fin est possible, à environ quatre fois les requêtes.
+*Reste à mesurer : la correspondance de ses codes régionaux avec ceux des données (NUTS, ISO 3166-2), pour S2.*
 
 **3.3 Garde.** Pour chaque caméra du beat, aucune zone de terre de la vue n'est vide de fond : la capture de contrôle
 échoue si un pixel de terre attendu est de la couleur de la page.
