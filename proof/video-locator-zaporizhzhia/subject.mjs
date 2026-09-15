@@ -8,8 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const STATIC_DIR = join(HERE, "..", "static-locator-zaporizhzhia");
-/** The continent's land: the sibling Europe beats' frozen Natural Earth 50 m shapes (the locator's own file holds only
- *  the close-up's region, and the video starts on the continent). */
+/** The sibling Europe beats' frozen Natural Earth 50 m shapes — no longer drawn (the map is MapTiler's): read for each
+ *  country's seat and to keep a country's name inside its own country. */
 export const EUROPE_SHAPES = join(HERE, "..", "static-dot-density-europe-stations", "shapes.geojson");
 export const EUROPE_WINDOW = { west: -25, east: 45, south: 34, north: 72 };
 export const AREAS = ["UKR", "RUS", "ROU", "MDA", "BLR", "TUR"];
@@ -19,7 +19,9 @@ export const FRENCH_PLACE = { Kyiv: "Kiev", Kharkiv: "Kharkiv", Dnipro: "Dnipro"
 export const WATERS = [
   { forms: ["Mer Noire"], lon: 33.5, lat: 43.6 },
   { forms: ["Mer d’Azov"], lon: 36.5, lat: 46.2 },
-  { forms: ["Dniepr"], lon: 33.4, lat: 47.0 },
+  // The still sets it at 33.4° E, 47.0° N; on the Mercator close-up that stands against the station's ring, so the name
+  // is set further down the river.
+  { forms: ["Dniepr"], lon: 33.1, lat: 46.8 },
 ];
 
 const csv = (path) => {
@@ -43,8 +45,5 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
     .slice(0, PLACES);
   for (const p of places) if (!FRENCH_PLACE[p.name]) throw new Error(`no French name recorded for ${p.name}`);
   const closeWindow = { west: biggest.lon - 9, east: biggest.lon + 9, south: biggest.lat - 5.2, north: biggest.lat + 5.2 };
-  /** The focus country's regional borders — Natural Earth 10 m admin-1 lines, Ukraine's only, frozen beside this beat. */
-  const regions = JSON.parse(readFileSync(join(HERE, "regions.geojson"), "utf8"));
-  if (!regions.features.length || regions.features.some((f) => f.properties.adm0 !== "UKR")) throw new Error("regions.geojson should hold Ukraine's admin-1 lines and nothing else");
-  return { biggest, places, closeWindow, regions, geo: JSON.parse(readFileSync(EUROPE_SHAPES, "utf8")) };
+  return { biggest, places, closeWindow, geo: JSON.parse(readFileSync(EUROPE_SHAPES, "utf8")) };
 }

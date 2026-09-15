@@ -2,7 +2,7 @@
 //
 // The duration and fps come from the timing contract and the frame from the video size table, so neither
 // is typed here. There is no usable `defaultProps`: the beat cannot be drawn without the runner's layout,
-// names and faces. Every real render goes through `render-directions-video.mjs`; the placeholder below
+// names, faces and proxied map plan. Every real render goes through `render-directions-video.mjs`; the placeholder below
 // carries no faces, so a render driven by it is refused rather than drawn in whatever this machine has.
 import { Composition } from "remotion";
 import { sizeFor } from "#shared/chart-video/sizes.mjs";
@@ -16,6 +16,8 @@ export const COMPOSITION_ID = "video-locator-zaporizhzhia-landscape";
 
 const PLACEHOLDER = {
   faces: [],
+  // The live map's plan through the render's proxy: written by the runner at render time, never committed.
+  mapPlanProxied: null,
   timing: LOCATOR_VIDEO_TIMING,
 } as unknown as DirectedLocatorVideoProps;
 

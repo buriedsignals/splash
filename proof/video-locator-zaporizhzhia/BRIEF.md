@@ -14,11 +14,35 @@ same assertions as `proof/static-locator-zaporizhzhia`: the largest low-carbon s
 naming rules: the country the story is in and its neighbours in frame, the six largest settlements in frame, three bodies
 of water — three classes of place, three treatments.
 
+## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
+
+The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+
+- **The plan** (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, every country drawn by the basemap and its own
+  labels removed; the sea a tint of the water hue and the land a step off the ground (`PALETTE.md`). Read from MapTiler
+  Countries beneath the basemap's water: Ukraine's tint (`level` 0, `iso_a2` UA), its regions (`level` 1) and every
+  national border. The station's ring and dot are circle layers, the ring closing with the travel; « UKRAINE » on the
+  continent and every name of the close-up (countries, settlements with their dots, waters) are symbol layers at 30 px
+  or more, each bound to its moment.
+- **Two fixed cameras**: Europe's window fitted "meet" into 1920 × 1080, and the still's window fitted "meet" centred on
+  the station on both axes. `mapStateAt` travels between them in Web Mercator numbers, centre and zoom linear in the
+  eased travel (the choropleth video's `cameraAt`); `useLiveMap` releases a frame only once every tile is loaded.
+- **Measured** once per camera (`measure.mjs` → `measured.json`): Europe at the end of reference, the close-up settled
+  and still unnamed (`settledBareFrameOf`). The names, their halos (the colour measured under each), the station's
+  block and the credit are placed in Bun on the close-up's cells; a neighbour's name keeps its middle half off the
+  measured Ukraine. A plan changed since is refused.
+- **The words outside the map** stay SVG: the station's name and its capacity counting up in measured texts, the credit,
+  the title card.
+- **The credit** is one line over open sea with « © MapTiler © OpenStreetMap »: creme and rapport set « WRI · Natural
+  Earth · © MapTiler © OpenStreetMap », nocturne « WRI · © MapTiler © OpenStreetMap » — provisional, the owner to rule.
+- « Dniepr » is set at 33.1° E, 46.8° N (the still's 33.4° E, 47.0° N stands against the ring on the Mercator close-up).
+- The key reaches MapTiler only through the local proxy; `no-key.live.test.ts` holds every output to it.
+
 ## The picture — shots, not a page
 
 1. **The title card** (from frame 0, 1.5 s).
-2. **The story** — the map on the whole frame, the camera the viewBox: Europe, then the close-up the still frames.
-3. **No end card** — the video ends on the close-up with every name; the credit in a sea corner.
+2. **The story** — the live map on the whole frame, the camera travelling: Europe, then the close-up the still frames.
+3. **No end card** — the video ends on the close-up with every name; the credit on one line over open sea.
 
 ## The choreography
 
@@ -38,9 +62,8 @@ place is ringed on it, and the camera closes in until the names that let a reade
 
 The owner (2026-09-14): « si tu focus sur un pays il faut montrer les frontières des régions ». Once the camera closes on
 Ukraine, its oblasts' borders are drawn — thinner and paler than a national border, landing as the camera settles and
-absent from the continental shot. Source: Natural Earth 10 m admin-1 boundary lines, fetched 2026-09-14
-(`curl -sSL https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces_lines.geojson`,
-10 179 features, sha256 `1a1f30cc…c75b6`), filtered to Ukraine's 57 lines and rounded to three decimals: `regions.geojson`.
+absent from the continental shot. Source: MapTiler Countries, `level` 1, `iso_a2` UA (the Natural Earth 10 m lines
+frozen beside the SVG version are gone with it).
 
 ## Write as little as the picture allows
 
