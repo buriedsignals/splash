@@ -4,7 +4,7 @@
  * `static-choropleth-europe-lowcarbon` — seven countries above 94 %, six in the north-west and Albania —
  * told with the gestures a scroll can make (`scrolly/references/directed-type-choreography.md`).
  *
- * THE MAP IS A LIVE MAPTILER GLOBE DRIVEN BY THE PLAN (`plan.mjs`). Everything inside the map — the class
+ * THE MAP IS A LIVE MAPTILER MAP (flat Web Mercator) DRIVEN BY THE PLAN (`plan.mjs`). Everything inside the map — the class
  * fills joined to MapTiler Countries by ISO A2, the borders, the names, the odd one's ring, the seas'
  * names — is a MapLibre layer; the scroll moves its camera and paint (`choropleth-drive.mjs`). Outside the
  * map, and so outside the plan: the counter above it, the key below it, and the odd one's name lifted

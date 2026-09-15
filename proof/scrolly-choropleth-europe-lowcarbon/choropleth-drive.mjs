@@ -25,8 +25,8 @@ export function applyChoroplethState(root, state) {
   const easeTravel = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const card = Math.max(0, Math.min(c.fallbacks.length - 1, Math.round(state.card)));
   const live = c.handle && c.handle.ready && !c.handle.failed;
-  // Once the live map is the picture, no card image stays under it: the space around the globe is
-  // transparent, and what shows there must be the stage's own ground, not a frozen card.
+  // Once the live map is the picture, no card image stays under it: anything the canvas leaves
+  // transparent must show the stage's own ground, not a frozen card.
   c.fallbacks.forEach((img, k) => {
     const opacity = !live && k === card ? "1" : "0";
     if (img.style.opacity !== opacity) img.style.opacity = opacity;
@@ -94,14 +94,17 @@ export function applyChoroplethState(root, state) {
 function setUpChoropleth(root) {
   const plan = JSON.parse(root.querySelector('[data-part="plan"]').textContent);
   // `?verify` is how the live guards ask for a canvas they can read back; a reader never needs it.
-  // `onReady` repaints the current state once: the reveal is the moment the card images step aside and
-  // the odd one's name is re-seated on the live camera, and no scroll may come to trigger it.
+  // `onShown` (the live map's first drawn view) and `onReady` (the warmed map taking over) repaint the
+  // current state once each: that is when the card images step aside and the odd one's name is re-seated
+  // on the live camera, and no scroll may come to trigger it.
+  const repaint = () => {
+    if (root.dataset.state) applyChoroplethState(root, JSON.parse(root.dataset.state));
+  };
   const handle = initScrollyMap(root, plan, {
     window,
     preserveDrawingBuffer: /[?&]verify/.test(location.search),
-    onReady: () => {
-      if (root.dataset.state) applyChoroplethState(root, JSON.parse(root.dataset.state));
-    },
+    onShown: repaint,
+    onReady: repaint,
   });
   root.__handle = handle;
   window.__scrollyMap = handle;

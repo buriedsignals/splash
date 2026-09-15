@@ -100,7 +100,7 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
   return {
     styleUrl: `https://api.maptiler.com/maps/dataviz/style.json?key=${KEY}`,
     styleName: "dataviz",
-    projection: "globe",
+    projection: "mercator",
     tints,
     cameras,
     statesForCards,

@@ -148,23 +148,24 @@ const classOf = (v) => BREAKS.filter((b) => v >= b).length;
 const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const pct0 = (v) => `${Math.round(v)}${NB}%`;
 
-/** THE CAMERAS, IN DEGREES FROM THE BEAT'S OWN FACTS, authored for a reference stage of 1280 px at the
- *  static plate's own frame aspect (1000 × 760). The whole-map cards put the study window's 67° of
- *  longitude across it, centred on Europe; the close-up comes 2.3 zoom levels in, CENTRED ON ALBANIA's
- *  seat on both axes, with no padding. A real stage keeps the reference's ground on both axes
- *  (`zoomShiftFor`): a phone is fitted by its width, a wide desktop by its height, and Iceland stays on
- *  the card that names it. */
+/** THE CAMERAS, FROM THE BEAT'S OWN FACTS, on a flat Web Mercator map (the owner's ruling after the globe
+ *  pilot, addendum §7.1). The whole-map cards are the static plate's own fit: its bounds fitted into its
+ *  1000 × 760 frame, scaled to a reference stage 1280 px wide, centred on the bounds' Mercator middle —
+ *  so Iceland, Malta and Cyprus are in the frame exactly as on the plate. The close-up comes 2.3 zoom
+ *  levels in, CENTRED ON ALBANIA's seat on both axes, with no padding. A real stage keeps the reference's
+ *  ground on both axes (`zoomShiftFor`): a phone is fitted by its width, a wide desktop by its height. */
+const worldX = (lon) => (lon + 180) / 360;
+const worldY = (lat) => (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / Math.PI) / 2;
+const latOfWorldY = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) * 180) / Math.PI - 90;
+const frameWorldPx = Math.min(FRAME.width / (worldX(BOUNDS[1][0]) - worldX(BOUNDS[0][0])), FRAME.height / (worldY(BOUNDS[0][1]) - worldY(BOUNDS[1][1])));
 const REFERENCE = { width: 1280, height: Math.round((1280 * FRAME.height) / FRAME.width) };
-const WHOLE_ZOOM = Math.log2((REFERENCE.width / 512) * (360 / (BOUNDS[1][0] - BOUNDS[0][0])));
-const WHOLE_CENTER = [10, 52];
+const WHOLE_ZOOM = Math.log2((frameWorldPx * (REFERENCE.width / FRAME.width)) / 512);
+const WHOLE_CENTER = [(BOUNDS[0][0] + BOUNDS[1][0]) / 2, latOfWorldY((worldY(BOUNDS[0][1]) + worldY(BOUNDS[1][1])) / 2)];
 const whole = cameraFields({ center: WHOLE_CENTER, zoom: WHOLE_ZOOM });
 const closeUp = cameraFields({ center: odd, zoom: WHOLE_ZOOM + 2.3 });
 const cameras = [whole, whole, whole, whole, closeUp, whole];
 /** The ring around Albania keeps the ground the SVG's r = 22 frame units covered: that frame's fitted
  *  Web Mercator scale, in degrees per unit. */
-const worldX = (lon) => (lon + 180) / 360;
-const worldY = (lat) => (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / Math.PI) / 2;
-const frameWorldPx = Math.min(FRAME.width / (worldX(BOUNDS[1][0]) - worldX(BOUNDS[0][0])), FRAME.height / (worldY(BOUNDS[0][1]) - worldY(BOUNDS[1][1])));
 const ODD_RING_DEGREES = (22 * 360) / frameWorldPx;
 
 // ── the words ──────────────────────────────────────────────────────────────────────────────────
@@ -289,7 +290,7 @@ async function assertJoin(page) {
     async (style, url, sourceLayer, center, zoom) => {
       const map = new maplibregl.Map({ container: "map", style, center, zoom, interactive: false, fadeDuration: 0 });
       await new Promise((r) => map.once("style.load", r));
-      map.setProjection({ type: "globe" });
+      map.setProjection({ type: "mercator" });
       map.addSource("countries", { type: "vector", url });
       map.addLayer({ id: "countries", type: "fill", source: "countries", "source-layer": sourceLayer, paint: { "fill-opacity": 0 } });
       await new Promise((r) => map.once("idle", r));
@@ -380,8 +381,8 @@ try {
       if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
 
       // THE CARD IMAGES ARE BAKED ONLY WHEN WHAT THEY PICTURE HAS CHANGED: the plan (key-free) and the size.
-      // The page behind the bake is the STAGE's own ground (the water tint): the space around the globe's limb
-      // is transparent in the canvas, and a card image baked on a white page carries white there.
+      // The page behind the bake is the STAGE's own ground (the water tint): whatever the canvas leaves
+      // transparent shows it, never a white page.
       const stageGround = tints.water;
       const planHash = createHash("sha256").update(JSON.stringify({ plan, size: FALLBACK_SIZE, stageGround })).digest("hex");
       const recordPath = join(FALLBACK, `${id}.json`);
