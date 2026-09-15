@@ -251,5 +251,9 @@ export function mountPlan(map, plan) {
       },
       beforeIdFor(map, layer),
     );
+    // MAPLIBRE REFUSES AN INVALID LAYER WITH AN `error` EVENT, NOT A THROW, and adds nothing: a layer missing from
+    // every frame with every guard green (the proportional symbol scrolly's station name, 2026-09-15).
+    if (typeof map.getLayer === "function" && !map.getLayer(layer.id))
+      throw new Error(`layer "${layer.id}" was refused by the map and is not drawn — its spec is invalid (see the map's error event)`);
   }
 }

@@ -5,7 +5,7 @@
 
 import { join } from "node:path";
 import { transformStyle } from "./style.mjs";
-import { bindState, viewOf, zoomShiftFor } from "./scrolly.mjs";
+import { bindState, stageViewOf } from "./scrolly.mjs";
 
 /** The shape MapLibre asks a glyph endpoint for, with the two placeholders it substitutes itself.
  *  A fontstack is a name with spaces in it, so it arrives percent-encoded. */
@@ -115,12 +115,8 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
  *  `window.__mountPlan = mountPlan`, never `mountPlan.toString()`. The same holds for `bakePlan`. */
 export async function bakeCards({ page, plan, cameras, size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
   const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
-  // The same zoom shift the live runtime applies: cameras are authored for the plan's reference stage.
-  const shiftedView = (k) => {
-    const view = viewOf(cameras[k]);
-    view.zoom += zoomShiftFor(plan, size.width, size.height);
-    return view;
-  };
+  // The same stage view the live runtime draws: cameras are authored for the plan's reference stage.
+  const shiftedView = (k) => stageViewOf(plan, cameras[k], size.width, size.height);
   // `scale` is the device pixel ratio the card is baked for (2 by default). A 1x screen must be given a 1x
   // bake: a 2x picture drawn at half size renders the map's words thinner than the live 1x canvas that
   // replaces it, and the reader sees the type change at the reveal.

@@ -3,6 +3,7 @@ import {
   cameraFields,
   lonLatOf,
   mercatorOf,
+  stageViewOf,
   viewOf,
   zoomShiftFor,
 } from "#shared/map-beat/scrolly.mjs";
@@ -60,5 +61,28 @@ describe("the zoom shift a stage applies to an authored camera", () => {
       zoomShiftFor({ referenceWidth: 1280, referenceHeight: 800 }, 1280, 0),
       zoomShiftFor({ referenceWidth: 1280, referenceHeight: 800 }, -4, 800),
     ]).toEqual([0, 0, 0]);
+  });
+});
+
+describe("the reference ground's place on a stage taller than it", () => {
+  const plan = { referenceWidth: 1000, referenceHeight: 500 };
+  const camera = { ...cameraFields({ center: [10, 50], zoom: 4 }) };
+
+  it("should keep the camera's centre when the card names no alignment", () => {
+    expect(stageViewOf(plan, camera, 500, 1000).center[1]).toBeCloseTo(50, 9);
+  });
+
+  it("should move the ground to the bottom of a tall stage, the centre north by half the spare height", () => {
+    // 500 px wide: shift −1, ground 250 px tall on a 1000 px stage, 750 px spare; half is 375 px at zoom 3.
+    const view = stageViewOf(plan, { ...camera, camAlignY: 1 }, 500, 1000);
+    expect(mercatorOf(view.center)[1]).toBeCloseTo(camera.camY - 375 / (512 * 2 ** 3), 12);
+  });
+
+  it("should not move a camera on a stage wider than the reference, which is fitted by its height", () => {
+    expect(stageViewOf(plan, { ...camera, camAlignY: 1 }, 2000, 500).center[1]).toBeCloseTo(50, 9);
+  });
+
+  it("should apply the zoom shift", () => {
+    expect(stageViewOf(plan, camera, 500, 1000).zoom).toBe(3);
   });
 });

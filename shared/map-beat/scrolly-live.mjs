@@ -17,14 +17,21 @@
 
 const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
-function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
+// `stageView` turns a camera into the view the stage draws (`stageViewOf`); a number is read as a bare zoom offset.
+function warmScrollyCameras(map, cameras, samples, win, timeoutMs, stageView) {
   const views = [];
-  const shifted = function (view) {
-    view.zoom += zoomOffset || 0;
+  const zoomOffset = typeof stageView === "function" ? 0 : stageView || 0;
+  const shifted = function (camera) {
+    if (typeof stageView === "function") return stageView(camera);
+    const view = viewOf(camera);
+    view.zoom += zoomOffset;
     return view;
   };
+  const shiftOf = function (camera) {
+    return typeof stageView === "function" ? stageView(camera).zoom - camera.camZoom : zoomOffset;
+  };
   for (let i = 0; i < cameras.length; i++) {
-    views.push(shifted(viewOf(cameras[i])));
+    views.push(shifted(cameras[i]));
     if (i + 1 < cameras.length) {
       const ts = [];
       for (let s = 1; s <= samples; s++) ts.push(s / (samples + 1));
@@ -32,8 +39,8 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
       // is the widest view that level ever shows, and uniform samples fall past it: on the choropleth
       // pilot (zoom 2.96 → 5.26, three samples) the zoom-3 tiles at the whole map's edges were never
       // fetched, and a slow scrub met 15 frames with a missing tile.
-      const z0 = cameras[i].camZoom + (zoomOffset || 0);
-      const z1 = cameras[i + 1].camZoom + (zoomOffset || 0);
+      const z0 = cameras[i].camZoom + shiftOf(cameras[i]);
+      const z1 = cameras[i + 1].camZoom + shiftOf(cameras[i + 1]);
       if (z0 !== z1)
         for (let level = Math.floor(Math.min(z0, z1)) + 1; level <= Math.max(z0, z1); level++) {
           // A tile level's widest view sits just above its integer, whichever way the travel goes.
@@ -46,9 +53,9 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
       });
       for (const t of ts) {
         const mix = {};
-        for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch"])
+        for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch", "camAlignY"])
           mix[k] = (cameras[i][k] ?? 0) + ((cameras[i + 1][k] ?? 0) - (cameras[i][k] ?? 0)) * t;
-        views.push(shifted(viewOf(mix)));
+        views.push(shifted(mix));
       }
     }
   }
@@ -150,9 +157,7 @@ function initScrollyMap(root, plan, options) {
   // camera and loaded its tiles on screen in visible stages — the owner's "refresh de la map la première
   // seconde", recorded at 2,436–3,730 ms on the choropleth pilot.
   const shiftedViewOf = function (state) {
-    const view = viewOf(state);
-    view.zoom += handle.zoomOffset();
-    return view;
+    return stageViewOf(plan, state, container.clientWidth, container.clientHeight);
   };
   const makeMap = function (el) {
     const map = new win.maplibregl.Map({
@@ -256,7 +261,7 @@ function initScrollyMap(root, plan, options) {
 
   warmMap.once("load", function () {
     const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
-    warmScrollyCameras(warmMap, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
+    warmScrollyCameras(warmMap, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, shiftedViewOf).then(function (warm) {
       // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the layers a
       // failed mount may never have added — but a live layer nobody finished painting is worse than the
       // fallback plate underneath it.
