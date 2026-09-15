@@ -131,8 +131,10 @@ cartogramme et grille hexagonale en dernier (§5).
 1. **La projection — tranchée le 2026-09-15 : globe.** Les statiques et les scrollys SVG dessinaient en Lambert
    azimutale équivalente ; MapLibre dessine en Web Mercator ou en globe. À 70° N, Mercator triple les surfaces. Le
    propriétaire retient la projection **globe** : aux zooms continentaux elle ne gonfle pas le Nord, en zoom proche elle
-   rejoint Mercator. *À vérifier dans S1 : que le style MapTiler, le rendu gelé et les gardes (§2.6, §3.3) tiennent en
-   globe, et mesurer l'écart de surface restant au bord d'une vue continentale.*
+   rejoint Mercator. *Mesuré le 2026-09-15 (MapLibre 5.24.0, style `dataviz`, 1280 × 800, centre 15° E 55° N, zoom 2,6) :
+   la surface à l'écran d'une cellule d'un degré de côté, rapportée à sa surface sphérique vraie (proportionnelle au
+   cosinus de la latitude) et normalisée à 45° N, vaut 0,92 fois cette référence à 70° N et 0,84 fois à 35° N
+   (Mercator : ≈ 2,9 à 70° N). Rendu sans navigateur visible : oui.*
 2. **Les polygones joints** (§3.2) : MapTiler Countries retenu ; son coût et la correspondance des codes régionaux sont
    à mesurer.
 3. **Le poids du repli** : une image par carte de texte multiplie le poids de la page par le nombre de cartes.
