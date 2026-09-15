@@ -22,7 +22,7 @@
 - Every Remotion spawn carries an empty `--env-file`; map videos render with `--gl=swangle --concurrency=1` (`skills/map-beat/scripts/render-video-map.mjs`).
 - Explicit pathspec on every `git add` and `git commit` (zsh arrays: `F=(...)`, `"${F[@]}"`); never `-A`, never bare; never `git stash`.
 - No mention of Claude or Anthropic in commits, code or comments; no session trailer in commit messages (grep the message after each commit).
-- The no-break space is written as the ` ` escape in code; check with `grep -nP '\x{00A0}'`.
+- The no-break space is written as the `\u00A0` escape in code; check with `grep -nP '\x{00A0}'`.
 - Code and comments in English. Mutation verification is mandatory for every new test.
 - A skill asset may not import out of its own skill (`skills/splash/test/no-cross-skill-imports.test.ts`): `useLiveMap` receives `mount` and `transform` as arguments.
 - A bound paint may not read feature data (`validateScrollyPlan`); one layer per class.
