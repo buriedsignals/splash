@@ -39,6 +39,10 @@ const NB = "\u00A0";
 const PILL_GAP = 0.25;
 /** The order names are placed in: the subject, then its neighbours. */
 const ROLE_PRIORITY = ["odd", "neighbour"];
+/** WHERE A NAME SITS WHEN ITS COUNTRY'S SEAT PUTS IT ON A NEIGHBOUR'S. At the video's floor FRANCE, centred on
+ *  France's seat, runs into SUISSE (measured on the first live stills): France's name moves west, still wholly on
+ *  France, and Switzerland's stays on its own small country. */
+const WORD_SEATS = Object.freeze({ FRA: [0.2, 47.0] });
 /** A close-up gauge: its width at 100 %, its thickness and its air under the words, × the axis lead. */
 const GAUGE_WIDTH = 5;
 const GAUGE_HEIGHT = 0.3;
@@ -259,7 +263,7 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
   const { whole, closeUp } = camerasOf(subject);
   const cameras = { whole, closeUp };
   const words = {
-    top: copy.top.map((t) => ({ iso2: iso2Of(t.iso), text: t.text, seat: mapSeats[t.iso] })),
+    top: copy.top.map((t) => ({ iso2: iso2Of(t.iso), text: t.text, seat: WORD_SEATS[t.iso] ?? mapSeats[t.iso] })),
     odd: { iso2: iso2Of(subject.ODD_ONE), text: copy.names.find((n) => n.key === `odd:${subject.ODD_ONE}`).text, seat: mapSeats[subject.ODD_ONE] },
     waters: copy.waters,
   };
