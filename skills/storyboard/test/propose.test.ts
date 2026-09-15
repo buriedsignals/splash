@@ -154,8 +154,12 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
       "En 2024, 34 Mt de glace ont fondu. Renewables overtook coal as the main source.",
       meltProfile,
     );
-    expect(resolved.coverage.unevaluated).toEqual(["Renewables overtook coal as the main source."]);
-    expect(resolved.detail).toContain("Renewables overtook coal as the main source");
+    expect(resolved.coverage.unevaluated).toEqual([
+      "Renewables overtook coal as the main source.",
+    ]);
+    expect(resolved.detail).toContain(
+      "Renewables overtook coal as the main source",
+    );
   });
 });
 
@@ -169,8 +173,12 @@ describe("resolveGrounding — how N claim verdicts become one scalar", () => {
 //
 // Run against the story's OWN frozen profile and CSV, not a fixture built to fail.
 const storyFile = (relative) =>
-  readFileSync(new URL(`../../../stories/${relative}`, import.meta.url), "utf8");
-const storyProfile = (story) => JSON.parse(storyFile(`${story}/source/profile.json`));
+  readFileSync(
+    new URL(`../../../stories/${relative}`, import.meta.url),
+    "utf8",
+  );
+const storyProfile = (story) =>
+  JSON.parse(storyFile(`${story}/source/profile.json`));
 const storyCsv = (story) => storyFile(`${story}/source/data.csv`);
 
 describe("resolveGrounding — a scalar that reflects what the data actually decided", () => {
@@ -178,9 +186,13 @@ describe("resolveGrounding — a scalar that reflects what the data actually dec
     "Of the €4.1 billion allocated to the regional resilience fund, €0 had been disbursed by the end of June 2026.";
 
   it("should refuse to close G1 supported on a tautological match, on the real frozen story", () => {
-    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
-      csv: storyCsv("stress-s-unspent-fund"),
-    });
+    const resolved = resolveGrounding(
+      STRESS_S_TAKEAWAY,
+      storyProfile("stress-s-unspent-fund"),
+      {
+        csv: storyCsv("stress-s-unspent-fund"),
+      },
+    );
     expect(resolved.verdict).toBe("unverifiable");
     expect(groundingScalar(resolved)).toBe("unverifiable");
     expect(resolved.supported.length).toBe(0);
@@ -190,9 +202,13 @@ describe("resolveGrounding — a scalar that reflects what the data actually dec
   });
 
   it("should report the decided fraction of the takeaway in every detail it writes", () => {
-    const resolved = resolveGrounding(STRESS_S_TAKEAWAY, storyProfile("stress-s-unspent-fund"), {
-      csv: storyCsv("stress-s-unspent-fund"),
-    });
+    const resolved = resolveGrounding(
+      STRESS_S_TAKEAWAY,
+      storyProfile("stress-s-unspent-fund"),
+      {
+        csv: storyCsv("stress-s-unspent-fund"),
+      },
+    );
     expect(resolved.coverage.decided).toBe(0);
     expect(resolved.detail).toContain("0 of 1 sentence(s)");
   });
@@ -319,30 +335,40 @@ describe("medium, then format, then size — each verified before it is offered"
     ).toBe(true);
   });
 
-  // Issue #39 removed `chart/scrolly`. The catalogue advertised it with the promise "an opaque
-  // prose card advances a fixed chart through explicit steps", and the scrolly skill says plainly
-  // that it "does not step a single chart through several states" — the table offered a thing the
-  // producer refuses to make. The two scrollies that exist are the map one and the image one.
-  it("should offer scrolly for the two media that have a producer for it, and refuse it for chart", () => {
-    for (const medium of ["map", "image"]) {
-      const scrolly = proposeFormats({ medium }).find((g) => g.format === "scrolly");
-      expect([medium, scrolly?.reachable, scrolly?.producer]).toEqual([medium, true, "scrolly"]);
+  // Owner decision, 2026-09-16: `chart/scrolly` is reopened. The scrolly skill now produces image,
+  // map, and chart scrollys, each one fixed stage with prose cards travelling over it while the
+  // scroll interpolates the medium's states continuously — the three media with a validated scrolly
+  // beat all reach it here.
+  it("should offer scrolly for every medium that has a producer for it", () => {
+    for (const medium of ["map", "image", "chart"]) {
+      const scrolly = proposeFormats({ medium }).find(
+        (g) => g.format === "scrolly",
+      );
+      expect([medium, scrolly?.reachable, scrolly?.producer]).toEqual([
+        medium,
+        true,
+        "scrolly",
+      ]);
     }
-    const chartScrolly = proposeFormats({ medium: "chart" }).find((g) => g.format === "scrolly");
-    expect(chartScrolly?.reachable).toBe(false);
-    // Named as absent rather than quietly omitted — the whole reason the catalogue is keyed on the
-    // pair, so the journalist hears the sentence at the gate.
-    expect(chartScrolly?.why).toContain("chart it can reach static, web, video");
   });
 
-  // Issue #39's other half: a scrolly is a kind of thing to MAKE, so it is named at the medium
-  // question rather than met one movement later as a publication format.
+  // A scrolly is a kind of thing to MAKE, so it is named at the medium question rather than met one
+  // movement later as a publication format.
   it("should name the scrollies at the medium gate", () => {
     const rows = proposeMediums({ capabilities: { map: true } });
     const byMedium = new Map(rows.map((r) => [r.medium, r]));
-    expect(byMedium.get("map")?.scrolly).toEqual({ available: true, label: "map scrolly" });
-    expect(byMedium.get("image")?.scrolly).toEqual({ available: true, label: "image scrolly" });
-    expect(byMedium.get("chart")?.scrolly).toEqual({ available: false });
+    expect(byMedium.get("map")?.scrolly).toEqual({
+      available: true,
+      label: "map scrolly",
+    });
+    expect(byMedium.get("image")?.scrolly).toEqual({
+      available: true,
+      label: "image scrolly",
+    });
+    expect(byMedium.get("chart")?.scrolly).toEqual({
+      available: true,
+      label: "chart scrolly",
+    });
   });
 
   // Issue #38. `image` reached this gate with an empty `types` array, so movement 4 had nothing to
@@ -352,7 +378,11 @@ describe("medium, then format, then size — each verified before it is offered"
   // next medium to be added will arrive without one.
   it("should report no gap now that every medium has a sheet to enumerate", () => {
     for (const row of proposeMediums({ capabilities: { map: true } })) {
-      expect([row.medium, row.types.length > 0, row.proposable]).toEqual([row.medium, true, null]);
+      expect([row.medium, row.types.length > 0, row.proposable]).toEqual([
+        row.medium,
+        true,
+        null,
+      ]);
     }
   });
 
@@ -395,8 +425,16 @@ describe("medium, then format, then size — each verified before it is offered"
   });
 
   it("should offer three sizes for a static or a video, and none for a page that fills its container", () => {
-    expect(proposeSizes("chart", "static")).toEqual(["landscape", "square", "portrait"]);
-    expect(proposeSizes("map", "video")).toEqual(["landscape", "square", "portrait"]);
+    expect(proposeSizes("chart", "static")).toEqual([
+      "landscape",
+      "square",
+      "portrait",
+    ]);
+    expect(proposeSizes("map", "video")).toEqual([
+      "landscape",
+      "square",
+      "portrait",
+    ]);
     expect(proposeSizes("chart", "web")).toEqual([]);
     expect(proposeSizes("map", "scrolly")).toEqual([]);
     // A photo essay takes no size, whatever its format (issue #58).
@@ -542,8 +580,17 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: sixRows,
         candidates: [
-          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
-          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+          {
+            type: "Scatter (and bubble)",
+            format: "static",
+            marks: 6,
+            why: "population against trips",
+          },
+          {
+            type: "Bar and column",
+            format: "static",
+            why: "trips per resident, ranked",
+          },
         ],
       }),
     ).toThrow(/fewer than about eight or ten points/);
@@ -558,8 +605,17 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile,
         candidates: [
-          { type: "Scatter (and bubble)", format: "static", marks: 6, why: "population against trips" },
-          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+          {
+            type: "Scatter (and bubble)",
+            format: "static",
+            marks: 6,
+            why: "population against trips",
+          },
+          {
+            type: "Bar and column",
+            format: "static",
+            why: "trips per resident, ranked",
+          },
         ],
       }),
     ).toThrow(/refuses 6 mark\(s\)/);
@@ -570,8 +626,16 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "chart",
       profile: { rowCount: 13, columns: [] },
       candidates: [
-        { type: "Bar and column", format: "static", why: "schools per region, ranked" },
-        { type: "Dot strip", format: "static", why: "the spread of the same thirteen" },
+        {
+          type: "Bar and column",
+          format: "static",
+          why: "schools per region, ranked",
+        },
+        {
+          type: "Dot strip",
+          format: "static",
+          why: "the spread of the same thirteen",
+        },
       ],
     });
     const sheet = typeSurvey().find(
@@ -587,8 +651,16 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "chart",
       profile: { rowCount: 13, columns: [] },
       candidates: [
-        { type: "Pie and donut", format: "static", why: "the shares of one whole" },
-        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+        {
+          type: "Pie and donut",
+          format: "static",
+          why: "the shares of one whole",
+        },
+        {
+          type: "Bar and column",
+          format: "static",
+          why: "the same shares, ranked",
+        },
       ],
     });
     expect(text).toContain("slices > 5");
@@ -607,7 +679,9 @@ describe("a candidate is checked against its own sheet's refusal", () => {
   it("should carry flow-map's many-to-many refusal to the menu, on the frozen story it was chosen for", () => {
     const profile = frozenProfile("stress-ab-emigration-flows");
     const origins = profile.columns.find((c: any) => c.name === "origin");
-    const destinations = profile.columns.find((c: any) => c.name === "destination");
+    const destinations = profile.columns.find(
+      (c: any) => c.name === "destination",
+    );
     // Not a fixture: six origins and five destinations over eight rows is many-to-many.
     expect(origins.distinct).toBeGreaterThan(1);
     expect(destinations.distinct).toBeGreaterThan(1);
@@ -615,8 +689,16 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "map",
       profile,
       candidates: [
-        { type: "Flow map (route — and origin-destination)", format: "web", why: "where the people who left went" },
-        { type: "Proportional symbol (symbol / bubble map)", format: "web", why: "how many left each district" },
+        {
+          type: "Flow map (route — and origin-destination)",
+          format: "web",
+          why: "where the people who left went",
+        },
+        {
+          type: "Proportional symbol (symbol / bubble map)",
+          format: "web",
+          why: "how many left each district",
+        },
       ],
     });
     expect(text).toContain("not a many-to-many flow");
@@ -650,8 +732,17 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile,
         candidates: [
-          { type: "Beeswarm", format: "static", marks: 240, why: "every salary as its own mark" },
-          { type: "Histogram", format: "static", why: "the shape of the spread" },
+          {
+            type: "Beeswarm",
+            format: "static",
+            marks: 240,
+            why: "every salary as its own mark",
+          },
+          {
+            type: "Histogram",
+            format: "static",
+            why: "the shape of the spread",
+          },
         ],
       }),
     ).toThrow(/refuses 240 mark\(s\)/);
@@ -662,7 +753,12 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       medium: "chart",
       profile: { rowCount: 90, columns: [] },
       candidates: [
-        { type: "Beeswarm", format: "static", marks: 90, why: "every reading as its own mark" },
+        {
+          type: "Beeswarm",
+          format: "static",
+          marks: 90,
+          why: "every reading as its own mark",
+        },
         { type: "Histogram", format: "static", why: "the shape of the spread" },
       ],
     });
@@ -675,8 +771,16 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: { rowCount: 6, columns: [] },
         candidates: [
-          { type: "Sunburst", format: "static", why: "the shares of one whole, nested" },
-          { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+          {
+            type: "Sunburst",
+            format: "static",
+            why: "the shares of one whole, nested",
+          },
+          {
+            type: "Bar and column",
+            format: "static",
+            why: "the same shares, ranked",
+          },
         ],
       }),
     ).toThrow(/Sunburst/);
@@ -694,7 +798,11 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       profile: { rowCount: 6, columns: [] },
       candidates: [
         { type: "Pie chart", format: "static", why: "the shares of one whole" },
-        { type: "Bar and column", format: "static", why: "the same shares, ranked" },
+        {
+          type: "Bar and column",
+          format: "static",
+          why: "the same shares, ranked",
+        },
       ],
     });
     expect(text).toContain("**Pie chart**");
@@ -731,7 +839,9 @@ describe("a candidate is checked against its own sheet's refusal", () => {
     const photographs = formatCandidates({
       medium: "image",
       profile: { rowCount: 0, columns: [] },
-      candidates: [{ type: "Photograph sequence", why: "the quay before and after" }],
+      candidates: [
+        { type: "Photograph sequence", why: "the quay before and after" },
+      ],
     });
     expect(photographs).not.toMatch(/no type sheet/i);
     expect(photographs).toContain("Not for:");
@@ -755,7 +865,12 @@ describe("a candidate is checked against its own sheet's refusal", () => {
   it("should resolve every treatment name the Datawrapper gate accepts to its own sheet", () => {
     const catalogue = JSON.parse(
       readFileSync(
-        join(import.meta.dirname, "..", "references", "datawrapper-chart-types.json"),
+        join(
+          import.meta.dirname,
+          "..",
+          "references",
+          "datawrapper-chart-types.json",
+        ),
         "utf8",
       ),
     );
@@ -767,14 +882,20 @@ describe("a candidate is checked against its own sheet's refusal", () => {
           return formatCandidates({
             medium: mapping.medium,
             profile: { rowCount: 12, columns: [] },
-            candidates: [{ type: mapping.treatment, why: "the delegated producer's own name for it" }],
+            candidates: [
+              {
+                type: mapping.treatment,
+                why: "the delegated producer's own name for it",
+              },
+            ],
           });
         } catch (error) {
           unresolved.push(`${mapping.treatment}: ${(error as Error).message}`);
           return "";
         }
       })();
-      if (line && !line.includes("Not for:")) unresolved.push(`${mapping.treatment}: rendered with no refusal`);
+      if (line && !line.includes("Not for:"))
+        unresolved.push(`${mapping.treatment}: rendered with no refusal`);
     }
     expect(unresolved).toEqual([]);
   });
@@ -787,8 +908,17 @@ describe("a candidate is checked against its own sheet's refusal", () => {
         medium: "chart",
         profile: frozenProfile("stress-p-transport-ridership"),
         candidates: [
-          { type: "Scatter and bubble", format: "static", marks: 6, why: "population against trips" },
-          { type: "Bar and column", format: "static", why: "trips per resident, ranked" },
+          {
+            type: "Scatter and bubble",
+            format: "static",
+            marks: 6,
+            why: "population against trips",
+          },
+          {
+            type: "Bar and column",
+            format: "static",
+            why: "trips per resident, ranked",
+          },
         ],
       }),
     ).toThrow(/refuses 6 mark\(s\)/);
@@ -806,7 +936,10 @@ describe("a candidate is checked against its own sheet's refusal", () => {
       ...text.matchAll(
         /^\|\s*\d+\s*\|\s*\[([^\]]+)\]\(\.\.\/\.\.\/(chart-beat|map-beat)\//gm,
       ),
-    ].map((match) => [match[1], match[2] === "chart-beat" ? "chart" : "map"] as const);
+    ].map(
+      (match) =>
+        [match[1], match[2] === "chart-beat" ? "chart" : "map"] as const,
+    );
     expect(named.length).toBeGreaterThan(30);
     const unresolved = [
       ...new Map(named.map((row) => [row.join("|"), row])).values(),
@@ -836,13 +969,19 @@ describe("a candidate is checked against its own sheet's refusal", () => {
 
   it("should refuse a candidate naming a treatment no sheet and no catalogue holds", () => {
     expect(() =>
-      assertDistinctWays([{ type: "OD flow diagram", why: "one way of seeing it" }, { type: "Choropleth", why: "one way of seeing it" }]),
+      assertDistinctWays([
+        { type: "OD flow diagram", why: "one way of seeing it" },
+        { type: "Choropleth", why: "one way of seeing it" },
+      ]),
     ).toThrow(/OD flow diagram/);
   });
 
   it("should still accept a catalogued treatment whose medium holds no sheets", () => {
     expect(
-      assertDistinctWays([{ type: "Photograph sequence", why: "one way of seeing it" }, { type: "Bar and column", why: "one way of seeing it" }]),
+      assertDistinctWays([
+        { type: "Photograph sequence", why: "one way of seeing it" },
+        { type: "Bar and column", why: "one way of seeing it" },
+      ]),
     ).toBe(true);
   });
 
@@ -1024,7 +1163,9 @@ describe("row count is evidence, and a column type is not a story", () => {
     });
     expect(result.recommendedOptionId).toBeNull();
     expect(result.refusal).toMatch(/one row|1 row/i);
-    expect(result.ranking.every((row) => row.unresolvedRequirements.length > 0)).toBe(true);
+    expect(
+      result.ranking.every((row) => row.unresolvedRequirements.length > 0),
+    ).toBe(true);
   });
 
   it("should refuse to call a single moment an ordered axis", () => {
@@ -1061,7 +1202,13 @@ describe("row count is evidence, and a column type is not a story", () => {
       rowCount: 30,
       columns: [
         { name: "year", type: "number", distinct: 30, min: 1995, max: 2024 },
-        { name: "forest_loss_ha", type: "number", distinct: 30, min: 10, max: 900 },
+        {
+          name: "forest_loss_ha",
+          type: "number",
+          distinct: 30,
+          min: 10,
+          max: 900,
+        },
       ],
     };
     const result = recommendVisualChoice({
@@ -1084,7 +1231,9 @@ describe("row count is evidence, and a column type is not a story", () => {
         ],
       },
     });
-    expect(result.ranking[0].unresolvedRequirements).toContain("multiple-series");
+    expect(result.ranking[0].unresolvedRequirements).toContain(
+      "multiple-series",
+    );
     expect(result.ranking[1].unresolvedRequirements).toContain("numeric-pair");
     expect(result.recommendedOptionId).toBeNull();
   });
@@ -1109,7 +1258,9 @@ describe("row count is evidence, and a column type is not a story", () => {
     };
     const claiming = stories.filter((story) => {
       const profile = frozenProfile(story);
-      const numbers = (profile.columns ?? []).filter((c: any) => c.type === "number");
+      const numbers = (profile.columns ?? []).filter(
+        (c: any) => c.type === "number",
+      );
       // THE POPULATION IS DERIVED, not re-typed here. This used to re-implement the period rule as
       // `/year|date|ann[ée]e/` over the numeric columns — the rule `findYearColumn` had at the time
       // — and it drifted the moment that rule learned that a numeric column named for a period must
@@ -1117,7 +1268,8 @@ describe("row count is evidence, and a column type is not a story", () => {
       // two things that table measures, and it is not this test's subject: a (period, value) table
       // is.
       const period = findYearColumn(profile.columns ?? []);
-      if (!period || period.type !== "number" || numbers.length !== 2) return false;
+      if (!period || period.type !== "number" || numbers.length !== 2)
+        return false;
       const result = recommendVisualChoice({ model, profile });
       return result.ranking[0].unresolvedRequirements.length === 0;
     });
@@ -1172,7 +1324,10 @@ describe("a part-to-whole table can reach a part-to-whole treatment", () => {
         (column: any) => column.type === "number" && column.min < 0,
       );
       expect(negative.length).toBeGreaterThan(0);
-      const result = recommendVisualChoice({ model: everyTreatment(), profile });
+      const result = recommendVisualChoice({
+        model: everyTreatment(),
+        profile,
+      });
       for (const id of partToWholeTreatments) {
         const row = rowFor(result, id);
         expect(row.unresolvedRequirements).toContain("part-to-whole");
@@ -1192,11 +1347,15 @@ describe("a part-to-whole table can reach a part-to-whole treatment", () => {
     // would be a share of one country counted five times.
     const profile = frozenProfile("heat-pump-adoption-across-europe");
     expect(profile.rowCount).toBe(50);
-    expect(profile.columns.find((c: any) => c.name === "country").distinct).toBe(10);
+    expect(
+      profile.columns.find((c: any) => c.name === "country").distinct,
+    ).toBe(10);
     const result = recommendVisualChoice({ model: everyTreatment(), profile });
     const pie = rowFor(result, "chart.pie-and-donut");
     expect(pie.unresolvedRequirements).toContain("part-to-whole");
-    expect(pie.unresolvedReasons.join(" ")).toMatch(/names each row exactly once|one row per part/);
+    expect(pie.unresolvedReasons.join(" ")).toMatch(
+      /names each row exactly once|one row per part/,
+    );
   });
 
   it("should stop reporting zero part-to-whole tables across the whole corpus", () => {
@@ -1210,7 +1369,8 @@ describe("a part-to-whole table can reach a part-to-whole treatment", () => {
         profile: frozenProfile(story),
       });
       return partToWholeTreatments.some(
-        (id) => !rowFor(result, id).unresolvedRequirements.includes("part-to-whole"),
+        (id) =>
+          !rowFor(result, id).unresolvedRequirements.includes("part-to-whole"),
       );
     });
     // Measured before this fix: zero. A requirement no table in the corpus can satisfy is a
@@ -1236,31 +1396,68 @@ describe("a part-to-whole table can reach a part-to-whole treatment", () => {
 describe("a distribution is a count of observations, and five of them is not one", () => {
   it("should let the first real distribution in the corpus reach a distribution type", () => {
     const profile = frozenProfile("stress-aa-salary-spread");
-    const salary = profile.columns.find((c: any) => c.name === "annual_salary_eur");
+    const salary = profile.columns.find(
+      (c: any) => c.name === "annual_salary_eur",
+    );
     expect(profile.rowCount).toBe(240);
     expect(salary.missing).toBe(6);
     const result = recommendVisualChoice({ model: everyTreatment(), profile });
-    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    const histogram = result.ranking.find(
+      (row: any) => row.optionId === "chart.histogram",
+    )!;
     expect(histogram.unresolvedRequirements).toEqual([]);
     // WHAT THIS NUMBER IS, and why it moved. The evidence reports the observations of the
     // best-observed measure. This table has TWO measures — a salary with six blanks and a tenure
     // with none — and it took six rounds to see the second, because `years_service` was read as the
     // table's own period by a rule that tested the column's NAME and never its values. So the
     // count is 240, the tenure's, and the salary's own 234 is one measure down the same list.
-    expect(JSON.stringify(histogram.matchedEvidence)).toContain("240 observation(s)");
+    expect(JSON.stringify(histogram.matchedEvidence)).toContain(
+      "240 observation(s)",
+    );
 
     // The claim underneath it — a row is not an observation — measured where nothing coincides:
     // every measure here carries blanks, so no reading of it can return the row count.
     const allBlank = {
       rowCount: 240,
       columns: [
-        { name: "region", type: "text", missing: 0, distinct: 12, min: null, max: null, sum: null, gaps: null },
-        { name: "annual_salary_eur", type: "number", missing: 6, min: 14664, max: 238530, sum: 1, gaps: null },
-        { name: "monthly_hours", type: "number", missing: 11, min: 10, max: 190, sum: 1, gaps: null },
+        {
+          name: "region",
+          type: "text",
+          missing: 0,
+          distinct: 12,
+          min: null,
+          max: null,
+          sum: null,
+          gaps: null,
+        },
+        {
+          name: "annual_salary_eur",
+          type: "number",
+          missing: 6,
+          min: 14664,
+          max: 238530,
+          sum: 1,
+          gaps: null,
+        },
+        {
+          name: "monthly_hours",
+          type: "number",
+          missing: 11,
+          min: 10,
+          max: 190,
+          sum: 1,
+          gaps: null,
+        },
       ],
     };
-    const blanks = recommendVisualChoice({ model: everyTreatment(), profile: allBlank });
-    const evidence = JSON.stringify(blanks.ranking.find((row: any) => row.optionId === "chart.histogram")!.matchedEvidence);
+    const blanks = recommendVisualChoice({
+      model: everyTreatment(),
+      profile: allBlank,
+    });
+    const evidence = JSON.stringify(
+      blanks.ranking.find((row: any) => row.optionId === "chart.histogram")!
+        .matchedEvidence,
+    );
     expect(evidence).toContain("234 observation(s)");
     expect(evidence).not.toContain("240 observation(s)");
   });
@@ -1270,14 +1467,23 @@ describe("a distribution is a count of observations, and five of them is not one
       rowCount: 5,
       columns: [
         { name: "district", type: "text", distinct: 5, missing: 0 },
-        { name: "rent_eur", type: "number", distinct: 5, missing: 0, min: 700, max: 1900 },
+        {
+          name: "rent_eur",
+          type: "number",
+          distinct: 5,
+          missing: 0,
+          min: 700,
+          max: 1900,
+        },
       ],
     };
     const result = recommendVisualChoice({
       model: everyTreatment(),
       profile: fiveReadings,
     });
-    const boxplot = result.ranking.find((row: any) => row.optionId === "chart.boxplot")!;
+    const boxplot = result.ranking.find(
+      (row: any) => row.optionId === "chart.boxplot",
+    )!;
     expect(boxplot.unresolvedRequirements).toContain("distribution");
     expect(boxplot.unresolvedReasons.join(" ")).toMatch(/5 observation/);
   });
@@ -1287,14 +1493,23 @@ describe("a distribution is a count of observations, and five of them is not one
       rowCount: 240,
       columns: [
         { name: "employee", type: "text", distinct: 240, missing: 0 },
-        { name: "salary_eur", type: "number", distinct: 7, missing: 233, min: 20000, max: 90000 },
+        {
+          name: "salary_eur",
+          type: "number",
+          distinct: 7,
+          missing: 233,
+          min: 20000,
+          max: 90000,
+        },
       ],
     };
     const result = recommendVisualChoice({
       model: everyTreatment(),
       profile: mostlyBlank,
     });
-    const histogram = result.ranking.find((row: any) => row.optionId === "chart.histogram")!;
+    const histogram = result.ranking.find(
+      (row: any) => row.optionId === "chart.histogram",
+    )!;
     // 240 rows, 7 readings. The rows are not the evidence; the readings are.
     expect(histogram.unresolvedRequirements).toContain("distribution");
     expect(histogram.unresolvedReasons.join(" ")).toMatch(/7 observation/);
@@ -1308,10 +1523,14 @@ describe("a distribution is a count of observations, and five of them is not one
 describe("resolveGrounding — an unplaced claim says why, not just that it was unplaced", () => {
   it("should name the reason a claim could not be placed, not only how many were not", () => {
     const resolved = resolveGrounding("Le glacier a perdu 120 km2 de surface", {
-      columns: [{ name: "surface", type: "number", min: 40, max: 90, sum: 500 }],
+      columns: [
+        { name: "surface", type: "number", min: 40, max: 90, sum: 500 },
+      ],
     });
     expect(resolved.verdict).toBe("unverifiable");
-    expect(resolved.detail).toContain("nothing was confirmed and nothing was refuted");
+    expect(resolved.detail).toContain(
+      "nothing was confirmed and nothing was refuted",
+    );
     // The column it was put to, and the range it missed — not just "1 could not be placed".
     expect(resolved.detail).toContain("surface");
     expect(resolved.detail).toContain("[40, 90]");
@@ -1345,8 +1564,17 @@ describe("a row limit is measured against the marks a beat draws", () => {
         medium: "chart",
         profile: panel,
         candidates: [
-          { type: "Beeswarm", format: "static", marks: 211, why: "every country as its own mark" },
-          { type: "Histogram", format: "static", why: "the shape of the spread" },
+          {
+            type: "Beeswarm",
+            format: "static",
+            marks: 211,
+            why: "every country as its own mark",
+          },
+          {
+            type: "Histogram",
+            format: "static",
+            why: "the shape of the spread",
+          },
         ],
       }),
     ).toThrow(/211 mark\(s\)/);
@@ -1357,7 +1585,12 @@ describe("a row limit is measured against the marks a beat draws", () => {
       medium: "chart",
       profile: panel,
       candidates: [
-        { type: "Beeswarm", format: "static", marks: 27, why: "the EU twenty-seven, one mark each" },
+        {
+          type: "Beeswarm",
+          format: "static",
+          marks: 27,
+          why: "the EU twenty-seven, one mark each",
+        },
         { type: "Histogram", format: "static", why: "the shape of the spread" },
       ],
     });
@@ -1369,7 +1602,11 @@ describe("a row limit is measured against the marks a beat draws", () => {
       medium: "chart",
       profile: panel,
       candidates: [
-        { type: "Beeswarm", format: "static", why: "every country as its own mark" },
+        {
+          type: "Beeswarm",
+          format: "static",
+          why: "every country as its own mark",
+        },
         { type: "Histogram", format: "static", why: "the shape of the spread" },
       ],
     });
@@ -1388,12 +1625,17 @@ describe("a row limit is measured against the marks a beat draws", () => {
 // is not the shape.
 describe("one candidate shape, and the mechanism refuses what it does not accept", () => {
   it("names the shape to write when a candidate is a bare string", () => {
-    expect(() => assertDistinctWays(["Line", "Treemap"])).toThrow(/\{ type, why, format \}/);
+    expect(() => assertDistinctWays(["Line", "Treemap"])).toThrow(
+      /\{ type, why, format \}/,
+    );
   });
 
   it("asks for the reason in the distinctness check too, not only when the menu renders", () => {
     expect(() =>
-      assertDistinctWays([{ type: "Line" }, { type: "Treemap", why: "the parts of the whole" }]),
+      assertDistinctWays([
+        { type: "Line" },
+        { type: "Treemap", why: "the parts of the whole" },
+      ]),
     ).toThrow(/carries no reason/);
   });
 
@@ -1492,7 +1734,8 @@ describe("resolveGrounding — the limits of the check, on the verdict the journ
             period: 2026,
             column: "year",
             word: "incomplete",
-            sentence: "The 2026 data is incomplete and was last updated 21 August 2026.",
+            sentence:
+              "The 2026 data is incomplete and was last updated 21 August 2026.",
           },
         ],
         unplaced: [],
@@ -1503,7 +1746,10 @@ describe("resolveGrounding — the limits of the check, on the verdict the journ
   });
 
   it("should say nothing where the profile carries no stated incompleteness", () => {
-    const resolved = resolveGrounding("Le glacier recule depuis 2003", meltProfile);
+    const resolved = resolveGrounding(
+      "Le glacier recule depuis 2003",
+      meltProfile,
+    );
     expect(resolved.detail).not.toContain("states an incompleteness");
   });
 });

@@ -27,12 +27,21 @@ describe("the canonical visual catalogue", () => {
     const catalog = readVisualCatalog();
     const entries = expandVisualCatalog(catalog);
     expect(catalog.treatments).toHaveLength(41);
-    // 130, not 162: issue #39 removed `chart/scrolly` and the scrolly format from all 32
-    // chart treatments, because the scrolly skill does not step a single chart through states.
-    expect(entries).toHaveLength(130);
+    // 162: `chart/scrolly` is restored on all 32 chart treatments (owner decision, 2026-09-16) —
+    // the scrolly skill now produces image, map, and chart scrollys, each one fixed stage with the
+    // scroll interpolating the medium's states continuously rather than replaying its static form.
+    expect(entries).toHaveLength(162);
     expect(new Set(entries.map((row) => row.id)).size).toBe(entries.length);
-    expect(entries.every((row) => row.producer?.skill && row.deliveryForms.length > 0)).toBe(true);
-    expect(entries.every((row) => row.dataShape.summary && row.dataShape.requires.length > 0)).toBe(true);
+    expect(
+      entries.every(
+        (row) => row.producer?.skill && row.deliveryForms.length > 0,
+      ),
+    ).toBe(true);
+    expect(
+      entries.every(
+        (row) => row.dataShape.summary && row.dataShape.requires.length > 0,
+      ),
+    ).toBe(true);
   });
 
   it("keeps the generated Storyboard derivative exact and carries one revision into its reader", () => {
@@ -49,89 +58,164 @@ describe("the canonical visual catalogue", () => {
   });
 
   it("rejects duplicate IDs", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.treatments[1].id = value.treatments[0].id;
-    }))).toThrow(/duplicate treatment id/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.treatments[1].id = value.treatments[0].id;
+        }),
+      ),
+    ).toThrow(/duplicate treatment id/);
   });
 
   it("rejects unknown producers", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.formatPairs[0].producer = "not-shipped";
-    }))).toThrow(/unknown producer/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.formatPairs[0].producer = "not-shipped";
+        }),
+      ),
+    ).toThrow(/unknown producer/);
   });
 
   it("rejects missing delivery forms", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.formatPairs[0].deliveryForms.pop();
-    }))).toThrow(/delivery forms drifted/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.formatPairs[0].deliveryForms.pop();
+        }),
+      ),
+    ).toThrow(/delivery forms drifted/);
   });
 
   it("rejects unsupported publication formats", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.formatPairs[0].format = "print";
-    }))).toThrow(/unsupported format/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.formatPairs[0].format = "print";
+        }),
+      ),
+    ).toThrow(/unsupported format/);
   });
 
   it("rejects impossible size rules", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.formatPairs.find((row) => row.id === "chart.web").sizeRule = {
-        kind: "required",
-        options: ["landscape"],
-      };
-    }))).toThrow(/impossible size rule/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.formatPairs.find((row) => row.id === "chart.web").sizeRule = {
+            kind: "required",
+            options: ["landscape"],
+          };
+        }),
+      ),
+    ).toThrow(/impossible size rule/);
   });
 
   it("rejects proof-only rows without a concrete disabled reason", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      delete value.treatments.find((row) => row.id === "map.contour-isoline").disabledReason;
-    }))).toThrow(/needs a disabled reason/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          delete value.treatments.find(
+            (row) => row.id === "map.contour-isoline",
+          ).disabledReason;
+        }),
+      ),
+    ).toThrow(/needs a disabled reason/);
   });
 
   it("rejects unknown fields instead of silently widening the contract", () => {
-    expect(() => validateVisualCatalog(changed((value) => {
-      value.treatments[0].selectable = true;
-    }))).toThrow(/schema rejection.*Unrecognized key/);
+    expect(() =>
+      validateVisualCatalog(
+        changed((value) => {
+          value.treatments[0].selectable = true;
+        }),
+      ),
+    ).toThrow(/schema rejection.*Unrecognized key/);
   });
 
   it("never turns proof coverage into production authority", () => {
-    const row = visualCatalogueEntries().find((entry) => entry.id === "chart.beeswarm.static");
-    expect(row).toMatchObject({ state: "selectable", available: true, provenInThisFormat: false });
+    const row = visualCatalogueEntries().find(
+      (entry) => entry.id === "chart.beeswarm.static",
+    );
+    expect(row).toMatchObject({
+      state: "selectable",
+      available: true,
+      provenInThisFormat: false,
+    });
   });
 
   it("makes proof-only rows visible but impossible to select", () => {
-    const rows = visualCatalogueEntries().filter((entry) => entry.treatmentId === "map.contour-isoline");
+    const rows = visualCatalogueEntries().filter(
+      (entry) => entry.treatmentId === "map.contour-isoline",
+    );
     expect(rows).toHaveLength(4);
-    expect(rows.every((row) => !row.available && row.cause === "proof-only" && row.repairAction === null)).toBe(true);
-    expect(rows.every((row) => row.reason.includes("no shipped contour/isoline implementation"))).toBe(true);
+    expect(
+      rows.every(
+        (row) =>
+          !row.available &&
+          row.cause === "proof-only" &&
+          row.repairAction === null,
+      ),
+    ).toBe(true);
+    expect(
+      rows.every((row) =>
+        row.reason.includes("no shipped contour/isoline implementation"),
+      ),
+    ).toBe(true);
   });
 
   it("closes only map rows when the map capability is unavailable and names the remedy", () => {
     const rows = visualCatalogueEntries({
-      capabilities: { map: { available: false, reason: "MAPTILER_KEY is not saved" } },
+      capabilities: {
+        map: { available: false, reason: "MAPTILER_KEY is not saved" },
+      },
     });
-    const selectableMaps = rows.filter((row) => row.medium === "map" && row.state === "selectable");
-    const credentialIndependent = rows.filter((row) => row.medium !== "map" && row.state === "selectable");
-    expect(selectableMaps.every((row) => !row.available && row.reason === "MAPTILER_KEY is not saved")).toBe(true);
-    expect(selectableMaps.every((row) => row.repairAction === "open-readiness")).toBe(true);
+    const selectableMaps = rows.filter(
+      (row) => row.medium === "map" && row.state === "selectable",
+    );
+    const credentialIndependent = rows.filter(
+      (row) => row.medium !== "map" && row.state === "selectable",
+    );
+    expect(
+      selectableMaps.every(
+        (row) => !row.available && row.reason === "MAPTILER_KEY is not saved",
+      ),
+    ).toBe(true);
+    expect(
+      selectableMaps.every((row) => row.repairAction === "open-readiness"),
+    ).toBe(true);
     expect(credentialIndependent.every((row) => row.available)).toBe(true);
   });
 
   it("disables hosted delivery without disabling the underlying web visual", () => {
     const row = visualCatalogueEntries({
-      capabilities: { hostedEmbed: { available: false, reason: "Cloudflare is not configured" } },
+      capabilities: {
+        hostedEmbed: {
+          available: false,
+          reason: "Cloudflare is not configured",
+        },
+      },
     }).find((entry) => entry.id === "chart.line.web");
     expect(row.available).toBe(true);
-    expect(row.deliveryForms.find((form) => form.id === "owned-file").available).toBe(true);
-    expect(row.deliveryForms.find((form) => form.id === "embed")).toMatchObject({
-      available: false,
-      reason: "Cloudflare is not configured",
-      repairAction: "open-readiness",
-    });
+    expect(
+      row.deliveryForms.find((form) => form.id === "owned-file").available,
+    ).toBe(true);
+    expect(row.deliveryForms.find((form) => form.id === "embed")).toMatchObject(
+      {
+        available: false,
+        reason: "Cloudflare is not configured",
+        repairAction: "open-readiness",
+      },
+    );
   });
 
   it("joins the maintained Datawrapper mapping without turning it into an implicit choice", () => {
     const row = visualCatalogueEntries({
-      capabilities: { datawrapper: { available: false, reason: "DATAWRAPPER_TOKEN is not saved" } },
+      capabilities: {
+        datawrapper: {
+          available: false,
+          reason: "DATAWRAPPER_TOKEN is not saved",
+        },
+      },
     }).find((entry) => entry.id === "chart.line.web");
     expect(row.available).toBe(true);
     expect(row.producer.id).toBe("chart-web");
@@ -144,7 +228,10 @@ describe("the canonical visual catalogue", () => {
         defaultProviderType: "d3-lines",
       }),
     ]);
-    expect(visualCatalogueEntries().find((entry) => entry.id === "chart.line.video").producerAlternatives).toEqual([]);
+    expect(
+      visualCatalogueEntries().find((entry) => entry.id === "chart.line.video")
+        .producerAlternatives,
+    ).toEqual([]);
   });
 
   it("gives the root and Storyboard consumers identical stable option IDs", () => {

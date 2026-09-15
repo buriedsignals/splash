@@ -1,6 +1,6 @@
 ---
 name: scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). The two scrollies that exist are the IMAGE scrolly (a sequence of the journalist's own photographs) and the MAP scrolly; each is ONE medium under a travelling prose card, and that is the ordinary case. Assembling several media behind one narrative is a documented extension the seed also demonstrates, not the thing to reach for first. It does not invent a second drawing engine and it does not step a single chart through several states — there is no chart scrolly.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame, with an opaque prose card centred over it and travelling upward as the reader scrolls (the page itself does not scroll). The scrolly skill produces IMAGE, MAP and CHART scrollys: a sequence of the journalist's own photographs, a baked map (optionally a live MapTiler layer leashed to the subject), or a single chart whose states the scroll interpolates continuously — each ONE medium under a travelling prose card, and that is the ordinary case. Assembling several media behind one narrative is a documented extension the seed also demonstrates, not the thing to reach for first. It does not invent a second drawing engine, and a chart scrolly never replays the static chart's states as a slideshow — the scroll drives one continuous interpolation, each card changing the picture.
 ---
 
 # scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
@@ -11,12 +11,15 @@ The scroll-driven vehicle. It does not hold a chart type and it is not a scrolly
 it holds the **mechanism** — a FIXED graphic that fills the frame behind the reader's own scroll,
 with a pinned panel of prose sitting OVER it as N narrative steps go by.
 
-**START FROM THE SINGLE-MEDIUM CASE.** The two scrollies this toolchain produces are the **image
+**START FROM THE SINGLE-MEDIUM CASE.** The three scrollies this toolchain produces are the **image
 scrolly** — a sequence of the journalist's own photographs under travelling prose, which is what
-most reporting actually wants — and the **map scrolly**. One medium, one fixed graphic, prose cards
-over it. A journalist with fourteen photographs asked why an image scrolly had not been suggested,
-and the reasons were structural rather than editorial (#38): the medium had no type sheet to
-enumerate, and this skill's own headline example was the complicated one.
+most reporting actually wants — the **map scrolly**, and the **chart scrolly**: one chart on a fixed
+stage, the scroll interpolating its own states continuously as prose cards travel over it (see
+`references/types/` for the per-type sheets and `proof/scrolly-<type>-*` for the 32 worked
+examples). One medium, one fixed graphic, prose cards over it. A journalist with fourteen
+photographs asked why an image scrolly had not been suggested, and the reasons were structural
+rather than editorial (#38): the medium had no type sheet to enumerate, and this skill's own
+headline example was the complicated one.
 
 The data model was never in the way: `assemblyGap` returns `null` when `assembles` is empty, so a
 slot with `medium: image, format: scrolly` and no assembly list is already legal and already
@@ -35,8 +38,8 @@ demonstrated the mechanism but never the point: a **map** and a **chart** are me
 this project already produce on their own, and assembling BOTH behind one narrative is the thing
 none of them can do. `test/canon.test.ts` refuses a seed that loses either track.
 
-**This is the one vehicle Splash publicly promises.** Chart beats ship static, web and video; maps
-ship the same three. Nothing scrolled, and nothing assembled two media at once.
+**This is the one vehicle Splash publicly promises.** Chart beats ship static, web, video and
+scrolly; maps ship the same four. Assembling two media at once is what only this skill does.
 
 `references/scrolly-discipline.md` carries the doctrine and the full account of what each round of
 this element got wrong. Read it before writing a second scrolly beat.
@@ -45,12 +48,15 @@ this element got wrong. Read it before writing a second scrolly beat.
 
 - When a closed `STORYBOARD.md` picks a scroll-driven interactive for a beat whose argument is
   genuinely told across **different kinds of evidence** — a scene, then a map, then a chart —
-  narrated as one sequence. That is what this vehicle is FOR: assembling media a single beat, of any
-  one format, cannot assemble on its own.
-- **If every step would show the same chart, do not reach for this skill — animate the beat
-  instead.** A scrolly that steps four states of one chart is not a vehicle carrying different
-  media; it is a duplicate of a beat that already exists under `chart-web` or
-  `chart-beat`, stepped by hand instead of animated.
+  narrated as one sequence. That is what the multi-track ASSEMBLY extension is FOR: assembling media
+  a single beat, of any one format, cannot assemble on its own.
+- **Or when a single chart or map argues its point BETTER as a scroll-led continuous transformation
+  than as one static frame or an unguided web page.** One chart, one fixed stage, prose cards
+  travelling over it while the scroll interpolates the chart's own states continuously — never a
+  replay of the static chart's states as a slideshow, never marks popping in groups on a fixed
+  picture, never two pictures overlapping on one card. Read `references/types/<type>.md` for the
+  type's scroll gestures, what a choreography must not do, and the worked `proof/scrolly-<type>-*`
+  example before writing a beat's own choreography.
 - When the argument is stronger revealed in STEPS than shown all at once — never suspense for its
   own sake. The beat's overall claim is stated in full in the header, before any step's reveal.
 - **Not** a place to invent a new drawing engine. Nothing under a skill may import out of it, so a
