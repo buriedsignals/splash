@@ -91,10 +91,17 @@ const style = {
   ],
 };
 
-// Cameras carry every field the plan's own bindings read (`reveal`, here) — `plan.cameras` is typed
-// `state[]`, not `camera[]`: a card's camera IS its state, so the runtime's own auto-restore of
-// `cameras[0]` once ready (no scroll position pending yet) has a `reveal` to paint, not just a view.
+// `plan.cameras` are PURE camera fields — exactly `cameraFields`'s own output, nothing else — the
+// shape Tasks 7-9 actually produce, and the warm reads only these. A card's full STATE (its camera
+// plus every field a binding reads, `reveal` here) lives separately in `plan.statesForCards`: the
+// runtime's own auto-restore of card 1 once ready (no scroll position pending yet) overlays
+// `statesForCards[0]` onto `cameras[0]` rather than assuming the camera alone carries what a binding
+// needs — the regression this file now guards is exactly a restore that assumed it did.
 const CAMERAS = [
+  cameraFields({ center: [10, 50], zoom: 3 }),
+  cameraFields({ center: [20, 41], zoom: 6 }),
+];
+const STATES_FOR_CARDS = [
   { ...cameraFields({ center: [10, 50], zoom: 3 }), reveal: 0 },
   { ...cameraFields({ center: [20, 41], zoom: 6 }), reveal: 1 },
 ];
@@ -105,6 +112,7 @@ const plan = {
   tints: { water: "#aaccee", land: "#f4f1ea" },
   warmSamples: 1,
   cameras: CAMERAS,
+  statesForCards: STATES_FOR_CARDS,
   degreesPerPixel: 1,
   layers: [
     {
@@ -301,6 +309,44 @@ describe("the scrolly map runtime in a browser", () => {
         plan.cameras[0].camZoom + Math.log2(width / 800),
         6,
       );
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
+  it("should reveal on card 1's own state when no scroll state is ever applied before ready", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = await new Promise<any>((resolve) => {
+          const h = (window as any).initScrollyMap(
+            root,
+            { ...plan, referenceWidth: 800 },
+            { window, onReady: () => resolve(h), warmTimeoutMs: 2000 },
+          );
+        });
+        // No external `applyScrollyMap` call at all: `plan.cameras` alone (pure camera fields, no
+        // `reveal`) would throw inside `bindState` if the restore did not also reach for
+        // `plan.statesForCards`.
+        return {
+          center: handle.map.getCenter().toArray(),
+          zoom: handle.map.getZoom(),
+          opacity: handle.map.getPaintProperty("square", "fill-opacity"),
+          live: (root.querySelector("[data-part=live]") as HTMLElement).style
+            .opacity,
+          liveError: root.dataset.liveError,
+        };
+      }, plan);
+      const expected = viewOf(plan.statesForCards[0]);
+      expect(result.center[0]).toBeCloseTo(expected.center[0], 4);
+      expect(result.center[1]).toBeCloseTo(expected.center[1], 4);
+      expect(result.zoom).toBeCloseTo(expected.zoom, 6);
+      expect(result.opacity).toBe(plan.statesForCards[0].reveal);
+      expect(result.live).toBe("1");
+      expect(result.liveError).toBeUndefined();
     } finally {
       await page.close();
     }

@@ -133,11 +133,20 @@ function initScrollyMap(root, plan, options) {
       // the camera on the last card; revealing before this would show a reader the wrong end of the
       // beat for one frame. `ready` is set first because `applyScrollyMap` itself gates on it —
       // otherwise this call would only queue itself back into `pending`.
-      handle.ready = true;
-      applyScrollyMap(handle, handle.pending || plan.cameras[0]);
-      handle.pending = null;
-      container.style.opacity = "1";
-      if (options && options.onReady) options.onReady(map);
+      //
+      // `plan.cameras` carries pure camera fields (`cameraFields`'s own output) — no bound field a
+      // layer's `bindings` might read, like `reveal`. The per-card STATE those bindings need lives in
+      // `plan.statesForCards`, when a beat has any: the first card's camera, overlaid with the first
+      // card's full state so a binding resolves to what card 1 actually paints rather than throwing.
+      try {
+        handle.ready = true;
+        applyScrollyMap(handle, handle.pending || { ...plan.cameras[0], ...(plan.statesForCards && plan.statesForCards[0]) });
+        handle.pending = null;
+        container.style.opacity = "1";
+        if (options && options.onReady) options.onReady(map);
+      } catch (err) {
+        fail((err && err.message) || "the live map failed to restore its first camera");
+      }
     });
   });
 
