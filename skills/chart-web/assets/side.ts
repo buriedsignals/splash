@@ -585,19 +585,46 @@ export function sideNotesForMarkup(
   }));
 }
 
-/** The attributes one cut's whole plate carries, so `assertOneCut` can read it back. */
-export function sideLayerAttrs(slug: string): { "data-side": string } {
-  return { "data-side": slug };
+/** How long a band takes to cross to its new side. A JUDGEMENT, and a knob: slow enough that a
+ *  reader can follow ONE band across the centre — which is the whole of what the owner asked to be
+ *  able to see — and short enough that pressing the second pill is not waiting for the first. It is
+ *  not measured off anything, and saying so is better than dressing it as arithmetic. */
+export const SIDE_TRAVEL_MS = 420;
+
+/** ONE CLOCK FOR EVERYTHING THAT MOVES, and it is load-bearing rather than tidy. The bands travel on
+ *  `transform`, in SVG user units; the net marker travels on `left`, as a percentage of an HTML
+ *  layer. Two engines, two coordinate systems, one flight — and they stay together only because they
+ *  are given the same duration and the same easing. `reorder.ts` measured exactly this on the radar
+ *  (a dot and the corner under it, both 13,3 % of the way at 400ms of 3000); here a drift would show
+ *  a bar arriving before the figure that summarises it. */
+export const SIDE_TRAVEL_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** The key naming ONE BAND for good.
+ *
+ *  The first mechanism keyed a band by cut as well as by row and barreau, because each cut drew its
+ *  own copy. It does not any more: A CUT CHANGES WHERE A BAND IS DRAWN AND NEVER WHAT IT IS, so one
+ *  key names one rectangle on the page in every state. That is precisely what lets the drawing be
+ *  shared — and a shared drawing is the only thing that can travel. */
+export function sideMarkOf(row: string, level: string): string {
+  return `${row}-${sideSlugOf(level)}`;
 }
 
-/** The attributes one drawn band carries inside a plate. Both, always — an element carrying the
- *  band and not the cut is the half-tagged datum `filter.ts` was written about. */
+/** The attributes one cut's HIT PLATE carries — the transparent `<svg>` holding only the points that
+ *  answer. Swapped with `display`, so an unchosen one has no box, no pointer event and no tab stop. */
+export function sidePlateAttrs(slug: string): { "data-side-plate": string } {
+  return { "data-side-plate": slug };
+}
+
+/** The attributes one drawn band carries in the ONE drawing. `data-mark` is the format's own
+ *  contract for the shape a point speaks for; `data-side-band` is what `assertOneCut` reads back and
+ *  what the travel's rules are written against. Both, always — an element carrying one and not the
+ *  other is the half-tagged datum `filter.ts` was written about. */
 export function sideBandAttrs(
-  slug: string,
   row: string,
   level: string,
-): { "data-side": string; "data-side-band": string } {
-  return { "data-side": slug, "data-side-band": `${row}:${sideSlugOf(level)}` };
+): { "data-side-band": string; "data-mark": string } {
+  const mark = sideMarkOf(row, level);
+  return { "data-side-band": mark, "data-mark": mark };
 }
 
 /**
@@ -688,20 +715,157 @@ export function sideBandsOf(
 }
 
 /**
+ * THE TRAVEL'S OWN ARITHMETIC, AND THE PRECONDITION IT REFUSES TO PROCEED WITHOUT.
+ *
+ * WHAT THE OWNER ASKED FOR. He looked at `nocturne` built on the first mechanism and said the bars'
+ * movement under the control *« pourrait être lerp et smooth au lieu d'être saccadé »*. The first
+ * mechanism could not do it, and the reason was structural rather than cosmetic: every cut was a
+ * whole `<svg>` revealed with `display`, and `display` cannot be transitioned.
+ *
+ * THE THREE TRIGGERS CSS HAS, AND WHAT EACH MEASURED — not re-measured here, inherited from
+ * `reorder.ts`, which drove all three in Chrome: (1) an animation on a plate being revealed runs
+ * while the plate is still hidden and is spent by the time anyone presses the pill; (2)
+ * `@starting-style` plus `allow-discrete` fires once, at load, for the hidden plate too; (3) A
+ * PROPERTY CHANGING ON AN ELEMENT THAT IS ALWAYS RENDERED — the only one that works, and it decides
+ * the architecture.
+ *
+ * WHY THIS TYPE CAN TRAVEL AT ALL, WHICH IS A FACT ABOUT ITS ARITHMETIC AND NOT A CHOICE.
+ * A cut moves a barreau from one camp to the other. It does not resize one — the share is the share.
+ * So every band has THE SAME WIDTH under every cut, including the straddling one, whose span
+ * `[-s/2, +s/2]` is also `s` wide, and the whole difference between two cuts is a HORIZONTAL
+ * DISPLACEMENT. A pure translation is therefore an exact, continuous path between any two of the
+ * four states — there is nothing to morph, nothing to fade, and nothing approximated. This function
+ * computes those displacements and REFUSES if any band's extent ever differs from the default's,
+ * because that would not merely be a style slip: there is no continuous path between two rectangles
+ * of different widths that a reader could read as the same band, and the travel would be a lie about
+ * which band went where.
+ *
+ * AND THE TRAVEL TURNED OUT TO BE RIGID, WHICH IS STRONGER THAN WHAT WAS ARGUED FOR. Within one
+ * row every band's displacement is the SAME number. It has to be: a row's two camps always total
+ * 100 %, so its bar is always the same length, and a cut only changes where its left edge starts —
+ * `left_A` becomes `left_B` and every band inside moves by `left_A - left_B`. So the bar does not
+ * deform at all. It SLIDES, and the fixed centre line passes through it, which is the reader's own
+ * gesture made literal: the reader is moving the cut, and the picture shows the cut moving.
+ * Measured in Chrome on the six rows across all three transitions: the worst seam between two
+ * adjacent bands mid-flight is 0,000 px and the bar's span holds at 622,0 px throughout.
+ *
+ * The rules are still emitted PER BAND rather than per row, because the rigidity is a property of
+ * this beat's arithmetic and not of this vocabulary's contract: a declaration whose camps did not
+ * total a constant would still be drawn correctly, and the extent refusal above is what catches the
+ * one case that could not be.
+ *
+ * `shift` is in the axis's own unit. The component and `sideCss` both take it from here, so a band
+ * and the rule that moves it cannot be computed twice and disagree.
+ */
+export function sideTravelOf(declaration: SideDeclaration): {
+  base: { mark: string; row: string; level: string; from: number; to: number; share: number }[];
+  offsets: { slug: string; mark: string; shift: number }[];
+} {
+  const firstSlug = sideSlugOf(declaration.cuts[0].key);
+  const base: { mark: string; row: string; level: string; from: number; to: number; share: number }[] = [];
+  const extent = new Map<string, number>();
+  const start = new Map<string, number>();
+  for (const row of declaration.rows)
+    for (const band of sideBandsOf(declaration, firstSlug, row)) {
+      if (!(band.share > 0)) continue;
+      const mark = sideMarkOf(row, band.level);
+      base.push({ mark, row, level: band.level, from: band.from, to: band.to, share: band.share });
+      extent.set(mark, band.to - band.from);
+      start.set(mark, band.from);
+    }
+
+  const offsets: { slug: string; mark: string; shift: number }[] = [];
+  for (const cut of declaration.cuts) {
+    const slug = sideSlugOf(cut.key);
+    for (const row of declaration.rows)
+      for (const band of sideBandsOf(declaration, slug, row)) {
+        if (!(band.share > 0)) continue;
+        const mark = sideMarkOf(row, band.level);
+        const was = extent.get(mark);
+        if (was === undefined)
+          throw new Error(
+            `side travel: cut ${JSON.stringify(cut.label)} draws the band ${JSON.stringify(mark)} ` +
+              "and the default cut draws none. A band that exists under one cut and not another has " +
+              "nowhere to travel from, and the drawing is shared by every cut.",
+          );
+        if (Math.abs(band.to - band.from - was) > 1e-9)
+          throw new Error(
+            `side travel: cut ${JSON.stringify(cut.label)} draws the band ${JSON.stringify(mark)} ` +
+              `${(band.to - band.from).toFixed(4)} units wide and the default draws it ` +
+              `${was.toFixed(4)}. A cut moves a barreau from one camp to the other; it never resizes ` +
+              "one. That is not a style rule here — it is what makes the travel EXPRESSIBLE AT ALL: " +
+              "a pure translation is a continuous path between any two cuts, and there is no " +
+              "continuous path between two rectangles of different widths that a reader could read " +
+              "as the same band.",
+          );
+        offsets.push({ slug, mark, shift: band.from - (start.get(mark) as number) });
+      }
+  }
+  return { base, offsets };
+}
+
+/**
+ * THE VERTEX — HERE, THE BAND — STILL LIGHTS UNDER THE POINTER, ACROSS THE SPLIT.
+ *
+ * `interaction.mjs` carries `.mark-active` from a point to `[data-mark="<key>"]` found with
+ * `svg.querySelectorAll` — INSIDE THE SAME `<svg>`. The drawing and the layer that answers are now
+ * two `<svg>`s, so that lookup finds nothing and the format's own `--mark-active` mechanism goes
+ * quiet. This puts it back in CSS, which can cross the boundary because both live under one
+ * `.chart-plot`: `:has()` on the plot, keyed on the point, painting the band in the colour THE BEAT
+ * declared and measured against that band's own fill. The mechanism is `count.ts`'s, reused rather
+ * than re-invented — including its finding that `:focus` in the selector gives a keyboard reader the
+ * lift the script used to be the only source of.
+ *
+ * WHAT IT COSTS WITH NO SCRIPT: `.pt-active` is the script's class, so a POINTER hover does not lift
+ * a band on a page whose script is blocked. `:focus` still does, so the reading is reachable; and the
+ * complete plate is there either way, which is the promise this format actually makes.
+ */
+export function sideMarkLiftCss({ scope, marks }: { scope: string; marks: string[] }): string {
+  if (marks.length === 0) return "";
+  const when = (key: string, state: string) =>
+    `${scope} .chart-plot:has(.pt[data-mark-ref="${key}"]${state})`;
+  const lines: string[] = [
+    `/* The band the pointed point speaks for, lit across the drawing/hit-plate split, in the dose`,
+    `   the beat sought against that band's OWN painted fill (--mark-active, set on the band). */`,
+  ];
+  for (const key of marks)
+    lines.push(
+      `${when(key, ".pt-active")} [data-mark="${key}"],`,
+      `${when(key, ":focus")} [data-mark="${key}"] { fill: var(--mark-active); }`,
+    );
+  return lines.join("\n");
+}
+
+/**
  * THE STYLESHEET, AND IT IS THE WHOLE MECHANISM. Pure CSS: `:has()` on the scope plus `:checked` on
  * a real radio. No script runs, so the control works with JavaScript off exactly as it works with it
  * on — and the empty string returned for a beat with no declaration is what makes "no dead CSS"
  * literal rather than aspirational, exactly as `filterCss`, `floorCss` and `qualifyCss` do.
  *
- * THE SELECTORS ARE ORDERED, NOT WEIGHTED. `${scope} svg.chart[data-side]` and
- * `${scope} svg.chart[data-side="<slug>"]` score identically — an attribute selector with a value is
- * still one attribute selector — so which wins is source order and nothing else; every blanket is
- * emitted FIRST and the default's reveal after it, and the same pair again inside each cut's
- * `:has()` scope, blanket first. A sankey on this branch rendered green with zero ribbons lit for
- * getting exactly this backwards.
+ * WHAT IT SWAPS IS NO LONGER THE PICTURE. See `sideTravelOf` for why: the bands are ONE drawing that
+ * travels on `transform`, and what `display` still swaps is the transparent HIT PLATES, the two
+ * gutter totals and the revealed sentence. The drawing answers nothing, so nothing that answers ever
+ * moves — which is the defect the first mechanism existed to avoid and which has not gone away:
+ * `interaction.mjs` resolves the mark under a pointer from `cx`/`cy` read ONCE at init.
+ *
+ * THE ONE HONEST COST, STATED RATHER THAN HIDDEN, and it is `reorder.ts`'s: for the travel's own
+ * duration the hit layer is already at the destination while the bands are still in the air. A
+ * reader who points DURING the flight is answered about the band that is ARRIVING. Nothing is ever
+ * answered from a place no band will occupy, which is the failure the split exists to prevent.
+ *
+ * THE SELECTORS ARE ORDERED, NOT WEIGHTED. `${scope} svg.chart[data-side-plate]` and
+ * `${scope} svg.chart[data-side-plate="<slug>"]` score identically — an attribute selector with a
+ * value is still one attribute selector — so which wins is source order and nothing else; every
+ * blanket is emitted FIRST and the default's reveal after it, and the same pair again inside each
+ * cut's `:has()` scope, blanket first. A sankey on this branch rendered green with zero ribbons lit
+ * for getting exactly this backwards.
  *
  * NO SELECTOR HERE IS GROUPED, for the defect `stack.ts` records at length: a descendant prefix
  * binds to the first selector of a group only.
+ *
+ * EVERY TRANSITION IS EMITTED LAST, INSIDE `@media (prefers-reduced-motion: no-preference)`, where
+ * `reduce` cannot reach it — and the declarations that SET the geometry are outside that query, so a
+ * reader who asks for no motion gets the new picture already in place rather than no picture.
  *
  * IT EMITS `data-stack-total` AND `data-stack-note`, WHICH IS NOT A COPY-PASTE SLIP. Those two
  * strings are the FORMAT'S DISCOVERY CONTRACT for a control that moves the picture, owes the reader
@@ -716,72 +880,106 @@ export function sideCss(
   {
     scope,
     idPrefix,
-    netMs,
+    width,
+    travelMs = SIDE_TRAVEL_MS,
   }: {
     scope: string;
     idPrefix: string;
-    /** How long a net marker takes to reach its new position. Honoured only under `no-preference`. */
-    netMs: number;
+    /** The plot's own width in geometry units — what a displacement in the axis's unit is turned
+     *  into user units with. ONE conversion, shared with the component through `sideAt`, because two
+     *  derivations of one mapping is how a band comes to be moved somewhere its own figure is not. */
+    width: number;
+    /** How long the flight takes. Honoured only under `no-preference`. */
+    travelMs?: number;
   },
 ): string {
   if (!declaration) return "";
+  if (!Number.isFinite(width) || width <= 0)
+    throw new Error(`side: the plot width must be a positive number of geometry units, got ${width}`);
   const round = (n: number) => Number(n.toFixed(3));
-  const place = (net: number) =>
-    round(sideAt(net, { axisMax: declaration.axisMax }));
+  const place = (net: number) => round(sideAt(net, { axisMax: declaration.axisMax }));
+  /** A displacement in the axis's unit, in SVG user units. `sideAt` is the one mapping; a shift is
+   *  the difference of two of its answers, so a band and its net marker cross the same distance. */
+  const travel = (shift: number) =>
+    round(
+      ((sideAt(shift, { axisMax: declaration.axisMax }) -
+        sideAt(0, { axisMax: declaration.axisMax })) /
+        100) *
+        width,
+    );
   const first = declaration.cuts[0];
   const defaultSlug = sideSlugOf(first.key);
+  const { offsets } = sideTravelOf(declaration);
+
   const lines: string[] = [
     `/* The boundary this beat declared: ${declaration.cuts.length} positions on a ${declaration.levels.length}-barreau scale,`,
     `   over ${JSON.stringify(declaration.label)}. Radios plus :checked/:has(), generated once at build`,
     `   time — the same mechanism filter.ts narrows with, and the reason this control needs no script`,
-    `   and survives one being blocked. */`,
+    `   and survives one being blocked. The bands are ONE drawing and they TRAVEL; what display still`,
+    `   swaps is the transparent hit plates, the gutter totals and the revealed sentence. */`,
     `${scope} [data-stack-note] { display: none; }`,
     `${scope} [data-stack-total] { display: none; }`,
-    `${scope} svg.chart[data-side] { display: none; }`,
-    `${scope} svg.chart[data-side="${defaultSlug}"] { display: block; }`,
+    `${scope} svg.chart[data-side-plate] { display: none; }`,
+    `${scope} svg.chart[data-side-plate="${defaultSlug}"] { display: block; }`,
     `${scope} [data-stack-total="${defaultSlug}"] { display: block; }`,
+    `/* The property has to EXIST on the element at rest for a transition to have anything to run`,
+    `   from, so the default cut's own place is written as a translation of zero rather than left`,
+    `   unsaid. Generated here and never inline: an inline transform wins against every rule below`,
+    `   it, and the bands would stand still while the picture around them changed. */`,
+    `${scope} [data-side-band] { transform: translateX(0px); }`,
   ];
   // The DEFAULT cut's net markers, generated here rather than written inline on the element, for the
-  // reason `floor.ts`, `weigh.ts` and `qualify.ts` all record: an inline `left` wins against every
-  // rule below it, so the marker would never move and a reader would watch a row change camp while
-  // the mark drawing that change sat still.
+  // reason `floor.ts`, `weigh.ts` and `qualify.ts` all record.
   for (const lean of first.leans)
-    lines.push(
-      `${scope} [data-side-net="${lean.row}"] { left: ${place(lean.net)}%; }`,
-    );
-  lines.push(
-    `@media (prefers-reduced-motion: no-preference) {`,
-    `  ${scope} [data-side-net] { transition: left ${netMs}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
-    `}`,
-  );
+    lines.push(`${scope} [data-side-net="${lean.row}"] { left: ${place(lean.net)}%; }`);
+
   for (const cut of declaration.cuts) {
     const slug = sideSlugOf(cut.key);
     const on = `${scope}:has(#${sideOptionId(idPrefix, slug)}:checked)`;
     lines.push(
-      `${on} svg.chart[data-side] { display: none; }`,
-      `${on} svg.chart[data-side="${slug}"] { display: block; }`,
+      `${on} svg.chart[data-side-plate] { display: none; }`,
+      `${on} svg.chart[data-side-plate="${slug}"] { display: block; }`,
       `${on} [data-stack-total] { display: none; }`,
       `${on} [data-stack-total="${slug}"] { display: block; }`,
     );
+    // A band that does not move under this cut gets no rule: the base rule above already puts it at
+    // zero, and a rule that restates it would be bytes that decide nothing.
+    for (const offset of offsets)
+      if (offset.slug === slug && Math.abs(offset.shift) > 1e-9)
+        lines.push(
+          `${on} [data-side-band="${offset.mark}"] { transform: translateX(${travel(offset.shift)}px); }`,
+        );
     for (const lean of cut.leans)
-      lines.push(
-        `${on} [data-side-net="${lean.row}"] { left: ${place(lean.net)}%; }`,
-      );
-    if (cut.note)
-      lines.push(`${on} [data-stack-note="${slug}"] { display: revert; }`);
+      lines.push(`${on} [data-side-net="${lean.row}"] { left: ${place(lean.net)}%; }`);
+    if (cut.note) lines.push(`${on} [data-stack-note="${slug}"] { display: revert; }`);
   }
+
+  lines.push(
+    `@media (prefers-reduced-motion: no-preference) {`,
+    `  /* ONE CLOCK. The band crosses in SVG user units and the net marker in per cent of an HTML`,
+    `     layer; same duration, same easing, so the bar and the figure that summarises it arrive`,
+    `     together. See SIDE_TRAVEL_EASING. */`,
+    `  ${scope} [data-side-band] { transition: transform ${travelMs}ms ${SIDE_TRAVEL_EASING}; }`,
+    `  ${scope} [data-side-net] { transition: left ${travelMs}ms ${SIDE_TRAVEL_EASING}; }`,
+    `}`,
+  );
   return lines.join("\n");
 }
 
 /**
- * Reads the WRITTEN PAGE back, which is the only place three of these refusals can be made.
+ * Reads the WRITTEN PAGE back, which is the only place these refusals can be made.
  *
- * `filter.ts` earned the first: an element drawn from a datum that carries the band and not the cut
- * is a half-tagged datum, and its visible symptom is a label left over a picture it no longer
- * belongs to. `descend.ts` earned the second by mutation — dropping the stylesheet call left every
- * plate drawn on top of every other while every attribute-level check stayed green, because the
- * attributes were all still perfectly correct. `weigh.ts` earned the third, and it is inherited here
- * rather than re-earned: see the note at the ordering check.
+ * `filter.ts` earned the first: an element drawn from a datum that carries the band and not the
+ * vocabulary is a half-tagged datum. `descend.ts` earned the second by mutation — dropping the
+ * stylesheet call left every plate drawn on top of every other while every attribute-level check
+ * stayed green, because the attributes were all still perfectly correct. `weigh.ts` earned the
+ * ordering one, inherited here rather than re-earned.
+ *
+ * AND TWO THIS PAGE'S NEW SHAPE EARNS ON ITS OWN, both about the split between the drawing and the
+ * plates. A drawing that could answer would answer from where its bands USED to be, because
+ * `interaction.mjs` reads coordinates once at init and no transform updates them; and a cut with no
+ * travel rule is a cut whose bands jump, which is the defect this whole mechanism was rebuilt to
+ * close. Neither can be seen in a declaration — both are facts about the written document.
  */
 export function assertOneCut(
   html: string,
@@ -790,30 +988,65 @@ export function assertOneCut(
 ): void {
   if (!declaration) return;
   const slugs = declaration.cuts.map((cut) => sideSlugOf(cut.key));
-  const declared = new Set(slugs);
+  const { base } = sideTravelOf(declaration);
 
-  const tags =
-    html.match(/<[a-zA-Z][^>]*\sdata-side-band="[^"]*"[^>]*>/g) ?? [];
+  const tags = html.match(/<[a-zA-Z][^>]*\sdata-side-band="[^"]*"[^>]*>/g) ?? [];
   if (tags.length === 0)
     throw new Error(
       `${where}: not one element carries \`data-side-band\`. The pills would be drawn over a ` +
         "picture they cannot reach — the same fact `filter.ts` refuses as an option that tags nothing.",
     );
+  const drawn = new Set<string>();
   for (const tag of tags) {
-    const cut = /\sdata-side="([^"]*)"/.exec(tag);
     const band = /\sdata-side-band="([^"]*)"/.exec(tag);
-    if (!cut || !declared.has(cut[1]))
+    const mark = /\sdata-mark="([^"]*)"/.exec(tag);
+    if (!band || !mark || band[1] !== mark[1])
       throw new Error(
-        `${where}: the band ${JSON.stringify(band?.[1] ?? "?")} is drawn with ` +
-          `${cut ? `data-side="${cut[1]}"` : "no data-side"}, which is not one of the declared cuts ` +
-          `(${slugs.join(", ")}). A half-tagged band is drawn under every cut at once.`,
+        `${where}: the band ${JSON.stringify(band?.[1] ?? "?")} carries ` +
+          `${mark ? `data-mark="${mark[1]}"` : "no data-mark"}. A band tagged for the travel and not ` +
+          "for the format's own mark contract is lit by nothing when a reader points at it, and a " +
+          "band tagged the other way round travels nowhere.",
+      );
+    drawn.add(band[1]);
+  }
+  for (const band of base)
+    if (!drawn.has(band.mark))
+      throw new Error(
+        `${where}: the band ${JSON.stringify(band.mark)} is declared at ${band.share.toFixed(2)} % ` +
+          "and the page draws none. A share with no rectangle is a figure the reader is asked to " +
+          "take on trust.",
+      );
+
+  // THE DRAWING MUST NOT ANSWER, AND THE PLATES MUST NOT DRAW. Read off the document rather than
+  // trusted: a `.pt` inside the travelling drawing would be resolved from coordinates taken once at
+  // init and would answer for the side its band has left.
+  for (const chunk of String(html).split(/<svg\b/).slice(1)) {
+    const close = chunk.indexOf(">");
+    const head = close < 0 ? chunk : chunk.slice(0, close);
+    const ends = chunk.indexOf("</svg>");
+    const body = ends < 0 ? chunk : chunk.slice(0, ends);
+    const draws = /\sdata-side-band="/.test(body);
+    if (!draws) continue;
+    if (/class="pt"/.test(body))
+      throw new Error(
+        `${where}: the <svg> that draws the travelling bands also carries the points that answer. ` +
+          "`interaction.mjs` resolves the mark under a pointer from coordinates read ONCE at init, " +
+          "which no CSS transform ever updates, so every one of those points would answer for the " +
+          "side its band has left. The drawing and the hit plates are two <svg>s on purpose.",
+      );
+    if (!/aria-hidden="true"/.test(head))
+      throw new Error(
+        `${where}: the <svg> that draws the travelling bands is not \`aria-hidden\`. It is a picture ` +
+          "of the data and not a way to ask it anything — the hit plates carry the readings, and a " +
+          "screen reader offered both would meet every band twice.",
       );
   }
 
   for (const slug of slugs) {
-    if (!html.includes(`data-side="${slug}"`))
+    if (!html.includes(`data-side-plate="${slug}"`))
       throw new Error(
-        `${where}: the cut ${JSON.stringify(slug)} is declared and nothing on the page carries it`,
+        `${where}: the cut ${JSON.stringify(slug)} is declared and the page carries no hit plate ` +
+          "for it, so nothing answers a pointer while it is chosen",
       );
     if (!new RegExp(`#[\\w-]*${slug}:checked`).test(html))
       throw new Error(
@@ -823,8 +1056,29 @@ export function assertOneCut(
       );
   }
 
-  // Every row the declaration reads a lean for has a marker to draw it with, or the reading this
-  // control hands back is a number with nothing behind it.
+  // EVERY NON-DEFAULT CUT MOVES SOMETHING, AND THE MOVEMENT IS A TRANSITION. The first half is what
+  // makes the travel real; the second is what makes it a lerp rather than a jump, which is the whole
+  // of what was asked for.
+  for (const slug of slugs.slice(1))
+    if (
+      !new RegExp(
+        `#[\\w-]*${slug}:checked\\)\\s\\[data-side-band="[^"]+"\\]\\s*\\{\\s*transform:\\s*translateX\\(`,
+      ).test(html)
+    )
+      throw new Error(
+        `${where}: the cut ${JSON.stringify(slug)} moves no band. Every cut but the default puts at ` +
+          "least one barreau on the other camp's side of the centre, so a cut whose stylesheet " +
+          "displaces nothing is drawing the default's picture under a second name.",
+      );
+  if (!/\[data-side-band\]\s*\{\s*transition:\s*transform\s/.test(html))
+    throw new Error(
+      `${where}: the bands carry no transition, so they JUMP between cuts. That is the defect this ` +
+        "mechanism was rebuilt to close — « le mouvement au filtre des barres pourrait être lerp et " +
+        'smooth au lieu d\'être saccadé ». The transition belongs inside ' +
+        "`@media (prefers-reduced-motion: no-preference)`, never outside it.",
+    );
+
+  // Every row the declaration reads a lean for has a marker to draw it with.
   for (const lean of declaration.cuts[0].leans)
     if (!html.includes(`data-side-net="${lean.row}"`))
       throw new Error(
@@ -833,28 +1087,27 @@ export function assertOneCut(
           "reader is asked to take on trust.",
       );
 
-  const blanket = html.search(/svg\.chart\[data-side\]\s*\{\s*display:\s*none/);
+  const blanket = html.search(/svg\.chart\[data-side-plate\]\s*\{\s*display:\s*none/);
   if (blanket < 0)
     throw new Error(
-      `${where}: the stylesheet carries no blanket rule hiding the plates, so all ${slugs.length} ` +
-        "are drawn at once. This is the rule that must be emitted FIRST, before the default plate's " +
+      `${where}: the stylesheet carries no blanket rule hiding the hit plates, so all ${slugs.length} ` +
+        "answer at once. This is the rule that must be emitted FIRST, before the default plate's " +
         "own — two attribute selectors score identically and source order is the whole mechanism.",
     );
   // AND IT MUST COME FIRST, WHICH IS A SEPARATE FACT. `weigh.ts` found it by mutation and records it
   // in full: swapping the two base rules renders GREEN in Chrome and at every check, because the
   // DEFAULT cut's own `:has(#…:checked)` block scores (1,3,0) against the base pair's (0,2,1), so in
   // an engine with `:has()` the base pair never decides anything. It decides everything in an engine
-  // WITHOUT it, where the swap leaves `display: none` last and the page ships a chart with no bars
-  // in it. Neither the render path nor the verifier can see that; both are Chrome.
+  // WITHOUT it, where the swap leaves `display: none` last and every reading is unreachable.
   const reveal = html.search(
-    new RegExp(`svg\\.chart\\[data-side="${slugs[0]}"\\]\\s*\\{\\s*display:`),
+    new RegExp(`svg\\.chart\\[data-side-plate="${slugs[0]}"\\]\\s*\\{\\s*display:`),
   );
   if (reveal >= 0 && reveal < blanket)
     throw new Error(
-      `${where}: the stylesheet reveals the default plate BEFORE the blanket rule that hides them ` +
-        "all. Two attribute selectors score identically, so source order is the whole mechanism — " +
-        "and an engine without `:has()`, which is the only engine the base pair ever decides " +
-        "anything for, would be shown a chart with no bars in it.",
+      `${where}: the stylesheet reveals the default hit plate BEFORE the blanket rule that hides ` +
+        "them all. Two attribute selectors score identically, so source order is the whole " +
+        "mechanism — and an engine without `:has()`, which is the only engine the base pair ever " +
+        "decides anything for, would have every plate answering at once.",
     );
 }
 

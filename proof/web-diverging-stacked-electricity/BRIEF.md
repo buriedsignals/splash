@@ -164,13 +164,44 @@ depuis SON PROPRE remplissage par une dose CHERCHÉE jusqu'à un écart mesuré 
 réellement peinte), jamais une dose fixe. Les `.pt` sont invisibles et ne servent qu'à nommer la
 bande (`data-mark-ref` → `data-mark`), ce que le format prévoit.
 
-**« Le changement d'état s'interpole quand c'est possible. »** Les rails se coupent net — ils
-DOIVENT, parce que `interaction.mjs` lit les coordonnées une fois à l'init et qu'une bande animée
-répondrait pour la position qu'elle a quittée. Ce qui s'interpole, c'est **le repère de net** : un
-petit trait HTML par ligne, TOUJOURS rendu, dont la position est générée par coupure et transitionnée.
-C'est la forme qu'une transition demande (`display` ne s'interpole pas), et c'est le seul mouvement
-de la page dont le lecteur voit la raison parce que **le mouvement EST la lecture** : le net d'une
-ligne est ce que le contrôle rend, et le trait est ce net dessiné.
+**« Le changement d'état s'interpole quand c'est possible. »** **Première version manquée, puis
+fermée.** Les quatre coupures étaient quatre `<svg>` révélées par `display`, donc les barres
+sautaient ; le propriétaire l'a vu sur `nocturne` — « le mouvement au filtre des barres pourrait être
+lerp et smooth au lieu d'être saccadé ». `display` ne s'interpole pas, et les deux autres déclencheurs
+que CSS possède ont été mesurés inutilisables par la session radar (une animation sur une planche
+révélée s'épuise pendant qu'elle est cachée ; `@starting-style` ne tire qu'une fois, au chargement).
+Reste le seul qui marche : **une propriété qui change sur un élément TOUJOURS rendu.**
+
+Donc **un seul dessin**, dessiné aux coordonnées de la coupure par défaut, dont chaque bande est
+TRANSLATÉE par la feuille générée. Ce type peut le faire là où beaucoup ne pourraient pas, et c'est
+une propriété de son arithmétique : **une coupure ne redimensionne jamais une bande**, elle la change
+de camp — donc la différence entre deux états est un déplacement horizontal, et une translation pure
+est un chemin continu exact entre deux quelconques des quatre états. `sideTravelOf` refuse la page si
+une coupure change l'étendue d'une bande, parce qu'il n'existe aucun chemin continu entre deux
+rectangles de largeurs différentes qu'un lecteur pourrait lire comme la même bande.
+
+Et le voyage s'est révélé **rigide**, ce qui est plus fort que ce qu'on avait argumenté : dans une
+ligne, toutes les bandes se déplacent du MÊME nombre, parce que les deux camps d'une ligne font
+toujours 100 % — sa barre a donc toujours la même longueur et seule son extrémité gauche change de
+place. **La barre ne se déforme pas : elle GLISSE, et la ligne centrale fixe la traverse.** C'est le
+geste du lecteur rendu littéral. Mesuré en Chrome sur les six lignes et les trois transitions : la
+pire couture entre deux bandes voisines en plein vol vaut **0,000 px** et la barre garde ses
+**622,0 px**.
+
+**Et ce qui bouge n'est toujours pas ce qui répond.** `interaction.mjs` résout la marque pointée sur
+des coordonnées lues une fois à l'init, qu'aucun `transform` ne met à jour. Les deux métiers sont donc
+séparés : un dessin `aria-hidden`, sans événement de pointeur, qui ne répond de rien ; et **quatre
+plaques de clic transparentes**, une par coupure, échangées par `display`, dont les points sont cuits
+aux coordonnées de leur propre coupure et n'y bougent jamais. Le coût honnête, dit plutôt que caché :
+pendant la durée du vol la plaque est déjà à l'arrivée, donc un lecteur qui pointe EN PLEIN VOL est
+renseigné sur la bande **qui arrive**. Rien n'est jamais répondu depuis une place qu'aucune bande
+n'occupera. L'allumage de la bande survolée traverse la césure en CSS (`sideMarkLiftCss`), parce que
+`interaction.mjs` porte `.mark-active` à l'intérieur d'un seul `<svg>` et qu'il y en a deux.
+
+Le **repère de net** voyage toujours, et sur **la même horloge** : la bande traverse en unités
+utilisateur SVG, le repère en pour-cent d'une couche HTML — deux moteurs, un seul vol. Mesuré à
+mi-course : les deux sont au **même centième de point** du chemin (51,7 % / 41,5 % / 51,8 % selon la
+direction, écart 0,00 point).
 
 **« Pas d'encadré au survol ni au filtre »** et **« la pastille n'est pas une dalle d'encre »** :
 le chrome vient de `control-chrome.ts` sans une variation locale, lavis + anneau + mots.
@@ -285,6 +316,19 @@ hors du `viewBox`. Le tronc réparé fait le reste : mesuré en Chrome, `scaleX 
 
 ## Verification
 
+- **Le vol, piloté et échantillonné en plein milieu** (Chrome, clic réel sur « ce qui est
+  renouvelable », relevé à 150 ms) : la bande nucléaire de la France parcourt **210,6 px**, est prise
+  à **51,7 % / 41,5 % / 51,8 %** du chemin selon la direction — donc en l'air, pas d'un bond — et sa
+  largeur ne dérive pas d'un millième de pixel (**0,000 px**). Le repère de net est au même
+  pourcentage à 0,00 point près. La pire couture entre deux bandes voisines en plein vol : **0,000 px**
+  sur les six lignes et les trois transitions ; la barre garde ses 622,0 px. Au repos et une fois
+  posée, `document.getAnimations()` ne rend **aucune** animation en cours ; en plein vol, 18.
+- **Sous `prefers-reduced-motion: reduce`** : 60 ms après le clic la bande est **déjà** à sa position
+  d'arrivée (357,7 px, partie de 568,4) — la planche saute, ce qui est le comportement demandé. Aucune
+  animation de ce beat ne tourne alors. *(Les douze qui tournent encore appartiennent au chrome
+  partagé — `transition: background-color/border-color/color 120ms` sur les pastilles de
+  `control-chrome.ts`, qui n'est pas enveloppé dans une requête de mouvement réduit. Antérieur,
+  commun aux vingt-et-un vocabulaires, signalé et non corrigé ici.)*
 - `verify-web.mjs` sur les trois rendus : **creme 101 / 0, nocturne 99 / 0, rapport 93 / 0**
   (les 5 ou 6 skips sont les contrôles de FILTRE, que ce beat ne déclare pas). Le navigateur est
   piloté avec script **et sans** : les 27 marques répondent à un vrai pointeur dans les deux fenêtres,
@@ -311,6 +355,18 @@ hors du `viewBox`. Le tronc réparé fait le reste : mesuré en Chrome, `scaleX 
 | une cinquième coupure identique au défaut sous un autre nom | « moves no row's net lean by more than 0.000 » |
 | les bandes cessent de porter `sideBandAttrs` | `assertOneCut` : « not one element carries `data-side-band` » |
 | le plan cesse de déclarer le contrôle que la page embarque | `assertInteractionPlan` |
+
+### Sept mutations de plus, sur le voyage — toutes rouges
+
+| mutation | ce qui rougit |
+| --- | --- |
+| les bandes perdent leur `transition` (elles sauteraient de nouveau) | « the bands carry no transition, so they JUMP between cuts » |
+| une coupure cesse d'émettre le moindre déplacement | « the cut "renouvelable" moves no band » |
+| les points qui répondent sont remis DANS le dessin qui voyage | « the <svg> that draws the travelling bands also carries the points that answer » |
+| une coupure redimensionne une bande | `sideTravelOf` : 67,72 unités contre 70,72 |
+| le dessin cesse d'être `aria-hidden` | « a screen reader offered both would meet every band twice » |
+| une bande garde `data-side-band` et perd `data-mark` | « the band "DEU-gaz" carries no data-mark » |
+| la règle-couverture des plaques passe APRÈS la révélation du défaut | l'ordre d'émission, dans les trois directions |
 
 La verte est dite plutôt que cachée : la première tentative posait `straddle: "biomasse"` sur la
 coupure `left: 3` **dont la couture EST la biomasse**. C'était une coupure légale, pas une garde

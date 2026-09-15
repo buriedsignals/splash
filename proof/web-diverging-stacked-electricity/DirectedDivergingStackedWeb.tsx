@@ -104,9 +104,13 @@ import {
   sideChromeCss,
   sideCss,
   sideCutsForMarkup,
-  sideLayerAttrs,
+  sideMarkLiftCss,
+  sideMarkOf,
   sideNotesForMarkup,
+  sidePlateAttrs,
   sideSlugOf,
+  sideTravelOf,
+  SIDE_TRAVEL_MS,
 } from "../../skills/chart-web/assets/side.ts";
 
 /** The frame. `row` is the room one country owns, `barTop`/`barH` where its bar sits inside that
@@ -130,8 +134,10 @@ export const FRAME = {
  *  it. See `side.ts`, "IT EMITS `data-stack-total`". */
 const SIDE_ID_PREFIX = "chart-stack";
 const SCOPE = ".chart-figure";
-/** How long a net marker takes to reach its new position. The one transition on this page. */
-const NET_MS = 420;
+/** ONE CLOCK, AND IT BELONGS TO THE VOCABULARY. The bands and the net markers cross on the same
+ *  duration and the same easing; a second number here would let the bar arrive before the figure
+ *  that summarises it. */
+const TRAVEL_MS = SIDE_TRAVEL_MS;
 /** THE FLOOR BETWEEN TWO NEIGHBOURING BARREAUX, and it is the beat's own declared number because
  *  WCAG has none for one fill against another. Five levels is the type sheet's written ceiling and
  *  this branch has already measured what happens past four or five: a ramp built inside
@@ -314,22 +320,34 @@ export function DirectedDivergingStackedWeb({
   const levelLabel = (slug: string) =>
     side.levels.find((level: any) => sideSlugOf(level.key) === slug)?.label ?? slug;
 
+  // THE TRAVEL'S OWN ARITHMETIC, TAKEN ONCE. `base` is where every band sits under the DEFAULT cut —
+  // which is where the one drawing draws it — and `sideTravelOf` refuses the page outright if any cut
+  // would change a band's width, because a pure translation is only a continuous path between two
+  // rectangles of the SAME size. See `side.ts`, "THE TRAVEL'S OWN ARITHMETIC".
+  const { base } = sideTravelOf(side);
+  const bandsOfRow = (row: string) => base.filter((band) => band.row === row);
+
   const css = [
     sideChromeCss({ scope: SCOPE }),
-    sideCss(side, { scope: SCOPE, idPrefix: SIDE_ID_PREFIX, netMs: NET_MS }),
-    // One rule per barreau: what its band becomes under the pointer, lifted off its own fill. The
-    // attribute is the band's LEVEL and not its row, because a reader asking "what is this?" is
-    // asking about the barreau, and a key per row would light six bands to name one.
-    ...Object.entries(FILLS).map(
-      ([slug, fill]) => `${SCOPE} rect.band[data-level="${slug}"].mark-active { fill: ${darken(fill)}; }`,
-    ),
+    sideCss(side, {
+      scope: SCOPE,
+      idPrefix: SIDE_ID_PREFIX,
+      width: FRAME.width,
+      travelMs: TRAVEL_MS,
+    }),
+    // The band the pointed point speaks for, lit ACROSS the split between the drawing and the hit
+    // plate — `interaction.mjs` carries `.mark-active` with `svg.querySelectorAll`, inside one
+    // `<svg>`, and there are two now. The dose itself is not here: each band carries its own
+    // `--mark-active`, sought against its OWN painted fill, which is the format's own contract and
+    // the owner's ruling that a mark darkens from what it already is.
+    sideMarkLiftCss({ scope: SCOPE, marks: base.map((band) => band.mark) }),
     // THE NET MARKER: the reading this control hands back, drawn as a place. Always rendered, which
     // is the shape a transition needs. Its `left` comes from the generated stylesheet and never from
     // an inline style, for the defect `floor.ts` and `weigh.ts` both record: an inline `left` wins
     // against every rule below it, so the tick would sit still while the row under it changed camp.
     `${SCOPE} [data-side-net] { position: absolute; width: 3px; background: ${netInk}; border-radius: 2px; transform: translateX(-50%); }`,
     // The per-cut layers that live in the two gutters and above the plot. They are revealed by the
-    // same `:checked` that reveals their plate.
+    // same `:checked` that reveals their hit plate.
     `${SCOPE} .gutter-totals { position: absolute; inset: 0; }`,
     `${SCOPE} p.camps { text-align: center; }`,
   ].join("\n\n");
@@ -494,6 +512,86 @@ export function DirectedDivergingStackedWeb({
           ))}
         </div>
 
+        {/* THE DRAWING, AND THERE IS ONLY ONE. Every band a reader looks at is here, drawn at the
+            DEFAULT cut's coordinates, and the stylesheet TRANSLATES each one to the cut that is
+            chosen. It is `aria-hidden` and takes no pointer event: it is a picture of the data and
+            not a way to ask it anything, which is exactly what lets it move at all. The gridlines
+            and the centre are here too, because neither ever moves. */}
+        <svg
+          role="presentation"
+          aria-hidden="true"
+          focusable="false"
+          pointerEvents="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${FRAME.width} ${height}`}
+          preserveAspectRatio="none"
+        >
+          <rect x={0} y={0} width={FRAME.width} height={height} fill={ground} />
+
+          {xTicks
+            .filter((tick) => tick !== 0)
+            .map((tick) => (
+              <line
+                key={tick}
+                x1={x(tick)}
+                x2={x(tick)}
+                y1={0}
+                y2={height}
+                stroke={grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+
+          {rows.map((row, i) => {
+            const top = FRAME.row * i + FRAME.barTop;
+            return (
+              <g key={row.key}>
+                {bandsOfRow(row.key).map((band) => (
+                  <rect
+                    key={band.mark}
+                    className="band"
+                    data-level={band.level}
+                    x={x(band.from)}
+                    y={top}
+                    width={Math.max(0, x(band.to) - x(band.from))}
+                    height={FRAME.barH}
+                    fill={FILLS[band.level]}
+                    // THE DOSE TRAVELS ON THE MARK, which is the format's own contract: the colour a
+                    // band becomes under the pointer is read off the band, sought against its own
+                    // painted fill, and never reached for from the text's ink.
+                    style={{ ["--mark-active" as string]: darken(FILLS[band.level]) }}
+                    {...sideBandAttrs(row.key, band.level)}
+                  />
+                ))}
+              </g>
+            );
+          })}
+
+          {/* The centre, drawn ON TOP of the bands so the straddling barreau reads as straddling
+              rather than as two bands that happen to meet. It never moves — it is the one thing on
+              this page a cut may not touch, and a reader watching a band cross it has to be able to
+              trust that the line itself stayed still. */}
+          <line
+            x1={x(0)}
+            x2={x(0)}
+            y1={0}
+            y2={height}
+            stroke={zeroInk}
+            strokeWidth={1.4}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+
+        {/* ONE CUT'S ANSWERS. Transparent, so it draws nothing over the picture underneath;
+            complete, so `initChart` wires it on its own and the unchosen ones — `display: none` —
+            hold no pointer event, no tab stop and no probe. THE MARKS THAT ANSWER NEVER MOVE: each
+            plate's points are baked at that cut's own coordinates and jump to them, while the
+            drawing underneath travels. The honest cost, stated rather than hidden: for the flight's
+            own duration the hit layer is already at the destination, so a reader who points DURING
+            the travel is answered about the band that is arriving. Nothing is ever answered from a
+            place no band will occupy. */}
         {side.cuts.map((cut: any) => {
           const slug = sideSlugOf(cut.key);
           return (
@@ -506,65 +604,9 @@ export function DirectedDivergingStackedWeb({
               data-hit="cell"
               viewBox={`0 0 ${FRAME.width} ${height}`}
               preserveAspectRatio="none"
-              {...sideLayerAttrs(slug)}
+              {...sidePlateAttrs(slug)}
             >
               <desc>{alt}</desc>
-              <rect x={0} y={0} width={FRAME.width} height={height} fill={ground} />
-
-              {xTicks
-                .filter((tick) => tick !== 0)
-                .map((tick) => (
-                  <line
-                    key={tick}
-                    x1={x(tick)}
-                    x2={x(tick)}
-                    y1={0}
-                    y2={height}
-                    stroke={grid}
-                    strokeWidth={1}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
-
-              {rows.map((row, i) => {
-                const top = FRAME.row * i + FRAME.barTop;
-                return (
-                  <g key={row.key}>
-                    {sideBandsOf(side, slug, row.key)
-                      .filter((band) => band.share > 0)
-                      .map((band) => (
-                        <rect
-                          key={band.level}
-                          className="band"
-                          data-level={band.level}
-                          data-mark={`${slug}:${row.key}:${band.level}`}
-                          x={x(band.from)}
-                          y={top}
-                          width={Math.max(0, x(band.to) - x(band.from))}
-                          height={FRAME.barH}
-                          fill={FILLS[band.level]}
-                          {...sideBandAttrs(slug, row.key, band.level)}
-                        />
-                      ))}
-                  </g>
-                );
-              })}
-
-              {/* The centre, drawn ON TOP of the bands so the straddling barreau reads as straddling
-                  rather than as two bands that happen to meet. It never moves. */}
-              <line
-                x1={x(0)}
-                x2={x(0)}
-                y1={0}
-                y2={height}
-                stroke={zeroInk}
-                strokeWidth={1.4}
-                vectorEffect="non-scaling-stroke"
-              />
-
-              {/* One invisible point per drawn band, naming the band it speaks for. A band with no
-                  width gets none: a mark of zero extent is not a mark, and a point sitting on it
-                  would take a pointer aimed at its neighbour. */}
               {rows.map((row, i) =>
                 sideBandsOf(side, slug, row.key)
                   .filter((band) => band.share > 0)
@@ -580,7 +622,7 @@ export function DirectedDivergingStackedWeb({
                       tabIndex={0}
                       role="img"
                       aria-label={details[`${slug}:${row.key}:${band.level}`]}
-                      data-mark-ref={`${slug}:${row.key}:${band.level}`}
+                      data-mark-ref={sideMarkOf(row.key, band.level)}
                       data-detail={details[`${slug}:${row.key}:${band.level}`]}
                     />
                   )),
