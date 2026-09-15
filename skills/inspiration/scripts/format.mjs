@@ -37,12 +37,19 @@ function quotaLine(quota) {
   return base;
 }
 
+const RECONNECT =
+  "Your Infoviz account needs reconnecting: Indicator Labs → Connected services → Infoviz → Reconnect.";
+
 function formatFailure(result) {
   switch (result.reason) {
     case "empty-query":
       return "Name a subject to search for.";
     case "query-too-long":
       return `Keep the subject under ${result.limit} characters.`;
+    case "invalid-token":
+      return RECONNECT;
+    case "engine-failed":
+      return `Indicator Labs could not run the search (${result.detail}).`;
     case "limit-reached": {
       const perDay = result.quota?.limit ? ` (${result.quota.limit} searches a day)` : "";
       const reset = result.quota?.resetsAt ?? "midnight UTC";
@@ -57,10 +64,7 @@ function formatFailure(result) {
   }
 }
 
-/**
- * Renders a `searchInspiration` result as markdown for the journalist.
- */
-export function formatInspiration(result) {
+function formatResult(result) {
   if (!result.ok) return formatFailure(result);
 
   const { query, items, quota } = result;
@@ -85,4 +89,14 @@ export function formatInspiration(result) {
   const left = quotaLine(quota);
   if (left) lines.push("", left);
   return lines.join("\n");
+}
+
+/**
+ * Renders a `searchInspiration` result as markdown for the journalist.
+ */
+export function formatInspiration(result) {
+  const body = formatResult(result);
+  return result.accountNeedsReconnect ? `${RECONNECT}
+
+${body}` : body;
 }

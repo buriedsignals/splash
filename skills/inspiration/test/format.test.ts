@@ -257,3 +257,42 @@ describe("formatInspiration", () => {
     );
   });
 });
+
+const RECONNECT = "Your Infoviz account needs reconnecting: Indicator Labs → Connected services → Infoviz → Reconnect.";
+
+describe("formatInspiration and the Infoviz account", () => {
+  it("should ask to reconnect when the token was refused", () => {
+    expect(formatInspiration({ ok: false, reason: "invalid-token" })).toBe(RECONNECT);
+  });
+
+  it("should put the reconnect sentence before an anonymous list", () => {
+    const text = formatInspiration({
+      ok: true,
+      query: "floods",
+      items: [],
+      quota: { limit: 5, remaining: 4, resetsAt: null },
+      accountNeedsReconnect: true,
+    });
+    expect(text).toMatch(/Your Infoviz account needs reconnecting/);
+    expect(text).toContain("Nothing in the gallery for");
+    expect(text).toContain("4 of 5 searches left today.");
+  });
+
+  it("should put the reconnect sentence before an anonymous failure", () => {
+    const text = formatInspiration({
+      ok: false,
+      reason: "limit-reached",
+      query: "floods",
+      quota: { limit: 5, remaining: 0, resetsAt: null },
+      accountNeedsReconnect: true,
+    });
+    expect(text).toMatch(/Your Infoviz account needs reconnecting/);
+    expect(text).toContain("The gallery's daily limit is reached");
+  });
+
+  it("should say Indicator Labs could not run the search", () => {
+    expect(formatInspiration({ ok: false, reason: "engine-failed", detail: "exit code 1" })).toBe(
+      "Indicator Labs could not run the search (exit code 1).",
+    );
+  });
+});
