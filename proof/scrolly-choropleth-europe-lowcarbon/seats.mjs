@@ -1,28 +1,34 @@
-// The map this beat draws, as vector shapes in the static plate's OWN camera, computed once in node.
+// THE SEATS, FROZEN. Where each study country's name sits on the live map, in [lon, lat], written to
+// `seats.json` beside this file and read by `render-directions-scrolly.mjs`.
 //
-// CAMERA. `static-choropleth-europe-lowcarbon` bakes its plate with MapLibre's `fitBounds` on the bounds
-// [-25, 34] → [42, 68] at an aspect of 1000:760, and places every mark through `cameraFor` — the fit in ten
-// lines. The same arithmetic is used here, so a country sits where it sits on the plate: Web Mercator,
-// longitude linear in x, latitude through the inverse Mercator formula.
+// The live map places words as symbol layers at geographic points, so the seat the SVG version
+// computed in its own frame (the point of a country's largest ring farthest from that ring's edge —
+// not the box centre, where Norway's name lands in Sweden, and not the vertex mean, which falls on
+// the coast) is carried over UNCHANGED and un-projected back to degrees. The search is the one the
+// SVG version's `choropleth-geometry.mjs` ran (removed with the SVG; this port matched its seats to
+// 0.001 frame units), on the same frozen Natural Earth rings (`shapes.geojson`, read as data) and in
+// the same frame: the static plate's bounds fitted into 1000 × 760 in Web Mercator.
 //
-// SHAPES. The frozen Natural Earth rings, projected, clamped to a wide margin around the frame (it shortens
-// Russia and Africa to that margin), rings too small to see dropped — but never a
-// study country's only ring: Malta is 27 km across and a map that loses it has lost a country — and
-// consecutive points closer than a unit merged.
-//
-// SEATS. A country's name is seated at the point of its largest ring farthest from that ring's own edge —
-// not the box centre (Norway's lands in Sweden), and not the vertex mean, which falls on the coast.
+// Run by hand when the shapes or the study set change:
+//   bun proof/scrolly-choropleth-europe-lowcarbon/seats.mjs
+
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const BOUNDS = [[-25, 34], [42, 68]];
+const FRAME = { width: 1000, height: 760 };
 
 const RAD = Math.PI / 180;
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * RAD) / 2));
+const latOfMercY = (m) => (2 * Math.atan(Math.exp(m)) - Math.PI / 2) / RAD;
 const worldX = (lon) => (lon + 180) / 360;
 const worldY = (lat) => (1 - mercY(lat) / Math.PI) / 2;
 const lonOf = (x) => x * 360 - 180;
 const latOf = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) - Math.PI / 2) / RAD;
 
-/** `fitBounds`, as `static-choropleth-europe-lowcarbon/render-directions.mjs` predicts it. */
-export function cameraFor(bounds, { width, height }) {
-  const [[west, south], [east, north]] = bounds;
+function frameCorners([[west, south], [east, north]], { width, height }) {
   const worldPx = Math.min(width / (worldX(east) - worldX(west)), height / (worldY(south) - worldY(north)));
   const cx = (worldX(west) + worldX(east)) / 2;
   const cy = (worldY(north) + worldY(south)) / 2;
@@ -31,28 +37,36 @@ export function cameraFor(bounds, { width, height }) {
   return { west: lonOf(cx - halfX), east: lonOf(cx + halfX), north: latOf(cy - halfY), south: latOf(cy + halfY) };
 }
 
-export function choroplethGeometry(geo, { bounds, width, height, keep }) {
-  const corners = cameraFor(bounds, { width, height });
+export async function computeSeats() {
+  const { width, height } = FRAME;
+  const corners = frameCorners(BOUNDS, FRAME);
   const yN = mercY(corners.north);
   const yS = mercY(corners.south);
   const project = ([lon, lat]) => [((lon - corners.west) / (corners.east - corners.west)) * width, ((mercY(lat) - yN) / (yS - yN)) * height];
-/** Shapes are kept this far past the frame: the map fills a stage of any aspect (`fitViewBox`), and a stage
-   *  two and a half times wider than tall shows ~870 units of geography past each side of the frame. */
+  const unproject = ([x, y]) => [corners.west + (x / width) * (corners.east - corners.west), latOfMercY(yN + (y / height) * (yS - yN))];
+
   const MARGIN_X = 900;
   const MARGIN_Y = 500;
-  const MARGIN = Math.max(MARGIN_X, MARGIN_Y);
   const clampPt = ([x, y]) => [Math.min(Math.max(x, -MARGIN_X), width + MARGIN_X), Math.min(Math.max(y, -MARGIN_Y), height + MARGIN_Y)];
-  const r1 = (v) => Math.round(v * 10) / 10;
   const outside = (p) => p[0] <= -MARGIN_X || p[0] >= width + MARGIN_X || p[1] <= -MARGIN_Y || p[1] >= height + MARGIN_Y;
+  const r1 = (v) => Math.round(v * 10) / 10;
 
-  const byIso = new Map();
+  const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
+  const study = new Set(
+    (await readFile(join(HERE, "data.csv"), "utf8"))
+      .trim()
+      .split(/\r?\n/)
+      .slice(1)
+      .map((l) => l.split(",")[1]),
+  );
+
+  const largestOf = new Map();
   for (const f of geo.features) {
     const iso = f.properties.iso;
-    const held = byIso.get(iso) ?? { iso, rings: [], largest: null };
+    if (!study.has(iso)) continue;
     for (const poly of f.geometry.coordinates)
       for (const ring of poly) {
-        const raw = ring.map(project);
-        const pts = raw.map(clampPt);
+        const pts = ring.map(project).map(clampPt);
         if (pts.every(outside)) continue;
         const xs = pts.map((p) => p[0]);
         const ys = pts.map((p) => p[1]);
@@ -63,19 +77,11 @@ export function choroplethGeometry(geo, { bounds, width, height, keep }) {
           if (Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) >= 0.8) kept.push(p);
         }
         const shape = kept.length >= 3 ? kept : pts;
-        const entry = { pts: shape, size, raw };
-        if (!held.largest || size > held.largest.size) held.largest = entry;
-        if (size >= 1.5) held.rings.push(entry);
-        byIso.set(iso, held);
+        const held = largestOf.get(iso);
+        if (!held || size > held.size) largestOf.set(iso, { pts: shape, size });
       }
-    // A study country is never lost to the size threshold.
-    if (keep.has(iso) && held.largest && held.rings.length === 0) held.rings.push(held.largest);
-    byIso.set(iso, held);
   }
 
-  /** The seat is the point of the largest ring farthest from its own edge, searched on a grid. The static
-   *  plate's vertex mean walked to a vertex lands ON the coast for Norway, Sweden, Italy and Britain,
-   *  and a name centred on a coastline sits half in the sea. */
   const seatOf = (largest) => {
     const ring = largest.pts.filter((p) => !outside(p));
     const use = ring.length >= 3 ? ring : largest.pts;
@@ -120,22 +126,26 @@ export function choroplethGeometry(geo, { bounds, width, height, keep }) {
           seat = [px, py];
         }
       }
-    return { x: r1(seat[0]), y: r1(seat[1]) };
-  };
-  const boxOf = (rings) => {
-    const pts = rings.flatMap((r) => r.pts);
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+    return [r1(seat[0]), r1(seat[1])];
   };
 
-  const shapes = [...byIso.values()]
-    .filter((c) => c.rings.length)
-    .map((c) => ({
-      iso: c.iso,
-      path: c.rings.map((r) => `M${r.pts.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}Z`).join(""),
-      seat: seatOf(c.largest),
-      box: boxOf(c.rings),
-    }));
-  return { shapes, project, corners };
+  const seats = {};
+  for (const iso of [...study].sort()) {
+    const largest = largestOf.get(iso);
+    if (!largest) throw new Error(`${iso} is in the study set and has no ring in shapes.geojson inside the frame's margin`);
+    const [lon, lat] = unproject(seatOf(largest));
+    seats[iso] = [Math.round(lon * 1e4) / 1e4, Math.round(lat * 1e4) / 1e4];
+  }
+  return seats;
+}
+
+if (import.meta.main) {
+  const seats = await computeSeats();
+  const out = {
+    provenance:
+      "Written by proof/scrolly-choropleth-europe-lowcarbon/seats.mjs from shapes.geojson (Natural Earth 50 m, frozen beside the beat, byte-identical to proof/static-choropleth-europe-lowcarbon/shapes.geojson) and the study set of data.csv: the point of each country's largest ring farthest from its edge, searched on a 24 × 24 grid in the frame the SVG scrolly drew (bounds [-25, 34] → [42, 68] fitted into 1000 × 760, Web Mercator), un-projected to [lon, lat].",
+    seats,
+  };
+  await writeFile(join(HERE, "seats.json"), `${JSON.stringify(out, null, 2)}\n`);
+  console.log(`${Object.keys(seats).length} seats -> seats.json`);
 }

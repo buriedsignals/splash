@@ -247,7 +247,10 @@ describe("the scrolly map runtime in a browser", () => {
       expect(result.center[1]).toBeCloseTo(41, 4);
       expect(result.zoom).toBeCloseTo(6, 6);
       expect(result.opacity).toBe(0.75);
-      expect(result.warm?.startsWith("3:")).toBe(true);
+      // Two cards, one uniform sample between them, and one view just past each integer zoom the travel
+      // crosses (3 → 6 crosses 4 and 5): the widest view of each tile level is the one a scrub reaches
+      // first, and uniform samples alone left it cold — 15 frames with a missing tile on the choropleth pilot.
+      expect(result.warm?.startsWith("5:")).toBe(true);
       expect(result.live).toBe("1");
     } finally {
       await page.close();
@@ -307,6 +310,31 @@ describe("the scrolly map runtime in a browser", () => {
       expect(result.containerWidth).toBe(width);
       expect(result.zoom).toBeCloseTo(
         plan.cameras[0].camZoom + Math.log2(width / 800),
+        6,
+      );
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
+  it("should shift zoom by the tighter of the width and height ratios when the plan names a referenceHeight", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 300 });
+      await loadRuntime(page);
+      const zoom = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = await new Promise<any>((resolve) => {
+          const h = (window as any).initScrollyMap(
+            root,
+            { ...plan, referenceWidth: 800, referenceHeight: 600 },
+            { window, onReady: () => resolve(h), warmTimeoutMs: 2000 },
+          );
+        });
+        return handle.map.getZoom();
+      }, plan);
+      expect(zoom).toBeCloseTo(
+        plan.cameras[0].camZoom + Math.log2(300 / 600),
         6,
       );
     } finally {

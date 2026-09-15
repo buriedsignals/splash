@@ -52,7 +52,23 @@ describe("scrolly paint bindings", () => {
     ]);
   });
 
-  it("should throw when a token names a field the state does not carry", () => {
+  it("should refuse a binding that reads feature data, which reloads the tiles on every frame", () => {
+    const plan = {
+      layers: [
+        {
+          id: "classes",
+          bindings: {
+            "fill-opacity": ["*", { $state: "classes" }, ["match", ["get", "iso_a2"], "AL", 1, 0]],
+          },
+        },
+      ],
+    };
+    const out = validateScrollyPlan(plan, [{ camX: 0.5, camY: 0.5, camZoom: 3, classes: 1 }]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain('layer "classes": "fill-opacity" reads feature data (get)');
+  });
+
+    it("should throw when a token names a field the state does not carry", () => {
     expect(() => bindState({ $state: "gone" }, {})).toThrow(/gone/);
   });
 });

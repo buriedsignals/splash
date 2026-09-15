@@ -19,14 +19,32 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
   };
   for (let i = 0; i < cameras.length; i++) {
     views.push(shifted(viewOf(cameras[i])));
-    if (i + 1 < cameras.length)
-      for (let s = 1; s <= samples; s++) {
-        const t = s / (samples + 1);
+    if (i + 1 < cameras.length) {
+      const ts = [];
+      for (let s = 1; s <= samples; s++) ts.push(s / (samples + 1));
+      // AND ONE VIEW JUST PAST EACH INTEGER ZOOM THE TRAVEL CROSSES. The first frame at a new tile level
+      // is the widest view that level ever shows, and uniform samples fall past it: on the choropleth
+      // pilot (zoom 2.96 → 5.26, three samples) the zoom-3 tiles at the whole map's edges were never
+      // fetched, and a slow scrub met 15 frames with a missing tile.
+      const z0 = cameras[i].camZoom + (zoomOffset || 0);
+      const z1 = cameras[i + 1].camZoom + (zoomOffset || 0);
+      if (z0 !== z1)
+        for (let level = Math.floor(Math.min(z0, z1)) + 1; level <= Math.max(z0, z1); level++) {
+          // A tile level's widest view sits just above its integer, whichever way the travel goes.
+          const past = level + 0.01;
+          const t = (past - z0) / (z1 - z0);
+          if (t > 0 && t < 1) ts.push(t);
+        }
+      ts.sort(function (a, b) {
+        return a - b;
+      });
+      for (const t of ts) {
         const mix = {};
         for (const k of ["camX", "camY", "camZoom", "camBearing", "camPitch"])
           mix[k] = (cameras[i][k] ?? 0) + ((cameras[i + 1][k] ?? 0) - (cameras[i][k] ?? 0)) * t;
         views.push(shifted(viewOf(mix)));
       }
+    }
   }
   let i = 0;
   const started = win.performance.now();
@@ -95,11 +113,12 @@ function initScrollyMap(root, plan, options) {
     maxTileCacheSize: 800,
     canvasContextAttributes: { preserveDrawingBuffer: !!(options && options.preserveDrawingBuffer) },
   });
-  // Cameras are authored for `plan.referenceWidth`; a narrower stage sees the same ground one
-  // log2(width ratio) zoom level further out, so a phone keeps the card's whole subject in view.
+  // Cameras are authored for `plan.referenceWidth` (and `plan.referenceHeight`, when a plan names
+  // one); a smaller stage sees the same ground `zoomShiftFor` levels further out, so a phone — and a
+  // wide, short desktop — keeps the card's whole subject in view.
   const handle = { map: map, plan: plan, root: root, ready: false, pending: null, failed: false };
   handle.zoomOffset = function () {
-    return plan.referenceWidth ? Math.log2(container.clientWidth / plan.referenceWidth) : 0;
+    return zoomShiftFor(plan, container.clientWidth, container.clientHeight);
   };
   // A REAL PAGE HAS NO `window.applyScrollyMap`. `renderScrolly` wraps the reveal driver (and the
   // inlined runtime beside it) in an IIFE, so the module-scope function below is not a global there

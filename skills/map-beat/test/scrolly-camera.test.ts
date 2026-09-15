@@ -4,6 +4,7 @@ import {
   lonLatOf,
   mercatorOf,
   viewOf,
+  zoomShiftFor,
 } from "#shared/map-beat/scrolly.mjs";
 
 describe("scrolly cameras as numbers", () => {
@@ -35,5 +36,19 @@ describe("scrolly cameras as numbers", () => {
 
   it("should refuse a latitude beyond the Mercator limit", () => {
     expect(() => mercatorOf([0, 89])).toThrow(/85\.05/);
+  });
+});
+
+describe("the zoom shift a stage applies to an authored camera", () => {
+  it("should shift by the width ratio alone when the plan names only a referenceWidth", () => {
+    expect(zoomShiftFor({ referenceWidth: 1280 }, 320, 100)).toBe(-2);
+  });
+
+  it("should shift by the tighter ratio when the plan names a referenceHeight too", () => {
+    expect(zoomShiftFor({ referenceWidth: 1280, referenceHeight: 800 }, 1280, 200)).toBe(-2);
+  });
+
+  it("should not shift a camera when the plan names no reference stage", () => {
+    expect(zoomShiftFor({}, 320, 100)).toBe(0);
   });
 });

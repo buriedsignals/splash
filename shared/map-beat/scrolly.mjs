@@ -42,6 +42,19 @@ export function viewOf(state) {
   };
 }
 
+/** HOW FAR A STAGE SHIFTS A CARD'S ZOOM. Cameras are authored for a reference stage. With only
+ *  `referenceWidth`, a stage keeps the reference's ground across its width — and a wide, short
+ *  desktop stage then loses the top and bottom of the card's subject: measured on the choropleth
+ *  pilot at 1168 × 563, a width-only camera cut Iceland off the card that names it. With
+ *  `referenceHeight` as well, the stage keeps the reference's ground on BOTH axes, fitted by the
+ *  tighter ratio, as a picture is fitted "meet". One definition, read by the live runtime and the
+ *  fallback bake. */
+export function zoomShiftFor(plan, width, height) {
+  if (!plan || !plan.referenceWidth) return 0;
+  const ratio = plan.referenceHeight ? Math.min(width / plan.referenceWidth, height / plan.referenceHeight) : width / plan.referenceWidth;
+  return Math.log2(ratio);
+}
+
 const isToken = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.$state === "string";
 
 export function bindState(value, state) {
@@ -64,8 +77,33 @@ export function stateFieldsIn(value, out = new Set()) {
   return [...out];
 }
 
+/** Expression operators whose value depends on the feature being drawn. */
+const FEATURE_OPERATORS = new Set(["get", "has", "properties", "feature-state", "id", "geometry-type", "global-state", "accumulated", "line-progress"]);
+
+function featureOperatorsIn(value, out = new Set()) {
+  if (Array.isArray(value)) {
+    if (typeof value[0] === "string" && FEATURE_OPERATORS.has(value[0])) out.add(value[0]);
+    for (const v of value) featureOperatorsIn(v, out);
+  } else if (value !== null && typeof value === "object" && !isToken(value))
+    for (const v of Object.values(value)) featureOperatorsIn(v, out);
+  return [...out];
+}
+
 export function validateScrollyPlan(plan, states) {
   const out = [];
+  // A BOUND PAINT MUST BE DATA-CONSTANT. MapLibre 5.24 answers a `setPaintProperty` whose old or new
+  // value is data-driven with a relayout of the layer's whole source (`requiresRelayout` in
+  // `StyleLayer#setPaintProperty`), so a binding that reads feature data reloads every tile of that
+  // source on every scroll frame. Measured on the choropleth pilot: 116 frames with a missing tile in
+  // one slow scrub. Split the layer by the feature values instead, one data-constant binding per part.
+  for (const layer of plan.layers ?? [])
+    for (const [property, value] of Object.entries(layer.bindings ?? {})) {
+      const operators = featureOperatorsIn(value);
+      if (operators.length)
+        out.push(
+          `layer "${layer.id}": "${property}" reads feature data (${operators.join(", ")}) in a binding — MapLibre reloads the source's tiles on every frame it changes; split the layer so the binding is data-constant`,
+        );
+    }
   states.forEach((state, i) => {
     if (![state.camX, state.camY, state.camZoom].every((v) => typeof v === "number" && Number.isFinite(v)))
       out.push(`card ${i + 1} carries no camera (camX, camY, camZoom) — the map would stay where the previous card left it`);

@@ -25,28 +25,39 @@ Each direction keeps its own palette and faces.
 
 ## Precision
 
-- **The static plate's camera**: Web Mercator on its own bake bounds and aspect, through the same `fitBounds`
-  arithmetic, so every country sits where it sits on the plate; the neighbours are derived in degrees on
-  the raw rings, the north-west measured on the drawn seats.
-- **Vectors, not the MapTiler raster**: each country takes its own fill as the scroll moves, and the zoom
-  is a camera move. Relief and the basemap's own labels are what is given up; the source line names the
-  Natural Earth shapes. Sea and land keep the plate's tints (`plateTints`).
-- **The zoom is the viewBox travelling**, Albania placed in the upper third so the card resting on the
-  middle does not cover it. The geography is drawn 280 units past the frame on every side, so a stage
-  wider than the frame and a close-up that sits low both show land and sea rather than a cut coastline.
-  Close-up names appear only once the camera has arrived.
-- **Names are seated at each country's most interior point** (never on its coast), placed through the
-  SVG's screen matrix, and a name that would touch another steps down.
-
-- **The map fills its own row, from gutter to gutter.** The counter sits in a row above it and the key in a
-  row below it — never over the map. The page's own side gutter (the header's, `--prose-gutter`) bounds the
-  map, so its edges line up with the title; inside that box the frame is fitted and the view widened to the
-  box's aspect (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), with geography drawn far enough past the
-  frame that no side of the row is left bare.
-
-- **The close-up keeps Albania at the centre of the stage, where the card reads over it**: its name is lifted
-  into the band above whichever card covers the country, and a leader runs down to it; the card hides the rest
-  of the line. The neighbours' names keep their seats around the country.
+- **A live MapTiler globe, driven by a plan** (`plan.mjs`, addendum 2026-09-15 §2–§3). Style `dataviz`, projection
+  `globe`, no controls, `interactive: false`; the scroll owns time: each card carries its camera
+  (`camX/camY/camZoom`, `shared/map-beat/scrolly.mjs`) and every paint is bound to the card's state, applied per frame
+  with transitions at 0. Everything inside the map is a MapLibre layer; the counter, the key and Albania's lifted chip
+  with its leader stay outside it.
+- **Fills from MapTiler Countries, joined by ISO A2.** Source layer `administrative`, fields `level` and `iso_a2`
+  (measured 2026-09-15, maxzoom 11). Every country is present, drawn by the basemap; the 41 study countries are
+  painted from level-0 polygons on the basemap's own coast, the unreported one (Ukraine) in the neutral outside the
+  ramp. The runner asserts in the browser that every study code is served at the whole-map camera. Malta has no
+  level-0 polygon below tile zoom 4, so it is painted from its level-1 units below zoom 4 (absent from tiles at zoom ≤ 1).
+  The fills are split into one layer per class and kept/filtered group, so every bound opacity is data-constant: a
+  binding that read `iso_a2` made MapLibre reload every tile on every frame (`validateScrollyPlan` refuses it now).
+- **Names as symbol layers at the beat's seats.** `seats.json` freezes, in [lon, lat], the most interior point of each
+  country's largest Natural Earth ring (the SVG version's own seats, matched to 0.001 frame units; provenance at the top
+  of the file, written by `seats.mjs`). Faces are the ones MapTiler really serves, each compared with the Noto Sans
+  fallback at render: creme Open Sans Medium (axis) / Merriweather Italic (seas), rapport Open Sans Regular / Open Sans
+  Bold, nocturne Montserrat Regular / Montserrat Medium. The six names take the accent walked to 7:1 on the top class
+  they sit on, with a halo in that fill; the close-up and Ukraine names a halo in the land tint.
+- **Cameras from the beat's own facts**, authored for a reference stage of 1280 × 973 (the static plate's 1000 × 760
+  aspect): the whole map puts the window's 67° of longitude across it, centred 10° E 52° N; the close-up comes 2.3
+  levels in, centred on Albania's seat on both axes, no padding. A stage keeps the reference ground on both axes
+  (`zoomShiftFor`): a phone is fitted by its width, a desktop by its height, so Iceland stays on the card that names it.
+  Names show only at rest or once the camera has arrived, as the SVG driver decided.
+- **One frozen image per card** (`fallback/<direction>-<card>.png`, 1168 × 566 at 2x, the stage at 1280 × 800), baked
+  from the same plan with the card's camera and state, shown `object-fit: cover` (cropped on other stages, never
+  stretched) when there is no key, no script, or until the live map has warmed; re-baked only when the plan's hash
+  changes (`fallback/<direction>.json`, which also carries Albania's pixel seat per card for the chip). The committed
+  pages carry `__MAPTILER_KEY__`.
+- **The live guards** (`skills/scrolly/scripts/verify-live-map-scrolly.mjs`): no frame with a missing tile at 30, 120
+  and 400 px per frame on 1280 × 800 and 375 × 812 in all three directions; no undrawn canvas at 375 × 812. At
+  1280 × 800 the whole-map cards (1–4, 6) show the space around the globe's limb (212–254 of about 2,500 sampled
+  points; the stage paints it in the water tint): holding Iceland on a wide stage in globe projection needs that zoom.
+  Owner decision pending (zoom further in and lose Iceland, Malta and Cyprus, or keep the space).
 
 ## Directions
 
