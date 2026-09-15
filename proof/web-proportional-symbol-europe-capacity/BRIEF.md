@@ -351,3 +351,124 @@ make them.
 Global Power Plant Database (WRI) · MapTiler basemap, baked once per filed direction in that
 direction's own tints. `stations.csv` and `shapes.geojson` are byte-for-byte copies of
 `proof/static-proportional-symbol-europe-capacity/`.
+
+---
+
+# Addendum, 2026-09-15 — every mark is a MapLibre layer
+
+The owner validated `proof/web-choropleth-europe-lowcarbon/` as THE PATTERN for a web map beat
+(`MAP-WEB-BRIEF.md`, « LE PATRON VALIDÉ », « là c'est top »). This beat is its second application,
+and the two rulings it rests on were given **on this beat's own renders**: *« la map doit prendre
+toute la largeur quitte à afficher plus de map… avec web on peut avoir des contrôles, zoom,
+déplacement et hover en plus directement dans MapTiler »* and *« oui une carte MapLibre plate pas un
+globe »*.
+
+Everything the sections above argue is still true. What follows is what changed underneath them.
+
+## What the page is now
+
+- **The 41 circles, the 5 labels and the mark under the pointer are three MapLibre layers**
+  (`skills/map-web/assets/live-symbols.ts`, new), over MapTiler's own tiles. There is no SVG drawing
+  of the field any more, and therefore no `viewBox`, and therefore nothing to arbitrate about the
+  width the map may take: **the map fills the figure's whole track.**
+- **Zoom, drag, wheel, keyboard and hover are MapTiler's own.** Two `NavigationControl` buttons,
+  named through MapLibre's `locale`; the pointer resolved by `queryRenderedFeatures` on the circle
+  layer, never by a collision test of ours — so no coordinate is read once at initialisation and the
+  trap this tree has paid for three times is closed by construction.
+- **Two layers, always.** Under the live map, a **photograph of this page's own live map**, taken by
+  the runner at the review window and frozen to webp. It is what stands there when the key lapses,
+  when the tiles fall over, when there is no network — and MapTiler invalidates every key on an
+  account at 100 % of its spending limit, so that failure mode is "every published map goes blank at
+  once". It is also what the committed artifact always shows: the key never enters a file here.
+- **The keyed copy for review** is `renders/<direction>.local.html`, written by the runner from
+  `.env` and git-ignored by `proof/**/renders/*.local.html`.
+
+## The gesture, and what the architecture cost it
+
+The exponent is still the gesture, and it still runs over the same 41 values with the anchor pinned.
+But **no stylesheet reaches a MapLibre circle layer**, so the gesture is now two halves driven from
+one set of radii:
+
+- the MAP's half is script — one `setPaintProperty("circle-radius", ["*", <match expression>,
+  scale])` per law, the expression built at BUILD time;
+- the TABLE's half is the CSS it always was — the 41 row swatches and the 3 legend swatches, native
+  radios plus generated rules, working with JavaScript off exactly as before. The swatches are the
+  map's own circles at **27,5 %**, which the caption says out loud: the anchor is pinned under every
+  law, so a common factor cancels and every ratio between the rows is untouched.
+
+`assertOneAreaScale` holds the markup's half against the declaration; the new
+`assertSymbolLawsReachTheLayers` holds the plan's half against a **third** derivation of the same
+exponent over the same raw values — never against the object the plan was built from, which is how
+the choropleth's own guard passed a mutation green.
+
+## The radius rule, and the key
+
+`shared/map-beat/mount.mjs` names the three things a radius can mean. A circle that encodes a VALUE
+is `radius: "camera"`: **derived from the camera at the fit, then held in screen pixels while the
+reader zooms**, because the same capacity must not mean two circles at two zooms. A dot-density dot
+would do the opposite. The plan declares which, and `assertSymbolLawsReachTheLayers` refuses any
+circle layer that declares anything else.
+
+The radii travel in **CSS pixels at a declared review camera** (1464 × 520) rather than in the
+plate's frame units. That is a departure from `mount.mjs`'s own arithmetic and the reason is the size
+legend, which is HTML outside the canvas: the script multiplies the marks AND the swatches by one
+number, and with no script at all the swatches fall back to a fraction of the map box's own HEIGHT —
+the axis this fit binds on, asserted in the runner — so they track the same ratio the frozen
+photograph is scaled by. **Measured: the legend swatches are 25,95 / 18,35 / 11,60 px with script
+and 25,95 / 18,35 / 11,60 px without it, and unchanged after a zoom.** This beat shipped the other
+thing once: a swatch radius counted in the drawing's own viewBox units and drawn at 1:1 CSS pixels
+in a cell that renders at no such ratio, over-stating every magnitude by about 2×.
+
+## The labels, and who decides them now
+
+The SVG build placed five labels at five centres and measured **0 overlapping pairs across 12
+states** by hand. A MapLibre `symbol` layer with `text-allow-overlap: false` decides it instead, and
+it decides it the owner's way: a label is anchored on its own mark (`text-anchor: center`, no
+variable anchor), so it is drawn there or not at all and nothing ever travels.
+
+**Measured on the rendered page with `queryRenderedFeatures`, which answers only for symbols
+actually placed: 5 of 5, in all three directions, at the published framing.** MapLibre drops nothing
+here.
+
+The face is MapTiler's own glyphs, and it is **probed rather than named**: MapTiler answers 200 with
+Noto Sans for any family it does not serve. `Open Sans Bold` (creme, rapport) and `Montserrat Bold`
+(nocturne) both came back with bytes that are not Noto's.
+
+## What Web Mercator costs THIS subject
+
+The choropleth prints its own number because a choropleth's mark IS the ground. **A proportional
+symbol's mark is not**: a radius held in screen pixels is immune to the projection, and the ratio of
+any two marks is exact at every latitude. So the distortion here falls on the LAND UNDER the
+circles, which is the second reading every reader of a symbol map takes anyway — "how big is this
+circle for the size of its country".
+
+Measured on this beat's own frozen shapes, at the review camera, over the rings the frame actually
+draws, Russia set aside (it is most of the land the frame can carry and only a slice of it is in
+view):
+
+| | share of the DRAWN land | share of the REAL land |
+| --- | ---: | ---: |
+| Norvège + Suède + Finlande | **31,2 %** | **16,3 %** |
+
+Per km² against France = 1: **Norvège ×2,57 · Suède ×2,29 · Finlande ×2,58 · Islande ×2,64.**
+
+The caveat carries it, derived and never typed, and the runner refuses the sentence if the
+measurement stops making it true.
+
+## The box, against the pattern's own
+
+At 1512 × 860, measured on the keyed page opened from disk:
+
+| | this beat | the pattern |
+| --- | ---: | ---: |
+| map box | **1464 × 468** (creme 451, nocturne 469,7) | 1464 × 519,6 |
+| document | **860** | 860 |
+
+The document fits the window in all three directions and nothing scrolls sideways. The map is 50 to
+69 px shorter than the pattern's because this beat's furniture is taller: it carries a fieldset, a
+reserved three-line note row (so choosing a law never moves the map — the owner's first standing
+arbitration) and a disclosure summary, where the pattern carries a legend strip.
+
+**What the wide box costs in ground: the frame shows 180° of longitude for a declared window 67°
+wide.** That is the arithmetic of a near-square study set in a 2,8:1 stage, and it is the same price
+the pattern pays (186°).
