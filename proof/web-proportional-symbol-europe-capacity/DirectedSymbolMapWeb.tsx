@@ -5,10 +5,12 @@
  * ─────────────────────────────────────────────────────────────────────────────────────────────
  * THE GESTURE, AND WHY IT IS THIS TYPE'S AND NOT A ZOOM.
  *
- * A zoom and a pan were available and are refused. They cost the framing `camera.ts` argues for,
- * they answer a question about the CAMERA rather than about the data, and they are the one gesture
- * all eight map types would reach for — the owner's fifth standing arbitrage is that a type gets its
- * own gesture, not the reflex one. Not a single `cx`/`cy` on this page changes in any state.
+ * A zoom and a pan answer a question about the CAMERA rather than about the data, and they are the
+ * one gesture all eight map types would reach for — the owner's fifth standing arbitrage is that a
+ * type gets its OWN gesture, not the reflex one. So this beat's gesture is not a zoom, and the
+ * navigation it also carries (`map-web/assets/navigate.ts`, wired below) is not its gesture: it is
+ * a supplement over a page that is already complete, it changes no camera, it moves no place, and
+ * not a single `cx`/`cy` on this page changes in any state, under any control.
  *
  * WHAT A PROPORTIONAL SYMBOL MAP HIDES IS THE EXPONENT OF ITS OWN SIZE SCALE. The ranking is right
  * under every law; the biggest circle is over the biggest country under every law; and the SPREAD
@@ -69,6 +71,13 @@ import {
   radiiUnder,
   type AreaScaleDeclaration,
 } from "../../skills/map-web/assets/area-scale.ts";
+import {
+  navigateChromeSpec,
+  navigateControlsForMarkup,
+  navigateCss,
+  navigateScript,
+  type NavigateDeclaration,
+} from "../../skills/map-web/assets/navigate.ts";
 
 /** One country's mark. The RADIUS IS NOT HERE: it is derived from the scale declaration below, so
  *  the size the page draws and the size the stylesheet re-scales cannot come from two places. */
@@ -99,12 +108,18 @@ const TRAVEL_MS = 380;
  *  text. The beat names which countries are labelled (its claim names five); this is the check that
  *  its choice fits inside the ink, made here because this is where the type size lives. */
 const LABEL_MIN_RADIUS = 22;
+/** How long the window takes to travel under a button or an arrow. Shorter than the law's own
+ *  380ms because a framing is a place and not an argument: a reader pressing zoom twice should not
+ *  be waiting on the first press. A drag never uses it — it follows the finger — and
+ *  `prefers-reduced-motion: reduce` sets it to zero, which removes the flight and not the arrival. */
+const NAV_TRAVEL_MS = 260;
 
 export function DirectedSymbolMapWeb({
   plate,
   symbols,
   keySizes,
   scale,
+  navigate,
   land,
   aspect,
   size,
@@ -126,6 +141,9 @@ export function DirectedSymbolMapWeb({
   keySizes: KeySize[];
   /** The scale laws this beat hands the reader (`map-web/assets/area-scale.ts`). */
   scale: AreaScaleDeclaration;
+  /** What the reader may do to the WINDOW (`map-web/assets/navigate.ts`) — a supplement over a page
+   *  that is already complete, never a door in front of it. */
+  navigate: NavigateDeclaration;
   land: string;
   /** The baked MapTiler basemap for THIS direction, already a data URI. */
   plate: string;
@@ -235,6 +253,16 @@ export function DirectedSymbolMapWeb({
   const scaleOptions = areaScaleOptionsForMarkup(scale, STACK_ID_PREFIX);
   const scaleNotes = areaScaleNotesForMarkup(scale);
   const chrome = areaScaleChromeSpec();
+  const navChrome = navigateChromeSpec();
+  const navControls = navigateControlsForMarkup(navigate);
+  /** The counter-scale's own origin, per mark: the mark's OWN centre, in the drawing's units. It is
+   *  inline because it is a different number on every element, and it is the one number that makes
+   *  the counter-scale safe — the centre is the fixed point of a scale about itself, so `cx`/`cy`,
+   *  which `interaction.mjs` read once at initialisation, are still where the pointer resolver
+   *  expects them at every zoom. */
+  const fixedAt = (cx: number, cy: number) => ({
+    transformOrigin: `${cx}px ${cy}px`,
+  }) as Record<string, string>;
 
   const css = [
     // THE CONTROL'S DRAWING IS NOT WRITTEN HERE AND NOT COPIED FROM A SIBLING. `control-chrome.ts`
@@ -244,6 +272,18 @@ export function DirectedSymbolMapWeb({
     // height measured on this page's own longest sentence.
     controlChromeCss({ scope: SCOPE, ...chrome }),
     areaScaleCss(scale, { scope: SCOPE, idPrefix: STACK_ID_PREFIX, travelMs: TRAVEL_MS }),
+    // THE WINDOW'S OWN CHROME AND ITS COUNTER-SCALE. `navigate.ts` derives the pill from
+    // `control-chrome.ts`'s own emitted declarations rather than drawing a second one, and emits
+    // the rule that keeps a symbol, a label and a stroke from growing with the zoom — which on this
+    // type is not a style rule: the size key is drawn outside the plate's coordinates, so a mark
+    // that grew with the window would leave the key stating a scale the map is no longer in.
+    // The chrome is called HERE and handed in: `navigate.ts` lives inside a skill and may not
+    // import across to `chart-web`, and this beat is under `proof/` and may import from both.
+    navigateCss(navigate, {
+      scope: SCOPE,
+      chrome: controlChromeCss({ scope: SCOPE, ...navChrome }),
+      travelMs: NAV_TRAVEL_MS,
+    }),
     // THE ANSWER, AS A GENERATED RULE. `--mark-active` is what the format's own stylesheet reads off
     // the mark; setting it inline on 41 circles would be 41 inline declarations beating every
     // generated rule on a page built out of generated rules.
@@ -325,6 +365,42 @@ export function DirectedSymbolMapWeb({
         ))}
       </div>
 
+      {/* THE WINDOW, AND IT IS A SUPPLEMENT. The rail ships `hidden` and the script is what takes
+          it off, so a reader with no JavaScript gets the published plate with nothing dead on it —
+          not a button, not a tab stop, not a cursor that promises a drag. Real `<button>`s, because
+          zoom is a momentary action and not a state: the three are reachable by Tab, named in words
+          (an icon-only return is refused by `assertNavigateDeclaration`), and the return names
+          where it goes rather than drawing an arrow at it. */}
+      <fieldset className={`chart-${navChrome.name}`} hidden>
+        <legend>{navigate.label}</legend>
+        <div className="options">
+          {navControls.map((control) => (
+            <button
+              key={control.action}
+              type="button"
+              className="nav-pill"
+              data-nav-do={control.action}
+              aria-label={control.announce}
+            >
+              {control.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* WHERE THE READER IS, IN WORDS AND IN A NUMBER. At scale 1 exactly one window fits inside
+          the camera's box, so `1,0` and "the framing the newsroom published" are the same fact —
+          which is why the return control is dead exactly when this reads 1,0. Both halves of the
+          sentence are in the markup and only the FIGURE is written by the script: a word a script
+          composed would be a glyph no embedded face was cut for. */}
+      <div className={`${navChrome.name}-notes`} id="nav-hint" role="status" hidden>
+        <p style={{ ...regs.annot, margin: 0 }}>
+          {navigate.hint.before}
+          <span className="nav-readout" data-nav-readout>1,0</span>
+          {navigate.hint.after}
+        </p>
+      </div>
+
       <div
         className="chart-plot"
         style={{
@@ -375,19 +451,25 @@ export function DirectedSymbolMapWeb({
           {[...symbols]
             .sort((a, b) => (radii.get(b.key) as number) - (radii.get(a.key) as number))
             .map((s) => (
-              <circle
-                key={s.key}
-                data-symbol={s.key}
-                data-mark={s.key}
-                cx={s.cx}
-                cy={s.cy}
-                r={radii.get(s.key)}
-                fill={symbolFill}
-                fillOpacity={SYMBOL_OPACITY}
-                stroke={symbolFill}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
+              // THE COUNTER-SCALE IS A WRAPPER AND NOT A SECOND FACTOR ON THE CIRCLE. The circle's
+              // own `transform` belongs to the law the reader chose (`area-scale.ts` emits it about
+              // the fill box); the window's own factor is a different question with a different
+              // clock, so it goes on a group about the mark's own centre and the two compose by
+              // nesting instead of fighting over one property.
+              <g key={s.key} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
+                <circle
+                  data-symbol={s.key}
+                  data-mark={s.key}
+                  cx={s.cx}
+                  cy={s.cy}
+                  r={radii.get(s.key)}
+                  fill={symbolFill}
+                  fillOpacity={SYMBOL_OPACITY}
+                  stroke={symbolFill}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </g>
             ))}
 
           {/* THE HIT TARGETS, AND THEY DELIBERATELY DO NOT RE-SCALE.
@@ -400,20 +482,21 @@ export function DirectedSymbolMapWeb({
               The pointer never depends on it anyway — `data-hit="cell"` resolves to the nearest
               CENTRE, and no centre moves. */}
           {symbols.map((s) => (
-            <circle
-              key={`hit-${s.key}`}
-              className="pt"
-              data-mark-ref={s.key}
-              cx={s.cx}
-              cy={s.cy}
-              r={Math.max(9, radii.get(s.key) as number)}
-              fill="transparent"
-              stroke="none"
-              tabIndex={0}
-              role="img"
-              aria-label={s.detail}
-              data-detail={s.detail}
-            />
+            <g key={`hit-${s.key}`} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
+              <circle
+                className="pt"
+                data-mark-ref={s.key}
+                cx={s.cx}
+                cy={s.cy}
+                r={Math.max(9, radii.get(s.key) as number)}
+                fill="transparent"
+                stroke="none"
+                tabIndex={0}
+                role="img"
+                aria-label={s.detail}
+                data-detail={s.detail}
+              />
+            </g>
           ))}
           <rect className="hit-area" x={0} y={0} width={width} height={height} fill="transparent" pointerEvents="all" />
 
@@ -432,9 +515,14 @@ export function DirectedSymbolMapWeb({
           {symbols
             .filter((s) => s.labelled)
             .map((s) => (
+              // A LABEL IS A FORM AND NEVER FOLLOWS THE PLAN. Counter-scaled about its own mark's
+              // centre, it keeps the size the register set and stays anchored where it was; and
+              // because every label's anchor travels with the zoom while none of them grows, the
+              // distance between any two is multiplied by the scale. A zoom on this page can
+              // therefore only ever RESOLVE an overlap and can never create one.
+              <g key={`l-${s.key}`} data-nav-fixed="" style={fixedAt(s.cx, s.cy)}>
               <text
                 pointerEvents="none"
-                key={`l-${s.key}`}
                 x={s.cx}
                 y={s.cy}
                 fill={label}
@@ -446,6 +534,7 @@ export function DirectedSymbolMapWeb({
                 <tspan x={s.cx} dy="-0.35em" fontWeight={700}>{s.name}</tspan>
                 <tspan x={s.cx} dy="1.15em">{s.figure}</tspan>
               </text>
+              </g>
             ))}
           </g>
         </svg>
@@ -512,6 +601,13 @@ export function DirectedSymbolMapWeb({
       <p className="chart-reading" style={{ ...regs.annot, margin: "8px 0 0" }}>{claimNote}</p>
       <p className="chart-reading" style={{ ...regs.body, margin: "6px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
+
+      {/* THE ONE SCRIPT THIS PAGE ADDS, and it is added LAST — after everything it wires, so it
+          needs no readiness dance of its own, and after the plate, so the page a reader sees is
+          complete before a line of it runs. It writes the svg's own `viewBox` and one custom
+          property, and nothing else on the page: no coordinate is recomputed and no word is
+          composed. */}
+      <script dangerouslySetInnerHTML={{ __html: navigateScript(navigate, { scope: SCOPE }) }} />
     </figure>
   );
 }

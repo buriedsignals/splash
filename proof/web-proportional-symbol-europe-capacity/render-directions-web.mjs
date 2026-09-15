@@ -34,6 +34,14 @@ import {
   assertAreaScaleDeclaration,
   assertOneAreaScale,
 } from "../../skills/map-web/assets/area-scale.ts";
+// The window a reader may move, and the bounds it moves inside — a map vocabulary, not a gesture:
+// it adds nothing to what this beat argues. Its ceiling is DERIVED below from the subject the claim
+// is about, so the framing can never be zoomed past the country the headline names.
+import {
+  assertNavigateDeclaration,
+  assertOneNavigation,
+  maxScaleOf,
+} from "../../skills/map-web/assets/navigate.ts";
 import { DirectedSymbolMapWeb } from "./DirectedSymbolMapWeb.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
@@ -345,6 +353,76 @@ const land = geo.features
   .map((r) => `M ${r.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L ")} Z`)
   .join(" ");
 
+// ── THE WINDOW THE READER MAY MOVE ────────────────────────────────────────────────────────────
+//
+// THE CEILING IS A COUNTRY, AND IT IS MEASURED HERE RATHER THAN CHOSEN. The reason to bring this
+// map closer is the caveat's own claim — that a symbol sits at the capacity-weighted centre of its
+// country's OWN stations and not at its centroid — and that claim is unreadable at the published
+// width, where the whole of France is 170 units of a 900-unit drawing. So the window is never
+// allowed to be narrower than the subject the headline names: a reader who has zoomed in to see
+// where inside France its centre of gravity falls can always still see the whole of France around
+// it, and past that the map would be showing terrain this beat holds no datum for.
+//
+// `navigate.ts` recomputes the ceiling from these two numbers and refuses a beat that types one.
+const subjectShape = geo.features.filter((f) => f.properties.name === biggest.country);
+if (subjectShape.length === 0)
+  throw new Error(
+    `${biggest.country} holds the biggest fleet and has no shape in the frozen file, so the zoom ` +
+      `ceiling cannot be measured against the country the headline names`,
+  );
+const subjectSpan = (() => {
+  let west = Infinity;
+  let east = -Infinity;
+  const walk = (node) => {
+    if (typeof node[0] === "number") {
+      const [x] = toPx(project(node));
+      west = Math.min(west, x);
+      east = Math.max(east, x);
+    } else node.forEach(walk);
+  };
+  for (const f of subjectShape) walk(f.geometry.coordinates);
+  return east - west;
+})();
+const navigate = {
+  label: "La fenêtre",
+  view: { width, height },
+  subject: { label: NAMES[biggest.country], width: subjectSpan },
+  // Doubling and halving: the one step a reader does not have to learn, and the one that keeps the
+  // ceiling two presses away rather than five.
+  step: 2,
+  // An eighth of the window per press — far enough that something new comes into view, near enough
+  // that the landmarks a reader was using are still on screen when it lands.
+  pan: 0.125,
+  controls: {
+    in: { label: "Zoom avant", announce: "Zoom avant — rapprocher la carte" },
+    out: { label: "Zoom arrière", announce: "Zoom arrière — éloigner la carte" },
+    home: {
+      label: "Revenir au cadrage publié",
+      announce: "Revenir au cadrage publié — celui de la carte telle qu'elle est parue",
+    },
+  },
+  // THE HINT IS ALSO THE MAP'S OWN ACCESSIBLE DESCRIPTION. The script points the svg's
+  // `aria-describedby` at this row, so the reader who has just tabbed onto the map is told the
+  // keys before they press one — and the last sentence is the promise this navigation makes about
+  // the beat's own claim: the window moves, the scale of the areas does not.
+  hint: {
+    before: "Agrandissement ",
+    // TRIMMED AGAINST A PHONE, NOT AGAINST TASTE. The first version ran to six lines at 375px and
+    // pushed the map below the fold on its own; this one says the same three things — how to move
+    // it, which keys, and what does NOT change — in four.
+    after:
+      " fois. Glissez la carte pour la déplacer ; au clavier, les flèches la déplacent, plus et " +
+      "moins zooment, zéro revient au cadrage publié. Cercles, étiquettes et légende gardent leur " +
+      "taille : la carte s'approche, l'échelle des aires ne change pas.",
+  },
+};
+assertNavigateDeclaration(navigate, "web-proportional-symbol-europe-capacity");
+console.log(
+  `fenêtre : plancher ${fr(1)} (le cadrage publié) · plafond ${fr(maxScaleOf(navigate), 2)} = ` +
+    `${fr(width, 0)} unités de dessin sur ${fr(subjectSpan, 0)} pour ${NAMES[biggest.country]} · ` +
+    `pas ${fr(navigate.step, 0)} · déplacement ${fr(navigate.pan * 100, 1)} % de la fenêtre\n`,
+);
+
 const facts = beatFacts(
   rows.map((r) => ({ key: r.country, label: NAMES[r.country], value: r.mw })),
   { subject: NAMES[biggest.country], declaredSequence: "MW" },
@@ -387,6 +465,17 @@ const interaction = {
         `montré, le rapport réel des capacités, et le nombre de pays que la loi efface.`,
     },
     {
+      question: `Où exactement, dans son propre pays, ce cercle est-il posé ?`,
+      gesture: "zoom-and-pan",
+      changes:
+        `La fenêtre se resserre sur le dessin — le viewBox, jamais la projection : la caméra reste ` +
+        `celle du beat et aucun lieu ne se déplace. Les cercles, les étiquettes et les traits ` +
+        `gardent leur taille à l'écran, donc la légende de taille dit toujours vrai et deux ` +
+        `étiquettes ne peuvent que s'éloigner l'une de l'autre. On ne peut pas dézoomer sous le ` +
+        `cadrage publié ni pousser la géographie hors du cadre, et le contrôle de retour dit en ` +
+        `toutes lettres où il ramène.`,
+    },
+    {
       question: `Que vaut ce cercle-là, et de quoi est-il fait ?`,
       gesture: "ask-a-mark",
       changes:
@@ -400,9 +489,13 @@ const interaction = {
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source} ${scale.label} ${scale.options.map((o) => o.label).join(" ")}`,
+  body:
+    `${caveat} ${readingLine} ${source} ${scale.label} ${scale.options.map((o) => o.label).join(" ")} ` +
+    `${navigate.label} ${Object.values(navigate.controls).map((c) => c.label).join(" ")}`,
   axis: keySizes.map((k) => k.label).join(" "),
-  annot: `${claimNote} ${scale.options.filter((o) => o.note).map((o) => o.note).join(" ")}`,
+  annot:
+    `${claimNote} ${scale.options.filter((o) => o.note).map((o) => o.note).join(" ")} ` +
+    `${navigate.hint.before} ${navigate.hint.after}`,
   value: symbols.filter((s) => s.labelled).map((s) => `${s.name} ${s.figure}`).join(" "),
 };
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
@@ -423,7 +516,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       component: DirectedSymbolMapWeb,
       props: {
         plate,
-        symbols, keySizes, scale, land,
+        symbols, keySizes, scale, navigate, land,
         aspect: CAMERA_ASPECT,
         size: SIZE,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
@@ -451,6 +544,11 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     const written = await readFile(outPath, "utf8");
     try {
       assertOneAreaScale(written, scale, name);
+      // THE SAME HALF, FOR THE WINDOW. Every refusal here is a way the navigation ships with every
+      // attribute correct and lies in a browser: a rail that draws itself with the script absent, a
+      // hit target counter-scaled about anything but its own centre, a mark that grows with the
+      // zoom while the key beside it does not.
+      assertOneNavigation(written, navigate, name);
     } catch (error) {
       await rm(outPath, { force: true });
       throw error;

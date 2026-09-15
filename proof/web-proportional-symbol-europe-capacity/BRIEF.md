@@ -32,10 +32,18 @@ range.
 ## The camera, and why the gesture does not touch it
 
 Lambert azimuthal equal-area measures (`camera.ts`); the baked MapTiler plate's own recorded corners
-place. **The gesture below changes no camera and moves no place.** A zoom and a pan were available
-and are refused here for the reason the map brief gives: they cost the framing this beat argued
-for, and they are the same gesture eight map types would all reach for. Not one circle's `cx`/`cy`
+place. **The gesture below changes no camera and moves no place.** Not one circle's `cx`/`cy`
 changes in any state of this page.
+
+**And the navigation added since is not that gesture and does not become it.** This brief used to
+say a zoom and a pan "were available and are refused here", on the ground that they cost the
+framing the camera argued for and that eight map types would all reach for the same one. The first
+half was answered rather than overruled — the window is bounded so that it cannot be zoomed out
+past the published framing or pushed off the geography, and the return control is named in words —
+and the second half was never an argument against a reader being able to look closer, only against
+a beat calling that its editorial gesture. The owner asked for it twice, in his own words, and it
+is a SUPPLEMENT: the page a reader without JavaScript receives is the same complete plate it was,
+with no dead control on it, and the exponent below is still the only thing this beat argues.
 
 ## The interaction, written before the code
 
@@ -120,6 +128,61 @@ continent, its station count and the water-and-atom / wind-and-sun split — the
 has no room for. Both controls are declared in `interaction`, and the render refuses the page if
 either ships without a declaration or is declared without shipping.
 
+## The window the reader may move
+
+**`skills/map-web/assets/navigate.ts`** — a second new map vocabulary, and the shared one: what a
+reader may do to the WINDOW. Zoom, zoom out, drag, arrow keys, and a return named in words. It is
+wired here first and belongs to every map type after it.
+
+**The window IS the `<svg>`'s own `viewBox`, and that is the whole answer to the trap this tree has
+paid for twice.** `interaction.mjs` resolves the mark under a pointer from `cx`/`cy` read ONCE at
+initialisation, and no CSS transform updates those. The radar answered it by keeping every vertex
+at the same coordinate in every state; the diverging stacked bar answered it by baking one hit
+plate per state at that state's own coordinates. Neither transfers literally to a CONTINUOUS
+navigation — there is no finite set of states to bake a plate for — but the principle under both
+does: **what answers must be at coordinates that are still true.** So the coordinates are made
+invariant and the movement is put into the coordinate system itself. `getScreenCTM()` is derived
+from the viewBox at the moment it is called, so the client → user-space mapping is live for free
+while every `cx` and `cy` on the page is the byte it was at build time. Measured rather than
+assumed, on a probe page: `getScreenCTM()` carries a CSS transform on the `<svg>` and on an
+ANCESTOR of it, and does NOT carry one on an inner `<g>` — which is why the mechanism is the
+viewBox and not a transform over the drawing.
+
+**What must not follow the window is counter-scaled about its own centre.** Every symbol, every
+label and every hit target sits in a `data-nav-fixed` group whose `transform-origin` is that mark's
+own `cx cy`; `--nav-inverse` scales it by 1/k. The centre is the FIXED POINT of a scale about
+itself, so the coordinate the resolver compares against does not move by construction rather than
+by care, and the vocabulary refuses a page where any transform between the `<svg>` and a `.pt` is
+anything else.
+
+**On this type the counter-scale is not a style rule.** The key is drawn outside the plate's
+coordinate system, in the cell's own CSS pixels. A zoom that enlarged the marks would leave the key
+stating a scale the map is no longer drawn in — which is, to the tenth of a factor, the defect this
+beat had just finished repairing. Measured on the emitted page at 1280×860: France's mark is
+125,94px across at 1,0 and 125,94px at 4,0, and the three swatches are 90,78 / 64,19 / 40,59px in
+both. The same counter-scale is what keeps the labels honest: they keep the size the register set
+and their anchors travel with the zoom, so the distance between any two is multiplied by the scale
+and a zoom can only ever RESOLVE an overlap, never create one. 0 overlapping pairs at 1,0 and at
+4,0, measured on real client rectangles.
+
+**The two bounds are derived, not typed.** The FLOOR is the published framing: the window keeps the
+view box's ratio and is clamped inside the camera's box, so at scale 1 exactly one window fits and
+it is the one the newsroom published — zooming out past the argued frame and panning off it are the
+same clamp rather than two rules that could disagree. Measured: forty arrow presses into the
+north-west corner land on `0 0 225 171`, sixty into the south-east on `675 513 225 171`, and ten
+presses of zoom out land on `0 0 900 684` exactly. The CEILING is a country: 900 drawing units
+divided by the 170 units the subject of the claim occupies, **5,30**, so the window is never
+narrower than France and a reader who has come close enough to see where inside it the
+capacity-weighted centre falls can always still see the whole country around it.
+
+**The cost, said rather than found.** The key is furniture pinned to the CELL, not to the map, so a
+reader who pans can bring a mark or a label underneath it; it stays legible (it is opaque, in the
+ground, with its own edge) and the reader can pan back out. A key that moved to get out of the way
+would be exactly the label the owner refused twice for moving with no visible reason. And the plate
+is baked: past roughly its own pixel density the sea tint softens. On this beat the land is a
+vector path drawn over the plate, so the geography a reader actually reads stays sharp at 5,30 and
+only the water does not.
+
 ## The vocabulary
 
 **New: `skills/map-web/assets/area-scale.ts`** — *what the size of a mark is a function of*. Not one
@@ -170,7 +233,45 @@ Driven in a real browser, on the emitted HTML:
 - **Every family a text node names is embedded**, and **the chosen pill is a wash and a ring** —
   both by the verifier above.
 
-**The vocabulary's refusals, by mutation.** Ten mutations, each breaking one thing
+**The navigation, driven in a real browser on the emitted page.**
+
+- **The trap, at every mark that is on screen**: 41/41 at the published framing, 20/20 after one
+  zoom, **7/7 after a zoom of 4,0 AND a drag**, 41/41 after the return — each probe a real pointer
+  moved onto the mark's own live client position, answered by that mark's own reading.
+- **Script off, all three directions**: the rail and its sentence compute to `display: none` and
+  0px of height, the map carries no `tabindex`, the viewBox is the published `0 0 900 684`,
+  `--nav-inverse` is 1, and a Tab walk goes straight from the law's radios to the marks — no dead
+  control on the screen and none in the tab order. (`[hidden]` is a UA rule and the chrome's own
+  `display: flex` is an author rule, so the vocabulary emits the author rule that makes the
+  attribute real, and refuses a page without it.)
+- **Keyboard alone**: arrows pan, `+`/`-` zoom, `0` returns; the map's own keydown answers only
+  when the map ITSELF is focused, so the 41 marks keep the arrow walk they already had. Reaching
+  the return control by forward Tab from the map costs **46 stops** (the 41 marks sit between), two
+  by Shift-Tab, and none at all with `0` — which is why the keys are in the map's own accessible
+  description.
+- **`prefers-reduced-motion`**: 5 distinct frames during a flight under `no-preference`, 1 under
+  `reduce`, both landing on the same window. The displacement stays and only the animation goes.
+  **This shipped wrong first**: the resting `--nav-travel-ms: 0` was emitted AFTER the query that
+  raises it, and two rules of equal specificity are settled by order, so every reader got zero.
+  Caught by counting frames, not by looking; there is now a refusal for the order.
+- **The focus ring shipped wrong too**: a plain mouse drag left `:focus-visible` false and the
+  outline 5px wide — Chrome's own `outline: auto` on `:focus`, which this page had never turned
+  off. The map came away from a DRAG wearing the ring that means "the keyboard is here".
+- **The format's own verifier**, re-run on the navigated page: 92/82/82 checks pass in
+  creme/nocturne/rapport, with the same two creme typeface false negatives named above and nothing
+  else. (The six "the drawing takes the whole track" failures the committed render carried are gone
+  — the trunk's width-driven cell landed under this work.)
+
+**The vocabulary's refusals, by mutation.** Twelve mutations on `navigate.ts` — the ceiling
+collapsing to 1 · an announce dropping its own visible words (WCAG 2.5.3) · a return named in one
+word · a first press that lands on the ceiling · an arrow press that throws the window away · a
+rail shipped visible · the `[hidden]` rule dropped · a hit target counter-scaled about the frame's
+corner instead of its own centre · the counter-scale dropped so a mark grows with the zoom · a
+second clock given to the marks · the two travel rules emitted the wrong way round · a script that
+never writes the viewBox — each run through the real runner; **all twelve go red AND exit
+non-zero**, and none stayed green.
+
+Ten mutations on `area-scale.ts`, each breaking one thing
 `area-scale.ts` claims to refuse, each run through the real runner; all ten go red AND exit
 non-zero: the resting law must be the area law · a non-default law must carry its sentence · the
 default law must carry none · a sentence must state the ratio its own law shows · an accessible
