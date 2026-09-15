@@ -162,7 +162,25 @@ console.table(topFive.map((r) => ({ pays: NAMES[r.country], GW: fr(r.mw / 1000),
 //
 // NOTHING IN THIS BEAT'S GESTURE TOUCHES ANY OF IT. The reader changes the exponent of the size
 // scale; the camera, the plate, the frame and every `cx`/`cy` are the same bytes in all three states.
-const PLATE_SIZE = "1600x1216";
+// THE PLATE IS BAKED WIDER THAN THE STUDY SET NEEDS, AND THAT IS THE BEAT'S EXTENSION.
+//
+// The layout holds the figure inside the window's height, so this map is HEIGHT-bound: at 1512x860
+// its drawing came to 735px inside a 1464px track and the other 729px were empty page. A map may
+// give that width back to the DRAWING by opening its geographic window — the frame shows more of
+// the surroundings AT THE SAME SCALE. Baking wider at the SAME HEIGHT is exactly that and nothing
+// else: `fitBounds` binds on the y axis here (the box is wider than the bounds' own ratio), so the
+// latitudes 34..68 and the zoom are untouched — measured, zoom 3.89 and 3321.63 m/px on both the
+// 1600 and the 1824 bake — and every extra pixel is longitude. `project` normalises by the frame's
+// WIDTH on both axes, so one degree keeps the same size on screen and not one circle moves relative
+// to another.
+//
+// WHY 1824 AND NOT MORE, LOOKED AT RATHER THAN REASONED. The bake at 1946 (ratio 1.60) brings the
+// east coast of Greenland into the top-left corner and carries the east edge to 54.6E, well across
+// the Caspian into Kazakhstan — two landmasses this beat holds no datum for, and a reader is
+// entitled to read empty land as "nothing here" rather than "not counted here". At 1824 (ratio
+// 1.50) the west edge is open Atlantic at 34.7W and the east edge stops at 51.7E, on the Caspian's
+// own water. That is this type's bound, and `frame.maxRatio` below is it.
+const PLATE_SIZE = "1824x1216";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
@@ -572,6 +590,24 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       },
       outDir: OUT,
       name,
+      // WHAT THIS BEAT SAYS ABOUT ITS OWN FRAME. A map extends: the projected plan continues past
+      // the subject, so the window opens onto more of the surroundings at the same scale rather
+      // than zooming (which would change what a kilometre is worth) or stretching (which would be
+      // a false geography). The base is the near-square Europe box this beat published before —
+      // 900/684 — and the bound is the one measured in PLATE_SIZE above, where the window would
+      // start showing land the study set does not cover.
+      frame: {
+        extends: true,
+        base: { width: SIZE, height: Math.round(SIZE / (1600 / 1216)) },
+        maxRatio: 1.5,
+        why:
+          "A map extends by opening its geographic window at the same scale, never by zooming or " +
+          "stretching: the marks keep their size and their distances, and the frame simply shows " +
+          "more of what surrounds the subject. The bound is where the window would reach land this " +
+          "beat counts no capacity for — Greenland to the west, Kazakhstan past the Caspian to the " +
+          "east — because empty land reads as \"nothing here\" and the true sentence is \"not " +
+          "counted here\".",
+      },
     });
     // THE VOCABULARY CHECKS THE PAGE IT ACTUALLY WROTE. `assertOneAreaScale` is the half of this
     // control that no declaration-level check can make: dropping the stylesheet call leaves every

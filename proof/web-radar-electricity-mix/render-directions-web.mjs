@@ -449,6 +449,27 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       },
       outDir: OUT,
       name: `${id}.html`,
+      // WHAT THIS BEAT SAYS ABOUT ITS OWN FRAME: NOTHING OPENS.
+      //
+      // A radar is radial. Its whole claim is that a distance from the centre is one number and
+      // that the same distance in any direction is the same number, so the ring it is read against
+      // must be a CIRCLE. Give the frame a wider ratio and the composition either draws an ellipse
+      // — in which case a spoke pointing north and a spoke pointing east no longer mean the same
+      // thing at the same length — or it keeps the circle and pads the sides, which is the margin
+      // it already has, reached by a longer route. Measured at 1512x860, `rapport`: 831px of
+      // drawing inside a 1464px track, 633px of it left as margin. That margin is the right
+      // answer, and it is the owner's own: "pour les charts qui peuvent pas s'étendre garde-le
+      // comme ça".
+      frame: {
+        extends: false,
+        base: { width: FRAME.width, height: FRAME.height },
+        why:
+          "A radar is radial: the reading IS the distance from one centre, and the same distance " +
+          "must mean the same number in every direction. A wider frame either makes the rings " +
+          "ellipses, which makes the radius lie, or keeps them round and pads the sides, which is " +
+          "the margin it already has. So nothing opens, the base height stays, and the surplus " +
+          "width — 633px of a 1464px track at 1512x860 — stays margin on purpose.",
+      },
     }));
     // THE CONTROL CHANGES THE PICTURE, MEASURED ON THE PAGE THAT WAS JUST WRITTEN. `renderWeb` runs
     // `assertInteractionPlan`, whose census discovers a filter, a stack and a yardstick by their own

@@ -77,6 +77,11 @@ body {
   font-family: "Open Sans", Helvetica, Arial, sans-serif;
 }
 
+/* THE FRAME — FIXED · base 620/440 (1.409) · drawn 620/440 (1.409) · bound 1.409091
+   A radar is radial: the reading IS the distance from one centre, and the same distance must mean the same number in every direction. A wider frame either makes the rings ellipses, which makes the radius lie, or keeps them round and pads the sides, which is the margin it already has. So nothing opens, the base height stays, and the surplus width — 633px of a 1464px track at 1512x860 — stays margin on purpose.
+   Past the bound the surplus width is margin again, with no rule of its own: the cell below carries
+   this page's own viewBox ratio and min()s against the track, so a drawing narrower than its track
+   is centred and its gutters travel with it. Nothing is ever stretched to fill. */
 /* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
    .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
    no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio

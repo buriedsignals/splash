@@ -22,7 +22,7 @@ import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.m
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { assertOneCut } from "../../skills/chart-web/assets/side.ts";
-import { DirectedDivergingStackedWeb } from "./DirectedDivergingStackedWeb.tsx";
+import { DirectedDivergingStackedWeb, FRAME } from "./DirectedDivergingStackedWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -441,6 +441,30 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       },
       outDir: OUT,
       name: `${id}.html`,
+      // WHAT THIS BEAT SAYS ABOUT ITS OWN FRAME, AND THE MEASUREMENT THAT SETS THE BOUND.
+      //
+      // The type extends: its x axis is a percentage continuum from one camp to the other, and a
+      // wider box lengthens every barreau without touching a row's height — more length per point
+      // is finer reading of the one thing this beat asks the reader to compare.
+      //
+      // But the bound here is the LAYOUT's, not the type's, and it is already the base frame.
+      // Measured in Chrome at 1512x860 on the restored layout: this beat's own 880/372 draws
+      // 1244px inside a 1290px track — 46px of margin on a figure that fills the window's height
+      // exactly. Widening it to 1240/372 does close those 46px, and it opens 140px of unused page
+      // UNDER the figure, because the plot's height comes from its own ratio and a wider frame is
+      // a shorter one. That is the trade turning negative, so it is where this declaration stops.
+      frame: {
+        extends: true,
+        base: { width: FRAME.width, height: CODES.length * FRAME.row },
+        maxRatio: FRAME.width / (CODES.length * FRAME.row),
+        why:
+          "A diverging stacked bar extends: its axis is a continuum of shares and a wider box " +
+          "lengthens every barreau without changing a row's height. The bound is not this type's " +
+          "legibility but this layout's arithmetic, and at the reference window it is already the " +
+          "base frame: 880/372 draws 1244px inside a 1290px track and fills the window's height " +
+          "exactly, while 1240/372 wins those 46px of side margin and opens 140px of unused page " +
+          "below. Past here the surplus only moves from the sides to the bottom.",
+      },
     });
     // The three refusals only the WRITTEN page can carry: a half-tagged band, a vocabulary that
     // emitted no rules at all, and a blanket hide that landed after the default plate's own reveal.
