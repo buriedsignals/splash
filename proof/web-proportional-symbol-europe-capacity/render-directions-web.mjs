@@ -1,16 +1,18 @@
 // twin/proof/web-proportional-symbol-europe-capacity/render-directions-web.mjs
 //
-// Europe's low-carbon capacity as proportional symbols, one per country. Rendered once per FILED
-// DIRECTION into a self-contained interactive page.
+// Europe's low-carbon capacity as proportional symbols, one circle per country. Rendered once per
+// FILED DIRECTION into a self-contained interactive page.
 //
-// AREA, NOT RADIUS. The scale is sqrt of the value, so a circle twice the area stands for twice the
-// capacity — and the key gives three named sizes rather than a ramp nobody can interpolate.
+// THE RESTING LAW IS THE AREA LAW: a circle twice the area stands for twice the capacity. The page
+// then hands the reader the exponent itself — the one parameter this type sets in silence — through
+// `skills/map-web/assets/area-scale.ts`. Every number the control's sentences print is derived here
+// from the frozen file by that vocabulary and asserted before anything is drawn.
 //
 // Usage:  bun proof/web-proportional-symbol-europe-capacity/render-directions-web.mjs
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
@@ -21,6 +23,17 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+// The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
+// nice-number ladder, not three fractions of a total. Its own header records why — a legend over
+// 9 815 / 19 629 / 29 444 is one datum's arithmetic showing through, and a reader cannot carry
+// 19 629 back to a circle they are looking at, which is the single job the legend has.
+import { niceReferenceValues } from "../../skills/map-web/assets/geo-symbol.ts";
+import {
+  areaScaleFacts,
+  areaScaleSlugOf,
+  assertAreaScaleDeclaration,
+  assertOneAreaScale,
+} from "../../skills/map-web/assets/area-scale.ts";
 import { DirectedSymbolMapWeb } from "./DirectedSymbolMapWeb.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
@@ -32,6 +45,13 @@ const SIZE = 900;
 const OLD = ["Hydro", "Nuclear"];
 const NEW = ["Wind", "Solar"];
 const R_MAX = 46;
+/** THE LEGIBILITY FLOOR, in the drawing's own units. A circle drawn under it is, on the page,
+ *  indistinguishable from a place with no data at all. One unit of this geometry is about 1,5 CSS
+ *  pixels at the width this page fills on a laptop, so a radius under 1 is a mark under three
+ *  pixels across — a dot, not a circle, and certainly not an area anyone can compare. The area law
+ *  is refused outright if it puts anything under this; a law offered as a counterexample may, and
+ *  then it owes the reader the count. */
+const R_FLOOR = 1;
 const OUTSIDE = new Set(["Algeria", "Iraq", "Morocco", "Syrian Arab Republic", "Tunisia"]);
 const NAMES = {
   France: "France", Germany: "Allemagne", Spain: "Espagne", Italy: "Italie",
@@ -94,7 +114,7 @@ for (const s of stations) {
   c.w += s.mw;
 }
 const rows = [...byCountry.entries()]
-  .map(([country, c]) => ({ country, ...c, lon: c.lon / c.w, lat: c.lat / c.w }))
+  .map(([country, c]) => ({ country, key: areaScaleSlugOf(country), ...c, lon: c.lon / c.w, lat: c.lat / c.w }))
   .sort((a, b) => b.mw - a.mw);
 for (const r of rows) if (!NAMES[r.country]) throw new Error(`${r.country} has no French name filed`);
 
@@ -102,13 +122,18 @@ const totalMw = rows.reduce((s, r) => s + r.mw, 0);
 const biggest = rows[0];
 const topFive = rows.slice(0, 5);
 const topShare = (topFive.reduce((s, r) => s + r.mw, 0) / totalMw) * 100;
+/** The country at the MEDIAN of the field — what the biggest is read against. Not the smallest: a
+ *  ratio against the tail is arithmetic nobody carries around, and the median is the country a
+ *  reader can actually picture as "an ordinary one of these forty-one". */
+const median = rows[Math.floor(rows.length / 2)];
 
 // ── THE CLAIM, ASSERTED ───────────────────────────────────────────────────────────────────────
 if (!(topShare > 50))
   throw new Error(`the headline says five countries hold more than half; they hold ${fr(topShare)} %`);
 console.log(
   `${rows.length} pays · ${fr(totalMw / 1000, 0)} GW sur ${plain(stations.length.toLocaleString("fr-FR"))} centrales · ` +
-    `cinq premiers ${fr(topShare, 0)} % · plus gros ${NAMES[biggest.country]} ${fr(biggest.mw / 1000, 0)} GW\n`,
+    `cinq premiers ${fr(topShare, 0)} % · plus gros ${NAMES[biggest.country]} ${fr(biggest.mw / 1000, 0)} GW · ` +
+    `médiane ${NAMES[median.country]} ${fr(median.mw / 1000)} GW\n`,
 );
 console.table(topFive.map((r) => ({ pays: NAMES[r.country], GW: fr(r.mw / 1000), centrales: r.count })));
 
@@ -124,6 +149,9 @@ console.table(topFive.map((r) => ({ pays: NAMES[r.country], GW: fr(r.mw / 1000),
 // ONE PLATE PER FILED DIRECTION, baked in that direction's own tints. The three share a camera by
 // construction, and that is asserted below rather than assumed: three plates that disagreed about
 // where 10°E is would put the same mark in three places and nothing here would notice.
+//
+// NOTHING IN THIS BEAT'S GESTURE TOUCHES ANY OF IT. The reader changes the exponent of the size
+// scale; the camera, the plate, the frame and every `cx`/`cy` are the same bytes in all three states.
 const PLATE_SIZE = "1600x1216";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
@@ -188,30 +216,115 @@ console.log(
   `camera qui DESSINE : plaque MapTiler ${FRAME.width}x${FRAME.height} · ` +
     `${CORNERS.west.toFixed(2)}..${CORNERS.east.toFixed(2)}E ` +
     `${CORNERS.south.toFixed(2)}..${CORNERS.north.toFixed(2)}N · aspect ${CAMERA_ASPECT.toFixed(2)}:1 · ` +
-    `zoom ${plateFacts.zoom}\n`,
+    `zoom ${plateFacts.zoom} · caméra qui MESURE (camera.ts, EPSG:3035) aspect ${MEASURE_ASPECT.toFixed(2)}:1 ` +
+    `sur ${WINDOW.west}..${WINDOW.east}E\n`,
 );
 
 const width = CAMERA_ASPECT >= 1 ? SIZE : SIZE * CAMERA_ASPECT;
 const height = CAMERA_ASPECT >= 1 ? SIZE / CAMERA_ASPECT : SIZE;
 const toPx = ([ux, uy]) => [ux * SIZE, uy * SIZE];
-const rOf = (mw) => Math.sqrt(mw / biggest.mw) * R_MAX;
 
-const symbols = rows.map((r) => {
+// ── THE SCALE LAWS THE READER HOLDS ───────────────────────────────────────────────────────────
+//
+// Three laws over the same 41 circles at the same 41 centres. The vocabulary normalises each to the
+// same anchor radius, so the biggest circle is identical in all three and the ONLY thing that
+// changes is the spread — which is the one quantity the exponent decides.
+//
+// The legend's magnitudes are `niceReferenceValues`'s own ladder, and they are part of this
+// declaration rather than of the drawing: `assertOneAreaScale` reads the written page back and
+// refuses it unless each swatch re-scales under each law. A size legend that stood still while the
+// marks re-sized would be the only instrument on a symbol map for turning an area back into a
+// quantity, calibrated to a scale nothing on the page is drawn in.
+const keyValues = niceReferenceValues(biggest.mw, 3).map((mw, i) => ({ key: `k${i}`, value: mw }));
+const baseScale = {
+  label: "L'échelle des aires",
+  values: rows.map((r) => ({ key: r.key, value: r.mw })),
+  keyValues,
+  maxRadius: R_MAX,
+  floor: R_FLOOR,
+  subjectKey: biggest.key,
+  referenceKey: median.key,
+};
+/** The three laws, before their sentences exist: the sentences quote numbers this vocabulary
+ *  derives from exactly these laws, so the facts are computed first and the words written round
+ *  them — never the other way about. */
+const LAWS = [
+  { key: "Aire proportionnelle", label: "Aire proportionnelle", exponent: 0.5 },
+  { key: "Rayon proportionnel", label: "Rayon proportionnel", exponent: 1 },
+  { key: "Aire aplatie", label: "Aire aplatie", exponent: 1 / 3 },
+];
+const lawFacts = LAWS.map((law) => areaScaleFacts({ ...baseScale, options: LAWS }, law));
+const SUBJECT = NAMES[biggest.country];
+const REFERENCE = NAMES[median.country];
+const FLOOR_WORDS = `moins de trois pixels de diamètre`;
+
+const scale = {
+  ...baseScale,
+  options: [
+    {
+      ...LAWS[0],
+      announce:
+        `Aire proportionnelle — la surface de chaque cercle est proportionnelle à la capacité ; ` +
+        `c'est l'échelle honnête et celle que la page affiche par défaut`,
+    },
+    {
+      ...LAWS[1],
+      announce:
+        `Rayon proportionnel — le rayon de chaque cercle est proportionnel à la capacité, ` +
+        `l'échelle que la fiche de type appelle mécaniquement fausse ; le seuil de lisibilité ` +
+        `qu'elle fait franchir est de ${FLOOR_WORDS}`,
+      // THE SENTENCE IS BUILT OUT OF THE DERIVED NUMBERS AND NOTHING ELSE, and it is deliberately
+      // written as a comparison table in words rather than as a French sentence with prepositions:
+      // the subject and the reference are DERIVED from the data (the biggest and the median), so a
+      // sentence needing "la France" and "la Grèce" would need an article table nobody could keep
+      // correct for the forty-one countries this file can pick from.
+      note:
+        `Rayon proportionnel — aire montrée, ${SUBJECT} contre ${REFERENCE} : ` +
+        `${fr(lawFacts[1].shown, 1)} fois. Aire réelle : ${fr(lawFacts[1].truth, 1)} fois. ` +
+        `${fr(lawFacts[1].erased.length, 0)} des ${fr(rows.length, 0)} pays passent sous le seuil ` +
+        `de lisibilité.`,
+    },
+    {
+      ...LAWS[2],
+      announce:
+        `Aire aplatie — les écarts entre les cercles sont compressés, l'échelle flatteuse qu'on ` +
+        `choisit quand le plus gros cercle écrase la carte`,
+      note:
+        `Aire aplatie — aire montrée, ${SUBJECT} contre ${REFERENCE} : ` +
+        `${fr(lawFacts[2].shown, 1)} fois. Aire réelle : ${fr(lawFacts[2].truth, 1)} fois. Aucun ` +
+        `pays ne passe sous le seuil, mais l'écart que la carte doit prouver a fondu.`,
+    },
+  ],
+};
+assertAreaScaleDeclaration(scale, { fr });
+for (const [i, law] of LAWS.entries())
+  console.log(
+    `loi « ${law.label} » (exposant ${law.exponent.toFixed(4)}) : ${SUBJECT} montrée ` +
+      `${fr(lawFacts[i].shown, 1)} fois ${REFERENCE}, pour ${fr(lawFacts[i].truth, 1)} fois sa ` +
+      `capacité · ${lawFacts[i].erased.length} pays sous le seuil de ${R_FLOOR}`,
+  );
+console.log("");
+
+const symbols = rows.map((r, index) => {
   const [cx, cy] = toPx(project([r.lon, r.lat]));
-  const rr = rOf(r.mw);
   return {
-    code: r.country,
+    key: r.key,
     name: NAMES[r.country],
+    figure: `${fr(r.mw / 1000, 0)} GW`,
+    // THE LABELLED SET IS THE CLAIM'S OWN FIVE, not "whatever happens to be big enough". A radius
+    // threshold labelled seven countries here, and the two it added are Norvège and Suède, whose
+    // weighted fleet centres are close enough for their labels to collide. The claim names five.
+    labelled: index < 5,
     cx,
     cy,
-    r: rr,
-    label: rr >= 22 ? fr(r.mw / 1000, 0) : null,
     detail:
       `${NAMES[r.country]} · ${fr(r.mw / 1000)} GW bas-carbone (${fr((r.mw / totalMw) * 100)} % de ` +
       `l'Europe) · ${plain(r.count.toLocaleString("fr-FR"))} centrales · eau + atome ` +
       `${fr((r.old / r.mw) * 100)} %, vent + soleil ${fr((r.fresh / r.mw) * 100)} %`,
   };
 });
+
+const keySizes = keyValues.map((k) => ({ key: k.key, label: `${fr(k.value / 1000, 0)} GW` }));
 
 // ── the basemap ───────────────────────────────────────────────────────────────────────────────
 const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
@@ -239,34 +352,58 @@ const facts = beatFacts(
 const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
-const keySizes = [totalMw * 0.005, totalMw * 0.05, biggest.mw].map((mw) => ({
-  r: rOf(mw),
-  label: `${fr(mw / 1000, 0)} GW`,
-}));
-
 const title = `Cinq pays portent ${fr(topShare, 0)} % de la capacité bas-carbone européenne`;
 const caveat =
   `Un cercle par pays, sa SURFACE proportionnelle à la capacité bas-carbone installée, posé au ` +
-  `centre pondéré de ses propres centrales — pas au centroïde du pays, qui peut tomber dans une ` +
-  `chaîne de montagnes vide. Les cercles sont translucides : là où deux se recouvrent, le ` +
-  `recouvrement se voit.`;
+  `centre pondéré de ses propres centrales et translucide, pour qu'un recouvrement se voie.`;
 const claimNote =
   `${topFive.map((r) => `${NAMES[r.country]} ${fr(r.mw / 1000, 0)} GW`).join(", ")} — ` +
   `${fr(topShare, 0)} % des ${fr(totalMw / 1000, 0)} GW du continent, sur ` +
   `${plain(stations.length.toLocaleString("fr-FR"))} centrales.`;
 const readingLine =
-  `Lecture : survolez, touchez ou tabulez un cercle pour lire le pays, ses GW, sa part de l'Europe, ` +
-  `son nombre de centrales et le partage entre eau-et-atome et vent-et-soleil. Une surface se classe ` +
-  `et ne se mesure pas : la légende donne trois tailles nommées, jamais une échelle continue.`;
-const source = `Source : Global Power Plant Database (WRI) · fond de carte MapTiler (dataviz), teinté par la direction`;
+  `Lecture : l'exposant qui fait la taille des cercles est le seul réglage qu'une carte à symboles ` +
+  `ne montre jamais — il est ci-dessus, et aucun pays ne bouge quand on en change. Survolez ou ` +
+  `tabulez un cercle pour le détail.`;
+const source = `Source : Global Power Plant Database (WRI) · fond de carte MapTiler`;
+
+/** THE INTERACTION, WRITTEN BEFORE THE CODE (`BRIEF.md`) and carried into the render so the two
+ *  cannot drift. `assertInteractionPlan` refuses a control shipped and not declared, and a control
+ *  declared and not shipped. */
+const interaction = {
+  earns:
+    `Une carte à symboles cache l'exposant de sa propre échelle : le classement est juste sous ` +
+    `n'importe quelle loi, et l'écart entre les cercles — la seule chose que la carte prouve — est ` +
+    `un paramètre libre que l'auteur a fixé en silence. Un still ne peut qu'en choisir un et ` +
+    `demander qu'on lui fasse confiance ; cette page le met dans la main du lecteur et chiffre ce ` +
+    `que chaque loi fait dire à la même carte.`,
+  controls: [
+    {
+      question: `De combien la France est-elle vraiment plus grande que la Grèce ?`,
+      gesture: "toggle-a-comparison",
+      changes:
+        `Chaque cercle change de rayon et rien d'autre : aucun centre ne bouge, aucune étiquette ne ` +
+        `bouge, le plus gros cercle reste au même rayon dans les trois états, la légende de taille ` +
+        `se remet à l'échelle avec les marques, et la phrase révélée chiffre le rapport de surfaces ` +
+        `montré, le rapport réel des capacités, et le nombre de pays que la loi efface.`,
+    },
+    {
+      question: `Que vaut ce cercle-là, et de quoi est-il fait ?`,
+      gesture: "ask-a-mark",
+      changes:
+        `Le cercle lui-même s'assombrit depuis son propre remplissage, mesuré à travers sa ` +
+        `translucidité, et répond avec le pays, ses GW, sa part de l'Europe, son nombre de ` +
+        `centrales et le partage entre eau-et-atome et vent-et-soleil.`,
+    },
+  ],
+};
 
 const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
-  body: `${caveat} ${readingLine} ${source}`,
+  body: `${caveat} ${readingLine} ${source} ${scale.label} ${scale.options.map((o) => o.label).join(" ")}`,
   axis: keySizes.map((k) => k.label).join(" "),
-  annot: claimNote,
-  value: symbols.filter((s) => s.label).map((s) => s.label).join(" "),
+  annot: `${claimNote} ${scale.options.filter((o) => o.note).map((o) => o.note).join(" ")}`,
+  value: symbols.filter((s) => s.labelled).map((s) => `${s.name} ${s.figure}`).join(" "),
 };
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
 
@@ -280,32 +417,53 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   const plate = `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`;
+  const name = `${id}.html`;
   try {
-    await renderWeb({
+    const { outPath } = await renderWeb({
       component: DirectedSymbolMapWeb,
       props: {
         plate,
-        symbols, keySizes, land,
+        symbols, keySizes, scale, land,
         aspect: CAMERA_ASPECT,
         size: SIZE,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
         alt:
-          `Une carte d'Europe portant un cercle par pays, dimensionné par sa capacité bas-carbone. ` +
-          `Le plus grand, ${NAMES[biggest.country]}, fait ${fr(biggest.mw / 1000, 0)} GW ; viennent ` +
-          `ensuite ${topFive.slice(1).map((r) => NAMES[r.country]).join(", ")}. Ces cinq cercles ` +
-          `couvrent ${fr(topShare, 0)} % de la capacité du continent ; le reste de la carte est un ` +
-          `semis de petits cercles.`,
+          `Une carte d'Europe portant un cercle par pays, dont la SURFACE est proportionnelle à sa ` +
+          `capacité bas-carbone. Le plus grand, ${NAMES[biggest.country]}, fait ` +
+          `${fr(biggest.mw / 1000, 0)} GW ; viennent ensuite ` +
+          `${topFive.slice(1).map((r) => NAMES[r.country]).join(", ")}. Ces cinq cercles couvrent ` +
+          `${fr(topShare, 0)} % de la capacité du continent ; le reste de la carte est un semis de ` +
+          `petits cercles. Un contrôle au-dessus de la carte change la loi qui transforme une ` +
+          `capacité en taille de cercle, sans déplacer aucun pays.`,
+        interaction,
         direction,
         ground: direction.ground,
         accent: direction.accent,
       },
       outDir: OUT,
-      name: `${id}.html`,
+      name,
     });
-    console.log(`${id} -> renders/${id}.html`);
+    // THE VOCABULARY CHECKS THE PAGE IT ACTUALLY WROTE. `assertOneAreaScale` is the half of this
+    // control that no declaration-level check can make: dropping the stylesheet call leaves every
+    // attribute perfectly correct and every state drawn on top of every other. A page that fails it
+    // is REMOVED rather than left on disk, because a stale render on disk looks exactly like a
+    // render that succeeded.
+    const written = await readFile(outPath, "utf8");
+    try {
+      assertOneAreaScale(written, scale, name);
+    } catch (error) {
+      await rm(outPath, { force: true });
+      throw error;
+    }
+    console.log(`${id} -> renders/${name}`);
   } catch (error) {
     refused.push({ id, why: error.message });
     console.log(`${id} REFUSED — ${error.message}`);
   }
 }
-if (refused.length) console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  // A runner that swallows a refusal makes a refused page look like a produced one, and leaves the
+  // previous render sitting on disk as if it were today's.
+  process.exitCode = 1;
+}
