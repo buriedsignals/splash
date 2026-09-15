@@ -166,18 +166,18 @@ function contrastRatio(a, b) {
 
 // ===== the checks =====
 
-/** ITEM: a web beat must FILL THE WIDTH IT IS GIVEN, and its drawing must stay in proportion.
+/** ITEM: no width is left EMPTY, the drawing stays in proportion, and the figure still fits the
+ *  window it opens in.
  *
- *  THE ITEM THIS REPLACES, QUOTED SO THE REVERSAL IS MET RATHER THAN LOST: "a web beat must fit the
- *  visible window. Measured as the document's own scroll height against the window's inner height —
- *  the one number a reader experiences as 'is there a scrollbar'." That was checked here for eleven
- *  months and it was the wrong half of the trade. Three things cannot hold at once — a drawing in
- *  proportion, a drawing edge to edge, a figure inside the window's height — and the owner picked
- *  the first two on a real render: "la carte ne prend pas toute la largeur tout comme les charts."
- *  So VERTICAL overflow is now permitted and no longer measured. What is measured instead is the
- *  thing that had no guard at all: the cell's own width against the track the figure left it, and
- *  the cell's own two scales against each other. Horizontal overflow stays forbidden — a reader who
- *  has to scroll sideways to see the end of a chart has not seen the chart. */
+ *  TWO ITEMS THIS REPLACES, BOTH QUOTED SO THE REVERSALS ARE MET. It first read "a web beat must fit
+ *  the visible window. Measured as the document's own scroll height against the window's inner
+ *  height" — true, and it was bought with two empty side gutters, which the owner refused. It then
+ *  read "a web beat must FILL THE WIDTH IT IS GIVEN [...] VERTICAL overflow is now permitted and no
+ *  longer measured" — and he refused that in turn: "ça prend la largeur mais ne respecte pas la
+ *  hauteur qu'on avait avant". Both hold at once only if the surplus width goes somewhere real, so
+ *  what is measured here is where it went: the drawing's own column against the drawing, and the
+ *  figure's right edge against the reading column's.
+ */
 async function checkFit(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
@@ -188,6 +188,43 @@ async function checkFit(page, vp) {
       const r = el.getBoundingClientRect();
       return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: r.width, h: r.height };
     };
+    const fig = document.querySelector(".chart-figure");
+    const plot = document.querySelector(".chart-plot");
+    const svg = document.querySelector("svg.chart");
+    const px = (v) => parseFloat(v) || 0;
+    let cell = null;
+    if (fig && plot && svg) {
+      const fcs = getComputedStyle(fig);
+      const pcs = getComputedStyle(plot);
+      const fr = fig.getBoundingClientRect();
+      const pr = plot.getBoundingClientRect();
+      const sr = svg.getBoundingClientRect();
+      // The reading column: every block of the figure that is neither the header nor the drawing.
+      let colLeft = Infinity;
+      let colRight = 0;
+      for (const el of fig.children) {
+        if (el === plot || el.classList.contains("chart-header")) continue;
+        if (getComputedStyle(el).display === "none") continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        colLeft = Math.min(colLeft, r.left);
+        colRight = Math.max(colRight, r.right);
+      }
+      cell = {
+        w: sr.width,
+        h: sr.height,
+        vbW: svg.viewBox.baseVal.width,
+        vbH: svg.viewBox.baseVal.height,
+        plotW: pr.width,
+        gutters: px(pcs.getPropertyValue("--y-gutter")) + px(pcs.getPropertyValue("--end-gutter")),
+        figRight: fr.right - px(fcs.paddingRight),
+        colLeft: colLeft === Infinity ? null : colLeft,
+        colRight,
+        plotRight: pr.right,
+        // Stacked when the column starts left of where the drawing ends — i.e. it is underneath.
+        stacked: colLeft !== Infinity && colLeft < pr.right - 1,
+      };
+    }
     return {
       docH: document.documentElement.scrollHeight,
       docW: document.documentElement.scrollWidth,
@@ -198,43 +235,15 @@ async function checkFit(page, vp) {
       source: box(".chart-source"),
       xAxis: box(".chart-plot .x-axis"),
       filter: box(".chart-filter"),
-      // The cell the reader actually gets, and the track the figure actually left it. Read off the
-      // COMPUTED gutters rather than off the stylesheet's text, so a beat that overrode either one
-      // is measured as it renders and not as it was written.
-      cell: (() => {
-        const svg = document.querySelector("svg.chart");
-        const plot = document.querySelector(".chart-plot");
-        if (!svg || !plot) return null;
-        const cs = getComputedStyle(plot);
-        const px = (v) => parseFloat(v) || 0;
-        const r = svg.getBoundingClientRect();
-        const pr = plot.getBoundingClientRect();
-        const inner = pr.width - px(cs.paddingLeft) - px(cs.paddingRight);
-        return {
-          w: r.width,
-          h: r.height,
-          track: inner - px(cs.getPropertyValue("--y-gutter")) - px(cs.getPropertyValue("--end-gutter")),
-          vbW: svg.viewBox.baseVal.width,
-          vbH: svg.viewBox.baseVal.height,
-        };
-      })(),
+      cell,
     };
   });
-  const hOverflow = m.docW - m.innerW;
   check(
-    hOverflow <= 1,
+    m.docW - m.innerW <= 1,
     `${vp.label} ${vp.w}x${vp.h}: no horizontal scroll`,
     `document ${m.docW}px in a ${m.innerW}px window`,
   );
   if (m.cell) {
-    // THE FILL. One CSS pixel of sub-pixel rounding, not a tolerance for a design decision: the
-    // defect this replaced was 466px of empty gutter on the connected scatter and 769px on the
-    // proportional symbol map.
-    check(
-      Math.abs(m.cell.w - m.cell.track) <= 1,
-      `${vp.label} ${vp.w}x${vp.h}: the drawing takes the whole track`,
-      `cell ${m.cell.w.toFixed(1)}px in a ${m.cell.track.toFixed(1)}px track`,
-    );
     // THE ISOTROPY. scaleX/scaleY against the cell's own viewBox — the number that says whether a
     // circle is round under `preserveAspectRatio="none"`.
     const aniso = (m.cell.w / m.cell.vbW) / (m.cell.h / m.cell.vbH);
@@ -243,7 +252,39 @@ async function checkFit(page, vp) {
       `${vp.label} ${vp.w}x${vp.h}: the drawing is in proportion`,
       `scaleX/scaleY ${aniso.toFixed(4)} (cell ${m.cell.w.toFixed(1)}x${m.cell.h.toFixed(1)}, viewBox ${m.cell.vbW}x${m.cell.vbH})`,
     );
+    // NO EMPTY WIDTH INSIDE THE PLOT. The plot's own box is the drawing plus the beat's declared
+    // gutters, and nothing else. One CSS pixel of sub-pixel rounding, not a tolerance for a
+    // decision: the defect this replaced was 466px of empty gutter on the connected scatter.
+    const inside = m.cell.plotW - m.cell.gutters - m.cell.w;
+    check(
+      Math.abs(inside) <= 1,
+      `${vp.label} ${vp.w}x${vp.h}: the plot's box is the drawing and its gutters, nothing else`,
+      `${inside.toFixed(1)}px unaccounted for inside a ${m.cell.plotW.toFixed(1)}px plot`,
+    );
+    // NO EMPTY WIDTH BESIDE THE COLUMN either — and the drawing may not run over it.
+    if (!m.cell.stacked) {
+      const unused = m.cell.figRight - m.cell.colRight;
+      check(
+        Math.abs(unused) <= 2,
+        `${vp.label} ${vp.w}x${vp.h}: the reading column runs to the frame's own edge`,
+        `${unused.toFixed(1)}px of the frame is neither the drawing nor the words`,
+      );
+      check(
+        m.cell.colLeft - m.cell.plotRight >= -1,
+        `${vp.label} ${vp.w}x${vp.h}: the drawing does not run over the column beside it`,
+        `the column starts ${(m.cell.colLeft - m.cell.plotRight).toFixed(1)}px past the plot's right edge`,
+      );
+    }
   }
+  // THE HEIGHT IT HAD BEFORE. Restored as an item, on the windows the owner actually reads on: a
+  // figure taller than the window is what he refused. A phone in portrait is excluded on purpose —
+  // there the column is stacked underneath and the page is a page.
+  if (m.figure && vp.w >= vp.h)
+    check(
+      m.docH - m.innerH <= 1,
+      `${vp.label} ${vp.w}x${vp.h}: the whole beat is inside the window`,
+      `document ${m.docH}px in a ${m.innerH}px window (overflow ${m.docH - m.innerH}px)`,
+    );
   check(
     m.plot.h >= 100,
     `${vp.label} ${vp.w}x${vp.h}: the plot is still a chart, not a strip`,
@@ -1208,7 +1249,7 @@ if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });
 try {
-  console.log(`\nFILL — the drawing takes the whole width, in proportion, with no sideways scroll`);
+  console.log(`\nFILL — the drawing in proportion, the surplus width in the column, inside the window`);
   {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });

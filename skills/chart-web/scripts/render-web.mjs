@@ -212,6 +212,11 @@ async function renderWeb({ component, props, outDir, name }) {
     // The plot cell's ratio, taken from the geometry this component actually drew rather than from
     // anything the beat declares twice. See `plotViewBoxOf`.
     plot: plotViewBoxOf(markup, name ?? "this beat"),
+    // The reading column's measure, from the words that column will actually hold, in the size the
+    // source line is set at — the smallest register any of those words uses, so the measure is
+    // never wider than the text needs.
+    aside: { minWidth: asideMeasure(markup) },
+    bands: plotBandsOf(markup, name ?? "this beat"),
     filter: props.filter ?? null,
     entrance: declaresEntrance,
     fontStack: stack,
@@ -251,7 +256,7 @@ ${inlineScript}
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
   assertPlotCellIsItsViewBox(html, name ?? "this beat");
-  assertPlotCellFillsItsTrack(html, name ?? "this beat");
+  assertNoEmptySurplus(html, name ?? "this beat");
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -322,6 +327,21 @@ function assertPlotGeometry(plot) {
   return { width, height };
 }
 
+/** The column's measure, refused rather than defaulted, for the same reason the plot's geometry is.
+ *  A stylesheet built with no measure would fall back to some number this file invented, and the
+ *  column beside the drawing would be whatever that number happened to be on every beat at once —
+ *  which is the "gutter with a label" the whole arrangement exists to avoid. */
+function assertAsideMeasure(aside) {
+  const min = Number(aside?.minWidth);
+  if (!Number.isFinite(min) || min <= 0)
+    throw new Error(
+      `buildCss needs the reading column's own measure ({minWidth}), derived from the words that ` +
+        `column holds; it was given ${JSON.stringify(aside)}. Without it the surplus width beside ` +
+        `the drawing has no floor and the layout cannot say where the drawing stops.`,
+    );
+  return Math.ceil(min);
+}
+
 /**
  * THE GUARD, ON THE WRITTEN PAGE RATHER THAN ON THE INTENTION.
  *
@@ -333,67 +353,85 @@ function assertPlotGeometry(plot) {
  */
 function assertPlotCellIsItsViewBox(html, name = "this beat") {
   const { width, height } = plotViewBoxOf(html, name);
-  const declared = /--cell-h:\s*calc\(var\(--track-w\)\s*\*\s*([\d.]+)\s*\/\s*([\d.]+)\)/.exec(html);
+  const declared = /aspect-ratio:\s*([\d.]+)\s*\/\s*([\d.]+)\s*;/.exec(html);
   if (!declared)
     throw new Error(
-      `${name}: the page carries no --cell-h rule, so its plot cell takes whatever ratio the ` +
-        `window leaves it and every filled shape in the geometry is drawn stretched.`,
+      `${name}: the page carries no aspect-ratio on the boxes that share the plot cell, so the ` +
+        `drawing takes whatever shape the window leaves it and every filled shape in the geometry ` +
+        `is drawn stretched.`,
     );
-  // Read as H/W and compared as H/W, because that is the direction the rule is written in: the
-  // cell's height is derived from the track's width, never the other way round.
-  const want = height / width;
+  const want = width / height;
   const got = Number(declared[1]) / Number(declared[2]);
   if (Math.abs(got - want) > 1e-6)
     throw new Error(
-      `${name}: the plot cell's height is ${declared[1]}/${declared[2]} (${got.toFixed(4)}) of its ` +
-        `width while the <svg class="chart"> declares ${height}/${width} (${want.toFixed(4)}). The ` +
-        `cell must carry its own viewBox's ratio exactly, or preserveAspectRatio="none" stretches ` +
-        `the drawing by the difference.`,
+      `${name}: the plot cell is shaped ${declared[1]}/${declared[2]} (${got.toFixed(4)}) while the ` +
+        `<svg class="chart"> declares ${width}/${height} (${want.toFixed(4)}). The cell must carry ` +
+        `its own viewBox's ratio exactly, or preserveAspectRatio="none" stretches the drawing by ` +
+        `the difference.`,
     );
 }
 
 /**
- * THE SECOND GUARD: THE CELL TAKES THE WHOLE WIDTH THE FIGURE LEFT IT.
+ * THE SECOND GUARD: NO WIDTH IS LEFT EMPTY.
  *
- * The first guard says the cell has the right SHAPE. It says nothing at all about its SIZE, and
- * that is exactly the hole the owner fell into: a cell built as `min(track, track x W/H)` is the
- * right shape at every width and, under a height clamp, the wrong size at most of them — the
- * connected scatter drew 954px inside a 1420px track at 1512x860, the proportional symbol map 695px
- * inside 1464px. Two empty side gutters, no guard anywhere in the tree, and the owner read it off
- * the render: "la carte ne prend pas toute la largeur tout comme les charts".
+ * The first guard says the drawing has the right SHAPE. It says nothing about where the width goes,
+ * and that is exactly the hole the owner fell into twice. A cell built as `min(track, track x W/H)`
+ * is the right shape at every width and, under a height budget, leaves two empty gutters: 954px of
+ * drawing inside a 1420px track on the connected scatter at 1512x860, 695px inside 1464px on the
+ * symbol map. Removing the budget instead made every page taller than the window, which he refused
+ * in turn: "ca prend la largeur mais ne respecte pas la hauteur qu'on avait avant".
  *
- * So: `--cell-w` must be `var(--track-w)` and nothing else — no min(), no clamp(), no max-width,
- * no second term of any kind — and `--track-w` must be the container's whole inline size less the
- * two gutters the beat DECLARED. Those gutters are the "declared margins" the width is measured
- * against; anything else subtracted there is width the reader was promised and did not get.
+ * So what is refused here is EMPTY SURPLUS, in either arrangement. Three structural claims, read off
+ * the written page rather than off the intention, because a beat that appends a rule of its own is
+ * the case this exists for:
  *
- * Like its sibling this reads the WRITTEN page rather than the intention, so a beat that appended a
- * rule of its own narrowing the cell is refused here rather than shipped with empty sides.
+ *   1. the figure's second column is `minmax(var(--aside-min), 1fr)` — every pixel the drawing does
+ *      not take belongs to the words, and there is no third place for width to go;
+ *   2. the plot is `width: max-content` — the drawing's own column hugs the drawing plus the beat's
+ *      declared gutters, so the surplus the column receives is the real surplus;
+ *   3. everything that shares the cell is sized `height: 100%` + `aspect-ratio: W / H`, capped by
+ *      `--room-w` expressed as a HEIGHT — never as a width, which would keep the height where it was
+ *      and break the very ratio the first guard protects.
  */
-function assertPlotCellFillsItsTrack(html, name = "this beat") {
-  const track = /--track-w:\s*calc\(100cqw - var\(--y-gutter\) - var\(--end-gutter, 0px\)\)/.test(html);
-  if (!track)
-    throw new Error(
-      `${name}: the page's --track-w is not the container's own inline size less the two declared ` +
-        `gutters. The track is what "the full available width" means here; measured against ` +
-        `anything else, the drawing stops short of the frame and the reader gets empty margins ` +
-        `beside it.`,
-    );
-  const declared = /--cell-w:\s*([^;\n]+);/.exec(html);
-  if (!declared)
-    throw new Error(
-      `${name}: the page carries no --cell-w rule, so nothing decides how much of the track the ` +
-        `drawing takes.`,
-    );
-  const value = declared[1].trim();
-  if (value !== "var(--track-w)")
-    throw new Error(
-      `${name}: the plot cell is sized "${value}" instead of "var(--track-w)". The cell is driven ` +
-        `by the WIDTH, always: anything that wraps the track in a min(), a clamp() or a second ` +
-        `term lets some other axis decide, and the drawing shrinks away from the frame's two ` +
-        `sides. That was refused on a real render; a figure taller than the window is the cost ` +
-        `that was accepted in its place.`,
-    );
+function assertNoEmptySurplus(html, name = "this beat") {
+  const { width, height } = plotViewBoxOf(html, name);
+  const checks = [
+    [
+      /minmax\(var\(--aside-min\),\s*1fr\);/,
+      `the figure's second track is not "minmax(var(--aside-min), 1fr)". That track is what takes ` +
+        `every pixel the drawing does not ` +
+        `take to the words beside it; without it the leftover width has somewhere else to go, and ` +
+        `where it goes is nowhere — an empty gutter, which is the defect this guard exists for.`,
+    ],
+    [
+      /grid-template-columns:\s*\n?\s*min\(/,
+      `the drawing's column is not stated as a min() of the room the words leave and the width its ` +
+        `own height implies. Left to 'auto' the track is sized in a pass that cannot know the ` +
+        `row's height — measured on the cartogram at 1512x860 it resolved 1014.3px for a plot that ` +
+        `then laid out at 1158px and ran 120px over the column beside it.`,
+    ],
+    [
+      new RegExp(`aspect-ratio:\\s*${width}\\s*/\\s*${height}`),
+      `the page does not size what shares the plot cell by "aspect-ratio: ${width} / ${height}", ` +
+        `the viewBox its own <svg> declares. Sized any other way the drawing is either stretched ` +
+        `or afloat in a box bigger than itself.`,
+    ],
+    [
+      /\.chart-plot\s*\{[^}]*aspect-ratio:\s*auto\s*!important/,
+      `the plot does not override the inline "aspect-ratio" its component still sets. Left in ` +
+        `force it fights "width: max-content" and the plot's box stops being the drawing's: ` +
+        `measured, 1176px wider than the drawing it holds, and 852px off the side of the document.`,
+    ],
+    [
+      /100dvh - var\(--frame-pad\) \* 2/,
+      `the drawing's column does not take the frame's own inset out of the window's height. Left ` +
+        `in, the drawing is sized for a window taller than it has and overruns the column beside ` +
+        `it; and expressed with a container unit instead, it is off by that inset again — an ` +
+        `element is not its own query container, so '100cqw' means the viewport here and the ` +
+        `figure's content box one level down. Measured, exactly 48px of drawing lost either way.`,
+    ],
+  ];
+  for (const [re, why] of checks) if (!re.test(html)) throw new Error(`${name}: ${why}`);
 }
 
 /**
@@ -413,6 +451,120 @@ function assertPlotCellFillsItsTrack(html, name = "this beat") {
 // assumed. Found missing by the owner's own screenshot: filling the container was read, correctly,
 // as "the frame spans it," which does not by itself mean the CONTENT inside may touch its edges.
 const FRAME_PAD_PX = 24;
+
+// The gap between the drawing and the column that reads it, and the gap between two blocks stacked
+// inside that column. Both fixed, for the reason FRAME_PAD_PX is fixed: a gap is furniture, not
+// geometry, and a gap expressed as a fraction of the window is one that vanishes on a phone and
+// gapes on an ultrawide.
+const ASIDE_GAP_PX = 24;
+const ASIDE_ROW_GAP_PX = 10;
+
+// THE COLUMN'S OWN MEASURE, DERIVED FROM THE BEAT'S OWN WORDS — never typed.
+//
+// The column beside the drawing has to be wide enough to be a column. What decides that is the
+// text it holds, in the face this page actually embeds, so it is measured here rather than guessed:
+// the widest line the column can be asked to set without breaking (its longest single word), and a
+// reading measure of `ASIDE_MEASURE_CHARS` characters taken from the column's own longest sentence.
+// The wider of the two wins, because a column narrower than either is one that either breaks a word
+// or sets four words to a line.
+//
+// `ASIDE_MEASURE_CHARS` is the only literal here and it is the classic one: a newspaper column is
+// cut at the low end of the 45-75 character band, which is where a narrow measure stops being
+// comfortable. Everything else — the face, the size, the words — comes from the page.
+const ASIDE_MEASURE_CHARS = 45;
+
+/** The text the column will hold: every direct child of the figure that is neither the header nor
+ *  the plot. Read off the markup the component just drew, so a vocabulary that arrives next week is
+ *  measured without this file learning its name. */
+function asideTextOf(markup) {
+  const figure = /<figure\b[^>]*class="(?:[^"]*\s)?chart-figure(?:\s[^"]*)?"[^>]*>([\s\S]*)<\/figure>/.exec(
+    String(markup),
+  );
+  if (!figure) return [];
+  const body = figure[1];
+  const out = [];
+  let depth = 0;
+  let keep = false;
+  const tag = /<(\/?)([a-zA-Z0-9]+)\b([^>]*?)(\/?)>/g;
+  let m;
+  let last = 0;
+  while ((m = tag.exec(body))) {
+    if (keep) out.push(body.slice(last, m.index));
+    const closing = m[1] === "/";
+    const selfClosing = m[4] === "/";
+    if (!closing && depth === 0) {
+      const cls = (/class="([^"]*)"/.exec(m[3]) ?? [, ""])[1];
+      const names = cls.split(/\s+/);
+      keep =
+        m[2].toLowerCase() !== "style" &&
+        !names.includes("chart-header") &&
+        !names.includes("chart-plot");
+    }
+    if (!selfClosing) depth += closing ? -1 : 1;
+    if (depth === 0) keep = false;
+    last = tag.lastIndex;
+  }
+  return out
+    .join(" ")
+    .replace(/&[a-z]+;|&#\d+;/gi, " ")
+    .split(/\s*[\n\r]+\s*/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+/** THE BEAT'S OWN THREE FIXED BANDS, read off the `.chart-plot` the component just drew.
+ *
+ *  They are inline custom properties on that element — `--y-gutter`, `--end-gutter`, `--x-axis-h` —
+ *  and the figure's own grid needs them as NUMBERS, not as `var()`s. A nested `var()` inside a
+ *  custom property is substituted against the element that DECLARES it, and these live one level
+ *  down: written as `var(--y-gutter, 0px)` in a rule on `.chart-figure` they silently take their
+ *  fallback, and the drawing comes out one gutter too wide. Measured: on the cartogram at 1512 that
+ *  was a 1282px plot across a 282px column. So they are read here, once, from the markup.
+ *
+ *  A beat that re-declares one inside a query (the lollipop widens its x-axis band when a name
+ *  wraps) still gets that inside the plot; what is baked here is the base value the figure's own
+ *  column is measured from. */
+function plotBandsOf(markup, name = "this beat") {
+  const tag = /<div[^>]*class="(?:[^"]*\s)?chart-plot(?:\s[^"]*)?"[^>]*style="([^"]*)"/.exec(String(markup));
+  const style = tag ? tag[1].replace(/&quot;/g, '"') : "";
+  const px = (prop) => {
+    const m = new RegExp(`${prop}:\\s*([-\\d.]+)px`).exec(style);
+    return m ? Number(m[1]) : 0;
+  };
+  if (!tag)
+    throw new Error(
+      `${name}: no <div class="chart-plot"> with a style attribute in the rendered markup. The ` +
+        `figure's own column is measured from the bands that element declares, and there is ` +
+        `nothing here to measure it from.`,
+    );
+  return { yGutter: px("--y-gutter"), endGutter: px("--end-gutter"), xAxisH: px("--x-axis-h") };
+}
+
+/** The column's measure in CSS pixels, from those words and the register they are actually set in.
+ *  The size is read off the figure's own `--source-size` custom property — the smallest register any
+ *  word in that column uses — so a beat that sets its words larger or smaller gets a column measured
+ *  at ITS size, and this file never types a type size it does not own. */
+function asideMeasure(markup) {
+  const declared = /--source-size:\s*([\d.]+)px/.exec(String(markup));
+  if (!declared)
+    throw new Error(
+      "this beat's figure declares no --source-size, so the reading column beside the drawing has " +
+        "no register to be measured in. The column's width is derived from the words it holds at " +
+        "the size they are set in; there is nothing here to derive it from.",
+    );
+  const size = Number(declared[1]);
+  const weight = 400;
+  const lines = asideTextOf(markup);
+  const words = lines.flatMap((l) => l.split(" ")).filter(Boolean);
+  const longestWord = words.reduce(
+    (w, word) => Math.max(w, measureText(word, { fontSize: size, fontWeight: weight })),
+    0,
+  );
+  const longestLine = lines.reduce((a, b) => (b.length > a.length ? b : a), "");
+  const sample = longestLine.slice(0, ASIDE_MEASURE_CHARS);
+  const measure = measureText(sample, { fontSize: size, fontWeight: weight });
+  return Math.ceil(Math.max(longestWord, measure));
+}
 
 // THERE IS NO `PLOT_FLOOR_PX` ANY MORE, and the constant it replaces is recorded rather than
 // silently dropped: `const PLOT_FLOOR_PX = 120` was "the plot rectangle's own floor [...] when the
@@ -584,8 +736,23 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, plot, filter = null, entrance = false, fontStack = "sans-serif" }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, aside, bands = { yGutter: 0, endGutter: 0, xAxisH: 0 }, filter = null, entrance = false, fontStack = "sans-serif" }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
+  const asideMin = assertAsideMeasure(aside);
+  const { yGutter, endGutter, xAxisH } = bands;
+  const sideBands = yGutter + endGutter;
+  // THE BREAKPOINT, DERIVED AND NOT TYPED. Two columns hold while the drawing beside the column is
+  // at least as much of a drawing as the column is a column. The floor under it is the column's own
+  // measure carried through the DRAWING'S OWN ASPECT: a drawing whose short side is under the
+  // reading measure of the words next to it has stopped being the subject of the figure. So the
+  // drawing's floor is `asideMin` on its short side, which on its long side is
+  // `asideMin * max(W/H, 1)` wide; add the beat's own declared gutters, the gap, the column, and
+  // the frame's two margins, and that is the window width below which the column goes underneath.
+  // Every term comes from the beat or from the words; nothing here is a round number somebody liked.
+  const drawMin = Math.ceil(asideMin * Math.max(plotWidth / plotHeight, 1));
+  const stackBelowPx = Math.ceil(
+    FRAME_PAD_PX * 2 + drawMin + ASIDE_GAP_PX + asideMin,
+  );
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -619,57 +786,103 @@ body {
   font-family: ${fontStack};
 }
 
-/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
-   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
-   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
-   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
-   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
-   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
-   empty gutters, and the failure mode letting width AND height both float freely would risk
-   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
-   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
-   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
-   as the graphic," for the reversal and what now bounds the line length instead.
+/* THE FIGURE IS TWO COLUMNS: THE DRAWING, AND THE WORDS THAT READ IT.
+   Three requirements, and the arrangement that holds all three at once.
+
+     1. the drawing keeps its own proportions -- on a map a stretch is a false geography;
+     2. no width is left EMPTY;
+     3. the figure is not taller than the window it opens in.
+
+   The pass before this one held (1) and (3) and paid with empty side gutters: the cell was
+   'min(track, track x W/H)', centred, so under the height budget the drawing shrank away from the
+   frame's two sides -- 954px inside a 1420px track on the connected scatter at 1512x860, 695px
+   inside 1464px on the symbol map. Refused. The pass after it held (1) and (2) by making the cell
+   width-driven with no height budget at all, and every page then ran past the fold. Refused too:
+   "ca prend la largeur mais ne respecte pas la hauteur qu'on avait avant".
+
+   THE FOURTH ARRANGEMENT, and the one newsrooms actually use: when the box is wider than the
+   drawing needs at the height it has, THE SURPLUS WIDTH GOES TO THE FURNITURE. The drawing keeps
+   its aspect and its height; the key, the control, its notes, the reading sentence and the source
+   move into a column beside it. Nothing is stretched, no gutter is empty, and the page does not
+   grow past the window.
+
+   WHAT GOES IN THE COLUMN, and why it is stated as a rule rather than a list. Everything that is
+   not the header and not the drawing: every fieldset and its notes, the key, every reading
+   sentence, the caveat that sits under the plot, a total, the source line. The rule survives a
+   vocabulary arriving next week, which a list would not -- sixteen control vocabularies ship in
+   this tree and each names its fieldset after itself. The HEADER stays full width on top, because
+   the title is the claim and the ruling that took the 640px reading-measure cap off it is still in
+   force: a headline is measured against the whole figure, not against a column. The CONTROL travels
+   with its own notes rather than staying above the drawing, because a control and the sentence that
+   says what it narrowed cannot live in two different columns. Reading order in the DOM is
+   untouched, so the keyboard still meets the control before the drawing.
+
+   WHY THE FIGURE CARRIES A DEFINITE HEIGHT and not 'max-height'. The plot has to be able to say
+   "the height I have", and a 'max-height' leaves every row indefinite -- measured, that collapses
+   the plot to nothing rather than failing loudly. 'dvh' is what a mobile browser's collapsing
+   toolbar makes correct; the 'vh' line above it is the fallback for an engine that does not know
+   dvh, and the later declaration simply wins where it parses.
+
+   The header's own height is never subtracted by hand anywhere in this file: the grid does it.
+   Row 1 is 'auto' and the plot spans from row 2 down, so whatever the title wraps to is taken out
+   of the drawing's budget by the layout itself. That is why this arrangement is expressible at all
+   -- every attempt that put the drawing's width in terms of the window's height needed a number for
+   the header, and CSS has none.
 
    "Fills the container" is a claim about the FRAME's own edges, never about the content inside
    it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
    filter, every axis label, the end label and the source line all sit inside it, so nothing ever
-   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
-   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
-   reconcile. */
+   touches the frame's own edge at any width. */
 .chart-figure {
   margin: 0;
   width: 100%;
   padding: ${FRAME_PAD_PX}px;
-  display: flex;
-  flex-direction: column;
-  /* THE WINDOW-FIT CLAMP IS GONE, AND THE COMMENT IT REPLACES IS QUOTED SO THE TRADE IS MET RATHER
-     THAN LOST: "THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll
-     through: the whole figure must be visible at once. [...] Clamping here, rather than capping
-     the width or shortening the geometry, is what keeps the fill and the fit true at the same
-     time." That was true of a plot whose cell was free to change shape. It stopped being true the
-     day the cell was made to carry its own viewBox ratio, because from then on the three things
-     could not all hold at once, and one of them had to go:
-
-       1. the drawing keeps its own proportions (a circle is round);
-       2. the drawing takes the whole width the figure has;
-       3. the whole figure fits inside the window's height.
-
-     (1) is not negotiable -- on a map it is not a style defect, it is a false geography. (2) and
-     (3) are the arbitration, and the owner made it on a render: "la carte ne prend pas toute la
-     largeur tout comme les charts, fais en sorte qu'ils prennent toute la largeur en respectant
-     les marges." So (3) goes. On a wide, short window the figure is now TALLER than the window and
-     the page scrolls.
-
-     DELETED RATHER THAN REPLACED BY AN INNER SCROLLER, and the reason is the sentence the old
-     comment ended on: this file is embedded inside an article as often as it is opened on its own.
-     An 'overflow: auto' here would put a second scrollbar inside the article's own, and a reader
-     who scrolls the page would stop at the figure's edge instead of moving through it. The
-     DOCUMENT's own vertical scroll is the honest overflow: it is the one the reader already has.
-     Horizontal overflow stays forbidden -- see 'assertPlotCellFillsItsTrack' and 'checkFit'. */
+  display: grid;
+  /* COLUMN 1 IS THE DRAWING, AT AN EXPLICIT WIDTH. Column 2 takes EVERYTHING that is left, down to
+     its own measure — that pair is the whole no-empty-surplus rule: there is no third place for
+     width to go.
+     THE WIDTH IS TYPED OUT HERE AND NOT LEFT TO 'auto', and this is the defect that made the first
+     build of this arrangement overflow. A grid sizes its COLUMNS before its ROWS, so an 'auto'
+     column asks the plot how wide it wants to be while the row's height is still unknown — and a
+     box whose width comes from its height cannot answer. Measured on the cartogram at 1512x860:
+     the track resolved to 1014.3px, the plot then laid out at 1158px, and it ran 120px over the
+     column beside it. 'max-content', 'min-content' and 'fit-content(100%)' all gave the identical
+     1014.3px, so it is not a choice of keyword — it is that the question cannot be answered in that
+     pass. Asked as arithmetic instead, it always can be. */
+  grid-template-columns:
+    min(
+      calc(100% - var(--aside-min) - var(--aside-gap)),
+      calc((100dvh - var(--frame-pad) * 2 - ${xAxisH}px) * ${plotWidth} / ${plotHeight} + ${sideBands}px)
+    )
+    minmax(var(--aside-min), 1fr);
+  /* EVERY ROW IS SIZED BY THE WORDS IN IT, and the drawing spans all of them. The drawing does not
+     need a row to tell it how tall it is any more — its width comes from the window's height above
+     and its height from its own ratio — so nothing here has to be flexible. It did once, and the
+     cost of getting that wrong is worth recording: with row 1 'minmax(0, 1fr)' the first block of
+     the column shared that row with the drawing, the row was sized as the LEFTOVER rather than as
+     the block, and the title, the control, the key and the reading all printed on top of one
+     another. */
+  grid-auto-rows: min-content;
+  align-content: start;
+  column-gap: var(--aside-gap);
+  row-gap: ${ASIDE_ROW_GAP_PX}px;
+  height: 100vh;
+  height: 100dvh;
+  --aside-min: ${asideMin}px;
+  --aside-gap: ${ASIDE_GAP_PX}px;
+  /* The frame's own inset, as a property, because the column arithmetic above has to take it out of
+     the window's height and the two must never disagree about how much it is. */
+  --frame-pad: ${FRAME_PAD_PX}px;
+  /* NO CONTAINER QUERY UNIT IN THE COLUMN ARITHMETIC, and this cost a whole build to learn: an
+     element is NOT its own query container, so '100cqw' written in a rule ON '.chart-figure'
+     resolves against the viewport while the same token written on a DESCENDANT resolves against the
+     figure's content box. Measured, the two differed by exactly the frame's own padding — 48px —
+     and the drawing came out 48px narrower than the column it was given. '100%' inside
+     'grid-template-columns' is the figure's own content box by definition, and the figure's height
+     is '100dvh' because this rule sets it: neither needs a container at all. */
 }
 /* Everything except the plot keeps its natural height: words are never squeezed to make a chart
-   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+   fit, the chart is. */
 .chart-header, .chart-source { flex: 0 0 auto; }
 .chart-title {
   margin: 0 0 4px;
@@ -688,111 +901,91 @@ ${filterChrome}
 
 .chart-plot {
   position: relative;
+  /* The height and the width the grid gave it, both definite. Column 1's width
+     is exactly the drawing's own width plus the beat's declared gutters — arithmetic, not an
+     intrinsic guess — so the surplus the column gets is the REAL surplus and never a gutter with a
+     label on it. */
+  height: auto;
+  align-self: start;
   width: 100%;
+  min-width: 0;
+  /* THE INLINE aspect-ratio FORTY COMPONENTS STILL SET ON THIS BOX IS OVERRIDDEN HERE, and an
+     important author declaration is the one thing that outranks a normal inline one. It used to be
+     this box's only height source and it cannot be one now: it mixes a gutter measured in CSS pixels
+     with a viewBox measured in its own units, so it is right at exactly ONE container width — across
+     the forty committed beats it puts the box out by as much as 115px. Left in place it also fights
+     the hug below outright: measured on the diverging stacked bar at 1512, the plot came out
+     1176px wider than the drawing in it and ran 852px off the side of the document; on the cartogram
+     it overran the column beside it. The trunk decides this box's size, both axes, alone. */
+  aspect-ratio: auto !important;
   display: grid;
   /* THREE COLUMNS, THE THIRD NORMALLY EMPTY. The format has always had a left gutter and an
      x-axis band; a beat whose marks END somewhere meaningful (the bump's final ranks) also needs a
      right gutter, and it used to get one by declaring an IMPLICIT third column of its own. That was
-     invisible to this stylesheet, and invisible is exactly what '--track-w' below cannot afford:
-     the cell IS the track, so a track 127px wider than the beat actually has puts the drawing 127px
-     wider than the column it sits in. Declared here, defaulting to nothing, it costs a beat that
-     has no end gutter exactly zero.
-     The first ROW is '1fr' in a box whose own height is indefinite, which resolves to its items'
-     own contribution -- and every item in it is exactly '--cell-h'. That is how the plot's height
-     comes to be the cell's height plus the x-axis band, with no ratio typed over the whole box. */
+     invisible to this stylesheet, and invisible is exactly what the middle column cannot afford.
+     Declared here, defaulting to nothing, it costs a beat that has no end gutter exactly zero.
+     The middle column is 'auto': it takes the drawing's own width, which the rule below derives
+     from the height this box was given. */
   grid-template-columns: var(--y-gutter) 1fr var(--end-gutter, 0px);
-  grid-template-rows: 1fr var(--x-axis-h);
-  /* THE PLOT NEVER SHRINKS AND NEVER CARRIES A FLOOR, AND THE COMMENT THIS REPLACES IS QUOTED SO
-     NOTHING IS LOST: "The one shrinkable item in the figure's column [...] Only when the column
-     overflows does 1 (flex-shrink) let this box give the height back." and "min-height is BOTH the
-     floor and the override of flexbox's own min-height:auto".
-     Both existed to serve the window-fit clamp, which is gone (see .chart-figure above). With the
-     clamp gone there is no shortfall to absorb, so 'flex: 0 0 auto'; and the floor was, measured,
-     the WORST stretcher of the lot -- the pictogram at 375x812 came to 2.15x the wrong way because
-     the floor pinned the height while the width collapsed. Nothing here pins a height any more:
-     this box's height is its content's, and its content is one cell derived from its width.
-     A LENGTH in the plane may follow the stretch, because it is a distance and it belongs to the
-     plane, but a SHAPE never may. The format already knew this for TEXT (which is why every word
-     lives in HTML outside the viewBox) and for STROKES (vector-effect="non-scaling-stroke"); it
-     had never written it down for filled shapes. The owner read it off a render before any guard
-     did: "les cercles sont pas parfaits tout comme les fleches, on dirait que c'est etire". */
-  flex: 0 0 auto;
+  grid-template-rows: auto var(--x-axis-h);
+}
+/* TWO PLACEMENTS, AND THE HEADER IS IN THE COLUMN WITH THE REST OF THE WORDS.
+   It was above, full width, for one draft. It cannot be: a full-width header of UNKNOWN height
+   cannot be subtracted from the window in CSS, and the drawing's width is the window's height minus
+   that header. Every formulation that kept it there needed a number nobody has. In the column the
+   arithmetic closes exactly, and what the column holds stops being a caption and becomes the
+   figure's whole text — the claim, the caveat, the key, the control and its notes, every reading
+   sentence and the source. That is the answer to "a column holding one short sentence is just a
+   gutter with a label": this one holds the beat's words.
+   Spanning rather than '1 / -1': '-1' is the end of the EXPLICIT grid, and the column beside the
+   drawing makes implicit rows. Measured: with '1 / -1' the plot resolves to zero height and the
+   drawing disappears without a word.
+   A <style> a beat inlines is display:none in the UA sheet and is therefore not a grid item. */
+.chart-figure > .chart-plot { grid-column: 1; grid-row: 1 / span 60; }
+.chart-figure > :not(.chart-plot) { grid-column: 2; min-width: 0; }
 
-  /* THE CELL IS DRIVEN BY THE WIDTH, ALWAYS, AND ITS HEIGHT FOLLOWS FROM ITS OWN viewBox RATIO.
-     That is what makes preserveAspectRatio="none" a uniform SCALE rather than a distortion, and it
-     is what puts the drawing edge to edge in the width the figure has.
-     THE COMMENT THIS REPLACES IS QUOTED, BECAUSE ITS REASONING WAS SOUND AND ITS RESULT WAS
-     REFUSED: "the min() pair below is what absorbs, with ONE mechanism, all three causes of
-     anisotropy: the fixed-pixel gutters [...], the height clamp, and the min-height floor" and
-     "The cell is CENTRED in its track, so a wide-and-short window gets even side margins and a
-     legible drawing rather than a squashed one." A min() pair is a CONTAIN: under a height clamp
-     it is the HEIGHT that ends up driving, and the drawing shrinks away from the frame's two
-     sides. The owner refused exactly that, on a map, in one line: "la carte ne prend pas toute la
-     largeur tout comme les charts, fais en sorte qu'ils prennent toute la largeur en respectant
-     les marges." So the two causes the min() was absorbing are removed at the source (no clamp, no
-     floor) instead of being papered over, and the third -- the fixed-pixel gutters -- is handled
-     by taking the cell's height from the TRACK's width rather than from any ratio typed over the
-     whole box. --cell-w is var(--track-w) with nothing wrapped round it: no min(), no clamp(), no
-     cap of any kind. An empty side gutter is now a refusal, not a cost. See
-     'assertPlotCellFillsItsTrack'.
-     WHY 'container-type: inline-size' AND WHY THE INLINE 'aspect-ratio' IS OVERRIDDEN. The plot's
-     height must be the cell's height plus the x-axis band, exactly. It used to come from an
-     'aspect-ratio: totalWidth / totalHeight' the component sets inline, which mixes fixed pixel
-     gutters with viewBox units and is therefore only right at ONE width: measured across the 40
-     committed beats, that ratio puts the plot's box out by up to 115px (the diverging bar at
-     1464px) and 84px (the gantt) -- far too much to absorb as slack. So the height is taken from
-     the content instead, which is the cell this rule just derived. 'container-type: size' implies
-     contain: size and would forbid that (a size container may not be sized by its contents);
-     'inline-size' contains only the axis that is actually definite. The inline aspect-ratio is
-     overridden with !important because forty shipped components set it in their style attribute,
-     and an important author declaration is the one thing that outranks a normal inline one; the
-     seed no longer writes it at all. Nothing in the tree queries THIS box's block axis -- every
-     beat with an '@container (max-height:)' rule (columns, grouped bar, marimekko, treemap, the
-     life-expectancy note) declares its own size container on the box it actually measures.
-     The numbers are the beat's own, read off the <svg> it just drew -- never typed here. */
-  container-type: inline-size;
-  aspect-ratio: auto !important;
-  --track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px));
-  --cell-w: var(--track-w);
-  --cell-h: calc(var(--track-w) * ${plotHeight} / ${plotWidth});
-}
-/* BOTH GUTTERS FOLLOW THE CELL. Each is the cell's own height, so a label at 'top: 62%' lands on
-   the same 62 % of the geometry it names. There is no translate any more and no slack to cross:
-   the cell fills its track in both axes by construction, so the drawing's edge and the track's
-   edge are the same edge. */
-.chart-plot .y-axis {
-  grid-column: 1;
-  grid-row: 1;
-  position: relative;
-  height: var(--cell-h);
-  min-height: 0;
-  margin-block: auto;
-}
-.chart-plot .end-axis {
-  grid-column: 3;
-  grid-row: 1;
-  position: relative;
-  height: var(--cell-h);
-  min-height: 0;
-  margin-block: auto;
-}
-/* Every box that SHARES the plot cell takes the cell's exact size and centres in the track: the
-   geometry itself, the HTML overlay that annotates it, and any layer a beat adds over both (the
-   tree's own convention names one '...-layer' -- 'option-layer', 'verdict-layer', 'cell-layer').
-   min-width/min-height: 0 overrides a grid item's automatic minimum size, which would otherwise
-   refuse to let a box carrying intrinsic geometry shrink below it. */
+/* THE DRAWING IS SIZED BY ITS HEIGHT AND SHAPED BY ITS OWN viewBox, and that is what makes
+   preserveAspectRatio="none" a uniform SCALE rather than a distortion.
+   'height: 100%' is the row the grid left after the x-axis band; 'aspect-ratio' turns it into a
+   width; 'max-height' is the one place the WIDTH available can bind, expressed as the height that
+   width implies, so the ratio survives both branches. A LENGTH in the plane may follow the stretch,
+   because it is a distance and it belongs to the plane; a SHAPE never may. The owner read that off
+   a render before any guard did: "les cercles sont pas parfaits tout comme les fleches, on dirait
+   que c'est etire".
+   Every box that SHARES the cell takes the same three declarations -- the geometry, the HTML
+   overlay that annotates it, and any layer a beat adds over both (the tree's own convention names
+   one '...-layer'). They resolve to the same number by construction rather than by being kept in
+   step. The numbers are the beat's own, read off the <svg> it just drew -- never typed here. */
 svg.chart,
 .chart-plot .overlay,
 .chart-plot > [class*="-layer"] {
   grid-column: 2;
   grid-row: 1;
-  width: var(--cell-w);
-  height: var(--cell-h);
+  width: 100%;
+  height: auto;
+  aspect-ratio: ${plotWidth} / ${plotHeight};
   min-width: 0;
   min-height: 0;
   margin: auto;
 }
 svg.chart { display: block; }
+/* BOTH GUTTERS FOLLOW THE CELL. Each is the cell's own height, so a label at 'top: 62%' lands on
+   the same 62 % of the geometry it names. The cell fills the middle column by construction, so
+   there is no slack for either of them to cross. */
+.chart-plot .y-axis {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.chart-plot .end-axis {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
 /* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
    svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
    mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
@@ -800,16 +993,45 @@ svg.chart { display: block; }
    never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
    correct: none of them is a control. */
 .chart-plot .overlay { position: relative; pointer-events: none; }
-/* The x-axis band is the y-axis's mirror: the cell's width, directly under the cell. It used to be
-   lifted by 'translateY(0px - var(--cell-slack-y))' across the vertical slack a contained cell left
-   above it; a width-driven cell leaves none, so the lift is gone rather than computed as zero. */
+/* The x-axis band is the y-axis's mirror: the middle column's width, directly under the cell.
+   'width: 100%' and NOT 'margin-inline: auto'. An auto inline margin makes a grid item shrink to
+   fit instead of stretching, and this band's labels are absolutely positioned inside it, so they
+   contribute nothing to fit: measured, the band came out 0.0px wide and every tick label piled up
+   on one point. It survived the old rule only because that one set an explicit width. */
 .chart-plot .x-axis {
   grid-column: 2;
   grid-row: 2;
   position: relative;
-  width: var(--cell-w);
+  width: 100%;
   min-width: 0;
-  margin-inline: auto;
+}
+
+/* AND WHEN THE DRAWING WOULD BE NARROWER THAN THE COLUMN THAT READS IT, THE COLUMN GOES BACK
+   UNDERNEATH. The threshold is not typed: it is the beat's own gutters plus the column's measure
+   twice -- once for the column, once as the floor under the drawing beside it -- where the floor is
+   itself the drawing's own aspect applied to that measure (a drawing whose SHORT side is under the
+   reading measure of the words next to it has stopped being the subject of the figure). ONE width
+   query, which is the one this format's doctrine allows; nothing in it caps the frame and nothing
+   in it takes content away. Stacked, the figure's height goes back to its
+   content: a phone scrolls, which it was always going to do. */
+@media (max-width: ${stackBelowPx - 1}px) {
+  .chart-figure {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    height: auto;
+  }
+  .chart-figure > .chart-plot,
+  .chart-figure > :not(.chart-plot) { grid-column: 1; grid-row: auto; }
+  svg.chart,
+  .chart-plot .overlay,
+  .chart-plot > [class*="-layer"],
+  .chart-plot .y-axis,
+  .chart-plot .end-axis { height: auto; max-height: none; }
+  svg.chart,
+  .chart-plot .overlay,
+  .chart-plot > [class*="-layer"] { width: 100%; }
+  .chart-plot .y-axis,
+  .chart-plot .end-axis { height: calc((var(--room-w) - var(--y-gutter, 0px) - var(--end-gutter, 0px)) * ${plotHeight} / ${plotWidth}); }
 }
 
 .axis-label {
@@ -946,5 +1168,5 @@ export {
   buildCss,
   plotViewBoxOf,
   assertPlotCellIsItsViewBox,
-  assertPlotCellFillsItsTrack,
+  assertNoEmptySurplus,
 };
