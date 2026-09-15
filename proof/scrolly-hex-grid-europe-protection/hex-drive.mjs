@@ -1,4 +1,5 @@
-// The painting function for this beat's one visual, inlined by `renderScrolly`'s `reveal` option.
+// The painting function for this beat's one visual, inlined by `renderScrolly`'s `reveal` option AFTER the map
+// runtime (`shared/map-beat/inline.mjs`): `initScrollyMap` and `applyScrollyMap` are in scope.
 //
 // A STATE, field by field (every gesture scrubbed by the reader's own scroll):
 //   fill   the cells taking their colour                                                             0..1
@@ -6,18 +7,33 @@
 //   rank   the cells leaving the map for a honeycomb in rate order, each with its rate               0..1
 //   pair   the rate leader and the count leader ringed, their rates written in                        0..1
 //
-// EVERYTHING IS PLACED IN THE READER'S PIXELS: the SVG's viewBox is the stage. Both layouts — the designed map and
-// the ranking — are sized to the stage (the ranking takes whichever row length gives the largest cell) and centred;
-// a cell travels between its two seats. Pointy-top hexagons, odd rows offset by half a cell.
+// ADDENDUM 2026-09-15 §5: A LIVE MAP WHILE THE FORM SHOWS GEOGRAPHY. This grid is "designed, not measured" (its
+// own BRIEF): a cell never claims its country's exact position, on the map or off it. So the live map is a plain,
+// unbound backdrop (`plan.mjs`) that simply fades under the hex layer as `rank` rises — the grid leaving the map
+// for the honeycomb ranking — and fades back in as it returns (cards 5–6, `pull back`). One fixed camera
+// throughout: the "zoom + ring" gesture stays the hex layer's own coordinate-space scale (`zoom` below), never a
+// real camera move, so the two never disagree about where anything is.
+//
+// EVERYTHING ELSE IS PLACED IN THE READER'S PIXELS, UNCHANGED: the SVG's viewBox is the stage. Both layouts — the
+// designed map and the ranking — are sized to the stage (the ranking takes whichever row length gives the largest
+// cell) and centred; a cell travels between its two seats. Pointy-top hexagons, odd rows offset by half a cell.
 
 export function applyHexState(root, state, context) {
   const carrier = root.querySelector("[data-hex]");
   if (!carrier) return;
   if (!root.__hex) seatHex(root, carrier);
   const c = root.__hex;
+  applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const lerp = (a, b, t) => a + (b - a) * t;
+
+  const shown = Boolean(c.handle.map && c.handle.ready);
+  c.fallbacks.forEach((img) => {
+    const opacity = !shown ? "1" : "0";
+    if (img.style.opacity !== opacity) img.style.opacity = opacity;
+  });
+
   const SW = c.stage.clientWidth;
   const SH = c.stage.clientHeight;
   if (!(SW > 0 && SH > 0)) return;
@@ -45,6 +61,8 @@ export function applyHexState(root, state, context) {
   const seat = (l, row, col) => [l.x0 + l.w * (col + 0.5 + (row % 2 ? 0.5 : 0)), l.y0 + l.w / Math.sqrt(3) + row * PITCH * l.w];
 
   const rankE = ease(clamp(state.rank));
+  // The live map is the backdrop while the grid is on the map, and leaves as it leaves for the honeycomb.
+  if (shown) c.live.style.opacity = String(1 - rankE);
   const pair = clamp(state.pair);
   const fill = clamp(state.fill);
   const rate = ease(clamp(state.rate));
@@ -126,14 +144,25 @@ function legible(fill, ink, ground) {
 
 function seatHex(root, carrier) {
   const data = JSON.parse(carrier.getAttribute("data-hex"));
+  const plan = JSON.parse(root.querySelector('[data-part="plan"]').textContent);
   const stage = root.querySelector('[data-part="stage"]');
   const svg = stage.querySelector('[data-part="field"]');
   const tiles = data.tiles.map((t) => {
     const group = svg.querySelector(`[data-tile="${t.code}"]`);
     return { ...t, group, hex: group.querySelector('[data-part="hex"]'), ring: group.querySelector('[data-part="ring"]'), code_: group.querySelector('[data-part="code"]'), value: group.querySelector('[data-part="value"]') };
   });
+  const repaint = () => {
+    if (root.dataset.state) applyHexState(root, JSON.parse(root.dataset.state));
+  };
+  const handle = initScrollyMap(root, plan, { window, preserveDrawingBuffer: /[?&]verify/.test(location.search), onShown: repaint, onReady: repaint });
+  root.__handle = handle;
+  window.__scrollyMap = handle;
   root.__hex = {
     ...data,
+    plan,
+    handle,
+    live: root.querySelector('[data-part="live"]'),
+    fallbacks: Array.from(root.querySelectorAll("[data-fallback]")),
     stage,
     svg,
     tiles,

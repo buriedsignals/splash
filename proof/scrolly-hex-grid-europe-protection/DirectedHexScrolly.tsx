@@ -22,6 +22,10 @@ import {
   NON_TEXT_CONTRAST_MIN,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
+import {
+  CardImages,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
 export type Tile = {
   code: string;
@@ -37,6 +41,9 @@ export type Tile = {
 type Style = Record<string, string | number>;
 
 export function DirectedHexScrolly({
+  plan,
+  fallbacks,
+  reference,
   tiles,
   ranked,
   subject,
@@ -51,6 +58,9 @@ export function DirectedHexScrolly({
   ink,
   muted,
 }: {
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  reference: { width: number; height: number };
   tiles: Tile[];
   ranked: string[];
   subject: string;
@@ -150,8 +160,12 @@ export function DirectedHexScrolly({
     </span>
   );
 
+  const scope = '[data-part="symbols"]';
+  const shapeCss = shapeSelectionCss(scope, reference);
+
   return (
     <div
+      data-part="symbols"
       role="img"
       aria-label={alt}
       data-hex={JSON.stringify({
@@ -178,6 +192,7 @@ export function DirectedHexScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      <style dangerouslySetInnerHTML={{ __html: shapeCss }} />
       <div
         style={{
           display: "flex",
@@ -202,7 +217,22 @@ export function DirectedHexScrolly({
         </span>
       </div>
 
-      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden" }}>
+      <div
+        data-part="stage"
+        style={{ position: "relative", minHeight: 0, overflow: "hidden" }}
+      >
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div
+          data-part="live"
+          style={{ position: "absolute", inset: 0, opacity: 0 }}
+        />
+        <script
+          type="application/json"
+          data-part="plan"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(plan).replace(/</g, "\\u003c"),
+          }}
+        />
         <svg
           data-part="field"
           xmlns="http://www.w3.org/2000/svg"

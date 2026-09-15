@@ -20,18 +20,29 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { readPalette } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, readPalette } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
+import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
+import { fitCamera, hexMapPlan, iso2Of } from "./plan.mjs";
 import { DirectedHexScrolly } from "./DirectedHexScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+const FALLBACK = join(HERE, "fallback");
+/** The live map's window and reference stage: a plain, unmoving backdrop (this beat's grid is "designed, not
+ *  measured" — see `plan.mjs`), so neither has to align with the hex layout's own pixels. */
+const WINDOW = [-25, 34, 45, 72];
+const REFERENCE = { width: 1200, height: 700 };
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 const EYEBROW = "Migrations · Europe";
 const NB = " ";
 const ORIGIN = "UKR";
@@ -138,8 +149,8 @@ const alt =
   `Grille d’hexagones, un par pays européen. Par nombre, ${NAMES[largest][1]} accueille le plus d’Ukrainiens sous protection temporaire ; ` +
   `pour 1 000 habitants, ${NAMES[top][1]} est en tête avec ${one(rate(top))}, ${NAMES[largest][1]} est ${largestRank}e avec ${one(rate(largest))}.`;
 
-/** One state per card; see `hex-drive.mjs` for what each field paints. */
-const STATES = [
+/** One state per card; see `hex-drive.mjs` for what each field paints. Unchanged from the validated choreography. */
+const STATES_RAW = [
   { fill: 0, rate: 0, rank: 0, pair: 0 },
   { fill: 1, rate: 0, rank: 0, pair: 0 },
   { fill: 1, rate: 1, rank: 0, pair: 0 },
@@ -147,6 +158,11 @@ const STATES = [
   { fill: 1, rate: 1, rank: 0, pair: 1 },
   { fill: 1, rate: 1, rank: 0, pair: 0 },
 ];
+/** The live map's one, unmoving camera; every card carries it (`hex-drive.mjs`, `plan.mjs`). */
+const camera = fitCamera({ west: WINDOW[0], south: WINDOW[1], east: WINDOW[2], north: WINDOW[3] }, REFERENCE);
+const STATES = STATES_RAW.map((state) => ({ ...state, ...camera, card: 0 }));
+/** The map never changes: one frozen card image covers every scroll card. */
+const BAKE_STATES = STATES.slice(0, 1);
 
 const textPerRegister = {
   display: title.join(" "),
@@ -165,51 +181,94 @@ const BEAT_FACTS = { evidenceLevels: 4 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
-const driver = await readFile(join(HERE, "hex-drive.mjs"), "utf8");
+for (const code of hosts) iso2Of(code); // every host joins MapTiler Countries, or refuses loudly here
+iso2Of(ORIGIN);
+
+const cards = await openLiveMapCards();
+const driver = `${cards.mapScript}\n${await readFile(join(HERE, "hex-drive.mjs"), "utf8")}`;
 const refused = [];
-for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
-  const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
-  const { ink, muted } = deriveFurniture(direction.ground);
-  const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
-  try {
-    const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["grille", "par-nombre", "par-habitant", "classement", "tchequie-allemagne", "lecture"][i], prose: p })),
-      reveal: {
-        element: createElement(DirectedHexScrolly, {
-          tiles,
-          ranked,
-          subject: SUBJECT,
-          largest,
-          countBreaks: COUNT_BREAKS.map((b) => `${n0(b / 1000)}${NB}k`),
-          rateBreaks: RATE_BREAKS.map((b) => one(b)),
-          words,
-          alt,
-          regs,
+try {
+  for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
+    const id = file.replace(/\.md$/, "");
+    if (ONLY && id !== ONLY) continue;
+    const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+    const { ink, muted, grid } = deriveFurniture(direction.ground);
+    const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
+    try {
+      const ground = direction.ground;
+      const { water: sea, land } = plateTints(direction);
+      const floorOnGround = (colour, what) => {
+        if (contrast(colour, ground) >= NON_TEXT_CONTRAST_MIN) return colour;
+        const lifted = adjustToContrast(colour, ground, NON_TEXT_CONTRAST_MIN);
+        if (!lifted) throw new Error(`${what} cannot be told from the ground: nothing clears ${NON_TEXT_CONTRAST_MIN}:1 against ${ground}`);
+        return lifted;
+      };
+      const neutral = floorOnGround(mix(ground, ink, 0.22), "the map's host countries");
+      const originFill = floorOnGround(mix(ground, ink, 0.16), "the map's Ukraine");
+      const mutedInk = adjustToContrast(muted, ground, NON_TEXT_CONTRAST_MIN) ?? muted;
+      const colours = { sea, land, neutral, originFill, originEdge: mutedInk, border: grid };
+      const strokes = { border: direction.stroke?.hairline ?? 0.6 };
+
+      const mapPlan = hexMapPlan({ hosts, origin: ORIGIN, colours, strokes, camera, referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height });
+      const violations = [...validateScrollyPlan(mapPlan, STATES), ...validateExpressions(mapPlan)];
+      if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
+
+      const renderPage = (fallbacks) =>
+        renderScrolly({
+          steps: prose.map((p, i) => ({ id: ["grille", "par-nombre", "par-habitant", "classement", "tchequie-allemagne", "lecture"][i], prose: p })),
+          reveal: {
+            element: createElement(DirectedHexScrolly, {
+              plan: mapPlan,
+              fallbacks,
+              reference: REFERENCE,
+              tiles,
+              ranked,
+              subject: SUBJECT,
+              largest,
+              countBreaks: COUNT_BREAKS.map((b) => `${n0(b / 1000)}${NB}k`),
+              rateBreaks: RATE_BREAKS.map((b) => one(b)),
+              words,
+              alt,
+              regs,
+              ground: direction.ground,
+              accent: direction.accent,
+              ink,
+              muted,
+            }),
+            states: STATES,
+            driver,
+            apply: "applyHexState",
+          },
+          vendor: [{ js: cards.maplibreJs, css: cards.maplibreCss }],
+          title,
+          eyebrow: EYEBROW,
+          source,
           ground: direction.ground,
-          accent: direction.accent,
-          ink,
-          muted,
-        }),
-        states: STATES,
-        driver,
-        apply: "applyHexState",
-      },
-      title,
-      eyebrow: EYEBROW,
-      source,
-      ground: direction.ground,
-      type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
-      lang: "fr",
-      outDir: OUT,
-      name: `${id}.html`,
-    });
-    console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
-  } catch (error) {
-    await rm(join(OUT, `${id}.html`), { force: true });
-    refused.push({ id, why: error.message });
-    console.log(`${id} REFUSED — ${error.message}`);
+          type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+          lang: "fr",
+          outDir: OUT,
+          name: `${id}.html`,
+        });
+
+      const { outPath } = await renderWithCardImages(cards, {
+        id,
+        plan: mapPlan,
+        states: BAKE_STATES,
+        fallbackDir: FALLBACK,
+        stageGround: ground,
+        cardOf: (baked) => ({ zoom: baked.zoom }),
+        renderPage,
+        noBake: process.argv.includes("--no-bake"),
+      });
+      console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
+    } catch (error) {
+      await rm(join(OUT, `${id}.html`), { force: true });
+      refused.push({ id, why: error.message });
+      console.log(`${id} REFUSED — ${error.message}`);
+    }
   }
+} finally {
+  await cards.close();
 }
 if (refused.length) {
   console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
