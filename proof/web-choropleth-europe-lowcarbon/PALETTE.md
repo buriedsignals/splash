@@ -10,12 +10,69 @@ The answer recorded for this beat: the newsroom's own house colours, as they sta
 `composeDirections` reconciles the three filed directions against; the delivered page is drawn in
 whichever direction governs it, never in this one.
 
-**One hue, two chromas, and no imported second hue.** The page partitions one quantity into two
-halves of itself — the emissions before and after the year the cumulative total reaches its
-midpoint — and `two-states-of-one-measure-are-one-hue-at-two-chromas` is exactly that case. Both
-halves are the direction's own accent; the earlier one is a tint of it, mixed toward the direction's
-ground only as far as the non-text floor against that ground allows.
+**One hue, four steps of it, and no second hue anywhere.** A choropleth partitions ONE quantity —
+the share of a country's 2024 electricity that came from low-carbon sources — into ordered bands.
+Ordered bands are a sequential ramp: one hue, monotone in lightness, so that the order of the
+classes survives a black-and-white print and a colour vision deficiency, because the ORDER is the
+only thing the reader has to recover. The hue is the direction's own accent. Nothing on this page is
+a second hue.
 
-Nothing else on the page is chromatic. The axis labels, the rule at the midpoint year, the baseline
-and the gridlines are steps off the direction's own ground, computed by `deriveFurniture` at render
-time and never written here as a literal.
+## The ramp is anchored on the LAND, not on the paper
+
+The thing a country is painted over is not the page's ground. It is the baked MapTiler plate, whose
+land is a step off the direction's ground toward its ink (`mix(ground, ink, 0.07)`). Anchoring the
+lightest class on the ground at 3:1 — which is what this beat did first — puts it at **3,02:1
+against the ground and 2,58:1 against the land** in creme, and it is not a creme accident: rapport
+measures 3,01 / 2,57 and nocturne 3,03 / 2,55. All three pass the floor against a colour the page
+never paints and fail it against the one it does. That is the choropleth fiche's own trap, sprung:
+the measurement was real, and it was against the wrong thing.
+
+So the lightest class is the lightest tint of the accent standing 3:1 off THE LAND, the darkest is
+the accent itself, and the two between are walked geometrically in contrast-against-ground. Measured,
+per direction:
+
+| direction | ground | accent | land | ramp | vs land | steps apart |
+| --- | --- | --- | --- | --- | --- | --- |
+| creme | `#FFFCEE` | `#1757B6` | `#edeadd` | `#5c88c7` `#4477c1` `#2e67bb` `#1757b6` | 3,00 / 3,74 / 4,61 / 5,66 | 1,246 / 1,233 / 1,227 |
+| rapport | `#FFFFFF` | `#1F5C8B` | `#ededed` | `#638dae` `#4b7ca2` `#356c96` `#1F5C8B` | 3,01 / 3,81 / 4,80 / 6,06 | 1,265 / 1,259 / 1,262 |
+| nocturne | `#111044` | `#4FE0C0` | `#222151` | `#307a83` `#3a9996` `#44baa9` `#4fe0c0` | 3,02 / 4,40 / 6,30 / 9,08 | 1,458 / 1,432 / 1,443 |
+
+Every class clears 3:1 against the land it is painted on — so the lightest band can never be mistaken
+for a country outside the study — and no two neighbouring classes stand closer than the 1,2:1 this
+beat asks of two bands a reader may have to compare a thousand kilometres apart.
+
+## Four classes, and the measurement that settles it
+
+`types/choropleth.md` offers five classes as "a reasonable default", not as a requirement. Five was
+built and measured. Its neighbouring steps came out at **1,183 / 1,170 / 1,169 / 1,165:1 in creme**
+and **1,195 / 1,187 / 1,191 / 1,189:1 in rapport** — every one of them under 1,2:1, and the ramp
+refuses rather than ships. Nocturne would have carried five (1,327 / 1,314 / 1,311 / 1,317:1),
+because its accent stands 10,80:1 off its ground where creme's stands 6,64:1; but `classes` is one
+number for all four rules and all three directions — a legend whose rank of chips changed length
+between directions is a legend that MOVES — so the count is the one the narrowest direction can
+carry. **Four is creme's answer, imposed on the other two, and that is the honest trade.** Past four,
+name rather than shade.
+
+## What a pointed-at country becomes
+
+Not a fixed dose and not a `brightness()` filter — a filter lightens on a light ground and on a dark
+one alike, and a fixed mix measured 1,104:1 one beat over. The dose of ink is walked up until the
+result stands 1,4:1 from **the fill it actually replaces** and still clears 3:1 against the land.
+Measured: 1,46 / 1,43 / 1,43 / 1,42 in creme, 1,40 / 1,43 / 1,43 / 1,44 in rapport, 1,41 / 1,43 /
+1,43 / 1,40 in nocturne. Because each class gets its own answer, a country darkens off the colour the
+CURRENT rule gave it — which is the whole reason the pointer keeps working when the reader re-cuts
+the map.
+
+## The one country with no reading
+
+Ukraine has no published 2024 production, so it is drawn hollow: no fill of its own, the plate's own
+land showing through, a dotted edge so it cannot be read as a country outside the frame, and its own
+name in the legend. It is handed to no rule as a number it is not, and it is never dropped into the
+lowest class — the lowest class is a reading, and Ukraine has none.
+
+## Everything else is a step off the ground
+
+The axis labels, the legend's words, the country edges, the source line: all computed by
+`deriveFurniture` from the direction's own ground at render time, never written here as a literal.
+The country edge is additionally lifted to 1,6:1 against the land, because an edge no one can see
+turns forty shapes into one.
