@@ -27,6 +27,9 @@ const NB = "\u00A0";
 const LABEL_GAP = 0.4;
 /** The gap that parts two routes, × the row pitch. The grid reserves it twice, half over the rows and half under. */
 export const GAP_ROWS = 0.5;
+/** The least air between two heads on one line, and between two family names, × the axis lead. */
+const HEAD_AIR = 0.8;
+const FAMILY_AIR = 0.6;
 
 export function loadBeat() {
   const subject = loadSubject();
@@ -114,26 +117,32 @@ export function buildDirection(id, { subject, states, copy }) {
   const gridRight = shareRight - shareRoom - gap;
   const cellW = (gridRight - gridLeft) / SOURCES.length;
 
-  // THE HEADS: on one line when every head fits its column; otherwise they alternate between two lines — Reuters' stagger —
-  // never rotate. Every head on a line is measured against its neighbours on that line, the share column's head included.
+  // THE HEADS: on as few lines as keep every head a word apart from its neighbours — one line when they fit, else a stagger
+  // over two or three lines, the column j on line j mod the count — never rotated. The share column's head takes the first
+  // line that holds it apart. Two heads closer than HEAD_AIR read as one phrase (« Charbon bas-carbone »).
   /** A column that is its family alone is named by the family over its rule; it takes no second head. */
   const alone = SOURCES.map((s) => SOURCES.filter((t) => t.family === s.family).length === 1);
   const heads = SOURCES.map((s) => measure(s.label, axis));
   const headGap = Math.max(Math.min(cellW, axis.lead) * 0.07, k);
-  const staggered = heads.some((h, j) => !alone[j] && drawnWidth(h.width) > cellW - headGap);
-  const raised = heads.map((_, j) => staggered && j % 2 === 1);
+  const air = HEAD_AIR * axis.lead;
   const centreOf = (j) => gridLeft + j * cellW + (cellW - headGap) / 2;
-  for (const line of [false, true]) {
-    const on = heads.map((h, j) => ({ text: h.text, left: centreOf(j) - drawnWidth(h.width) / 2, right: centreOf(j) + drawnWidth(h.width) / 2 })).filter((_, j) => !alone[j] && raised[j] === line);
-    if (line === staggered) on.push({ text: shareHead.text, left: shareRight - drawnWidth(shareHead.width), right: shareRight });
-    if (on[0].left < inset) throw new Error(`the head « ${on[0].text} » runs off the frame`);
-    on.forEach((h, i) => {
-      if (i > 0 && !(on[i - 1].right + gap / 2 < h.left)) throw new Error(`the heads « ${on[i - 1].text} » and « ${h.text} » collide on one line (column ${cellW.toFixed(1)}px)`);
-    });
-  }
+  const spans = heads.map((h, j) => ({ j, text: h.text, left: centreOf(j) - drawnWidth(h.width) / 2, right: centreOf(j) + drawnWidth(h.width) / 2 }));
+  const shareSpan = { j: SOURCES.length, text: shareHead.text, left: shareRight - drawnWidth(shareHead.width), right: shareRight };
+  const clear = (on) => on.every((h, i) => i === 0 || on[i - 1].right + air <= h.left);
+  const staggerOf = (lines) => {
+    const on = (line) => spans.filter((s) => !alone[s.j] && s.j % lines === line);
+    if (!Array.from({ length: lines }, (_, line) => clear(on(line))).every(Boolean)) return null;
+    const shareLine = Array.from({ length: lines }, (_, line) => line).find((line) => clear([...on(line), shareSpan]));
+    return shareLine === undefined ? null : { lines, shareLine };
+  };
+  const stagger = [1, 2, 3].map(staggerOf).find(Boolean);
+  if (!stagger) throw new Error(`the source heads do not stand a word apart on three lines of a ${cellW.toFixed(1)}px column`);
+  if (Math.min(...spans.filter((s) => !alone[s.j]).map((s) => s.left)) < inset) throw new Error("a source head runs off the frame");
+  /** A head's line, counted up from the line nearest the grid. */
+  const lineOf = (j) => j % stagger.lines;
   const familyBaseline = vInset + Math.max(annotBand.ascent, axisBand.ascent);
   const ruleY = familyBaseline + Math.max(annotBand.descent, axisBand.descent) + 0.25 * axis.lead;
-  const headBaseline = ruleY + 0.3 * axis.lead + axisBand.ascent + (staggered ? axis.lead : 0);
+  const headBaseline = ruleY + 0.3 * axis.lead + axisBand.ascent + (stagger.lines - 1) * axis.lead;
 
   // THE ROWS: twelve, and the two gaps a route parting takes. A row owes the band of the words it carries.
   const top = headBaseline + axisBand.descent + gap;
@@ -171,7 +180,7 @@ export function buildDirection(id, { subject, states, copy }) {
     return { name: { ...w, x: familyX(x1, x2, drawnWidth(w.width), from === 0 ? "start" : to === SOURCES.length - 1 ? "end" : "middle"), y: familyBaseline }, x1, x2, y: ruleY };
   });
   families.forEach((f, i) => {
-    if (i > 0 && !(families[i - 1].name.x + drawnWidth(families[i - 1].name.width) + gap < f.name.x)) throw new Error(`the family names « ${families[i - 1].name.text} » and « ${f.name.text} » collide`);
+    if (i > 0 && !(families[i - 1].name.x + drawnWidth(families[i - 1].name.width) + FAMILY_AIR * axis.lead <= f.name.x)) throw new Error(`the family names « ${families[i - 1].name.text} » and « ${f.name.text} » collide`);
   });
 
   const { ground, accent } = direction;
@@ -222,9 +231,9 @@ export function buildDirection(id, { subject, states, copy }) {
       name: { ...names[i], x: r1(gridLeft - gap - drawnWidth(names[i].width)), dy: r1((pitch - cellGap) / 2 + centred(axisBand)) },
       share: { ...shares[i], x: r1(shareRight - drawnWidth(shares[i].width)), dy: r1((pitch - cellGap) / 2 + centred(valueBand)) },
     })),
-    heads: heads.map((h, j) => ({ ...h, x: r1(xOf(j) + (cellW - cellGap) / 2 - h.width / 2), y: r1(headBaseline - (raised[j] ? axis.lead : 0)) })).filter((_, j) => !alone[j]),
+    heads: heads.map((h, j) => ({ ...h, x: r1(xOf(j) + (cellW - cellGap) / 2 - h.width / 2), y: r1(headBaseline - lineOf(j) * axis.lead) })).filter((_, j) => !alone[j]),
     families,
-    shareHead: { ...shareHead, x: r1(shareRight - drawnWidth(shareHead.width)), y: r1(headBaseline - (staggered ? axis.lead : 0)) },
+    shareHead: { ...shareHead, x: r1(shareRight - drawnWidth(shareHead.width)), y: r1(headBaseline - stagger.shareLine * axis.lead) },
     floorLine: (() => {
       const x = gridLeft + (FLOOR / 100) * W;
       const w = measure(copy.floor, axis);
@@ -240,5 +249,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: HEATMAP_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, cell: `${cellW.toFixed(1)}×${pitch.toFixed(1)}`, staggered } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, cell: `${cellW.toFixed(1)}×${pitch.toFixed(1)}`, headLines: stagger.lines } };
 }
