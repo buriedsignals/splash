@@ -29,6 +29,16 @@ export function applyLocatorState(root, state) {
   });
 
   if (shownLive) paintNativeLabels(c, state);
+  // A READER WHO HAS NOT YET SCROLLED must still get the confirmed filter, not only one who moves: retried off
+  // the animation frame, bounded, so an idle page still converges without costing anything once it has.
+  if (shownLive && !c.nativeConfirmed && !c.nativeRetryQueued && (c.nativeRetries || 0) < 240) {
+    c.nativeRetryQueued = true;
+    c.nativeRetries = (c.nativeRetries || 0) + 1;
+    requestAnimationFrame(() => {
+      c.nativeRetryQueued = false;
+      if (c.handle && c.handle.ready && !c.nativeConfirmed) paintNativeLabels(c, JSON.parse(c.rootRef.dataset.state || "{}"));
+    });
+  }
 
   const notes = {
     topNote: clamp(state.tops) * (1 - clamp(state.country)),
@@ -47,26 +57,19 @@ export function applyLocatorState(root, state) {
 function paintNativeLabels(c, state) {
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const map = c.handle.map;
-  if (!c.nativeReady) {
+  if (!c.nativeConfirmed) {
     // `isStyleLoaded()` waits on every resource the style names, glyphs included, and can stay false for a
     // while after the layers this beat filters already exist — gating on it left the filter set-up racing the
-    // page's first paint (found live, 2026-09-15: the unfiltered style shipped on some loads and not others).
-    // The layer's own presence is the honest signal: it exists once the style has loaded, before any tile does.
-    if (!map.getLayer("Country labels")) {
-      // Retried off the animation frame, not only off the next scroll: a reader who has not yet scrolled must
-      // still see the names once the style is ready, not only once they move.
-      if (!c.nativeRetryQueued) {
-        c.nativeRetryQueued = true;
-        requestAnimationFrame(() => {
-          c.nativeRetryQueued = false;
-          if (c.handle && c.handle.ready) paintNativeLabels(c, JSON.parse(c.rootRef.dataset.state || "{}"));
-        });
-      }
-      return;
-    }
+    // page's first paint. THE SET-UP ITSELF WAS ALSO FOUND TO RACE SOMETHING ELSE (found live, 2026-09-15: even
+    // once `setFilter` had run, a later read of the same layer sometimes still answered the style's own default
+    // filter — a MapLibre-internal timing this beat does not control). So set-up is READ BACK and reapplied every
+    // frame until the filter it produced is confirmed in place, not run once and trusted.
+    if (!map.getLayer("Country labels")) return;
     setUpNativeLabels(map, c.native);
-    c.nativeReady = true;
-    c.nativePaint = {};
+    c.nativePaint = c.nativePaint || {};
+    const applied = JSON.stringify(map.getFilter("Country labels"));
+    if (applied === JSON.stringify(["all", ["==", ["get", "class"], "country"], ["has", "iso_a2"], ["in", ["get", "iso_a2"], ["literal", c.native.countryCodes]]]))
+      c.nativeConfirmed = true;
   }
   const set = (id, property, value) => {
     const key = `${id}.${property}`;

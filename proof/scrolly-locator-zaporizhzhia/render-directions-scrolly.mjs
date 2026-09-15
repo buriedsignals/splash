@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, readPalette, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, readPalette, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -178,15 +178,21 @@ try {
       const waterInk = adjustToContrast(mix(direction.accent, ink, 0.2), tints.water, TEXT_CONTRAST_MIN) ?? inkOnLand;
       const accentMark = adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent;
       const accentInk = adjustToContrast(direction.accent, tints.land, TEXT_CONTRAST_MIN) ?? direction.accent;
+      // MEASURED AGAINST THE BASEMAP'S OWN TINTS (`tints.land`, `tints.water` — what the live sweep actually
+      // paints), not the page ground, and against each other where one sits on the other (owner, 2026-09-15: a
+      // no-data fill mixed only 7% toward ink measured 1.17:1 against land — practically invisible; every
+      // neutral here now goes through `adjustToContrast` instead of a bare, unmeasured `mix`).
+      const unreported = adjustToContrast(mix(tints.land, ink, 0.22), tints.land, NON_TEXT_CONTRAST_MIN) ?? mix(tints.land, ink, 0.22);
       const colours = {
-        unreported: mix(tints.land, ink, 0.07),
+        unreported,
         accentMark,
         accentInk,
-        regionLine: mix(tints.land, ink, 0.45),
-        stationDot: adjustToContrast(mix(direction.accent, direction.ground, 0.3), tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+        regionLine: adjustToContrast(mix(tints.land, ink, 0.45), unreported, NON_TEXT_CONTRAST_MIN) ?? mix(tints.land, ink, 0.45),
+        stationDot: adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
         inkOnLand,
         waterInk,
       };
+      if (contrast(colours.unreported, tints.land) < NON_TEXT_CONTRAST_MIN) throw new Error(`Ukraine's no-data fill ${colours.unreported} measures under 3:1 against the land ${tints.land}`);
       const fonts = {
         axis: await cards.faceOf(regs.axis, "axis"),
         axisSize: Number.parseFloat(regs.axis.fontSize),
