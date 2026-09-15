@@ -1,152 +1,148 @@
-// The painting function for this beat's one visual, inlined by `renderScrolly`'s `reveal` option AFTER
-// `reveal.mjs`, whose `fitViewBox` it calls.
+// The painting function for the locator scrolly, inlined by `renderScrolly`'s `reveal` option AFTER the map
+// runtime (`shared/map-beat/inline.mjs`), inside the same IIFE: `initScrollyMap` and `applyScrollyMap` are in scope.
 //
-// A STATE, field by field (every gesture scrubbed by the reader's own scroll):
-//   tops     the largest stations across Europe, dotted and labelled with their capacity              0..1
-//   country  the subject's country outlined, the one with no reported generation                     0..1
-//   zoom     the camera from Europe onto the region around the station, the country's oblasts appearing 0..1
-//   places   the three classes of place named: countries, settlements, water                         0..1
-//   subject  the station ringed and named                                                            0..1
-//   limit    the database's limit stated                                                               0..1
+// THE RUNTIME OWNS THE CAMERA AND EVERY BEAT-DRAWN LAYER'S PAINT (`plan.mjs`). This file owns two things the plan
+// cannot: which frozen card image lies under the live map, and MapTiler's OWN label layers — filtered to the names
+// this beat needs and faded by the same state tokens, since those layers are not `plan.layers` and so are outside
+// `bindState`'s reach (owner ruling, 2026-09-15: native toponyms, not beat-drawn words).
 //
-// THE CAMERA IS THE VIEWBOX travelling between the two boxes, fitted to the stage. Every label is HTML, seated on its
-// point through the SVG's screen matrix each paint, so words keep their register's size while the map grows. Labels
-// are placed subject first; a label that would touch one already placed tries its other sides, then steps back.
+// A STATE, field by field:
+//   tops     the four largest stations across Europe, dotted and labelled with their capacity            0..1
+//   country  Ukraine stepped forward: its fill and outline                                                0..1
+//   zoom     arrived at the close-up (0 at rest, 1 once the camera has settled there); the oblasts appear 0..1
+//   places   the three classes of place named: countries, settlements, water                              0..1
+//   subject  the station ringed and named                                                                 0..1
+//   limit    the database's own limit stated                                                              0..1
+//   card camX camY camZoom camBearing camPitch camAlignY   the card's camera and its frozen image
 
-export function applyLocatorState(root, state, context) {
-  const carrier = root.querySelector("[data-locator]");
-  if (!carrier) return;
-  if (!root.__locator) seatLocator(root, carrier);
+export function applyLocatorState(root, state) {
+  if (!root.__locator) setUpLocator(root);
   const c = root.__locator;
+  applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const SW = c.stage.clientWidth;
-  const SH = c.stage.clientHeight;
-  if (!(SW > 0 && SH > 0)) return;
+  const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
 
-  // The camera travels in log space so the zoom reads as a steady approach rather than a sudden plunge.
-  const z = ease(clamp(state.zoom));
-  const scale = Math.exp(lerp(Math.log(c.europeBox.w), Math.log(c.zoomBox.w), z));
-  const t = (c.europeBox.w - scale) / (c.europeBox.w - c.zoomBox.w || 1);
-  const box = {
-    x: lerp(c.europeBox.x, c.zoomBox.x, t),
-    y: lerp(c.europeBox.y, c.zoomBox.y, t),
-    w: scale,
-    h: lerp(c.europeBox.h, c.zoomBox.h, t),
+  const shownLive = Boolean(c.handle && c.handle.ready);
+  c.fallbacks.forEach((img) => {
+    const opacity = !shownLive && Number(img.dataset.fallback) === card ? "1" : "0";
+    if (img.style.opacity !== opacity) img.style.opacity = opacity;
+  });
+
+  if (shownLive) paintNativeLabels(c, state);
+
+  const notes = {
+    topNote: clamp(state.tops) * (1 - clamp(state.country)),
+    countryNote: clamp(state.country) * (1 - clamp(state.zoom)),
+    zoomNote: clamp(state.zoom) * (1 - clamp(state.places)),
+    subjectNote: clamp(state.subject) * (1 - clamp(state.limit)),
+    limitNote: clamp(state.limit),
   };
-  const vb = fitViewBox(box, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 });
-  // The close-up centres the station, both ways. On a narrow stage the whole of Europe is taller than the stars of
-  // card one, so before the zoom they are held in the upper part, easing to the centre as the camera closes.
-  const narrow = SW < 560;
-  const starsY = c.stations.reduce((sum, s) => sum + s.y, 0) / c.stations.length;
-  vb.x += z * (c.subject.x - (vb.x + 0.5 * vb.w));
-  vb.y += (narrow ? 1 : z) * (lerp(starsY, c.subject.y, z) - (vb.y + lerp(narrow ? 0.3 : 0.5, 0.5, z) * vb.h));
-  c.svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  c.svg.setAttribute("preserveAspectRatio", "none");
-  const ppu = SW / vb.w;
-  const px = (x) => (x - vb.x) * ppu;
-  const py = (y) => (y - vb.y) * ppu;
-
-  const tops = clamp(state.tops);
-  const country = clamp(state.country);
-  const places = clamp(state.places);
-  const subject = clamp(state.subject);
-  for (const s of c.stations) {
-    s.el.setAttribute("r", String(Math.max(2.5, Math.sqrt(s.mw / 6000) * 9) / ppu));
-    s.el.setAttribute("opacity", String(tops * (1 - z)));
-  }
-  for (const [iso, node] of c.countries) node.setAttribute("opacity", iso === c.subjectCountry ? "1" : String(1 - 0.35 * country * (1 - z)));
-  c.outline.setAttribute("opacity", String(country));
-  // The oblasts come with the close-up: at the scale of Europe they are a grey smear inside the country.
-  c.regions.setAttribute("opacity", String(clamp((z - 0.5) * 2)));
-  c.subjectRing.setAttribute("r", String(lerp(5, 9, subject) / ppu));
-  c.subjectRing.setAttribute("opacity", String(Math.max(subject, tops * (1 - z))));
-  c.subjectDot.setAttribute("r", String(3 / ppu));
-  for (const d of c.placeDots) {
-    d.setAttribute("r", String(2.6 / ppu));
-    d.setAttribute("opacity", String(places * z));
-  }
-
-  const want = {
-    station: tops * (1 - z),
-    area: places * z,
-    place: places * z,
-    water: places * z,
-  };
-  // The marks themselves are obstacles: a label is never laid over a station's dot.
-  const placed = c.stations
-    .filter(() => tops * (1 - z) > 0.01)
-    .map((s) => {
-      const rr = Math.max(2.5, Math.sqrt(s.mw / 6000) * 9) + 2;
-      return { l: px(s.x) - rr, t: py(s.y) - rr, r: px(s.x) + rr, b: py(s.y) + rr };
-    });
-  const order = [...c.labels].sort((a, b) => rank(a.kind) - rank(b.kind));
-  for (const l of order) {
-    const on = l.kind === "subject" ? Math.max(subject, tops * (1 - z)) : want[l.kind];
-    const node = l.el;
-    if (on <= 0.01) {
-      node.style.opacity = "0";
-      continue;
-    }
-    const x = px(l.x);
-    const y = py(l.y);
-    const w = node.offsetWidth;
-    const h = node.offsetHeight;
-    // A label clears its own mark: a station's dot grows with its capacity, so its gap does too.
-    const markR = l.kind === "station" || (l.kind === "subject" && tops * (1 - z) > 0.01) ? Math.max(2.5, Math.sqrt(l.mw / 6000) * 9) + 2 : 0;
-    const gap = l.kind === "area" || l.kind === "water" ? 0 : Math.max(7, markR + 4);
-    const sides = l.kind === "area" || l.kind === "water" ? [[-0.5, -0.5]] : [[0, -0.5], [-1, -0.5], [-0.5, -1], [-0.5, 0], [0, -1], [-1, 0]];
-    let seat = null;
-    for (const [ox, oy] of sides) {
-      const left = x + ox * w + (ox === 0 ? gap : ox === -1 ? -gap : 0);
-      const top = y + oy * h + (oy === 0 ? gap : oy === -1 ? -gap : 0);
-      const b = { l: left, t: top, r: left + w, b: top + h };
-      if (b.l < 2 || b.t < 2 || b.r > SW - 2 || b.b > SH - 2) continue;
-      if (placed.some((p) => b.l < p.r && b.r > p.l && b.t < p.b && b.b > p.t)) continue;
-      seat = b;
-      break;
-    }
-    if (!seat) {
-      node.style.opacity = "0";
-      continue;
-    }
-    placed.push(seat);
-    node.style.left = `${seat.l}px`;
-    node.style.top = `${seat.t}px`;
-    node.style.opacity = String(on);
-  }
-
-  const notes = { topNote: tops * (1 - country), countryNote: country * (1 - z), zoomNote: z * (1 - places), subjectNote: subject * (1 - clamp(state.limit)), limitNote: clamp(state.limit) };
   showOneNote(Object.entries(c.notes).map(([key, node]) => [node, notes[key]]));
 }
 
-function rank(kind) {
-  return { subject: 0, station: 1, place: 2, area: 3, water: 4 }[kind];
+/** MAPTILER'S OWN LABEL LAYERS, FILTERED ONCE and faded every frame. Filtering and colouring happen only once
+ *  (`onReady`, when the style has just loaded and every `keepLabels` layer exists); fading is state, so it runs
+ *  every frame — but only ever calls `setPaintProperty` when the number actually changed (the live map's own rule:
+ *  a bound paint value is set only on change). */
+function paintNativeLabels(c, state) {
+  const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const map = c.handle.map;
+  if (!c.nativeReady) {
+    // `isStyleLoaded()` waits on every resource the style names, glyphs included, and can stay false for a
+    // while after the layers this beat filters already exist — gating on it left the filter set-up racing the
+    // page's first paint (found live, 2026-09-15: the unfiltered style shipped on some loads and not others).
+    // The layer's own presence is the honest signal: it exists once the style has loaded, before any tile does.
+    if (!map.getLayer("Country labels")) {
+      // Retried off the animation frame, not only off the next scroll: a reader who has not yet scrolled must
+      // still see the names once the style is ready, not only once they move.
+      if (!c.nativeRetryQueued) {
+        c.nativeRetryQueued = true;
+        requestAnimationFrame(() => {
+          c.nativeRetryQueued = false;
+          if (c.handle && c.handle.ready) paintNativeLabels(c, JSON.parse(c.rootRef.dataset.state || "{}"));
+        });
+      }
+      return;
+    }
+    setUpNativeLabels(map, c.native);
+    c.nativeReady = true;
+    c.nativePaint = {};
+  }
+  const set = (id, property, value) => {
+    const key = `${id}.${property}`;
+    if (c.nativePaint[key] === value) return;
+    c.nativePaint[key] = value;
+    if (map.getLayer(id)) map.setPaintProperty(id, property, value, { validate: false });
+  };
+  const places = clamp(state.places);
+  set("Country labels", "text-opacity", clamp(state.places));
+  for (const id of ["City labels", "Town labels", "Village labels", "Place labels", "State labels"]) set(id, "text-opacity", places);
+  for (const id of ["Sea labels", "Ocean labels", "Lakeline labels"]) set(id, "text-opacity", places);
 }
 
-function seatLocator(root, carrier) {
-  const data = JSON.parse(carrier.getAttribute("data-locator"));
-  const stage = root.querySelector('[data-part="stage"]');
-  const svg = stage.querySelector('[data-part="field"]');
+// EACH LAYER'S OWN CLASS SCOPE, RESTATED IN MODERN EXPRESSION SYNTAX. The style ships these filters in the OLDER,
+// pre-expression form (`["==", "class", "city"]`, a bare property name) — legal MapLibre, but a legacy filter and
+// a modern one (`["in", ["get", …], ["literal", …]]`, needed for a name list) do not combine under one `all`: MapLibre
+// validates the whole tree by the legacy schema and refuses the modern branch ("string expected, array found"),
+// silently dropping the filter along with it. So each layer's own scope is restated here, in the same syntax as the
+// name filter it is joined to, rather than read back from the style and wrapped.
+const CLASS_SCOPE = {
+  "City labels": ["all", ["==", ["get", "class"], "city"], ["has", "rank"]],
+  "Town labels": ["==", ["get", "class"], "town"],
+  "Village labels": ["==", ["get", "class"], "village"],
+  "Place labels": ["!", ["in", ["get", "class"], ["literal", ["city", "continent", "country", "province", "state", "town", "village", "place"]]]],
+  "State labels": ["all", ["==", ["get", "class"], "state"], ["==", ["get", "rank"], 1]],
+};
+
+function setUpNativeLabels(map, native) {
+  map.setFilter("Country labels", ["all", ["==", ["get", "class"], "country"], ["has", "iso_a2"], ["in", ["get", "iso_a2"], ["literal", native.countryCodes]]], { validate: false });
+  map.setPaintProperty("Country labels", "text-color", native.countryColor, { validate: false });
+  map.setPaintProperty("Country labels", "text-halo-color", native.landHalo, { validate: false });
+
+  const nameOf = ["coalesce", ["get", "name:latin"], ["get", "name"]];
+  const placeFilter = ["in", nameOf, ["literal", native.placeNames]];
+  for (const id of ["City labels", "Town labels", "Village labels", "Place labels", "State labels"]) {
+    map.setFilter(id, ["all", CLASS_SCOPE[id], placeFilter], { validate: false });
+    map.setPaintProperty(id, "text-color", native.placeColor, { validate: false });
+    map.setPaintProperty(id, "text-halo-color", native.landHalo, { validate: false });
+  }
+
+  const waterFilter = ["in", ["get", "name"], ["literal", native.waterNames]];
+  map.setFilter("Sea labels", ["all", ["==", ["get", "class"], "sea"], ["has", "name"], waterFilter], { validate: false });
+  map.setFilter("Ocean labels", ["all", ["==", ["get", "class"], "ocean"], ["has", "name"], waterFilter], { validate: false });
+  map.setFilter("Lakeline labels", ["all", ["has", "name"], waterFilter], { validate: false });
+  for (const id of ["Sea labels", "Ocean labels", "Lakeline labels"]) map.setPaintProperty(id, "text-color", native.waterColor, { validate: false });
+}
+
+function setUpLocator(root) {
+  const data = JSON.parse(root.querySelector("[data-locator]").getAttribute("data-locator"));
+  const plan = JSON.parse(root.querySelector('[data-part="plan"]').textContent);
+  const repaint = () => {
+    if (root.dataset.state) applyLocatorState(root, JSON.parse(root.dataset.state));
+  };
+  const handle = initScrollyMap(root, plan, {
+    window,
+    preserveDrawingBuffer: /[?&]verify/.test(location.search),
+    onShown: repaint,
+    onReady: repaint,
+  });
+  root.__handle = handle;
+  window.__scrollyMap = handle;
   root.__locator = {
     ...data,
-    stage,
-    svg,
-    countries: Array.from(svg.querySelectorAll("[data-country]")).map((n) => [n.dataset.country, n]),
-    outline: svg.querySelector('[data-part="country-outline"]'),
-    regions: svg.querySelector('[data-part="regions"]'),
-    stations: data.stations.map((s) => ({ ...s, el: svg.querySelector(`[data-station="${s.id}"]`) })),
-    placeDots: Array.from(svg.querySelectorAll("[data-place-dot]")),
-    subjectRing: svg.querySelector('[data-part="subject-ring"]'),
-    subjectDot: svg.querySelector('[data-part="subject-dot"]'),
-    labels: data.labels.map((l) => ({ ...l, el: stage.querySelector(`[data-label="${l.id}"]`) })),
+    plan,
+    handle,
+    rootRef: root,
+    nativeReady: false,
+    stage: root.querySelector('[data-part="stage"]'),
+    fallbacks: Array.from(root.querySelectorAll("[data-fallback]")),
+    cards: plan.fallback.wide.cards.length,
     notes: Object.fromEntries(Array.from(root.querySelectorAll("[data-note]")).map((n) => [n.dataset.note, n])),
   };
 }
 
-// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
-// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never
+// overlap while the scroll crossfades between them — each fades out to nothing before the next fades in.
 function showOneNote(entries) {
   const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
   const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));
