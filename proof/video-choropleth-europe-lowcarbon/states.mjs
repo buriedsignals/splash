@@ -20,7 +20,7 @@
 // filter has landed, only after the camera has settled — is the composition's windows (`scene.mjs`).
 //
 // EVERY DERIVED VALUE BRIEF.md NAMES IS ASSERTED HERE against the same `loadSubject` the still reads,
-// and the north-west is measured again on the seats this video actually draws.
+// and the north-west is measured again on the seats the live map names the countries at.
 
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
 import { assertEventStates } from "../../skills/chart-video/scripts/choreography.mjs";
@@ -28,8 +28,8 @@ import { assertEventStates } from "../../skills/chart-video/scripts/choreography
 const EXPECTED_CLASS_COUNTS = [8, 6, 6, 8, 5, 7];
 
 /** @param {ReturnType<typeof import("../static-choropleth-europe-lowcarbon/beat.mjs").loadSubject>} subject
- *  @param {{ shapes: Array<{ iso: string, seat: { x: number, y: number } }> }} geometry  `videoGeometry(subject)` */
-export function assertDerivedValues(subject, geometry) {
+ *  @param {Record<string, [number, number]>} seats  the map's frozen seats, `[lon, lat]` (`map-plan.mjs`, `SEATS`) */
+export function assertDerivedValues(subject, seats) {
   const { value, BREAKS, FLOOR, above, ODD_ONE, neighbours, unreported, studySet, format, NEIGHBOUR_CEILING } = subject;
   if (value.size !== 40) throw new Error(`establish reports 40 countries; loadSubject carries ${value.size}`);
   if (unreported.length !== 1 || unreported[0].iso !== "UKR")
@@ -55,22 +55,22 @@ export function assertDerivedValues(subject, geometry) {
     throw new Error(`every measured neighbour should be under ${NEIGHBOUR_CEILING} %; the highest is ${highest.toFixed(1)} %`);
 
   const seatOf = (iso) => {
-    const shape = geometry.shapes.find((s) => s.iso === iso);
-    if (!shape) throw new Error(`${iso} is named but the video's geometry draws no shape for it`);
-    return shape.seat;
+    if (!seats[iso]) throw new Error(`${iso} is named but the map has no frozen seat for it`);
+    return seats[iso];
   };
   const oddSeat = seatOf(ODD_ONE);
   const named = above.filter((r) => r.iso !== ODD_ONE);
   if (named.length !== 6) throw new Error(`reveal names six of the seven above ${FLOOR} %; it would name ${named.length}`);
-  const notNorthWest = named.filter((r) => seatOf(r.iso).y > oddSeat.y && seatOf(r.iso).x > oddSeat.x);
+  // In degrees on the seats the map names them at: south of Albania AND east of it is what "not north or west" means.
+  const notNorthWest = named.filter((r) => seatOf(r.iso)[1] < oddSeat[1] && seatOf(r.iso)[0] > oddSeat[0]);
   if (notNorthWest.length)
-    throw new Error(`the title says the other six are north or west of Albania; on the drawn seats ${notNorthWest.map((r) => r.label).join(", ")} is neither`);
+    throw new Error(`the title says the other six are north or west of Albania; on the map's seats ${notNorthWest.map((r) => r.label).join(", ")} is neither`);
   return { classCounts: counts, steppedBack: value.size - above.length, highestNeighbour: highest };
 }
 
 /** One state per event in `EVENT_ORDER`, the hold restating the conclusion exactly. */
-export function statesFor(subject, geometry) {
-  assertDerivedValues(subject, geometry);
+export function statesFor(subject, seats) {
+  assertDerivedValues(subject, seats);
   const blank = { title: 0, furniture: 0, classes: 0, filter: 0, floor: 0, count: 0, top: 0, context: 0, zoom: 0, odd: 0, neighbours: 0, source: 0 };
   const establish = { ...blank, title: 1 };
   const reference = { ...establish, title: 0, furniture: 1, count: 1, classes: 1, context: 1 };

@@ -5,8 +5,9 @@ import { buildDirection, loadBeat } from "./build.mjs";
 import { DRAWN_WIDER } from "./layout.mjs";
 
 /**
- * The shots of BRIEF.md for every filed direction: the title card, the story's panel, the end card. Widths are
- * measured again here, independently of `layout.mjs`'s own helper.
+ * The shots of BRIEF.md for every filed direction: the title card, the story's panel, the credit. Widths are
+ * measured again here, independently of `layout.mjs`'s own helper; where the panel and the credit sit on the map is
+ * `anatomy.test.ts`'s.
  */
 
 const beat = loadBeat();
@@ -24,7 +25,7 @@ const measured = (text: string, r: any) =>
   r.letterSpacing * Math.max(0, [...text].length - 1);
 
 for (const id of ["creme", "nocturne", "rapport"]) {
-  const { layout, props, report } = buildDirection(id, beat);
+  const { layout, props } = buildDirection(id, beat);
   const { titleCard, panel, registers } = layout;
   const measure = 0.72 * content;
 
@@ -62,7 +63,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
     });
 
     it("should set the source at the type floor — smaller than every other word — on one line", () => {
-      const { source } = layout;
+      const source = props.source;
       expect(registers.source.fontSize).toBe(row.minTypePx);
       const others = Object.entries(registers).filter(([n]) => n !== "source").map(([, r]: any) => r.fontSize);
       expect(registers.source.fontSize).toBeLessThanOrEqual(Math.min(...others));
@@ -98,15 +99,12 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(panel.width).toBeLessThan(0.36 * row.width);
     });
 
-    it("should seat the panel inside the frame's margins, over at most 3 % land at the overview camera", () => {
+    it("should seat the panel inside the frame's margins", () => {
       const at = props.panel.at;
       expect(at.x).toBeGreaterThanOrEqual(inset);
       expect(at.x + panel.width).toBeLessThanOrEqual(row.width - inset);
       expect(at.y).toBeGreaterThanOrEqual(layout.vInset);
-      expect(at.y + panel.height).toBeLessThanOrEqual(
-        row.height - layout.vInset,
-      );
-      expect(report.panelLand).toBeLessThanOrEqual(0.03);
+      expect(at.y + panel.height).toBeLessThanOrEqual(row.height - layout.vInset);
     });
 
     it("should give the story the whole frame", () => {

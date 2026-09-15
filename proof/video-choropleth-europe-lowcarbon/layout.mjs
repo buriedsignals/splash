@@ -7,10 +7,10 @@
 //   1. THE TITLE CARD — the eyebrow and the title, alone on the direction's ground, as large as the display
 //      register draws, wrapped to a reading measure. No standfirst: a video says what it can show rather than
 //      writing it (the owner, 2026-09-14: « faire comprendre en écrivant le moins possible de texte explicatif »).
-//   2. THE STORY — the map on the whole frame, edge to edge. What the story needs to be read — the count and
-//      the key — sits in one PANEL that comes and goes with its gestures; `build.mjs` seats it where it covers
-//      the least land at the overview camera. The panel is laid out here at its own origin: the count and the
-//      key, no sentence; the map's words are the still's anatomy, uppercased and haloed (`build.mjs`).
+//   2. THE STORY — the live map on the whole frame, edge to edge. What the story needs to be read — the count and
+//      the key — sits in one PANEL that comes and goes with its gestures; `build.mjs` seats it on the sea the map
+//      was measured to paint. The panel is laid out here at its own origin: the count and the key, no sentence;
+//      the six and the seas are the map's own words, the close-up's labels the overlay's (`build.mjs`).
 //   3. NO END CARD — the video ends on the map, with the source set small on its sea.
 //
 // Every width is `measureText` on the face the composition embeds, plus the register's tracking; every
@@ -43,8 +43,9 @@ export const SLOT_REGISTERS = Object.freeze({
 /**
  * THE STILL'S MAP TREATMENTS AT THE VIDEO'S SIZE — `mapRegistersFor` (the still's component) applied to the
  * video's own registers: `area` is the axis register tracked to at least 0.8 px of the still, carried by the
- * ladder's factor `k`; `feature` is that at 700; `water` the axis in italic, untracked. `closeFeature` is the
- * close-up's own name, the value register set as a feature — the one word the shot is about.
+ * ladder's factor `k`; `feature` is that at 700 (the six the map names, and Albania's name); `water` the axis in
+ * italic, untracked (the seas the map names). `closeFeature` is the close-up's own name, the value register set as a
+ * feature — the one word the shot is about.
  */
 export function mapRegistersOf(registers, k) {
   const { axis, value } = registers;
@@ -73,9 +74,9 @@ export function layoutFor({ registers, copy, size, k }) {
     if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
 
   // 1. THE TITLE CARD, 3. THE CREDIT — the owner (2026-09-14): « la vue finale doit être la map et pas le titre à
-  // nouveau »; `build.mjs` seats the credit on the sea.
+  // nouveau »; `build.mjs` seats the credit on the measured sea.
   const { form, register, eyebrow, title } = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  // The credit on one line, in every form that holds one: `build.mjs` seats the longest that finds a sea corner.
+  // The credit on one line, in every form that holds one: `build.mjs` seats the longest that finds open sea.
   const sources = copy.source.flatMap((form) => {
     try {
       return [sourceCreditFor({ registers, forms: [form], size, k, ...CREDIT_ONE_LINE })];

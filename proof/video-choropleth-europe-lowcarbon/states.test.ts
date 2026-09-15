@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
 import { assertEventStates } from "../../skills/chart-video/scripts/choreography.mjs";
 import { loadSubject } from "../static-choropleth-europe-lowcarbon/beat.mjs";
-import { videoGeometry } from "./geometry.mjs";
+import { SEATS } from "./map-plan.mjs";
 import { assertDerivedValues, statesFor } from "./states.mjs";
 
 /**
@@ -14,8 +14,7 @@ import { assertDerivedValues, statesFor } from "./states.mjs";
 const subject = loadSubject({
   dir: join(import.meta.dirname, "..", "static-choropleth-europe-lowcarbon"),
 });
-const geometry = videoGeometry(subject);
-const states = statesFor(subject, geometry);
+const states = statesFor(subject, SEATS);
 const [establish, reference, reveal, subjectState, conclusion, hold] = states;
 
 describe("statesFor", () => {
@@ -60,7 +59,7 @@ describe("statesFor", () => {
 });
 
 describe("the BRIEF's derived values", () => {
-  const derived = assertDerivedValues(subject, geometry);
+  const derived = assertDerivedValues(subject, SEATS);
 
   it("should class the countries 8·6·6·8·5·7", () => {
     expect(derived.classCounts).toEqual([8, 6, 6, 8, 5, 7]);
@@ -74,15 +73,9 @@ describe("the BRIEF's derived values", () => {
     expect(Math.round(derived.highestNeighbour * 10) / 10).toBe(59.5);
   });
 
-  it("should refuse a geometry in which one of the six is south-east of Albania", () => {
-    const albania = geometry.shapes.find((s: any) => s.iso === "ALB").seat;
-    const moved = {
-      shapes: geometry.shapes.map((s: any) =>
-        s.iso === "FRA"
-          ? { ...s, seat: { x: albania.x + 10, y: albania.y + 10 } }
-          : s,
-      ),
-    };
+  it("should refuse seats on which one of the six is south-east of Albania", () => {
+    const [lon, lat] = SEATS.ALB;
+    const moved = { ...SEATS, FRA: [lon + 5, lat - 5] };
     expect(() => assertDerivedValues(subject, moved)).toThrow(/north or west/);
   });
 });

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { validatePlan } from "#shared/map-beat/plan.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { buildDirection, loadBeat } from "./build.mjs";

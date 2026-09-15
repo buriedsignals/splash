@@ -1,145 +1,349 @@
 import { describe, expect, it } from "bun:test";
 import { contrast } from "#shared/chart-beat/colour.mjs";
-import { measureTextBand } from "#shared/chart-beat/render-still.mjs";
-import { buildDirection, loadBeat } from "./build.mjs";
-import { toStage } from "./scene.mjs";
+import { endOf } from "#shared/chart-video/timing.ts";
+import {
+  buildDirection,
+  LED_REACH,
+  loadBeat,
+  PANEL_LAND,
+  subjectRadiusPx,
+  unmeasuredNeighboursOf,
+} from "./build.mjs";
+import measured from "./measured.json";
+import { mapStateAt } from "./scene.mjs";
 
 /**
- * THE STILL'S ANATOMY, ON THE VIDEO'S PROPS — measured again here on the drawn shapes, not read back from
- * `build.mjs`'s own grids: every map word uppercased and readable on every cell it crosses in every state it is
- * seen in, set wholly inside its country or led to it, the seas in open water near their own centres, the panel
- * off the seven — and no sentence written where the picture can show it.
+ * THE OVERLAY ON THE MEASURED MAP — read again here on `measured.json`'s own grids, not through `build.mjs`'s helpers:
+ * every label readable on every cell it inks, over its measured seat or led to it, the panel and the credit on the sea
+ * the map was measured to paint, and the measurement itself taken on the frames those words are seen at, on the plan
+ * that is drawn.
  */
 
 const beat = loadBeat();
-const ringsOf = (path: string) =>
-  path
-    .split("Z")
-    .filter(Boolean)
-    .map((ring) => ring.replace(/^M/, "").split("L").map((p) => p.split(" ").map(Number)));
-const insideRing = (ring: number[][], x: number, y: number) => {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
+const IDS = ["creme", "nocturne", "rapport"] as const;
+type Box = { x: number; y: number; width: number; height: number };
+type Picture = "whole" | "wholeFiltered" | "closeUp";
+
+const gridOf = (id: string, picture: Picture) =>
+  (measured.cameras as any)[id][picture].grid;
+/** Every measured colour a box covers, clamped to the grid. */
+const cellsUnder = (id: string, picture: Picture, box: Box) => {
+  const m = gridOf(id, picture);
+  const out = new Set<string>();
+  for (
+    let j = Math.max(0, Math.floor(box.y / m.cell));
+    j <= Math.min(m.rows - 1, Math.floor((box.y + box.height) / m.cell));
+    j++
+  )
+    for (
+      let i = Math.max(0, Math.floor(box.x / m.cell));
+      i <= Math.min(m.cols - 1, Math.floor((box.x + box.width) / m.cell));
+      i++
+    )
+      out.add(m.colours[j * m.cols + i]);
+  return [...out];
 };
-const SEEN: Record<string, string[]> = { top: ["filtered", "classes"], odd: ["classes"], missing: ["classes"], context: ["classes"], neighbour: ["classes"] };
+const cellAt = (id: string, picture: Picture, x: number, y: number) => {
+  const m = gridOf(id, picture);
+  return m.colours[Math.floor(y / m.cell) * m.cols + Math.floor(x / m.cell)];
+};
+const rgb = (c: string) =>
+  [1, 3, 5].map((i) => Number.parseInt(c.slice(i, i + 2), 16));
+const sameCell = (a: string, b: string) =>
+  rgb(a).every((v, i) => Math.abs(v - rgb(b)[i]) <= 3);
+const seatOf = (id: string, picture: Picture, key: string) => {
+  const [x, y] = (measured.cameras as any)[id][picture].projected[key];
+  return { x, y };
+};
+const offSeat = (box: Box, p: { x: number; y: number }) =>
+  Math.hypot(
+    Math.max(box.x - p.x, 0, p.x - box.x - box.width),
+    Math.max(box.y - p.y, 0, p.y - box.y - box.height),
+  );
+const overlaps = (a: Box, b: Box) =>
+  a.x < b.x + b.width &&
+  b.x < a.x + a.width &&
+  a.y < b.y + b.height &&
+  b.y < a.y + a.height;
 
-for (const id of ["creme", "nocturne", "rapport"]) {
-  const { props } = buildDirection(id, beat);
-  const { stage, cameras, colours } = props;
-  const shapes = props.shapes.map((s: any) => ({ ...s, rings: ringsOf(s.path) }));
-  const toMap = (camera: "overview" | "closeUp", sx: number, sy: number) => ({
-    x: cameras[camera].x + (sx / stage.width) * cameras[camera].w,
-    y: cameras[camera].y + (sy / stage.height) * cameras[camera].h,
+for (const id of IDS) {
+  const { props, layout } = buildDirection(id, beat);
+  const { stage } = props;
+  const pictureOf = (n: any): Picture =>
+    n.camera === "closeUp" ? "closeUp" : "whole";
+  const boxOf = (n: any): Box => ({
+    x: n.x,
+    y: n.y,
+    width: n.width,
+    height: n.height,
   });
-  const shapeUnder = (camera: "overview" | "closeUp", sx: number, sy: number) => {
-    const p = toMap(camera, sx, sy);
-    return shapes.find((s: any) => s.rings.some((r: number[][]) => insideRing(r, p.x, p.y))) ?? null;
-  };
-  const cellOf = (shape: any, state: string) => {
-    if (!shape) return colours.sea;
-    if (shape.classIndex === null) return shape.fill;
-    return state === "filtered" && !shape.kept ? colours.land : colours.classFills[shape.classIndex];
-  };
-  const gap = 0.25 * props.registers.axis.lead;
-  const touches = (a: any, b: any) => a.x < b.x + b.width + gap && b.x < a.x + a.width + gap && a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
+  const atlantic = () =>
+    cellAt(
+      id,
+      "whole",
+      ...(Object.values(seatOf(id, "whole", "atlantic")) as [number, number]),
+    );
+  const ring = props.mapPlan.layers.find((l: any) => l.id === "odd-ring").paint;
+  const ringPx = (zoom: number) =>
+    ring["circle-radius"][4] * 2 ** zoom + ring["circle-stroke-width"];
 
-  describe(`${id}'s map anatomy`, () => {
-    it("should set every map name in capitals, the seven in the feature weight and the rest in the area weight", () => {
+  describe(`${id}'s overlay on the measured map`, () => {
+    it("should set every label in capitals, Albania's in the feature weight and the rest in the area weight", () => {
       for (const n of props.names) {
         expect([n.key, n.text]).toEqual([n.key, n.text.toUpperCase()]);
-        const weight = props.registers[n.register].fontWeight;
-        expect([n.key, weight]).toEqual([n.key, n.role === "top" || n.role === "odd" ? 700 : props.registers.area.fontWeight]);
+        expect([n.key, props.registers[n.register].fontWeight]).toEqual([
+          n.key,
+          n.role === "odd" ? 700 : props.registers.area.fontWeight,
+        ]);
       }
     });
 
-    it("should set every name in an ink that reads on every cell its line crosses, in every state it is seen in", () => {
-      for (const n of props.names) {
-        const floor = n.role === "top" || n.role === "odd" ? 7 : 4.5;
-        const cy = n.y + n.height / 2;
-        const half = (0.9 * (n.width - n.halo)) / 2;
-        const points = n.role === "odd" ? [n.x + n.width / 2] : Array.from({ length: 9 }, (_, i) => n.x + n.width / 2 - half + (2 * half * i) / 8);
-        for (const px of points)
-          for (const state of SEEN[n.role]) {
-            const cell = cellOf(shapeUnder(n.camera, px, cy), state);
-            expect([n.key, Math.round(px), state, contrast(n.ink, cell) >= floor - 0.05]).toEqual([n.key, Math.round(px), state, true]);
-          }
-      }
-    });
-
-    it("should set every name but Albania's wholly inside its country, or lead it there from a seat outside its box", () => {
+    it("should set every label but Albania's in an ink that reads at 4.5:1 on every cell its text and its gauge cover", () => {
       for (const n of props.names.filter((x: any) => x.role !== "odd")) {
-        if (!n.leader) {
-          const own = shapes.find((s: any) => s.key === n.key.split(":").slice(1).join(":"));
-          const cy = n.y + n.height / 2;
-          const reach = (0.9 * (n.width - n.halo)) / 2;
-          const inside = [0, -reach / 2, reach / 2, -reach, reach].every((dx) => {
-            const p = toMap(n.camera, n.x + n.width / 2 + dx, cy);
-            return own.rings.some((r: number[][]) => insideRing(r, p.x, p.y));
+        const rects = [
+          {
+            x: n.x + n.textX,
+            y: n.y + n.textX,
+            width: n.textWidth,
+            height:
+              n.baseline +
+              (n.gauge
+                ? n.gauge.y - 0.3 * props.registers.axis.lead - n.baseline
+                : n.height - n.baseline - n.textX) -
+              n.textX,
+          },
+        ];
+        if (n.gauge)
+          rects.push({
+            x: n.x + n.gauge.x,
+            y: n.y + n.gauge.y,
+            width: n.gauge.width,
+            height: n.gauge.height,
           });
-          expect([n.key, inside]).toEqual([n.key, true]);
+        for (const c of rects.flatMap((r) => cellsUnder(id, pictureOf(n), r)))
+          expect([n.key, c, contrast(n.ink, c) >= 4.5]).toEqual([
+            n.key,
+            c,
+            true,
+          ]);
+      }
+    });
+
+    it("should set Albania's names at 7:1 on their halo, struck in the colour measured under the word's centre", () => {
+      for (const n of props.names.filter((x: any) => x.role === "odd")) {
+        expect([n.key, n.haloColour]).toEqual([
+          n.key,
+          cellAt(id, pictureOf(n), n.x + n.width / 2, n.y + n.height / 2),
+        ]);
+        expect([n.key, contrast(n.ink, n.haloColour) >= 7]).toEqual([
+          n.key,
+          true,
+        ]);
+      }
+    });
+
+    it("should seat every close-up label over its measured seat, or led to it from the seat within three of its heights, off Albania's seat, inside the frame", () => {
+      const albania = seatOf(id, "closeUp", "ALB");
+      const r = subjectRadiusPx(
+        beat.subjectRadius,
+        beat.mapSeats.ALB[1],
+        props.cameras.closeUp.camZoom,
+      );
+      const core = {
+        x: albania.x - r,
+        y: albania.y - r,
+        width: 2 * r,
+        height: 2 * r,
+      };
+      for (const n of props.names.filter((x: any) => x.camera === "closeUp")) {
+        const box = boxOf(n);
+        const seat = seatOf(id, "closeUp", n.key.split(":").slice(1).join(":"));
+        expect([
+          n.key,
+          box.x >= 0,
+          box.y >= 0,
+          box.x + box.width <= stage.width,
+          box.y + box.height <= stage.height,
+        ]).toEqual([n.key, true, true, true, true]);
+        if (n.role === "odd") {
+          expect([
+            n.key,
+            Math.abs(box.x + box.width / 2 - seat.x) < 1,
+            Math.abs(box.y + box.height / 2 - seat.y) < 1,
+          ]).toEqual([n.key, true, true]);
           continue;
         }
-        const outside = n.seat.x < n.x || n.seat.x > n.x + n.width || n.seat.y < n.y || n.seat.y > n.y + n.height;
-        expect([n.key, outside, n.leader.from]).toEqual([n.key, true, n.seat]);
-        const onBox = Math.abs(n.leader.to.x - Math.min(Math.max(n.seat.x, n.x), n.x + n.width)) < 1e-6 && Math.abs(n.leader.to.y - Math.min(Math.max(n.seat.y, n.y), n.y + n.height)) < 1e-6;
-        expect([n.key, onBox]).toEqual([n.key, true]);
+        expect([n.key, overlaps(box, core)]).toEqual([n.key, false]);
+        const off = offSeat(box, seat);
+        if (off === 0) expect([n.key, n.leader]).toEqual([n.key, null]);
+        else
+          expect([n.key, off <= LED_REACH * n.height, n.leader?.from]).toEqual([
+            n.key,
+            true,
+            seat,
+          ]);
       }
     });
 
-    it("should name the seas in open water, inside the margins, within two and a half leads of their centres, clear of every name and of the panel", () => {
-      expect(props.waters.length).toBeGreaterThanOrEqual(2);
-      const panel = { ...props.panel.at, width: props.panel.width, height: props.panel.height };
-      for (const w of props.waters) {
-        const declared = beat.copy.waters.find((d: any) => d.key === w.key);
-        const [ux, uy] = beat.geometry.project([declared.lon, declared.lat]);
-        const centre = toStage(cameras.overview, stage, { x: ux, y: uy });
-        const halo = props.halos.water;
-        const size = props.registers.water.fontSize;
-        const r = props.registers.water;
-        const band = measureTextBand(w.text, { fontSize: r.fontSize, fontWeight: r.fontWeight, fontFamily: r.fontFamily, fontStyle: "italic" });
-        const box = { x: w.x - halo / 2, y: w.y - band.ascent - halo / 2, width: w.width + halo, height: band.ascent + band.descent + halo };
-        expect([w.key, Math.hypot(w.x + w.width / 2 - centre.x, w.y - centre.y) <= 2.5 * props.registers.axis.lead + 1e-6]).toEqual([w.key, true]);
-        for (let i = 0; i <= 12; i++) expect([w.key, i, shapeUnder("overview", w.x + (w.width * i) / 12, w.y - size / 2)]).toEqual([w.key, i, null]);
-        for (const n of props.names.filter((x: any) => x.camera === "overview")) expect([w.key, n.key, touches(box, n)]).toEqual([w.key, n.key, false]);
-        expect([w.key, touches(box, panel)]).toEqual([w.key, false]);
-        expect([w.key, w.x >= props.layoutInset.x - 1e-6 && w.x + w.width <= stage.width - props.layoutInset.x + 1e-6]).toEqual([w.key, true]);
-      }
+    it("should set Albania's whole-map name beside its ring, clear of the ring, within one of its heights of it", () => {
+      const n = props.names.find((x: any) => x.key === "odd:ALB");
+      const seat = seatOf(id, "whole", "ALB");
+      const ringR = ringPx(props.cameras.whole.camZoom);
+      const off = offSeat(boxOf(n), seat);
+      expect([off > ringR, off <= ringR + n.height]).toEqual([true, true]);
     });
 
-    it("should seat the panel over none of the seven's land", () => {
-      const seven = shapes.filter((s: any) => s.kept);
-      const { at, width, height } = props.panel;
-      for (let sy = at.y; sy <= at.y + height; sy += 6)
-        for (let sx = at.x; sx <= at.x + width; sx += 6) {
-          const p = toMap("overview", sx, sy);
-          const hit = seven.find((s: any) => s.rings.some((r: number[][]) => insideRing(r, p.x, p.y)));
-          expect([sx, sy, hit?.key ?? null]).toEqual([sx, sy, null]);
-        }
+    it("should measure the Atlantic seat on the plan's own sea", () => {
+      expect(atlantic()).toBe(props.mapPlan.tints.water);
+      expect(props.colours.sea).toBe(atlantic());
     });
 
-    it("should set the source on one line of the final map inside the margins, clear of every name, sea name and the panel, its words over no studied country, in an ink that reads on sea and land", () => {
+    it("should set the credit on one line, inside the margins, clear of the panel and of Albania's name, over the sea", () => {
       const src = props.source;
-      const box = { x: src.at.x, y: src.at.y, width: src.width, height: src.height };
-      expect(src.lines.every((l: any) => l.x + l.width <= src.width && l.y <= src.height)).toBe(true);
-      expect([box.x >= props.layoutInset.x, box.y >= props.layoutInset.y, box.x + box.width <= stage.width - props.layoutInset.x, box.y + box.height <= stage.height - props.layoutInset.y]).toEqual([true, true, true, true]);
-      const panel = { ...props.panel.at, width: props.panel.width, height: props.panel.height };
-      for (const o of [...props.names.filter((n: any) => n.camera === "overview"), panel]) expect([o.key ?? "panel", touches(box, o)]).toEqual([o.key ?? "panel", false]);
-      for (const w of props.waters) expect([w.key, touches(box, { x: w.x, y: w.y - props.registers.water.fontSize, width: w.width, height: props.registers.water.fontSize })]).toEqual([w.key, false]);
-      for (const l of src.lines)
-        for (let i = 0; i <= 10; i++) expect([l.text, i, shapeUnder("overview", src.at.x + l.x + (l.width * i) / 10, src.at.y + l.y - props.registers.axis.fontSize / 3)?.studied ?? false]).toEqual([l.text, i, false]);
+      const box = {
+        x: src.at.x,
+        y: src.at.y,
+        width: src.width,
+        height: src.height,
+      };
       expect(src.lines.length).toBe(1);
-      for (const ground of [colours.sea, colours.land]) expect(contrast(colours.text.source, ground)).toBeGreaterThanOrEqual(4.5);
+      // MapTiler's attribution, required on every map drawn from its tiles.
+      expect(src.lines[0].text).toContain("© MapTiler © OpenStreetMap");
+      expect([
+        box.x >= layout.inset,
+        box.y >= layout.vInset,
+        box.x + box.width <= stage.width - layout.inset,
+        box.y + box.height <= stage.height - layout.vInset,
+      ]).toEqual([true, true, true, true]);
+      const panel = {
+        ...props.panel.at,
+        width: props.panel.width,
+        height: props.panel.height,
+      };
+      expect(overlaps(box, panel)).toBe(false);
+      expect(
+        overlaps(box, boxOf(props.names.find((x: any) => x.key === "odd:ALB"))),
+      ).toBe(false);
+      for (const c of cellsUnder(id, "whole", box))
+        expect([c, sameCell(c, atlantic())]).toEqual([c, true]);
+      expect(
+        contrast(props.colours.text.source, atlantic()),
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it("should seat the panel over at most 3 % land and none of the seven's, at the end of reveal and on the final map", () => {
+      const panel = {
+        ...props.panel.at,
+        width: props.panel.width,
+        height: props.panel.height,
+      };
+      const top = props.colours.classFills.at(-1);
+      const distance = (a: string, b: string) =>
+        Math.hypot(...rgb(a).map((v, i) => v - rgb(b)[i]));
+      for (const picture of ["whole", "wholeFiltered"] as const) {
+        const m = gridOf(id, picture);
+        const cells: string[] = [];
+        for (
+          let j = Math.floor(panel.y / m.cell);
+          j <= Math.floor((panel.y + panel.height) / m.cell);
+          j++
+        )
+          for (
+            let i = Math.floor(panel.x / m.cell);
+            i <= Math.floor((panel.x + panel.width) / m.cell);
+            i++
+          )
+            cells.push(m.colours[j * m.cols + i]);
+        const land =
+          cells.filter((c) => !sameCell(c, atlantic())).length / cells.length;
+        expect([picture, land <= PANEL_LAND]).toEqual([picture, true]);
+        expect([
+          picture,
+          cells.filter((c) => distance(c, top) < distance(c, atlantic())),
+        ]).toEqual([picture, []]);
+      }
+      for (const ink of [props.colours.text.counter, props.colours.text.key])
+        expect(contrast(ink, atlantic())).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it("should draw the key in the map's own class fills", () => {
+      const fills = props.mapPlan.layers
+        .filter((l: any) => /^class-\d+(-kept)?$/.test(l.id))
+        .map((l: any) => [Number(l.id.split("-")[1]), l.paint["fill-color"]]);
+      for (const [klass, fill] of fills)
+        expect([klass, props.colours.classFills[klass]]).toEqual([klass, fill]);
+      expect(props.colours.missingFill).toBe(
+        props.mapPlan.layers.find((l: any) => l.id === "missing").paint[
+          "fill-color"
+        ],
+      );
     });
 
     it("should write no sentence on the map — no callout, no standfirst", () => {
       expect((props as any).callout).toBeUndefined();
       expect((props.titleCard as any).standfirst).toBeUndefined();
-      for (const n of props.names) expect([n.key, n.text.split(/\s+/).length <= 6]).toEqual([n.key, true]);
+      for (const n of props.names)
+        expect([n.key, n.text.split(/\s+/).length <= 6]).toEqual([n.key, true]);
+    });
+
+    it("should refuse a plan that changed since it was measured", () => {
+      const stale = {
+        ...measured,
+        planDigest: { ...measured.planDigest, [id]: "stale" },
+      };
+      expect(() => buildDirection(id, beat, { measured: stale })).toThrow(
+        /the plan changed since it was measured — run measure.mjs again/,
+      );
     });
   });
 }
+
+describe("the measurement", () => {
+  const T = buildDirection("creme", beat).props.timing;
+  const { props } = buildDirection("creme", beat);
+
+  it("should have been taken on the frames its words are seen at: the final map, the end of reveal, the settled close-up", () => {
+    expect(measured.states).toEqual({
+      whole: mapStateAt(props, T.total - 1),
+      wholeFiltered: mapStateAt(props, endOf(T.reveal) - 1),
+      closeUp: mapStateAt(props, endOf(T.subject) - 1),
+    });
+  });
+
+  it("should carry every tile loaded, every seat projected, and no key", () => {
+    for (const id of IDS)
+      for (const picture of ["whole", "wholeFiltered", "closeUp"] as const) {
+        const m = (measured.cameras as any)[id][picture];
+        expect([id, picture, m.tilesLoaded]).toEqual([id, picture, true]);
+        expect(Object.keys(m.projected).sort()).toEqual(
+          Object.keys(beat.mapSeats).sort(),
+        );
+      }
+    expect(JSON.stringify(measured)).not.toContain("key=");
+  });
+
+  it("should find Kosovo as Albania's one ring-neighbour with no row in the data, and seat it inside Kosovo", () => {
+    expect(unmeasuredNeighboursOf(beat.subject, "ALB")).toEqual([
+      { key: "-99:Kosovo", name: "Kosovo" },
+    ]);
+    const kosovo = beat.subject.geo.features.find(
+      (f: any) => f.properties.name === "Kosovo",
+    );
+    const [x, y] = beat.mapSeats["-99:Kosovo"];
+    const inside = kosovo.geometry.coordinates.some((poly: number[][][]) => {
+      const ring = poly[0];
+      let hit = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++)
+        if (
+          ring[i][1] > y !== ring[j][1] > y &&
+          x <
+            ((ring[j][0] - ring[i][0]) * (y - ring[i][1])) /
+              (ring[j][1] - ring[i][1]) +
+              ring[i][0]
+        )
+          hit = !hit;
+      return hit;
+    });
+    expect(inside).toBe(true);
+  });
+});

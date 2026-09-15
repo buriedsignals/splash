@@ -90,6 +90,18 @@ export function mapPlanFor({ direction, registers, subject, cameras, iso2Of, wor
     paint: { "line-color": grid, "line-width": 0.5 * (direction.stroke?.hairline ?? 0.6), "line-opacity": 0 },
     bindings: { "line-opacity": arrived },
   };
-  const at = plan.layers.findIndex((l) => l.id === "borders");
-  return { ...plan, layers: [...plan.layers.slice(0, at), regions, ...plan.layers.slice(at)], camera: { view: viewOf(cameras.whole) } };
+  // THE FLOOR RISES CLASS BY CLASS (the video's gesture, BRIEF.md): the cursor travels the key borne by borne and
+  // each class steps back to bare land once the cursor has passed its upper borne, the lowest first — as the key's
+  // swatches do (`scene.mjs`). The pilot's plan steps every class under the floor back together, over one scroll.
+  const cursor = ["*", { $state: "filter" }, classCount - 1];
+  const floorRises = (layer) => {
+    const match = /^class-(\d+)(-small)?$/.exec(layer.id);
+    if (!match) return layer;
+    const reached = layer.bindings["fill-opacity"][1];
+    const passed = ["max", 0, ["min", 1, ["-", cursor, Number(match[1])]]];
+    return { ...layer, bindings: { "fill-opacity": ["*", reached, ["-", 1, passed]] } };
+  };
+  const layers = plan.layers.map(floorRises);
+  const at = layers.findIndex((l) => l.id === "borders");
+  return { ...plan, layers: [...layers.slice(0, at), regions, ...layers.slice(at)], camera: { view: viewOf(cameras.whole) } };
 }

@@ -1,22 +1,19 @@
 // THE PICTURE AT ONE FRAME — pure arithmetic, run by the composition in Chrome and by the tests in Bun.
 //
-// This is `choropleth-drive.mjs`'s painting, re-expressed as a function of the frame. The drive reads the
-// DOM (`querySelector`, `getScreenCTM`, `getBoundingClientRect`) because a scroll can resize the page under
-// it; a video frame has one size, measured in Bun, so the same rules become numbers:
+// Two pictures are drawn at every frame, one over the other:
 //
-//   - THE ZOOM IS THE CAMERA: a viewBox travelling from the whole frame onto the close-up, both fitted to
-//     the stage with the scrolly's `fitViewBox` so the map runs edge to edge, eased with its `ease`. The
-//     travel keeps the one point that sits at the same pixel in both views where it is, and moves the
-//     scale geometrically, so the camera closes in rather than panning and zooming side by side.
-//   - FILL = CLASS × REVEAL × FILTER: a class arriving on bare land, lowest first; under the floor, a
-//     country steps back to bare land while the seven keep their ink.
-//   - NAMES AT THEIR SEATS, KEPT APART: every pill is placed once per camera, in Bun, for the whole set that
-//     camera ever shows (`placePills`), so a name never moves when another arrives. A name is only shown
-//     once its camera has settled.
+//   - THE LIVE MAP (`mapStateAt`): the scrolly pilot's map plan driven in numbers, as the scroll drives it — a
+//     camera in Web Mercator units travelling from the whole map onto the close-up, the zoom linear in the eased
+//     travel (it is already logarithmic), and the fields the plan's paints are bound to: the classes arriving,
+//     the floor rising, the six named, Albania ringed.
+//   - THE OVERLAY (`sceneAt`): what stays SVG — the title card, the panel with its count and cursor, the
+//     close-up's labels and gauges, Albania's name beside its ring, the credit. Every label is placed once per
+//     fixed camera, in Bun, from the measured map (`build.mjs`), so a name never moves when another arrives;
+//     a name is only shown once its camera has settled.
 //
 // Browser-safe: no Node module, no `#shared/chart-beat` import (those read the file system).
 
-import { clamp01, ease, fitViewBox } from "../../skills/scrolly/assets/reveal.mjs";
+import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 
 /** The share of its own event each field changes over. A field changing in an event not named here
@@ -35,7 +32,8 @@ export const WINDOWS = Object.freeze({
 /** When the names of each camera may be seen: the overview's leave before the camera departs and return
  *  after it has come back; the close-up's arrive after it has settled and leave before it departs. */
 export const GATES = Object.freeze({
-  overview: { leaves: ["subject", 0, 0.08], returns: ["conclusion", 0.45, 0.57] },
+  // The overview's names are gone before the camera departs, not as it departs: the travel starts at 0.06.
+  overview: { leaves: ["subject", 0, 0.06], returns: ["conclusion", 0.45, 0.57] },
   closeUp: { arrives: ["subject", 0.4, 0.48], leaves: ["conclusion", 0, 0.08] },
 });
 
@@ -73,33 +71,39 @@ export function gatesAt(frame, timing) {
 
 // ── the camera ───────────────────────────────────────────────────────────────────────────────────────
 
-const NO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 };
-
-/** The whole frame, fitted to the stage and widened to it (the scrolly's own call). */
-export function overviewViewBox(frame, stage) {
-  return fitViewBox({ x: 0, y: 0, w: frame.width, h: frame.height }, stage, NO_INSETS);
+/** The camera between the whole map (t = 0) and the close-up (t = 1): every field linear in t — the zoom is
+ *  already logarithmic, the centre is in Web Mercator units, the plane MapLibre moves in (the pilot's rule). */
+export function cameraAt(cameras, t) {
+  const { whole, closeUp } = cameras;
+  if (t <= 0) return { ...whole };
+  if (t >= 1) return { ...closeUp };
+  const at = (k) => whole[k] + (closeUp[k] - whole[k]) * t;
+  return { camX: at("camX"), camY: at("camY"), camZoom: at("camZoom"), camBearing: 0, camPitch: 0 };
 }
 
 /**
- * THE CLOSE-UP, CENTRED ON ALBANIA — the scrolly's zoom box (`render-directions-scrolly.mjs`: centred on the
- * odd one's seat, both axes, reaching every neighbour's seat), sized for the video's stage. The scrolly
- * padded that reach by 2.2 for 12 px pills beside a card; here the scale is the largest at which every
- * close-up name's seat, with its pill around it and `gap` of air, stays inside the stage — so the close-up
- * is as close as the names allow, and Albania stays at the centre.
+ * THE LIVE MAP AT `frame`, IN NUMBERS: the camera, and every field the plan's paints are bound to (`map-plan.mjs`,
+ * `MAP_FIELDS`). `classes` and `filter` travel linearly, as the key's swatches and cursor do; `zoom` is the eased
+ * travel the camera follows; the six's names and Albania's ring are gated like the overlay's names, so the map
+ * names nothing while its camera moves.
  */
-export function closeUpViewBox(stage, centre, names, gap) {
-  let scale = Infinity;
-  for (const n of names) {
-    const dx = Math.abs(n.seat.x - centre.x);
-    const dy = Math.abs(n.seat.y - centre.y);
-    if (dx > 0) scale = Math.min(scale, (stage.width / 2 - n.width / 2 - gap) / dx);
-    if (dy > 0) scale = Math.min(scale, (stage.height / 2 - n.height / 2 - gap) / dy);
-  }
-  if (!(scale > 0 && Number.isFinite(scale))) throw new Error(`no close-up scale keeps every name inside a ${stage.width}×${stage.height} stage`);
-  const w = stage.width / scale;
-  const h = stage.height / scale;
-  return fitViewBox({ x: centre.x - w / 2, y: centre.y - h / 2, w, h }, stage, NO_INSETS);
+export function mapStateAt(props, frame) {
+  const { states, timing } = props;
+  const at = (field) => fieldAt(field, frame, states, timing);
+  const gates = gatesAt(frame, timing);
+  const zoom = at("zoom");
+  return {
+    ...cameraAt(props.cameras, zoom),
+    classes: at("classes"),
+    filter: at("filter"),
+    top: clamp01(at("top") * gates.overview),
+    zoom,
+    odd: clamp01(at("odd") * Math.max(gates.overview, gates.closeUp)),
+  };
 }
+
+// The two below are no longer this beat's camera: the locator video (`proof/video-locator-zaporizhzhia`) still
+// draws an SVG map and reads them from here.
 
 /** Between two viewBoxes of the stage's aspect: the scale moves geometrically, about their fixed point. */
 export function viewBoxAt(from, to, t) {
@@ -178,44 +182,23 @@ export function placePills(items, stage, gap, { obstacles = [], cover = () => 0,
   return out;
 }
 
-// ── colour ───────────────────────────────────────────────────────────────────────────────────────────
-
-/** `a` carried `t` of the way to `b`, channel by channel — the drive's own blend. */
-export function blend(a, b, t) {
-  const pa = [1, 3, 5].map((i) => Number.parseInt(a.slice(i, i + 2), 16));
-  const pb = [1, 3, 5].map((i) => Number.parseInt(b.slice(i, i + 2), 16));
-  return `#${pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("")}`;
-}
-
-// ── the frame ────────────────────────────────────────────────────────────────────────────────────────
+// ── the overlay ──────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Everything the composition draws that moves, at `frame`.
+ * Everything the SVG overlay draws that moves, at `frame`.
  *
- * @param {{ states: Record<string, number>[], timing: any, stage: {width:number,height:number},
- *   cameras: { overview: any, closeUp: any }, shapes: Array<{ key: string, classIndex: number|null, kept: boolean }>,
- *   colours: { land: string, classFills: string[], missingFill: string },
- *   names: Array<{ key: string, role: "top"|"odd"|"neighbour"|"context", camera: "overview"|"closeUp", gauge: { share: number } | null }>,
- *   waters: Array<{ key: string }> }} props
+ * @param {{ states: Record<string, number>[], timing: any, colours: { classFills: string[] },
+ *   names: Array<{ key: string, role: "odd"|"neighbour", camera: "overview"|"closeUp", gauge: { share: number } | null }> }} props
  */
 export function sceneAt(props, frame) {
-  const { states, timing, cameras, colours } = props;
+  const { states, timing, colours } = props;
   const at = (field) => fieldAt(field, frame, states, timing);
   const classes = at("classes");
   const filter = at("filter");
   const gates = gatesAt(frame, timing);
   const n = colours.classFills.length;
 
-  const fills = {};
-  for (const shape of props.shapes) {
-    if (shape.classIndex === null) continue;
-    const reached = ease(clamp01(classes * n - shape.classIndex));
-    // THE FLOOR: a class steps back once the cursor has passed its upper borne, the lowest class first.
-    const kept = shape.kept ? 1 : 1 - ease(clamp01(filter * (n - 1) - shape.classIndex));
-    fills[shape.key] = blend(colours.land, colours.classFills[shape.classIndex], reached * kept);
-  }
-
-  const role = { top: at("top"), odd: at("odd"), neighbour: at("neighbours"), context: at("context") };
+  const role = { odd: at("odd"), neighbour: at("neighbours") };
   const names = {};
   for (const name of props.names) names[name.key] = clamp01(role[name.role] * gates[name.camera]);
   const count = at("count");
@@ -232,11 +215,7 @@ export function sceneAt(props, frame) {
     counter: { step: Math.min(n - 1, Math.floor(cursor + 1e-9)), opacity: clamp01(count) },
     cursor: { at: cursor, opacity: clamp01(count) },
     countUp,
-    viewBox: viewBoxAt(cameras.overview, cameras.closeUp, at("zoom")),
-    fills,
     names,
-    waters: gates.overview,
-    ring: clamp01(role.odd * Math.max(gates.overview, gates.closeUp)),
     /** Each close-up gauge's fill, as a share of its width: its value, counting up with its words. */
     gauges: Object.fromEntries(props.names.filter((n) => n.gauge).map((n) => [n.key, n.gauge.share * (countUp[n.role] ?? 1)])),
     gates,

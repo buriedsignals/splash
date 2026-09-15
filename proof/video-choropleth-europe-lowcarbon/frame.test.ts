@@ -7,9 +7,9 @@ import { buildDirection, loadBeat } from "./build.mjs";
 import { ChoroplethFrame } from "./ChoroplethFrame.tsx";
 
 /**
- * The markup the composition draws, rendered in Bun at the last frame of every event, held to the landscape
- * type floor — map names included, since every word is an SVG `<text>` — and every word carrying the width
- * Bun measured for the width agreement.
+ * The overlay the composition draws over the live map, rendered in Bun at the last frame of every event with no map
+ * under it, held to the landscape type floor, and every word carrying the width Bun measured for the width
+ * agreement. The map's own words are held to the floor on the plan (`map-plan.test.ts`).
  */
 
 const beat = loadBeat();
@@ -17,7 +17,7 @@ const beat = loadBeat();
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat);
   const markupAt = (p: any, frame: number) =>
-    renderToStaticMarkup(createElement(ChoroplethFrame, { ...p, at: frame }));
+    renderToStaticMarkup(createElement(ChoroplethFrame, { ...p, at: frame, liveMap: () => null }));
 
   describe(`${id}'s drawn markup`, () => {
     for (const event of EVENT_ORDER)
@@ -25,7 +25,9 @@ for (const id of ["creme", "nocturne", "rapport"]) {
         const svg = markupAt(props, endOf(props.timing[event]) - 1);
         expect(() => assertTypeFloor(svg, "landscape")).not.toThrow();
         const texts = [...svg.matchAll(/<text\b([^>]*)>/g)].map((m) => m[1]);
-        expect(texts.length).toBeGreaterThan(20);
+        // Every word the overlay carries is in the markup: the title card, the count, the key, the labels, the credit.
+        const words = 1 + props.titleCard.title.length + 1 + props.panel.bornes.length + 1 + props.names.length + props.source.lines.length;
+        expect(texts.length).toBe(words);
         expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual(
           [],
         );

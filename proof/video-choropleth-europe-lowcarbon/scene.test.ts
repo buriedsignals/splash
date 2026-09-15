@@ -1,24 +1,24 @@
 import { describe, expect, it } from "bun:test";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
+import { bindState } from "#shared/map-beat/scrolly.mjs";
 import { buildDirection, loadBeat } from "./build.mjs";
-import { COUNT_UP, sceneAt, toStage, WINDOWS } from "./scene.mjs";
+import { cameraAt, COUNT_UP, mapStateAt, sceneAt } from "./scene.mjs";
 
 /**
- * The choreography of BRIEF.md, frame by frame, on the props each direction is actually rendered from: who
- * is named at the end of every event, that nothing is named while the camera moves, that every shown name
- * is inside the stage, clear of every other and against its own country, that Albania is the centre of its
- * close-up, and that the hold does not move.
+ * The choreography of BRIEF.md, frame by frame, on the props each direction is actually rendered from: the live
+ * map's camera and bound paints (`mapStateAt`, read through the plan's own bindings), the SVG overlay's words
+ * (`sceneAt`), who is named at the end of every event, that nothing is named while the camera moves, and that the
+ * hold does not move.
  */
 
 const beat = loadBeat();
 const DIRECTIONS = ["creme", "nocturne", "rapport"];
-const SIX = ["ISL", "SWE", "NOR", "FIN", "FRA", "CHE"];
-/** The three lowest shares, named as the still names them. */
-const LOWEST = ["context:CYP", "context:MLT", "context:MDA"];
+/** The overlay's words: the close-up's labels, and Albania's name beside its ring once the map is whole again. The
+ *  six are the map's own symbol layer (`top`), asserted apart. */
 const EXPECTED_NAMES: Record<string, string[]> = {
   establish: [],
-  reference: LOWEST,
-  reveal: SIX.map((iso) => `top:${iso}`),
+  reference: [],
+  reveal: [],
   subject: [
     "close:ALB",
     "neighbour:MNE",
@@ -26,8 +26,17 @@ const EXPECTED_NAMES: Record<string, string[]> = {
     "neighbour:GRC",
     "neighbour:-99:Kosovo",
   ],
-  conclusion: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", ...LOWEST],
-  hold: [...SIX.map((iso) => `top:${iso}`), "odd:ALB", ...LOWEST],
+  conclusion: ["odd:ALB"],
+  hold: ["odd:ALB"],
+};
+/** When the map's six names stand: once the floor has landed, and again once the camera is back. */
+const SIX_NAMED: Record<string, boolean> = {
+  establish: false,
+  reference: false,
+  reveal: true,
+  subject: false,
+  conclusion: true,
+  hold: true,
 };
 const shown = (scene: any) =>
   Object.entries(scene.names)
@@ -35,11 +44,51 @@ const shown = (scene: any) =>
     .map(([k]) => k)
     .sort();
 
+/** A bound paint, evaluated: the plan's binding with the frame's numbers put in, run through the few operators
+ *  its opacity expressions use. An operator not named here throws rather than guessing. */
+function evaluate(e: any): any {
+  if (typeof e === "number" || typeof e === "boolean") return e;
+  const [op, ...a] = e;
+  const v = a.map(evaluate);
+  switch (op) {
+    case "max":
+      return Math.max(...v);
+    case "min":
+      return Math.min(...v);
+    case "+":
+      return v.reduce((s: number, x: number) => s + x, 0);
+    case "*":
+      return v.reduce((s: number, x: number) => s * x, 1);
+    case "-":
+      return v.length === 1 ? -v[0] : v[0] - v[1];
+    case "/":
+      return v[0] / v[1];
+    case "^":
+      return v[0] ** v[1];
+    case "<":
+      return v[0] < v[1];
+    case "case":
+      return v[0] ? v[1] : v[2];
+  }
+  throw new Error(`no evaluator for ${op}`);
+}
+const opacityOf = (layer: any, state: any) =>
+  evaluate(bindState(layer.bindings["fill-opacity"], state));
+
 for (const id of DIRECTIONS) {
   const { props } = buildDirection(id, beat);
   const T = props.timing;
   const last = (event: string) => endOf(T[event]) - 1;
   const gap = 0.25 * props.registers.axis.lead;
+  /** One fill layer per class and filter group (`plan.mjs`); Malta's level-1 twin repeats its group's members. */
+  const classLayers = props.mapPlan.layers
+    .filter((l: any) => /^class-\d+(-kept)?$/.test(l.id))
+    .map((l: any) => ({
+      layer: l,
+      klass: Number(l.id.split("-")[1]),
+      kept: l.id.endsWith("-kept"),
+      members: l.filter[2][2],
+    }));
 
   describe(`${id}, frame by frame`, () => {
     it("should end on the map — no card over it at the last frame of the hold", () => {
@@ -53,13 +102,12 @@ for (const id of DIRECTIONS) {
     });
 
     it("should draw Europe at frame 0 with no class, no name and no furniture yet", () => {
-      const scene = sceneAt(props, 0);
-      expect(props.shapes.length).toBeGreaterThan(40);
-      expect(
-        Object.values(scene.fills).every((f) => f === props.colours.land),
-      ).toBe(true);
-      expect(shown(scene)).toEqual([]);
-      expect(scene.furniture).toBe(0);
+      const state = mapStateAt(props, 0);
+      expect([state.classes, state.top, state.odd]).toEqual([0, 0, 0]);
+      for (const { layer } of classLayers)
+        expect([layer.id, opacityOf(layer, state)]).toEqual([layer.id, 0]);
+      expect(shown(sceneAt(props, 0))).toEqual([]);
+      expect(sceneAt(props, 0).furniture).toBe(0);
     });
 
     for (const event of EVENT_ORDER)
@@ -67,28 +115,22 @@ for (const id of DIRECTIONS) {
         expect(shown(sceneAt(props, last(event)))).toEqual(
           [...EXPECTED_NAMES[event]].sort(),
         );
+        expect([event, mapStateAt(props, last(event)).top > 0.01]).toEqual([
+          event,
+          SIX_NAMED[event],
+        ]);
       });
 
-    it("should name nothing while the camera travels, either way", () => {
-      for (const event of ["subject", "conclusion"] as const) {
-        const [a, b] = (WINDOWS as any)[event].zoom;
-        for (let t = 0.05; t < 1; t += 0.1) {
-          const frame = Math.round(
-            T[event].start + T[event].duration * (a + (b - a) * t),
-          );
-          const scene = sceneAt(props, frame);
-          if (
-            scene.viewBox.w === props.cameras.overview.w ||
-            scene.viewBox.w === props.cameras.closeUp.w
-          )
-            continue;
-          expect([frame, shown(scene)]).toEqual([frame, []]);
-        }
+    it("should name nothing over the map while the camera travels, either way", () => {
+      for (let f = T.subject.start; f < T.total; f++) {
+        const s = mapStateAt(props, f);
+        if (s.zoom > 1e-9 && s.zoom < 1 - 1e-9)
+          expect([f, shown(sceneAt(props, f))]).toEqual([f, []]);
       }
     });
 
     for (const camera of ["overview", "closeUp"] as const)
-      it(`should keep every ${camera} name inside the stage, clear of every other, and against its own country or led to it`, () => {
+      it(`should keep every ${camera} name inside the stage and clear of every other`, () => {
         const names = props.names.filter((n: any) => n.camera === camera);
         for (const n of names) {
           expect(n.x).toBeGreaterThanOrEqual(gap - 1e-6);
@@ -99,16 +141,6 @@ for (const id of DIRECTIONS) {
           expect(n.y + n.height).toBeLessThanOrEqual(
             props.stage.height - gap + 1e-6,
           );
-          const dx = Math.max(n.x - n.seat.x, 0, n.seat.x - n.x - n.width);
-          const dy = Math.max(n.y - n.seat.y, 0, n.seat.y - n.y - n.height);
-          // Albania's overview name steps beside its ring, so it may stand the ring's radius further off; a name
-          // set in the sea beside a small country is led to it, and may stand three of its heights off.
-          const slack = camera === "overview" && n.role === "odd" ? (props.ring.r / props.cameras.overview.w) * props.stage.width + props.strokes.ring : 0;
-          const reach = n.leader && n.role !== "odd" ? 3 * n.height : n.height;
-          expect([n.key, Math.hypot(dx, dy) <= reach + slack + 1e-6]).toEqual([
-            n.key,
-            true,
-          ]);
         }
         for (let i = 0; i < names.length; i++)
           for (let j = i + 1; j < names.length; j++) {
@@ -123,52 +155,6 @@ for (const id of DIRECTIONS) {
           }
       });
 
-    it("should keep Albania's ring clear of every name at the overview", () => {
-      const at = toStage(props.cameras.overview, props.stage, {
-        x: props.ring.cx,
-        y: props.ring.cy,
-      });
-      const r = (props.ring.r / props.cameras.overview.w) * props.stage.width;
-      for (const n of props.names.filter((n: any) => n.camera === "overview")) {
-        const dx = Math.max(n.x - at.x, 0, at.x - n.x - n.width);
-        const dy = Math.max(n.y - at.y, 0, at.y - n.y - n.height);
-        expect([n.key, Math.hypot(dx, dy) > r]).toEqual([n.key, true]);
-      }
-    });
-
-    it("should keep every other close-up name off Albania's box at the end of subject", () => {
-      const scene = sceneAt(props, last("subject"));
-      const a = toStage(scene.viewBox, props.stage, { x: props.subjectBox.x, y: props.subjectBox.y });
-      const b = toStage(scene.viewBox, props.stage, { x: props.subjectBox.x + props.subjectBox.w, y: props.subjectBox.y + props.subjectBox.h });
-      for (const n of props.names.filter((n: any) => scene.names[n.key] > 0.01 && n.key !== "close:ALB")) {
-        const clear = n.x + n.width <= a.x || b.x <= n.x || n.y + n.height <= a.y || b.y <= n.y;
-        expect([n.key, clear]).toEqual([n.key, true]);
-      }
-    });
-
-    it("should frame the close-up on what it shows — Albania's ring and its neighbours' names, centred on their extent and wholly in frame", () => {
-      const scene = sceneAt(props, last("subject"));
-      const shown = props.names.filter((n: any) => n.camera === "closeUp");
-      const r = props.ring.r;
-      const perPx = scene.viewBox.w / props.stage.width;
-      const seatOf = (n: any) => props.closeUpSeats[n.key];
-      const xs = [props.ring.cx - r, props.ring.cx + r, ...shown.flatMap((n: any) => [seatOf(n).x - (n.width / 2) * perPx, seatOf(n).x + (n.width / 2) * perPx])];
-      const ys = [props.ring.cy - r, props.ring.cy + r, ...shown.flatMap((n: any) => [seatOf(n).y - (n.height / 2) * perPx, seatOf(n).y + (n.height / 2) * perPx])];
-      const a = toStage(scene.viewBox, props.stage, { x: Math.min(...xs), y: Math.min(...ys) });
-      const b = toStage(scene.viewBox, props.stage, { x: Math.max(...xs), y: Math.max(...ys) });
-      // centred on their extent on both axes…
-      expect(Math.abs((a.x + b.x) / 2 - props.stage.width / 2)).toBeLessThan(2);
-      expect(Math.abs((a.y + b.y) / 2 - props.stage.height / 2)).toBeLessThan(2);
-      // …and every name kept inside the stage (placement test above) with Albania wholly in frame.
-      expect([a.x > 0, a.y > 0, b.x < props.stage.width, b.y < props.stage.height]).toEqual([true, true, true, true]);
-    });
-
-    it("should pull back to exactly the establish camera", () => {
-      expect(sceneAt(props, last("conclusion")).viewBox).toEqual(
-        sceneAt(props, last("establish")).viewBox,
-      );
-    });
-
     it("should reveal the classes in value order — a lower class is never behind a higher one", () => {
       for (
         let frame = T.reference.start;
@@ -181,34 +167,61 @@ for (const id of DIRECTIONS) {
       }
     });
 
-    it("should fill the map's classes in value order — no country of a higher class takes ink before every lower class is full", () => {
-      const byClass = (i: number) => props.shapes.filter((s: any) => s.classIndex === i);
-      const n = props.colours.classFills.length;
-      for (let frame = T.reference.start; frame <= endOf(T.reference); frame += 2) {
-        const { fills } = sceneAt(props, frame);
-        for (let i = 1; i < n; i++) {
-          const started = byClass(i).some((s: any) => fills[s.key] !== props.colours.land);
-          if (!started) continue;
-          const lowerFull = byClass(i - 1).every((s: any) => fills[s.key] === props.colours.classFills[i - 1]);
-          expect([frame, i, lowerFull]).toEqual([frame, i, true]);
+    it("should fill the map's classes in value order — no layer of a higher class takes ink before every lower class is full", () => {
+      for (
+        let frame = T.reference.start;
+        frame <= endOf(T.reference);
+        frame += 2
+      ) {
+        const state = mapStateAt(props, frame);
+        for (const { layer, klass } of classLayers) {
+          if (opacityOf(layer, state) <= 0) continue;
+          const lowerFull = classLayers
+            .filter((c: any) => c.klass < klass)
+            .every((c: any) => opacityOf(c.layer, state) >= 1);
+          expect([frame, layer.id, lowerFull]).toEqual([frame, layer.id, true]);
         }
       }
     });
 
     it("should step the counter down the floor — 40, 32, 26, 20, 12, then 7 — the count alone, and keep it to the last frame", () => {
-      expect(props.panel.counter.map((l: any) => l.text)).toEqual(["40 pays", "32 pays", "26 pays", "20 pays", "12 pays", "7 pays"]);
+      expect(props.panel.counter.map((l: any) => l.text)).toEqual([
+        "40 pays",
+        "32 pays",
+        "26 pays",
+        "20 pays",
+        "12 pays",
+        "7 pays",
+      ]);
       const steps = new Set<number>();
-      for (let f = T.reveal.start; f <= last("reveal"); f++) steps.add(sceneAt(props, f).counter.step);
+      for (let f = T.reveal.start; f <= last("reveal"); f++)
+        steps.add(sceneAt(props, f).counter.step);
       expect([...steps].sort()).toEqual([0, 1, 2, 3, 4, 5]);
-      expect(sceneAt(props, T.total - 1).counter).toEqual({ step: 5, opacity: 1 });
+      expect(sceneAt(props, T.total - 1).counter).toEqual({
+        step: 5,
+        opacity: 1,
+      });
     });
 
-    it("should step each class back only once the floor's cursor has passed its borne, the lowest class first", () => {
+    it("should step each class of the map back only once the floor's cursor has passed its borne, the lowest class first", () => {
       for (let f = T.reveal.start; f <= last("reveal"); f += 2) {
         const scene = sceneAt(props, f);
-        for (const s of props.shapes.filter((x: any) => x.classIndex !== null && !x.kept)) {
-          if (scene.cursor.at < s.classIndex) expect([f, s.key, scene.fills[s.key]]).toEqual([f, s.key, props.colours.classFills[s.classIndex]]);
-          if (scene.cursor.at >= s.classIndex + 1) expect([f, s.key, scene.fills[s.key]]).toEqual([f, s.key, props.colours.land]);
+        const state = mapStateAt(props, f);
+        for (const { layer, klass } of classLayers.filter(
+          (c: any) => !c.kept,
+        )) {
+          if (scene.cursor.at < klass)
+            expect([f, layer.id, opacityOf(layer, state)]).toEqual([
+              f,
+              layer.id,
+              1,
+            ]);
+          if (scene.cursor.at >= klass + 1)
+            expect([f, layer.id, opacityOf(layer, state)]).toEqual([
+              f,
+              layer.id,
+              0,
+            ]);
         }
       }
     });
@@ -217,7 +230,8 @@ for (const id of DIRECTIONS) {
       const settled = sceneAt(props, last("subject"));
       expect(settled.countUp).toEqual({ odd: 1, neighbour: 1 });
       const [, a, b] = COUNT_UP.neighbour;
-      const early = T.subject.start + Math.round(T.subject.duration * (a + b) / 2);
+      const early =
+        T.subject.start + Math.round((T.subject.duration * (a + b)) / 2);
       const mid = sceneAt(props, early).countUp;
       expect(mid.neighbour).toBeGreaterThan(0);
       expect(mid.neighbour).toBeLessThan(1);
@@ -225,7 +239,12 @@ for (const id of DIRECTIONS) {
 
     it("should give every measured close-up share a gauge on one scale, the floor notched on it, counting up with its share", () => {
       const gauged = props.names.filter((n: any) => n.gauge);
-      expect(gauged.map((n: any) => n.key).sort()).toEqual(["close:ALB", "neighbour:GRC", "neighbour:MKD", "neighbour:MNE"]);
+      expect(gauged.map((n: any) => n.key).sort()).toEqual([
+        "close:ALB",
+        "neighbour:GRC",
+        "neighbour:MKD",
+        "neighbour:MNE",
+      ]);
       const width = gauged[0].gauge.width;
       for (const n of gauged) {
         expect(n.gauge.width).toBe(width);
@@ -236,37 +255,100 @@ for (const id of DIRECTIONS) {
         expect(n.gauge.y).toBeGreaterThan(n.baseline);
         expect(n.gauge.y + n.gauge.height).toBeLessThanOrEqual(n.height + 1e-6);
       }
-      const share = (iso: string) => beat.subject.value.get(iso).lowCarbon / 100;
+      const share = (iso: string) =>
+        beat.subject.value.get(iso).lowCarbon / 100;
       const settled = sceneAt(props, last("subject"));
-      for (const n of gauged) expect(settled.gauges[n.key]).toBeCloseTo(share(n.key.split(":")[1]), 9);
-      const passing = gauged.filter((n: any) => settled.gauges[n.key] > n.gauge.notch).map((n: any) => n.key);
+      for (const n of gauged)
+        expect(settled.gauges[n.key]).toBeCloseTo(
+          share(n.key.split(":")[1]),
+          9,
+        );
+      const passing = gauged
+        .filter((n: any) => settled.gauges[n.key] > n.gauge.notch)
+        .map((n: any) => n.key);
       expect(passing).toEqual(["close:ALB"]);
       const [, a, b] = COUNT_UP.neighbour;
-      const mid = sceneAt(props, T.subject.start + Math.round((T.subject.duration * (a + b)) / 2));
-      expect(mid.gauges["neighbour:MNE"]).toBeCloseTo(share("MNE") * mid.countUp.neighbour, 9);
+      const mid = sceneAt(
+        props,
+        T.subject.start + Math.round((T.subject.duration * (a + b)) / 2),
+      );
+      expect(mid.gauges["neighbour:MNE"]).toBeCloseTo(
+        share("MNE") * mid.countUp.neighbour,
+        9,
+      );
       expect(sceneAt(props, T.subject.start).gauges["neighbour:MNE"]).toBe(0);
     });
 
     it("should step the 33 back and keep the seven at the end of reveal", () => {
-      const scene = sceneAt(props, last("reveal"));
-      const kept = props.shapes.filter((s: any) => s.kept);
-      expect(kept.length).toBe(7);
-      expect(
-        kept.every(
-          (s: any) => scene.fills[s.key] === props.colours.classFills.at(-1),
-        ),
-      ).toBe(true);
-      const back = props.shapes.filter(
-        (s: any) => s.classIndex !== null && !s.kept,
-      );
-      expect(back.length).toBe(33);
-      expect(
-        back.every((s: any) => scene.fills[s.key] === props.colours.land),
-      ).toBe(true);
+      const state = mapStateAt(props, last("reveal"));
+      const kept = classLayers.filter((c: any) => c.kept);
+      const back = classLayers.filter((c: any) => !c.kept);
+      expect(kept.flatMap((c: any) => c.members).length).toBe(7);
+      expect(back.flatMap((c: any) => c.members).length).toBe(33);
+      for (const { layer } of kept)
+        expect([layer.id, opacityOf(layer, state)]).toEqual([layer.id, 1]);
+      for (const { layer } of back)
+        expect([layer.id, opacityOf(layer, state)]).toEqual([layer.id, 0]);
     });
 
     it("should hold still — the first and last frames of the hold are one picture", () => {
       expect(sceneAt(props, T.hold.start)).toEqual(sceneAt(props, T.total - 1));
+      expect(mapStateAt(props, T.hold.start)).toEqual(
+        mapStateAt(props, T.total - 1),
+      );
+    });
+  });
+
+  describe(`${id}'s map camera, frame by frame`, () => {
+    it("should hold the whole map from frame 0 to the camera's departure, and return to exactly it", () => {
+      const whole = props.cameras.whole;
+      for (const f of [0, endOf(T.reveal) - 1, T.total - 1]) {
+        const s = mapStateAt(props, f);
+        expect([s.camX, s.camY, s.camZoom]).toEqual([
+          whole.camX,
+          whole.camY,
+          whole.camZoom,
+        ]);
+      }
+    });
+
+    it("should stand on the close-up, Albania at the centre, at the end of subject", () => {
+      const s = mapStateAt(props, endOf(T.subject) - 1);
+      expect([s.camX, s.camY, s.camZoom]).toEqual([
+        props.cameras.closeUp.camX,
+        props.cameras.closeUp.camY,
+        props.cameras.closeUp.camZoom,
+      ]);
+    });
+
+    it("should move the zoom linearly with the camera's travel and the centre in Mercator units", () => {
+      const { whole, closeUp } = props.cameras;
+      const mid = cameraAt(props.cameras, 0.5);
+      expect(mid.camZoom).toBeCloseTo(
+        (whole.camZoom + closeUp.camZoom) / 2,
+        12,
+      );
+      expect(mid.camX).toBeCloseTo((whole.camX + closeUp.camX) / 2, 12);
+      expect(mid.camY).toBeCloseTo((whole.camY + closeUp.camY) / 2, 12);
+    });
+
+    it("should name nothing on the map while the camera moves", () => {
+      for (let f = T.subject.start; f < T.total; f++) {
+        const s = mapStateAt(props, f);
+        const moving = s.zoom > 1e-9 && s.zoom < 1 - 1e-9;
+        if (moving) expect([f, s.top]).toEqual([f, 0]);
+      }
+    });
+
+    it("should reveal the classes and raise the floor exactly as the key's swatches do", () => {
+      for (let f = 0; f < endOf(T.reveal); f += 3) {
+        const s = mapStateAt(props, f);
+        const scene = sceneAt(props, f);
+        expect(s.classes * props.colours.classFills.length).toBeCloseTo(
+          scene.swatches.reduce((a: number, v: number) => a + v, 0),
+          0,
+        );
+      }
     });
   });
 }
