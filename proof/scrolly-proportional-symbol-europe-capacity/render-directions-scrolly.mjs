@@ -37,7 +37,7 @@ import { cameraFields, mercatorOf, lonLatOf, stageViewOf, validateScrollyPlan, z
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
-import { proportionalPlan } from "./plan.mjs";
+import { arrivalsFor, proportionalPlan } from "./plan.mjs";
 import { DirectedProportionalScrolly } from "./DirectedProportionalScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -219,12 +219,18 @@ const EDGES = [...new Set([
   total,
 ])].sort((a, b) => a - b);
 const round4 = (v) => Math.round(v * 1e4) / 1e4;
-const bands = EDGES.map((to, i) => {
+const bands = arrivalsFor(EDGES.map((to, i) => {
   const from = i === 0 ? 1 : EDGES[i - 1] + 1;
   const members = stations.slice(from - 1, to).map((s) => ({ lon: round4(s.lon), lat: round4(s.lat), r: round4(Math.sqrt(s.mw / first.mw)), nuclear: s.fuel === SUBJECT }));
   return { from, to, nuclear: members.filter((m) => m.nuclear), others: members.filter((m) => !m.nuclear) };
-});
+}), STATES.map((s) => s.level));
 if (bands.reduce((a, b) => a + b.nuclear.length + b.others.length, 0) !== total) throw new Error("the rank bands do not hold every station once");
+// EVERY CARD SHOWS EXACTLY ITS STATIONS once the staggered arrivals have landed: the counter's count (`symbol-drive.mjs`)
+// equals the card's own count at its level.
+for (const [k, state] of STATES.entries()) {
+  const arrived = bands.reduce((n, b) => n + (b.to - b.from + 1) * Math.max(0, Math.min(1, (state.level - b.a) / (b.b - b.a))), 0);
+  if (Math.abs(arrived - Math.round(10 ** state.level)) > 1e-6) throw new Error(`card ${k + 1} should show ${Math.round(10 ** state.level)} stations; the arrivals give ${arrived}`);
+}
 
 const textPerRegister = {
   display: title.join(" "),

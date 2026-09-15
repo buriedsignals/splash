@@ -5,8 +5,8 @@
 // "LARGEST FIRST" WITHOUT READING A FEATURE IN A BINDING. A binding that reads feature data makes MapLibre re-lay
 // out the whole source on every scroll frame (`validateScrollyPlan` refuses it). So the stations are split into
 // rank buckets — each of the ten largest alone, then ten buckets to a decade, the plate's cut and 1,000 as edges — and each
-// into nuclear and not, one layer and one GeoJSON source each. A band's opacity climbs as the count the reader
-// has scrolled to passes through its ranks; every binding is a number of the state.
+// into nuclear and not, one layer and one GeoJSON source each. A bucket's opacity climbs over its own stretch of the
+// scroll (`arrivalsFor`); every binding is a number of the state.
 //
 // THE RADIUS IS SET ONCE, AT MOUNT, AS ONE ZOOM INTERPOLATION: circle area ∝ capacity, and the screen radius of
 // the largest station grows by 2^(GROWTH · Δzoom) — the SVG beat's gentle close-up growth, `(ppu ratio)^0.35`.
@@ -46,8 +46,10 @@ export function proportionalPlan({ tints, bands, colours, fonts, largest, camera
     type: "FeatureCollection",
     features: stations.map((s) => ({ type: "Feature", properties: { r: s.r }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })),
   });
-  // A band reached as the count passes its ranks: 0 before its first, 1 at its last.
-  const reached = (band) => clamp(["/", ["-", count, band.from - 1], band.to - band.from + 1]);
+  // A BUCKET ARRIVES OVER ITS OWN STRETCH OF THE SCROLL, `[band.a, band.b]` in `level`: staggered largest first and
+  // overlapping its neighbours, so circles fade in one after another over a visible distance instead of each popping
+  // in the instant the count passes its rank (measured: the ninth largest took 4.6 % of a transition).
+  const reached = (band) => clamp(["/", ["-", { $state: "level" }, band.a], band.b - band.a]);
   const ring = (inset) => radiusExpression(radius.largestPx, radius.anchorZoom, inset);
   const others = [];
   const nuclear = [];
@@ -108,8 +110,32 @@ export function proportionalPlan({ tints, bands, colours, fonts, largest, camera
     referenceWidth,
     referenceHeight,
     radius,
+    // What the driver's counter counts: the same arrivals the map draws.
+    buckets: bands.map((b) => ({ from: b.from, to: b.to, a: b.a, b: b.b })),
     warmSamples: 3,
     degreesPerPixel: 1,
     layers: [...others, ...nuclear, name],
   };
+}
+
+/**
+ * THE ARRIVAL STRETCH OF EVERY BUCKET, in `level`. Between two card levels, the buckets whose ranks lie between those
+ * cards' counts share the stretch in rank order: bucket i of n starts at `(i / n) · (1 − OVERLAP)` of it and lasts
+ * `OVERLAP` of it, so the last one lands exactly on the next card and every card shows exactly its stations.
+ */
+export const OVERLAP = 0.45;
+export function arrivalsFor(bands, cardLevels) {
+  const stops = [...new Set(cardLevels)].sort((x, y) => x - y);
+  return bands.map((band) => {
+    const upper = stops.find((l) => 10 ** l >= band.to - 1e-9);
+    const lower = [...stops].reverse().find((l) => 10 ** l <= band.from - 1 + 1e-9);
+    if (upper === undefined) throw new Error(`no card reaches rank ${band.to}`);
+    // Already standing on the first card: fully in there.
+    if (lower === undefined) return { ...band, a: upper - 1, b: upper };
+    const inStretch = bands.filter((b) => b.from - 1 >= 10 ** lower - 1e-9 && b.to <= 10 ** upper + 1e-9);
+    const i = inStretch.indexOf(band);
+    const span = upper - lower;
+    const a = lower + (inStretch.length > 1 ? i / (inStretch.length - 1) : 0) * (1 - OVERLAP) * span;
+    return { ...band, a, b: a + OVERLAP * span };
+  });
 }

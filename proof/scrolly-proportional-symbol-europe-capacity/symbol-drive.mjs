@@ -8,7 +8,7 @@
 //
 // A STATE, field by field (every gesture scrubbed by the reader's own scroll):
 //   level    how many stations stand, as a power of ten, largest first: 0 is the largest alone, 2 the hundred
-//            largest; a rank band arrives as the count passes its ranks                                  0..log10(n)
+//            largest; each rank bucket arrives over its own stretch of it (`plan.mjs`)                    0..log10(n)
 //   largest  the largest station named                                                                  0..1
 //   subject  the nuclear sites drawn in the ink, whatever their rank; every other station steps back      0..1
 //   zoom     the travel from the whole map onto the country with most nuclear sites                       0..1
@@ -61,7 +61,10 @@ export function applySymbolState(root, state) {
 
   // The counter: the stations standing, their share of the sites and of the power.
   const n = c.cumulative.length;
-  const k = Math.max(1, Math.round(Math.min(n, 10 ** Math.max(0, state.level))));
+  // THE COUNTER COUNTS WHAT THE MAP HAS DRAWN: each bucket's stations weighted by how far it has arrived (`plan.mjs`).
+  let arrived = 0;
+  for (const b of c.plan.buckets) arrived += (b.to - b.from + 1) * clamp((state.level - b.a) / (b.b - b.a));
+  const k = Math.max(1, Math.min(n, Math.round(arrived)));
   const text = c.counter.dataset.template
     .replace("{n}", c.format(k))
     .replace("centrales", k === 1 ? "centrale" : "centrales")
