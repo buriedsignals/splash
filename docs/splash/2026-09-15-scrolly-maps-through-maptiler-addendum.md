@@ -1,6 +1,6 @@
 # Addendum — les cartes scrolly passent par MapTiler, avec tous les pays et un niveau de détail choisi par le sujet
 
-**Statut :** approuvé par le propriétaire le 2026-09-15, projection comprise (§7.1). Non planifié, non implémenté.
+**Statut :** approuvé par le propriétaire le 2026-09-15 ; projection revue le même jour après le pilote : carte plate (§7.1).
 **Complète :** `2026-09-12-maps-through-maptiler-spec.md` (« la spec »), qui traite le statique, le web et la vidéo,
 et exclut le cartogramme et la grille hexagonale (§11).
 **Décisions du propriétaire enregistrées ici (2026-09-15) :**
@@ -128,13 +128,12 @@ cartogramme et grille hexagonale en dernier (§5).
 
 ## 7. Questions ouvertes
 
-1. **La projection — tranchée le 2026-09-15 : globe.** Les statiques et les scrollys SVG dessinaient en Lambert
-   azimutale équivalente ; MapLibre dessine en Web Mercator ou en globe. À 70° N, Mercator triple les surfaces. Le
-   propriétaire retient la projection **globe** : aux zooms continentaux elle ne gonfle pas le Nord, en zoom proche elle
-   rejoint Mercator. *Mesuré le 2026-09-15 (MapLibre 5.24.0, style `dataviz`, 1280 × 800, centre 15° E 55° N, zoom 2,6) :
-   la surface à l'écran d'une cellule d'un degré de côté, rapportée à sa surface sphérique vraie (proportionnelle au
-   cosinus de la latitude) et normalisée à 45° N, vaut 0,92 fois cette référence à 70° N et 0,84 fois à 35° N
-   (Mercator : ≈ 2,9 à 70° N). Rendu sans navigateur visible : oui.*
+1. **La projection — tranchée le 2026-09-15 : carte plate (Web Mercator).** Le propriétaire avait d'abord retenu le
+   globe ; après avoir vu le pilote, il le refuse au profit d'une carte à plat (« tu devrais pas faire un globe mais un
+   aplat »). Sur le globe, le bord de la Terre se voyait sur les vues d'ensemble à 1 280 px. Mercator gonfle les
+   surfaces du Nord (≈ 2,9 à 70° N) : c'est accepté, les chiffres des cartes restent calculés sur les vraies surfaces.
+   *Mesure du globe conservée pour mémoire : une cellule d'un degré y valait 0,92 fois sa surface vraie à 70° N et 0,84
+   à 35° N (MapLibre 5.24.0, centre 15° E 55° N).*
 2. **Les polygones joints** (§3.2) : MapTiler Countries retenu ; son coût et la correspondance des codes régionaux sont
    à mesurer.
 3. **Le poids du repli** : une image par carte de texte multiplie le poids de la page par le nombre de cartes.
