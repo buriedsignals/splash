@@ -288,7 +288,10 @@ const GENERIC_KEYWORDS = new Set([
  *  asks for Helvetica; the rest is what a BROWSER falls back to, and a rasteriser drawing from
  *  files has no fallback at all. */
 export function requestedFamily(stack) {
-  return String(stack).split(",")[0].replace(/^["']|["']$/g, "").trim();
+  // DECODED FIRST, because a stack read off a document can still be carrying its entities: an SVG
+  // attribute holding `&quot;Open Sans&quot;, Helvetica` would otherwise answer `&quot;Open Sans&quot;`,
+  // which is not a family anybody can fetch and not a name any error message would make sense of.
+  return decodeEntities(stack).split(",")[0].replace(/^["']|["']$/g, "").trim();
 }
 
 /**
@@ -1210,8 +1213,66 @@ function resolveWeight(raw, vars) {
   return null;
 }
 
+/**
+ * EVERY `font-family` A SOURCE WRITES, IN THE ORDER IT WRITES THEM.
+ *
+ * Two shapes, and one pattern could never read both:
+ *
+ *   - a DECLARATION (`font-family: "Open Sans", Helvetica`) — it ends at `;`, `}` or the end of the
+ *     block, and a quote inside it is part of the value;
+ *   - a PRESENTATION ATTRIBUTE (`font-family="…"`) — it ends at its own closing delimiter, and a
+ *     quote inside it is ALSO part of the value.
+ *
+ * The second is what this file was blind to, and the blindness was silent. A tag reaches the
+ * readers below already decoded (see `fontRequestsInHtml`), so an attribute holding a stack whose
+ * first family is quoted — which is every stack `figureVars` emits — arrives as
+ * `font-family=""Open Sans", Helvetica, Arial, sans-serif"`. The old single pattern stopped at the
+ * first quote, matched NOTHING at all, and the request fell through to the page's inherited body
+ * family: `assertFontsEmbedded` was then told about a face the page does carry, and went green over
+ * text drawn in one it does not. Measured on `proof/web-small-multiples-solar-eu-six` before that
+ * beat worked around it locally: forty `<text>` elements set in Open Sans 400 on a `rapport` page
+ * that embedded Open Sans 700 and Merriweather, with every guard green.
+ *
+ * The attribute patterns close on a quote FOLLOWED BY whitespace, `/` or `>` — the only place an
+ * attribute value can end inside a tag — so a quote belonging to the stack cannot end it early.
+ * The declaration pattern is the one this file has always used, kept byte for byte and tried last,
+ * so a `style="…"` attribute and a stylesheet block still read exactly as before.
+ */
+const FONT_FAMILY_WRITTEN = new RegExp(
+  [
+    'font-family\\s*=\\s*"([\\s\\S]*?)"(?=[\\s/>]|$)',
+    "font-family\\s*=\\s*'([\\s\\S]*?)'(?=[\\s/>]|$)",
+    'font-family\\s*[:=]\\s*"?([^;"}]+?)"?\\s*(?:[;"}]|$)',
+  ].join("|"),
+  "g",
+);
+
+/**
+ * THE VALUE OF EVERY `style="…"` ON A DECODED TAG.
+ *
+ * Bounded by the delimiter that is FOLLOWED BY whitespace, `/` or `>` — the only place an attribute
+ * value can end inside a tag — so a quote belonging to a font stack inside it does not end it early.
+ * That boundary is what makes a quoted custom property readable off a tag at all.
+ */
+function styleAttributeValues(tag) {
+  const values = [];
+  for (const m of String(tag).matchAll(/\bstyle\s*=\s*(?:"([\s\S]*?)"|'([\s\S]*?)')(?=[\s/>]|$)/g))
+    values.push(m[1] ?? m[2] ?? "");
+  return values;
+}
+
+/** @returns {string[]} every stack `source` writes, trimmed, as written. */
+function fontFamiliesWritten(source) {
+  const stacks = [];
+  for (const m of String(source).matchAll(FONT_FAMILY_WRITTEN)) {
+    const written = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    if (written) stacks.push(written);
+  }
+  return stacks;
+}
+
 function readFont(source, vars) {
-  const family = /font-family\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/.exec(source)?.[1];
+  const family = fontFamiliesWritten(source)[0];
   const weight = /font-weight\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/.exec(source)?.[1];
   // Widened from `[a-z]+` so a `var(--…)` slope is captured and can be followed; the branch below
   // still only ever answers `italic`, `normal` or nothing.
@@ -1258,9 +1319,8 @@ export function dominantFontStack(markup, fallback = HOUSE_SANS_STACK) {
   const counts = new Map();
   for (const m of String(markup).matchAll(/<[a-zA-Z][^>]*>/g)) {
     const tag = decodeEntities(m[0]);
-    for (const d of tag.matchAll(/font-family\s*[:=]\s*"?([^;"}]+?)"?\s*(?:[;"}]|$)/g)) {
-      const stack = d[1].trim();
-      if (!stack || !SAFE_STACK.test(stack)) continue;
+    for (const stack of fontFamiliesWritten(tag)) {
+      if (!SAFE_STACK.test(stack)) continue;
       if (GENERIC_KEYWORDS.has(requestedFamily(stack).toLowerCase())) continue;
       counts.set(stack, (counts.get(stack) ?? 0) + 1);
     }
@@ -1305,8 +1365,19 @@ export function fontRequestsInHtml(html) {
   // at the first quote is the conservative reading, and it is what this has always done.
   const vars = new Map();
   for (const m of sheet.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;{}]+)/g)) vars.set(m[1], m[2].trim());
-  for (const source of tags)
+  for (const source of tags) {
     for (const m of source.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;"'{}]+)/g)) vars.set(m[1], m[2].trim());
+    // AND THEN THE SAME PROPERTIES READ OUT OF THE ATTRIBUTE'S OWN VALUE, quotes and all, which
+    // overwrites the narrow reading above wherever the narrow reading gave up. The narrow pass is
+    // kept and runs FIRST so nothing this ever resolved stops resolving; this pass is what makes a
+    // `--title-family: "Open Sans", …` written on the figure — the shape `figureVars` emits, and
+    // the shape whose leading quote made the narrow pattern match the empty string — reachable by
+    // the `var()` in the stylesheet that reads it. Without it a titled page attributes its title to
+    // the page's INHERITED body family, which is a face the page does carry, and the guard goes
+    // green over a title drawn in one it does not.
+    for (const value of styleAttributeValues(source))
+      for (const m of value.matchAll(/(--[A-Za-z0-9_-]+)\s*:\s*([^;{}]+)/g)) vars.set(m[1], m[2].trim());
+  }
 
   const units = [...declarationBlocks(sheet), ...tags];
   const read = units

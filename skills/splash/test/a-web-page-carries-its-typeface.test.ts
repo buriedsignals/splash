@@ -53,6 +53,7 @@ import {
   pageTextOf,
   parseUnicodeRange,
   parseWebFaces,
+  requestedFamily,
   rangeSpec,
   rangesCover,
   subsetWebFace,
@@ -171,6 +172,84 @@ body { font-family: "Open Sans", Helvetica, Arial, sans-serif; }
       "Open Sans, Helvetica, Arial, sans-serif",
     );
     expect(dominantFontStack("<p>nothing styled</p>")).toContain("Open Sans");
+  });
+});
+
+describe("a stack quoted inside an attribute", () => {
+  /**
+   * THE BLIND SPOT THAT MADE THE CENSUS ANSWER GREEN OVER TEXT IN A FACE NOBODY EMBEDDED.
+   *
+   * `figureVars` emits stacks that OPEN WITH A QUOTE, which is right for a stylesheet; a component
+   * that hands one straight to an SVG presentation attribute writes `font-family="&quot;Open
+   * Sans&quot;, …"`, and the census decodes each tag before reading it, so what its pattern met was
+   * `font-family=""Open Sans", …"`. Stopping at the first quote, it matched NOTHING — the request
+   * fell through to the page's inherited body family, a face the page does carry, and
+   * `assertFontsEmbedded` passed. Measured on the committed corpus at the time of this fix:
+   * `proof/web-sankey-electricity-sources/renders/rapport.html` shipped 53 `<text>` elements asking
+   * for Open Sans 400 on a page that embedded Merriweather and Open Sans 700 and nothing else, and
+   * every guard in the tree was green on it.
+   *
+   * The same leading quote hid a `--…-family` custom property written on the figure, which is how a
+   * filed direction reaches a stylesheet: unresolvable, the title was attributed to the body family
+   * instead of the one it is really set in. On 15 of the 120 committed directed pages the census
+   * named the WRONG family for at least one request because of it.
+   */
+  it("should read a font-family attribute whose first family is itself quoted", () => {
+    const { requests } = fontRequestsInHtml(
+      `<style>body{font-family:"Merriweather",Georgia,serif}` +
+        `@font-face{font-family:"Merriweather";font-weight:400;src:url(x)}</style>` +
+        `<body><svg><text font-family="&quot;Open Sans&quot;, Helvetica, Arial, sans-serif" ` +
+        `font-weight="400">DE</text></svg></body>`,
+    );
+    expect(requests.map((r) => `${r.family} ${r.weight}`)).toContain("Open Sans 400");
+  });
+
+  it("should read the same attribute written with single quotes", () => {
+    const { requests } = fontRequestsInHtml(
+      `<style>body{font-family:"Merriweather",Georgia,serif}</style>` +
+        `<body><svg><text font-family="'Open Sans', Helvetica" font-weight="600">FR</text></svg></body>`,
+    );
+    expect(requests.map((r) => `${r.family} ${r.weight}`)).toContain("Open Sans 600");
+  });
+
+  it("should resolve a family custom property whose value opens with a quote", () => {
+    const { requests } = fontRequestsInHtml(
+      `<style>body{font-family:"Merriweather",Georgia,serif}` +
+        `.chart-title{font-family:var(--title-family);font-weight:700}</style>` +
+        `<body><figure style="--title-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif">` +
+        `<h1 class="chart-title">titre</h1></figure></body>`,
+    );
+    expect(requests.map((r) => `${r.family} ${r.weight}`)).toContain("Open Sans 700");
+  });
+
+  // MERRIWEATHER AND NOT OPEN SANS, and that is the whole test: `HOUSE_SANS_STACK` — what this
+  // answers when it finds nothing at all — IS the Open Sans stack, so asserting on that stack would
+  // have gone green against a reader that saw no stack whatsoever. Found by running the mutation.
+  it("should count a quoted attribute stack when it reads the page's dominant family", () => {
+    expect(
+      dominantFontStack(
+        `<text font-family="&quot;Merriweather&quot;, Georgia, serif">a</text>` +
+          `<text font-family="&quot;Merriweather&quot;, Georgia, serif">b</text>`,
+      ),
+    ).toBe('"Merriweather", Georgia, serif');
+  });
+
+  it("should name the family, not its entities, when a stack still carries them", () => {
+    expect(requestedFamily("&quot;Open Sans&quot;, Helvetica, Arial, sans-serif")).toBe("Open Sans");
+  });
+
+  // THE BODY FAMILY IS CARRIED AND THE ATTRIBUTE'S IS NOT — the exact shape of the defect, and the
+  // only shape that makes this assertion mean anything: a page whose body family were the missing
+  // one would fail with the pattern narrow too, on the inherited request, and prove nothing.
+  it("should refuse a page whose quoted attribute names a face it does not carry", () => {
+    const page =
+      `<!doctype html><html><head><style>` +
+      `@font-face{font-family:"Merriweather";font-style:normal;font-weight:400;` +
+      `unicode-range:U+0000-00FF;src:url(data:font/woff2;base64,AA)}` +
+      `body{font-family:"Merriweather",Georgia,serif}</style></head><body>` +
+      `<svg><text font-family="&quot;Open Sans&quot;, Helvetica, Arial, sans-serif" ` +
+      `font-weight="400">DE</text></svg></body></html>`;
+    expect(() => assertFontsEmbedded(page)).toThrow(/Open Sans/);
   });
 });
 
