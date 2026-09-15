@@ -312,6 +312,9 @@
      (flex:0 0 auto; white-space:nowrap) by specificity. */
   #aout{flex:0 0 auto;white-space:nowrap}
   #aemail{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  #acct{flex-wrap:wrap}
+  #acopy{flex:0 0 auto;white-space:nowrap}
+  #acopied{flex:1 0 100%;white-space:normal}
   /* Pushed right by its own margin and not by `space-between`: the gauge only
      exists once a search has been run, and before that the lone pill fell back
      to the left. The way into the agent does not move when a search lands. */
@@ -1097,6 +1100,8 @@
     </div>
     <div class="quota" id="acct" hidden>
       <span id="aemail"></span>
+      <button type="button" id="acopy">Copy token for Indicator Labs</button>
+      <span id="acopied" role="status" hidden></span>
       <button type="button" id="aout">Sign out</button>
     </div>
     <a class="mcplink" href="#agent">
@@ -1355,6 +1360,7 @@
     $('acct').hidden = !account;
     $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
     $('aemail').title = account ? account.email : '';
+    $('acopied').hidden = true;
   };
 
   /* ------------------------------------------------------------ the quota */
@@ -1876,6 +1882,23 @@
     polling++;
     saveAccount(null);
     limit = 5; left = null; drawQuota();
+  });
+
+  /* The token goes to the clipboard, never onto the page: the reader pastes it into Indicator Labs,
+     whose protected prompt keeps it in the operating system's credential store. */
+  let copiedTimer = 0;
+  $('acopy').addEventListener('click', async () => {
+    if (!account) return;
+    const note = $('acopied');
+    try {
+      await navigator.clipboard.writeText(account.token);
+      note.textContent = 'Copied. Paste it in Indicator Labs → Connected services → Infoviz → Enter token…';
+    } catch {
+      note.textContent = 'Your browser refused the clipboard.';
+    }
+    note.hidden = false;
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => { note.hidden = true; }, 8000);
   });
 
   /* ------------------------------------------------------- the auth probe */
