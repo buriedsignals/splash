@@ -12,6 +12,17 @@ thing a static frame and a video build cannot have, a reader who can ask the cha
 get an exact answer back, without anything the static frame already states being gated behind that
 ask.
 
+**Two things live here, and only the first is how a web beat is built today:**
+
+1. **The directed web path** — any subject, any of the 32 chart types: the format's rules, one
+   type sheet per type, one worked example per type under `proof/web-<type>-…`, the twenty-five
+   interaction vocabularies, and the scaffold that writes the plumbing. Start at "The directed
+   web path" below.
+2. **The seed** (`assets/ChartWebSeed.tsx`) — a teaching composition kept because the
+   standalone-render and verification tests exercise it. It is not the model for a new beat: it
+   declares a threshold-shaped filter so the mechanism is runnable end to end, not because a beat
+   should have one.
+
 **Eighteen beats ship through this skill** — `co2-suisse` plus the `web-*`, `webx-*`, `weby-*`,
 `webz-*` and `more-heatmap-*` workspaces — counted by the eighteen `proof/*/render-web.mjs` that
 import this skill's own `renderWeb`, and every one of them is on the fluid frame this skill teaches.
@@ -45,6 +56,138 @@ against this beat's first real build, the way `static-discipline.md` was written
 static beat and `motion-grammar.md` against the first video build — read it before writing a second
 web beat. It was rewritten again against this skill's SECOND build, when the owner's own read of the
 first build's shipped output was that it did not fill its container (see "How it works").
+
+## The directed web path (start here)
+
+Read in this order, then write. Thirty-two types have a web beat on disk and every one of them was
+written by hand; this is the order that actually worked, and each step is one somebody skipped once.
+
+| step | read / do | what it gives you |
+| --- | --- | --- |
+| 1 | `references/web-discipline.md` | the format's rules: what hover may reveal, keyboard/touch parity, what survives with JavaScript off, the fluid frame, what must never become interactive |
+| 2 | `references/directed-interaction.md` | the gesture is written BEFORE the code, control by control, in the beat's `BRIEF.md`; a control whose state equals the default state is refused at render time; the repertoire and what the corpus ships |
+| 3 | `references/types/<type>.md` | what this type has to SPEND to draw at all, the question that spend makes unreachable on one plate, and the name of its web worked example (index below) |
+| 4 | that worked example and its `BRIEF.md` | the split into files (table below) and the vocabulary it declares. **Read it to learn the MECHANISM, never to copy the GESTURE** |
+| 5 | scaffold the plumbing | `bun skills/chart-web/scripts/scaffold-web-beat.mjs --type <type> --beat proof/web-<type>-<subject> --static proof/static-<type>-<subject>` — see the script's own header for the line it draws and refuses to cross |
+| 6 | **`BRIEF.md`: the gesture ARGUED — no code before it** | the design: what the type spends, what that makes unreachable, why THIS gesture and not a neighbour's, what does NOT move and why each of those is a decision, and what the default state already shows |
+| 7 | the holes — `grep -n SCAFFOLD <beat>` | the drawing, every word, the claims computed from the frozen file, the stylesheet, the colour floors searched on this beat's own grounds, the refusals |
+| 8 | `bun <beat>/render-directions-web.mjs`, then `verify-web.mjs --shots`, then LOOK | three pages, none refused; the driven evidence; the eye no script replaces |
+
+**Step 6 is the one that cannot be generated, and it is the one that decides whether the beat is any
+good.** The scaffold's job is to remove typing, not to remove thinking — its header says so and the
+rule behind it is the owner's: *« si générateur alors il faut pas que ça contraigne la création et
+que ça reste originale »*. Reaching for a neighbouring beat's vocabulary because it is already there
+produces a page that looks like its neighbour, which is a defect a green suite will not catch and the
+exact one this catalogue exists to avoid. **A type that deserves NO control is a legitimate outcome**
+— `proof/web-line-swiss-co2` declares none — and so is a type that needs a vocabulary nobody has
+written yet: nineteen of the twenty-five below were written for exactly one beat, because that beat
+needed something no existing file said.
+
+### The type index
+
+Each sheet names its web worked example and the static sibling it was derived from; the last column
+is what that beat's reader actually operates, and it is a record of what was chosen, not a rule.
+
+| type | sheet | web worked example | the gesture it spends |
+| --- | --- | --- | --- |
+| Area | `references/types/area.md` | `proof/web-area-swiss-co2` | `level` |
+| Bar and column | `references/types/bar-and-column.md` | `proof/web-bar-top-emitters-2024` | `filter` + `stack` |
+| Beeswarm | `references/types/beeswarm.md` | `proof/web-beeswarm-co2-per-person` | `weigh` |
+| Box plot | `references/types/boxplot.md` | `proof/web-boxplot-france-co2-decades` | `level` |
+| Bullet | `references/types/bullet.md` | `proof/web-bullet-low-carbon-share` | `benchmark` |
+| Bump | `references/types/bump.md` | `proof/web-bump-emitter-rank` | `follow` |
+| Calendar heatmap | `references/types/calendar-heatmap.md` | `proof/web-calendar-heatmap-geneva` | `cutoff` |
+| Connected scatter | `references/types/connected-scatter.md` | `proof/web-connected-scatter-lowcarbon` | `aim` |
+| Diverging bar | `references/types/diverging-bar.md` | `proof/web-diverging-bar-eu-per-capita` | `datum` |
+| Diverging stacked bar | `references/types/diverging-stacked-bar.md` | `proof/web-diverging-stacked-electricity` | `side` |
+| Dot strip | `references/types/dot-strip.md` | `proof/web-dot-strip-lowcarbon-spread` | `qualify` |
+| Dumbbell | `references/types/dumbbell.md` | `proof/web-dumbbell-life-expectancy-gains` | `level` |
+| Gantt | `references/types/gantt.md` | `proof/web-gantt-top-ten-tenure` | `align` |
+| Grouped bar | `references/types/grouped-bar.md` | `proof/web-grouped-bar-wind-vs-solar` | `level` |
+| Heatmap | `references/types/heatmap.md` | `proof/web-heatmap-europe-electricity` | `filter` |
+| Histogram | `references/types/histogram.md` | `proof/web-histogram-carbon-footprint` | `level` |
+| Line | `references/types/line.md` | `proof/web-line-swiss-co2` | **none** — hover and keyboard only |
+| Lollipop | `references/types/lollipop.md` | `proof/web-lollipop-co2-per-person` | `level` |
+| Marimekko | `references/types/marimekko.md` | `proof/web-marimekko-electricity-mix` | `hold` + `stack` |
+| Parallel coordinates | `references/types/parallel-coordinates.md` | `proof/web-parallel-coordinates-electricity` | `brush` |
+| Pictogram | `references/types/pictogram.md` | `proof/web-pictogram-europe-lowcarbon` | `unit` |
+| Pie and donut | `references/types/pie-and-donut.md` | `proof/web-donut-world-co2-share` | `level` |
+| Population pyramid | `references/types/population-pyramid.md` | `proof/web-population-pyramid-switzerland` | `fold` |
+| Radar | `references/types/radar.md` | `proof/web-radar-electricity-mix` | `count` |
+| Sankey | `references/types/sankey.md` | `proof/web-sankey-electricity-sources` | `trace` |
+| Scatter | `references/types/scatter.md` | `proof/web-scatter-income-life-expectancy` | `level` |
+| Slope | `references/types/slope.md` | `proof/web-slope-europe-lowcarbon` | `level` |
+| Small multiples | `references/types/small-multiples.md` | `proof/web-small-multiples-solar-eu-six` | `carry` |
+| Stacked bar | `references/types/stacked-bar.md` | `proof/web-stacked-bar-lowcarbon-growth` | `rebase` |
+| Streamgraph | `references/types/streamgraph.md` | `proof/web-streamgraph-swiss-electricity` | `floor` |
+| Treemap | `references/types/treemap.md` | `proof/web-treemap-europe-capacity` | `descend` |
+| Waterfall | `references/types/waterfall.md` | `proof/web-waterfall-germany-bridge` | `filter` + `withdraw` |
+
+### The worked example, file by file
+
+Measured by diffing three finished beats — `proof/web-gantt-top-ten-tenure` (990 lines),
+`proof/web-diverging-stacked-electricity` (1188), `proof/web-beeswarm-co2-per-person` (935). The
+split is the same in all three.
+
+| file | holds | plumbing or beat |
+| --- | --- | --- |
+| `render-directions-web.mjs` | the eight trunk imports, `HERE`/`DIRECTIONS`/`OUT`/`EYEBROW`, `plain`; the frozen CSV read written for that file's exact header; the shaping and every claim `BRIEF.md` states; `beatFacts`/`applicableTreatments`; the words; `textPerRegister` and its `plain` pass; `readPalette` + `composeDirections` + `report`; the per-direction loop with `resolveDirectionFamilies`, the stale-render removal on refusal and the non-zero exit | ~90 lines of imports and loop are plumbing and identical; the shaping, the claims and the words are the beat |
+| `Directed<Type>Web.tsx` | the doc-comment that ARGUES the gesture and names the treatments spent and refused; the colour and register imports; the vocabulary import; `SCOPE`, `FRAME`, `pct`; the props; `webRegisters`; the colour floors searched on this beat's own grounds; the beat's own stylesheet; the figure skeleton — CSS vars + `figureVars`, the carried `<style>`, eyebrow/title/caveat, `.chart-plot` with its `aspect-ratio`, `<svg class="chart">` + `<desc>`, `.overlay`, `.x-axis`, the reading and source lines | the skeleton is plumbing; the doc-comment, the drawing, the control and the floors are the beat |
+| `data.csv` | the frozen file, copied from the static sibling and never re-fetched | beat (frozen) |
+| `PALETTE.md` | the newsroom answer `readPalette` reads — and the contrast tables measured on THIS beat's own renders | beat; the searched floors do NOT transfer to another subject and nothing goes red if they do |
+| `BRIEF.md` | the takeaway, what the static frame had to omit, the gesture argued, the readings, the refusals | beat |
+| `renders/{creme,nocturne,rapport}.html` | one self-contained page per filed direction | output |
+
+The trunk each beat imports — `renderWeb`, `shared/design-base/*`, `shared/chart-beat/colour.mjs`,
+one vocabulary file — is genuinely reusable and does real work, but it is roughly 90 of ~990 lines.
+**There is no generator and the beats are not parameterised.** A new subject in an existing type is a
+new component and a new runner, written by hand, with the scaffold writing the ~280 lines of it that
+nobody would ever write differently on purpose. That is the premise, not an omission: see
+`references/types/README.md` — *nobody imports a chart-type component, they write one, once, for the
+story in front of them*.
+
+### The vocabularies
+
+Twenty-five declarations a beat can make, plus the entrance. Each is native `<input type="radio">`
+inside a real `<fieldset>`/`<legend>` plus CSS generated at build time — `:checked` and `:has()` on
+the enclosing figure, no listener, no state, not one byte of JavaScript — because that is the only
+kind of control this format can promise still works with the script absent. **A beat hands one
+declaration object in and the vocabulary does the rest, including its own refusals**; the shared
+`interaction-plan.ts` census only measures six of them by design, so each file carries its own
+`assert…` instead. Nineteen have been spent exactly once, and `reorder.ts` has never been spent at
+all — their generality is asserted, not demonstrated.
+
+| file | what the reader does | spent by |
+| --- | --- | --- |
+| `aim.ts` | chooses WHERE A DISPLACEMENT POINTS — one vector, tail nailed down, head aimed at whichever reading of "where it ended up" was asked for | connected scatter |
+| `align.ts` | chooses WHAT EVERY INTERVAL IS LINED UP ON — where each mark's own zero sits on one shared axis, so a calendar and a stopwatch become the same picture in turn | gantt |
+| `benchmark.ts` | chooses WHAT EACH ROW IS JUDGED AGAINST — one target per row, confined to that row's own track, and the verdict every row earns under it | bullet |
+| `brush.ts` | chooses WHICH SPAN OF AN AXIS is selected — a named band between two bounds, drawn on the rail it cuts | parallel coordinates |
+| `carry.ts` | chooses WHICH MEMBER OF A REPEATED SET is carried into every other member's frame — one series stamped into every panel of a facet grid, unchanged | small multiples |
+| `count.ts` | chooses WHICH OF A CLOSED SHAPE'S TERMS ARE COUNTED IN IT, and what the outline becomes when it closes over the rest | radar |
+| `cutoff.ts` | chooses WHERE THE CLAIM'S OWN LINE IS DRAWN, and which region of the plate that line selects | calendar heatmap |
+| `datum.ts` | chooses WHAT THE PICTURE IS MEASURED FROM — which level is subtracted before anything is drawn, i.e. where a diverging zero sits | diverging bar |
+| `descend.ts` | chooses WHAT BECOMES THE WHOLE — one branch of a hierarchy given the entire frame, children re-laid at a scale they never had, and a way back out | treemap |
+| `entrance.ts` | *not a control*: the beat's ARRIVAL, in the video's own six-event vocabulary rather than a second grammar | read off the markup, never declared |
+| `filter.ts` | chooses WHAT LEAVES THE PICTURE — a named subset of keys the default view already draws, hidden (never dimmed), with the narrowed count always stated against the total | bar, heatmap, waterfall, scatter |
+| `floor.ts` | chooses WHAT THE PICTURE STANDS ON — which band of a stack is laid flat, so what a free baseline takes away comes back | streamgraph |
+| `fold.ts` | chooses WHAT IS LAID OVER WHAT IS DRAWN — one half carried across onto the other at its own measured values, so a difference stops being an inference and becomes a shape | population pyramid |
+| `follow.ts` | chooses WHAT IS FOLLOWED THROUGH THE ORDERED STEPS — one competitor pulled out of a tangle it crosses by construction, its position recovered at every step | bump |
+| `hold.ts` | chooses WHICH FACTOR OF A PRODUCT IS HELD STILL, so the other becomes readable on its own | marimekko |
+| `level.ts` | chooses WHAT THE PICTURE IS MEASURED AGAINST — a reference laid across it | area, box plot, dumbbell, histogram, donut, lollipop, grouped bar, scatter, slope |
+| `qualify.ts` | chooses WHAT COUNTS AS THE THING THE AXIS MEASURES — one denominator, a declared ladder of numerators, every mark re-placed at its new exact value | dot strip |
+| `rebase.ts` | chooses WHICH BAND IS MEASURED FROM THE COMMON ZERO — a second mark at the drawn band's own length, beside a stack that does not move | stacked bar |
+| `reorder.ts` | chooses WHAT THE SAME NUMBERS LOOK LIKE SOMEWHERE ELSE IN A CYCLE — a radial chart's axes handed round the circle, every value untouched | **no beat** — 1045 lines, 25 exports, never spent |
+| `side.ts` | chooses WHICH SIDE OF THE ARGUMENT EACH RUNG OF AN ORDERED SCALE COUNTS ON — one boundary the reader slides along the ladder | diverging stacked bar |
+| `stack.ts` | chooses WHAT MOVES IN THE PICTURE — a mark's place, re-laid, with nothing entering or leaving | bar, marimekko |
+| `trace.ts` | chooses WHAT IS FOLLOWED THROUGH THE IMAGE — one origin lit end to end while the rest of the network recedes, the path's arithmetic written out | sankey |
+| `unit.ts` | chooses WHAT ONE ICON STANDS FOR, and the field that comes out of it | pictogram |
+| `weigh.ts` | chooses WHAT A MARK IS WORTH — the packing re-run from nothing at a new weighting, every mark's place a function of every other mark's new size | beeswarm |
+| `withdraw.ts` | chooses WHAT IS TAKEN OUT OF A SUM — and, because the rest depended on it, what the rest becomes without it | waterfall |
+
+Each file's own header is still the full contract — the arithmetic, the refusals, and the argument
+for why it is a separate file rather than an option inside a neighbouring one. **Read the header of
+the one you intend to spend before you declare it.**
 
 ## When to use
 
@@ -134,6 +277,8 @@ look at them; each catches what the other is blind to.
 | Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with that story's own STILL beat — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here. Not shared with the video SEED: that is a skill file and carries its own inlined copy |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `ChartWebSeed`-shaped component: SVG geometry plus HTML/CSS furniture, called once — not two pre-rendered rungs |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
+| Scaffold | `scripts/scaffold-web-beat.mjs` | Writes the ~280 lines of a beat that are mechanical and verbatim-identical across beats — the runner's trunk imports and direction loop, the component's figure skeleton, the brief's headings — and leaves every subject-specific part a marked `SCAFFOLD` hole. It never chooses a vocabulary: that is the design of the page |
+| Vocabularies | `assets/{aim,align,benchmark,brush,carry,count,cutoff,datum,descend,filter,floor,fold,follow,hold,level,qualify,rebase,reorder,side,stack,trace,unit,weigh,withdraw}.ts` | The twenty-five declarations a beat can make, each with its own arithmetic and its own refusals (`interaction-plan.ts`'s census measures six of them by design). Table under "The vocabularies" |
 | Render | `scripts/render-web.mjs` | Exports the format's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
 | Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
@@ -279,6 +424,11 @@ bun skills/chart-web/scripts/verify-web.mjs --shots --out /tmp/canon-web-verify
 # the other.
 open /tmp/canon-web-verify   # fit-*.png, hover-*.png, filter-late-*.png, nojs-filter.png, control-focus-*.png
 
+# a NEW beat, on a new subject, in an existing type — the plumbing only; the gesture is argued
+# in BRIEF.md before a line of it is filled in:
+bun skills/chart-web/scripts/scaffold-web-beat.mjs \
+  --type gantt --beat proof/web-gantt-<subject> --static proof/static-gantt-<subject>
+
 # a real story's own runner, filed beside the story, not inside the skill:
 bun proof/co2-suisse/render-web.mjs /tmp/web-twin --data /tmp/web-twin/data.csv   # → co2.html
 ```
@@ -317,6 +467,15 @@ skill into a journalist's root — the whole premise — did not build.
 
 ## Files
 
+- `scripts/scaffold-web-beat.mjs` — the plumbing of a directed web beat, written once, and
+  nothing else. `--type <type> --beat proof/web-<type>-<subject> --static proof/static-<type>-<subject>`;
+  refuses an unknown type (no `references/types/<type>.md`), an existing beat folder, and a
+  `--static` with no `PALETTE.md` or no frozen data. **Its header draws the line it will not
+  cross and explains why**: it generates no gesture, no drawing, no words, no palette reasoning
+  and no refusals, because a default gets kept — and thirty-two pages generated from one
+  template is the defect the catalogue exists to avoid.
+- `references/types/` — 32 web type sheets; each names its web worked example and the static
+  sibling it was derived from. Index under "The directed web path".
 - `TYPEFACE.md` — **the face this skill draws in, and a REQUIRED gate: a render refuses without
   one.** `readTypeface` walks up from the beat's own directory, so a story root's own
   `TYPEFACE.md` overrides this skill's; `useTypeface` then puts the answer in force before
