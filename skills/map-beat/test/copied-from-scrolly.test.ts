@@ -47,4 +47,16 @@ describe("the map engine copied from quality/scrolly", () => {
       ),
     ).toBe(readFileSync(join(ROOT, "shared/map-beat/mount.mjs"), "utf8"));
   });
+
+  it("should keep the root template's scrolly module identical to the trunk's", () => {
+    expect(
+      readFileSync(
+        join(
+          ROOT,
+          "skills/splash/assets/root-template/shared/map-beat/scrolly.mjs",
+        ),
+        "utf8",
+      ),
+    ).toBe(readFileSync(join(ROOT, "shared/map-beat/scrolly.mjs"), "utf8"));
+  });
 });
