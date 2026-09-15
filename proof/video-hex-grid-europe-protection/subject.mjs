@@ -1,14 +1,17 @@
 // THE SUBJECT OF `static-hex-grid-europe-protection`, LOADED AND ASSERTED — the static beat's grid checked both ways and
-// its three assertions.
+// its three assertions — and the countries' shapes the cells are drawn from, in the frame's own pixels.
 //
 // Runs in Bun only.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { clipRing } from "../video-choropleth-europe-lowcarbon/geometry.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const STATIC_DIR = join(HERE, "..", "static-hex-grid-europe-protection");
+/** Natural Earth 50 m, the extract the cartogram beats freeze: every cell of this grid has its country in it. */
+export const SHAPES = join(HERE, "..", "static-cartogram-europe-lowcarbon", "shapes.geojson");
 export const ORIGIN = "UKR";
 export const SUBJECT = "CZE";
 /** The static beat's grid, unchanged: odd rows offset by half a cell. */
@@ -71,4 +74,56 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
     month: protection[0].month,
     hosts: hosts.length,
   };
+}
+
+const r1 = (v) => Math.round(v * 10) / 10;
+const ringArea = (ring) => Math.abs(ring.reduce((s, p, i) => { const q = ring[(i + 1) % ring.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+
+/**
+ * THE SHAPES THE CELLS ARE DRAWN FROM, IN STAGE PIXELS, projected with the LIVE MAP'S OWN CAMERA (`project`), so the SVG
+ * shape a country morphs from lies where MapLibre fills it when the overlay takes over from the map. Every ring is cut
+ * against the stage plus a margin; a ring under a pixel and a half is not drawn.
+ *
+ * The box a country's morph maps onto its hexagon is its LARGEST ring's — the mainland — so the Azores do not stretch
+ * Portugal, nor Jan Mayen Norway; the outlying rings travel with it and fade with the shape. A country too small to draw
+ * at this camera (Liechtenstein) keeps its box and no path: its hexagon grows from where it is.
+ *
+ * @param {{ project: (lonLat: number[]) => number[], stage: {width:number,height:number}, margin: number, codes: string[] }} frame
+ */
+export function shapesOf({ project, stage, margin, codes, path = SHAPES }) {
+  const geo = JSON.parse(readFileSync(path, "utf8"));
+  const clip = { x0: -margin, x1: stage.width + margin, y0: -margin, y1: stage.height + margin };
+  return Object.fromEntries(
+    codes.map((code) => {
+      const features = geo.features.filter((f) => f.properties.iso === code);
+      if (!features.length) throw new Error(`${code} has a cell and no shape in ${path}`);
+      const rings = [];
+      let largest = null;
+      for (const f of features)
+        for (const poly of f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates)
+          for (const raw of poly) {
+            const cut = clipRing(raw.map(project), clip);
+            if (cut.length < 3) continue;
+            const a = ringArea(cut);
+            if (!largest || a > largest.area) largest = { ring: cut, area: a };
+            const kept = [cut[0]];
+            for (const p of cut.slice(1)) {
+              const q = kept[kept.length - 1];
+              if (Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) >= 1) kept.push(p);
+            }
+            const xs = kept.map((p) => p[0]);
+            const ys = kept.map((p) => p[1]);
+            if (kept.length < 3 || (Math.max(...xs) - Math.min(...xs) < 1.5 && Math.max(...ys) - Math.min(...ys) < 1.5)) continue;
+            rings.push(kept);
+          }
+      if (!largest) throw new Error(`${code} has no shape near the frame`);
+      const xs = largest.ring.map((p) => p[0]);
+      const ys = largest.ring.map((p) => p[1]);
+      const x0 = Math.min(...xs);
+      const y0 = Math.min(...ys);
+      const box = { x: r1(x0), y: r1(y0), w: r1(Math.max(1, Math.max(...xs) - x0)), h: r1(Math.max(1, Math.max(...ys) - y0)) };
+      const d = rings.map((ring) => `M${ring.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}Z`).join("");
+      return [code, { rings, path: d, box }];
+    }),
+  );
 }

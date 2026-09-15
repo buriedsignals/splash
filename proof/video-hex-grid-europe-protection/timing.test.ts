@@ -18,7 +18,11 @@ describe("the shipped hex grid video timing", () => {
     expect(T.subject.duration * 0.5).toBeGreaterThanOrEqual(T.fps * 2.5);
   });
 
+  it("should give the countries at least two seconds to travel from the map into their cells", () => {
+    expect(T.reference.duration * 0.5).toBeGreaterThanOrEqual(T.fps * 2);
+  });
+
   it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 200, duration: 180 } })).join(" ")).toContain("subject starts at 200");
+    expect(checkTiming(broken({ subject: { start: 300, duration: 180 } })).join(" ")).toContain("subject starts at 300");
   });
 });

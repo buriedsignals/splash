@@ -101,6 +101,12 @@ leader ringed and each figure line changing in place. No one code ink reads on a
 carries the ink for each of its fills and switches as the fill passes the middle of its change; a test holds every code
 to the text floor at the end of every event.
 
+- **Geography is the live map; the cells are not** (on MapTiler 2026-09-15, addendum §5). The video opens on the live
+  MapTiler map (flat Web Mercator, the units' fills from Countries beneath the water, fitted in the grid's own box).
+  Before anything moves, SVG shapes projected with the measured camera rise over the fills and the fills leave; each
+  unit then travels from its mainland's box into its hexagon — an affine map ending exactly on the cell — while a ground
+  rect rises over the basemap, so the classing happens on no map at all.
+
 ## The worked example in this tree
 
 `proof/static-hex-grid-europe-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a

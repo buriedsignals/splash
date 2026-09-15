@@ -18,7 +18,7 @@ const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(HexFrame, { ...(props as any), at: frame }));
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(HexFrame, { ...(props as any), at: frame, liveMap: () => null }));
   const last = (event: string) => endOf((props.timing as any)[event]) - 1;
   const hosts = props.cells.filter((c: any) => !c.origin);
 
