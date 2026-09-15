@@ -35,7 +35,7 @@ import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.m
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 // The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
 // nice-number ladder, not three fractions of a total. Its own header records why — a legend over
 // 9 815 / 19 629 / 29 444 is one datum's arithmetic showing through, and a reader cannot carry
@@ -908,6 +908,9 @@ for (const file of DIRECTION_FILES) {
 
     const pageOf = (plate, box) =>
       renderWeb({
+        // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
+        // declared once, in the trunk, and refused there on the file this call writes.
+        drawing: { share: MAP_DRAWING_SHARE },
         component: DirectedSymbolMapWeb,
         props: {
           plate,

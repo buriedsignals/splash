@@ -28,7 +28,8 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { countryGround } from "#shared/map-beat/tints.mjs";
+import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertDotValueReachesTheLayers,
   dotSlugOf,
@@ -962,9 +963,26 @@ for (const file of DIRECTION_FILES) {
     ink: furniture.ink,
     plateLand: tints.land,
   });
+  const ground = countryGround({
+    ground: base.ground,
+    land: tints.land,
+    water: tints.water,
+    ink: furniture.ink,
+  });
+  // NO FRONTIER FROM THIS ONE: `mw-study` below already draws the level-0 outline, and it
+  // carries a MEANING this neutral one does not — studied country against the rest. Two
+  // lines on one geometry would be one line hidden under another.
+  const countries = { ...ground, border: null };
   const live = {
     style: plateFacts.style,
     tints,
+    // THE BEAT DRAWS THE COUNTRIES ITSELF (31539d1e, extended here). The owner's verdict on the
+    // pages this replaces: « les cartes ne sont pas stylisées derrière ». Keeping MapTiler's own
+    // frontier lines and re-inking them reads as a provider basemap with our tints on it; the
+    // choropleth reads as OUR map because it draws its countries itself. Same mechanism here, and
+    // the one difference is what a fill MEANS: there a class, here neutral ground — the land these
+    // marks were ALREADY measured against, never a second one derived beside it.
+    countries,
     studyBounds: ASKED,
     frame: FRAME,
     degreesPerPixel: plateFacts.degreesPerPixel,
@@ -990,6 +1008,9 @@ for (const file of DIRECTION_FILES) {
   // so a viewBox of some other ratio crops the image rather than the stage.
   const pageOf = (plate, box) =>
     renderWeb({
+      // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
+      // declared once, in the trunk, and refused there on the file this call writes.
+      drawing: { share: MAP_DRAWING_SHARE },
       component: DirectedDotMapWeb,
       props: {
         plate,

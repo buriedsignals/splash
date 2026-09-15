@@ -37,7 +37,8 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { countryGround } from "#shared/map-beat/tints.mjs";
+import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOneVantage,
   vantageSlugOf,
@@ -897,9 +898,23 @@ for (const file of DIRECTION_FILES) {
   const direction = resolveDirectionFamilies(base, textPerRegister);
   const p = paletteFor(base);
 
+  const ground = countryGround({
+    ground: base.ground,
+    land: p.tints.land,
+    water: p.tints.water,
+    ink: deriveFurniture(base.ground).ink,
+  });
+  const countries = ground;
   const live = {
     style: plateFacts.style,
     tints: p.tints,
+    // THE BEAT DRAWS THE COUNTRIES ITSELF (31539d1e, extended here). The owner's verdict on the
+    // pages this replaces: « les cartes ne sont pas stylisées derrière ». Keeping MapTiler's own
+    // frontier lines and re-inking them reads as a provider basemap with our tints on it; the
+    // choropleth reads as OUR map because it draws its countries itself. Same mechanism here, and
+    // the one difference is what a fill MEANS: there a class, here neutral ground — the land these
+    // marks were ALREADY measured against, never a second one derived beside it.
+    countries,
     vantage,
     marks: marks.map((mark) => ({
       key: mark.key,
@@ -956,6 +971,9 @@ for (const file of DIRECTION_FILES) {
 
   const pageOf = (plates, box) =>
     renderWeb({
+      // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
+      // declared once, in the trunk, and refused there on the file this call writes.
+      drawing: { share: MAP_DRAWING_SHARE },
       component: DirectedLocatorWeb,
       props: {
         plates,

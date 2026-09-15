@@ -37,7 +37,8 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { countryGround } from "#shared/map-beat/tints.mjs";
+import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   liveContourPlan,
   liveContourScript,
@@ -900,9 +901,23 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       );
     }
 
+  const ground = countryGround({
+    ground: base.ground,
+    land: tints.land,
+    water: tints.water,
+    ink: furniture.ink,
+  });
+  const countryGround_ = ground;
   const live = {
     style: dirFacts.style,
     tints,
+    // THE BEAT DRAWS THE COUNTRIES ITSELF (31539d1e, extended here). The owner's verdict on the
+    // pages this replaces: « les cartes ne sont pas stylisées derrière ». Keeping MapTiler's own
+    // frontier lines and re-inking them reads as a provider basemap with our tints on it; the
+    // choropleth reads as OUR map because it draws its countries itself. Same mechanism here, and
+    // the one difference is what a fill MEANS: there a class, here neutral ground — the land these
+    // marks were ALREADY measured against, never a second one derived beside it.
+    countryGround: countryGround_,
     studyBounds: {
       west: dirFacts.bounds[0][0],
       south: dirFacts.bounds[0][1],
@@ -959,6 +974,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
 
   const pageOf = (plate, box) =>
     renderWeb({
+      // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
+      // declared once, in the trunk, and refused there on the file this call writes.
+      drawing: { share: MAP_DRAWING_SHARE },
       component: DirectedContourWeb,
       props: {
         plate,

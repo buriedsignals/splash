@@ -266,15 +266,14 @@ export function DirectedHexGridWeb({
       scope: SCOPE,
       name: "pool",
       rail: "wrap",
-      notes: {
-        reserve: "3.6em",
-        stacked: true,
-        why:
-          "The two sentences wrap to two and three lines at 375px on this beat's own words, and a " +
-          "revealed sentence that grows its row pushes the whole map down — the movement the " +
-          "owner's first arbitration refuses. Stacked in one cell, the row is always as tall as " +
-          "the longest sentence and the map never moves.",
-      },
+      // NOT RESERVED, AND THE REASON IT USED TO BE IS ALREADY ANSWERED BY `stacked`. The reserve
+      // said: "The two sentences wrap to two and three lines at 375px on this beat's own words, and
+      // a revealed sentence that grows its row pushes the whole map down." Stacked in one grid cell
+      // the row is ALWAYS as tall as the longest sentence, so the map does not move whichever is
+      // showing — which is the whole of what the reserve was buying, at the price of 3.6em of map
+      // before the reader has chosen anything. On a map beat that price is the defect (see
+      // MAP_DRAWING_SHARE), so it is not paid twice.
+      notes: { reserve: null, stacked: true },
       extra: poolFigureCss({ scope: SCOPE }),
     }),
     // THE GESTURE'S SCRIPT-FREE HALF. The map's cells are MapLibre layers now and no stylesheet

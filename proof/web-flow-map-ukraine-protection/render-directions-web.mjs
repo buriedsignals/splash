@@ -37,7 +37,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
-import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
   assertOneMeasure,
@@ -858,6 +858,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
 
   const pageOf = (plate, box) =>
     renderWeb({
+      // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
+      // declared once, in the trunk, and refused there on the file this call writes.
+      drawing: { share: MAP_DRAWING_SHARE },
       component: DirectedFlowMapWeb,
       props: {
         plate,

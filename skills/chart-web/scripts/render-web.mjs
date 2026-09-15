@@ -143,7 +143,7 @@ const OUTPUT_NAME = "rainfall.html";
  * composition — so every web beat shares one implementation of the colour rule and the
  * text-measurement rule, never a copy per story.
  */
-async function renderWeb({ component, props, outDir, name, frame = null }) {
+async function renderWeb({ component, props, outDir, name, frame = null, drawing = null }) {
   const furniture = deriveFurniture(props.ground);
 
   // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
@@ -153,7 +153,7 @@ async function renderWeb({ component, props, outDir, name, frame = null }) {
   // returns the empty string and `filterNotes` returns nothing — no markup, no rule, no listener,
   // which is the difference between a filter that is removable and a control that is merely hidden.
   const filterIndex = buildFilterIndex(props.filter, props.filterKeys ?? []);
-  const markup = renderToStaticMarkup(
+  let markup = renderToStaticMarkup(
     createElement(component, {
       ...props,
       ...furniture,
@@ -169,6 +169,10 @@ async function renderWeb({ component, props, outDir, name, frame = null }) {
   // away (B6.18b). What this cannot see — an element carrying no attributes at all — is what the
   // driven guard walks a real browser for.
   assertOneVocabulary(markup, filterIndex);
+
+  // A MAP BEAT'S PROSE MOVES INSIDE ITS OWN DISCLOSURE (see MAP_DRAWING_SHARE). A chart beat passes
+  // no `drawing` and nothing here runs: its column is exactly the column the owner validated.
+  if (drawing) markup = foldProseIntoDisclosure(markup, name ?? "this beat");
 
   // THE ENTRANCE IS READ OFF THE MARKUP, never passed in. A beat declares an entrance the same way
   // it declares a filter — by DOING it, here by tagging its own layers with `data-entrance-motion`
@@ -219,6 +223,7 @@ async function renderWeb({ component, props, outDir, name, frame = null }) {
     filter: props.filter ?? null,
     entrance: declaresEntrance,
     fontStack: stack,
+    drawing,
   });
   const page = (css) => `<!doctype html>
 <html lang="fr">
@@ -260,6 +265,8 @@ ${inlineScript}
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
+  // MEASURED ON THE FILE A READER OPENS, not on the string this function happened to build.
+  if (drawing) await assertDrawingShare(outPath, drawing.share, name ?? "this beat");
   return { outPath };
 }
 
@@ -506,6 +513,127 @@ const FRAME_PAD_PX = 24;
 // scrollbar, which is honest, rather than a 20px strip pretending to be a line chart.
 const PLOT_FLOOR_PX = 120;
 
+// ── THE DRAWING'S GUARANTEED SHARE, ON A MAP BEAT ────────────────────────────────────────────────
+//
+// THE DEFECT. `.chart-figure` is one window tall and `.chart-plot` is the only shrinkable item in
+// its column, so every sentence a beat adds above or below the drawing is paid for by the drawing
+// and by nothing else. On a CHART that is right and validated: the words are few and the geometry
+// gives back a few pixels. On a MAP it is not — the owner, reading the seven map pages: « pour les
+// charts ça passe mais pour les maps tu en mets trois tonnes, c'est trop ». Measured at 1512x860
+// before this: the validated choropleth gave its drawing 503-520 px of the 812 px usable, the flow
+// beat 435-490 and the locator 413-467. Fifty to sixty-nine pixels of map, spent on prose, with
+// nothing in the format able to notice.
+//
+// THE REVERSAL. On a map beat the DRAWING declares a floor as a share of the usable height, and the
+// TEXT becomes the adjusting variable: the standfirst is capped at one line, the control's note row
+// is no longer reserved at its worst-case height, and the readings that no longer fit are folded
+// into the disclosure the page already carries — never deleted, one click away, still in the
+// accessible tree and still read out in order.
+//
+// TWO THIRDS IS WHERE IT STARTED AND WHAT IT SHIPS. 0.66 of the usable height, which at 1512x860 is
+// 536 px of drawing against the 812 px the figure has inside its own padding. It is above every
+// number measured before it, including the choropleth the owner validated as the pattern.
+const MAP_DRAWING_SHARE = 0.66;
+
+/** The window the share is declared against and refused against — the owner's own review size. */
+const REVIEW_WINDOW = { width: 1512, height: 860 };
+
+/**
+ * THE READINGS GO INTO THE DISCLOSURE THE PAGE ALREADY HAS.
+ *
+ * Every map beat ends with `<details class="mw-readings">` — the values behind the drawing, for a
+ * reader who wants them. The prose paragraphs the beat prints BETWEEN the drawing and the source
+ * line say the same kind of thing at the cost of two to five lines of map, so they move inside it,
+ * ahead of the table, in the order they were written.
+ *
+ * It is a move, never a cut: nothing is dropped, and a beat that carries no disclosure is refused
+ * rather than silently stripped of its prose.
+ */
+function foldProseIntoDisclosure(markup, where) {
+  const prose = [
+    ...markup.matchAll(/<p class="(?:chart-reading|live-hint)"[^>]*>[\s\S]*?<\/p>/g),
+  ].map((m) => m[0]);
+  if (!prose.length) return markup;
+  const summary = markup.match(/<details class="mw-readings"[^>]*>\s*<summary[^>]*>[\s\S]*?<\/summary>/);
+  if (!summary)
+    throw new Error(
+      `${where} declares a drawing share, so its reading paragraphs fold into its own ` +
+        `<details class="mw-readings"> — and it carries none. Add the disclosure, or drop the prose.`,
+    );
+  let out = markup;
+  for (const p of prose) out = out.replace(p, "");
+  return out.replace(summary[0], `${summary[0]}${prose.join("")}`);
+}
+
+/**
+ * THE REFUSAL. The page is opened at the review window and the drawing is MEASURED against the
+ * share it declared. A floor written in CSS is a promise; this is the reading that holds it — and
+ * it is the same reading that catches the other half, a page whose text no longer fits the window
+ * once the drawing has taken its share.
+ *
+ * No MapTiler key is needed and none is used: the live map never loads from a placeholder, the
+ * frozen fallback is what paints, and neither changes the height of a single row in the column.
+ */
+async function assertDrawingShare(outPath, share, where) {
+  const { default: puppeteer } = await import("puppeteer");
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ ...REVIEW_WINDOW, deviceScaleFactor: 1 });
+    await page.goto(`file://${outPath}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await new Promise((r) => setTimeout(r, 400));
+    // THE LIVE PAGE'S OWN COLUMN, NOT THE KEYLESS ONE. `p.live-hint` ships `hidden` and is revealed
+    // the moment the live map arrives, so a page measured without it is measured one row short —
+    // 17 px on the locator, which is exactly the overflow this guard exists to catch.
+    await page.evaluate(() => {
+      for (const hint of document.querySelectorAll(".live-hint")) hint.removeAttribute("hidden");
+    });
+    const seen = await page.evaluate(() => {
+      const fig = document.querySelector(".chart-figure");
+      const plot = document.querySelector(".chart-plot");
+      if (!fig || !plot) return null;
+      const cs = getComputedStyle(fig);
+      const usable =
+        fig.getBoundingClientRect().height -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom);
+      return {
+        usable,
+        plot: plot.getBoundingClientRect().height,
+        doc: document.documentElement.scrollHeight,
+        scrollW: document.documentElement.scrollWidth,
+        winW: window.innerWidth,
+        winH: window.innerHeight,
+      };
+    });
+    if (!seen) throw new Error(`${where} draws no .chart-figure/.chart-plot to measure a share on`);
+    const got = seen.plot / seen.usable;
+    if (got + 1e-4 < share)
+      throw new Error(
+        `${where} gives its drawing ${(got * 100).toFixed(1)} % of the ${Math.round(seen.usable)} px ` +
+          `usable height at ${REVIEW_WINDOW.width}x${REVIEW_WINDOW.height} — under the ` +
+          `${(share * 100).toFixed(1)} % a map beat declares. The text above and below it is what ` +
+          `gives way, not the map.`,
+      );
+    if (seen.doc > seen.winH)
+      throw new Error(
+        `${where} runs ${Math.round(seen.doc)} px tall in a ${seen.winH} px window once its drawing ` +
+          `has taken its ${(share * 100).toFixed(1)} % — the beat no longer fits what it is read in. ` +
+          `Shorten the words; the drawing's share is not the variable.`,
+      );
+    if (seen.scrollW > seen.winW)
+      throw new Error(
+        `${where} scrolls sideways at ${REVIEW_WINDOW.width} px: ${Math.round(seen.scrollW)} px wide`,
+      );
+    return { share: got, usable: seen.usable, plot: seen.plot, doc: seen.doc };
+  } finally {
+    await browser.close();
+  }
+}
+
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a filter — the styling of the
  * fieldset, the segmented pills, and the narrowing note the reader is owed. The rules that decide
@@ -665,7 +793,7 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, filter = null, entrance = false, fontStack = "sans-serif" }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
   // The beat's own answer to "may this frame open?", written into the page above the rule the
   // answer is about. Empty for a beat that has not been asked. See `frameNoteCss`.
@@ -959,6 +1087,45 @@ svg.chart { display: block; }
 }
 #tooltip[hidden] { display: none; }
 
+${
+  drawing
+    ? `
+/* THE DRAWING'S GUARANTEED SHARE — emitted only for a beat that declared one, which is every MAP
+   beat and no chart beat (see MAP_DRAWING_SHARE above for the measurement that made it necessary).
+
+   The floor is a share of the USABLE height, which is the window less the frame's own padding on
+   both edges — the same two numbers .chart-figure is built from, so the floor and the box it sits
+   in can never disagree about what "the height the beat has" means. 'max()' keeps PLOT_FLOOR_PX
+   underneath it: a pathologically short window still gets the honest scrollbar rather than a strip.
+   Two declarations for the same reason .chart-figure has two: dvh is what a collapsing mobile
+   toolbar makes correct, vh is what an engine without dvh still understands.
+
+   The rule is a floor, not a height. In a tall window the plot's own aspect-ratio is already larger
+   and this changes nothing at all. */
+.chart-plot {
+  min-height: max(${PLOT_FLOOR_PX}px, calc((100vh - ${FRAME_PAD_PX * 2}px) * ${drawing.share}));
+  min-height: max(${PLOT_FLOOR_PX}px, calc((100dvh - ${FRAME_PAD_PX * 2}px) * ${drawing.share}));
+}
+/* THE STANDFIRST IS THE ADJUSTING VARIABLE, NOT THE MAP. One line on the page; the sentence itself
+   is untouched in the markup, still read out whole by a screen reader and still copied whole.
+   Measured at 1512x860: every map beat's standfirst set two lines, and the second cost 18 px of
+   drawing on every one of them. */
+.chart-caveat {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+}
+/* AND THE CONTROL'S NOTE ROW STOPS BEING RESERVED AT ITS WORST CASE. 'stacked' notes already put
+   every sentence in one grid cell, so the row is as tall as the one showing and the drawing never
+   moves when the reader changes option — the reserve on top of that bought nothing and cost the
+   map its worst sentence's height before a reader had chosen anything. :where() keeps this at zero
+   specificity so a beat that still needs its own reserve can simply say so and win. */
+:where(.chart-figure) :where([class$="-notes"]) { min-height: 0; }
+`
+    : ""
+}
 ${filterRules}
 
 ${entranceRules}
@@ -1012,6 +1179,9 @@ if (import.meta.main) {
 export {
   render,
   renderWeb,
+  MAP_DRAWING_SHARE,
+  foldProseIntoDisclosure,
+  assertDrawingShare,
   SEED,
   buildCss,
   plotViewBoxOf,
