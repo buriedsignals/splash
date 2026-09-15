@@ -96,7 +96,7 @@
   },
   "legend": {
     "width": 525,
-    "height": 357,
+    "height": 395,
     "rows": {
       "stations": {
         "x": 5.582825317382813,
@@ -108,38 +108,38 @@
       },
       "power": {
         "x": 5.582825317382813,
-        "y": 168.40505597636718
+        "y": 205.92527578535157
       }
     },
     "symbols": {
       "dot": {
         "cx": 21.912756935937335,
-        "cy": 218.75844285839844,
+        "cy": 256.27866266738283,
         "label": {
           "text": "une centrale",
           "width": 218.31239568710328,
           "x": 52.83388514687467,
-          "y": 231.0056505
+          "y": 268.5258703089844
         }
       },
       "ring": {
         "cx": 21.912756935937335,
-        "cy": 274.5355220191406,
+        "cy": 312.055741828125,
         "label": {
           "text": "nucléaire",
           "width": 160.12506759903647,
           "x": 52.83388514687467,
-          "y": 286.7827296607422
+          "y": 324.30294946972657
         }
       },
       "reference": {
         "cx": 21.912756935937335,
-        "cy": 330.3126011798828,
+        "cy": 367.8328209888672,
         "label": {
           "text": "1 000 MW",
           "width": 171.36993294108998,
           "x": 52.83388514687467,
-          "y": 342.55980882148435
+          "y": 380.08002863046875
         }
       }
     },
@@ -658,6 +658,12 @@
     "halo": 11.165650634765626,
     "valueHalo": 14.542346191406251,
     "referenceR": 16.32993161855452,
+    "bar": {
+      "x": 5.582825317382813,
+      "y": 131.88681949921875,
+      "width": 503.0415930747986,
+      "height": 18.76010990449219
+    },
     "at": {
       "x": 85,
       "y": 190
@@ -667,30 +673,18 @@
     "form": 0,
     "lines": [
       {
-        "text": "Source : WRI Global Power",
+        "text": "Source : WRI Global Power Plant Database · Natural Earth",
         "x": 4.82109375,
         "y": 27.6140625,
-        "width": 400.76926491477275
-      },
-      {
-        "text": "Plant Database v1.3.0 ·",
-        "x": 4.82109375,
-        "y": 63.615041015624996,
-        "width": 344.619140625
-      },
-      {
-        "text": "contours Natural Earth 50 m",
-        "x": 4.82109375,
-        "y": 99.61601953125,
-        "width": 430.33247514204544
+        "width": 870.791015625
       }
     ],
     "halo": 9.6421875,
-    "width": 449,
-    "height": 105,
+    "width": 898,
+    "height": 33,
     "at": {
-      "x": 85,
-      "y": 915
+      "x": 925,
+      "y": 987
     }
   },
   "colours": {
@@ -45329,6 +45323,8 @@
   "ringR": 7.040000000000001,
   "total": 8900,
   "shareCapacity": 34.4,
+  "shareCapacityExact": 34.37177899690679,
+  "shareSites": 0.8089887640449439,
   "copyTexts": {
     "nuclear": "72 nucléaires · 0,8 %"
   },
@@ -45394,30 +45390,30 @@
   ],
   "timing": {
     "fps": 30,
-    "total": 639,
+    "total": 522,
     "establish": {
       "start": 0,
       "duration": 45
     },
     "reference": {
       "start": 51,
-      "duration": 150
+      "duration": 120
     },
     "reveal": {
-      "start": 207,
-      "duration": 100
+      "start": 174,
+      "duration": 75
     },
     "subject": {
-      "start": 313,
-      "duration": 170
+      "start": 252,
+      "duration": 150
     },
     "conclusion": {
-      "start": 489,
-      "duration": 60
+      "start": 408,
+      "duration": 54
     },
     "hold": {
-      "start": 549,
-      "duration": 90
+      "start": 462,
+      "duration": 60
     }
   },
   "fontFamily": null,
