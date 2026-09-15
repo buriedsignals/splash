@@ -1,0 +1,22 @@
+import { describe, expect, it } from "bun:test";
+import { checkTiming } from "#shared/chart-video/timing.ts";
+import { %%CONST%%_VIDEO_TIMING as T } from "./timing-contract";
+
+describe("the timing of %%BEAT%%", () => {
+  it("should pass every structural rule of the motion grammar", () => {
+    expect(checkTiming(T)).toEqual([]);
+  });
+
+  it("should run no longer than twenty-two seconds", () => {
+    expect(T.total).toBeLessThanOrEqual(T.fps * 22);
+  });
+
+  it("should hold the title card no longer than 1.5 s and the final frame at least 60 frames", () => {
+    expect([T.establish.duration <= T.fps * 1.5, T.hold.duration >= 60]).toEqual([true, true]);
+  });
+
+  it("should give every gesture the screen time BRIEF.md asks of it — SCAFFOLD PLACEHOLDER", () => {
+    // SCAFFOLD: each gesture's window (`scene.mjs`, WINDOWS) × its event's duration, against the seconds it needs.
+    throw new Error("write the gesture-duration test (timing.test.ts)");
+  });
+});
