@@ -293,6 +293,55 @@ real beat writes its own runner in that same shape — never editing this skill'
 | The WCAG floor `renderScrolly`'s own panel-contrast tripwire enforces | `4.5` | `renderScrolly`, `render-scrolly.mjs` |
 | The drawn step's own illustrated water level and day label (never a plotted value) | `{ waterLevelT, dayLabel }` | `DRAWN_VARIANT`, `render-scrolly.mjs` |
 
+## Per-type sheets
+
+Every catalogue chart and map type has its own sheet: what it argues, the scroll gestures that suit
+it, what a choreography must not do, the precision to assert, and its worked `proof/scrolly-*`
+example. Read the type's sheet before writing its choreography.
+
+| Type | Sheet | Worked example |
+| --- | --- | --- |
+| Area (and stacked area) | `references/types/area.md` | `proof/scrolly-area-swiss-co2/` |
+| Bar and column | `references/types/bar-and-column.md` | `proof/scrolly-bar-top-emitters-2024/` |
+| Beeswarm | `references/types/beeswarm.md` | `proof/scrolly-beeswarm-co2-per-person/` |
+| Box plot | `references/types/boxplot.md` | `proof/scrolly-boxplot-france-co2-decades/` |
+| Bullet | `references/types/bullet.md` | `proof/scrolly-bullet-low-carbon-share/` |
+| Bump (ranking-over-time) | `references/types/bump.md` | `proof/scrolly-bump-emitter-rank/` |
+| Calendar heatmap | `references/types/calendar-heatmap.md` | `proof/scrolly-calendar-heatmap-geneva/` |
+| Connected scatter | `references/types/connected-scatter.md` | `proof/scrolly-connected-scatter-lowcarbon/` |
+| Diverging bar | `references/types/diverging-bar.md` | `proof/scrolly-diverging-bar-eu-per-capita/` |
+| Diverging stacked bar (Likert) | `references/types/diverging-stacked-bar.md` | `proof/scrolly-diverging-stacked-electricity/` |
+| Dot strip | `references/types/dot-strip.md` | `proof/scrolly-dot-strip-lowcarbon-spread/` |
+| Dumbbell (range plot) | `references/types/dumbbell.md` | `proof/scrolly-dumbbell-life-expectancy-gains/` |
+| Gantt | `references/types/gantt.md` | `proof/scrolly-gantt-top-ten-tenure/` |
+| Grouped bar | `references/types/grouped-bar.md` | `proof/scrolly-wind-vs-solar/` |
+| Heatmap (matrix) | `references/types/heatmap.md` | `proof/scrolly-heatmap-coal-share-europe/` |
+| Histogram | `references/types/histogram.md` | `proof/scrolly-carbon-footprint-spread/` |
+| Line | `references/types/line.md` | `proof/scrolly-line-swiss-co2/` |
+| Lollipop | `references/types/lollipop.md` | `proof/scrolly-lollipop-co2-per-person/` |
+| Marimekko (mosaic plot) | `references/types/marimekko.md` | `proof/scrolly-marimekko-electricity-mix/` |
+| Parallel coordinates | `references/types/parallel-coordinates.md` | `proof/scrolly-parallel-coordinates-electricity-mix/` |
+| Pictogram (isotype) | `references/types/pictogram.md` | `proof/scrolly-pictogram-europe-lowcarbon/` |
+| Pie and donut | `references/types/pie-and-donut.md` | `proof/scrolly-donut-world-co2-share/` |
+| Population pyramid | `references/types/population-pyramid.md` | `proof/scrolly-swiss-age-pyramid/` |
+| Radar (spider) | `references/types/radar.md` | `proof/scrolly-radar-electricity-mix/` |
+| Sankey | `references/types/sankey.md` | `proof/scrolly-sankey-electricity-sources/` |
+| Scatter (and bubble) | `references/types/scatter.md` | `proof/scrolly-scatter-income-life-expectancy/` |
+| Slope (slopegraph) | `references/types/slope.md` | `proof/scrolly-slope-europe-lowcarbon/` |
+| Small multiples | `references/types/small-multiples.md` | `proof/scrolly-small-multiples-lowcarbon/` |
+| Stacked bar | `references/types/stacked-bar.md` | `proof/scrolly-stacked-bar-lowcarbon-growth/` |
+| Streamgraph | `references/types/streamgraph.md` | `proof/scrolly-streamgraph-swiss-electricity/` |
+| Treemap | `references/types/treemap.md` | `proof/scrolly-treemap-europe-capacity/` |
+| Waterfall (bridge) | `references/types/waterfall.md` | `proof/scrolly-germany-electricity-bridge/` |
+| Cartogram (area distortion — and tile cartogram) | `references/types/cartogram.md` | `proof/scrolly-cartogram-europe-lowcarbon/` |
+| Choropleth | `references/types/choropleth.md` | `proof/scrolly-choropleth-europe-lowcarbon/` |
+| Contour / isoline | `references/types/contour-isoline.md` | `proof/scrolly-contour-europe-distance/` |
+| Dot density | `references/types/dot-density.md` | `proof/scrolly-dot-density-europe-stations/` |
+| Flow map (route — and origin-destination) | `references/types/flow-map.md` | `proof/scrolly-flow-map-ukraine-protection/` |
+| Hex grid (spatial binning — and hex cartogram) | `references/types/hex-grid.md` | `proof/scrolly-hex-grid-europe-protection/` |
+| Locator | `references/types/locator.md` | `proof/scrolly-locator-zaporizhzhia/` |
+| Proportional symbol (symbol / bubble map) | `references/types/proportional-symbol.md` | `proof/scrolly-proportional-symbol-europe-capacity/` |
+
 ## Files
 - `TYPEFACE.md` — the recorded typeface this skill's still renders in (`origin: default`: nobody chose
   it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
