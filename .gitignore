@@ -41,3 +41,7 @@ brand.json
 # default (~/.cache/splash/typefaces) so nothing can be committed and a second clone reuses it.
 # This line only covers the case where SPLASH_TYPEFACE_CACHE is pointed inside the tree.
 .splash-typefaces/
+
+# A live map page's local copy carries the MapTiler key (skills/scrolly/scripts/live-map-cards-bake.mjs,
+# writeLocalCopy): the committed page keeps the placeholder, because the repository is public.
+proof/**/renders/*.local.html

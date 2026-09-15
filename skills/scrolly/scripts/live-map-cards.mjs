@@ -23,6 +23,7 @@
 //   shapeSelectionCss(scope, reference)                       one shape shown, chosen by the stage's aspect
 //   noScriptCss(scope, lastCard, alsoShown)                   the last card's picture without a script
 //   CardImages({ fallbacks, first })                          the `<picture>` per card and shape
+//   KEY_PLACEHOLDER, localPageOf(page), keyedPage(html, key, name)   the git-ignored local copy with the key in it
 
 import { createHash } from "node:crypto";
 import { createElement } from "react";
@@ -165,4 +166,23 @@ export function CardImages({ fallbacks, first }) {
       ),
     ),
   );
+}
+
+export const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
+
+/** WHERE A DIRECTION'S LOCAL, KEYED COPY LIVES: beside its page, `renders/<id>.local.html`, git-ignored
+ *  (the `.gitignore` rule for renders/*.local.html under proof). The committed page carries the placeholder, because the repository is public;
+ *  the local copy is what a page opened from disk needs to show a live map (owner, 2026-09-15). */
+export function localPageOf(pagePath) {
+  if (!pagePath.endsWith(".html") || pagePath.endsWith(".local.html")) throw new Error(`${pagePath} is not a committed page`);
+  return pagePath.replace(/\.html$/, ".local.html");
+}
+
+/** The page's HTML with the key substituted, refused loudly when there is no key or nothing to substitute: a local
+ *  copy without a live map would look like a broken page. */
+export function keyedPage(html, key, name = "the page") {
+  if (!key)
+    throw new Error(`no MapTiler key in the environment to write ${name}'s local copy: load the worktree's .env (set -a && . ./.env && set +a)`);
+  if (!html.includes(KEY_PLACEHOLDER)) throw new Error(`${name} carries no ${KEY_PLACEHOLDER} placeholder — is it a live map page?`);
+  return html.split(KEY_PLACEHOLDER).join(key);
 }

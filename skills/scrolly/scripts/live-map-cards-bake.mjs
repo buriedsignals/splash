@@ -23,6 +23,7 @@
 // Needs a MapTiler key in the environment and `cwebp` (brew `webp`) when a bake is redone.
 
 import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+export { KEY_PLACEHOLDER } from "./live-map-cards.mjs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -45,6 +46,9 @@ import {
   cardImageName,
   cardImageStem,
   checkCardImages,
+  KEY_PLACEHOLDER,
+  keyedPage,
+  localPageOf,
   planHashOf,
   sha256Of,
   variantsOf,
@@ -52,7 +56,6 @@ import {
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-export const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
 /** THE CODE THE PIXELS DEPEND ON besides the plan: the trunk that mounts, sweeps and paints it, and this bake. A
  *  change in any of them re-bakes the card images instead of leaving stale ones behind the live map. */
@@ -171,14 +174,17 @@ const readRecord = async (path) => (existsSync(path) ? JSON.parse(await readFile
  * @param blankCard    `cardOf`'s shape, zeroed, for the draft page
  * @param renderPage   (fallbacks, shapes) → `renderScrolly`'s answer (`{ outPath }`)
  * @param aspects      the bake aspects (`SHAPE_ASPECTS`)
+ * @param noBake       reuse the images on disk even when stale (tuning only; the render says so)
  */
 export async function renderWithCardImages(
   cards,
-  { id, plan, states, fallbackDir, stageGround, project = [], cardOf = (b) => ({ zoom: b.zoom }), blankCard = { zoom: 0 }, renderPage, aspects = SHAPE_ASPECTS, log = console.log },
+  { id, plan, states, fallbackDir, stageGround, project = [], cardOf = (b) => ({ zoom: b.zoom }), blankCard = { zoom: 0 }, renderPage, aspects = SHAPE_ASPECTS, log = console.log, noBake = false },
 ) {
   // THE STAGE FIRST: a draft page with blank card images publishes the same layout.
   const blank = blankCards(states.length, blankCard);
   const draft = await renderPage(blank.fallbacks, blank.shapes);
+  // A local copy left from an earlier render never outlives a page this render refuses.
+  rmSync(localPageOf(draft.outPath), { force: true });
   const sizes = bakeSizesFor(await cards.measureStages(draft.outPath), aspects);
   const variants = variantsOf(SCALES);
   const planHash = planHashOf({ plan, sizes, stageGround, scales: SCALES, style: cards.unkeyedStyle, maplibre: cards.maplibreVersion, trunk: cards.trunkDigest });
@@ -187,7 +193,14 @@ export async function renderWithCardImages(
   let record = await readRecord(recordPath);
   const missing = states.some((_, k) => variants.some(([shape, scale]) => !existsSync(pathOf(k, shape, scale, "webp")) && !existsSync(pathOf(k, shape, scale, "png"))));
   let baked = false;
-  if (!record || record.planHash !== planHash || missing) {
+  // `noBake` (a beat's `--no-bake`, while a map is being tuned before the owner validates): the images already on
+  // disk are inlined even when what they picture has changed, and the render says so. Never for a final render.
+  const stale = !record || record.planHash !== planHash || missing;
+  if (stale && noBake) {
+    if (!record || missing) throw new Error(`--no-bake: ${id} has no complete set of card images to reuse; bake them once first`);
+    log(`${id}: STALE card images reused (--no-bake) — they may not match the live map until the next bake`);
+  }
+  if (stale && !noBake) {
     await mkdir(fallbackDir, { recursive: true });
     const page = await cards.mapPage();
     try {
@@ -273,16 +286,24 @@ export async function renderWithCardImages(
     const kept = shape === "wide" ? at.height === bakedFor.height : at.width === bakedFor.width;
     if (!kept) throw new Error(`the ${shape} stage measured ${at.width} × ${at.height} on the written page, and its cards were baked for ${bakedFor.width} × ${bakedFor.height}`);
   }
-  return { outPath, record, sizes, baked };
+  const localPath = writeLocalCopy(outPath, cards.key);
+  return { outPath, localPath, record, sizes, baked };
+}
+
+/** EVERY WRITTEN PAGE GETS ITS LOCAL, KEYED COPY beside it (`renders/<id>.local.html`, git-ignored), so a page
+ *  opened from disk always has a live map; no key refuses the render (`keyedPage`). Returns the copy's path. */
+export function writeLocalCopy(pagePath, key) {
+  const local = localPageOf(pagePath);
+  writeFileSync(local, keyedPage(readFileSync(pagePath, "utf8"), key, pagePath));
+  return local;
 }
 
 /** A COPY OF A PAGE WITH THE KEY IN IT, in a fresh temporary directory, for a guard or a capture. The committed
  *  page never carries the key; call `remove()` however the run ends. */
 export function writeKeyedCopy(pagePath, key, { parent = tmpdir(), prefix = "live-scrolly-" } = {}) {
-  const html = readFileSync(pagePath, "utf8");
-  if (!html.includes(KEY_PLACEHOLDER)) throw new Error(`${pagePath} carries no key placeholder — is it a live map page?`);
+  const html = keyedPage(readFileSync(pagePath, "utf8"), key, pagePath);
   const dir = mkdtempSync(join(parent, prefix));
   const path = join(dir, "page.html");
-  writeFileSync(path, html.split(KEY_PLACEHOLDER).join(key));
+  writeFileSync(path, html);
   return { path, dir, remove: () => rmSync(dir, { recursive: true, force: true }) };
 }
