@@ -1,171 +1,82 @@
-// The painting function for this beat's one visual, inlined by `renderScrolly`'s `reveal` option AFTER
-// `reveal.mjs`, whose `fitViewBox` it calls.
+// The painting function for the dot density scrolly, inlined by `renderScrolly`'s `reveal` option AFTER the map
+// runtime (`shared/map-beat/inline.mjs`), inside the same IIFE: `initScrollyMap` and `applyScrollyMap` are in scope.
 //
-// A STATE, field by field (every gesture scrubbed by the reader's own scroll):
-//   arrive   the stations other than the subject's arriving fuel by fuel, counted                    0..1
-//   subject  the subject's sites arriving, ringed                                                    0..1
-//   fade     every other station stepping back                                                       0..1
-//   weight   every dot going from one size (a station) to the area of its capacity                   0..1
-//   zoom     the camera travelling from the box the stations fill onto the country with most of the
-//            subject's sites                                                                          0..1
+// THE RUNTIME OWNS THE CAMERA AND EVERY PLAN LAYER'S PAINT (`plan.mjs`). This file owns what sits outside the
+// plan: which frozen card image lies under the live map, and the counter and its notes above it.
 //
-// ONE CANVAS, redrawn on every paint in the reader's pixels: the land as one path, then the dots, largest
-// first so a small station is never buried under a large one. The camera is a view box fitted to the stage
-// (`fitViewBox`); dot sizes are in pixels, grown gently with the zoom.
+// A STATE, field by field:
+//   arrive   the ordinary stations filling in, fuel by fuel, most numerous first                        0..1
+//   subject  the 72 nuclear sites arriving, ringed                                                       0..1
+//   fade     every other station stepping back while nuclear is isolated                                 0..1
+//   weight   every dot re-encoded to the area of its capacity                                             0..1
+//   zoom     the travel onto the close-up country (paint timing only; the camera moves on its own cards)  0..1
+//   card camX camY camZoom camBearing camPitch camAlignY   the card's camera and its frozen image
 
-export function applyDotState(root, state, context) {
-  const carrier = root.querySelector("[data-dots]");
-  if (!carrier) return;
-  if (!root.__dots) seatDots(root, carrier);
+export function applyDotState(root, state) {
+  if (!root.__dots) setUpDots(root);
   const c = root.__dots;
+  applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const SW = c.stage.clientWidth;
-  const SH = c.stage.clientHeight;
-  if (!(SW > 0 && SH > 0)) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  if (c.canvas.width !== Math.round(SW * dpr) || c.canvas.height !== Math.round(SH * dpr)) {
-    c.canvas.width = Math.round(SW * dpr);
-    c.canvas.height = Math.round(SH * dpr);
-  }
+  const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
 
-  const z = ease(clamp(state.zoom));
-  const box = {
-    x: lerp(c.europeBox.x, c.zoomBox.x, z),
-    y: lerp(c.europeBox.y, c.zoomBox.y, z),
-    w: lerp(c.europeBox.w, c.zoomBox.w, z),
-    h: lerp(c.europeBox.h, c.zoomBox.h, z),
-  };
-  const vb = fitViewBox(box, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 });
-  const ppu = SW / vb.w;
-  const ctx = c.ctx;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = c.colours.water;
-  ctx.fillRect(0, 0, c.canvas.width, c.canvas.height);
-  ctx.setTransform(ppu * dpr, 0, 0, ppu * dpr, -vb.x * ppu * dpr, -vb.y * ppu * dpr);
-  ctx.fillStyle = c.colours.land;
-  ctx.fill(c.land, "evenodd");
-  ctx.strokeStyle = c.colours.coast;
-  ctx.lineWidth = 0.6 / ppu;
-  ctx.stroke(c.land);
+  const shownLive = Boolean(c.handle && c.handle.ready);
+  c.fallbacks.forEach((img) => {
+    const opacity = !shownLive && Number(img.dataset.fallback) === card ? "1" : "0";
+    if (img.style.opacity !== opacity) img.style.opacity = opacity;
+  });
 
-  // Sizes in pixels. A station is a dot a reader can count; at full weight the largest site takes the radius
-  // the stage allows, and every other the radius its capacity's area gives it.
-  const fitPpu = SW / fitViewBox(c.europeBox, { width: SW, height: SH }, { top: 0, right: 0, bottom: 0, left: 0 }).w;
-  const grow = Math.sqrt(ppu / fitPpu);
-  const rCount = Math.max(1, Math.min(1.8, SW / 750)) * grow;
-  const rMax = Math.max(8, Math.min(20, SW / 60)) * grow;
-  const w = ease(clamp(state.weight));
+  // THE COUNTER COUNTS WHAT THE MAP HAS DRAWN: the ordinary stations' own buckets, weighted by how far each has
+  // arrived — nuclear counts separately, on its own note, once isolated (`subjectNote`).
   const arrive = clamp(state.arrive);
-  const subjectOn = clamp(state.subject);
-  const fade = clamp(state.fade);
-  const fuels = c.arrival.length;
+  let arrived = 0;
+  for (const b of c.plan.buckets) arrived += b.n * clamp(arrive * c.plan.buckets.length - c.plan.buckets.indexOf(b));
+  const k = Math.max(0, Math.min(c.total, Math.round(arrived)));
+  const text = c.counter.dataset.template.replace("{n}", c.format(k));
+  if (c.counter.textContent !== text) c.counter.textContent = text;
 
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const toX = (x) => (x - vb.x) * ppu;
-  const toY = (y) => (y - vb.y) * ppu;
-  let counted = 0;
-  const rings = [];
-  for (const d of c.order) {
-    const [x, y, fuel, mw, rank] = d;
-    const isSubject = fuel === c.subjectFuel;
-    let shown;
-    if (isSubject) shown = subjectOn;
-    else {
-      const slot = c.arrivalSlot[fuel];
-      // Within its fuel a station arrives at its own moment, so a fuel sprinkles in rather than wiping across.
-      shown = clamp((arrive * fuels - slot) * 1.4 - (rank % 97) / 97 * 0.4);
-    }
-    if (shown <= 0.01) continue;
-    if (!isSubject && shown > 0.5) counted++;
-    const px = toX(x);
-    const py = toY(y);
-    const r = lerp(rCount, Math.max(0.6 * grow, rMax * Math.sqrt(mw / c.maxMw)), w);
-    if (px < -r - 4 || py < -r - 4 || px > SW + r + 4 || py > SH + r + 4) continue;
-    if (isSubject) {
-      // The subject is drawn after the field, as a ring: at a count a ring round a dot, at a weight the ring IS
-      // the capacity's outline over a faint fill, so the field under it stays readable.
-      rings.push([px, py, r, shown]);
-      continue;
-    }
-    // Translucent at a count, so where stations crowd the field reads as a deeper shade rather than a solid mass
-    // the subject's rings disappear into.
-    ctx.globalAlpha = shown * (1 - 0.85 * fade) * lerp(0.5, 0.5, w);
-    ctx.fillStyle = c.colours.dot;
-    ctx.beginPath();
-    ctx.arc(px, py, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // The subject's rings over everything, so none of its sites is lost under a neighbour.
-  ctx.strokeStyle = c.colours.subject;
-  ctx.fillStyle = c.colours.subject;
-  ctx.lineWidth = lerp(1.6, 1.8, w);
-  for (const [px, py, r, shown] of rings) {
-    const ringR = lerp(5, r, w);
-    ctx.globalAlpha = shown * lerp(0, 0.12, w);
-    ctx.beginPath();
-    ctx.arc(px, py, ringR, 0, Math.PI * 2);
-    ctx.fill();
-    // A halo in the land's colour under each ring, so it cuts through the densest part of the field.
-    ctx.globalAlpha = shown * (1 - 0.6 * w);
-    ctx.strokeStyle = c.colours.land;
-    ctx.lineWidth = lerp(4.5, 3.5, w);
-    ctx.stroke();
-    ctx.globalAlpha = shown;
-    ctx.strokeStyle = c.colours.subject;
-    ctx.lineWidth = lerp(1.6, 1.8, w);
-    ctx.stroke();
-    ctx.globalAlpha = shown * (1 - w);
-    ctx.beginPath();
-    ctx.arc(px, py, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  const countText = c.count.dataset.template.replace("{n}", c.format(counted));
-  if (c.count.textContent !== countText) c.count.textContent = countText;
-  showOneNote([[c.count, clamp(arrive * 4) * (1 - subjectOn)], [c.subjectNote, subjectOn * (1 - w)], [c.weightNote, w * (1 - z)], [c.zoomNote, z]]);
-  showOneNote([[c.keyCount, 1 - w], [c.keyWeight, w]]);
-  for (const swatch of c.sizeSwatches) {
-    const d = 2 * rMax * Math.sqrt(Number(swatch.dataset.mw) / c.maxMw) / grow;
-    swatch.style.width = `${d}px`;
-    swatch.style.height = `${d}px`;
-  }
+  const subject = clamp(state.subject);
+  const weight = clamp(state.weight);
+  const zoom = clamp(state.zoom);
+  const notes = {
+    counter: (1 - subject) * (1 - weight),
+    subjectNote: subject * (1 - weight) * (1 - zoom),
+    weightNote: weight * (1 - zoom),
+    zoomNote: zoom,
+  };
+  showOneNote([[c.counter, notes.counter], [c.subjectNote, notes.subjectNote], [c.weightNote, notes.weightNote], [c.zoomNote, notes.zoomNote]]);
 }
 
-function seatDots(root, carrier) {
-  const data = JSON.parse(carrier.getAttribute("data-dots"));
-  const stage = root.querySelector('[data-part="stage"]');
-  const canvas = stage.querySelector("canvas");
-  const arrivalSlot = {};
-  data.arrival.forEach((fuel, i) => {
-    arrivalSlot[fuel] = i;
+function setUpDots(root) {
+  const data = JSON.parse(root.querySelector("[data-dots]").getAttribute("data-dots"));
+  const plan = JSON.parse(root.querySelector('[data-part="plan"]').textContent);
+  const repaint = () => {
+    if (root.dataset.state) applyDotState(root, JSON.parse(root.dataset.state));
+  };
+  const handle = initScrollyMap(root, plan, {
+    window,
+    preserveDrawingBuffer: /[?&]verify/.test(location.search),
+    onShown: repaint,
+    onReady: repaint,
   });
-  // Largest first, so small stations draw on top.
-  const order = data.stations.map((s, i) => [...s, i]).sort((a, b) => b[3] - a[3]);
+  root.__handle = handle;
+  window.__scrollyMap = handle;
   root.__dots = {
     ...data,
-    stage,
-    canvas,
-    ctx: canvas.getContext("2d"),
-    land: new Path2D(data.land),
-    order,
-    arrivalSlot,
-    maxMw: Math.max(...data.stations.map((s) => s[3])),
-    format: (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "),
-    count: root.querySelector('[data-part="count"]'),
+    plan,
+    handle,
+    stage: root.querySelector('[data-part="stage"]'),
+    fallbacks: Array.from(root.querySelectorAll("[data-fallback]")),
+    cards: plan.fallback.wide.cards.length,
+    format: (v) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " "),
+    counter: root.querySelector('[data-part="counter"]'),
     subjectNote: root.querySelector('[data-part="subject-note"]'),
     weightNote: root.querySelector('[data-part="weight-note"]'),
     zoomNote: root.querySelector('[data-part="zoom-note"]'),
-    keyCount: root.querySelector('[data-part="key-count"]'),
-    keyWeight: root.querySelector('[data-part="key-weight"]'),
-    sizeSwatches: Array.from(root.querySelectorAll("[data-mw]")),
   };
 }
 
-// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never overlap
-// while the scroll crossfades between them — each fades out to nothing before the next fades in.
+// The header's notes share one slot: only the strongest shows, at its lead over the next, so two notes never
+// overlap while the scroll crossfades between them — each fades out to nothing before the next fades in.
 function showOneNote(entries) {
   const ranked = entries.map(([, v]) => v).sort((a, b) => b - a);
   const lead = Math.max(0, Math.min(1, ranked[0] - (ranked[1] ?? 0)));

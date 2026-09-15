@@ -1,18 +1,16 @@
 // Europe's low-carbon power stations, one dot each, rendered once per FILED DIRECTION into a self-contained
-// scrolly page. The `dot density` type in the scrolly format.
+// scrolly page. The `dot density` type in the scrolly format, on a live MapTiler map (addendum 2026-09-15).
 //
-// THE SUBJECT OF `static-dot-density-europe-stations`, CHOREOGRAPHED. The stations, the claim and its assertions
-// are the static beat's own; the scroll tells them with its own gestures
-// (`scrolly/references/directed-type-choreography.md`):
+// THE SUBJECT OF `static-dot-density-europe-stations`, CHOREOGRAPHED:
 //
-//   1. the land, empty;
+//   1. the land, empty — the live basemap itself, no dots yet;
 //   2. the stations arriving fuel by fuel, counted;
 //   3. the 72 nuclear sites arriving, ringed, the rest stepping back;
 //   4. every dot taking the area of its capacity;
 //   5. the camera onto the country with most of the nuclear sites, its own averages;
 //   6. back to one dot per station, and the database's limit.
 //
-// Usage:  bun proof/scrolly-dot-density-europe-stations/render-directions-scrolly.mjs
+// Usage:  set -a && . ./.env && set +a && bun proof/scrolly-dot-density-europe-stations/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
 import { readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
@@ -20,29 +18,33 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { readPalette } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, readPalette, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { cameraFields, mercatorOf, lonLatOf, validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
-import { dotGeometry } from "./dot-geometry.mjs";
+import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
+import { dotDensityPlan } from "./plan.mjs";
 import { DirectedDotDensityScrolly } from "./DirectedDotDensityScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+const FALLBACK = join(HERE, "fallback");
 const EYEBROW = "Énergie · Europe";
-const NB = "\u00A0";
+const NB = " ";
 const SUBJECT = "Nuclear";
-const WINDOW = { west: -25, east: 45, south: 34, north: 72 };
-/** The order the other fuels arrive in: the most numerous first. */
+const WHOLE_WINDOW = { west: -25, east: 45, south: 34, north: 72 };
 const FUEL_WORDS = { Solar: "solaire", Wind: "éolien", Hydro: "hydraulique", Biomass: "biomasse", Geothermal: "géothermie", "Wave and Tidal": "marées", Nuclear: "nucléaire" };
 const COUNTRY = { France: ["France", "en France"], "United Kingdom": ["Royaume-Uni", "au Royaume-Uni"], Germany: ["Allemagne", "en Allemagne"], Russia: ["Russie", "en Russie"] };
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
 
-// ── the stations, and the static beat's own assertions ─────────────────────────────────────────
+// ── the stations, and the static beat's own assertions (unchanged) ──────────────────────────────
 const csv = (await readFile(join(HERE, "stations.csv"), "utf8")).trim().split(/\r?\n/);
 const header = csv[0].split(",");
 const stations = csv.slice(1).map((l) => {
@@ -85,40 +87,38 @@ const focusNuclear = avg(SUBJECT);
 const focusSolar = avg("Solar");
 if (!(focusNuclear / focusSolar > 100)) throw new Error(`the close-up says a nuclear site outweighs a solar site by orders of magnitude in ${focus}; the ratio is ${(focusNuclear / focusSolar).toFixed(0)}`);
 
-const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
-const map = dotGeometry(geo, stations, { window: WINDOW, width: 1000 });
-const fuelList = [...others, SUBJECT];
-const drawn = stations.map((s) => [...map.place(s), fuelList.indexOf(s.fuel), Math.round(s.mw * 10) / 10]);
-const focusPts = inFocus.map((s) => map.place(s)).filter(([x, y]) => x > -50 && x < map.width + 50 && y > -50 && y < map.height + 50);
-// A station is placed in the frame or its margin; one outside both is a projection error, not a far place.
-if (drawn.some(([x, y]) => x < -map.margin.x || x > map.width + map.margin.x || y < -map.margin.y || y > map.height + map.margin.y))
-  throw new Error("a station lands outside the margin the land is drawn in");
-const fx0 = Math.min(...focusPts.map((p) => p[0]));
-const fx1 = Math.max(...focusPts.map((p) => p[0]));
-const fy0 = Math.min(...focusPts.map((p) => p[1]));
-const fy1 = Math.max(...focusPts.map((p) => p[1]));
-const aspect = map.width / map.height;
-let zw = (fx1 - fx0) * 1.15;
-let zh = (fy1 - fy0) * 1.15;
-if (zw / zh < aspect) zw = zh * aspect;
-else zh = zw / aspect;
-const zoomBox = { x: (fx0 + fx1) / 2 - zw / 2, y: (fy0 + fy1) / 2 - zh / 2, w: zw, h: zh };
-/** The whole-map view: the box holding the stations between the 1st and 99th percentile on each axis, padded —
- *  not the window, whose corners are Greenland and the Sahara. On a phone the window fitted to the width left
- *  Europe a strip in the middle of the stage. */
-const pctile = (values, q) => [...values].sort((a, b) => a - b)[Math.floor(q * (values.length - 1))];
-const inFrame = drawn.filter(([x, y]) => x >= 0 && x <= map.width && y >= 0 && y <= map.height);
-const ex0 = pctile(inFrame.map((d) => d[0]), 0.01);
-const ex1 = pctile(inFrame.map((d) => d[0]), 0.99);
-const ey0 = pctile(inFrame.map((d) => d[1]), 0.01);
-const ey1 = pctile(inFrame.map((d) => d[1]), 0.99);
-const europeBox = { x: ex0 - (ex1 - ex0) * 0.05, y: ey0 - (ey1 - ey0) * 0.05, w: (ex1 - ex0) * 1.1, h: (ey1 - ey0) * 1.1 };
-
 const n0 = (v) => plainSpaces(Math.round(v).toLocaleString("fr-FR"));
 const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const listOf = (xs) => `${xs.slice(0, -1).join(", ")} et ${xs[xs.length - 1]}`;
 const [focusName, inFocusWords] = COUNTRY[focus];
 console.log(`${total} centrales · nucléaire ${nuclear.length} (${shareSites.toFixed(2)} %) · ${shareCapacity.toFixed(1)} % de la puissance · ${focus} ${focusSites} sites, ${focusNuclear.toFixed(0)} MW contre ${focusSolar.toFixed(1)} MW\n`);
+
+// ── the cameras: whole-map is the box the stations fill, not the continental window ─────────────
+const proj = stations.map((s) => ({ ...s, m: mercatorOf([s.lon, s.lat]) }));
+const pctile = (values, q) => [...values].sort((a, b) => a - b)[Math.floor(q * (values.length - 1))];
+const ex0 = pctile(proj.map((p) => p.m[0]), 0.01);
+const ex1 = pctile(proj.map((p) => p.m[0]), 0.99);
+const ey0 = pctile(proj.map((p) => p.m[1]), 0.01);
+const ey1 = pctile(proj.map((p) => p.m[1]), 0.99);
+const padX = (ex1 - ex0) * 0.06;
+const padY = (ey1 - ey0) * 0.06;
+const [bx0, bx1, by0, by1] = [ex0 - padX, ex1 + padX, ey0 - padY, ey1 + padY];
+const REFERENCE = { width: 1280, height: Math.round((1280 * (by1 - by0)) / (bx1 - bx0)) };
+const WHOLE_ZOOM = Math.log2(REFERENCE.width / ((bx1 - bx0) * 512));
+const WHOLE_CENTER = lonLatOf([(bx0 + bx1) / 2, (by0 + by1) / 2]);
+
+/** THE CLOSE-UP CENTRES THE FOCUS COUNTRY'S NUCLEAR SITES ON BOTH AXES: their box, 15 % over, fitted in. */
+const focusNuclearPts = nuclear.filter((s) => s.country === focus).map((s) => mercatorOf([s.lon, s.lat]));
+const fx0 = Math.min(...focusNuclearPts.map((p) => p[0]));
+const fx1 = Math.max(...focusNuclearPts.map((p) => p[0]));
+const fy0 = Math.min(...focusNuclearPts.map((p) => p[1]));
+const fy1 = Math.max(...focusNuclearPts.map((p) => p[1]));
+const CLOSE_ZOOM = Math.log2(Math.min(REFERENCE.width / ((fx1 - fx0) * 1.15 * 512), REFERENCE.height / ((fy1 - fy0) * 1.15 * 512)));
+const CLOSE_CENTER = lonLatOf([(fx0 + fx1) / 2, (fy0 + fy1) / 2]);
+
+const whole = cameraFields({ center: WHOLE_CENTER, zoom: WHOLE_ZOOM, alignY: 1 });
+const closeUp = cameraFields({ center: CLOSE_CENTER, zoom: CLOSE_ZOOM, alignY: 0 });
+const cameras = [whole, whole, whole, whole, closeUp, whole];
 
 // ── the words ──────────────────────────────────────────────────────────────────────────────────
 const title = [
@@ -134,7 +134,7 @@ const prose = [
   [`${inFocusWords[0].toUpperCase()}${inFocusWords.slice(1)}, qui compte ${focusSites} des ${nuclear.length} sites, un site nucléaire pèse en moyenne ${n0(focusNuclear)}${NB}MW ; un site solaire, ${one(focusSolar)}${NB}MW.`],
   [`Lecture : un point, une centrale, à ses coordonnées. La base recense les centrales qu’elle connaît : le petit solaire et le petit éolien y sont sous-représentés.`],
 ];
-const source = "Source : WRI Global Power Plant Database v1.3.0 · contours Natural Earth 50 m, projection équivalente";
+const source = "Source : WRI Global Power Plant Database v1.3.0 · fond de carte © MapTiler © OpenStreetMap";
 const words = {
   unit: "centrales bas-carbone recensées",
   count: `{n} centrales`,
@@ -146,10 +146,10 @@ const words = {
   weightIs: "surface proportionnelle à la puissance",
   limit: "La base recense les centrales qu’elle connaît ; le petit solaire et le petit éolien y sont sous-représentés.",
 };
-const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW` }));
 const alt =
   `Carte de l’Europe où chacune des ${n0(total)} centrales bas-carbone est un point à ses coordonnées. Les ${nuclear.length} sites nucléaires, ` +
   `cerclés, ne sont que ${one(shareSites)} % des centrales mais portent ${one(shareCapacity)} % de la puissance installée.`;
+const firstCounter = words.count.replace("{n}", "0");
 
 /** One state per card; see `dot-drive.mjs` for what each field paints. */
 const STATES = [
@@ -159,7 +159,19 @@ const STATES = [
   { arrive: 1, subject: 1, fade: 0, weight: 1, zoom: 0 },
   { arrive: 1, subject: 1, fade: 0, weight: 1, zoom: 1 },
   { arrive: 1, subject: 1, fade: 0, weight: 0, zoom: 0 },
-];
+].map((state, k) => ({ ...state, ...cameras[k], card: k }));
+
+// ── the fuel buckets, most numerous first (arrival order), and the nuclear set ───────────────────
+const maxMw = Math.max(...stations.map((s) => s.mw));
+const round4 = (v) => Math.round(v * 1e4) / 1e4;
+const asPoint = (s) => ({ lon: round4(s.lon), lat: round4(s.lat), r: round4(Math.sqrt(s.mw / maxMw)) });
+const buckets = others.map((fuel) => ({ fuel, stations: stations.filter((s) => s.fuel === fuel).map(asPoint) }));
+if (buckets.reduce((a, b) => a + b.stations.length, 0) !== total - nuclear.length) throw new Error("the fuel buckets do not hold every non-nuclear station once");
+const nuclearPoints = nuclear.map(asPoint);
+
+const WEIGHT_LARGEST_PX = 46;
+const COUNT_RADIUS_PX = 1.5;
+const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW`, px: Math.max(1.2, Math.sqrt(mw / maxMw) * WEIGHT_LARGEST_PX * 2) }));
 
 const textPerRegister = {
   display: title.join(" "),
@@ -178,56 +190,94 @@ const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
-const driver = await readFile(join(HERE, "dot-drive.mjs"), "utf8");
+// ── the live map: its key, its faces, its frozen cards ─────────────────────────────────────────
+const cards = await openLiveMapCards();
+const driver = `${cards.mapScript}\n${await readFile(join(HERE, "dot-drive.mjs"), "utf8")}`;
 const refused = [];
-for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
-  const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
-  const { ink, muted } = deriveFurniture(direction.ground);
-  const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
-  try {
-    const { outPath } = await renderScrolly({
-      steps: prose.map((p, i) => ({ id: ["carte", "centrales", "nucleaire", "puissance", "gros-plan", "lecture"][i], prose: p })),
-      reveal: {
-        element: createElement(DirectedDotDensityScrolly, {
-          width: map.width,
-          height: map.height,
-          land: map.land,
-          stations: drawn,
-          fuels: fuelList,
-          arrival: others.map((f) => fuelList.indexOf(f)),
-          subjectFuel: fuelList.indexOf(SUBJECT),
-          zoomBox,
-          europeBox,
-          sizes,
-          tints: plateTints(direction),
-          words,
-          alt,
-          regs,
+try {
+  for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
+    const id = file.replace(/\.md$/, "");
+    if (ONLY && id !== ONLY) continue;
+    const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+    const { ink, muted } = deriveFurniture(direction.ground);
+    const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
+    try {
+      const tints = plateTints(direction);
+      const colours = {
+        dot: adjustToContrast(mix(ink, direction.ground, 0.15), tints.land, NON_TEXT_CONTRAST_MIN) ?? ink,
+        weightFill: adjustToContrast(mix(direction.accent, tints.land, 0.75), tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+        ring: adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+      };
+      const plan = dotDensityPlan({
+        tints: { water: tints.water, land: tints.land },
+        buckets,
+        nuclear: nuclearPoints,
+        colours,
+        cameras,
+        statesForCards: STATES,
+        referenceWidth: REFERENCE.width,
+        referenceHeight: REFERENCE.height,
+        countRadius: COUNT_RADIUS_PX,
+        weightLargestPx: WEIGHT_LARGEST_PX,
+      });
+      const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
+      if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
+
+      const renderPage = (fallbacks, shapes) =>
+        renderScrolly({
+          steps: prose.map((p, i) => ({ id: ["carte", "centrales", "nucleaire", "puissance", "gros-plan", "lecture"][i], prose: p })),
+          reveal: {
+            element: createElement(DirectedDotDensityScrolly, {
+              plan: { ...plan, fallback: shapes },
+              fallbacks,
+              reference: REFERENCE,
+              total: total - nuclear.length,
+              firstCounter,
+              sizes,
+              dotColour: colours.dot,
+              ringColour: colours.ring,
+              words,
+              alt,
+              regs,
+              ground: direction.ground,
+              accent: direction.accent,
+              ink,
+              muted,
+            }),
+            states: STATES,
+            driver,
+            apply: "applyDotState",
+          },
+          vendor: [{ js: cards.maplibreJs, css: cards.maplibreCss }],
+          title,
+          eyebrow: EYEBROW,
+          source,
           ground: direction.ground,
-          accent: direction.accent,
-          ink,
-          muted,
-        }),
+          type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+          lang: "fr",
+          outDir: OUT,
+          name: `${id}.html`,
+        });
+
+      const { outPath } = await renderWithCardImages(cards, {
+        id,
+        plan,
         states: STATES,
-        driver,
-        apply: "applyDotState",
-      },
-      title,
-      eyebrow: EYEBROW,
-      source,
-      ground: direction.ground,
-      type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
-      lang: "fr",
-      outDir: OUT,
-      name: `${id}.html`,
-    });
-    console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
-  } catch (error) {
-    await rm(join(OUT, `${id}.html`), { force: true });
-    refused.push({ id, why: error.message });
-    console.log(`${id} REFUSED — ${error.message}`);
+        fallbackDir: FALLBACK,
+        stageGround: tints.water,
+        cardOf: (baked) => ({ zoom: baked.zoom }),
+        renderPage,
+        noBake: process.argv.includes("--no-bake"),
+      });
+      console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
+    } catch (error) {
+      await rm(join(OUT, `${id}.html`), { force: true });
+      refused.push({ id, why: error.message });
+      console.log(`${id} REFUSED — ${error.message}`);
+    }
   }
+} finally {
+  await cards.close();
 }
 if (refused.length) {
   console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);

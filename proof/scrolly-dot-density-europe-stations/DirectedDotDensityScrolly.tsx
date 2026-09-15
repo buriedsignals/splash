@@ -1,41 +1,41 @@
 /**
  * Europe's low-carbon power stations, one dot each, drawn THROUGH the design base as a dot density map and
  * CHOREOGRAPHED by the scroll. The `dot density` type in the scrolly format: the subject of
- * `static-dot-density-europe-stations` — 72 nuclear sites among 8,900 stations, a third of the capacity — told
- * with the gestures a scroll can make (`scrolly/references/directed-type-choreography.md`): the stations
- * arriving fuel by fuel, the nuclear sites ringed, the same dots going from a count to a weight, the camera
- * closing on the country with most of the sites.
+ * `static-dot-density-europe-stations` — 72 nuclear reactors among 8,900 stations carry a third of the power —
+ * told with the gestures a scroll can make: the stations filling in fuel by fuel while a counter climbs, the
+ * nuclear sites isolated and ringed, every dot re-encoded to the area of its capacity, the camera closing on the
+ * country with the most nuclear sites, then pulling back.
  *
- * THE STATIC PLATE'S RULES ARE THE FLOOR: one dot is one station, at its own coordinates; one hue for the field,
- * the subject ringed rather than recoloured; the basemap gives up its contrast; the database's limit stated
- * beside the key.
+ * THE MAP IS A LIVE MAPTILER MAP (flat Web Mercator) DRIVEN BY THE PLAN (`plan.mjs`): every dot is a MapLibre
+ * circle layer over the basemap's own land and sea — card 1, "the land, empty", is simply the basemap with no
+ * dots yet, needing no beat-drawn land at all.
  *
- * `dot-drive.mjs` paints the map on a canvas in the reader's pixels. What is rendered here is the last card's
- * picture as an SVG, for a reader without a script.
+ * UNDER THE LIVE MAP, ONE FROZEN IMAGE PER CARD (`live-map-cards.mjs`). THE MARKUP IS CARD 1; a reader without a
+ * script gets the last card.
  */
 
 import type { CSSProperties } from "react";
 import {
   adjustToContrast,
-  mix,
-  NON_TEXT_CONTRAST_MIN,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
+import {
+  CardImages,
+  noScriptCss,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
 type Style = Record<string, string | number>;
 
 export function DirectedDotDensityScrolly({
-  width,
-  height,
-  land,
-  stations,
-  fuels,
-  arrival,
-  subjectFuel,
-  zoomBox,
-  europeBox,
+  plan,
+  fallbacks,
+  reference,
+  total,
+  firstCounter,
   sizes,
-  tints,
+  dotColour,
+  ringColour,
   words,
   alt,
   regs,
@@ -44,18 +44,14 @@ export function DirectedDotDensityScrolly({
   ink,
   muted,
 }: {
-  width: number;
-  height: number;
-  land: string;
-  /** [x, y, fuel index, capacity in MW] */
-  stations: [number, number, number, number][];
-  fuels: string[];
-  arrival: number[];
-  subjectFuel: number;
-  zoomBox: { x: number; y: number; w: number; h: number };
-  europeBox: { x: number; y: number; w: number; h: number };
-  tints: { water: string; land: string };
-  sizes: { mw: number; label: string }[];
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  reference: { width: number; height: number };
+  total: number;
+  firstCounter: string;
+  sizes: { mw: number; label: string; px: number }[];
+  dotColour: string;
+  ringColour: string;
   words: {
     unit: string;
     count: string;
@@ -77,16 +73,8 @@ export function DirectedDotDensityScrolly({
   ink: string;
   muted: string;
 }) {
-  /** The sibling map beats' measured tints (`plateTints`): the lightest land and sea that still separate by
-   *  `SEA_LAND_MIN`. A darker land put 8,900 accent dots on a mid-grey and the field lost its contrast. */
-  const { water, land: landFill } = tints;
-  const coast = mix(landFill, ink, 0.12);
-  const dot = adjustToContrast(accent, landFill, NON_TEXT_CONTRAST_MIN) ?? accent;
-  /** The subject is ringed in the ink, not in a second hue: a dark ring reads against the accent field. */
-  const subject = adjustToContrast(ink, landFill, TEXT_CONTRAST_MIN) ?? ink;
   const accentInk =
     adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
-  const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
   const mutedInk = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
   const slot: CSSProperties = {
     gridArea: "1 / 1",
@@ -100,23 +88,18 @@ export function DirectedDotDensityScrolly({
     alignItems: "center",
     gap: "6px",
   };
+  const scope = '[data-part="symbols"]';
+  const shapes = shapeSelectionCss(scope, reference);
+  const noScript =
+    noScriptCss(scope, fallbacks.length - 1, []) +
+    `${scope} [data-part="counter"]{opacity:0!important}`;
 
   return (
     <div
+      data-part="symbols"
       role="img"
       aria-label={alt}
-      data-dots={JSON.stringify({
-        width,
-        height,
-        land,
-        stations,
-        fuels,
-        arrival,
-        subjectFuel,
-        zoomBox,
-        europeBox,
-        colours: { water, land: landFill, coast, dot, subject },
-      })}
+      data-dots={JSON.stringify({ total })}
       style={{
         position: "absolute",
         inset: 0,
@@ -128,6 +111,11 @@ export function DirectedDotDensityScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      <noscript
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }}
+      />
+      <style dangerouslySetInnerHTML={{ __html: shapes }} />
       <div
         style={{
           display: "flex",
@@ -142,15 +130,19 @@ export function DirectedDotDensityScrolly({
         </span>
         <span style={{ display: "grid", marginLeft: "auto" }}>
           <span
-            data-part="count"
+            data-part="counter"
             data-template={words.count}
-            style={{ ...regs.value, ...slot, color: inkOnGround, opacity: 0 }}
+            style={{
+              ...regs.value,
+              ...slot,
+              color: adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink,
+            }}
           >
-            {words.count.replace("{n}", "")}
+            {firstCounter}
           </span>
           <span
             data-part="subject-note"
-            style={{ ...regs.value, ...slot, color: accentInk }}
+            style={{ ...regs.value, ...slot, color: accentInk, opacity: 0 }}
           >
             {words.subjectNote}
           </span>
@@ -171,128 +163,60 @@ export function DirectedDotDensityScrolly({
 
       <div
         data-part="stage"
-        style={{
-          position: "relative",
-          minHeight: 0,
-          overflow: "hidden",
-          background: water,
-        }}
+        style={{ position: "relative", minHeight: 0, overflow: "hidden" }}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMidYMid slice"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <path
-            d={land}
-            fill={landFill}
-            fillRule="evenodd"
-            stroke={coast}
-            strokeWidth={0.6}
-          />
-          <path
-            d={stations
-              .filter((s) => s[2] !== subjectFuel)
-              .map((s) => `M${s[0]} ${s[1]}h1.4v1.4h-1.4z`)
-              .join("")}
-            fill={dot}
-          />
-          {stations
-            .filter((s) => s[2] === subjectFuel)
-            .map((s, i) => (
-              <circle
-                key={i}
-                cx={s[0]}
-                cy={s[1]}
-                r={3.5}
-                fill="none"
-                stroke={subject}
-                strokeWidth={1}
-              />
-            ))}
-        </svg>
-        <canvas
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div
+          data-part="live"
+          style={{ position: "absolute", inset: 0, opacity: 0 }}
+        />
+        <script
+          type="application/json"
+          data-part="plan"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(plan).replace(/</g, "\\u003c"),
           }}
         />
       </div>
 
       <div style={{ display: "grid", gap: "4px" }}>
-        <div style={{ display: "grid" }}>
-          <span
-            data-part="key-count"
-            style={{
-              gridArea: "1 / 1",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "4px 18px",
-              alignItems: "center",
-            }}
-          >
-            <span style={keyItem}>
+        <span
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 14px",
+            alignItems: "center",
+          }}
+        >
+          <span style={keyItem}>{words.dotIs}</span>
+          <span style={keyItem}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "4px",
+                height: "4px",
+                borderRadius: "50%",
+                background: dotColour,
+              }}
+            />
+            {words.subjectIs}, cerclés
+          </span>
+          <span style={keyItem}>{words.weightIs}</span>
+          {sizes.map((s) => (
+            <span key={s.mw} style={keyItem}>
               <span
                 style={{
                   display: "inline-block",
-                  width: "4px",
-                  height: "4px",
+                  width: `${s.px}px`,
+                  height: `${s.px}px`,
                   borderRadius: "50%",
-                  background: dot,
+                  boxShadow: `inset 0 0 0 1.4px ${ringColour}`,
                 }}
               />
-              {words.dotIs}
+              {s.label}
             </span>
-            <span style={{ ...keyItem, color: accentInk }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: "9px",
-                  height: "9px",
-                  borderRadius: "50%",
-                  boxShadow: `inset 0 0 0 1.2px ${subject}`,
-                }}
-              />
-              {words.subjectIs}
-            </span>
-          </span>
-          <span
-            data-part="key-weight"
-            style={{
-              gridArea: "1 / 1",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "4px 14px",
-              alignItems: "center",
-              opacity: 0,
-            }}
-          >
-            <span style={keyItem}>{words.weightIs}</span>
-            {sizes.map((s) => (
-              <span key={s.mw} style={keyItem}>
-                <span
-                  data-mw={s.mw}
-                  style={{
-                    display: "inline-block",
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    boxShadow: `inset 0 0 0 1.5px ${subject}`,
-                  }}
-                />
-                {s.label}
-              </span>
-            ))}
-          </span>
-        </div>
+          ))}
+        </span>
         <span style={{ ...regs.axis, color: mutedInk }}>{words.limit}</span>
       </div>
     </div>
