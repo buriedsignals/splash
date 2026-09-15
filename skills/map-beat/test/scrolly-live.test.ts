@@ -364,6 +364,51 @@ describe("the scrolly map runtime in a browser", () => {
     }
   }, 60_000);
 
+  it("should draw the state's own shifted camera before it reveals the map, never an unshifted one", async () => {
+    // THE FIRST-SECOND REFRESH. Recorded on the choropleth pilot (Apple M2 Max, cold profile, CDP
+    // screencast): at 2,436 ms the live map appeared at the card's UNSHIFTED camera (the stage's zoom
+    // shift was not in the map's constructor), 8 ms later it jumped to the right camera and its tiles
+    // filled in visible stages until 3,730 ms. What the canvas last drew when the container is revealed
+    // must already be the state's shifted camera.
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 400, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const live = root.querySelector("[data-part=live]") as HTMLElement;
+        const w = window as any;
+        const Original = w.maplibregl.Map;
+        const rendered: number[] = [];
+        const maps: any[] = [];
+        w.maplibregl.Map = function (options: any) {
+          const map = new Original(options);
+          maps.push(map);
+          map.on("render", () => {
+            if (map === maps[0]) rendered.push(map.getZoom());
+          });
+          return map;
+        };
+        let atReveal: number | null = null;
+        new MutationObserver(() => {
+          if (live.style.opacity === "1" && atReveal === null) atReveal = rendered[rendered.length - 1] ?? null;
+        }).observe(live, { attributes: true, attributeFilter: ["style"] });
+        w.initScrollyMap(root, { ...plan, warmSamples: 400, referenceWidth: 800 }, { window, warmTimeoutMs: 2000 });
+        await new Promise<void>((resolve) => {
+          const check = () => (atReveal !== null ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        w.maplibregl.Map = Original;
+        return { atReveal, firstRendered: rendered[0] };
+      }, plan);
+      const shifted = plan.cameras[0].camZoom + Math.log2(400 / 800);
+      expect(result.atReveal).toBeCloseTo(shifted, 6);
+      expect(result.firstRendered).toBeCloseTo(shifted, 6);
+    } finally {
+      await page.close();
+    }
+  }, 120_000);
+
   it("should show a live map that follows the scroll before the warm has finished", async () => {
     // THE FIRST SCROLL IS READ ON A LIVE MAP, NOT ON THE FROZEN CARDS. Measured on the choropleth pilot
     // (Apple M2 Max, cold profile): the warm took 8 s and the reveal came 11.1 s after the page loaded,

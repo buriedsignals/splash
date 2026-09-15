@@ -146,11 +146,20 @@ function initScrollyMap(root, plan, options) {
     container.appendChild(el);
     return el;
   };
+  // A MAP IS BORN AT THE CAMERA IT WILL FIRST SHOW: the state's own, shifted for this stage. Born at the
+  // card's unshifted camera, the shown map drew and idled there, was revealed, jumped to the shifted
+  // camera and loaded its tiles on screen in visible stages — the owner's "refresh de la map la première
+  // seconde", recorded at 2,436–3,730 ms on the choropleth pilot.
+  const shiftedViewOf = function (state) {
+    const view = viewOf(state);
+    view.zoom += handle.zoomOffset();
+    return view;
+  };
   const makeMap = function (el) {
     const map = new win.maplibregl.Map({
       container: el,
       style: plan.styleUrl,
-      ...viewOf(plan.cameras[0]),
+      ...shiftedViewOf(firstState()),
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
@@ -175,8 +184,7 @@ function initScrollyMap(root, plan, options) {
     return map;
   };
   const paintOn = function (map, state) {
-    const view = viewOf(state);
-    view.zoom += handle.zoomOffset();
+    const view = shiftedViewOf(state);
     map.jumpTo(view);
     for (const layer of plan.layers)
       for (const property in layer.bindings || {})
@@ -184,6 +192,19 @@ function initScrollyMap(root, plan, options) {
     return view;
   };
   handle.paintOn = paintOn;
+  // SETTLED: the map has DRAWN the reader's latest state with every tile of that view loaded. It paints
+  // the latest state, waits for `idle`, and starts again if the reader moved meanwhile — so what a
+  // reveal or a handover puts on screen is a finished frame of the state the reader is on.
+  const settle = function (map, done) {
+    const seen = handle.last;
+    paintOn(map, firstState());
+    map.once("idle", function () {
+      if (handle.failed) return;
+      if (handle.last !== seen) return settle(map, done);
+      done();
+    });
+    map.triggerRepaint();
+  };
 
   const shownEl = layerOf(false);
   const warmEl = layerOf(true);
@@ -195,13 +216,12 @@ function initScrollyMap(root, plan, options) {
   // carries pure camera fields; the per-card STATE a binding needs lives in `plan.statesForCards`, so
   // card 1's full state is overlaid when no scroll has happened yet.
   shown.once("load", function () {
-    shown.once("idle", function () {
+    settle(shown, function () {
       if (handle.failed || replaced) return;
       try {
         handle.map = shown;
         handle.maps = [shown];
         handle.ready = true;
-        applyScrollyMap(handle, firstState());
         handle.pending = null;
         container.style.opacity = "1";
         root.dataset.liveShown = String(Math.round(win.performance.now()));
@@ -210,8 +230,6 @@ function initScrollyMap(root, plan, options) {
         fail((err && err.message) || "the live map failed to restore its first camera");
       }
     });
-    // The first idle only comes once something renders.
-    shown.triggerRepaint();
   });
 
   warmMap.once("load", function () {
@@ -225,13 +243,11 @@ function initScrollyMap(root, plan, options) {
         return;
       }
       try {
-        // THE WARM MAP TAKES THE READER'S STATE BEFORE IT IS SHOWN, and follows the scroll alongside
-        // the shown map until it has drawn it, so the swap never shows the warm's last camera.
-        paintOn(warmMap, firstState());
+        // THE HANDOVER IS INVISIBLE: the warm map follows the scroll alongside the shown one, is settled on
+        // the reader's latest state (same camera, same paint, every tile of the view loaded), and replaces
+        // the shown map in one frame — no fade, no jump.
         handle.maps = handle.ready ? [handle.map, warmMap] : [warmMap];
-        warmMap.once("idle", function () {
-          if (handle.failed) return;
-          paintOn(warmMap, firstState());
+        settle(warmMap, function () {
           replaced = true;
           warmEl.style.opacity = "1";
           warmEl.style.pointerEvents = "";
@@ -245,7 +261,6 @@ function initScrollyMap(root, plan, options) {
           root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
           if (options && options.onReady) options.onReady(warmMap);
         });
-        warmMap.triggerRepaint();
       } catch (err) {
         fail((err && err.message) || "the live map failed to restore its first camera");
       }
