@@ -189,6 +189,9 @@ async function renderWeb({ component, props, outDir, name }) {
     ground: props.ground,
     accent: props.accent,
     ...furniture,
+    // The plot cell's ratio, taken from the geometry this component actually drew rather than from
+    // anything the beat declares twice. See `plotViewBoxOf`.
+    plot: plotViewBoxOf(markup, name ?? "this beat"),
     filter: props.filter ?? null,
     entrance: declaresEntrance,
     fontStack: stack,
@@ -227,6 +230,7 @@ ${inlineScript}
   const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
   const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
   assertFontsEmbedded(html);
+  assertPlotCellIsItsViewBox(html, name ?? "this beat");
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -248,6 +252,81 @@ function escapeHtml(text) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+/**
+ * THE PLOT'S OWN GEOMETRY, READ OFF THE MARKUP THE COMPONENT JUST DREW — never passed in, never
+ * typed into the stylesheet.
+ *
+ * The cell rules in `buildCss` are generated from these two numbers, so the ratio the CSS holds and
+ * the ratio the `<svg>` declares cannot drift apart: there is only one place they come from. A beat
+ * whose control swaps between several plates (`unit.ts` emits one `svg.chart[data-unit]` per option)
+ * draws several of these, and they must all declare the SAME box — a control that changed the box
+ * would change the cell under the reader's hands, which is a different beat, not a different state.
+ */
+function plotViewBoxOf(markup, name = "this beat") {
+  const boxes = new Map();
+  for (const tag of String(markup).matchAll(/<svg\b[^>]*>/g)) {
+    const source = tag[0];
+    if (!/\bclass="(?:[^"]*\s)?chart(?:\s[^"]*)?"/.test(source)) continue;
+    const box = /\bviewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*"/.exec(source);
+    if (box) boxes.set(`${box[1]}|${box[2]}`, { width: Number(box[1]), height: Number(box[2]) });
+  }
+  if (boxes.size === 0)
+    throw new Error(
+      `${name}: no <svg class="chart"> with a viewBox in the rendered markup. The plot cell is ` +
+        `sized from that box, so there is nothing to size it from and every filled shape on the ` +
+        `page would be drawn at whatever ratio the window happened to leave.`,
+    );
+  if (boxes.size > 1)
+    throw new Error(
+      `${name}: the plot draws ${boxes.size} different viewBoxes (${[...boxes.keys()].join(", ")}). ` +
+        `One beat is one box: a cell can only carry one ratio, and a control that changed it would ` +
+        `reshape the plot under the reader rather than answer a question about it.`,
+    );
+  return [...boxes.values()][0];
+}
+
+/** The same two numbers, refused rather than defaulted. A stylesheet built with no geometry would
+ *  silently go back to the stretch this whole mechanism exists to end. */
+function assertPlotGeometry(plot) {
+  const width = Number(plot?.width);
+  const height = Number(plot?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+    throw new Error(
+      `buildCss needs the plot's own viewBox ({width, height}) to size the cell; it was given ` +
+        `${JSON.stringify(plot)}. Without it the cell takes whatever shape the window leaves and ` +
+        `every circle, arrowhead, icon and proportional symbol on the page is drawn out of round.`,
+    );
+  return { width, height };
+}
+
+/**
+ * THE GUARD, ON THE WRITTEN PAGE RATHER THAN ON THE INTENTION.
+ *
+ * Re-reads the document that is about to be written and refuses it unless the cell rules carry the
+ * ratio of the `<svg class="chart">` the same document draws. It is deliberately not a check that
+ * `buildCss` was called correctly — that would only ever restate the line above it. It reads the
+ * emitted CSS, so a beat that appended a rule of its own redefining `--cell-w`, or that drew a
+ * plate the stylesheet was not built from, is refused here rather than shipped out of round.
+ */
+function assertPlotCellIsItsViewBox(html, name = "this beat") {
+  const { width, height } = plotViewBoxOf(html, name);
+  const declared = /--cell-w:\s*min\(var\(--track-w\),\s*calc\(var\(--track-h\)\s*\*\s*([\d.]+)\s*\/\s*([\d.]+)\)\)/.exec(html);
+  if (!declared)
+    throw new Error(
+      `${name}: the page carries no --cell-w rule, so its plot cell takes whatever ratio the ` +
+        `window leaves it and every filled shape in the geometry is drawn stretched.`,
+    );
+  const want = width / height;
+  const got = Number(declared[1]) / Number(declared[2]);
+  if (Math.abs(got - want) > 1e-6)
+    throw new Error(
+      `${name}: the plot cell is sized ${declared[1]}/${declared[2]} (${got.toFixed(4)}) while the ` +
+        `<svg class="chart"> declares ${width}/${height} (${want.toFixed(4)}). The cell must carry ` +
+        `its own viewBox's ratio exactly, or preserveAspectRatio="none" stretches the drawing by ` +
+        `the difference.`,
+    );
 }
 
 /**
@@ -483,7 +562,8 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = false, fontStack = "sans-serif" }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, filter = null, entrance = false, fontStack = "sans-serif" }) {
+  const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -578,33 +658,123 @@ ${filterChrome}
   position: relative;
   width: 100%;
   display: grid;
-  grid-template-columns: var(--y-gutter) 1fr;
+  /* THREE COLUMNS, THE THIRD NORMALLY EMPTY. The format has always had a left gutter and an
+     x-axis band; a beat whose marks END somewhere meaningful (the bump's final ranks) also needs a
+     right gutter, and it used to get one by declaring an IMPLICIT third column of its own. That was
+     invisible to this stylesheet, and invisible is exactly what '--track-w' below cannot afford:
+     the cell's own slack is measured from the track, and a track 127px narrower than assumed moved
+     the bump's left gutter 63.5px off the drawing it labels. Declared here, defaulting to nothing,
+     it costs a beat that has no end gutter exactly zero. */
+  grid-template-columns: var(--y-gutter) 1fr var(--end-gutter, 0px);
   grid-template-rows: 1fr var(--x-axis-h);
   /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
      flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
      inline style, from the real geometry), so in a window with room the shape is exactly what it
      always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
-     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
-     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
-     format documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     give the height back. A flatter plot is a real cost and it USED to be paid by the drawing:
+     preserveAspectRatio="none" followed the box down and the geometry went with it.
+     THAT REASONING IS NOW OVERTURNED, AND THE COMMENT IT REPLACES IS QUOTED SO THE COST IS MET
+     RATHER THAN LOST: "A flatter plot is a real cost, paid knowingly: a slope read at a shallower
      angle is still the same series, whereas a chart whose end label is below the fold is not a
-     chart the reader has seen.
+     chart the reader has seen." That held for a CURVE. It does not hold for a scatter, a
+     pictogram, an arrowhead or a proportional symbol: a LENGTH in the plane may follow the
+     stretch, because it is a distance and it belongs to the plane, but a SHAPE never may. The
+     format already knew this for TEXT (which is why every word lives in HTML outside the viewBox)
+     and for STROKES (vector-effect="non-scaling-stroke"); it had never written it down for filled
+     shapes. The owner read it off a render before any guard did: "les cercles sont pas parfaits
+     tout comme les fleches, on dirait que c'est etire" -- measured on the connected scatter at
+     1512x860, a 1420x564 cell for an 820x460 viewBox, 1.41x wider than tall.
      min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
      min-height:auto, which would otherwise refuse to shrink this box below its content size and
-     re-open the overflow this whole rule exists to close. */
+     re-open the overflow this whole rule exists to close. It is ALSO the worst stretcher of the
+     two: the pictogram measured 2.15x at 375x812, where this floor pins the height while the
+     width collapses -- worse than any wide-and-short window, and out of reach of any fix aimed at
+     the clamp alone. */
   flex: 0 1 auto;
   min-height: ${PLOT_FLOOR_PX}px;
+
+  /* THE CELL CARRIES THE VIEWBOX'S OWN RATIO, AT EVERY WINDOW SIZE, WHICH IS WHAT MAKES
+     preserveAspectRatio="none" UNIFORM AND THEREFORE HARMLESS.
+     Not a letterbox: switching the <svg> to "meet" would shift every HTML overlay positioned in %
+     of the cell (the price the radar already paid by pulling its text inside the viewBox). The
+     cell is made exact instead, and then the stretch has nothing left to stretch.
+     WHY THE ASPECT-RATIO STAYS ON THIS ELEMENT. It looks as though the cell could simply carry
+     'aspect-ratio: W / H' and the gutters be forgotten. It cannot: container-type: size implies
+     contain: size, so a size container's own size must come from somewhere other than its
+     contents. This box takes its height from its width (the inline aspect-ratio the component
+     sets, gutters included), the grid then hands the plot cell a box definite in BOTH axes, and
+     the min() pair below is what absorbs, with ONE mechanism, all three causes of anisotropy: the
+     fixed-pixel gutters that only make the cell exactly W:H at one single width (~2 % drift at
+     1464px), the height clamp, and the min-height floor.
+     The numbers are the beat's own, read off the <svg> it just drew -- never typed here. */
+  container-type: size;
+  --track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px));
+  --track-h: calc(100cqh - var(--x-axis-h));
+  --cell-w: min(var(--track-w), calc(var(--track-h) * ${plotWidth} / ${plotHeight}));
+  --cell-h: min(var(--track-h), calc(var(--track-w) * ${plotHeight} / ${plotWidth}));
+  /* Half of whatever the cell did not take, in each axis. The cell is CENTRED in its track, so a
+     wide-and-short window gets even side margins and a legible drawing rather than a squashed one
+     -- and the gutters travel with it (below), because an axis label that stays glued to the
+     track's edge while the plot it labels moves is a worse defect than the one being fixed. */
+  --cell-slack-x: calc((var(--track-w) - var(--cell-w)) / 2);
+  --cell-slack-y: calc((var(--track-h) - var(--cell-h)) / 2);
 }
-.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
-svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* BOTH GUTTERS FOLLOW THE CELL. Each is the cell's own height, so a label at 'top: 62%' lands on
+   the same 62 % of the geometry it names; each translate carries it across whatever slack the cell
+   left, so it stays flush against the drawing's own edge instead of the track's. */
+.chart-plot .y-axis {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  height: var(--cell-h);
+  min-height: 0;
+  margin-block: auto;
+  transform: translateX(var(--cell-slack-x));
+}
+.chart-plot .end-axis {
+  grid-column: 3;
+  grid-row: 1;
+  position: relative;
+  height: var(--cell-h);
+  min-height: 0;
+  margin-block: auto;
+  transform: translateX(calc(0px - var(--cell-slack-x)));
+}
+/* Every box that SHARES the plot cell takes the cell's exact size and centres in the track: the
+   geometry itself, the HTML overlay that annotates it, and any layer a beat adds over both (the
+   tree's own convention names one '...-layer' -- 'option-layer', 'verdict-layer', 'cell-layer').
+   min-width/min-height: 0 overrides a grid item's automatic minimum size, which would otherwise
+   refuse to let a box carrying intrinsic geometry shrink below it. */
+svg.chart,
+.chart-plot .overlay,
+.chart-plot > [class*="-layer"] {
+  grid-column: 2;
+  grid-row: 1;
+  width: var(--cell-w);
+  height: var(--cell-h);
+  min-width: 0;
+  min-height: 0;
+  margin: auto;
+}
+svg.chart { display: block; }
 /* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
    svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
    mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
    driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
    never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
    correct: none of them is a control. */
-.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
-.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+.chart-plot .overlay { position: relative; pointer-events: none; }
+/* The x-axis band is the y-axis's mirror: the cell's width, and lifted by whatever vertical slack
+   the cell left above it, so the tick under a mark stays under that mark. */
+.chart-plot .x-axis {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  width: var(--cell-w);
+  min-width: 0;
+  margin-inline: auto;
+  transform: translateY(calc(0px - var(--cell-slack-y)));
+}
 
 .axis-label {
   position: absolute;
@@ -733,4 +903,4 @@ if (import.meta.main) {
   console.log(`web beat → ${outPath}  [${readings} readings]`);
 }
 
-export { render, renderWeb, SEED, buildCss };
+export { render, renderWeb, SEED, buildCss, plotViewBoxOf, assertPlotCellIsItsViewBox };

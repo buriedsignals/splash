@@ -25,7 +25,11 @@ import {
   filterNotes,
   filterOptionsForMarkup,
 } from "../assets/filter.ts";
-import { buildCss } from "../scripts/render-web.mjs";
+import {
+  assertPlotCellIsItsViewBox,
+  buildCss,
+  plotViewBoxOf,
+} from "../scripts/render-web.mjs";
 
 const HERE = import.meta.dirname;
 
@@ -101,7 +105,7 @@ describe("the seed's <svg> carries geometry only", () => {
 
 describe("nothing caps the chart frame's own width", () => {
   const css = () =>
-    buildCss({
+    buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -110,7 +114,7 @@ describe("nothing caps the chart frame's own width", () => {
     });
 
   it("should never set max-width on .chart-figure or .chart-plot in the shared stylesheet", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -138,7 +142,7 @@ describe("nothing caps the chart frame's own width", () => {
   // The assertion is kept rather than deleted, pointed the other way, so nobody can reinstate the
   // cap without this file going red and telling them where the argument is written down.
   it("should cap neither the header block nor the source line — the words take the graphic's width", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -272,7 +276,7 @@ describe("nothing caps the chart frame's own width", () => {
   // real defect a "no max-width" assertion alone cannot catch, since the frame filling its
   // container and its content having room to breathe are two different claims.
   it("should give .chart-figure a fixed, non-zero inner padding on every side", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -308,7 +312,7 @@ describe("nothing caps the chart frame's own width", () => {
   // worked, which is exactly the kind of defect a markup read or a unit test asserting attributes
   // exist would miss and only driving a real pointer over the real page caught.
   it("should mark .overlay pointer-events:none so it never shadows the svg's own hit-area", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -333,7 +337,7 @@ describe("nothing caps the chart frame's own width", () => {
 // wherever the window already had room.
 describe("the beat fits the visible window", () => {
   const css = () =>
-    buildCss({
+    buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -452,7 +456,7 @@ describe("the filter — declared by the beat, default view complete, native con
   });
 
   it("should put the segmented treatment behind a :has() support guard, leaving native radios as the base", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
@@ -476,7 +480,7 @@ describe("the filter — declared by the beat, default view complete, native con
   });
 
   it("should never take a radio out of the focus order to make the pills look tidy", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
@@ -498,7 +502,7 @@ describe("the filter — declared by the beat, default view complete, native con
   });
 
   it("should paint the checked pill from the derived furniture, never a literal colour", () => {
-    const css = buildCss({
+    const css = buildCss({ plot: FRAME,
       filter: SEED_FILTER,
       ground: "#FFFFFF",
       accent: "#0B7A75",
@@ -549,7 +553,7 @@ describe("the filter — declared by the beat, default view complete, native con
  */
 describe("a point may delegate its answer to the mark it names", () => {
   const css = () =>
-    buildCss({
+    buildCss({ plot: FRAME,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       ink: "#000000",
@@ -582,5 +586,96 @@ describe("a point may delegate its answer to the mark it names", () => {
     expect(css().slice(at, css().indexOf("}", at))).toContain("fill: var(--muted)");
     // And the seed, which is a line beat, names no mark at all.
     expect(renderSeed()).not.toContain("data-mark-ref");
+  });
+});
+
+/**
+ * THE CELL CARRIES THE RATIO OF ITS OWN viewBox — the guard, and the three things it has to refuse.
+ *
+ * The owner read the defect off a render: "les cercles ne sont pas parfaits tout comme les flèches,
+ * on dirait que c'est étiré." Measured on `proof/web-connected-scatter-lowcarbon` at 1512x860, a
+ * 1420x535 cell for an 820x460 viewBox — scaleX 1.732 against scaleY 1.163, 1.49x. On
+ * `proof/web-proportional-symbol-europe-capacity`, 2.11x. And the WORST case was not the height
+ * clamp at all but the `min-height` floor: the pictogram at 375x812, 2.15x the other way.
+ *
+ * `preserveAspectRatio="none"` is kept. What is guarded is that the box it fills always has the
+ * viewBox's own proportions, which is what makes that stretch uniform — a scale rather than a
+ * distortion. See `references/web-discipline.md`, "A LENGTH follows the stretch; a SHAPE never
+ * does", for the numbers after: 1.0000 on all 120 measurements of the committed corpus.
+ */
+describe("the plot cell carries the ratio of its own viewBox", () => {
+  const cssFor = (plot: { width: number; height: number }) =>
+    buildCss({
+      plot,
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ...deriveFurniture("#FFFFFF"),
+    });
+
+  it("should size the cell from the beat's own two numbers, not from a ratio typed here", () => {
+    const css = cssFor(FRAME);
+    expect(css).toContain(
+      `--cell-w: min(var(--track-w), calc(var(--track-h) * ${FRAME.width} / ${FRAME.height}))`,
+    );
+    expect(css).toContain(
+      `--cell-h: min(var(--track-h), calc(var(--track-w) * ${FRAME.height} / ${FRAME.width}))`,
+    );
+    // The track is what is left after BOTH gutters, not after one: a beat that declares an end
+    // gutter (the bump does) otherwise measures its slack against a track 127px too wide, which is
+    // exactly how its left gutter ended up 63.5px off the drawing it labels.
+    expect(css).toContain("--track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px))");
+    expect(css).toContain("--track-h: calc(100cqh - var(--x-axis-h))");
+    expect(css).toContain("container-type: size");
+    // And a DIFFERENT beat gets its own two numbers, not the seed's: the pair is read per render,
+    // off the markup, and a constant compiled in here would satisfy the seed and nothing else.
+    expect(cssFor({ width: 901, height: 337 })).toContain(
+      "--cell-w: min(var(--track-w), calc(var(--track-h) * 901 / 337))",
+    );
+  });
+
+  it("should give both gutters the cell's own height and carry them across its slack", () => {
+    const css = cssFor(FRAME);
+    for (const gutter of [".chart-plot .y-axis", ".chart-plot .end-axis"]) {
+      const rule = css.slice(css.indexOf(gutter), css.indexOf("}", css.indexOf(gutter)));
+      expect(rule).toContain("height: var(--cell-h)");
+      expect(rule).toContain("margin-block: auto");
+      expect(rule).toContain("--cell-slack-x");
+    }
+    const x = css.slice(css.indexOf(".chart-plot .x-axis"), css.indexOf("}", css.indexOf(".chart-plot .x-axis")));
+    expect(x).toContain("width: var(--cell-w)");
+    expect(x).toContain("translateY(calc(0px - var(--cell-slack-y)))");
+  });
+
+  it("should refuse to build a stylesheet with no geometry to size the cell from", () => {
+    expect(() => buildCss({ ground: "#FFFFFF", accent: "#0B7A75", ...deriveFurniture("#FFFFFF") } as never)).toThrow(
+      /viewBox/,
+    );
+  });
+
+  it("should read the beat's viewBox off the markup it drew, and refuse markup that draws two", () => {
+    expect(plotViewBoxOf(renderSeed())).toEqual({ width: FRAME.width, height: FRAME.height });
+    expect(() => plotViewBoxOf('<p>no chart here</p>', "a beat")).toThrow(/no <svg class="chart">/);
+    expect(() =>
+      plotViewBoxOf(
+        '<svg class="chart" viewBox="0 0 820 380"></svg><svg class="chart" viewBox="0 0 900 380"></svg>',
+        "a beat",
+      ),
+    ).toThrow(/2 different viewBoxes/);
+  });
+
+  it("should refuse a page whose cell rules and whose <svg> disagree", () => {
+    const honest = `<style>${cssFor(FRAME)}</style>` +
+      `<svg class="chart" viewBox="0 0 ${FRAME.width} ${FRAME.height}"></svg>`;
+    expect(() => assertPlotCellIsItsViewBox(honest, "the seed")).not.toThrow();
+
+    // THE MUTATION THE GUARD EXISTS FOR: the same page, drawn at a different box from the one its
+    // stylesheet was built for — which is what a beat that swapped its geometry without rebuilding
+    // its CSS, or that redefined --cell-w in a rule of its own, ships.
+    const stretched = `<style>${cssFor({ width: 820, height: 380 })}</style>` +
+      `<svg class="chart" viewBox="0 0 820 460"></svg>`;
+    expect(() => assertPlotCellIsItsViewBox(stretched, "a beat")).toThrow(/carry its own viewBox/);
+
+    const none = `<style>.chart-plot { display: grid; }</style><svg class="chart" viewBox="0 0 820 380"></svg>`;
+    expect(() => assertPlotCellIsItsViewBox(none, "a beat")).toThrow(/no --cell-w rule/);
   });
 });

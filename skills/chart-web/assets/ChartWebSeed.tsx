@@ -101,11 +101,20 @@ type Period = "early" | "late";
 export type WebFrame = {
   /** The plot rectangle's own canonical width/height, in SVG user units. NOT a rendered pixel size
    *  and NOT a cap: the `<svg>` is stretched (`preserveAspectRatio="none"`) to fill whatever box
-   *  `.chart-plot`'s CSS grid gives it, at any container width. This pair only fixes the geometry's
-   *  own internal proportions (how a fixed-height-below-the-plot x-axis row and a content-measured
-   *  y-axis gutter combine into one `aspect-ratio` for that box) and the tick-density decisions
-   *  below, which are made once, at this canonical size, and then scale uniformly with everything
-   *  else — never recomputed per resize. */
+   *  `.chart-plot`'s CSS grid gives it, at any container width.
+   *
+   *  AND IT IS THE RATIO THE CELL CARRIES. `render-web.mjs` reads this pair back off the `viewBox`
+   *  this component draws and generates the cell's own size from it, so the box the `<svg>` fills
+   *  has exactly these proportions at every window size and the stretch is UNIFORM — a scale, not a
+   *  distortion. That is what lets a circle stay round, an arrowhead stay square-on and a
+   *  proportional symbol keep its area: a LENGTH in the plane follows the stretch because it is a
+   *  distance, a SHAPE never does. Before that, a 30 % drift between this ratio and the window's was
+   *  passed straight into every filled shape on the page, and nothing said so.
+   *
+   *  The pair also fixes the geometry's own internal proportions (how a fixed-height-below-the-plot
+   *  x-axis row and a content-measured y-axis gutter combine into one `aspect-ratio` for that box)
+   *  and the tick-density decisions below, which are made once, at this canonical size, and then
+   *  scale uniformly with everything else — never recomputed per resize. */
   width: number;
   height: number;
   /** Fixed CSS pixel row, below the plot, reserved for the x-axis year labels — a margin, not part

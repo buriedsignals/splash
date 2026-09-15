@@ -242,11 +242,13 @@ label's parked corner are still decided at one width in the beats that have them
 (content-measured, not scaled) inside a CSS grid whose other column is `1fr`. As the total frame
 grows from 375px to 1600px, that fixed gutter is a shrinking fraction of the whole — which means the
 PLOT rectangle's own aspect ratio drifts very slightly from its canonical proportions at any width
-other than the one it was measured at. `preserveAspectRatio="none"` absorbs this by design: the
-`<svg>` simply stretches to fill whatever rectangle results, with no letterboxing and no clipping.
-This is the accepted cost of a fixed-width label column existing at all (the alternative — recomputing
-the gutter's width per resize — is the anti-pattern rejected above), and it is imperceptible in
-practice because the drift is a few percent of a narrow margin column, never the plot itself.
+other than the one it was measured at. **This used to say `preserveAspectRatio="none"` absorbed it by
+design, and called it imperceptible; it was neither.** The stretch did not absorb the drift, it
+PASSED IT ON to every filled shape in the geometry, and ~2 % at 1464px is only imperceptible on a
+line. The fixed gutter stays — recomputing its width per resize is still the anti-pattern rejected
+above — and the drift is now absorbed where it belongs: the cell is sized to the beat's own `viewBox`
+ratio and centred in whatever the gutters leave. See "A LENGTH follows the stretch; a SHAPE never
+does" below.
 
 **What re-derives once, decided explicitly rather than left to guesswork**: the y-axis gutter
 (measured against the axis font's own fixed size and the widest tick label that will actually be
@@ -308,14 +310,21 @@ parses). `max-height`, never `height`: a figure that already fits is untouched a
 space — which matters, because this file is embedded inside an article at least as often as it is
 opened on its own. Header, filter and source line are `flex: 0 0 auto`; the plot is `flex: 0 1 auto`
 with an explicit `min-height` floor. So when the column's preferred height exceeds the window, the
-PLOT absorbs the entire shortfall and no word is ever squeezed. The `<svg>`'s own
-`preserveAspectRatio="none"` follows the box down with no letterboxing and no clipping — the same
-stretch that already absorbs the fixed-gutter drift named above.
+PLOT absorbs the entire shortfall and no word is ever squeezed.
 
-**The cost, named rather than hidden.** A clamped plot is FLATTER than its canonical
-`aspect-ratio`, so a slope is read at a shallower angle than the author drew it. That is a real
-editorial cost and it is the right side of the trade: a shallower slope is still the same series,
-whereas an end label below the fold is a value the reader never saw. It only ever happens in a
+**AMENDED: the shortfall no longer reaches the drawing.** This section used to end here with "the
+`<svg>`'s own `preserveAspectRatio="none"` follows the box down with no letterboxing and no
+clipping — the same stretch that already absorbs the fixed-gutter drift named above," and that
+sentence was the defect. The box still absorbs the shortfall; the CELL inside it does not, because
+it is now sized to the beat's own `viewBox` ratio and centred in whatever the clamp left. See "A
+LENGTH follows the stretch; a SHAPE never does" below for the mechanism and for the numbers.
+
+**The cost, named rather than hidden, and now paid in a different currency.** A clamped plot used to
+be FLATTER than its canonical `aspect-ratio`, so a slope was read at a shallower angle than the
+author drew it. It is now NARROWER instead, at its own ratio, with empty margin either side. The
+original trade — a shallower slope is still the same series, whereas an end label below the fold is a
+value the reader never saw — held for a curve and for nothing else: a scatter, a pictogram or a
+symbol map read at a shallower angle is a different claim, not the same one. It only ever happens in a
 window too short for the canonical shape — measured after the fix, the plot's height is byte-for-byte
 unchanged at 2560 × 1440 (1175px), 1920 × 1080 (875px), 1728 × 1000 (786px) and 1024 × 768 (456px),
 and every one of the overflowing cases above now measures 0px of overflow.
@@ -324,7 +333,12 @@ and every one of the overflowing cases above now measures 0px of overflow.
 shrinking stops. It is set below the 153px the seed measures at 375px wide, so it cannot fire at any
 width this format actually verifies at and cannot change a rendering that was already correct; only a
 window under roughly 300px tall reaches it, and such a window gets a scrollbar instead of a 20px
-strip pretending to be a line chart. It doubles as the override of flexbox's own `min-height: auto`,
+strip pretending to be a line chart. **That claim was true of the SEED and false of the corpus**: a
+beat with a wide declared ratio reaches the floor at 375px wide, where it pins the height while the
+width collapses — the pictogram measured 2.15× taller than wide there, the worst anisotropy anywhere
+in the corpus and worse than any wide-and-short window. Under the floor the cell is now driven by the
+WIDTH and leaves vertical slack inside the plot, which is the honest reading: the plot keeps its
+floor, the drawing keeps its shape. It doubles as the override of flexbox's own `min-height: auto`,
 which would otherwise refuse to shrink the plot below its content size and re-open the overflow this
 rule closes.
 
@@ -366,14 +380,62 @@ including the one that stays green on purpose.
 That is B3.3's, reversed by its own owner, and its guard scans the whole stylesheet — including
 anything nested in a query. See "The words take the same width as the graphic" above.
 
-## What `preserveAspectRatio="none"` costs, and the shape it will ruin
+## A LENGTH follows the stretch; a SHAPE never does
 
-**The stretch that makes this format fluid is a NON-UNIFORM scale, and a non-uniform scale turns a
-circle into an ellipse.** `preserveAspectRatio="none"` is what lets one `viewBox` fill any container
-without letterboxing; the price is that x and y are scaled by different factors, and every shape in
-the `<svg>` is distorted by exactly that difference. Nothing warns. It is invisible in the markup, it
-is invisible in a unit test, and at the width the author happened to look at it is often invisible on
-screen too.
+**The rule this format had for text and for strokes, and had never written down for filled shapes.**
+Every word lives in HTML outside the `viewBox`, and every stroke carries
+`vector-effect="non-scaling-stroke"`, for one reason: a word and a stroke weight are not distances in
+the plane, so they must not be scaled like one. A LENGTH in the plane — where a point sits, how far
+apart two of them are, how long a bar runs — is a distance, it belongs to the plane, and it follows
+the stretch exactly. A SHAPE — a circle, an arrowhead, a pictogram icon, a proportional symbol, a
+glyph — is not a distance, and it must never follow it.
+
+**How the format keeps that true, since this rewrite.** The `<svg>` still carries
+`preserveAspectRatio="none"`. What changed is that the CELL IT FILLS NOW CARRIES THE RATIO OF ITS OWN
+`viewBox`, at every window size — so the stretch is UNIFORM, and a uniform stretch is a scale, not a
+distortion. `render-web.mjs` reads the beat's own `viewBox` off the markup it just drew and generates
+
+```
+--track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px));
+--track-h: calc(100cqh - var(--x-axis-h));
+--cell-w: min(var(--track-w), calc(var(--track-h) * W / H));
+--cell-h: min(var(--track-h), calc(var(--track-w) * H / W));
+```
+
+`.chart-plot` is the size container; the geometry, the HTML overlay and any layer a beat adds over
+them take exactly `--cell-w` × `--cell-h` and centre in the track, and both gutters travel with the
+cell so an axis label still lands on the thing it names. `assertPlotCellIsItsViewBox` refuses a page
+whose cell rules and whose `<svg>` disagree.
+
+**Why not `meet`.** Letterboxing the `<svg>` would have been one word. It would also have shifted
+every HTML overlay positioned in `%` of the cell off the geometry it annotates — the price the radar
+already paid, by pulling its text back inside the `viewBox`. Making the cell exact costs the overlays
+nothing, because they are sized from the same two custom properties.
+
+**What it costs, stated rather than hidden.** On a wide-and-short window the drawing becomes narrower
+and centres, with empty margins either side: 1512×860 on the connected scatter gives a 954px-wide
+plot inside a 1420px track. That is the deliberate trade — empty margin instead of a squashed
+drawing — and it replaces an older ruling in `render-web.mjs` that read "a flatter plot is a real
+cost, paid knowingly." That ruling was written about a CURVE, where a shallower slope is still the
+same series. It was never true of a scatter, a pictogram or a symbol map.
+
+**The three causes, all closed by one mechanism.** The anisotropy was never only the height clamp:
+it is the gap between the beat's declared ratio and the box the window leaves it, whatever opens the
+gap. Measured before the fix, on `rapport`: the gutters are fixed pixels, so the cell was exactly
+W:H at one single width and drifted either side of it (~2 % at 1464px); the `max-height: 100dvh`
+clamp took the connected scatter to 1.49× at 1512×860 and the symbol map to 2.11×; and
+`min-height: 120px` — the FLOOR, not the clamp — pinned the pictogram's height while its width
+collapsed at 375×812, giving 2.15× the other way, the worst case of the three. After: 1.0000 on all
+120 measurements (40 beats × 3 window sizes).
+
+### What the old section said, kept because its reasoning is still the right test
+
+**The stretch used to be a NON-UNIFORM scale, and a non-uniform scale turns a circle into an
+ellipse.** The price of `preserveAspectRatio="none"` was that x and y were scaled by different
+factors, and every shape in the `<svg>` was distorted by exactly that difference. Nothing warned. It
+was invisible in the markup, invisible in a unit test, and at the width the author happened to look
+at it was often invisible on screen too — the owner found it by opening a render: *"les cercles ne
+sont pas parfaits tout comme les flèches, on dirait que c'est étiré."*
 
 **When it does not matter.** A gridline, a reference rule, an axis-parallel bar, a line path: all of
 these carry their meaning in position, and position is preserved exactly — a point at 40% across and
@@ -386,13 +448,15 @@ the reader is being asked to see a cloud, and the roundness of the dots is part 
 density and its outliers — stretch them into ellipses and the cloud acquires a directional grain
 that is a pure artefact of the container's width. One migrating beat hit exactly this and moved its
 dots out of the `<svg>` into fixed-size HTML positioned in `%` over the same grid cell — the same
-split this format already uses for every word. That is the general remedy: **anything whose shape
-must survive belongs in the HTML layer, not in the stretched `viewBox`.**
+split this format already uses for every word.
 
-The test to apply, before drawing a mark as an SVG shape: *if this were 30% wider than tall, would
-the reader be misled?* Gridline, no. Bar, no. Scatter dot, yes. Proportional circle whose AREA
-encodes a value — emphatically yes, since the encoded quantity itself is what the distortion
-corrupts.
+The test that section proposed is still the one to apply, and it is now a test of the WORK, not of
+the format: *if this were 30% wider than tall, would the reader be misled?* Gridline, no. Bar, no.
+Scatter dot, yes. Proportional circle whose AREA encodes a value — emphatically yes, since the
+encoded quantity itself is what the distortion corrupts. What has changed is the remedy. A shape no
+longer has to leave the `viewBox` to survive, because the cell no longer distorts it; moving a mark
+into the HTML layer is now a choice about what answers a pointer, not a defence against the
+stretch.
 
 ## Nothing clipped — and the one edge this format does not protect
 
