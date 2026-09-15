@@ -23,9 +23,11 @@ export function applyChoroplethState(root, state) {
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const easeTravel = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
-  const live = c.handle && c.handle.ready && !c.handle.failed;
-  // Once the live map is the picture, no card image stays under it: anything the canvas leaves
-  // transparent must show the stage's own ground, not a frozen card.
+  // LIVE MEANS A LIVE MAP IS ON SCREEN (`ready`), not "nothing has failed": the runtime only fails a map it
+  // could never show, and records a refused tile or glyph after that as `data-live-warning`, which changes
+  // nothing here. Once the live map is the picture, no card image stays under it: anything the canvas
+  // leaves transparent must show the stage's own ground, not a frozen card.
+  const live = Boolean(c.handle && c.handle.ready);
   c.fallbacks.forEach((img) => {
     const opacity = !live && Number(img.dataset.fallback) === card ? "1" : "0";
     if (img.style.opacity !== opacity) img.style.opacity = opacity;

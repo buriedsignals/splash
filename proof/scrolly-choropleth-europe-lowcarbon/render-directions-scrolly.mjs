@@ -13,7 +13,7 @@
 //   5. the camera travels onto the Balkans: Albania ringed, its neighbours named with their shares;
 //   6. back to Europe, every class; the country with no reading keeps the key's neutral and no word on the map.
 //
-// THE MAP IS A LIVE MAPTILER GLOBE DRIVEN BY A PLAN (`plan.mjs`, addendum 2026-09-15 §2–§3): the class
+// THE MAP IS A LIVE, FLAT (WEB MERCATOR) MAPTILER MAP DRIVEN BY A PLAN (`plan.mjs`, addendum 2026-09-15 §2–§3): the class
 // fills join MapTiler Countries by ISO A2, the names are symbol layers at the beat's frozen seats
 // (`seats.json`), each card carries its camera, and one frozen image per card is baked from the same plan
 // under the live map (`fallback/`). The page carries `__MAPTILER_KEY__`; the key is substituted at delivery.
@@ -288,6 +288,11 @@ const mapScript = await scrollyMapScript();
 const driver = `${mapScript}\n${await readFile(join(HERE, "choropleth-drive.mjs"), "utf8")}`;
 const styleDoc = await (await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)).json();
 if (!styleDoc.glyphs) throw new Error("the dataviz style carries no glyph endpoint");
+const unkeyedStyle = JSON.parse(JSON.stringify(styleDoc).split(key).join(PLACEHOLDER));
+const MAPLIBRE_VERSION = JSON.parse(await readFile(require.resolve("maplibre-gl/package.json"), "utf8")).version;
+const TRUNK_DIGEST = createHash("sha256")
+  .update((await Promise.all(["bake.mjs", "mount.mjs", "style.mjs", "scrolly.mjs", "scrolly-live.mjs"].map((f) => readFile(join(HERE, "../../shared/map-beat", f), "utf8")))).join("\0"))
+  .digest("hex");
 
 const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars"] });
 /** THE STAGE A RENDERED PAGE PUBLISHES at each measured viewport, in the whole CSS pixels the live runtime
@@ -489,7 +494,12 @@ try {
       // 2026-09-15, the owner's "les fonts changent").
       const SCALES = [2, 1];
       const SHAPES = Object.keys(SIZES);
-      const planHash = createHash("sha256").update(JSON.stringify({ plan, sizes: SIZES, stageGround, scales: SCALES })).digest("hex");
+      // The hash covers everything the pixels depend on besides the plan: the style document (key taken back
+      // out), the MapLibre that draws it, and the trunk code that mounts, sweeps and paints it — a MapTiler
+      // restyle or a trunk change re-bakes the card images instead of leaving them behind the live map.
+      const planHash = createHash("sha256")
+        .update(JSON.stringify({ plan, sizes: SIZES, stageGround, scales: SCALES, style: unkeyedStyle, maplibre: MAPLIBRE_VERSION, trunk: TRUNK_DIGEST }))
+        .digest("hex");
       const recordPath = join(FALLBACK, `${id}.json`);
       const variants = SHAPES.flatMap((shape) => SCALES.map((scale) => [shape, scale]));
       let record = existsSync(recordPath) ? JSON.parse(await readFile(recordPath, "utf8")) : null;
