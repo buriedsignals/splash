@@ -1,0 +1,8 @@
+{
+  "branch": "quality/scrolly",
+  "commit": "fdec7bbd",
+  "files": {
+    "shared/map-beat/scrolly.mjs": "1bab84435929b9ab1ea2d98e93bf4f6aeb7fd7fb2009b50943ba978678bd1a74",
+    "shared/map-beat/mount.mjs": "ef154a56764dddc920136d27384c94e4cddb9baf0b17232ab1dff8238845dbd3"
+  }
+}
