@@ -13,6 +13,28 @@ the same assertions as `proof/static-flow-map-ukraine-protection`: the subject i
 about half (49,1 %), the total is over four million (4 504 080). One band per host, its width the number of people, each
 leaving the node at its own bearing with a slight bow; the camera is the box the ten largest hosts need.
 
+## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
+
+The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+
+- **The plan** (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, every country drawn by the basemap; the sea
+  the bare ground and the land one step off it (`PALETTE.md`). The still camera fits the box the origin and the ten
+  largest hosts need (their seats, the vertex mean inside the static window, padded 16 %) "meet" into the stage right of
+  the key column; it never moves, so each direction has its own (its key column's width).
+- **The bands** are one GeoJSON `line` layer each, the arc (the same bow in px) sampled in Bun and taken back to
+  lon/lat, the width a constant in px, the opacity bound per band. **The trace is a cut, not a gradient**: a
+  `line-gradient` reads `line-progress`, which `validateScrollyPlan` refuses in a binding, and a `line-dasharray`
+  restarts at every tile edge. At each frame the composition hands a band's source its arc cut at the drawn share of
+  its px length (`arcAt`, `setData`); a GeoJSON source counts as loading until re-tiled, so the frame waits for it.
+- **On the map**: the node (circle + « Ukraine » symbol) and the ten named hosts — a seat dot and a symbol layer each
+  (text at the axis size, ≥ 30 px), bound to the name's arrival. A name stands beside the seat dots, never on one.
+- **The words outside the map** (the counts, the width scale, the credit) stay SVG, placed from `measured.json`: the
+  real map measured once at the last frame (`measure.mjs`), its projected seats matching `projectorOf` to a tenth of a
+  pixel; the key over measured open sea clear of every band; the names placed on it, their halos the measured colour.
+- **The credit** is one line over open sea with « © MapTiler © OpenStreetMap ». The bottom-left sea holds only
+  « Eurostat, 2026-06 · © MapTiler © OpenStreetMap » — provisional, the owner to rule.
+- The key reaches MapTiler only through the local proxy; `no-key.live.test.ts` holds every output to it.
+
 ## The picture — shots, not a page
 
 1. **The title card** (from frame 0, 1.5 s).

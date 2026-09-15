@@ -1,8 +1,14 @@
-// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the key column, the land, the node, every band's
-// path, width and length, every host's name placed, the colours and the states.
+// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the key column, the live map's plan and its
+// still camera, every band's arc and width, every host's name and the credit placed on the MEASURED map, the colours
+// and the states.
+//
+// The map is MapTiler's, drawn live under the overlay (`DirectedFlowMapVideo.tsx`). Where the sea is under a box is not
+// computed here: `measure.mjs` read it once on the real map and froze it in `measured.json`, with the digest of the
+// plan it was read on. A plan that changed since is refused.
 //
 // Runs in Bun only.
 
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
@@ -13,11 +19,11 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { SEA_LAND_MIN } from "#shared/map-beat/tints.mjs";
 import { applyCase } from "../../skills/map-beat/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, DRAWN_WIDER, haloOf, pillOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, pillOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/map-beat/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
-import { laea } from "../scrolly-cartogram-europe-lowcarbon/cartogram-geometry.mjs";
-import { clipRing } from "../video-choropleth-europe-lowcarbon/geometry.mjs";
 import { placePills } from "../video-choropleth-europe-lowcarbon/scene.mjs";
+import { cameraOf, mapPlanFor, mapSeatsOf, projectorOf, seatsOf, unprojectorOf, withNames } from "./map-plan.mjs";
+import { planDigestOf } from "./measure.mjs";
 import { statesFor } from "./states.mjs";
 import { FOCUS_HOSTS, loadSubject, NAMES, ORIGIN, SUBJECT } from "./subject.mjs";
 import { FLOW_VIDEO_TIMING } from "./timing-contract.ts";
@@ -28,16 +34,15 @@ export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 export const SIZE = "landscape";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
-/** The static beat's window, [west, south, east, north]; a seat is the centre of a country's part inside it. */
-const WINDOW = [-25, 34, 45, 72];
-/** The focus box's padding, × its span (the static beat's 16 %). */
-const FOCUS_PAD = 0.16;
 /** The widest band, the largest host's, in px. */
 export const WIDEST = 36;
 /** A band narrower than this is not drawn; its people still count. */
 export const BAND_FLOOR = 2;
 const SEAT_STEP = 10;
-const MAP_MARGIN = 300;
+/** Two measured cells are one colour when no channel differs by more than this — the tolerance of a cell's mean. */
+const SAME_CELL = 3;
+/** A named host's seat dot, × the axis size. */
+const SEAT_DOT = 0.16;
 // The key's rhythm, × the axis lead.
 const ROW_GAP = 0.15;
 const TO_SCALE = 0.5;
@@ -45,7 +50,8 @@ const SCALE_GAP = 0.35;
 
 export function loadBeat() {
   const subject = loadSubject();
-  return { subject, states: statesFor(), copy: copyOf(subject) };
+  const seats = seatsOf(subject.geo);
+  return { subject, states: statesFor(), copy: copyOf(subject), seats, mapSeats: mapSeatsOf(seats) };
 }
 
 const n0 = (v) => Math.round(v).toLocaleString("fr-FR").replace(/[\u202F\u00A0\u2009]/g, NB);
@@ -53,6 +59,7 @@ const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximum
 const amount = (p) => (p >= 1e6 ? `${(p / 1e6).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${NB}M` : `${Math.round(p / 1000)}${NB}k`);
 
 export function copyOf(subject) {
+  const attribution = `©${NB}MapTiler ©${NB}OpenStreetMap`;
   return {
     eyebrow: "Migrations · Europe",
     title: [`${one(subject.total / 1e6)} millions d’Ukrainiens sous protection temporaire — l’Allemagne et la Pologne en accueillent la moitié`, `${one(subject.total / 1e6)} millions d’Ukrainiens sous protection temporaire`],
@@ -64,7 +71,13 @@ export function copyOf(subject) {
     ],
     origin: "Ukraine",
     host: (code, people) => `${NAMES[code]} ${amount(people)}`,
-    source: [`Source : Eurostat, protection temporaire (migr_asytpsm), ${subject.month} · Natural Earth`, `Source : Eurostat (migr_asytpsm), ${subject.month}`].map((f) => f.replace(" · ", `${NB}· `)),
+    // One line, over open sea, with the map's attribution: the longest form the measured sea holds is set.
+    source: [
+      `Source${NB}: Eurostat, protection temporaire (migr_asytpsm), ${subject.month} · ${attribution}`,
+      `Source${NB}: Eurostat (migr_asytpsm), ${subject.month} · ${attribution}`,
+      `Eurostat, ${subject.month} · ${attribution}`,
+      `Eurostat · ${attribution}`,
+    ].map((f) => f.replace(" · ", `${NB}· `)),
     topTwoShare: Number(subject.topTwoShare.toFixed(1)),
   };
 }
@@ -80,19 +93,56 @@ export function textPerRegisterOf(copy, subject) {
   };
 }
 
-function insideRing(ring, x, y) {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
+// ── the measured map ─────────────────────────────────────────────────────────────────────────────────
+
+const MEASURED = join(HERE, "measured.json");
+let measuredCache = null;
+/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+export function readMeasured() {
+  if (measuredCache) return measuredCache;
+  if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
+  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  return measuredCache;
 }
+export const near = (a, b, tolerance = SAME_CELL) => [1, 3, 5].every((k) => Math.abs(Number.parseInt(a.slice(k, k + 2), 16) - Number.parseInt(b.slice(k, k + 2), 16)) <= tolerance);
+/** The measured colour of the cell under a stage point. */
+export const cellAt = (grid, x, y) => grid.colours[Math.min(grid.rows - 1, Math.max(0, Math.floor(y / grid.cell))) * grid.cols + Math.min(grid.cols - 1, Math.max(0, Math.floor(x / grid.cell)))];
+/** HOW MANY CELLS OF A KIND a box covers, in constant time: a summed-area table over the grid. */
+export function countOf(grid, kind) {
+  const { cols, rows } = grid;
+  const sums = new Float64Array((cols + 1) * (rows + 1));
+  for (let j = 0; j < rows; j++)
+    for (let i = 0; i < cols; i++) sums[(j + 1) * (cols + 1) + i + 1] = (kind(grid.colours[j * cols + i]) ? 1 : 0) + sums[j * (cols + 1) + i + 1] + sums[(j + 1) * (cols + 1) + i] - sums[j * (cols + 1) + i];
+  return (box) => {
+    const i0 = Math.max(0, Math.floor(box.x / grid.cell));
+    const i1 = Math.min(cols - 1, Math.floor((box.x + box.width) / grid.cell)) + 1;
+    const j0 = Math.max(0, Math.floor(box.y / grid.cell));
+    const j1 = Math.min(rows - 1, Math.floor((box.y + box.height) / grid.cell)) + 1;
+    const at = (i, j) => sums[j * (cols + 1) + i];
+    return { count: at(i1, j1) - at(i0, j1) - at(i1, j0) + at(i0, j0), total: (i1 - i0) * (j1 - j0) };
+  };
+}
+
+/** Whether any drawn band, at its width, comes within `gap` of the box (its samples densified to a quarter step). */
+export const bandsIn = (bands, box, gap = 0, minWidth = 0) =>
+  bands.some((b) => b.drawn && b.width >= minWidth && b.samples.some(([x, y], i) => {
+    if (i === 0) return false;
+    const [x0, y0] = b.samples[i - 1];
+    return [0.25, 0.5, 0.75, 1].some((t) => {
+      const qx = x0 + (x - x0) * t;
+      const qy = y0 + (y - y0) * t;
+      const r = b.width / 2 + gap;
+      return qx >= box.x - r && qx <= box.x + box.width + r && qy >= box.y - r && qy <= box.y + box.height + r;
+    });
+  }));
+
 const touches = (a, b, gap = 0) => a.x < b.x + b.width + gap && b.x < a.x + a.width + gap && a.y < b.y + b.height + gap && b.y < a.y + a.height + gap;
 const r1 = (v) => Math.round(v * 10) / 10;
 
-export function buildDirection(id, { subject, states, copy }) {
+/**
+ * @param {{ measured?: any }} [options]  `measured: null` builds the plan and the camera only — what `measure.mjs` reads.
+ */
+export function buildDirection(id, { subject, states, copy, seats }, { measured = undefined } = {}) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, `${id}.md`)), textPerRegisterOf(copy, subject));
   const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
   const registers = videoRegistersOf(resolved, SIZE);
@@ -107,7 +157,16 @@ export function buildDirection(id, { subject, states, copy }) {
   const pad = haloOf(axis, k) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k });
+  /** The credit on one line, in every form that holds one — the longest that finds open sea is set. */
+  const credits = copy.source.flatMap((form) => {
+    try {
+      return [sourceCreditFor({ registers, forms: [form], size: SIZE, k, ...CREDIT_ONE_LINE })];
+    } catch {
+      return [];
+    }
+  });
+  if (!credits.length) throw new Error("no form of the source holds one line");
+  const sourceRegister = credits[0].register;
 
   // ── the key column: the people count, the top two's share, the width scale ────────────────────────────────────
   const { ranked, total } = subject;
@@ -144,57 +203,14 @@ export function buildDirection(id, { subject, states, copy }) {
   const keyHeight = Math.ceil(y + axisBand.descent + pad);
 
   // ── the camera: the box the ten largest hosts need, fitted to the stage to the right of the key column ─────────
-  const [west, south, east, north] = WINDOW;
-  const inWindow = ([lon, lat]) => lon >= west && lon <= east && lat >= south && lat <= north;
-  const seatsUnit = {};
-  for (const f of subject.geo.features) {
-    const pts = f.geometry.coordinates.flat(2).filter(inWindow).map(([lon, lat]) => laea(lon, lat));
-    if (!pts.length) continue;
-    const prev = seatsUnit[f.properties.iso];
-    const sum = pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1]], [0, 0]);
-    seatsUnit[f.properties.iso] = prev ? { sx: prev.sx + sum[0], sy: prev.sy + sum[1], n: prev.n + pts.length } : { sx: sum[0], sy: sum[1], n: pts.length };
-  }
-  const unitSeat = (iso) => {
-    const s = seatsUnit[iso];
-    if (!s) throw new Error(`${iso} has no seat inside the window`);
-    return [s.sx / s.n, s.sy / s.n];
+  const seatOf = (iso) => {
+    if (!seats[iso]) throw new Error(`${iso} has no seat inside the window`);
+    return seats[iso];
   };
-  const focusSeats = [ORIGIN, ...ranked.slice(0, FOCUS_HOSTS).map((f) => f.code)].map(unitSeat);
-  let fx0 = Math.min(...focusSeats.map((p) => p[0]));
-  let fx1 = Math.max(...focusSeats.map((p) => p[0]));
-  let fy0 = Math.min(...focusSeats.map((p) => p[1]));
-  let fy1 = Math.max(...focusSeats.map((p) => p[1]));
-  const px = (fx1 - fx0) * FOCUS_PAD;
-  const py = (fy1 - fy0) * FOCUS_PAD;
-  fx0 -= px;
-  fx1 += px;
-  fy0 -= py;
-  fy1 += py;
   const mapBox = { x: inset + keyWidth + axis.lead, y: vInset, w: stage.width - 2 * inset - keyWidth - axis.lead, h: stage.height - 2 * vInset };
-  const unitScale = Math.min(mapBox.w / (fx1 - fx0), mapBox.h / (fy1 - fy0));
-  const offX = mapBox.x + (mapBox.w - (fx1 - fx0) * unitScale) / 2;
-  const offY = mapBox.y + (mapBox.h - (fy1 - fy0) * unitScale) / 2;
-  const toStage = ([x, y]) => [offX + (x - fx0) * unitScale, offY + (y - fy0) * unitScale];
-
-  // ── the land ─────────────────────────────────────────────────────────────────────────────────────────────────
-  const clip = { x0: -MAP_MARGIN, x1: stage.width + MAP_MARGIN, y0: -MAP_MARGIN, y1: stage.height + MAP_MARGIN };
-  const rings = [];
-  const land = [];
-  for (const f of subject.geo.features) {
-    const parts = [];
-    for (const poly of f.geometry.coordinates)
-      for (const ring of poly) {
-        const cut = clipRing(ring.map(([lon, lat]) => toStage(laea(lon, lat))), clip);
-        if (cut.length < 3) continue;
-        const kept = [cut[0]];
-        for (const p of cut.slice(1)) if (Math.abs(p[0] - kept.at(-1)[0]) + Math.abs(p[1] - kept.at(-1)[1]) >= 1) kept.push(p);
-        if (kept.length < 3) continue;
-        rings.push(kept);
-        parts.push(`M${kept.map((p) => `${r1(p[0])} ${r1(p[1])}`).join("L")}Z`);
-      }
-    if (parts.length) land.push(parts.join(""));
-  }
-  const onLand = (x, y) => rings.some((ring) => insideRing(ring, x, y));
+  const camera = cameraOf([ORIGIN, ...ranked.slice(0, FOCUS_HOSTS).map((f) => f.code)].map(seatOf), mapBox, stage);
+  const project = projectorOf(camera, stage);
+  const unproject = unprojectorOf(camera, stage);
 
   // ── colours: the sea the bare ground, the land one measured step off it, the bands the accent ─────────────────
   const { ground, accent } = direction;
@@ -225,14 +241,15 @@ export function buildDirection(id, { subject, states, copy }) {
     },
   };
   for (const [slot, c] of Object.entries(colours.text)) if (!c) throw new Error(`the ${slot} has no ink that reads`);
+  const strokes = { node: (direction.stroke?.rule ?? 1) * k };
 
-  // ── the node and the bands ────────────────────────────────────────────────────────────────────────────────────
-  const [ox, oy] = toStage(unitSeat(ORIGIN));
+  // ── the node and the bands: each arc a bow in stage px, sampled and taken back to lon/lat ──────────────────────
+  const [ox, oy] = project(seatOf(ORIGIN));
   const originText = measure(copy.origin, axis);
   const nodeR = originText.width / 2 + 2 * pad;
   const nodeBox = { x: ox - nodeR, y: oy - nodeR, width: 2 * nodeR, height: 2 * nodeR };
   const bands = ranked.map((f) => {
-    const [sx, sy] = toStage(unitSeat(f.code));
+    const [sx, sy] = project(seatOf(f.code));
     const dx = sx - ox;
     const dy = sy - oy;
     const len = Math.hypot(dx, dy);
@@ -245,7 +262,8 @@ export function buildDirection(id, { subject, states, copy }) {
     const control = [(start[0] + sx) / 2 - (dy / len) * bow, (start[1] + sy) / 2 + (dx / len) * bow];
     const quad = (t) => [(1 - t) ** 2 * start[0] + 2 * (1 - t) * t * control[0] + t * t * sx, (1 - t) ** 2 * start[1] + 2 * (1 - t) * t * control[1] + t * t * sy];
     const samples = Array.from({ length: 41 }, (_, i) => quad(i / 40));
-    const length = samples.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - samples[i][0], p[1] - samples[i][1]), 0);
+    const lengths = [0];
+    for (let i = 1; i < samples.length; i++) lengths.push(lengths[i - 1] + Math.hypot(samples[i][0] - samples[i - 1][0], samples[i][1] - samples[i - 1][1]));
     return {
       code: f.code,
       people: f.people,
@@ -253,27 +271,37 @@ export function buildDirection(id, { subject, states, copy }) {
       subject: f.code === SUBJECT,
       drawn,
       width: r1(width),
-      d: `M${r1(start[0])} ${r1(start[1])}Q${r1(control[0])} ${r1(control[1])} ${r1(sx)} ${r1(sy)}`,
-      length: Math.ceil(length) + 2,
       seat: { x: sx, y: sy },
       samples,
+      coordinates: samples.map(unproject),
+      cumulative: lengths,
     };
   });
+  const mapPlan = mapPlanFor({ bands, node: { seat: seatOf(ORIGIN), r: nodeR, text: originText.text }, colours, strokes, registers: { axis }, camera });
+  /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
+  const drive = { cameras: { whole: camera }, bands: bands.map(({ samples, seat, coordinates, cumulative, ...b }) => b), topTwoShare: copy.topTwoShare, total, states, timing: FLOW_VIDEO_TIMING };
+  if (measured === null) return { props: { mapPlan, ...drive } };
+  measured ??= readMeasured();
+  if (measured.planDigest?.[id] !== planDigestOf(mapPlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
+  if (measured.size.width !== stage.width || measured.size.height !== stage.height)
+    throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
+  const { grid, projected } = measured.cameras[id].whole;
+  const measuredSea = cellAt(grid, ...projected.biscay);
+  if (!near(measuredSea, ground)) throw new Error(`${id}: the measured sea ${measuredSea} is not the direction's ground ${ground}`);
+  /** Not sea: the land, the node and every band drawn over the sea (the measured frame is the last, every band in). */
+  const landIn = countOf(grid, (c) => !near(c, measuredSea));
+  const landShare = (box) => {
+    const { count, total: cells } = landIn(box);
+    return cells ? count / cells : 0;
+  };
 
-  // ── the key column: at the left margin, the height over the least land clear of every band ────────────────────
+  // ── the key column: at the left margin, the height over the least measured land clear of every band ────────────
   const keyAt = (() => {
     let best = null;
     for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP) {
       const box = { x: inset, y: ky, width: keyWidth, height: keyHeight };
-      if (bands.some((b) => b.drawn && b.samples.some(([x, yy]) => x >= box.x - b.width && x <= box.x + box.width + b.width && yy >= box.y - b.width && yy <= box.y + box.height + b.width))) continue;
-      let covered = 0;
-      let totalCells = 0;
-      for (let yy = box.y + 6; yy < box.y + box.height; yy += 12)
-        for (let x = box.x + 6; x < box.x + box.width; x += 12) {
-          totalCells++;
-          if (onLand(x, yy)) covered++;
-        }
-      const share = covered / totalCells;
+      if (bandsIn(bands, box, gap)) continue;
+      const share = landShare(box);
       if (!best || share < best.share - 1e-9 || (Math.abs(share - best.share) < 1e-9 && Math.abs(ky + keyHeight / 2 - stage.height / 2) < Math.abs(best.y + keyHeight / 2 - stage.height / 2))) best = { x: inset, y: ky, share };
     }
     if (!best) throw new Error(`a ${keyWidth}×${keyHeight} key finds no height at the left margin clear of every band`);
@@ -283,63 +311,65 @@ export function buildDirection(id, { subject, states, copy }) {
 
   // ── the names: the ten largest hosts, each at its band's end, kept apart and clear of the node and the key ─────
   const named = bands.filter((b) => b.drawn).slice(0, FOCUS_HOSTS);
-  const crossesBand = (box) =>
-    bands.some((b) => b.drawn && b.width >= WIDEST / 4 && b.samples.some(([x, yy], i) => {
-      if (i === 0) return false;
-      const [x0, y0] = b.samples[i - 1];
-      // Densified: a quarter of the way between two samples as well as at each.
-      return [0.25, 0.5, 0.75, 1].some((t) => {
-        const qx = x0 + (x - x0) * t;
-        const qy = y0 + (yy - y0) * t;
-        return qx >= box.x - b.width / 2 && qx <= box.x + box.width + b.width / 2 && qy >= box.y - b.width / 2 && qy <= box.y + box.height + b.width / 2;
-      });
-    }));
   const pills = named.map((b) => ({ ...b, pill: pillOf(copy.host(b.code, b.people), axis, pad) }));
+  const dotR = SEAT_DOT * axis.fontSize;
+  // A name never covers a named host's seat dot, its own included: the dot says where the band ends.
+  const dots = named.map((b) => ({ x: b.seat.x - dotR, y: b.seat.y - dotR, width: 2 * dotR, height: 2 * dotR }));
   const placed = placePills(
-    pills.map((b) => ({ key: b.code, cx: b.seat.x, cy: b.seat.y, width: b.pill.width, height: b.pill.height })),
+    pills.map((b) => ({ key: b.code, cx: b.seat.x, cy: b.seat.y, width: b.pill.width, height: b.pill.height, avoid: dots })),
     { width: stage.width, height: stage.height },
     gap,
     // A name never sits across one of the wide bands (a quarter of the widest or more) — the thin ones pass under its halo.
-    { obstacles: [nodeBox, { ...keyBox, x: 0, width: keyBox.x + keyBox.width }], allowed: (box) => !crossesBand(box) },
+    { obstacles: [nodeBox, { ...keyBox, x: 0, width: keyBox.x + keyBox.width }], allowed: (box) => !bandsIn(bands, box, 0, WIDEST / 4) },
   );
-  const names = Object.fromEntries(
-    pills.map((b) => {
-      const at = placed[b.code];
-      const cx = at.x + b.pill.width / 2;
-      const cy = at.y + b.pill.height / 2;
-      return [b.code, { text: b.pill.text, width: b.pill.textWidth, x: at.x + b.pill.textX, y: at.y + b.pill.baseline, halo: haloOf(axis, k), haloColour: onLand(cx, cy) ? landFill : ground, box: { x: at.x, y: at.y, width: b.pill.width, height: b.pill.height } }];
-    }),
-  );
+  const halo = haloOf(axis, k);
+  const names = pills.map((b) => {
+    const at = placed[b.code];
+    const box = { x: at.x, y: at.y, width: b.pill.width, height: b.pill.height };
+    return {
+      code: b.code,
+      text: b.pill.text,
+      width: b.pill.textWidth,
+      box,
+      seat: seatOf(b.code),
+      at: unproject([box.x + box.width / 2, box.y + box.height / 2]),
+      ink: b.top ? colours.text.subject : colours.text.name,
+      halo,
+      // The halo is the colour under most of the name on the measured map.
+      haloColour: landShare(box) > 0.5 ? landFill : ground,
+    };
+  });
 
-  // ── the credit: the lowest, leftmost free corner — no land, no band, no name, not the key ─────────────────────
+  // ── the credit: one line over open sea, in the lowest, leftmost corner clear of the key, the node, the names ────
   let creditAt = null;
-  search: for (let cy = stage.height - vInset - credit.height; cy >= vInset; cy -= SEAT_STEP)
-    for (let cx = inset; cx + credit.width <= stage.width - inset; cx += SEAT_STEP) {
-      const box = { x: cx, y: cy, width: credit.width, height: credit.height };
-      if (touches(box, keyBox, gap) || touches(box, nodeBox, gap) || Object.values(names).some((n) => touches(box, n.box, gap))) continue;
-      if (bands.some((b) => b.drawn && b.samples.some(([x, yy]) => x >= box.x - b.width && x <= box.x + box.width + b.width && yy >= box.y - b.width && yy <= box.y + box.height + b.width))) continue;
-      creditAt = { x: cx, y: cy };
-      break search;
+  let credit = null;
+  for (const form of credits) {
+    search: for (let cy = stage.height - vInset - form.height; cy >= vInset; cy -= SEAT_STEP)
+      for (let cx = inset; cx + form.width <= stage.width - inset; cx += SEAT_STEP) {
+        const box = { x: cx, y: cy, width: form.width, height: form.height };
+        if (landIn(box).count || touches(box, keyBox, gap) || touches(box, nodeBox, gap) || names.some((n) => touches(box, n.box, gap)) || bandsIn(bands, box, gap)) continue;
+        creditAt = { x: cx, y: cy };
+        break search;
+      }
+    if (creditAt) {
+      const { register, ...rest } = form;
+      credit = rest;
+      break;
     }
-  if (!creditAt) throw new Error(`a ${credit.width}×${credit.height} credit finds no free corner`);
+  }
+  if (!creditAt) throw new Error(`${id}: no one-line form of the source finds open sea clear of the key, the node, the names and every band on the measured map`);
 
   const props = {
     frame: stage,
     registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, axis, source: sourceRegister },
     titleCard,
-    legend: { at: { x: keyBox.x, y: keyBox.y }, width: keyWidth, height: keyHeight, peopleRow, shareRow, peopleTexts, shareTexts, scale, halo: haloOf(axis, k), valueHalo: haloOf(value, k) },
+    legend: { at: { x: keyBox.x, y: keyBox.y }, width: keyWidth, height: keyHeight, peopleRow, shareRow, peopleTexts, shareTexts, scale, halo, valueHalo: haloOf(value, k) },
     credit: { ...credit, at: creditAt },
     colours,
-    strokes: { node: (direction.stroke?.rule ?? 1) * k },
-    land,
-    node: { x: ox, y: oy, r: nodeR, label: { ...originText, x: ox, y: oy + (axisBand.ascent - axisBand.descent) / 2 } },
-    bands: bands.map(({ samples, seat, ...b }) => b),
-    names: Object.fromEntries(Object.entries(names).map(([c, { box, ...n }]) => [c, n])),
-    topTwoShare: copy.topTwoShare,
-    total,
+    strokes,
     layoutInset: { x: inset, y: vInset },
-    states,
-    timing: FLOW_VIDEO_TIMING,
+    mapPlan: withNames(mapPlan, { names, colours, axis, dotR }),
+    ...drive,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, keyLand: keyAt.share, drawn: bands.filter((b) => b.drawn).length, named: named.length } };
+  return { id, direction, props, bands, names, dots, report: { k, titleForm: titleCard.form, sourceText: credit.lines[0].text, keyLand: keyAt.share, drawn: bands.filter((b) => b.drawn).length, named: named.length } };
 }

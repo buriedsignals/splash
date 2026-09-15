@@ -10,14 +10,15 @@ import { sceneAt } from "./scene.mjs";
 /**
  * The markup at the last frame of every event — the type floor, every word with its measured width — and the claim told
  * in order: the title at frame 0, every band drawn and the total counted at the end of reveal, the top two's exact share
- * at the end, every name against its own band's end, the widths the key's scale.
+ * at the end, the widths the key's scale. The map is not drawn here (`liveMap: () => null`): its layers — the bands, the
+ * node and the names — are held in `map-plan.test.ts`.
  */
 
 const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(FlowFrame, { ...(props as any), at: frame }));
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(FlowFrame, { ...(props as any), at: frame, liveMap: () => null }));
   const last = (event: string) => endOf((props.timing as any)[event]) - 1;
 
   describe(`${id}'s flow map video`, () => {
@@ -46,16 +47,6 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       const largest = props.bands[0];
       expect(largest.width).toBe(WIDEST);
       expect(props.legend.scale[0].width / largest.width).toBeCloseTo(1e6 / largest.people, 3);
-    });
-
-    it("should seat every name within three of its heights of its own band's end", () => {
-      for (const b of props.bands.filter((x: any) => props.names[x.code])) {
-        const n = props.names[b.code];
-        const end = b.d.split(/[QM ]/).filter(Boolean).slice(-2).map(Number);
-        const cx = n.x + n.width / 2;
-        const dist = Math.hypot(Math.max(n.x - end[0], 0, end[0] - n.x - n.width), Math.max(n.y - 40 - end[1], 0, end[1] - n.y));
-        expect([b.code, dist <= 3 * 50, Number.isFinite(cx)]).toEqual([b.code, true, true]);
-      }
     });
   });
 }

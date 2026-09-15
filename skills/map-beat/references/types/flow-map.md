@@ -122,6 +122,12 @@ hosts need, fitted to the right of it. A host whose seat is outside the frame's 
 the edge ends nowhere); a name never sits across a band a quarter of the widest or wider, and stays within three of its
 heights of its own band's end.
 
+On the live MapTiler map (2026-09-15, awaiting the owner): each band a GeoJSON `line` layer, its arc sampled in Bun in
+lon/lat and its width a constant in px at the still camera; the trace a cut of the arc at its drawn share handed to the
+band's source each frame (`setData`) — `line-gradient` needs `line-progress`, refused in a binding, and a dash restarts at
+tile edges. The node and the named hosts are circle + symbol layers; a name stands beside every seat dot. The key and the
+credit stand on the measured open sea, clear of every band.
+
 ## The worked example in this tree
 
 `proof/static-flow-map-ukraine-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a

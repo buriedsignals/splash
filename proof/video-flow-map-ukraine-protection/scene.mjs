@@ -72,3 +72,51 @@ export function sceneAt(props, frame) {
     source: at("source"),
   };
 }
+
+// ── the live map ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The fields the map plan's paints are bound to, besides the camera (`map-plan.mjs`): the node's, and each drawn
+ *  band's and each named host's opacity. */
+export const mapFieldsOf = (bands, named) => ["furniture", ...bands.filter((b) => b.drawn).map((b) => `band${b.code}`), ...named.map((code) => `name${code}`)];
+
+/**
+ * THE LIVE MAP AT `frame`, IN NUMBERS: the still camera, the node's presence, each band's opacity (stepped back unless
+ * it is one of the top two) and drawn share (`drawn<code>`, what `arcAt` cuts its line by), each host's name.
+ *
+ * @param {{ cameras: { whole: any } } & Parameters<typeof sceneAt>[0]} props
+ */
+export function mapStateAt(props, frame) {
+  const scene = sceneAt(props, frame);
+  const state = { ...props.cameras.whole, furniture: scene.furniture };
+  for (const b of props.bands) {
+    const s = scene.bands[b.code];
+    state[`band${b.code}`] = s.drawn > 0 ? s.opacity : 0;
+    state[`drawn${b.code}`] = s.drawn;
+    state[`name${b.code}`] = s.name * s.opacity;
+  }
+  return state;
+}
+
+/**
+ * A BAND'S LINE AT `t` OF ITS LENGTH: the arc's vertices up to `t` × its length in stage px (`cumulative`), the last
+ * one interpolated. Nothing before the band starts; the whole arc once it has arrived.
+ *
+ * @param {number[][]} coordinates  @param {number[]} cumulative  @param {number} t
+ */
+export function arcAt(coordinates, cumulative, t) {
+  if (!(t > 0)) return [];
+  if (t >= 1) return coordinates;
+  const reach = t * cumulative.at(-1);
+  const out = [coordinates[0]];
+  for (let i = 1; i < coordinates.length; i++) {
+    if (cumulative[i] < reach) {
+      out.push(coordinates[i]);
+      continue;
+    }
+    const u = (reach - cumulative[i - 1]) / (cumulative[i] - cumulative[i - 1] || 1);
+    const [a, b] = [coordinates[i - 1], coordinates[i]];
+    out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+    break;
+  }
+  return out;
+}
