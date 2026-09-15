@@ -24,20 +24,26 @@ import puppeteer from "puppeteer";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// Europe, near-square once projected (geo-discipline.md rule 12) — the same bounds
-// `map-beat`'s own choropleth seed uses, because this beat's study set is the same shape of
-// continent (holds Iceland whole, per that skill's own recorded defect fix).
-/** THE CAMERA HOLDS THE STUDY SET, and the study set reaches further east than a Europe-shaped box
- *  does: Cyprus sits at 33°E and Ukraine's eastern border at 40°. A bake that stopped at 33 cropped
- *  both, and `assertCameraReachesBounds` below is what turns that into a refusal rather than a plate
- *  nobody checked. Iceland at 24°W sets the west edge. */
-/** THE CAMERA HOLDS THE STUDY SET. This beat draws every low-carbon station the database lists in
- *  Europe, so the box is the one the sibling maps use: Iceland at 24°W to Ukraine's eastern border
- *  at 40°E. `assertCameraReachesBounds` turns a short bake into a refusal rather than a silent crop. */
+// Europe, near-square once projected (geo-discipline.md rule 12).
+/** THE CAMERA HOLDS THE STUDY SET, AND THE WINDOW IS MEASURED RATHER THAN TYPED.
+ *
+ *  WHAT CHANGED, AND WHY IT WAS A DEFECT. This window was [-25, 34] .. [42, 68]. The file's own
+ *  stations reach 44,93°E (Georgia) and 71,01°N (Norway), and the study countries' own largest
+ *  parts reach 46,67°E and 71,09°N — so the declared window cut the study on two edges. Nothing
+ *  was red, because `assertCameraReachesBounds` compares the FRAME against the typed box and the
+ *  frame overshoots on whichever axis does not bind: at this aspect it reached 46,4°E on its own.
+ *  A window too small for its own study set is forgiven by its own overshoot, which is exactly the
+ *  defect `proof/web-choropleth-europe-lowcarbon` names — and the runner now measures the declared
+ *  WINDOW against the study set rather than the frame.
+ *
+ *  RUSSIA IS THE ONE COUNTRY THIS FRAME DOES NOT HOLD WHOLE, and that is editorial rather than
+ *  accidental: its largest part reaches 180°E, so a frame that held it would be a world map with
+ *  Europe in one corner. The page draws European Russia and the runner names it as the single
+ *  declared exception instead of quietly widening for it. */
 const BEAT = {
   bounds: [
-    [-25, 34],
-    [42, 68],
+    [-24.6, 35.1],
+    [46.8, 71.2],
   ],
   style: "dataviz-light",
 };
