@@ -393,6 +393,9 @@ export function contourField(geo, { study, window: win, width, levels }) {
   return {
     width,
     height,
+    /** How a frame-unit point maps back to the LAEA plane this field was measured in — `[fx, fy] / scale +
+     *  [x0, frameY0]` — for the live map, which draws in lon/lat and needs the field's own points unprojected. */
+    projection: { x0: BX0, frameY0: minY, scale },
     unitsPerKm,
     median,
     deepest,
