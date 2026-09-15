@@ -94,7 +94,7 @@ Aucun mot ne bouge non plus. Le code du pays est du mobilier : il est écrit une
 dans aucun état. Le nombre de chaque case est **trois `<text>` empilés à une seule place** et la
 feuille en révèle un — les chiffres changent, le span ne voyage pas.
 
-**Le liseré du regroupement** apparaît au grain « la région » : c'est le contour des six blocs,
+**Le trait de bloc** apparaît au grain « la région » : c'est le contour des six blocs,
 dessiné à partir des arêtes qui séparent deux blocs différents. Il est toujours dans le DOM et c'est
 son `opacity` qui bouge, donc il s'interpole aussi. Au grain « le pays » il n'y a aucun groupe de
 plus d'une case, donc rien à contourner. Au grain « le voisinage » il n'y en a pas non plus, et pour
@@ -202,3 +202,19 @@ tuiles tombent, quand il n'y a pas de réseau, et c'est ce qu'est toujours l'art
 clé n'entre dans aucun fichier du dépôt**, le rendu porte `__MAPTILER_KEY__`, et le runner écrit EN
 PLUS `renders/<direction>.local.html` avec la vraie clé (ignoré par git) — c'est ce fichier-là que le
 propriétaire ouvre.
+
+### Le trait de bloc, corrigé le 2026-09-15 — un mur entre deux cases, jamais une boîte autour d'un groupe
+
+Le propriétaire a ouvert `la région` et répondu : « je comprends pas le filtre la région qui met des
+bouts d'encadrés ». Il avait raison, et la cause est géométrique. **Mesuré sur cette disposition : les
+six blocs nommés tombent en NEUF morceaux connexes** — `Nordiques` = ISL seule + NOR+DNK+SWE+FIN,
+`Europe du Sud` = PRT+ESP, ITA+MLT et GRC+HRV+CYP. Il n'y a donc **aucune union à cerner d'un seul
+trait**, et MapLibre ne peut pas dissoudre ce qui n'est pas connexe.
+
+Sur les 128 segments livrés, **61 tombaient sur une arête sans aucun voisin** — le pourtour de la
+grille. Ce sont eux qui refermaient les formes en boîtes. Ils sont supprimés : **un trait n'est tracé
+que là où deux cases VOISINES ne sont pas dans le même bloc** (67 segments). Le trait sépare donc
+toujours deux choses que le lecteur voit, et une case isolée comme l'Islande n'est jamais cernée toute
+seule. Ce qui relie les morceaux épars d'un même bloc est ce qui l'a toujours fait et qui se lit :
+**toutes les cases d'un bloc portent le MÊME chiffre**, donc la même teinte. Un refus tient la règle.
+Et la phrase du grain dit maintenant ce que les blocs SONT, en les nommant.

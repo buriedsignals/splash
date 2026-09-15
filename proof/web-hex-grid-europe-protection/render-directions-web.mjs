@@ -357,9 +357,11 @@ pool.grains[1].note = plain(
     `il n'y a aucun bloc à contourner ici.`,
 );
 pool.grains[2].note = plain(
-  `Les ${hosts.length} pays sont réunis en ${Object.keys(REGIONS).length} blocs nommés, et chaque ` +
-    `bloc divise la somme de ses personnes par la somme de ses habitants : ${regionMoved} cases sur ` +
-    `${hosts.length} changent de classe et le contour des blocs apparaît. ` +
+  `Les blocs sont ${Object.keys(REGIONS).length} ensembles de pays nommés à la main — ` +
+    `${Object.keys(REGIONS).join(", ")} — et chaque bloc divise la somme de ses personnes par la ` +
+    `somme de ses habitants, si bien que toutes ses cases affichent le MÊME chiffre. Le trait épais ` +
+    `tombe partout où deux cases voisines ne sont pas dans le même bloc : ${regionMoved} cases sur ` +
+    `${hosts.length} changent de classe. ` +
     `${widestBlock.name} tombe à ${fr(widestBlock.pooledRate)} quand la moyenne des taux de ses ` +
     `${REGIONS[widestBlock.name].length} membres est ${fr(widestBlock.mean)} : le quotient des ` +
     `sommes n'est pas la moyenne des quotients, et c'est ce que coûte un découpage.`,
@@ -379,8 +381,24 @@ console.log(
 
 // ── the block outline, as lon/lat segments tagged with their grain ────────────────────────────
 //
-// A segment is drawn on every edge that separates two cells this grain does NOT pool together. A
-// grain that is a MOVING WINDOW rather than a partition has no such edge set at all — the windows
+// A SEAM IS A WALL BETWEEN TWO NEIGHBOURS, NEVER A BOX AROUND ONE GROUP — and that is a correction,
+// made by looking at the delivered page. The owner opened `la région` and wrote « je comprends pas le
+// filtre la région qui met des bouts d'encadrés ».
+//
+// He was right and the cause is geometry, not drawing. MEASURED on this layout: the six named blocks
+// fall into **nine connected pieces** — `Nordiques` is ISL alone plus NOR+DNK+SWE+FIN, and
+// `Europe du Sud` is PRT+ESP, ITA+MLT and GRC+HRV+CYP — so there is no union to put ONE outline
+// around, and MapLibre cannot dissolve what is not connected. Outlining each piece drew nine
+// free-standing boxes for six groupings, which is exactly the false reading the owner got.
+//
+// Of the 128 segments that shipped, **61 lay on an edge with NO neighbour at all** — the outer rim of
+// the grid. Those are the ones that closed a shape into a box. They are dropped: a seam is drawn only
+// where two ADJACENT cells are NOT pooled together (67 segments), so the heavy line always separates
+// two things a reader can see, and a lone cell like ISL is never ringed on its own. What ties the
+// scattered pieces of one block together is then what it always was and what a reader can read: every
+// member of a block carries the SAME pooled number and therefore the same fill.
+//
+// A grain that is a MOVING WINDOW rather than a partition has no such edge set at all — the windows
 // overlap — and `poolPartitionOf` says so by returning `null`. Every grain's segments live in ONE
 // source and it is `line-opacity` that moves, so the feature set never changes between states.
 const seamFeatures = [];
@@ -395,7 +413,9 @@ for (const grain of pool.grains) {
     const { cx, cy } = centreOf(s);
     for (let edge = 0; edge < 6; edge += 1) {
       const n = neighbourAcross(s, edge);
-      if (n && blockOf(n.code) === mine) continue;
+      // NO NEIGHBOUR, NO WALL. An edge on the outer rim has nothing on its far side, so a line there
+      // says nothing about a grouping — it only closes the shape into a box.
+      if (!n || blockOf(n.code) === mine) continue;
       seamFeatures.push({
         grain: slug,
         line: [geo(...vertexOf(cx, cy, edge)), geo(...vertexOf(cx, cy, edge + 1))],
@@ -403,14 +423,55 @@ for (const grain of pool.grains) {
     }
   }
 }
+/** EVERY SEAM SEPARATES TWO DRAWN CELLS, and nothing else. The refusal is the regression guard for
+ *  the defect the owner found: a segment on an edge with no far side is a box, and a box around one
+ *  piece of a block that has three pieces teaches a reader that the piece IS the grouping. */
+const seamKeys = new Set();
+for (const s of seats)
+  for (let edge = 0; edge < 6; edge += 1)
+    if (neighbourAcross(s, edge)) {
+      const [a, b] = [vertexOf(centreOf(s).cx, centreOf(s).cy, edge), vertexOf(centreOf(s).cx, centreOf(s).cy, edge + 1)];
+      seamKeys.add([geo(...a), geo(...b)].flat().map((v) => v.toFixed(5)).sort().join("|"));
+    }
+for (const feature of seamFeatures)
+  if (!seamKeys.has(feature.line.flat().map((v) => v.toFixed(5)).sort().join("|")))
+    throw new Error(
+      `a block seam is drawn on an edge that has no cell on its far side. A seam is a WALL between ` +
+        `two neighbours; on the outer rim it is a BOX around one group — and the owner refused ` +
+        `exactly that (« des bouts d'encadrés »), because six blocks fall into nine connected ` +
+        `pieces here and a box around a piece reads as the grouping itself.`,
+    );
+const piecesOf = (members) => {
+  const set = new Set(members);
+  const seen = new Set();
+  let pieces = 0;
+  for (const code of members) {
+    if (seen.has(code)) continue;
+    pieces += 1;
+    const stack = [code];
+    seen.add(code);
+    while (stack.length) {
+      const cur = stack.pop();
+      for (let edge = 0; edge < 6; edge += 1) {
+        const n = neighbourAcross(seatOf.get(cur), edge);
+        if (n && set.has(n.code) && !seen.has(n.code)) {
+          seen.add(n.code);
+          stack.push(n.code);
+        }
+      }
+    }
+  }
+  return pieces;
+};
+const BLOCK_PIECES = Object.values(REGIONS).reduce((a, m) => a + piecesOf(m), 0);
 console.log(
   `contours · ${pool.grains
     .map((g) => {
       const slug = poolSlugOf(g.key);
       const n = seamFeatures.filter((f) => f.grain === slug).length;
-      return `${slug}: ${n ? `${n} segments` : "aucun (une fenêtre n'a pas de frontière)"}`;
+      return `${slug}: ${n ? `${n} murs entre deux cases` : "aucun (une fenêtre n'a pas de frontière)"}`;
     })
-    .join(" · ")}\n`,
+    .join(" · ")} · ${Object.keys(REGIONS).length} blocs en ${BLOCK_PIECES} morceaux connexes\n`,
 );
 
 // ── the cells ─────────────────────────────────────────────────────────────────────────────────
@@ -508,7 +569,8 @@ const interaction = {
       changes: plain(
         `chaque case garde sa place et son code, et change de teinte et de chiffre : le taux est ` +
           `recalculé sur le pays seul, sur le pays plus ses voisines par une arête, ou sur son bloc ` +
-          `régional — et au grain régional le contour des blocs apparaît par-dessus les cases.`,
+          `régional — et au grain régional un trait épais apparaît partout où deux cases voisines ` +
+          `ne sont pas dans le même bloc.`,
       ),
     },
     {
