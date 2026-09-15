@@ -10,7 +10,7 @@ import { maptilerFace } from "#shared/map-beat/glyphs.mjs";
 import { cameraFields, viewOf } from "#shared/map-beat/scrolly.mjs";
 import { plateTints, WATER_HUE } from "#shared/map-beat/tints.mjs";
 import { BEAT } from "../static-choropleth-europe-lowcarbon/bake.mjs";
-import { arrived, choroplethPlan, ISO, LAYER, LEVEL } from "./plan.mjs";
+import { arrived, choroplethPlan, LAYER, LEVEL } from "./plan.mjs";
 
 export const REFERENCE = Object.freeze({ width: 1920, height: 1080 });
 export const MAP_FIELDS = Object.freeze(["classes", "filter", "top", "zoom", "odd"]);
@@ -27,9 +27,11 @@ const latOfWorldY = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) * 180
 export function camerasOf(subject) {
   const [[west, south], [east, north]] = BEAT.bounds;
   const frameWorldPx = Math.min(FRAME.width / (worldX(east) - worldX(west)), FRAME.height / (worldY(south) - worldY(north)));
-  // THE STATIC PLATE'S FIT, at the video's size: its bounds fitted into its frame, that frame scaled to fill the
-  // reference stage's width, centred on the bounds' Mercator middle — the pilot runner's own arithmetic.
-  const zoom = Math.log2((frameWorldPx * (REFERENCE.width / FRAME.width)) / 512);
+  // THE STATIC PLATE'S FIT, at the video's size: its bounds fitted into its frame, that frame fitted "meet" into the
+  // reference stage — by the tighter of its two ratios, as `zoomShiftFor` fits the pilot's reference ground on both
+  // axes — centred on the bounds' Mercator middle. Fitted by the width alone, the 1000 × 760 frame stood 1459 px
+  // tall on a 1080 px stage and the whole map lost a quarter of its height.
+  const zoom = Math.log2((frameWorldPx * Math.min(REFERENCE.width / FRAME.width, REFERENCE.height / FRAME.height)) / 512);
   const center = [(west + east) / 2, latOfWorldY((worldY(south) + worldY(north)) / 2)];
   return { whole: cameraFields({ center, zoom }), closeUp: cameraFields({ center: SEATS[subject.ODD_ONE], zoom: zoom + CLOSE_UP_ZOOM }), frameWorldPx };
 }
