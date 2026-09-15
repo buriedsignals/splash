@@ -49,6 +49,19 @@ function warmScrollyCameras(map, cameras, samples, win, timeoutMs, zoomOffset) {
   });
 }
 
+// EVERY BOUND PAINT PROPERTY GETS ITS TRANSITION KILLED, OR THE SCROLL DOES NOT OWN TIME. MapLibre
+// eases every `setPaintProperty` over its own default 300ms — `fadeDuration: 0` only reaches symbol
+// and raster crossfades, not this. There is no public `Map#setTransition` in 5.24.0 (checked against
+// `node_modules/maplibre-gl/dist/maplibre-gl.d.ts`: the only `setTransition` in the bundle belongs to
+// the internal per-layer `Transitionable` class, never exposed on `Map`), so the public door is the
+// one the style spec already gives every transitionable paint property: a sibling
+// `<property>-transition` value, set through the same `setPaintProperty` the bindings use.
+function disableBoundTransitions(map, plan) {
+  for (const layer of plan.layers)
+    for (const property in layer.bindings || {})
+      map.setPaintProperty(layer.id, property + "-transition", { duration: 0, delay: 0 }, { validate: false });
+}
+
 function registerEmbeddedGlyphs(maplibregl, glyphs) {
   if (!glyphs) return null;
   maplibregl.addProtocol("splash-glyphs", async function (params) {
@@ -83,31 +96,53 @@ function initScrollyMap(root, plan, options) {
   });
   // Cameras are authored for `plan.referenceWidth`; a narrower stage sees the same ground one
   // log2(width ratio) zoom level further out, so a phone keeps the card's whole subject in view.
-  const handle = { map: map, plan: plan, root: root, ready: false, pending: null };
+  const handle = { map: map, plan: plan, root: root, ready: false, pending: null, failed: false };
   handle.zoomOffset = function () {
     return plan.referenceWidth ? Math.log2(container.clientWidth / plan.referenceWidth) : 0;
   };
+  // THE FIRST CAUSE WINS. A mount failure and a later runtime "error" event can both reach here;
+  // only the first is kept, so a reader debugging a blank map reads what actually broke it rather
+  // than whatever fired last.
+  const fail = function (message) {
+    if (handle.failed) return;
+    handle.failed = true;
+    root.dataset.liveError = message;
+  };
 
   map.once("style.load", function () {
-    if (plan.projection) map.setProjection({ type: plan.projection });
-    if (glyphsUrl) map.setGlyphs(glyphsUrl);
-    assertLiveStyleAnswered(applyLiveStyle(map, { tints: plan.tints, keepLabels: (plan.keepLabels || []).map((s) => new RegExp(s, "i")) }), plan.styleName || plan.styleUrl);
-    mountPlan(map, plan);
+    try {
+      if (plan.projection) map.setProjection({ type: plan.projection });
+      if (glyphsUrl) map.setGlyphs(glyphsUrl);
+      assertLiveStyleAnswered(applyLiveStyle(map, { tints: plan.tints, keepLabels: (plan.keepLabels || []).map((s) => new RegExp(s, "i")) }), plan.styleName || plan.styleUrl);
+      mountPlan(map, plan);
+      disableBoundTransitions(map, plan);
+    } catch (err) {
+      fail((err && err.message) || "the live style failed to mount");
+    }
   });
 
   map.once("load", function () {
     const samples = plan.warmSamples === undefined ? 3 : plan.warmSamples;
     warmScrollyCameras(map, plan.cameras, samples, win, (options && options.warmTimeoutMs) || 4000, handle.zoomOffset()).then(function (warm) {
       root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
-      container.style.opacity = "1";
+      // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the
+      // layers a failed mount may never have added — but a live layer nobody finished painting is
+      // worse than the fallback plate underneath it, so neither `ready` nor the reveal happens.
+      if (handle.failed) return;
+      // THE CAMERA IS RESTORED BEFORE THE REVEAL, NOT AFTER. The warm's own last `jumpTo` leaves
+      // the camera on the last card; revealing before this would show a reader the wrong end of the
+      // beat for one frame. `ready` is set first because `applyScrollyMap` itself gates on it —
+      // otherwise this call would only queue itself back into `pending`.
       handle.ready = true;
-      if (handle.pending) applyScrollyMap(handle, handle.pending);
+      applyScrollyMap(handle, handle.pending || plan.cameras[0]);
+      handle.pending = null;
+      container.style.opacity = "1";
       if (options && options.onReady) options.onReady(map);
     });
   });
 
   map.on("error", function (event) {
-    root.dataset.liveError = (event && event.error && event.error.message) || "map error";
+    fail((event && event.error && event.error.message) || "map error");
   });
   return handle;
 }
