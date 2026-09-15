@@ -29,7 +29,7 @@ import {
   restoreClearOf,
   restoreNamesOf,
   restoreSlugOf,
-} from "../../skills/chart-web/assets/restore.ts";
+} from "../../skills/map-web/assets/restore.ts";
 import { DirectedCartogramWeb } from "./DirectedCartogramWeb.tsx";
 import { project } from "./camera.ts";
 

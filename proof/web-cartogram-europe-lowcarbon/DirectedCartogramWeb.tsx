@@ -60,9 +60,13 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars, inkOnFill } from "#shared/design-base/web.mjs";
+// THE BEAT WIRES THE CHROME, and it is the beat that is allowed to: a file under `proof/` may
+// import from any skill, where `no-cross-skill-imports` stops a file INSIDE a skill from reaching
+// out of it. That is what lets `restore.ts` live in `map-web` — where a newsroom installing the map
+// skill actually receives it — and still be drawn in the same pill rail as every other control.
+import { controlChromeCss } from "../../skills/chart-web/assets/control-chrome.ts";
 import {
   restoreCss,
-  restoreChromeCss,
   restoreMarkLiftCss,
   restoreStagesForMarkup,
   restoreNotesForMarkup,
@@ -70,8 +74,9 @@ import {
   restoreSlugOf,
   restoreCellAttrs,
   restoreNameAttrs,
+  restoreEdgeAttrs,
   restorePlateAttrs,
-} from "../../skills/chart-web/assets/restore.ts";
+} from "../../skills/map-web/assets/restore.ts";
 
 const SCOPE = ".chart-figure";
 /** `interaction-plan.ts` discovers a control that MOVES the picture by this id stem — the format's
@@ -139,6 +144,22 @@ export function DirectedCartogramWeb({
     mix(ground, accent, 0.14 + (i / (classes.length - 1)) * 0.86),
   );
   const edge = mix(ground, ink, 0.32);
+  /** WHAT SEPARATES ONE FILL FROM THE NEXT, measured on the pairs that REALLY collide rather than
+   *  on every pair that could. A ground-coloured gap is the separator a map wants — it is the page
+   *  showing between the tiles, it adds no ink, and it cannot be misread as a value. Measured
+   *  against the 125 colliding pairs of `lieu` and the 40 of `surface`, it holds everywhere except
+   *  where the palest class meets the palest class: TUR/CYP at the true place and ROU/MDA at the
+   *  true area both sit at 1,24:1 on the light grounds and 1,31:1 on the dark one, which is not a
+   *  gap a reader can see. So the gap is CASED: the tile's own soft edge is redrawn over it, and
+   *  that line carries exactly those two pairs, at 1,71:1 on `creme`, 2,03:1 on `nocturne` and
+   *  1,81:1 on `rapport` against the palest class.
+   *
+   *  The alternative measured and rejected was a separator sought for the best worst case over all
+   *  six paints, which lands on the direction's own ink — 2,78:1, 1,49:1 and 2,96:1. It separates
+   *  better on paper and was worse on the page: on `nocturne` it is a near-white wireframe over 41
+   *  squares, it is the heaviest ink on the page, and it competes with the names, which are also
+   *  near-white. Rendered and looked at before being dropped. */
+  const gap = ground;
 
   /** The dose that moves a cell off its OWN painted fill far enough to be seen — sought, not fixed,
    *  which is the owner's second ruling taken literally. */
@@ -173,7 +194,19 @@ export function DirectedCartogramWeb({
     tile.klass === null ? lifted(edge) : lifted(ramp[tile.klass]);
 
   const css = [
-    restoreChromeCss({ scope: SCOPE }),
+    controlChromeCss({
+      scope: SCOPE,
+      name: "restore",
+      notes: {
+        stacked: true,
+        reserve: "3em",
+        why:
+          "Two lines at the frame's own width, which is what the longer of this beat's two " +
+          "revealed sentences takes there, measured in Chrome rather than guessed; stacked in one " +
+          "cell so the tallest is always what the row is, and choosing a stage never moves the " +
+          "plot down under the reader's pointer while forty-one cells are in the air.",
+      },
+    }),
     restoreCss(restore, { scope: SCOPE, idPrefix: RESTORE_ID_PREFIX }),
     // The cell the pointed point speaks for, lit ACROSS the split between the drawing and the hit
     // plate. The dose is not here: each cell carries its own `--mark-active`, sought against its own
@@ -376,7 +409,78 @@ export function DirectedCartogramWeb({
             );
           })}
 
-          {/* THE NAMES. One group per cell, TRANSLATED with its square and never scaled by it, and
+
+          {/* THE SEPARATOR LAYER — every square's own boundary, drawn ABOVE every fill and revealed
+              only in the stages the geometry says collide.
+
+              WHAT THIS COSTS. A second rect per cell and a heavier line than the tile's own edge, in
+              the direction's ink rather than in a step off the ground. In the filed grid the layer
+              is at `opacity: 0` and costs nothing but its markup; in `lieu` it is 41 outlines over a
+              pile 38 cells deep, which is busy — but busy is what that stage MEASURES, and the
+              alternative was worse in a way that cannot be argued back: the tile's own edge sits at
+              1,18:1 against the second class on `creme`, 1,13:1 on `nocturne` and 1,20:1 on
+              `rapport`, so the moment two mid-ramp squares touch, the line between them is not
+              there. That is the whole of what the owner saw.
+
+              WHY NOT TRANSPARENCY, the usual answer to colliding marks: opacity under 1 would make a
+              deep pile DARKER, and on this page darker is a class. A reader would read crowding as
+              a low-carbon reading. Recolouring the ramp to show geometry is the one thing a
+              choropleth-coloured cartogram may never do, so the separation had to be a line.
+
+              WHY NOT A GROUND-COLOURED HALO, the other usual answer: measured on the delivered
+              ramps it is worse than the ink everywhere and worst exactly where it is needed — two
+              adjacent palest squares separated by a line of page sit at 1,24:1 on `creme` and
+              `rapport`, which is the same invisibility under a different name. */}
+          {order.map((code) => {
+            const tile = byCode.get(code) as Tile;
+            const seat = home.get(code) as any;
+            return (
+              <g key={`e-${code}`}>
+                <rect
+                  {...restoreEdgeAttrs(code)}
+                  pointerEvents="none"
+                  x={seat.cx - seat.side / 2}
+                  y={seat.cy - seat.side / 2}
+                  width={seat.side}
+                  height={seat.side}
+                  rx={3}
+                  fill="none"
+                  stroke={gap}
+                  data-restore-cased=""
+                />
+                <rect
+                  {...restoreEdgeAttrs(code)}
+                  pointerEvents="none"
+                  x={seat.cx - seat.side / 2}
+                  y={seat.cy - seat.side / 2}
+                  width={seat.side}
+                  height={seat.side}
+                  rx={3}
+                  fill="none"
+                  stroke={edge}
+                  strokeWidth={1}
+                  strokeDasharray={tile.klass === null ? "3 3" : undefined}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </g>
+            );
+          })}
+
+          {/* THE NAMES, EACH HALOED IN ITS OWN CELL'S FILL. The halo is not decoration and it is
+              not here for the filed grid, where a name sits alone on its own square and needs
+              nothing: it is what lets a name survive the separator layer, whose boundaries cross
+              behind any word sitting near the edge of a crowded square. `paint-order: stroke` puts
+              the halo UNDER the glyph, so the ink a reader reads is still the ink measured against
+              that cell's own fill and the halo only clears what is behind it.
+
+              THE HALO IS THE CELL'S OWN FILL, and it has to be. A name is only ever drawn on a
+              square nothing later covers, so its glyphs already sit on that fill; haloing in the
+              fill restores exactly the condition the ink was measured against. The first attempt
+              haloed in the page's GROUND and was rendered and rejected: on `nocturne` the bright
+              classes take a DARK ink, so a navy halo around a navy glyph ate the word. A halo has
+              to be what the ink is not, and the fill already is.
+
+              THE NAMES. One group per cell, TRANSLATED with its square and never scaled by it, and
               faded out exactly when the square can no longer hold the word — which `restore.ts`
               derives from the sides and the overlaps rather than taking on trust. `opacity` is a
               property on an element that is ALWAYS rendered, which is the only kind of change CSS
@@ -399,6 +503,10 @@ export function DirectedCartogramWeb({
                   x={seat.cx}
                   y={seat.cy - 9}
                   fill={on}
+                  stroke={fill}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
                   fontFamily={String(regs.axis.fontFamily)}
                   fontSize={12}
                   fontWeight={600}
@@ -412,6 +520,10 @@ export function DirectedCartogramWeb({
                   x={seat.cx}
                   y={seat.cy + 10}
                   fill={on}
+                  stroke={fill}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
                   fontFamily={String(regs.value.fontFamily)}
                   fontSize={13}
                   fontWeight={700}

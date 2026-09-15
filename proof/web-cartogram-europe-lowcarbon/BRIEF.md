@@ -101,17 +101,24 @@ fenêtre, pas trois fenêtres sur le même dessin.
 RESTITUE, et `geo-symbol.ts` raisonne sur des points à rayon proportionnel dans une plaque cuite —
 ce beat n'a pas de plaque, sa géométrie EST la donnée.
 
-**Où le fichier est posé, et l'arbitrage du dépôt qui décide pour lui.** `restore.ts` est sous
-`skills/chart-web/assets/` et non sous `skills/map-web/assets/`, pour une raison mécanique et non
-par confort : ce beat rend par `skills/chart-web/scripts/render-web.mjs` (comme son voisin
-choroplèthe-web, et pour la raison qu'il écrit — une carte vectorielle sans tuiles n'a que faire du
-plan live de `map-web`), et surtout `no-cross-skill-imports.test.ts` interdit à TOUT fichier sous un
-skill d'importer hors de ce skill. Un `restore.ts` sous `map-web` ne pourrait donc pas importer
-`skills/chart-web/assets/control-chrome.ts` — et il devrait recopier le chrome des contrôles, ce que
-le brief de ce lot interdit explicitement (« Ne recopiez pas de CSS de chrome depuis un frère »). Le
-choix est entre les deux règles ; celle du chrome est la plus récente, la plus chèrement payée
-(vingt copies dérivées, trois refus du propriétaire) et la seule des deux qui a un défaut visible à
-l'écran.
+**Où le fichier est posé, et la prémisse fausse qui avait failli le poser ailleurs.** `restore.ts`
+est sous **`skills/map-web/assets/`**, avec `filter.ts` et `geo-symbol.ts`, parce qu'un répertoire de
+skill doit pouvoir se copier tel quel : un vocabulaire de CARTE garé dans `chart-web` est un
+vocabulaire qu'une rédaction qui installe `map-web` ne reçoit jamais.
+
+Un premier jet l'avait posé sous `chart-web`, au motif que `no-cross-skill-imports.test.ts` aurait
+empêché un `restore.ts` sous `map-web` d'importer `skills/chart-web/assets/control-chrome.ts`, et
+qu'il aurait donc fallu recopier le chrome des contrôles — ce que le brief de ce lot interdit. **La
+prémisse était fausse, et c'est l'arrangement qui la rendait vraie.** La règle contraint les
+fichiers À L'INTÉRIEUR d'un skill ; un beat sous `proof/` n'est dans aucun skill et importe de
+n'importe lequel. Donc `restore.ts` **n'importe rien du tout** — comme `classing.ts`, écrit en
+parallèle pour le choroplèthe — et c'est `DirectedCartogramWeb.tsx` qui appelle `controlChromeCss`
+de `chart-web` et `restore.ts` de `map-web` côte à côte. Le chrome n'est recopié nulle part, et la
+règle des imports est verte.
+
+Ce qui restait de « chrome propre à ce contrôle » n'était pas du dessin : c'étaient deux arguments
+(les phrases sont EMPILÉES dans une seule cellule de grille, et trois ems leur sont réservés), que
+le beat passe maintenant lui-même.
 
 ### Les refus que `restore.ts` fait, et six qu'aucun voisin ne peut faire
 
