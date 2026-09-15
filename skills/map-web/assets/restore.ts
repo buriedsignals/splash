@@ -1,4 +1,4 @@
-// twin/skills/chart-web/assets/restore.ts
+// twin/skills/map-web/assets/restore.ts
 //
 // ANOTHER THING A READER CAN DO TO A PICTURE WITHOUT A SCRIPT, AND IT IS THE SAME MECHANISM.
 //
@@ -117,7 +117,6 @@
 // the destination, so a reader who points MID-FLIGHT is answered about the cell that is ARRIVING.
 // Nothing is ever answered from a place no cell will occupy.
 
-import { controlChromeCss } from "./control-chrome.ts";
 
 /** One cell of the map, declared once for the whole page — there is only ever one drawing. */
 export type RestoreTile = {
@@ -228,6 +227,45 @@ export function restoreNameAttrs(key: string): { "data-restore-name": string } {
 }
 
 /** The attributes one stage's transparent HIT PLATE carries. */
+/**
+ * The separator layer's tag. It is a SECOND element per cell, carrying no `data-mark`, because the
+ * outline must not be what a pointer lights: `restoreMarkLiftCss` sets `fill` on the mark, and a
+ * `fill: none` outline handed that rule would suddenly acquire a fill under the pointer.
+ */
+export function restoreEdgeAttrs(key: string): { "data-restore-edge": string } {
+  return { "data-restore-edge": key };
+}
+
+/**
+ * HOW CROWDED EACH STAGE REALLY IS, counted on the squares rather than asserted.
+ *
+ * A cartogram that gives a country back its true place makes squares COLLIDE, and the collision is
+ * a true fact about the geography the grid traded away — it is not a layout bug to be nudged out.
+ * But an opaque square painted over another opaque square deletes it, and a reader then sees one
+ * blob whose outline belongs to nobody. This census is what lets the drawing decide, per stage and
+ * from the geometry alone, whether it owes the reader a separator.
+ */
+export function restoreCrowdingOf(
+  declaration: RestoreDeclaration,
+): { slug: string; pairs: number; touched: string[] }[] {
+  return declaration.stages.map((stage) => {
+    const places = stage.places;
+    const touched = new Set<string>();
+    let pairs = 0;
+    for (let i = 0; i < places.length; i += 1)
+      for (let j = i + 1; j < places.length; j += 1) {
+        const a = places[i];
+        const b = places[j];
+        if (overlaps(a.cx, a.cy, a.side, a.side, b.cx, b.cy, b.side, b.side)) {
+          pairs += 1;
+          touched.add(a.key);
+          touched.add(b.key);
+        }
+      }
+    return { slug: restoreSlugOf(stage.key), pairs, touched: [...touched] };
+  });
+}
+
 export function restorePlateAttrs(slug: string): {
   "data-restore-plate": string;
 } {
@@ -672,12 +710,23 @@ export function restoreCss(
     scope,
     idPrefix,
     travelMs = RESTORE_TRAVEL_MS,
-  }: { scope: string; idPrefix: string; travelMs?: number },
+    casing = 5,
+  }: { scope: string; idPrefix: string; travelMs?: number; casing?: number },
 ): string {
   if (!declaration) return "";
   const round = (n: number) => Number(n.toFixed(3));
   const travel = restoreTravelOf(declaration);
   const names = new Map(restoreNamesOf(declaration).map((s) => [s.slug, new Set(s.named)]));
+  const crowded = new Map(restoreCrowdingOf(declaration).map((c) => [c.slug, c.pairs > 0]));
+  const homeSide = new Map(declaration.stages[0].places.map((p) => [p.key, p.side]));
+  /* THE CASING IS IN USER UNITS AND THE SQUARE IT CASES IS NOT A FIXED SIZE. Across these stages a
+     side runs from 455 units to 1,9 — a ratio of 245 to 1 — so a casing that is a constant on the
+     screen swallows the smallest squares whole: at the true-area stage Malta is 1,3 device pixels
+     across, and a three-pixel band centred on its outline would erase the country it was drawn to
+     protect. The width is therefore capped at a FIFTH of the square's own side, and divided by the
+     scale the stage applies so that what is painted is that width and not that width times k. */
+  const casingFor = (key: string, k: number) =>
+    Math.min(casing / (k || 1), (homeSide.get(key) ?? 0) / 5);
   const defaultSlug = travel[0].slug;
 
   const lines: string[] = [
@@ -700,6 +749,17 @@ export function restoreCss(
     `${scope} [data-restore-cell] { transform-box: fill-box; transform-origin: center; transform: translate(0px, 0px) scale(1); }`,
     `/* The name TRAVELS with its cell and is never scaled by it. */`,
     `${scope} [data-restore-name] { transform: translate(0px, 0px); opacity: 1; }`,
+    `/* THE SEPARATOR TRAVELS TOO, and it is revealed BY THE CENSUS rather than by an author. In a`,
+    `   stage where nothing collides it is off, and the plate is exactly the picture the filed grid`,
+    `   always was; in a stage where squares genuinely pile up it is on, and every square keeps a`,
+    `   boundary of its own instead of dissolving into whichever fill was painted last. \`opacity\``,
+    `   on an always-rendered element, never \`display\`, so the layer can be interpolated like`,
+    `   everything else that changes here. */`,
+    `${scope} [data-restore-edge] { transform-box: fill-box; transform-origin: center; transform: translate(0px, 0px) scale(1); opacity: ${crowded.get(defaultSlug) ? 1 : 0}; }`,
+    ...declaration.tiles.map(
+      (tile) =>
+        `${scope} [data-restore-edge="${tile.key}"][data-restore-cased] { stroke-width: ${round(casingFor(tile.key, 1))}; }`,
+    ),
   ];
   for (const key of declaration.tiles.map((t) => t.key))
     if (!names.get(defaultSlug)?.has(key))
@@ -720,6 +780,8 @@ export function restoreCss(
       if (!still)
         lines.push(
           `${on} [data-restore-cell="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
+          `${on} [data-restore-edge="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
+          `${on} [data-restore-edge="${move.key}"][data-restore-cased] { stroke-width: ${round(casingFor(move.key, move.k))}; }`,
           `${on} [data-restore-name="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px); }`,
         );
       // The opacity rule is emitted for EVERY cell of every stage, not only for the ones that
@@ -729,6 +791,7 @@ export function restoreCss(
         `${on} [data-restore-name="${move.key}"] { opacity: ${named.has(move.key) ? 1 : 0}; }`,
       );
     }
+    lines.push(`${on} [data-restore-edge] { opacity: ${crowded.get(stage.slug) ? 1 : 0}; }`);
     const note = declaration.stages.find((s) => restoreSlugOf(s.key) === stage.slug)?.note;
     if (note) lines.push(`${on} [data-stack-note="${stage.slug}"] { display: revert; }`);
   }
@@ -739,6 +802,7 @@ export function restoreCss(
     `     same duration, same easing, so a cell and the word naming it arrive together. */`,
     `  ${scope} [data-restore-cell] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
     `  ${scope} [data-restore-name] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
+    `  ${scope} [data-restore-edge] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}, stroke-width ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
     `}`,
   );
   return lines.join("\n");
@@ -876,6 +940,48 @@ export function assertOneRestore(
           "names. A label with no cell behind it travels nowhere and is measured against nothing.",
       );
 
+  // A CROWDED STAGE OWES THE READER A BOUNDARY, and the census decides which stages those are.
+  // Squares on true centroids genuinely collide; that collision is a fact about the geography the
+  // grid traded away and must not be nudged out. What the page may not do is paint one opaque
+  // square over another and leave the reader a blob whose outline belongs to nobody — the owner
+  // read exactly that and called it "placed any old how, and not legible".
+  const edgeTags = String(html).match(/<[a-zA-Z][^>]*\sdata-restore-edge="[^"]*"[^>]*>/g) ?? [];
+  const drawnEdges = new Set<string>();
+  for (const tag of edgeTags) {
+    const key = /\sdata-restore-edge="([^"]*)"/.exec(tag);
+    if (key) drawnEdges.add(key[1]);
+  }
+  const crowding = restoreCrowdingOf(declaration);
+  if (crowding.some((stage) => stage.pairs > 0)) {
+    for (const tile of declaration.tiles)
+      if (!drawnEdges.has(tile.key))
+        throw new Error(
+          `${where}: ${JSON.stringify(tile.key)} has no \`data-restore-edge\` outline, and this map ` +
+            `collides in ${crowding.filter((s) => s.pairs > 0).length} of its ${crowding.length} ` +
+            "stages. A square with no boundary of its own disappears under the next opaque fill, and " +
+            "the pile it disappeared into is then a shape no country answers for.",
+        );
+    for (const stage of crowding) {
+      if (stage.pairs === 0) continue;
+      const on = new RegExp(
+        `#[\\w-]*${stage.slug}:checked\\)\\s\\[data-restore-edge\\]\\s*\\{\\s*opacity:\\s*1\\s*;`,
+      );
+      if (!on.test(String(html)))
+        throw new Error(
+          `${where}: the stage ${JSON.stringify(stage.slug)} piles ${stage.pairs} pairs of squares ` +
+            `over ${stage.touched.length} of ${declaration.tiles.length} cells and its stylesheet ` +
+            "leaves the separator layer off. The crowding is the finding of that stage; hiding what " +
+            "it looks like is the one way to make the stage lie without moving a single square.",
+        );
+    }
+  }
+  for (const key of drawnEdges)
+    if (!declaration.tiles.some((tile) => tile.key === key))
+      throw new Error(
+        `${where}: an outline is drawn for ${JSON.stringify(key)}, which the declaration never ` +
+          "names. A boundary with no square inside it is a shape the reader cannot ask about.",
+      );
+
   // THE NAMES DRAWN ARE THE NAMES DERIVED. The stylesheet is the page's own answer to "which cells
   // can hold their name in this stage"; if it disagrees with `restoreNamesOf`, the rule that a cell
   // has to hold its own name has been overruled somewhere between the two.
@@ -926,25 +1032,13 @@ export function assertOneRestore(
 }
 
 /**
- * The control's own chrome, emitted ONLY for a beat that declared a map it can give back.
- *
- * ONE DRAWING, IN ONE PLACE. `control-chrome.ts` carries the drawing and the measurements behind
- * it; what is left here is the only thing that was ever this control's own — how many lines of
- * sentence to reserve, and that the sentences are STACKED in one grid cell, because a row that
- * grows when a sentence is revealed pushes the plot down under the reader's hands.
+ * THE CHROME IS NOT HERE, AND THAT IS WHAT MAKES THIS FILE A MAP VOCABULARY RATHER THAN A GUEST IN
+ * THE CHART SKILL. The fieldset, the pill rail, the wash and the ring are
+ * `chart-web/assets/control-chrome.ts`, and the BEAT calls it — a file under `proof/` may import
+ * from any skill, where a file inside a skill may not. Wiring it from here would have pinned this
+ * vocabulary to `skills/chart-web/`, and a newsroom installing `map-web` would not have received
+ * the one gesture only a cartogram can make. What this control's own chrome ever amounted to was
+ * two arguments the beat now passes itself: the sentences are STACKED in one grid cell, and three
+ * ems are reserved for them, because a row that grows when a sentence is revealed pushes the plot
+ * down under the reader's hands while forty-one cells are in the air.
  */
-export function restoreChromeCss({ scope }: { scope: string }): string {
-  return controlChromeCss({
-    scope,
-    name: "restore",
-    notes: {
-      stacked: true,
-      reserve: "3em",
-      why:
-        "Two lines at the frame's own width, which is what the longer of this beat's two revealed " +
-        "sentences takes there, measured in Chrome rather than guessed; stacked in one cell so the " +
-        "tallest is always what the row is, and choosing a stage never moves the plot under the " +
-        "reader's pointer while forty-one cells are in the air.",
-    },
-  });
-}
