@@ -59,13 +59,13 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
 | 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ✅ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
-| 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
+| 04 | Dot density | 3 | ✅ | ◦ | ◦ | ✅ |
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ◦ |
-| 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
+| 07 | Locator | 1 | ✅ | ◦ | ◦ | ✅ |
 | 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ✅ |
 
-**Maps: 8 of 8 done in static, 2 of 8 in scrolly, 0 in web or video.**
+**Maps: 8 of 8 done in static, 4 of 8 in scrolly, 0 in web or video.**
 
 The eight map scrolly beats listed below were drawn in SVG from a Natural Earth extract clipped to a fixed window, so
 countries outside it are missing as soon as the view leaves it. The owner ruled on 2026-09-15 that they are redone
@@ -151,10 +151,10 @@ until then. The choropleth is the first redone and validated.
 | Cartogram | scrolly | `proof/scrolly-cartogram-europe-lowcarbon` — SVG, to redo on MapTiler |
 | Choropleth | scrolly | `proof/scrolly-choropleth-europe-lowcarbon` — live MapTiler, flat map (pilot, validated 2026-09-15) |
 | Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` — SVG, to redo on MapTiler |
-| Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` — SVG, to redo on MapTiler |
+| Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` — live MapTiler, flat map (validated 2026-09-15; final bake pending) |
 | Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` — SVG, to redo on MapTiler |
 | Hex grid | scrolly | `proof/scrolly-hex-grid-europe-protection` — SVG, to redo on MapTiler |
-| Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` — SVG, to redo on MapTiler |
+| Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` — live MapTiler, flat map (validated 2026-09-15; final bake pending) |
 | Proportional symbol | scrolly | `proof/scrolly-proportional-symbol-europe-capacity` — live MapTiler, flat map (validated 2026-09-15) |
 
 ## What is next, by how much evidence backs it
