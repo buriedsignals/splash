@@ -105,20 +105,27 @@ export type LiveSymbolMark = {
   label: string | null;
 };
 
-/** THE PROVIDER'S OWN GEOGRAPHY, KEPT AND RE-INKED — what `shared/map-beat/tints.mjs`'s
- *  `basemapGeography` derives from one direction. Optional, and absent it nothing changes: a beat
- *  whose own marks carry the countries (a choropleth fills all forty) wants the bare sweep. A beat
- *  whose marks do NOT carry them — a fan of bands, a scatter of circles — leaves the ground with no
- *  coast, no frontier and no name on it, which is what this brings back. Every regular expression
- *  travels as `{ source, flags }`: a plan is a file, and `JSON.stringify` flattens a RegExp to `{}`. */
-export type LiveBasemapGeography = {
-  keepLabels: { source: string; flags: string }[];
-  keepTextures: { source: string; flags: string }[];
-  ink: {
-    match: { source: string; flags: string };
-    layout?: Record<string, unknown>;
-    paint?: Record<string, unknown>;
-  }[];
+/** THE COUNTRIES THIS BEAT DRAWS ITSELF, when its own marks do not carry them.
+ *
+ *  A choropleth fills all forty countries: its marks ARE the geography, and it draws them as its own
+ *  MapLibre layers over MapTiler's Countries tileset, joined by ISO A2. Forty-one circles are not a
+ *  geography, so this beat takes the SAME mechanism — the same tileset, the same level-0 filter, the
+ *  same two layers beneath the basemap's water. The only difference is what a fill means: there a
+ *  class, here neutral ground.
+ *
+ *  What it is NOT is MapTiler's own frontier lines and place names kept and re-tinted. That was
+ *  tried, and the owner read it against the choropleth he had just validated: a kept provider layer
+ *  reads as a provider basemap with our tints on it. The provider's lines and its words stay hidden,
+ *  as the trunk's sweep intends; the countries are ours.
+ *
+ *  Absent, nothing is drawn and the beat keeps the bare sweep it had. */
+export type LiveCountries = {
+  /** The one neutral land tint every country is filled with — `countryGround`'s `fill`. */
+  fill: string;
+  /** The frontier between them, and the coast around them — `countryGround`'s `border`. */
+  border: string;
+  /** Its weight in screen pixels, the choropleth's own. */
+  width: number;
 };
 
 export type LiveSymbolsDeclaration = {
@@ -127,8 +134,8 @@ export type LiveSymbolsDeclaration = {
   /** The two tints the live style is repainted with — the sea, and the ground every mark is measured
    *  against. */
   tints: { water: string; land: string };
-  /** See `LiveBasemapGeography`. Absent, the basemap is swept bare. */
-  basemap?: LiveBasemapGeography;
+  /** See `LiveCountries`. Absent, no country is drawn. */
+  countries?: LiveCountries;
   /** What the camera fits to at runtime: the beat's own declared window, the same one the bake
    *  fitted, so the frozen photograph and the live map are ONE camera and not two that agree today. */
   studyBounds: { west: number; east: number; south: number; north: number };
@@ -397,6 +404,48 @@ export function radiusExpressionFor(
   ];
 }
 
+/** THE COUNTRIES, AS THIS BEAT'S OWN LAYERS. The choropleth's mechanism, with a neutral fill in
+ *  place of a class: MapTiler's Countries tileset (`administrative`, `level` 0 … 4, keyed on
+ *  `iso_a2`), filtered to level 0, drawn BENEATH the basemap's water because Countries' coast is
+ *  generalised per zoom and stands over the basemap's finer one — a country fill drawn above the
+ *  water paints a coarse halo of land out into the sea.
+ *
+ *  Both layers are `ground: true`, which is how the mount tells them from a mark: no radius law
+ *  reaches them, no clock runs on them, and no pointer ever answers from them. */
+function countryLayers(d: LiveSymbolsDeclaration): Record<string, unknown>[] {
+  if (!d.countries) return [];
+  const source = {
+    type: "vector",
+    url: `https://api.maptiler.com/tiles/countries/tiles.json?key=${KEY_PLACEHOLDER}`,
+  };
+  const sourceLayer = "administrative";
+  const level0 = ["==", ["get", "level"], 0];
+  return [
+    {
+      id: "mw-countries",
+      type: "fill",
+      ground: true,
+      beneath: "water",
+      source,
+      sourceLayer,
+      filter: level0,
+      paint: { "fill-color": d.countries.fill, "fill-opacity": 1 },
+      hover: false,
+    },
+    {
+      id: "mw-countries-edge",
+      type: "line",
+      ground: true,
+      beneath: "water",
+      source,
+      sourceLayer,
+      filter: level0,
+      paint: { "line-color": d.countries.border, "line-width": d.countries.width },
+      hover: false,
+    },
+  ];
+}
+
 /** THE PLAN THE PAGE CARRIES, as JSON, read back by a script that never met the code that wrote it.
  *  It is a FILE before it is an object, so what is checked here is checked again in the browser. */
 export function liveSymbolsPlan(
@@ -423,6 +472,7 @@ export function liveSymbolsPlan(
   };
 
   const layers: Record<string, unknown>[] = [
+    ...countryLayers(d),
     // THE FIELD. One circle layer for all of it, repainted per law — not one layer per law, because
     // the reader changes law with a click and one layer is one place a radius is decided.
     {
@@ -495,7 +545,6 @@ export function liveSymbolsPlan(
     styleName: d.style,
     projection: "mercator",
     tints: d.tints,
-    basemap: d.basemap ?? null,
     studyBounds: d.studyBounds,
     reviewBox: d.reviewBox,
     changeMs: d.changeMs,
@@ -568,12 +617,6 @@ export function liveSymbolsScript(
       "live-symbols: the style sweep is handed in by the beat (the source of " +
         "`skills/map-web/assets/style.mjs`, with its `export` keywords stripped) because a page " +
         "script cannot import. What it was given does not define `applyLiveStyle`.",
-    );
-  if (d.basemap && !/function\s+applyBasemapInk/.test(styleModule))
-    throw new Error(
-      "this beat keeps part of the provider's geography and re-inks it, which `applyBasemapInk` does. " +
-        "The style module it was handed does not define it — the page would keep the countries in " +
-        "MapTiler's own colours and nothing would report it.",
     );
   if (/\bexport\s/.test(styleModule))
     throw new Error(
@@ -706,11 +749,36 @@ export function liveSymbolsScript(
     figure.setAttribute("data-live-law", slug);
   }
 
+  // THE ONE LAYER THE BEAT'S OWN COUNTRIES ARE DRAWN BENEATH. Countries' coast is generalised per
+  // zoom and coarser than the basemap's own, so a country fill drawn ABOVE the water paints a halo
+  // of land out into the sea along every fjord.
+  function waterId() {
+    var layers = map.getStyle().layers;
+    for (var i = 0; i < layers.length; i++)
+      if (styleDecisionFor(layers[i]).tint === "water") return layers[i].id;
+    throw new Error("the style carries no water fill for this beat's countries to be drawn beneath, so MapTiler Countries' coarser coast would stand over the basemap's own");
+  }
+
   function mountLayers() {
+    var before = null;
+    var vector = {};
     for (var i = 0; i < PLAN.layers.length; i++) {
       var layer = PLAN.layers[i];
-      if (!map.getSource(layer.id)) map.addSource(layer.id, { type: "geojson", data: layer.data });
-      var spec = { id: layer.id, type: layer.type, source: layer.id };
+      var source = layer.id;
+      if (layer.source) {
+        // A VECTOR TILESET, SHARED BY EVERY LAYER THAT READS IT: MapTiler's Countries, the same one
+        // the choropleth sibling joins on. Two sources on one url is two tile fetches for one map.
+        var url = layer.source.url.replace(/[?#].*$/, "");
+        if (!vector[url]) {
+          vector[url] = "mw-src-" + i;
+          map.addSource(vector[url], { type: layer.source.type, url: layer.source.url });
+        }
+        source = vector[url];
+      } else if (!map.getSource(layer.id)) {
+        map.addSource(layer.id, { type: "geojson", data: layer.data });
+      }
+      var spec = { id: layer.id, type: layer.type, source: source };
+      if (layer.sourceLayer) spec["source-layer"] = layer.sourceLayer;
       if (layer.layout) spec.layout = layer.layout;
       if (layer.paint) spec.paint = JSON.parse(JSON.stringify(layer.paint));
       if (layer.filter) spec.filter = layer.filter;
@@ -720,7 +788,10 @@ export function liveSymbolsScript(
         if (!spec.paint) spec.paint = {};
         spec.paint["circle-radius"] = ["*", PLAN.radii[currentSlug()] || PLAN.radii[PLAN.defaultSlug], scale];
       }
-      map.addLayer(spec);
+      if (layer.beneath === "water") {
+        if (before === null) before = waterId();
+        map.addLayer(spec, before);
+      } else map.addLayer(spec);
       // ONE CLOCK FOR THE LAW CHANGE, AND IT IS THE BEAT'S. MapLibre eases every paint change over
       // its own default 300 ms; the table's swatches are eased by the stylesheet over the beat's own
       // number, and two clocks on one gesture is two halves of one reading coming apart mid-travel.
@@ -735,22 +806,7 @@ export function liveSymbolsScript(
     // The trunk's own sweep, ASSERTED rather than assumed: a sweep that re-tinted nothing did not
     // find the style it was written against, and the reader would keep the provider's own water with
     // nothing to say so.
-    // WHAT THE SWEEP KEEPS, AND WHAT IT IS RE-INKED IN. A beat carrying no countries in its own
-    // marks names the provider geography it keeps, and the ink it keeps it in; a beat that names
-    // nothing gets the bare sweep exactly as before this field existed.
-    var GEO = PLAN.basemap || { keepLabels: [], keepTextures: [], ink: [] };
-    function reOf(r) { return new RegExp(r.source, r.flags); }
-    assertLiveStyleAnswered(
-      applyLiveStyle(map, {
-        tints: PLAN.tints,
-        keepLabels: (GEO.keepLabels || []).map(reOf),
-        keepTextures: (GEO.keepTextures || []).map(reOf)
-      }),
-      PLAN.styleName || PLAN.styleUrl
-    );
-    // AND IT IS ASSERTED THE SAME WAY: a rule that reached no layer would leave the frontier in
-    // MapTiler's own pink under a map painted in the direction's, with nothing red anywhere.
-    assertBasemapInkAnswered(applyBasemapInk(map, GEO.ink || []), PLAN.styleName || PLAN.styleUrl);
+    assertLiveStyleAnswered(applyLiveStyle(map, { tints: PLAN.tints }), PLAN.styleName || PLAN.styleUrl);
     scale = cameraScale();
     mountLayers();
     paintLaw(currentSlug());

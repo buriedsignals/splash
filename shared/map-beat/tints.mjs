@@ -10,7 +10,7 @@
 // So the rule targets a MEASURED gap and takes the smallest dose that reaches it: the basemap stays
 // as quiet as it can while a coastline still reads.
 
-import { mix, contrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { mix, contrast } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 
 /** Below this, a coastline stops reading as a coastline. Measured on the six converted types. */
@@ -55,69 +55,48 @@ export function plateTints(direction) {
  *  A frontier is not a datum: it is the ground telling a reader which country they are looking at.
  *  Below the floor it is not a frontier, it is a smudge; above the ceiling it competes with the
  *  marks, which is `the-basemap-gives-up-its-contrast` read one level down. Both are measured and
- *  reported by `basemapGeography`, so a beat can put its own marks' contrast beside them and show
+ *  reported by `countryGround`, so a beat can put its own marks' contrast beside them and show
  *  that the subject still dominates its context. */
 export const BORDER_MIN = 1.7;
 export const BORDER_MAX = 3.0;
 
-/** The registers the basemap's own words are allowed, smallest first. A name on the ground is
- *  FURNITURE: it never reaches the size a beat gives its own labels, and a beat that hands a bigger
- *  number here has stopped treating the map as context. */
-const NAME_SIZES = {
-  country: ["interpolate", ["linear"], ["zoom"], 2, 10, 4, 11.5, 6, 13],
-  city: ["interpolate", ["linear"], ["zoom"], 5, 9.5, 8, 11],
-  water: ["interpolate", ["linear"], ["zoom"], 2, 9.5, 5, 10.5],
-};
-
-/** FRENCH FIRST, THEN WHATEVER THE TILE HAS. MapTiler's own label layers read `{name:en}`, so a
- *  French page left alone prints "Germany" beside a sentence that says "l'Allemagne". */
-const FRENCH_NAME = ["coalesce", ["get", "name:fr"], ["get", "name:en"], ["get", "name"]];
-
-const jsonRe = (re) => ({ source: re.source, flags: re.flags });
-
-/** The quietest ink, walked up from the land, that a reader can read this word on EVERY ground the
- *  page actually paints behind it — land, water, and the halo that rings the glyph. Measuring a map
- *  label against the page's own ground is the mistake this repository has paid for twice: the page
- *  ground is not what is behind a word printed on a basemap. */
-function nameInk(land, ink, backdrops, min) {
-  for (let dose = 0.5; dose <= 1.0001; dose += 0.02) {
-    const candidate = mix(land, ink, Math.min(dose, 1));
-    if (backdrops.every((b) => contrast(candidate, b) >= min)) return candidate;
-  }
-  return null;
-}
-
 /**
- * WHEN A BEAT'S OWN MARKS DO NOT CARRY THE COUNTRIES, THE BASEMAP MUST.
+ * THE COUNTRIES A BEAT DRAWS ITSELF, WHEN ITS OWN MARKS DO NOT CARRY THEM.
  *
- * A choropleth fills all forty countries: its marks ARE the geography, and sweeping the provider's
- * borders and names away leaves nothing missing. A fan of bands and a scatter of circles carry no
- * countries at all, and the same sweep leaves a pale blob a reader cannot locate anything on — the
- * owner's verdict on two shipped beats, read side by side: « la carte derrière ne donne aucune
- * notion des pays et peu détaillé ».
+ * WHAT WAS TRIED FIRST, AND WHY IT WAS WRONG. A fan of bands and a scatter of circles carry no
+ * country at all, so the trunk's sweep left them on a pale blob a reader could not place anything
+ * on. The first answer was to stop sweeping — to keep MapTiler's own frontier lines and its own
+ * place names and re-ink them. The owner read the result against the choropleth he had just
+ * validated and asked the question that settles it: « pourquoi tu ne reprends pas dans l'idée la
+ * map qu'on avait dans le choroplèthe ? » A kept-and-re-tinted provider layer reads as a MapTiler
+ * basemap with our tints on it. The choropleth reads as OUR map, because it draws its forty
+ * countries itself — its own MapLibre layers over MapTiler's Countries tileset, joined by ISO A2 —
+ * and the provider's lines and words stay hidden.
  *
- * So this derives, from ONE direction, the geography such a beat keeps and the ink it keeps it in:
- * national frontiers, country names, city names once a reader has zoomed in far enough to want
- * them, and the names of the seas. Every colour is measured — against the LAND and the WATER the
- * basemap paints, never against the page behind them — and every one is deliberately quieter than a
- * mark: the frontier is capped below `BORDER_MAX`, and no name is ever given a size a beat gives
- * its own labels.
+ * So these two beats take the same mechanism. The ONLY difference from the choropleth is what a
+ * fill MEANS: there, a class; here, neutral ground.
  *
- * Returns the two keep-lists in JSON form (a plan is a file and `JSON.stringify` flattens a RegExp
- * to `{}`), the ink rules `applyBasemapInk` applies, and what was measured, so the beat can print it.
+ * AND THE NEUTRAL GROUND IS THE LAND THE BEAT ALREADY MEASURED AGAINST, never a second one derived
+ * here. Both beats searched their marks' doses against the land the live style paints — the symbol
+ * beat asserts the two are the same colour and refuses when they are not — so a country filled in
+ * some other step off the ground would move every contrast on the page without moving the number
+ * that records it. This takes that land, CHECKS it is still quieter than `BASEMAP_MAX` against the
+ * page, and derives from it the one thing the beat does not already own: the frontier, walked up
+ * from the land until it clears `BORDER_MIN` and capped at `BORDER_MAX` so the ground stays context
+ * under the marks.
+ *
+ * IT DOES NOT RE-IMPOSE `SEA_LAND_MIN`. That is the target `plateTints`' own SEARCH aims at while it
+ * chooses a pair; a beat that derived its two tints another way — both of these did, and both were
+ * baked into plates and measured against months ago — separates sea from land by about 1.09:1, and
+ * refusing that here would refuse every direction over a rule this function is not the author of.
+ * What the countries need from the sea is not contrast but an EDGE, and they draw their own.
  */
-export function basemapGeography({ ground, land, water, ink, font, textMin = TEXT_CONTRAST_MIN }) {
-  const overLand = [land, ground];
-  const overWater = [water, ground];
-  const country = nameInk(land, ink, [...overLand, water], textMin);
-  const city = nameInk(land, ink, overLand, textMin);
-  const sea = nameInk(water, ink, overWater, textMin);
-  if (!country || !city || !sea)
+export function countryGround({ ground, land, water, ink }) {
+  if (contrast(land, ground) >= BASEMAP_MAX)
     throw new Error(
-      `no ink between this direction's land ${land} and its own furniture ink ${ink} reads at ` +
-        `${textMin}:1 on land, on water ${water} and on the halo ${ground} at once — the basemap's ` +
-        `own names would be unreadable somewhere on the map, and a name a reader cannot read is worse ` +
-        `than no name`,
+      `the land ${land} this beat draws its countries in reads ${contrast(land, ground).toFixed(3)}:1 ` +
+        `against the page ${ground}, at or past ${BASEMAP_MAX}:1 — the ground would carry more weight ` +
+        `than the marks on it`,
     );
 
   let border = null;
@@ -130,65 +109,23 @@ export function basemapGeography({ ground, land, water, ink, font, textMin = TEX
   }
   if (!border)
     throw new Error(
-      `no dose of this direction's ink separates a frontier from its land ${land} by ${BORDER_MIN}:1 ` +
-        `without passing ${BORDER_MAX}:1 — the ground would either show no countries or out-shout the marks on it`,
+      `no dose of this direction's ink separates a frontier from the land ${land} it divides by ` +
+        `${BORDER_MIN}:1 without passing ${BORDER_MAX}:1 — the ground would either show no countries ` +
+        `or out-shout the marks on it`,
     );
 
-  /** WHAT IS KEPT, AND WHAT IS STILL SWEPT AWAY. National frontiers only: `Other border` carries
-   *  admin levels 3 to 10, which at a continental framing is a mesh of départements over a beat
-   *  about countries. Place, town, village and state names go the same way — a reader locating a
-   *  band's destination needs the country, and the city once they have zoomed to it. */
-  const keepTextures = [jsonRe(/country border|disputed border/i)];
-  const keepLabels = [jsonRe(/country labels|city labels|ocean labels|sea labels/i)];
-
-  const words = (size, colour) => ({
-    layout: {
-      "text-field": FRENCH_NAME,
-      "text-font": font,
-      "text-size": size,
-      "text-letter-spacing": 0.02,
-      "text-max-width": 8,
-      "text-padding": 2,
-    },
-    paint: {
-      "text-color": colour,
-      /** THE HALO IS THE PAGE'S GROUND AND NOT THE LAND, and that is what makes one word readable on
-       *  both. Land and water sit within `BASEMAP_MAX` of each other by construction, so a halo in
-       *  either would vanish over the other; the ground is the one colour that rings the glyph the
-       *  same way over a coast. */
-      "text-halo-color": ground,
-      "text-halo-width": 1.4,
-      "text-halo-blur": 0.2,
-      "text-opacity": 1,
-    },
-  });
-
   return {
-    keepLabels,
-    keepTextures,
-    ink: [
-      {
-        match: jsonRe(/country border|disputed border/i),
-        paint: {
-          "line-color": border,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 2, 0.6, 4, 0.9, 7, 1.4],
-          "line-opacity": 1,
-        },
-      },
-      { match: jsonRe(/country labels/i), ...words(NAME_SIZES.country, country) },
-      { match: jsonRe(/city labels/i), ...words(NAME_SIZES.city, city) },
-      { match: jsonRe(/ocean labels|sea labels/i), ...words(NAME_SIZES.water, sea) },
-    ],
+    fill: land,
+    border,
+    /** The choropleth's own frontier weight, unchanged: it is the width the owner validated, and a
+     *  second number here would be a second cartography beside a beat meant to match it. */
+    width: 0.8,
     measured: {
+      fill: land,
       border,
-      country,
-      city,
-      sea,
-      borderOnLand: contrast(border, land),
-      countryOnLand: contrast(country, land),
-      countryOnWater: contrast(country, water),
-      countryOnHalo: contrast(country, ground),
-      seaOnWater: contrast(sea, water),
+      fillOnWater: contrast(land, water),
+      fillOnGround: contrast(land, ground),
+      borderOnFill: contrast(border, land),
     },
   };
 }

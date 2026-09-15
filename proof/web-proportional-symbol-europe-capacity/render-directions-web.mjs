@@ -34,7 +34,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
-import { basemapGeography } from "#shared/map-beat/tints.mjs";
+import { countryGround } from "#shared/map-beat/tints.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 // The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
 // nice-number ladder, not three fractions of a total. Its own header records why — a legend over
@@ -808,21 +808,30 @@ for (const file of DIRECTION_FILES) {
         `measured against ${paint.landFill}. One ground, or the measurements record a page nobody ` +
         `renders.`,
     );
+  const countries = countryGround({
+    ground: base.ground,
+    land: tints.land,
+    water: tints.water,
+    ink: furniture.ink,
+  });
+
   const live = {
     style: plateFacts.style,
     tints,
-    /** THE GROUND CARRIES THE COUNTRIES, BECAUSE THE CIRCLES DO NOT.
+    /** THE BEAT DRAWS THE COUNTRIES ITSELF, BECAUSE THE CIRCLES DO NOT.
      *
-     *  The owner's verdict on the page this replaces: « les cartes ne sont pas stylisées derrière et
-     *  les labels ne sont pas bien stylisés ». The choropleth sibling never had this problem — its
-     *  own marks fill all forty countries, so the marks ARE the geography. Forty-one circles are not
-     *  a geography: they sit on a pale blob with no coast, no frontier and no name, and a reader
-     *  cannot tell which country a circle is in. So the frontiers, the country names and the seas
-     *  come back — re-inked by `basemapGeography` in this direction's own palette, measured against
-     *  the LAND and the WATER the basemap paints rather than the page ground behind them, and held
-     *  under `BORDER_MAX` so the ground stays context. `basemap` is filled in below, once the face
-     *  it sets its names in has been probed against Noto's own bytes. */
-    basemap: null,
+     *  The owner's verdict on the page this replaces: « les cartes ne sont pas stylisées derrière ».
+     *  The first answer kept MapTiler's own frontier lines and place names and re-inked them, and he
+     *  read the result against the choropleth he had just validated — « pourquoi tu ne reprends pas
+     *  dans l'idée la map qu'on avait dans le choroplèthe ? » A kept provider layer reads as a
+     *  provider basemap with our tints on it; the choropleth reads as OUR map because it draws its
+     *  forty countries itself, as its own MapLibre layers over MapTiler's Countries tileset joined
+     *  by ISO A2, with the provider's lines and words swept away.
+     *
+     *  So this beat takes that mechanism. The one difference is what a fill MEANS: there a class,
+     *  here neutral ground — one land tint under 41 circles, derived from the direction and measured
+     *  to sit well below them. */
+    countries,
     studyBounds: STUDY,
     reviewBox: REVIEW_BOX,
     marks: symbols.map((s) => ({
@@ -872,22 +881,11 @@ for (const file of DIRECTION_FILES) {
     // THE MAP'S OWN LABEL FACE, probed rather than named: MapTiler answers 200 with Noto Sans for a
     // family it does not serve, so this is the only place the substitution can be caught.
     live.paint.labelFont = await labelFontFor(direction);
-    live.basemap = basemapGeography({
-      ground: base.ground,
-      land: tints.land,
-      water: tints.water,
-      ink: furniture.ink,
-      // THE FURNITURE REGISTER, not the register a mark's own answer is set in: a country's name on
-      // the ground is furniture, and it must not arrive in the same face at the same weight as the
-      // 41 labels the beat prints on its own circles.
-      font: await labelFontFor(direction, "axis"),
-    });
-    const markOnLand = contrast(live.paint.ring, tints.land);
+    const markOnLand = contrast(live.paint.ring, countries.fill);
     console.log(
-      `${id} · fond : frontière ${live.basemap.measured.borderOnLand.toFixed(2)}:1 sur la terre, ` +
-        `noms de pays ${live.basemap.measured.countryOnLand.toFixed(2)}:1 sur la terre / ` +
-        `${live.basemap.measured.countryOnWater.toFixed(2)}:1 sur la mer / ` +
-        `${live.basemap.measured.countryOnHalo.toFixed(2)}:1 sur leur halo — l'anneau d'un symbole, ` +
+      `${id} · fond : terre ${countries.measured.fillOnWater.toFixed(2)}:1 sur la mer et ` +
+        `${countries.measured.fillOnGround.toFixed(2)}:1 sur le fond de page, frontière ` +
+        `${countries.measured.borderOnFill.toFixed(2)}:1 sur cette terre — l'anneau d'un symbole, ` +
         `lui, lit ${markOnLand.toFixed(2)}:1 sur la même terre`,
     );
 
