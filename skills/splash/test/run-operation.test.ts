@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, it, test } from "bun:test";
 import { createHash } from "node:crypto";
 import {
   mkdtemp,
@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   loadRuntimeCapabilities,
+  OPERATION_IDS,
   runOperation,
 } from "../scripts/run-operation.mjs";
 import {
@@ -87,7 +88,9 @@ async function waitForReservationDecision(controlDir: string) {
   while (true) {
     const names = await readdir(controlDir);
     const runCount = names.filter((name) => name.endsWith(".run")).length;
-    const resultCount = names.filter((name) => name.endsWith(".result.json")).length;
+    const resultCount = names.filter((name) =>
+      name.endsWith(".result.json"),
+    ).length;
     if (runCount === 2 || (runCount === 1 && resultCount === 1)) return;
     await nextTurn();
   }
@@ -367,9 +370,7 @@ describe("closed Splash operation runner", () => {
       browserPath: "/engine/managed/chromium",
       mapTilerKey: "broker-map-canary-12345",
     });
-    expect(result.outputs).toEqual([
-      "beats/map/map-bake/revision/plate.png",
-    ]);
+    expect(result.outputs).toEqual(["beats/map/map-bake/revision/plate.png"]);
     expect(JSON.stringify(result)).not.toContain("broker-map-canary-12345");
   });
 
@@ -466,9 +467,7 @@ describe("closed Splash operation runner", () => {
         .sort(),
     ).toEqual(["blocked", "success"]);
     expect(
-      await Bun.file(
-        join(result.beatDir, "PRODUCTION-ATTEMPTS.json"),
-      ).exists(),
+      await Bun.file(join(result.beatDir, "PRODUCTION-ATTEMPTS.json")).exists(),
     ).toBe(false);
   });
 
@@ -572,16 +571,12 @@ await runOperation("datawrapper-produce", request, {
     await child.exited;
 
     let resumedRuns = 0;
-    const resumedOutcome = await runOperation(
-      "datawrapper-produce",
-      request,
-      {
-        runSkillEntrypointFn: async () => {
-          resumedRuns++;
-          throw new Error("resumed attempt failed");
-        },
+    const resumedOutcome = await runOperation("datawrapper-produce", request, {
+      runSkillEntrypointFn: async () => {
+        resumedRuns++;
+        throw new Error("resumed attempt failed");
       },
-    ).then(
+    }).then(
       () => "resolved",
       (error) => String(error),
     );
@@ -759,5 +754,65 @@ await runOperation("datawrapper-produce", request, {
         },
       }),
     ).rejects.toThrow("closed contract");
+  });
+});
+
+describe("inspiration-search operation", () => {
+  it("should be a closed operation ID", () => {
+    expect(OPERATION_IDS).toContain("inspiration-search");
+  });
+
+  it("should run the inspiration skill's sealed entry with only the query", async () => {
+    const seen: any[] = [];
+    const result = await runOperation(
+      "inspiration-search",
+      { parameters: { query: "floods" } },
+      {
+        runSkillEntrypointFn: async (path, args, input) => {
+          seen.push({ path, args, input });
+          return {
+            ok: true,
+            query: "floods",
+            items: [],
+            quota: { limit: 10, remaining: 9, resetsAt: null },
+          };
+        },
+      },
+    );
+    expect(seen).toHaveLength(1);
+    expect(
+      seen[0].path.endsWith("skills/inspiration/scripts/sealed-search.mjs"),
+    ).toBe(true);
+    expect(seen[0].args).toEqual([]);
+    expect(seen[0].input).toEqual({ query: "floods" });
+    expect(result.quota.limit).toBe(10);
+  });
+
+  it("should refuse parameters other than query", async () => {
+    await expect(
+      runOperation(
+        "inspiration-search",
+        { parameters: { query: "floods", token: "x" } },
+        { runSkillEntrypointFn: async () => ({}) },
+      ),
+    ).rejects.toThrow(/closed contract/);
+  });
+
+  it("should refuse an empty or oversized query", async () => {
+    const runner = { runSkillEntrypointFn: async () => ({}) };
+    await expect(
+      runOperation(
+        "inspiration-search",
+        { parameters: { query: "   " } },
+        runner,
+      ),
+    ).rejects.toThrow(/1 to 1000/);
+    await expect(
+      runOperation(
+        "inspiration-search",
+        { parameters: { query: "x".repeat(1001) } },
+        runner,
+      ),
+    ).rejects.toThrow(/1 to 1000/);
   });
 });
