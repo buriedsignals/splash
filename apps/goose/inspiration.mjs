@@ -11,16 +11,24 @@ import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
 const CREDENTIAL_ID = "INFOVIZ_TOKEN";
 const OPERATION_ID = "inspiration-search";
 
-// `invokeEngine` defaults to a 90 s timeout, but the MCP SDK client's own default request timeout
-// is 60 s — worse case 10 s + 48 s stays under that 60 s budget, with room to spare before a client
-// retry could fire and start a second Engine search. Engine's own provider timeout for the
-// operation is 45 s, so 48 s gives it just enough room to time out on its own first.
+// The 10 s status read matches the studio's own per-key budget; the 48 s run bound keeps a stalled
+// Engine from holding the tool call open indefinitely. Engine's own 45 s operation timeout only
+// starts once the operation actually execs, so Splash's own bound can fire first — in which case
+// the journalist reads "it took too long" and nothing searches again.
 export const KEY_STATUS_TIMEOUT_MS = 10_000;
 export const OPERATION_TIMEOUT_MS = 48_000;
 
 function terminal(outcome) {
   const events = Array.isArray(outcome?.events) ? outcome.events : [];
   return events.length ? events[events.length - 1] : null;
+}
+
+// Every `engine-failed` reaches the journalist as one of exactly two sentences — never Engine's own
+// raw text, which can carry a remedy meant for a shell, not for a reading journalist.
+function engineFailureDetail(message) {
+  return typeof message === "string" && /timed out/i.test(message)
+    ? "it took too long"
+    : "Indicator Labs reported an error";
 }
 
 /**
@@ -57,30 +65,32 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
       return {
         ok: false,
         reason: "engine-failed",
-        detail: error instanceof Error ? error.message : "Indicator Labs could not be reached",
+        detail: engineFailureDetail(error instanceof Error ? error.message : null),
       };
     }
 
     const event = terminal(outcome);
     if (outcome.exitCode !== 0 || event?.event !== "result" || typeof event.data?.stdout !== "string") {
-      const detail =
-        typeof event?.message === "string" && event.message ? event.message : `exit code ${outcome.exitCode}`;
-      return { ok: false, reason: "engine-failed", detail };
+      return { ok: false, reason: "engine-failed", detail: engineFailureDetail(event?.message) };
     }
     try {
-      const result = JSON.parse(event.data.stdout);
+      const parsed = JSON.parse(event.data.stdout);
+      const decoded =
+        parsed && typeof parsed === "object" && typeof parsed.b64 === "string"
+          ? JSON.parse(Buffer.from(parsed.b64, "base64").toString("utf8"))
+          : null;
       if (
-        result &&
-        typeof result === "object" &&
-        typeof result.ok === "boolean" &&
-        (result.ok ? Array.isArray(result.items) : typeof result.reason === "string")
+        decoded &&
+        typeof decoded === "object" &&
+        typeof decoded.ok === "boolean" &&
+        (decoded.ok ? Array.isArray(decoded.items) : typeof decoded.reason === "string")
       ) {
-        return result;
+        return decoded;
       }
     } catch {
       // reported as unreadable below
     }
-    return { ok: false, reason: "engine-failed", detail: "Indicator Labs returned an unreadable result" };
+    return { ok: false, reason: "engine-failed", detail: engineFailureDetail(null) };
   }
 
   return { search, format: formatInspiration };

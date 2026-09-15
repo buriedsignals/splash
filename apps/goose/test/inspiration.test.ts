@@ -39,13 +39,32 @@ const stored = (value: boolean) => ({
   exitCode: 0,
   events: [{ event: "result", data: { id: "INFOVIZ_TOKEN", stored: value } }],
 });
-const ran = (result: any) => ({
-  exitCode: 0,
-  events: [
-    { event: "progress" },
-    { event: "result", data: { stdout: `${JSON.stringify(result)}\n` } },
-  ],
-});
+
+// Engine redacts every emitted NDJSON line with this same pattern before the caller ever sees it —
+// simulated here against the whole event line, exactly as Engine would apply it.
+const ENGINE_REDACTION = /(?:cj_|on_|sk-|fw_)[A-Za-z0-9_-]{8,}/g;
+
+function encodeSealedResult(result: any): string {
+  return Buffer.from(JSON.stringify(result), "utf8").toString("base64");
+}
+
+// The sealed entry's real envelope (`{"b64": ...}`), run through Engine's own redaction the way a
+// raw result never survives — base64 has no `_`/`-`, so it comes back untouched.
+const ran = (result: any) => {
+  const stdout = `${JSON.stringify({ b64: encodeSealedResult(result) })}\n`;
+  const eventLine = JSON.stringify({ event: "result", data: { stdout } });
+  const event = JSON.parse(eventLine.replace(ENGINE_REDACTION, "[redacted]"));
+  return { exitCode: 0, events: [{ event: "progress" }, event] };
+};
+
+// A run whose stdout is the PLAIN result, unenveloped — what a search would look like without the
+// base64 wrapper, and through Engine's redaction as it really runs.
+const ranUnenveloped = (result: any) => {
+  const stdout = `${JSON.stringify(result)}\n`;
+  const eventLine = JSON.stringify({ event: "result", data: { stdout } });
+  const event = JSON.parse(eventLine.replace(ENGINE_REDACTION, "[redacted]"));
+  return { exitCode: 0, events: [{ event: "progress" }, event] };
+};
 
 describe("createInspirationService", () => {
   it("should search directly without an Engine path", async () => {
@@ -141,12 +160,12 @@ describe("createInspirationService", () => {
     expect(await service.search("floods")).toEqual({
       ok: false,
       reason: "engine-failed",
-      detail: "splash operation inspiration-search exited with code 1",
+      detail: "Indicator Labs reported an error",
     });
     expect(f.directCalls).toEqual([]);
   });
 
-  it("should report a run that throws without a second search", async () => {
+  it("should say it took too long when the run throws a timeout", async () => {
     const f = fakes({
       status: stored(true),
       run: new Error("Engine credential operation timed out"),
@@ -157,7 +176,11 @@ describe("createInspirationService", () => {
       searchFn: f.searchFn,
     });
     const result = await service.search("floods");
-    expect(result.reason).toBe("engine-failed");
+    expect(result).toEqual({
+      ok: false,
+      reason: "engine-failed",
+      detail: "it took too long",
+    });
     expect(f.directCalls).toEqual([]);
   });
 
@@ -174,7 +197,67 @@ describe("createInspirationService", () => {
       invokeEngineFn: f.invokeEngineFn,
       searchFn: f.searchFn,
     });
-    expect((await service.search("floods")).reason).toBe("engine-failed");
+    const result = await service.search("floods");
+    expect(result).toEqual({
+      ok: false,
+      reason: "engine-failed",
+      detail: "Indicator Labs reported an error",
+    });
+    expect(f.directCalls).toEqual([]);
+  });
+
+  it("should never put Engine's raw remedy text in the result", async () => {
+    const f = fakes({
+      status: stored(true),
+      run: new Error("run `bsig keys set INFOVIZ_TOKEN`, then retry"),
+    });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    const result = await service.search("floods");
+    expect(JSON.stringify(result)).not.toContain("bsig keys set INFOVIZ_TOKEN");
+    expect(result.detail).toBe("Indicator Labs reported an error");
+  });
+
+  it("should decode a redacted, enveloped result exactly, including urls and titles Engine's own redaction would otherwise mangle", async () => {
+    const target = {
+      ok: true,
+      query: "floods",
+      items: [
+        {
+          title: "flood-risk-map-england",
+          source: "Reuters Graphics",
+          date: "2024-01-01",
+          url: "https://example.org/inundation_forecast_2024",
+          image: null,
+        },
+      ],
+      quota: { limit: 10, remaining: 9, resetsAt: null },
+    };
+    const f = fakes({ status: stored(true), run: ran(target) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    expect(await service.search("floods")).toEqual(target);
+  });
+
+  it("should report a plain, unenveloped run result as unreadable without a second search", async () => {
+    const f = fakes({ status: stored(true), run: ranUnenveloped(ACCOUNT) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    const result = await service.search("floods");
+    expect(result).toEqual({
+      ok: false,
+      reason: "engine-failed",
+      detail: "Indicator Labs reported an error",
+    });
     expect(f.directCalls).toEqual([]);
   });
 
@@ -219,7 +302,12 @@ describe("createInspirationService", () => {
       invokeEngineFn: f.invokeEngineFn,
       searchFn: f.searchFn,
     });
-    expect((await service.search("floods")).reason).toBe("engine-failed");
+    const result = await service.search("floods");
+    expect(result).toEqual({
+      ok: false,
+      reason: "engine-failed",
+      detail: "Indicator Labs reported an error",
+    });
     expect(f.directCalls).toEqual([]);
   });
 

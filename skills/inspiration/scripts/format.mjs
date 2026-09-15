@@ -38,7 +38,7 @@ function quotaLine(quota) {
 }
 
 const RECONNECT =
-  "Your Infoviz account needs reconnecting: Indicator Labs → Connected services → Infoviz → Reconnect.";
+  "Your Infoviz account needs a new token: sign in on https://splash.buriedsignals.com/inspiration.html, copy the token, then Indicator Labs → Connected services → Infoviz account → Replace token…";
 
 function formatFailure(result) {
   switch (result.reason) {

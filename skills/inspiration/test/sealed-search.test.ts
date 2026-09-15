@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { sealedSearch } from "../scripts/sealed-search.mjs";
+import { encodeSealedResult, sealedSearch } from "../scripts/sealed-search.mjs";
 
 const LIST = {
   ok: true,
@@ -72,5 +72,42 @@ describe("sealedSearch", () => {
     await expect(
       sealedSearch({ query: "floods", token: "x" }, { searchFn, env: {} }),
     ).rejects.toThrow(/closed contract/);
+  });
+});
+
+describe("encodeSealedResult", () => {
+  it("should decode back to the exact result", () => {
+    const result = {
+      ok: true,
+      query: "floods",
+      items: [
+        {
+          title: "flood-risk-map-england",
+          url: "https://example.org/inundation_forecast_2024",
+        },
+      ],
+      quota: { limit: 10, remaining: 9, resetsAt: null },
+    };
+    const decoded = JSON.parse(
+      Buffer.from(encodeSealedResult(result), "base64").toString("utf8"),
+    );
+    expect(decoded).toEqual(result);
+  });
+
+  it("should never contain an underscore or a hyphen", () => {
+    const result = {
+      ok: true,
+      query: "floods",
+      items: [
+        {
+          title: "flood-risk-map-england",
+          url: "https://example.org/inundation_forecast_2024",
+        },
+      ],
+      quota: { limit: 10, remaining: 9, resetsAt: null },
+    };
+    const encoded = encodeSealedResult(result);
+    expect(encoded).not.toContain("_");
+    expect(encoded).not.toContain("-");
   });
 });

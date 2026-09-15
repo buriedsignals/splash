@@ -41,10 +41,18 @@ async function readRequest() {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+// Engine redacts every emitted NDJSON line with `(?:cj_|on_|sk-|fw_)[A-Za-z0-9_-]{8,}`, which
+// ordinary gallery urls and titles match (`flood-risk-map-england` becomes `flood-ri[redacted]`).
+// Standard base64 (no `_` or `-` in its alphabet) survives that scan untouched, so the result
+// travels wrapped rather than raw.
+export function encodeSealedResult(result) {
+  return Buffer.from(JSON.stringify(result), "utf8").toString("base64");
+}
+
 if (import.meta.main) {
   try {
     const result = await sealedSearch(await readRequest());
-    process.stdout.write(`${JSON.stringify(result)}\n`);
+    process.stdout.write(`${JSON.stringify({ b64: encodeSealedResult(result) })}\n`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : "sealed inspiration search failed");
     process.exitCode = 1;
