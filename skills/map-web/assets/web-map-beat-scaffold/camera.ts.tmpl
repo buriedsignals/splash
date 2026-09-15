@@ -1,0 +1,72 @@
+/**
+ * %%BEAT_PATH%%/camera.ts — THE MEASUREMENT CAMERA. HALF SCAFFOLDED, HALF ARGUED.
+ *
+ * Two cameras live in a map × web beat and they are not the same camera:
+ *
+ *   1. The LIVE map is flat Web Mercator, always (`projection: "mercator"`), because MapTiler's
+ *      tiles are. That is not a choice and it is not here — `live-map.mjs` sets it.
+ *   2. THIS one is the camera the beat MEASURES in: the projection the beat's own numbers are
+ *      derived on before anything is drawn. It is an editorial assertion, not a setting.
+ *
+ * ── SCAFFOLD · ARGUE THE PROJECTION, THEN DELETE THESE LINES. ────────────────────────────────
+ *
+ * Write here why this projection and not Web Mercator, in this subject's own terms. A mark read by
+ * AREA (choropleth, hex grid, cartogram) weights a class by how much of the page it covers, so a
+ * projection that inflates the north inflates the argument — in Web Mercator, Norway/Sweden/Finland
+ * are stretched by about a factor of two at their own latitudes. A mark read by SIZE or by PLACE
+ * (proportional symbol, locator, flow) may not care. Whichever you land on, the beat still owes the
+ * reader Mercator's cost ON ITS OWN SUBJECT, printed on the page: see the runner's own hole.
+ *
+ * The default below is Lambert azimuthal equal-area (EPSG:3035's parameters, what the EEA and
+ * Eurostat publish continental statistics in). It is a STARTING POINT for a European study set and
+ * a wrong answer everywhere else. Change LAT0/LON0, or the projection itself.
+ *
+ * This file is this beat's own copy. No beat imports another's camera.
+ */
+
+/** SCAFFOLD: the window this beat publishes. Declared here, held by `bake.mjs`'s own bounds. */
+export const WINDOW = { west: NaN, east: NaN, south: NaN, north: NaN };
+const RAD = Math.PI / 180;
+/** SCAFFOLD: the projection's own centre. */
+const LAT0 = NaN * RAD;
+const LON0 = NaN * RAD;
+
+export function laea([lonDeg, latDeg]: [number, number]): [number, number] {
+  const lat = latDeg * RAD;
+  const lon = lonDeg * RAD - LON0;
+  const cosc = Math.sin(LAT0) * Math.sin(lat) + Math.cos(LAT0) * Math.cos(lat) * Math.cos(lon);
+  const k = Math.sqrt(2 / Math.max(1e-9, 1 + cosc));
+  return [
+    k * Math.cos(lat) * Math.sin(lon),
+    -k * (Math.cos(LAT0) * Math.sin(lat) - Math.sin(LAT0) * Math.cos(lat) * Math.cos(lon)),
+  ];
+}
+
+/** MECHANISM, not a choice: the camera's box is the projected border of the declared window —
+ *  SAMPLED, because a projected rectangle is not a rectangle and its four corners would crop the
+ *  bulge in the middle of each edge. */
+const border: [number, number][] = [];
+for (let i = 0; i <= 120; i += 1) {
+  const t = i / 120;
+  border.push(laea([WINDOW.west + t * (WINDOW.east - WINDOW.west), WINDOW.north]));
+  border.push(laea([WINDOW.west + t * (WINDOW.east - WINDOW.west), WINDOW.south]));
+  border.push(laea([WINDOW.west, WINDOW.south + t * (WINDOW.north - WINDOW.south)]));
+  border.push(laea([WINDOW.east, WINDOW.south + t * (WINDOW.north - WINDOW.south)]));
+}
+const BX0 = Math.min(...border.map((p) => p[0]));
+const BX1 = Math.max(...border.map((p) => p[0]));
+const BY0 = Math.min(...border.map((p) => p[1]));
+const BY1 = Math.max(...border.map((p) => p[1]));
+
+/** MECHANISM: ONE SCALE FOR BOTH AXES. A map whose aspect is stretched to fill a frame is a map
+ *  that lies about shape, so the shapes go into a unit box on the LONGER side and the caller is
+ *  told the aspect. */
+const spanX = BX1 - BX0;
+const spanY = BY1 - BY0;
+const span = Math.max(spanX, spanY);
+export const CAMERA_ASPECT = spanX / spanY;
+
+export const project = (lonLat: [number, number]): [number, number] => {
+  const [x, y] = laea(lonLat);
+  return [(x - BX0) / span, (y - BY0) / span];
+};

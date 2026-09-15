@@ -1,0 +1,119 @@
+// %%BEAT_PATH%%/Directed%%Name%%Web.tsx — THE SHELL IS SCAFFOLDED. THE DRAWING IS NOT.
+//
+// This file is the beat's own composition and it is NOT a component to import or parameterise. The
+// scaffold writes the props seam, the two colour rules every map × web beat is held to, and the
+// arrangement — nothing that decides what the reader sees.
+//
+// THE TWO-LAYER ARRANGEMENT, and it is not optional:
+//   1. a LIVE MapLibre map on MapTiler tiles, flat Web Mercator (never a globe), which the reader
+//      moves through;
+//   2. a BAKED FALLBACK image under it, which is what stands with JavaScript off, offline, and on
+//      the day a key lapses. The page renders complete either way.
+// Marks are MapLibre LAYERS on the live map, interrogated with `queryRenderedFeatures` — never SVG
+// drawn over a plate, which would drift the moment the reader pans.
+//
+// grep -n SCAFFOLD this file.
+
+import {
+  mix,
+  adjustToContrast,
+  contrast,
+  NON_TEXT_CONTRAST_MIN,
+} from "#shared/chart-beat/colour.mjs";
+import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
+import { controlChromeCss } from "../../skills/chart-web/assets/control-chrome.ts";
+// SCAFFOLD · this type's own vocabulary CSS/markup helpers and its `live-<type>.ts` CSS. The menu
+// is in map-web/SKILL.md, "The map vocabularies"; the type sheet names the one its worked example
+// spent. None, or a new one, is a legitimate answer.
+
+/** The scope every generated rule is written inside. */
+const SCOPE = ".chart-figure";
+/** SCAFFOLD · the id prefix every radio carries. It is the FORMAT'S DISCOVERY CONTRACT for a control
+ *  that changes the picture and owes the reader a sentence — never a copy-paste from another beat,
+ *  and never squatted on another vocabulary's prefix to be discovered. */
+const CONTROL_ID_PREFIX = "SCAFFOLD";
+/** How long a mark takes to cross from one state to the next, in ms. Honoured only under
+ *  `no-preference` — the travel is the reading, so a reader who asked for no motion gets the new
+ *  state instantly rather than not at all. The live map is given the SAME number, so the map and the
+ *  table's swatches cross together rather than on two clocks. */
+export const CHANGE_MS = 260;
+/** SCAFFOLD · HOW FAR APART TWO NEIGHBOURING STATES HAVE TO STAND before a reader can tell them
+ *  apart, and HOW MUCH a pointed-at mark has to separate from its own fill before it counts as
+ *  answering. A DOSE IS SEARCHED AGAINST THIS BEAT'S OWN RENDERS IN ALL THREE DIRECTIONS, never
+ *  inherited: a number found on another dataset transfers silently and nothing goes red. Refuse,
+ *  do not hope. */
+const STEP_MIN = NaN;
+const MARK_SEPARATION = NaN;
+
+// ── SCAFFOLD · THE BEAT'S OWN TYPES AND ITS ONE COLOUR DERIVATION ─────────────────────────────
+//
+// Export the derivation the RUNNER also reads, so the drawing and the live map's paint expressions
+// come from one array rather than two that agree today. Measure every step against `plateLand` —
+// the colour the plate was actually baked in — and not against the direction's ground.
+
+export function Directed%%Name%%Web({
+  plate,
+  plateLand,
+  liveHint,
+  maplibreCss,
+  maplibreJs,
+  tableCaption,
+  columns,
+  aspect,
+  size,
+  title,
+  eyebrow,
+  caveat,
+  source,
+  alt,
+  reading,
+  claimNote,
+  direction,
+  ground,
+  accent,
+  ink,
+  muted,
+  grid,
+}: {
+  /** The baked MapTiler basemap for THIS direction, already a data URI — LAYER 2, the fallback. */
+  plate: string;
+  /** The LAND colour that plate was baked in — what the page actually paints behind every mark, and
+   *  therefore the only honest thing to measure the lightest state against. */
+  plateLand: string;
+  /** What the live map's controls do, shown ONLY once the live map is actually up. */
+  liveHint: string;
+  maplibreCss: string;
+  maplibreJs: string;
+  tableCaption: string;
+  columns: string[];
+  aspect: number;
+  size: number;
+  title: string;
+  eyebrow: string;
+  caveat: string;
+  source: string;
+  alt: string;
+  reading: string;
+  claimNote: string;
+  direction: Record<string, unknown>;
+  ground: string;
+  accent: string;
+  ink?: string;
+  muted?: string;
+  grid?: string;
+}) {
+  // ── SCAFFOLD · THE STORY ────────────────────────────────────────────────────────────────────
+  //
+  // Everything below this line is this beat's own. Write:
+  //   · the figure, with the live map box and the fallback `<image>` underneath it;
+  //   · the HTML overlay carrying every word and every control (text is HTML, never SVG);
+  //   · the reader's own answer on every mark — hover, tap AND keyboard focus, one order, one
+  //     vocabulary shared with the accessible table;
+  //   · the accessible table, decided deliberately (read the discipline file's "The accessibility
+  //     question" before leaving it off);
+  //   · the drawing's guaranteed share of the height — `MAP_DRAWING_SHARE` is declared in the trunk
+  //     and refused there; the words give way, the map does not.
+  //
+  // A beat that looks like its neighbour has failed even if every test is green.
+  throw new Error("SCAFFOLD: Directed%%Name%%Web has no drawing yet");
+}

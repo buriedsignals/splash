@@ -32,11 +32,126 @@ skill carries its OWN copies of everything it needs (`assets/geo-symbol.ts`,
 actually uses (no polygon join — see the gotcha in `map-beat`'s own `SKILL.md`, "a data join
 fails silently" — a point has no shape to join).
 
+**Two things live here, and only the first is how a web map is built today.** (1) **The directed
+web map path** — any subject, any of the eight map types: the discipline file, one type sheet per
+type, one worked example per type under `proof/web-<type>-…`, the validated pattern
+`proof/web-choropleth-europe-lowcarbon`, and the scaffold that writes the plumbing and refuses to
+write anything else. Start at "The directed web map path" below. (2) **The seed**
+(`assets/MapWebSeed.tsx`), a teaching composition that predates the directed path — kept because the
+standalone and preview tests exercise it, not the model for a new beat.
+
 There was no doctrine for this format before this skill. `references/map-web-discipline.md` was
 written against this beat's first real build, the way `chart-web/references/web-discipline.md`
 was written against the chart engine's own first web build — read it before writing a second map-web
 beat, especially its first section: a map is a spatial medium, and a hover tooltip alone is not an
 accessible answer to that fact.
+
+## The directed web map path (start here)
+
+Read in this order, then write. The order is the one that worked on the three validated beats; the
+step that is never skipped is the fifth.
+
+| step | read / do | what it gives you |
+| --- | --- | --- |
+| 1 | `references/map-web-discipline.md` | the rules — "Full width, genuinely", "Fit the window", "The accessibility question", "Pan and zoom" |
+| 2 | `references/types/<type>.md` | what the type keeps, drops and changes in web; its gesture; its `radius` behaviour; the JOIN it can fail silently on; its worked example's name |
+| 3 | the worked example, and the validated pattern `proof/web-choropleth-europe-lowcarbon` | the beat's split into files (table below) |
+| 4 | scaffold the plumbing | `bun skills/map-web/scripts/scaffold-web-map-beat.mjs --type <type> --beat proof/web-<type>-<subject> --static proof/static-<type>-<subject>` (see the script's header for the line it is written on) |
+| 5 | **`BRIEF.md`: the gesture, argued, before any code** | the design. The scaffold wrote no gesture and no camera; those are the beat. No brief, no code |
+| 6 | close the holes — `grep -n SCAFFOLD <beat>` — TDD the refusals as you go | the runner refuses to render until every one is closed |
+| 7 | render three directions, open the keyed `.local.html`, DRIVE it, screenshot at 1600/1024/768/375 | the pages |
+
+**What is reused is the MECHANISM, never the gesture.** The scaffold removes typing, not thinking.
+It generates roughly **1 050 lines** of a beat's **2 200–2 650** — the plate cache, the camera
+agreement check, the MapLibre inlining, the fallback bake, the keyed copy, the direction loop, the
+refusal cleanup — and it deliberately generates no camera, no gesture, no words, no palette
+reasoning and no refusals. The owner's constraint, in his own words: *« si générateur alors il faut
+pas que ça contraigne la création et que ça reste originale »*. A beat that looks like its neighbour
+has failed even if every test is green.
+
+**The rules this format is written under, in brief** — they are what a new subject gets wrong, and
+until now they lived only in the beats' own headers:
+
+- **Two layers, and the page renders complete either way.** A LIVE MapTiler map the reader moves
+  through, over a BAKED FALLBACK image that stands with JavaScript off, offline, and on the day a
+  key lapses (ruling R1, 2026-08-10: *a web map you cannot move through is a picture*). The fallback
+  is photographed from the page's OWN live map — never a second rendering of the same plan, which
+  would be two mounts free to disagree.
+- **The key never enters a committed file.** The page is rendered with `__MAPTILER_KEY__` and
+  committed with it; the runner writes a keyed `renders/<id>.local.html` beside it, git-ignored,
+  which is the copy a human actually opens. The owner: *« non, comme pour les scrolly il faut
+  toujours une clé sinon ça sert à rien »*. `no-key-in-the-repository` scans the working tree.
+- **Flat Web Mercator, never a globe** (the owner, 2026-09-15: *« oui une carte MapLibre plate pas
+  un globe »*) — `projection: "mercator"`, set by each `live-*.ts`. The MEASUREMENT camera in
+  `camera.ts` is a different camera and is the beat's own editorial assertion.
+- **A beat must print what Mercator costs ITS OWN subject.** The flat map is a chosen trade, and a
+  cost a page carries is a cost it states: derive the drawn area (shoelace at the plate's own
+  camera) against the true spherical area, set aside any unit big enough to swamp every share, and
+  put the number in the caveat. Never typed.
+- **Three radius behaviours, and choosing wrong lies** (`assets/live-map.mjs`): `"camera"` for a
+  circle that encodes a VALUE — derived at the fit, then held in screen pixels, because one number
+  must not mean two things at two zooms; `"ground"` for a dot standing for a fixed quantity of
+  ground — its screen radius doubles per zoom level (`["interpolate", ["exponential", 2], ["zoom"],
+  …]`), because a camera-held radius would thin the field out as the reader zooms in, which is a lie
+  about density; `"fixed"` for a pin, which is not a measurement; and **none at all** for `fill` and
+  `line` layers (regions, bins, routes) — they reproject on their own, and only their strokes are
+  screen-sized.
+- **Marks are MapLibre layers, interrogated with `queryRenderedFeatures`** — never SVG drawn over a
+  plate, which drifts the moment the reader pans. The hit target, the halo and the label gutter are
+  sized from the mark's ONE remembered radius (`data-r`), never from a second number describing the
+  same circle.
+- **The drawing keeps its guaranteed share of the height.** `MAP_DRAWING_SHARE` (0.66) is declared
+  once in the trunk (`skills/chart-web/scripts/render-web.mjs`) and refused there: the words give
+  way, the map does not.
+- **The JOIN fails silently by construction.** A code that does not match the tileset's own key
+  (`iso_a2` on MapTiler's Countries) paints nothing, and a unit painted nothing looks exactly like a
+  unit outside the study — a legitimate state already in the legend. Write the table down, check it,
+  and let the live plan refuse anything that is not what it claims to be.
+- **Add a gesture only when the type earns one.** The unfiltered default must already show the whole
+  claim the title makes; a gesture that moves argument-bearing content behind an interaction is
+  refused whatever it is called. A type that deserves no gesture is a legitimate outcome, and better
+  than borrowing a neighbour's.
+
+### The worked example, file by file
+
+Every live map × web beat has the same split (`proof/web-choropleth-europe-lowcarbon`). A map beat
+carries four pieces a chart beat does not: `camera.ts`, the bake, the frozen fallback, and the keyed
+`.local.html` copy.
+
+| file | holds | plumbing or beat |
+| --- | --- | --- |
+| `camera.ts` | the MEASUREMENT projection, its window, the sampled projected border, one scale for both axes, `project` | **beat** — the projection and the window are the beat's central claim; the border sampling and the unit box are plumbing |
+| `bake.mjs` | `BEAT.bounds`/`style`, the camera gate (`assertWorldFillsFrame`, `assertCameraReachesBounds`), one basemap capture per filed direction, cull and thin, `geometry.json` | plumbing except `BEAT.bounds` |
+| `shapes.geojson`, `<data>.csv` | the frozen geography and the frozen readings | beat |
+| `render-directions-web.mjs` | plate cache keyed on the frame · `plateTints` · three-plate camera agreement · `ASKED` vs the study set · MapLibre + `style.mjs` inlined · `bakeFallback` · the fallback hash cache · `pageOf`/`renderWeb` · the keyed `.local.html` write · the direction loop · refusal cleanup and exit code | plumbing — **except** the data read, the claim, the words, the live plan, the gesture declaration and the refusals |
+| `Directed<Type>Web.tsx` | the props seam, the two-layer arrangement, the colour derivation both halves read, the drawing, the HTML overlay, the accessible table | shell plumbing; **the drawing is beat** |
+| `plate/{creme,nocturne,rapport}/` | `plate.png` + `geometry.json` per direction — one camera, three grounds | generated, committed |
+| `fallback/<id>.webp` + `<id>.sha` | the frozen picture of the page's own live map, and the hash that decides a re-bake | generated, committed |
+| `renders/<id>.html` | the delivered page, carrying `__MAPTILER_KEY__` | generated, committed |
+| `renders/<id>.local.html` | the keyed copy a human opens | generated, **git-ignored** |
+| `BRIEF.md`, `PALETTE.md` | the gesture argued before the code; the newsroom answer and this beat's own searched contrast floors | beat |
+
+### The map vocabularies
+
+A **menu**, not a checklist. Each says what the reader does and which type spent it. A beat that
+needs none of them, or needs a new one, has a legitimate answer — and squatting on another
+vocabulary's id prefix to be discovered would make the census report a yardstick that is not one.
+
+| vocabulary | the reader … | spent by |
+| --- | --- | --- |
+| `assets/classing.ts` | picks the RULE that cuts the classes, because the partition was a choice nobody showed | choropleth |
+| `assets/area-scale.ts` | picks the EXPONENT of the size scale — the spread between the circles, otherwise set in silence | proportional symbol |
+| `assets/pool.ts` | holds the GRAIN — over how many cells a cell sums its numerator and denominator before dividing | hex grid |
+| `assets/restore.ts` | PUTS THE GEOGRAPHY BACK, one sacrifice at a time, and watches the headline figure move | cartogram |
+| `assets/vantage.ts` | chooses the REMOVE — how far back the author stood, the only decision anybody made on this type | locator |
+| `assets/live-dot-density.ts` | chooses WHAT ONE DOT IS WORTH, because the dot value is the sentence | dot density |
+| `assets/live-contour.ts` | chooses THE STEP between the lines, which decides how much of the surface survives | contour / isoline |
+| `assets/live-flow.ts` | picks WHAT THE WIDTH IS DIVIDED BY — a band measures two places, so it has a second denominator | flow map |
+| `assets/filter.ts` | says what may LEAVE the map — the shared `chart-web` vocabulary, pure CSS (`:has()` + `:checked`), mirrored onto the live layer with `setFilter` | any type, when the test in "When to use" passes |
+| `assets/navigate.ts` | zooms, moves, and comes back to the framing the newsroom published. **A supplement, not a gesture** — it adds nothing to what the beat argues | every live map |
+
+`assets/geo-symbol.ts` is not a vocabulary: it is the pure geometry (radius scale, legend values,
+draw and reading order, label placement) a symbol beat computes with.
 
 ## When to use
 
@@ -147,6 +262,7 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
 | Verify | `scripts/verify-interaction.mjs` | Drives the rendered beat in a real browser with REAL input: fit at four viewport sizes, `elementFromPoint` + a real pointer move per point checked against the sample data, a real click per filter chip, keyboard, and the no-JS pass. Mutation-proven to fail when the hover is swallowed, the filter selector is wrong, the fit is removed or the plate is stretched |
 | Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, props, outDir, name, regionTable })` — SSRs the one fluid map render, plus the table only when the beat opted in, inlines the interaction script, writes one self-contained HTML file. `assertDistinctSlugs` refuses a filter vocabulary that cannot work. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
+| Scaffold | `scripts/scaffold-web-map-beat.mjs`, `assets/web-map-beat-scaffold/` | The plumbing of a directed web map beat, written once — and nothing else. Generates ~1 050 of a beat's 2 200–2 650 lines: the bake, the plate cache, the camera agreement, the MapLibre inlining, the fallback bake, the keyed copy, the direction loop, the refusal cleanup. Generates NO camera, NO gesture, NO words, NO palette reasoning, NO refusals — each is a named `SCAFFOLD` hole that throws |
 | Preview | `scripts/render-preview.mjs` | The seed rendered from sample data, screenshotted through headless Chrome at one fixed viewport width — no longer a pure-SVG Resvg rasterise, since the furniture is now HTML |
 | Compare | `scripts/compare-png.mjs` | `comparePngBuffers` — tolerant, decoded-pixel PNG comparison through a real `<canvas>`; two Chrome launches of identical HTML are not always byte-identical (anti-aliasing jitter), so `--check`/the standalone test compare pictures, not bytes |
 | Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `chart-beat`'s, kept in step by hand (a skill never imports another skill); only `deriveFurniture` (the colour maths) is used by this format now |
@@ -216,6 +332,18 @@ cost thirteen separate interactions. Read it before choosing; do not choose by n
    computed value can lie, a screenshot cannot.
 
 ## Quick start
+
+A directed beat (the path above):
+
+```sh
+bun skills/map-web/scripts/scaffold-web-map-beat.mjs --type <type> \
+  --beat proof/web-<type>-<subject> --static proof/static-<type>-<subject>
+# then: BRIEF.md's gesture, then  grep -n SCAFFOLD proof/web-<type>-<subject>
+bun proof/web-<type>-<subject>/render-directions-web.mjs      # three directions
+open proof/web-<type>-<subject>/renders/creme.local.html      # the keyed copy — DRIVE it
+```
+
+The seed:
 
 ```sh
 # the bake: one plate, this skill's own sample points, this skill's own namespace under /tmp so
@@ -290,6 +418,15 @@ for its own generic function.
   it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
   cannot resolve rather than substituting for it; a story root overrides it with its own file.
 
+- `references/types/` — eight sheets, one per map type, each naming its gesture, its `radius`
+  behaviour, its JOIN trap and its worked example under `proof/web-<type>-…`.
+- `scripts/scaffold-web-map-beat.mjs` — the scaffold. Its header carries the line it is written on
+  and why: it removes typing, not thinking. Refuses an unknown type, an existing beat folder, a
+  static sibling with no `PALETTE.md` or no frozen data, and `cartogram` (which is not a live map:
+  no basemap, no plate, no fallback, so none of this plumbing applies to it).
+- `assets/web-map-beat-scaffold/` — the five templates it fills (`bake.mjs`, `camera.ts`,
+  `render-directions-web.mjs`, `Directed<Name>Web.tsx`, `BRIEF.md`); `PALETTE.md` is copied from the
+  static sibling.
 - `references/map-web-discipline.md` — the rules this format is written under, each attached to the
   reasoning that produced it. Read before writing a second beat.
 - `assets/MapWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
