@@ -1,0 +1,48 @@
+// `%%BEAT%%` AS A MAP PLAN — MapTiler's dataviz style, flat Web Mercator, mounted once and driven by numbers: a camera
+// in Mercator fields and the plan's bound fields, both from `mapStateAt` (`scene.mjs`). The plan's MapTiler URLs
+// carry a key PLACEHOLDER, never the key: the runner's local proxy strips it (`throughProxy`) and holds the key.
+//
+// SCAFFOLD: what the whole map holds (BOUNDS), the other cameras, the seats, and the layers are this beat's own.
+
+import { viewOf } from "#shared/map-beat/scrolly.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
+import { fitBoundsMeet } from "%%UP%%/skills/map-beat/scripts/video-placement.mjs";
+
+export const STAGE = Object.freeze({ width: 1920, height: 1080 });
+const KEY = "__MAPTILER" + "_KEY__";
+/** MapTiler Countries: one `administrative` layer, `level` 0 the countries and 1 their regions, joined on `iso_a2`. */
+export const COUNTRIES = Object.freeze({ type: "vector", url: `https://api.maptiler.com/tiles/countries/tiles.json?key=${KEY}` });
+export const COUNTRIES_LAYER = "administrative";
+/** The fields the plan's bindings read (`{ $state: field }`) — `mapStateAt` returns every one. SCAFFOLD. */
+export const MAP_FIELDS = Object.freeze([]);
+/** What the whole map holds, [[west, south], [east, north]]. SCAFFOLD: the study set's own extent. */
+export const BOUNDS = Object.freeze([[-170, -58], [180, 78]]);
+/** The share of the stage the bounds are fitted into, "meet". */
+const FIT = 0.92;
+/** Where each word the overlay places is anchored, [lon, lat]; `measure.mjs` measures each at every camera. SCAFFOLD. */
+export const SEATS = Object.freeze({});
+
+export function camerasOf() {
+  const whole = fitBoundsMeet({ bounds: BOUNDS, stage: STAGE, fit: FIT });
+  // SCAFFOLD: every other camera the argument travels to — a close-up centres its subject on both axes.
+  return { whole };
+}
+
+export function mapPlanFor({ direction, cameras }) {
+  const tints = plateTints(direction);
+  return {
+    styleUrl: `https://api.maptiler.com/maps/dataviz/style.json?key=${KEY}`,
+    styleName: "dataviz",
+    projection: "mercator",
+    tints: { water: tints.water, land: tints.land },
+    referenceWidth: STAGE.width,
+    referenceHeight: STAGE.height,
+    degreesPerPixel: 1,
+    camera: { view: viewOf(cameras.whole) },
+    // ════ THE LAYERS — SCAFFOLD ════
+    // SCAFFOLD: this beat's layers — `source: COUNTRIES`, `sourceLayer: COUNTRIES_LAYER`, `beneath: "water"`, a
+    // `filter` on `level` and `iso_a2` — every paint from the direction, every moving paint bound to MAP_FIELDS
+    // through `bindings`.
+    layers: [],
+  };
+}

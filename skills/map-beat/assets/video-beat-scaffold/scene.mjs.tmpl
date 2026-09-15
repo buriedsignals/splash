@@ -1,0 +1,69 @@
+// THE PICTURE AT ONE FRAME — pure arithmetic, run by the composition in Chrome and by the tests in Bun. Browser-safe:
+// no Node import.
+//
+// The shared mechanics: one state per event (`states.mjs`), each field's change run through its WINDOW inside the
+// event (shares of the event's duration), eased unless the field is LINEAR. The live map is driven in numbers
+// (`mapStateAt`: a camera in Web Mercator fields and the plan's bound fields); the SVG overlay by `sceneAt`. Both
+// bodies are this beat's own.
+
+import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
+
+export const clamp01 = (t) => (t < 0 ? 0 : t > 1 ? 1 : t);
+/** easeInOutQuad — a reading leaves and arrives calmly, and holds still in between. */
+export const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+export const lerp = (a, b, t) => a + (b - a) * t;
+
+/** Where, inside its event, each field's change runs: [from, to] as shares of the event. A field not named runs [0, 1]. */
+export const WINDOWS = Object.freeze({
+  establish: { title: [-1, 0] },
+  reference: { title: [0, 0.2], furniture: [0.1, 0.8] },
+  reveal: {}, // SCAFFOLD: the reveal's gesture windows
+  subject: {}, // SCAFFOLD: the subject's gesture windows — a camera's travel among them
+  conclusion: { source: [0.3, 0.9] },
+});
+
+/** The fields that move at constant speed — the years a map runs through, a count. Every other field is eased. */
+export const LINEAR = new Set([]); // SCAFFOLD
+
+const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
+
+/** A field's value at `frame`: every event's change to it, run through its window. */
+export function fieldAt(field, frame, states, timing) {
+  let value = 0;
+  EVENT_ORDER.forEach((event, i) => {
+    const delta = states[i][field] - (i === 0 ? 0 : states[i - 1][field]);
+    if (delta === 0) return;
+    const t = windowed(frame, timing, event, WINDOWS[event]?.[field] ?? [0, 1]);
+    value += delta * (LINEAR.has(field) ? t : ease(t));
+  });
+  return value;
+}
+
+/** A camera between two fixed cameras at `t` — linear in the map's own plane, where zoom is already a logarithm. */
+export function cameraAt(from, to, t) {
+  if (t <= 0) return { ...from };
+  if (t >= 1) return { ...to };
+  const at = (key) => lerp(from[key] ?? 0, to[key] ?? 0, t);
+  return { camX: at("camX"), camY: at("camY"), camZoom: at("camZoom"), camBearing: at("camBearing"), camPitch: at("camPitch") };
+}
+
+/** The live map at `frame`: the camera, and every field the plan's bindings read (`map-plan.mjs`, MAP_FIELDS). */
+export function mapStateAt(props, frame) {
+  const { whole } = props.cameras;
+  return {
+    ...cameraAt(whole, whole, 0),
+    // SCAFFOLD: the camera's travel — `cameraAt(whole, props.cameras.<another>, fieldAt(<its field>, frame, props.states,
+    // props.timing))` — and one entry per field of MAP_FIELDS.
+  };
+}
+
+/** Everything the SVG overlay draws that moves, at `frame`. */
+export function sceneAt(props, frame) {
+  const at = (field) => fieldAt(field, frame, props.states, props.timing);
+  return {
+    title: at("title"),
+    furniture: at("furniture"),
+    source: at("source"),
+    // SCAFFOLD: the scene maths — every overlay gesture's value at this frame, from the props `build.mjs` placed.
+  };
+}
