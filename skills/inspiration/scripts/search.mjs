@@ -88,13 +88,14 @@ async function withDeadline(work, controller, timeoutMs) {
 }
 
 /**
- * Searches the gallery once for `query`.
+ * Searches the gallery once for `query`, with the journalist's account when a `token` is given.
  */
 export async function searchInspiration({
   query,
   fetchFn = fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   apiBase = INFOVIZ_API,
+  token = "",
 } = {}) {
   const subject = typeof query === "string" ? query.trim() : "";
   if (!subject) return { ok: false, reason: "empty-query" };
@@ -104,12 +105,20 @@ export async function searchInspiration({
   const exchange = (async () => {
     const response = await fetchFn(`${apiBase}/api/graphics/examples`, {
       method: "POST",
-      headers: { "content-type": "application/json", "user-agent": USER_AGENT },
+      headers: {
+        "content-type": "application/json",
+        "user-agent": USER_AGENT,
+        ...(typeof token === "string" && token ? { authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ query: subject }),
       signal: controller.signal,
     });
     const quota = readQuota(response.headers);
     const body = await response.json().catch(() => null);
+
+    if (response.status === 401 && typeof token === "string" && token) {
+      return { ok: false, reason: "invalid-token" };
+    }
 
     if (response.status === 429) {
       return {

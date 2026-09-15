@@ -233,6 +233,49 @@ describe("searchInspiration", () => {
   });
 });
 
+describe("searchInspiration with an account token", () => {
+  it("should send the token as a Bearer header", async () => {
+    let headers: Record<string, string> = {};
+    const fetchFn = async (_url, init) => {
+      headers = init.headers;
+      return answer([])();
+    };
+    await searchInspiration({ query: "floods", fetchFn, token: "tok-123" });
+    expect(headers.authorization).toBe("Bearer tok-123");
+  });
+
+  it("should send no authorization header without a token", async () => {
+    let headers: Record<string, string> = {};
+    const fetchFn = async (_url, init) => {
+      headers = init.headers;
+      return answer([])();
+    };
+    await searchInspiration({ query: "floods", fetchFn });
+    expect("authorization" in headers).toBe(false);
+  });
+
+  it("should report a refused token as invalid-token", async () => {
+    const fetchFn = async () =>
+      new Response(JSON.stringify({ error: "invalid_token" }), { status: 401 });
+    expect(
+      await searchInspiration({ query: "floods", fetchFn, token: "expired" }),
+    ).toEqual({
+      ok: false,
+      reason: "invalid-token",
+    });
+  });
+
+  it("should keep a 401 without a token as an unexpected response", async () => {
+    const fetchFn = async () =>
+      new Response(JSON.stringify({ error: "invalid_token" }), { status: 401 });
+    expect(await searchInspiration({ query: "floods", fetchFn })).toEqual({
+      ok: false,
+      reason: "unexpected-response",
+      status: 401,
+    });
+  });
+});
+
 describe("normaliseItems", () => {
   it("should keep only items with a title and an http(s) link", () => {
     const items = normaliseItems([
