@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { adjustToContrast, contrast, NON_TEXT_CONTRAST_MIN, readPalette } from "#shared/chart-beat/colour.mjs";
+import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, readPalette } from "#shared/chart-beat/colour.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -169,7 +169,9 @@ const buckets = others.map((fuel) => ({ fuel, stations: stations.filter((s) => s
 if (buckets.reduce((a, b) => a + b.stations.length, 0) !== total - nuclear.length) throw new Error("the fuel buckets do not hold every non-nuclear station once");
 const nuclearPoints = nuclear.map(asPoint);
 
-const WEIGHT_LARGEST_PX = 46;
+/** THE LARGEST SITE'S SCREEN RADIUS AT A WEIGHT: capped well under the size that fuses a dense cluster (France,
+ *  Germany, Benelux) into one mass — measured live against the owner's own reading (2026-09-15). */
+const WEIGHT_LARGEST_PX = 38;
 /** THE STATIC PLATE'S OWN COUNT-DOT RANGE, taken at its low end: the field has to show gaps in its densest
  *  cell, not fuse into a mass. TEXTURE COMES FROM THIS RADIUS, NOT FROM OPACITY: every dot is fully opaque
  *  (owner, 2026-09-15 — a partial-opacity fill next to the fully-opaque weight-mode circles and the nuclear
@@ -215,8 +217,17 @@ try {
       const colours = {
         dot: adjustToContrast(adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent, tints.water, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
         ring: adjustToContrast(adjustToContrast(ink, tints.land, NON_TEXT_CONTRAST_MIN) ?? ink, tints.water, NON_TEXT_CONTRAST_MIN) ?? ink,
+        // A PALE TINT OF THE ACCENT, MOSTLY TOWARD THE LAND: ordinary stations at a weight are dust beside the
+        // nuclear discs, not a second strong colour competing with them (owner, 2026-09-15).
+        paleFill: mix(direction.accent, tints.land, 0.72),
+        // THE STROKE THAT SEPARATES TWO OVERLAPPING DISCS reads as the page's own ground — a gap, never a black
+        // outline (which is what a nuclear ring lost in a fused mass looked like) — but is nudged a few percent
+        // off it: the live map's own guard samples the canvas for the page's exact ground colour to catch a
+        // country the tiles never drew, and a stroke drawn in that exact colour is indistinguishable from one.
+        strokeGround: mix(direction.ground, ink, 0.04),
       };
       if (contrast(colours.dot, colours.ring) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear ring (${colours.ring}) measure ${contrast(colours.dot, colours.ring).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
+      if (contrast(colours.dot, colours.paleFill) < 1.5) throw new Error(`the nuclear disc (${colours.dot}) and the ordinary pale disc (${colours.paleFill}) measure ${contrast(colours.dot, colours.paleFill).toFixed(2)}:1 apart — the subject would not stand out from the dust`);
       const plan = dotDensityPlan({
         tints: { water: tints.water, land: tints.land },
         buckets,
@@ -245,6 +256,7 @@ try {
               sizes,
               dotColour: colours.dot,
               ringColour: colours.ring,
+              paleColour: colours.paleFill,
               words,
               alt,
               regs,

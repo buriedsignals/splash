@@ -36,6 +36,7 @@ export function DirectedDotDensityScrolly({
   sizes,
   dotColour,
   ringColour,
+  paleColour,
   words,
   alt,
   regs,
@@ -52,6 +53,7 @@ export function DirectedDotDensityScrolly({
   sizes: { mw: number; label: string; px: number }[];
   dotColour: string;
   ringColour: string;
+  paleColour: string;
   words: {
     unit: string;
     count: string;
@@ -192,16 +194,56 @@ export function DirectedDotDensityScrolly({
           <span style={keyItem}>
             <span
               style={{
+                position: "relative",
                 display: "inline-block",
-                width: "4px",
-                height: "4px",
+                width: "6px",
+                height: "6px",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  inset: "1px",
+                  borderRadius: "50%",
+                  background: dotColour,
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  boxShadow: `0 0 0 1px ${ringColour}`,
+                }}
+              />
+            </span>
+            {words.subjectIs}, cerclés
+          </span>
+          <span style={keyItem}>{words.weightIs}</span>
+          <span style={keyItem}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "14px",
+                height: "14px",
                 borderRadius: "50%",
                 background: dotColour,
               }}
             />
-            {words.subjectIs}, cerclés
+            site nucléaire
           </span>
-          <span style={keyItem}>{words.weightIs}</span>
+          <span style={keyItem}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "14px",
+                height: "14px",
+                borderRadius: "50%",
+                background: paleColour,
+              }}
+            />
+            autre centrale
+          </span>
           {sizes.map((s) => (
             <span key={s.mw} style={keyItem}>
               <span
@@ -210,7 +252,7 @@ export function DirectedDotDensityScrolly({
                   width: `${s.px}px`,
                   height: `${s.px}px`,
                   borderRadius: "50%",
-                  boxShadow: `inset 0 0 0 1.4px ${ringColour}`,
+                  background: paleColour,
                 }}
               />
               {s.label}
