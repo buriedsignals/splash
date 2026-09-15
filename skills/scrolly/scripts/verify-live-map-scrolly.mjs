@@ -5,7 +5,7 @@
 //   1. After the warm, a scrub at 30, 120 and 400 px per animation frame meets no frame whose tiles
 //      are not all loaded (`map.areTilesLoaded()` sampled every frame).
 //   2. At every card's camera, no sampled point of the canvas is left undrawn — the page's own ground
-//      or transparent — which is what a missing country or the space around the globe looks like.
+//      or transparent — which is what a missing country or a tile that never drew looks like.
 //
 // The key is substituted into a temporary copy of the page, never into the committed file, and that
 // copy is removed once the run is done, however it ends.
@@ -55,7 +55,9 @@ function resolveChrome() {
 
 const [pagePath, ...rest] = process.argv.slice(2);
 if (!pagePath) throw new Error("usage: verify-live-map-scrolly.mjs <page.html> [--viewports WxH,…]");
-const viewports = (rest[rest.indexOf("--viewports") + 1] || "1280x800,375x812").split(",").map((v) => v.split("x").map(Number));
+const viewportsArg = rest.includes("--viewports") ? rest[rest.indexOf("--viewports") + 1] : "1280x800,375x812";
+if (!/^\d+x\d+(,\d+x\d+)*$/.test(viewportsArg ?? "")) throw new Error(`--viewports takes WxH[,WxH…]; got ${JSON.stringify(viewportsArg)}`);
+const viewports = viewportsArg.split(",").map((v) => v.split("x").map(Number));
 const key = mapTilerKeyIn(process.env);
 if (!key) throw new Error("no MapTiler key in the environment");
 
@@ -67,6 +69,7 @@ const keyed = join(dir, "page.html");
 writeFileSync(keyed, html.split(placeholder).join(key));
 
 const failures = [];
+const notes = [];
 try {
   const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   try {
@@ -107,7 +110,7 @@ try {
 
         // Land is tinted `mix(ground, ink, 0.045)` and water by `plateTints`, so the page's own ground
         // colour appears in the canvas only where nothing is drawn: a country missing from the tiles,
-        // or space around the globe's limb. Either is a defect a real map does not have. A missing
+        // or a tile that never drew. Either is a defect a real map does not have. A missing
         // handle is a sentinel (`null`), not a thrown error — the tile check above already treats it
         // that way, and an uncaught rejection here would skip both `page.close()` and `browser.close()`.
         const bare = await page.evaluate(async () => {
@@ -131,6 +134,10 @@ try {
           }
           return out;
         });
+        // A refused tile or glyph request is not a failed map (the runtime keeps a shown map in charge); the
+        // guards above already say whether the reader saw it. It is reported, not counted.
+        const warning = await page.evaluate(() => document.querySelector("[data-live-warning]")?.getAttribute("data-live-warning"));
+        if (warning) notes.push(`${width}x${height}: the live map recorded a warning: "${warning}"`);
         if (bare === null) failures.push(`${width}x${height}: no window.__scrollyMap handle`);
         else
           bare.forEach((n, k) => {
@@ -147,6 +154,7 @@ try {
   rmSync(dir, { recursive: true, force: true });
 }
 
+if (notes.length) console.log(notes.join("\n"));
 if (failures.length) {
   console.log(failures.join("\n"));
   process.exit(1);
