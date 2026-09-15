@@ -93,12 +93,20 @@ function initScrollyMap(root, plan, options) {
     attributionControl: false,
     fadeDuration: 0,
     maxTileCacheSize: 800,
+    canvasContextAttributes: { preserveDrawingBuffer: !!(options && options.preserveDrawingBuffer) },
   });
   // Cameras are authored for `plan.referenceWidth`; a narrower stage sees the same ground one
   // log2(width ratio) zoom level further out, so a phone keeps the card's whole subject in view.
   const handle = { map: map, plan: plan, root: root, ready: false, pending: null, failed: false };
   handle.zoomOffset = function () {
     return plan.referenceWidth ? Math.log2(container.clientWidth / plan.referenceWidth) : 0;
+  };
+  // A REAL PAGE HAS NO `window.applyScrollyMap`. `renderScrolly` wraps the reveal driver (and the
+  // inlined runtime beside it) in an IIFE, so the module-scope function below is not a global there
+  // — only what a caller reaches off the handle itself is. The pilot driver sets `window.__scrollyMap
+  // = handle`; a guard reaches this the same way it reaches `handle.map`.
+  handle.apply = function (state) {
+    applyScrollyMap(handle, state);
   };
   // THE FIRST CAUSE WINS. A mount failure and a later runtime "error" event can both reach here;
   // only the first is kept, so a reader debugging a blank map reads what actually broke it rather

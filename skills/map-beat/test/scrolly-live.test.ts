@@ -352,6 +352,39 @@ describe("the scrolly map runtime in a browser", () => {
     }
   }, 60_000);
 
+  it("should move the camera and paint through handle.apply, the door a real page's own IIFE leaves open", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = await new Promise<any>((resolve) => {
+          const h = (window as any).initScrollyMap(
+            root,
+            { ...plan, referenceWidth: 800 },
+            { window, onReady: () => resolve(h), warmTimeoutMs: 2000 },
+          );
+        });
+        // `handle.apply` is what a real page's driver and this guard both call — `renderScrolly`
+        // wraps the inlined runtime in an IIFE, so `window.applyScrollyMap` does not exist there.
+        handle.apply(plan.statesForCards[1]);
+        return {
+          center: handle.map.getCenter().toArray(),
+          zoom: handle.map.getZoom(),
+          opacity: handle.map.getPaintProperty("square", "fill-opacity"),
+        };
+      }, plan);
+      const expected = viewOf(plan.statesForCards[1]);
+      expect(result.center[0]).toBeCloseTo(expected.center[0], 4);
+      expect(result.center[1]).toBeCloseTo(expected.center[1], 4);
+      expect(result.zoom).toBeCloseTo(expected.zoom, 6);
+      expect(result.opacity).toBe(plan.statesForCards[1].reveal);
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
   it("should record the first error and never reveal the container when the style sweep answers no tint", async () => {
     const page = await browser.newPage();
     try {
