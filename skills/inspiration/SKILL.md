@@ -48,9 +48,7 @@ Five rules shape it:
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Command | `scripts/cli.mjs` | reads the subject (argv or `--stdin`), searches, prints the markdown or `--json`; exit 1 when there is no list, 2 on a usage error |
-| Path | `scripts/managed.mjs` | `searchWithAccount({query, env, runEngineFn, searchFn})` — under Engine with a stored `INFOVIZ_TOKEN`, runs `bsig run splash inspiration-search`; otherwise the direct search; never a second search once the operation started |
-| Engine | `scripts/engine.mjs` | `runEngine(bsigPath, args, stdin, {timeoutMs})` — the only place `bsig` is started: argv and stdin, bounded |
+| Command | `scripts/cli.mjs` | the anonymous search for hosts without the Splash MCP tool: reads the subject (argv or `--stdin`), prints the markdown or `--json`; exit 1 when there is no list, 2 on a usage error |
 | Account entry | `scripts/sealed-search.mjs` | `sealedSearch(request, {searchFn, env})` — Engine's closed entry: searches with the injected token, one anonymous retry flagged `accountNeedsReconnect` when the token is refused |
 | Request | `scripts/search.mjs` | `searchInspiration({query, fetchFn, timeoutMs, apiBase, token})` — one POST under one deadline covering request and body; returns the list and quota, or the reason there is none; never throws |
 | Words | `scripts/format.mjs` | `formatInspiration(result)` — the numbered list, the quota line, the reconnect sentence, or the plain sentence for each failure |
@@ -59,8 +57,9 @@ Five rules shape it:
 
 1. **Check the subject.** Blank → `empty-query`; longer than Splash's own 1000-character cap (the
    gallery itself has no maximum) → `query-too-long`. Neither contacts the gallery.
-2. **Choose the path.** Under Engine (`SPLASH_BSIG_PATH`) with a stored `INFOVIZ_TOKEN`, the search
-   runs as `bsig run splash inspiration-search`; otherwise directly and anonymously.
+2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`,
+   which runs the search as `bsig run splash inspiration-search` when an Infoviz account is stored and
+   directly otherwise; without that tool, `cli.mjs` searches anonymously.
 3. **Ask once.** `POST https://infoviz.design/api/graphics/examples` with `{"query": subject}`, read
    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 4. **Keep what can be opened.** An item needs a title and an http(s) link; newsroom (`source`), date
@@ -89,9 +88,12 @@ bun skills/inspiration/scripts/cli.mjs "election night maps" --json
 The markdown form is what the journalist reads; `--json` prints the structured result instead, for
 when code needs it — never both for the same search. Both exit with code 1 when there is no list.
 
-With an Infoviz account connected in Indicator Labs (Connected services → Infoviz → Connect), the
-same command uses it — 10 searches a day instead of 5. Nothing about the account is ever done or
-said in chat; if the account needs reconnecting, the output says so in its first line.
+When the host exposes the Splash MCP tool `search_inspiration`, call it with the journalist's subject
+instead of running a command: it uses the Infoviz account connected in Indicator Labs (10 searches a
+day instead of 5) and returns the same text. Nothing about the account is ever done or said in chat;
+if the account needs reconnecting, the text says so in its first line. The journalist connects the
+account once, outside chat: sign in on https://splash.buriedsignals.com/inspiration.html, press
+"Copy token for Indicator Labs", paste it in Indicator Labs → Connected services → Infoviz.
 
 ```js
 import { searchInspiration } from "./scripts/search.mjs";
@@ -108,21 +110,16 @@ console.log(formatInspiration(result));
 | How long one search may run, request and body together | `15000` ms | `DEFAULT_TIMEOUT_MS`, `search.mjs` (override via `searchInspiration({timeoutMs})`) |
 | The longest subject sent to the gallery | `1000` characters | `MAX_QUERY_LENGTH`, `search.mjs` |
 | Which gallery is asked | `https://infoviz.design` | `INFOVIZ_API`, `search.mjs` (override via `searchInspiration({apiBase})`) |
-| How long Engine may take to say whether an account is stored, and to run the search | `20000` / `90000` ms | `KEY_STATUS_TIMEOUT_MS`, `OPERATION_TIMEOUT_MS`, `managed.mjs` |
 
 ## Files
 
-- `scripts/cli.mjs` — the one command the agent runs.
-- `scripts/managed.mjs` — `searchWithAccount`, `KEY_STATUS_TIMEOUT_MS`, `OPERATION_TIMEOUT_MS` — the path
-  choice between the connected account and the anonymous search.
-- `scripts/engine.mjs` — `runEngine` — starts `bsig` with argv and stdin only.
+- `scripts/cli.mjs` — the anonymous command for hosts without the Splash MCP tool.
+- `apps/goose/inspiration.mjs` — `createInspirationService` — the account-aware search behind the Splash MCP tool `search_inspiration`.
 - `scripts/sealed-search.mjs` — `sealedSearch` — Engine's closed entry for a search with the account token.
 - `scripts/search.mjs` — `searchInspiration`, `normaliseItems`, `parseArgs` — the one bounded request, the item
   filter and the command's argument reader.
 - `scripts/format.mjs` — `formatInspiration` — every sentence the journalist reads.
-- `test/managed.test.ts` — every path decision, with Engine faked.
 - `test/sealed-search.test.ts` — the token, the single anonymous retry, the closed request.
-- `test/engine.test.ts` — argv, stdin, events and the deadline against a fake executable (heavy lane).
 - `test/search.test.ts` — the request, the 429, the unexpected answers, the hung request, the
   stalled body, and `parseArgs`, against stubbed responses.
 - `test/format.test.ts` — the rendered list, the markdown escaping, and each failure sentence.

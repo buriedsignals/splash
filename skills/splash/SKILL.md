@@ -65,7 +65,8 @@ owner's own skill or persona brief; this document duplicates no owner body.
   preflight/newsroom/install detail lives in `references/preflight-and-install.md`.
 - When the journalist wants to see what newsrooms have already published on a subject — with or
   without a story, with or without the intent to produce anything — hand over directly to
-  `inspiration`: no preflight, no studio, no story. It creates no story, opens no gate and is never
+  `inspiration` (through the Splash MCP tool `search_inspiration` when the host has it): no
+  preflight, no studio, no story. It creates no story, opens no gate and is never
   a phase: `whereIs` does not know it, and it does not move a story forward.
 - **Not** for writing a chart, map, brief, or export — those belong to `intake`, `storyboard`,
   the craft skill, and `deliver`. This skill decides which runs next and produces nothing at

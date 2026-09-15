@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
 
-// The inspiration skill's one command. It reads the subject (argv or stdin), lets managed.mjs
-// choose between the connected Infoviz account under Engine and the anonymous search, and prints
-// what the journalist reads — or the structured result with --json.
+// The inspiration skill's command for hosts without the Splash MCP tool: it reads the subject (argv or
+// stdin), searches the gallery anonymously once, and prints what the journalist reads — or the
+// structured result with --json. Under Indicator Labs the agent uses the `search_inspiration` tool
+// instead, which can use the journalist's Infoviz account.
 
 import { formatInspiration } from "./format.mjs";
-import { runEngine } from "./engine.mjs";
-import { searchWithAccount } from "./managed.mjs";
-import { parseArgs } from "./search.mjs";
+import { parseArgs, searchInspiration } from "./search.mjs";
 
 const STDIN_LIMIT_BYTES = 64 * 1024;
 
@@ -28,6 +27,6 @@ if (parsed.error) {
   process.exit(2);
 }
 const query = parsed.readStdin ? await readStdinSubject(process.stdin) : parsed.query;
-const result = await searchWithAccount({ query, runEngineFn: runEngine });
+const result = await searchInspiration({ query });
 console.log(parsed.asJson ? JSON.stringify(result, null, 2) : formatInspiration(result));
 if (!result.ok) process.exitCode = 1;
