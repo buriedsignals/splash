@@ -1,16 +1,15 @@
 // THE SUBJECT OF `static-proportional-symbol-europe-capacity`, LOADED AND ASSERTED — the static beat's claim on the
-// hundred largest stations. The register and the land are the dot density video's (the same frozen files, byte for byte).
+// hundred largest stations. The register is the dot density video's (the same frozen file, byte for byte).
 //
 // Runs in Bun only.
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dotGeometry, loadSubject as loadRegister } from "../video-dot-density-europe-stations/subject.mjs";
+import { loadSubject as loadRegister } from "../video-dot-density-europe-stations/subject.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const STATIC_DIR = join(HERE, "..", "static-proportional-symbol-europe-capacity");
 export const TOP = 100;
-export { dotGeometry };
 
 export function loadSubject({ dir = STATIC_DIR } = {}) {
   const register = loadRegister({ dir });

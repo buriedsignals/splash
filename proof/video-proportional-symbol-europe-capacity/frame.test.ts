@@ -10,14 +10,15 @@ import { SymbolFrame } from "./SymbolFrame.tsx";
 /**
  * The markup at the last frame of every event — the type floor, every word with its measured width — and the claim told
  * in order: the title at frame 0, the hundred circles arrived largest first with the count at 43,0 % at the end of reveal,
- * the rest at the end; area proportional to capacity in the marks and in the key alike; the key's words apart.
+ * the rest at the end; area proportional to capacity in the marks and in the key alike; the key's words apart. The map is
+ * not drawn here (`liveMap: () => null`): its layers are held in `map-plan.test.ts`.
  */
 
 const beat = loadBeat();
 
 for (const id of ["creme", "nocturne", "rapport"]) {
   const { props } = buildDirection(id, beat);
-  const markupAt = (frame: number) => renderToStaticMarkup(createElement(SymbolFrame, { ...(props as any), at: frame }));
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(SymbolFrame, { ...(props as any), at: frame, liveMap: () => null }));
   const last = (event: string) => endOf((props.timing as any)[event]) - 1;
 
   describe(`${id}'s proportional symbol video`, () => {
@@ -33,6 +34,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
       expect(sceneAt(props as any, 0).title).toBe(1);
       const reveal = sceneAt(props as any, last("reveal"));
       expect(reveal.arrived).toBe(100);
+      expect(reveal.circles.filter((t: number) => t < 1)).toEqual([]);
       expect(props.legend.topTexts["100"].text.replace(/\\s/g, "")).toContain("43,0");
       for (let k = 1; k < props.top.length; k++) expect(props.top[k].r).toBeLessThanOrEqual(props.top[k - 1].r);
       const mid = sceneAt(props as any, Math.round(props.timing.reveal.start + props.timing.reveal.duration * 0.4));

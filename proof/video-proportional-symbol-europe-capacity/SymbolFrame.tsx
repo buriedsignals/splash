@@ -2,11 +2,13 @@
  * One frame of « Un centième des sites porte plus d'un tiers de la puissance » — the title card, the hundred largest
  * stations arriving largest first while the counts climb, then the other 8 800 as faint points (BRIEF.md).
  *
+ * THE MAP IS THE CALLER'S (`liveMap`: the live MapTiler map in the composition — the land, the hundred circles and the
+ * rest, each a MapLibre layer; nothing in the Bun tests). Over it, one SVG: the key, the credit and the title card.
+ *
  * NOTHING HERE IS MEASURED OR CHOSEN: positions, radii, texts and colours come from `build.mjs`; motion from `sceneAt`.
- * The 8 800 points are one path of zero-length strokes with round caps, so the frame stays light.
  */
 
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { sceneAt } from "./scene.mjs";
 
 type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
@@ -31,10 +33,9 @@ export type SymbolFrameProps = {
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
   colours: { ground: string; sea: string; land: string; circle: string; point: string; text: Record<"eyebrow" | "title" | "top" | "rest" | "key", string> };
   strokes: { circle: number; hairline: number };
-  land: string[];
+  cameras: { whole: Record<string, number> };
+  mapPlan: { layers: Array<{ id: string; bindings?: Record<string, unknown> }> } & Record<string, unknown>;
   top: Array<{ x: number; y: number; r: number }>;
-  rest: string;
-  pointR: number;
   states: Record<string, number>[];
   timing: unknown;
 };
@@ -47,25 +48,14 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
   );
 }
 
-export function SymbolFrame(props: SymbolFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
+export function SymbolFrame(props: SymbolFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
   const { frame, registers: r, colours, strokes, legend: key, credit, titleCard } = props;
   const scene = sceneAt(props as never, props.at);
 
   return (
-    <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
-      <rect width={frame.width} height={frame.height} fill={colours.sea} />
-      {props.land.map((d, i) => (
-        <path key={`land${i}`} d={d} fill={colours.land} stroke={colours.sea} strokeWidth={strokes.hairline} strokeLinejoin="round" />
-      ))}
-      <path d={props.rest} fill="none" stroke={colours.point} strokeWidth={2 * props.pointR} strokeLinecap="round" opacity={scene.rest} />
-      {/* ── THE HUNDRED: hollow, the smallest drawn last so its outline is never under a larger one. ── */}
-      {props.top
-        .map((c, k) => ({ c, k }))
-        .reverse()
-        .map(({ c, k }) => (
-          <circle key={`c${k}`} cx={c.x} cy={c.y} r={c.r * (0.6 + 0.4 * scene.circles[k])} fill="none" stroke={colours.circle} strokeWidth={strokes.circle} opacity={scene.circles[k]} />
-        ))}
-
+    <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.sea }}>
+      {props.liveMap(props.at)}
+      <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
         <Word line={{ ...key.topTexts[String(scene.arrived)], ...key.topRow }} register={r.value} fill={colours.text.top} opacity={Math.min(1, scene.circles[0] * 3)} halo={{ colour: colours.sea, width: key.valueHalo }} />
         <Word line={{ ...key.restText, ...key.restRow }} register={r.value} fill={colours.text.rest} opacity={scene.rest} halo={{ colour: colours.sea, width: key.valueHalo }} />
@@ -90,6 +80,7 @@ export function SymbolFrame(props: SymbolFrameProps & { at: number; svgRef?: Ref
           <Word key={`title${i}`} line={line} register={titleCard.register} fill={colours.text.title} />
         ))}
       </g>
-    </svg>
+      </svg>
+    </div>
   );
 }

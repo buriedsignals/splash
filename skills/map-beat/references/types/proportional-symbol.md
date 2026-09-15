@@ -78,6 +78,11 @@ points and their share is set beside the first — a comparison, not a sentence.
 quantity, the key's named circles on the same function as the marks, one row per named circle with its label beside it.
 The still's drawing threshold is not needed: the rest are points.
 
+On the live MapTiler map (2026-09-15, awaiting the owner): each symbol that arrives at its own time is its own GeoJSON
+`circle` layer, hollow, its radius a constant expression bound to its own arrival field (less half the stroke — MapLibre
+strokes outside the radius); the rest share one layer bound to their presence. The key and the counts stay SVG, the key
+and the credit on the measured open sea, clear of every symbol.
+
 ## The worked example in this tree
 
 `proof/static-proportional-symbol-europe-capacity` — a **directed** beat of this type: written by hand under the doctrine, taken through a

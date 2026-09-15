@@ -34,8 +34,28 @@ export function sceneAt(props, frame) {
   const at = (f) => fieldAt(f, frame, props.states, props.timing);
   const top = at("top");
   const n = props.top.length;
-  // Each circle's arrival takes two ranks' worth of the reveal, and the last has fully arrived when the reveal ends.
-  const circles = Array.from({ length: n }, (_, k) => ease(clamp01((top * (n + 2) - k - 2) / 2)));
+  // Each circle's arrival takes two ranks' worth of the reveal, and the last has fully arrived when the reveal ends
+  // (circle k spans top k/(n+1) to (k+2)/(n+1)).
+  const circles = Array.from({ length: n }, (_, k) => ease(clamp01((top * (n + 1) - k) / 2)));
   const arrived = circles.filter((t) => t >= 1).length;
   return { title: at("title"), furniture: at("furniture"), circles, arrived: top >= 1 ? n : arrived, rest: at("rest"), source: at("source") };
+}
+
+// ── the live map ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The fields the map plan's paints are bound to, besides the camera (`map-plan.mjs`): the rest, and each circle's arrival. */
+export const mapFieldsOf = (n) => ["rest", ...Array.from({ length: n }, (_, k) => `c${k}`)];
+
+/**
+ * THE LIVE MAP AT `frame`, IN NUMBERS: the still camera, the rest's presence, and each of the hundred's own arrival.
+ *
+ * @param {{ cameras: { whole: any } } & Parameters<typeof sceneAt>[0]} props
+ */
+export function mapStateAt(props, frame) {
+  const scene = sceneAt(props, frame);
+  const state = { ...props.cameras.whole, rest: scene.rest };
+  scene.circles.forEach((t, k) => {
+    state[`c${k}`] = t;
+  });
+  return state;
 }
