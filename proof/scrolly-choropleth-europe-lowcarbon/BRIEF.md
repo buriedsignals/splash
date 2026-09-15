@@ -50,16 +50,25 @@ Each direction keeps its own palette and faces.
   keeps the reference ground on both axes (`zoomShiftFor`): a phone is fitted by its width, a desktop by its height, so
   Iceland, Malta and Cyprus stay in the frame (Cyprus 7 px above the bottom edge at 1168 × 563, as on the plate).
   Names show only at rest or once the camera has arrived, as the SVG driver decided.
-- **One frozen image per card, at two densities** (`fallback/<direction>-<card>.webp` at 2x and
-  `fallback/<direction>@1x-<card>.webp` at 1x, 1168 × 566, the stage at 1280 × 800), baked from the same plan with the
-  card's camera and state, shown `object-fit: cover` (cropped on other stages, never stretched) when there is no key, no
-  script, or until the live map's first view is drawn; re-baked only when the plan's hash changes
-  (`fallback/<direction>.json`, which also carries Albania's pixel seat per card for the chip). A 1x screen gets the 1x
-  bake, so the map's words keep their weight when the live 1x canvas replaces the picture. The density is chosen by a
-  `<picture>` media query (`min-resolution: 1.5dppx`), not by `srcset`'s `2x`: Chrome treats an inlined data URI as
-  already cached and always takes the densest candidate. The bakes are written by the browser as PNG and kept as
-  lossless WebP (`cwebp -lossless`, the same pixels in about 40 % of the bytes): a page with both densities weighs
-  2.6 MB, against 3.5 MB with the 2x PNGs alone. The committed pages carry `__MAPTILER_KEY__`.
+- **One frozen image per card, baked at the stage the layout publishes** (`fallback/<direction>-<shape>@<1|2>x-<card>.webp`).
+  The runner renders a draft page, measures its stage with the page's scripts (the header's title ladder changes a
+  phone's stage) at 1280 × 800 (`wide`) and 375 × 812 (`tall`), bakes there, and refuses a written page whose stage
+  differs. The live map fits the reference ground by the stage's height on a stage wider than 1280 × 973 and by its
+  width otherwise, so `wide` keeps the stage's height and is baked 2.5 times as wide (creme 1408 × 563, rapport
+  1430 × 572, nocturne 1404 × 561) and `tall` keeps its width and is baked about 2.1 times as tall (330 × ~700). A
+  container query on the stage's own aspect shows one shape; `object-fit: cover`, centred, then scales it by exactly
+  the live map's zoom shift on every stage of that shape's aspect range (wide 1.32–2.5, tall 0.47–1.32), and not at
+  all on the measured stage, where the swap from the frozen card to the live map changes no pixel above 24/255
+  (≤ 0.01 % of the stage, the three directions at 1x and 2x, measured 2026-09-15); on other stages the names meet
+  within 0.4 px (desktop) and 1.4 px (phone) but the scaled image reads softer or heavier. The live map follows a
+  stage that changes size without the window (a phone's header sets its title once its faces load), before and
+  after its reveal. Before, the images were baked 1168 × 566 against a 1168 × 563 stage: the live map sat 0.0077 zoom
+  levels further out and Méditerranée moved 1.9 px up at the swap; on a phone the desktop image was cropped and the
+  names moved 28–45 px. Each shape at 1x and 2x, chosen by a `<picture>` media query (`min-resolution: 1.5dppx`), not by
+  `srcset`'s `2x`: Chrome treats an inlined data URI as already cached and always takes the densest candidate. The bakes
+  are written by the browser as PNG and kept as lossless WebP (`cwebp -lossless`). Re-baked only when the plan's hash
+  or a size changes (`fallback/<direction>.json`, which also carries Albania's pixel seat per card and shape for the
+  chip). The committed pages carry `__MAPTILER_KEY__`.
 - **The first paint is card 1.** The markup is card 1's state (its image, no counter, no key), because the page's
   scripts come after megabytes of images and a browser paints before they run; a reader without a script gets the last
   card, with its counter and key, through `<noscript>` rules.

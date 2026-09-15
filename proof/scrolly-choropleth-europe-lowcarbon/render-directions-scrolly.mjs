@@ -58,10 +58,32 @@ const NB = "\u00A0";
 const BOUNDS = [[-25, 34], [42, 68]];
 const FRAME = { width: 1000, height: 760 };
 const FALLBACK = join(HERE, "fallback");
-/** THE SIZE THE CARD IMAGES ARE BAKED AT: the stage at a 1280 × 800 viewport, measured on the three
- *  directions' renders on 2026-09-15 (1168 × 561, 563 and 572). A stage of another size shows them
- *  `object-fit: cover`, so they are cropped there, never stretched. */
-const FALLBACK_SIZE = { width: 1168, height: 566 };
+/** Where a direction's card image lives. Module-level and handed the direction's id: built as closures inside the
+ *  direction loop, Bun 1.3.5 returned the FIRST direction's paths on later iterations and inlined creme's images
+ *  into nocturne's and rapport's pages (caught 2026-09-15 by the swap measurement). */
+const stemOf = (id, shape, scale) => `${id}-${shape}@${scale}x`;
+const pngOf = (id, k, shape, scale) => join(FALLBACK, `${stemOf(id, shape, scale)}-${k + 1}.png`);
+const webpOf = (id, k, shape, scale) => join(FALLBACK, `${stemOf(id, shape, scale)}-${k + 1}.webp`);
+const unbaked = (id, k, shape, scale) => !existsSync(webpOf(id, k, shape, scale)) && !existsSync(pngOf(id, k, shape, scale));
+const fallbackUri = async (id, k, shape, scale) => toDataUri(await readFile(webpOf(id, k, shape, scale)), "image/webp");
+
+/** The view the join is asserted at: a desktop stage. */
+const JOIN_VIEW = { width: 1168, height: 566 };
+/** THE CARD IMAGES ARE BAKED AT THE STAGE THE LAYOUT PUBLISHES, measured on the direction's own page: `wide`
+ *  at a 1280 × 800 viewport, `tall` at 375 × 812 (`measureStages`). The live map fits the reference ground by
+ *  the stage's height when the stage is wider than the reference (1280 × 973) and by its width otherwise, so
+ *  `wide` keeps the stage's height and is baked wider (aspect `WIDE_ASPECT`), `tall` keeps the stage's width and
+ *  is baked taller (`TALL_ASPECT`). Shown `object-fit: cover` and centred, each image is then scaled by exactly
+ *  the live map's own zoom shift on every stage whose aspect lies between the reference's and its own, and not
+ *  scaled at all on the measured stage: the frozen card and the live map meet to the pixel. */
+const WIDE_ASPECT = 2.5;
+const TALL_ASPECT = 0.47;
+const MEASURED_VIEWPORTS = { wide: { width: 1280, height: 800 }, tall: { width: 375, height: 812 } };
+/** A length at least `min` whose difference from `stage` is even, so the centred crop falls on whole pixels. */
+const evenFrom = (min, stage) => {
+  const n = Math.ceil(min);
+  return (n - stage) % 2 === 0 ? n : n + 1;
+};
 
 const RENEWABLE = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh"];
 const NUCLEAR = "nuclear_generation__twh";
@@ -268,6 +290,28 @@ const styleDoc = await (await fetch(`https://api.maptiler.com/maps/dataviz/style
 if (!styleDoc.glyphs) throw new Error("the dataviz style carries no glyph endpoint");
 
 const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars"] });
+/** THE STAGE A RENDERED PAGE PUBLISHES at each measured viewport, in the whole CSS pixels the live runtime
+ *  reads (`clientWidth`, `clientHeight`). Read WITH the page's scripts, once its faces are loaded: the header
+ *  sets the longest title form that fits (`fitTitle`), so a phone's stage is taller than the no-script layout's. */
+async function measureStages(file) {
+  const out = {};
+  for (const [shape, viewport] of Object.entries(MEASURED_VIEWPORTS)) {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
+      await page.goto(`file://${file}`, { waitUntil: "load" });
+      await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
+      out[shape] = await page.evaluate(() => {
+        const stage = document.querySelector('[data-part="stage"]');
+        return { width: stage.clientWidth, height: stage.clientHeight };
+      });
+    } finally {
+      await page.close();
+    }
+  }
+  return out;
+}
+
 async function mapPage() {
   const page = await browser.newPage();
   await page.setContent(
@@ -284,8 +328,8 @@ const shares = Object.fromEntries([...studySet].map((iso) => [iso2Of(iso), value
  *  where the data has a value, and nothing says so. Malta is found among level-1 units at this zoom
  *  (`plan.mjs`). */
 async function assertJoin(page) {
-  await page.setViewport({ ...FALLBACK_SIZE, deviceScaleFactor: 1 });
-  const zoom = WHOLE_ZOOM + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height }, FALLBACK_SIZE.width, FALLBACK_SIZE.height);
+  await page.setViewport({ ...JOIN_VIEW, deviceScaleFactor: 1 });
+  const zoom = WHOLE_ZOOM + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height }, JOIN_VIEW.width, JOIN_VIEW.height);
   const found = await page.evaluate(
     async (style, url, sourceLayer, center, zoom) => {
       const map = new maplibregl.Map({ container: "map", style, center, zoom, interactive: false, fadeDuration: 0 });
@@ -382,22 +426,74 @@ try {
       const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
       if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
 
-      // THE CARD IMAGES ARE BAKED ONLY WHEN WHAT THEY PICTURE HAS CHANGED: the plan (key-free) and the size.
+      const renderPage = (fallbacks, shapes) =>
+        renderScrolly({
+          steps: prose.map((p, i) => ({ id: ["pays", "classes", "sept", "nord-ouest", "albanie", "retour"][i], prose: p })),
+          reveal: {
+            element: createElement(DirectedChoroplethScrolly, {
+              plan: { ...plan, fallback: shapes },
+              first: STATES[0],
+              reference: REFERENCE,
+              fallbacks,
+              classFills,
+              missingFill,
+              breaks: BREAKS.map((b) => `${b}${NB}%`),
+              odd: names.find((n) => n.role === "odd"),
+              topCount,
+              unit: "part bas-carbone de la production",
+              missingLabel: "donnée non rapportée",
+              alt,
+              regs,
+              stroke: direction.stroke ?? {},
+              ground: direction.ground,
+              accent: direction.accent,
+              ink,
+              muted,
+              water: tints,
+            }),
+            states: STATES,
+            driver,
+            apply: "applyChoroplethState",
+          },
+          vendor: [{ js: maplibreJs, css: maplibreCss }],
+          title,
+          eyebrow: EYEBROW,
+          source,
+          ground: direction.ground,
+          type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+          lang: "fr",
+          outDir: OUT,
+          name: `${id}.html`,
+        });
+
+      // THE STAGE FIRST: a draft page with blank card images publishes the same layout (images are absolutely
+      // placed), and its stages are what the cards are baked at.
+      const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+      const blankShape = { size: { width: 1, height: 1 }, cards: STATES.map(() => ({ odd: [0, 0], zoom: 0 })) };
+      const draft = await renderPage(
+        STATES.map(() => ({ wide: { x1: BLANK, x2: BLANK }, tall: { x1: BLANK, x2: BLANK } })),
+        { wide: blankShape, tall: blankShape },
+      );
+      const stages = await measureStages(draft.outPath);
+      const SIZES = {
+        wide: { width: evenFrom(stages.wide.height * WIDE_ASPECT, stages.wide.width), height: stages.wide.height },
+        tall: { width: stages.tall.width, height: evenFrom(stages.tall.width / TALL_ASPECT, stages.tall.height) },
+      };
+
+      // THE CARD IMAGES ARE BAKED ONLY WHEN WHAT THEY PICTURE HAS CHANGED: the plan (key-free) and the sizes.
       // The page behind the bake is the STAGE's own ground (the water tint): whatever the canvas leaves
       // transparent shows it, never a white page.
       const stageGround = tints.water;
-      // TWO BAKES PER CARD, 2x AND 1x, chosen by the page's `<picture>` media query: a 1x screen shown the 2x picture at half size
-      // reads the map's words thinner than the live 1x canvas that replaces them, and the type changes at
-      // the reveal (recorded on 2026-09-15, the owner's "les fonts changent").
+      // TWO DENSITIES PER CARD, 2x AND 1x, chosen by the page's `<picture>` media queries: a 1x screen shown the 2x
+      // picture at half size reads the map's words thinner than the live 1x canvas that replaces them (recorded on
+      // 2026-09-15, the owner's "les fonts changent").
       const SCALES = [2, 1];
-      const planHash = createHash("sha256").update(JSON.stringify({ plan, size: FALLBACK_SIZE, stageGround, scales: SCALES })).digest("hex");
+      const SHAPES = Object.keys(SIZES);
+      const planHash = createHash("sha256").update(JSON.stringify({ plan, sizes: SIZES, stageGround, scales: SCALES })).digest("hex");
       const recordPath = join(FALLBACK, `${id}.json`);
-      const stemOf = (scale) => (scale === 2 ? id : `${id}@1x`);
-      const pngOf = (k, scale) => join(FALLBACK, `${stemOf(scale)}-${k + 1}.png`);
-      const webpOf = (k, scale) => join(FALLBACK, `${stemOf(scale)}-${k + 1}.webp`);
+      const variants = SHAPES.flatMap((shape) => SCALES.map((scale) => [shape, scale]));
       let record = existsSync(recordPath) ? JSON.parse(await readFile(recordPath, "utf8")) : null;
-      const unbaked = (k, scale) => !existsSync(webpOf(k, scale)) && !existsSync(pngOf(k, scale));
-      if (!record || record.planHash !== planHash || STATES.some((_, k) => SCALES.some((scale) => unbaked(k, scale)))) {
+      if (!record || record.planHash !== planHash || STATES.some((_, k) => variants.some(([shape, scale]) => unbaked(id, k, shape, scale)))) {
         await mkdir(FALLBACK, { recursive: true });
         const page = await mapPage();
         try {
@@ -405,82 +501,65 @@ try {
             document.documentElement.style.background = ground;
             document.body.style.background = ground;
           }, stageGround);
-          let baked;
-          for (const scale of SCALES)
-            baked = await bakeCards({
+          const shapes = {};
+          for (const [shape, scale] of variants) {
+            const baked = await bakeCards({
               page,
               plan: { ...keyed(plan), style: keyed(styleDoc) },
               cameras,
-              size: FALLBACK_SIZE,
+              size: SIZES[shape],
               glyphsUrl: styleDoc.glyphs,
               tints: plan.tints,
               keepLabels: [],
               statesForCards: STATES,
               outDir: FALLBACK,
-              stem: stemOf(scale),
+              stem: stemOf(id, shape, scale),
               project: [plan.oddSeat],
               scale,
             });
-          record = { planHash, size: FALLBACK_SIZE, cards: baked.map((b) => ({ odd: b.projected[0].map((v) => Math.round(v * 10) / 10), zoom: b.zoom })) };
+            shapes[shape] = { size: SIZES[shape], cards: baked.map((b) => ({ odd: b.projected[0].map((v) => Math.round(v * 10) / 10), zoom: b.zoom })) };
+          }
+          record = { planHash, shapes };
           await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`);
-          console.log(`${id}: baked ${baked.length} card images`);
+          console.log(`${id}: baked ${STATES.length} cards at ${SHAPES.map((shape) => `${SIZES[shape].width} × ${SIZES[shape].height}`).join(" and ")}`);
         } finally {
           await page.close();
         }
       }
-      // THE BAKES TRAVEL AS LOSSLESS WEBP: the same pixels as the PNG the browser wrote, in about 40 % of its
-      // bytes, so the page carrying both densities weighs less than it did carrying the 2x PNGs alone.
+      // THE BAKES TRAVEL AS LOSSLESS WEBP: the same pixels as the PNG the browser wrote, in about 40 % of its bytes.
       for (const [k] of STATES.entries())
-        for (const scale of SCALES) {
-          if (!existsSync(pngOf(k, scale))) continue;
+        for (const [shape, scale] of variants) {
+          if (!existsSync(pngOf(id, k, shape, scale))) continue;
           try {
-            execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", "-exact", pngOf(k, scale), "-o", webpOf(k, scale)]);
+            execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", "-exact", pngOf(id, k, shape, scale), "-o", webpOf(id, k, shape, scale)]);
           } catch (error) {
-            throw new Error(`cwebp could not encode ${pngOf(k, scale)} (brew install webp): ${error.message}`);
+            throw new Error(`cwebp could not encode ${pngOf(id, k, shape, scale)} (brew install webp): ${error.message}`);
           }
-          await rm(pngOf(k, scale));
+          await rm(pngOf(id, k, shape, scale));
         }
-      const fallbacks = await Promise.all(
-        STATES.map(async (_, k) => ({ x1: toDataUri(await readFile(webpOf(k, 1)), "image/webp"), x2: toDataUri(await readFile(webpOf(k, 2)), "image/webp") })),
-      );
+      const fallbacks = [];
+      for (const [k] of STATES.entries())
+        fallbacks.push({
+          wide: { x1: await fallbackUri(id, k, "wide", 1), x2: await fallbackUri(id, k, "wide", 2) },
+          tall: { x1: await fallbackUri(id, k, "tall", 1), x2: await fallbackUri(id, k, "tall", 2) },
+        });
+      // The page carries this direction's own bakes, never another's (see `stemOf`).
+      const own = new Set();
+      for (const f of readdirSync(FALLBACK).filter((f) => f.startsWith(`${id}-`) && f.endsWith(".webp")))
+        own.add(toDataUri(await readFile(join(FALLBACK, f)), "image/webp"));
+      const inlined = fallbacks.flatMap((card) => Object.values(card).flatMap((pair) => Object.values(pair)));
+      if (inlined.some((u) => !own.has(u)) || new Set(inlined).size !== inlined.length)
+        throw new Error(`a card image inlined for ${id} is not one of ${id}'s own bakes`);
 
-      const { outPath } = await renderScrolly({
-        steps: prose.map((p, i) => ({ id: ["pays", "classes", "sept", "nord-ouest", "albanie", "retour"][i], prose: p })),
-        reveal: {
-          element: createElement(DirectedChoroplethScrolly, {
-            plan: { ...plan, fallback: { size: record.size, cards: record.cards } },
-            first: STATES[0],
-            fallbacks,
-            classFills,
-            missingFill,
-            breaks: BREAKS.map((b) => `${b}${NB}%`),
-            odd: names.find((n) => n.role === "odd"),
-            topCount,
-            unit: "part bas-carbone de la production",
-            missingLabel: "donnée non rapportée",
-            alt,
-            regs,
-            stroke: direction.stroke ?? {},
-            ground: direction.ground,
-            accent: direction.accent,
-            ink,
-            muted,
-            water: tints,
-          }),
-          states: STATES,
-          driver,
-          apply: "applyChoroplethState",
-        },
-        vendor: [{ js: maplibreJs, css: maplibreCss }],
-        title,
-        eyebrow: EYEBROW,
-        source,
-        ground: direction.ground,
-        type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
-        lang: "fr",
-        outDir: OUT,
-        name: `${id}.html`,
-      });
+      const { outPath } = await renderPage(fallbacks, record.shapes);
+      // The written page must publish the stages its cards were baked at, or the frozen card and the live map part.
+      const published = await measureStages(outPath);
+      for (const shape of SHAPES) {
+        const baked = SIZES[shape];
+        const at = published[shape];
+        const kept = shape === "wide" ? at.height === baked.height : at.width === baked.width;
+        if (!kept) throw new Error(`the ${shape} stage measured ${at.width} × ${at.height} on the written page, and its cards were baked for ${baked.width} × ${baked.height}`);
+      }
       console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")} · faces ${fonts.axis} / ${fonts.annot}`);
     } catch (error) {
       await rm(join(OUT, `${id}.html`), { force: true });

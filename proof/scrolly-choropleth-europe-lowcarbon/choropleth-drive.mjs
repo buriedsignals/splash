@@ -22,12 +22,12 @@ export function applyChoroplethState(root, state) {
 
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const easeTravel = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
-  const card = Math.max(0, Math.min(c.fallbacks.length - 1, Math.round(state.card)));
+  const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
   const live = c.handle && c.handle.ready && !c.handle.failed;
   // Once the live map is the picture, no card image stays under it: anything the canvas leaves
   // transparent must show the stage's own ground, not a frozen card.
-  c.fallbacks.forEach((img, k) => {
-    const opacity = !live && k === card ? "1" : "0";
+  c.fallbacks.forEach((img) => {
+    const opacity = !live && Number(img.dataset.fallback) === card ? "1" : "0";
     if (img.style.opacity !== opacity) img.style.opacity = opacity;
   });
 
@@ -43,7 +43,8 @@ export function applyChoroplethState(root, state) {
   const atRest = clamp((0.08 - z) / 0.08);
 
   // WHERE ALBANIA IS ON THE STAGE: asked of the live map when it is the picture, read off the frozen
-  // card's own bake otherwise — scaled and cropped exactly as `object-fit: cover` scales and crops it.
+  // card's own bake otherwise — the shape the stage shows (the other is `display: none`), scaled and
+  // cropped exactly as `object-fit: cover` scales and crops it.
   const stage = c.stage.getBoundingClientRect();
   let x;
   let y;
@@ -54,8 +55,10 @@ export function applyChoroplethState(root, state) {
     y = p.y;
     radius = (c.plan.oddRingDegrees * 512 * 2 ** c.handle.map.getZoom()) / 360;
   } else {
-    const baked = c.plan.fallback.cards[card];
-    const size = c.plan.fallback.size;
+    const shown = c.fallbacks.find((img) => Number(img.dataset.fallback) === card && img.getClientRects().length > 0);
+    const shape = c.plan.fallback[shown ? shown.dataset.shape : "wide"];
+    const baked = shape.cards[card];
+    const size = shape.size;
     const scale = Math.max(stage.width / size.width, stage.height / size.height);
     x = (stage.width - size.width * scale) / 2 + baked.odd[0] * scale;
     y = (stage.height - size.height * scale) / 2 + baked.odd[1] * scale;
@@ -112,6 +115,7 @@ function setUpChoropleth(root) {
     handle,
     stage: root.querySelector('[data-part="stage"]'),
     fallbacks: Array.from(root.querySelectorAll("[data-fallback]")),
+    cards: plan.fallback.wide.cards.length,
     swatches: Array.from(root.querySelectorAll("[data-class-swatch]")),
     key: root.querySelector('[data-part="key"]'),
     topCount: root.querySelector('[data-part="top-count"]'),
