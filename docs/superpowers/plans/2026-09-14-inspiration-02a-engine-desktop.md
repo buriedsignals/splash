@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-09-15** — D9 revised and D11 dropped (spec Part 2): no email-flow acquisition and no desktop Connect UI. Replaced by `docs/superpowers/plans/2026-09-15-inspiration-02a-engine-small.md`. Kept for the record; do not execute.
+
 # Inspiration 02a — Engine desktop: Connect for email-flow credentials — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

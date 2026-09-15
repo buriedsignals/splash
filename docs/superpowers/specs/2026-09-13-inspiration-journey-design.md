@@ -125,73 +125,76 @@ already falls back to the HTTP API.
   validated by `GET https://infoviz.design/auth/status` with the Bearer (the Datawrapper `/v3/me` pattern).
   The validator must require `200` **and** `authenticated === true`: `/auth/status` without a Bearer also
   answers 200 (anonymous), and an invalid Bearer answers `401 {error:"invalid_token"}`.
-Decided 2026-09-14 (Rémy):
-- **D9** — the journalist connects the account from **Indicator Labs** with a **Connect** button (email → press
-  Connect in the email), the Navigator way. No token is ever pasted, copied or shown.
+Decided 2026-09-14/15 (Rémy):
+- **D9 (revised 2026-09-15)** — the journalist gets the token from the **Splash inspiration page**, already signed in
+  there by email + Connect, with a **"Copy token for Indicator Labs"** button, and pastes it into **Indicator Labs →
+  Connected services → Infoviz → Enter token…** — the paste prompt Indicator Labs already has for Datawrapper.
+  Replaces the earlier "Connect button inside Indicator Labs": that needed a new Go email flow and a new desktop UI in
+  Engine for a step done once every 90 days.
 - **D10** — self-installs without Engine stay **anonymous** in the agent (no `INFOVIZ_TOKEN` environment variable).
-- **D11** — Engine shape: a **generic "email-flow" acquisition** for record credentials, not an infoviz-specific
-  auth verb. Infoviz is its first user.
+- **D11 (superseded)** — no generic "email-flow" acquisition in Engine; `INFOVIZ_TOKEN` is an ordinary paste record.
+- **D12 (2026-09-15)** — the agent reaches the account through a **`search_inspiration` tool on the existing Splash MCP
+  server** (`apps/goose/server.mjs`), which already runs with the Engine path and the journalist's real home and
+  talks to Engine through `installer/setup/engine-bridge.mjs`. The skill's command stays anonymous.
 
-Measured on Engine `origin/main` 52fed4f (why the shape is what it is):
-- Navigator's flow (`bsig/internal/auth/devicecode.go`, `bsig auth start|poll`) reads the poll outcome from a
-  body `status`; infoviz answers by HTTP code (202 / 200 / 410) with a POST poll — it cannot be reused as is,
-  and `docs/packages/auth-standard.md` forbids a shared auth library.
+Measured on Engine `origin/main` 52fed4f and Splash (why):
 - Credentials reach Splash only through `bsig run splash <op>` with a per-operation allowlist
   (`bsig/internal/run/splash.go`); a credential is mandatory for an operation that declares it.
-- The desktop's Splash "Connected services" rows come from `SPLASH_KEY_IDS` and render a paste prompt
-  (`renderer-product-controls.tsx` `CredentialControl`); Navigator has its own "Connect account" section.
+- Engine gives `SPLASH_BSIG_PATH` and `SPLASH_ENGINE_HOME` **only** to the Splash MCP server (`PrepareSplashMCP`,
+  `splash.go:305-313`); `bsig run splash --agent` and a host's shell tool get neither, so a skill command run by the
+  agent cannot reach Engine or the keychain.
+- `engineEnvironment` in `engine-bridge.mjs` drops loader hooks and credential-shaped variables and restores `HOME`
+  from `SPLASH_ENGINE_HOME`; `invokeEngine(bsigPath, args, stdin)` returns `{events, exitCode}`.
+- The desktop's Splash "Connected services" rows come from `SPLASH_KEY_IDS` and already render the paste prompt
+  (`renderer-product-controls.tsx` `CredentialControl`).
 
-#### Part 2a — Engine (`buriedsignals/engine`: `bsig` + desktop)
+#### Part 2a — Engine (`buriedsignals/engine`) — the small change
 
 - **Registry** (`bsig/internal/keys/registry.go`): `INFOVIZ_TOKEN` — `StorageRecord`, `SensitivitySecret`,
   `ValidatorPolicy: "authenticated-account-request"`, `ReplacementBehavior: "validate-before-atomic-replacement"`,
-  `BaseURL: "https://infoviz.design"`, a new acquisition field set to email-flow (existing entries: paste).
-  Metadata: name "Infoviz account", purpose "Raises Splash inspiration searches from 5 to 10 a day.",
-  acquisition URL `https://splash.buriedsignals.com/inspiration.html`.
+  `BaseURL: "https://infoviz.design"`, `ValidateRecord: ValidateInfovizRecord`; name "Infoviz account", purpose
+  "Raises Splash inspiration searches from 5 to 10 a day.", capability "Splash inspiration search", required
+  permissions ["A signed-in Infoviz account"], acquisition URL `https://splash.buriedsignals.com/inspiration.html`.
 - **Validator** `ValidateInfovizRecord` (`validators.go`): rejects any validation context; `GET {base}/auth/status`
   with the Bearer via `providerGET`; valid only on 200 **and** `authenticated === true`; one verified dimension.
-- **Email-flow acquisition** — a small infoviz package (its own wire contract) behind a generic verb:
-  - `bsig keys connect <ID> start <email>` → result `{flowId (opaque), expiresInSeconds, pollIntervalSeconds}`;
-  - `bsig keys connect <ID> poll <flowId>` → `pending` | `connected` (the token was received and written through
-    the record broker's `Replace`, which validates it) | `expired`; 429 / 5xx / network → still `pending`;
-  - the token never appears on stdout, in events or logs (registered with the redactor on arrival);
-  - bounded cadence (interval 1-60 s, lifetime ≤ 30 min, 30 s per request); no server-side cancel exists, so
-    cancel only forgets the flow;
-  - only IDs whose registry entry declares email-flow accept `connect`; `set`/`replace` stay refused paths for
-    them from the desktop (Engine still accepts `replace` on stdin for tests and recovery).
-- **Operation** `inspiration-search`: credentials `[INFOVIZ_TOKEN]`, provider timeout, request
-  `{parameters:{query}}` with a non-empty query ≤ 1000 characters and no story fields; added to
-  `execpolicy/policy.go`.
-- **Desktop**: `INFOVIZ_TOKEN` in `RECORD_KEY_IDS` and `SPLASH_KEY_IDS`; the Splash "Connected services" row for an
-  email-flow credential shows an email field and **Connect** / **Reconnect** instead of "Enter token…"; the main
-  process holds the flow id (renderer gets only an opaque flow token, as for Navigator); the renderer schedules
-  polls and also polls on window focus; copy: "Check your email and press Connect.", "Connected as {email hint}",
-  "The link expired. Connect again."; "Check saved token" validates as for other records.
-- **Tests**: the infoviz package (start, 202/200/410, 429/5xx retry, lifetime, redaction), the validator, pinned ID
-  lists (`keys_test.go`, `keys_verb_test.go`), Splash operation tables (`splash_test.go`), desktop contracts and
-  workflow tests; a release-runbook manual check "Infoviz Connect".
-- **Catalog**: `bsig/catalog/catalog.json` pins a Splash commit that contains Part 2b-1 (re-signed minisig).
+- **Operation** `inspiration-search`: credentials `[INFOVIZ_TOKEN]`, provider timeout, request `{parameters:{query}}`
+  with a non-empty query ≤ 1000 characters and no story fields; `validateSplashOperationRequest` case;
+  `execpolicy/policy.go` allowlist.
+- **Desktop**: `INFOVIZ_TOKEN` in `RECORD_KEY_IDS` and `SPLASH_KEY_IDS` (+ pinned test); the contracts test's allowlist
+  of registry acquisition URLs gains the inspiration page. No new UI.
+- **Tests**: validator, pinned ID lists (`keys_test.go`, `keys_verb_test.go`), Splash operation tables
+  (`splash_test.go`), desktop list tests. Precedent change set: commit `28e2c3e`.
+- **Catalog**: `bsig/catalog/catalog.json` pins a Splash commit that contains Part 2b-1 (re-signed minisig, Tom).
 - **Delivery**: a branch of the local Engine clone → a PR to `buriedsignals/engine` reviewed by Tom → a signed
   Indicator Labs release triggered by Tom. **Nothing is pushed to `buriedsignals/engine` without Rémy's explicit go.**
 
 #### Part 2b — Splash
 
-**2b-1 — safe before the Engine release** (an Engine that does not know the ID simply leaves the agent anonymous):
-- `skills/splash/scripts/run-operation.mjs`: `inspiration-search` in `OPERATION_IDS`; requires parameter `query`;
-  runs `skills/inspiration/scripts/sealed-search.mjs` as a child (as `datawrapper-produce` does).
-- `skills/inspiration/scripts/sealed-search.mjs`: bounded JSON on stdin `{query}`; reads `INFOVIZ_TOKEN`; searches
-  with the Bearer; on `invalid-token` runs exactly one anonymous search and returns it with
-  `accountNeedsReconnect: true`; prints the result JSON.
-- `search.mjs`: optional `token` (Bearer), new reason `invalid-token` (401 with a token).
-- `format.mjs`: when `accountNeedsReconnect`, first line "Your Infoviz account needs reconnecting: Indicator Labs →
-  Connected services → Infoviz → Reconnect." then the anonymous list.
-- Path choice inside the CLI (the agent still runs one command, `search.mjs --stdin`): if `SPLASH_BSIG_PATH` is set
-  and `bsig --json keys status INFOVIZ_TOKEN` reports it stored → `bsig run splash inspiration-search` with the
-  request JSON-encoded on stdin, and the result parsed from the run's `stdout`; otherwise (unset, not stored,
-  unknown ID, any bsig failure) → the direct anonymous search. The spawning lives in its own module, injected in
-  tests; no test spawns a process.
-- `SKILL.md`: one line — with an Infoviz account connected in Indicator Labs, the same command uses it; nothing is
-  done in chat.
+**2b-1 — safe before the Engine release**:
+- Already built and kept (2026-09-15): `search.mjs` optional `token` (Bearer, a blank token is no token) and reason
+  `invalid-token`; `format.mjs` reconnect sentence ("Your Infoviz account needs reconnecting: Indicator Labs →
+  Connected services → Infoviz → Reconnect."), `engine-failed` sentence and `accountNeedsReconnect` prefix;
+  `sealed-search.mjs` (bounded `{query}`, `INFOVIZ_TOKEN`, one anonymous retry on `invalid-token` flagged
+  `accountNeedsReconnect`); `run-operation.mjs` `inspiration-search` (query 1-1000 after trim → sealed entry).
+- Removed: `skills/inspiration/scripts/managed.mjs`, `engine.mjs` and their tests (they duplicated the bridge
+  without its environment rules). `cli.mjs` calls `searchInspiration` directly (anonymous).
+- **MCP tool** `search_inspiration({ query })` on the Splash MCP server:
+  - Engine installation (`SPLASH_BSIG_PATH` set): `invokeEngine(bsigPath, ["keys","status","INFOVIZ_TOKEN"])`; if the
+    terminal result says `stored: true` → `invokeEngine(bsigPath, ["run","splash","inspiration-search"],
+    {"parameters":{"query"}})` and the result parsed from the run's `data.stdout`; otherwise (not stored, unknown
+    ID on an older Engine, any failure before the run) → the direct anonymous search. Once the run has started, a
+    failure is `engine-failed` and nothing searches again.
+  - Self-install (no `SPLASH_BSIG_PATH`): the direct anonymous search.
+  - Returns `formatInspiration(result)` as text plus the structured result; the tool description says to pass only
+    the journalist's subject and never a credential.
+  - The decision lives in `apps/goose/inspiration.mjs` with `invokeEngineFn` and `searchFn` injected; tests never
+    spawn a process. The bridge's `status()` is not used: it refuses IDs outside `CREDENTIAL_IDS` until 2b-2.
+- `skills/inspiration/SKILL.md`: when the host exposes the Splash tool `search_inspiration`, call it with the
+  subject (it uses a connected Indicator Labs account); otherwise run `cli.mjs` (anonymous). Nothing about the
+  account is done or said in chat.
+- **Web page** (`landing/inspiration.html`): when signed in, a **"Copy token for Indicator Labs"** button next to Sign
+  out; it copies `account.token` to the clipboard (never shows it) and confirms "Copied. Paste it in Indicator Labs →
+  Connected services → Infoviz → Enter token…". The token is never rendered in the page.
 
 **2b-2 — only once the Engine release is live**:
 - `INFOVIZ_TOKEN` in `apps/goose/contract.mjs` `CREDENTIAL_IDS`, `installer/setup/engine-bridge.mjs`
