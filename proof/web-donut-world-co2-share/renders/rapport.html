@@ -431,7 +431,6 @@ svg.chart { display: block; }
     border-radius: 999px;
     line-height: 1.2;
     white-space: nowrap;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
   }
   .chart-figure .chart-level label input {
     position: absolute;
@@ -461,6 +460,22 @@ svg.chart { display: block; }
     color: var(--ink);
   }
   .chart-figure .chart-level label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+/* THE ONLY MOTION THIS CHROME EMITS, AND IT IS EMITTED LAST, INSIDE @media
+   (prefers-reduced-motion: no-preference), where `reduce` cannot reach it. It used to be one more
+   declaration in the pill's own rule, outside every query — so a reader who had asked their system
+   for no motion still got twelve chrome animations on a page whose own travel correctly snapped,
+   on every vocabulary that calls this module, which is every beat with a control. The three
+   declarations that SET the chosen state stay outside: the wash, the ring and the darkened words
+   arrive instantly under `reduce` rather than not at all. Top level and last, which is the idiom
+   every vocabulary already uses for its own motion (side.ts, reorder.ts, count.ts) rather than a
+   second convention; and outside the @supports block, where nesting a query is refused, because in
+   an engine without :has() nothing here changes a colour at all and a transition over changes that
+   never happen costs a reader nothing. */
+@media (prefers-reduced-motion: no-preference) {
+  .chart-figure .chart-level label {
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
 }
 
 /* The yardstick this beat declared: 7 options over "Suivre un pays".
