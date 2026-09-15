@@ -11,6 +11,13 @@ import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
 const CREDENTIAL_ID = "INFOVIZ_TOKEN";
 const OPERATION_ID = "inspiration-search";
 
+// `invokeEngine` defaults to a 90 s timeout, but the MCP SDK client's own default request timeout
+// is 60 s — worse case 10 s + 48 s stays under that 60 s budget, with room to spare before a client
+// retry could fire and start a second Engine search. Engine's own provider timeout for the
+// operation is 45 s, so 48 s gives it just enough room to time out on its own first.
+export const KEY_STATUS_TIMEOUT_MS = 10_000;
+export const OPERATION_TIMEOUT_MS = 48_000;
+
 function terminal(outcome) {
   const events = Array.isArray(outcome?.events) ? outcome.events : [];
   return events.length ? events[events.length - 1] : null;
@@ -23,7 +30,9 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
   async function accountStored() {
     if (!bsigPath) return false;
     try {
-      const outcome = await invokeEngineFn(bsigPath, ["keys", "status", CREDENTIAL_ID], "");
+      const outcome = await invokeEngineFn(bsigPath, ["keys", "status", CREDENTIAL_ID], "", {
+        timeoutMs: KEY_STATUS_TIMEOUT_MS,
+      });
       const event = terminal(outcome);
       return outcome.exitCode === 0 && event?.event === "result" && event.data?.stored === true;
     } catch {
@@ -42,6 +51,7 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
         bsigPath,
         ["run", "splash", OPERATION_ID],
         `${JSON.stringify({ parameters: { query: subject } })}\n`,
+        { timeoutMs: OPERATION_TIMEOUT_MS },
       );
     } catch (error) {
       return {
@@ -59,7 +69,14 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
     }
     try {
       const result = JSON.parse(event.data.stdout);
-      if (result && typeof result === "object" && typeof result.ok === "boolean") return result;
+      if (
+        result &&
+        typeof result === "object" &&
+        typeof result.ok === "boolean" &&
+        (result.ok ? Array.isArray(result.items) : typeof result.reason === "string")
+      ) {
+        return result;
+      }
     } catch {
       // reported as unreadable below
     }

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { createInspirationService } from "../inspiration.mjs";
+import {
+  createInspirationService,
+  KEY_STATUS_TIMEOUT_MS,
+  OPERATION_TIMEOUT_MS,
+} from "../inspiration.mjs";
 
 const BSIG = "/Applications/Indicator Labs.app/Contents/Resources/bsig";
 const DIRECT = {
@@ -18,8 +22,8 @@ const ACCOUNT = {
 function fakes({ status, run }: { status?: any; run?: any }) {
   const engineCalls: any[] = [];
   const directCalls: any[] = [];
-  const invokeEngineFn = async (path, args, stdin) => {
-    engineCalls.push({ path, args, stdin });
+  const invokeEngineFn = async (path, args, stdin, options) => {
+    engineCalls.push({ path, args, stdin, options });
     const answer = args[0] === "keys" ? status : run;
     if (answer instanceof Error) throw answer;
     return answer;
@@ -184,6 +188,39 @@ describe("createInspirationService", () => {
     await service.search("   ");
     expect(f.engineCalls).toEqual([]);
     expect(f.directCalls).toEqual([{ query: "   " }]);
+  });
+
+  it("should keep the status check and the run within a client's patience", async () => {
+    const f = fakes({ status: stored(true), run: ran(ACCOUNT) });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    await service.search("floods");
+    expect(f.engineCalls[0].options).toEqual({
+      timeoutMs: KEY_STATUS_TIMEOUT_MS,
+    });
+    expect(f.engineCalls[1].options).toEqual({
+      timeoutMs: OPERATION_TIMEOUT_MS,
+    });
+  });
+
+  it("should report a well-formed-but-empty run result as unreadable without a second search", async () => {
+    const f = fakes({
+      status: stored(true),
+      run: {
+        exitCode: 0,
+        events: [{ event: "result", data: { stdout: '{"ok":true}\n' } }],
+      },
+    });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    expect((await service.search("floods")).reason).toBe("engine-failed");
+    expect(f.directCalls).toEqual([]);
   });
 
   it("should format with the skill's own words", async () => {
