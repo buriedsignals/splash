@@ -88,6 +88,7 @@
 // beat for `top` and `height`, and it is stated rather than assumed.
 
 import { answerPieces, defaultPrintedText } from "./interaction-plan.ts";
+import { controlChromeCss } from "./control-chrome.ts";
 
 /** Where one band is drawn, in the geometry's own units. A rail is vertical here, so the band is a
  *  span of `top`/`height` on it; `x`/`width` are the rail's own position and the band's thickness. */
@@ -844,123 +845,25 @@ export function assertBrushChangesThePicture(
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a brush.
  *
- * A DELIBERATE COPY of `withdrawChromeCss`, not an import, and the cost is stated rather than hidden
- * — the same trade that file records against `stackChromeCss` and `render-web.mjs`'s `.chart-filter`
- * block. Reaching one of those would mean either shipping a control this beat does not want or
- * teaching another file's stylesheet a class it cannot see the declaration for. The blocks are held
- * together by the eye; the thing that would actually hurt if they drifted — a reader unable to
- * operate the control — is held by neither, but by `verify-web.mjs` driving a real keyboard.
- *
- * AND ONE PLACE IT NO LONGER COPIES THEM, WHICH IS THE POINT OF THE `pill` ARGUMENT. Those blocks
- * draw ONE rounded outline around the whole row of options and leave each option bare, so only the
- * chosen one — ink fill, ground words — reads as a control at all. Measured on this vocabulary's
- * own first page: six options at 13 px, five of them `#61605a` on the cream ground with no border
- * and no fill, i.e. a row of grey words beside a black pill. So the group's frame comes off, a real
- * gap goes between the options, and EVERY option carries its own outline — painted in a colour the
- * BEAT measured against the ground it actually sits on and handed in, because this file may not
- * measure one. `assertBrushDeclaration` refuses the declaration whose outline is under the floor.
- *
- * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
- * (`opacity: 0`, never `display: none`) and the whole treatment is behind
- * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets the plain radios
- * rather than six identical ones.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function brushChromeCss({
   scope,
-  pill,
 }: {
   scope: string;
-  /** What the option at rest is outlined in. One colour, measured by the beat against the ground —
-   *  the hovered, focused and chosen states are all the direction's own `--ink`, which is already
-   *  what this format draws its words in. */
-  pill: { outline: string };
+  /** Accepted and unused since the chrome moved into `control-chrome.ts`. The pill at rest
+   *  no longer carries an outline of its own — the owner refused a row of grey boxes over a
+   *  plot that is already a thicket of lines — so there is nothing left for a beat to measure
+   *  one against. Kept in the signature so the beat that hands one in still type-checks. */
+  pill?: { outline: string };
 }): string {
-  return `
-${scope} .chart-brush {
-  flex: 0 0 auto;
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-brush legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-brush .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-${scope} .chart-brush label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-brush input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not a band is chosen, so
-   choosing one never moves the plot underneath it. role="status" is on the container rather than on
-   each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
-${scope} .brush-notes {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  min-height: 1.5em;
-  font-size: var(--source-size);
-  color: var(--muted);
-}
-${scope} .brush-notes p { margin: 0; }
-
-@supports selector(:has(*)) {
-  /* NO FRAME AROUND THE GROUP, AND ONE AROUND EVERY OPTION — see this function's own header for the
-     measurement. The gap is what makes six outlines read as six objects rather than as one ruled
-     table; without it two 1px edges meet and the row goes back to looking like a single frame. The
-     two axes are not the same number and must not be: 6px ACROSS is what separates two outlines on
-     one row, while 2px DOWN is all a wrapped row can afford — at 375px this control wraps to three
-     rows on the direction that sets its display in 32px uppercase, where the page has no pixels to
-     spare and the format's window-fit rule pays for every one of them out of the plot. */
-  ${scope} .chart-brush .options {
-    gap: 2px 6px;
-    padding: 0;
-    border: 0;
-  }
-  /* 4px of vertical padding and not the 5px the frameless copies take, so that an option's OUTER
-     box is the same 25,6px it was before it had a border: the 1px edge is paid for out of the
-     padding rather than out of the plot below, which on this format's tightest direction at 375px
-     is the difference between the source line being on screen and being under the fold. Still a
-     24px touch target, which is what the 5px was there to protect. */
-  ${scope} .chart-brush label {
-    gap: 0;
-    padding: 4px 10px;
-    /* NO PER-OPTION EDGE. This control shipped one for a while and the owner's verdict on the
-       result was « l'encadré gris au filtre c'est moche » — a row of outlined boxes over a plot
-       that is already a thicket of lines reads as a second grid. The shared chrome frames the
-       GROUP and leaves each label bare, which is what every other control in this format does; a
-       pill still says it can be pressed, by its padding, its radius and its hover. Kept
-       transparent rather than removed so the chosen state's own border has something to swap and
-       the row cannot shift sideways by 2px when a reader changes their mind. */
-    border: 1px solid transparent;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
-  }
-  ${scope} .chart-brush label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  ${scope} .chart-brush label:hover { color: var(--ink); border-color: var(--ink); }
-  /* ink-on-ground, never the accent: the accent is what the argument is drawn in on this page, and a
-     control that borrowed it would make the one colour that means something also mean "you clicked
-     here". The chosen option keeps a border rather than dropping one: its own fill hides it, and a
-     pill that lost 2px of box on being chosen would shove the row sideways every time the reader
-     changed their mind. */
-  ${scope} .chart-brush label:has(input:checked) { background: var(--ink); color: var(--ground); border-color: var(--ink); }
-  ${scope} .chart-brush label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "brush",
+    notes: { reserve: "1.5em" },
+  });
 }

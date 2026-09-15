@@ -95,6 +95,7 @@
 // rendered in and measures them there, so nothing here names a colour.
 
 import { answerPieces, defaultPrintedText } from "./interaction-plan.ts";
+import { controlChromeCss } from "./control-chrome.ts";
 
 /**
  * One event on a followed trajectory: a step at which the followed competitor and one other swapped
@@ -618,105 +619,17 @@ export function assertFollowChangesThePicture(
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a follow.
  *
- * A DELIBERATE COPY of `foldChromeCss` and `levelChromeCss`, not an import, and the cost is stated
- * rather than hidden — the same trade each of those records against the others and against
- * `render-web.mjs`'s `.chart-filter` block. Reaching one of them would mean either shipping a control
- * this beat does not want or teaching another file's stylesheet a class it cannot see the declaration
- * for. The blocks are held together by the eye; the thing that would actually hurt if they drifted —
- * a reader unable to operate the control — is held by `verify-web.mjs` driving a real keyboard.
- *
- * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
- * (`opacity: 0`, never `display: none`) and the whole treatment is behind
- * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets the plain radios
- * rather than six identical ones.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function followChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-follow {
-  flex: 0 0 auto;
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-  /* A fieldset's default min-inline-size is min-content and a flex item's default min-width is auto,
-     so a row of pills simply grows to its content and takes the DOCUMENT with it — measured at
-     1351px wide in a 375px window on proof/web-slope-europe-lowcarbon. Both are load-bearing. */
-  min-inline-size: 0;
-  min-width: 0;
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-follow legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-follow .options {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px 12px;
-  /* One scrollable line rather than a wrapped block: a wrapped row of competitor names is tall, and
-     the height it takes comes straight off the plot under this format's window-fit rule. Nothing is
-     removed and no option leaves the keyboard's reach. */
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  min-width: 0;
-  /* SHRINK, NEVER GROW. a grow factor of 1 let the row take every pixel offered it, so the frame that
-     is meant to hug the options measured 1240px around 490px of content — a border with half a row
-     of nothing inside it. The scrollable line still needs to SHRINK when the window is narrower than
-     the options, which is the 1 in the shrink slot; growing past the content was never part of
-     that and is what read as odd. */
-  flex: 0 1 auto;
-}
-${scope} .chart-follow label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-follow input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is chosen,
-   so choosing one never moves the plot underneath it. role="status" is on the container rather than
-   on each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
-${scope} .follow-notes {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  font-size: var(--source-size);
-  color: var(--muted);
-}
-${scope} .follow-notes p { margin: 0; }
-
-@supports selector(:has(*)) {
-  ${scope} .chart-follow .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  ${scope} .chart-follow label {
-    gap: 0;
-    padding: 5px 10px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  ${scope} .chart-follow label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  ${scope} .chart-follow label:hover { color: var(--ink); }
-  /* ink-on-ground, never a series ink: on a rank chart colour is already carrying the subject, and a
-     control that borrowed it would make the colour that means "the claim" also mean "you clicked
-     here". */
-  ${scope} .chart-follow label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  ${scope} .chart-follow label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "follow",
+    rail: "scroll",
+    notes: { reserve: null },
+  });
 }

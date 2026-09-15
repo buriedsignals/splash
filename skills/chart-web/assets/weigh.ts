@@ -105,6 +105,8 @@
 //     page by `assertOneWeighing`. `descend.ts` records the mutation that earned the second one:
 //     dropping the stylesheet call left every view drawn on top of every other and went green.
 
+import { controlChromeCss } from "./control-chrome.ts";
+
 /** One mark the beat draws, in the order its `weights` arrays are written in. `value` is its place
  *  on the measured axis — the one number no weighting is allowed to move. */
 export type WeighMark = { key: string; value: number };
@@ -766,86 +768,18 @@ function defaultSlugOf(declaration: WeighDeclaration): string {
 }
 
 /**
- * The control's own chrome, emitted ONLY for a beat that declared a weighing.
+ * The control's own chrome, emitted ONLY for a beat that declared a weighting.
  *
- * A DELIBERATE COPY of the segmented treatment `render-web.mjs` gives `.chart-filter`, and the cost
- * is stated rather than hidden, exactly as `floor.ts` and `stack.ts` state it: the format's own
- * block is emitted only for a beat that declared a FILTER, which this beat has not and must not —
- * nothing leaves its picture. The two blocks are held together by the eye; the thing that would
- * actually hurt if they drifted, a reader unable to operate the control, is held by `verify-web.mjs`
- * driving a real keyboard.
- *
- * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
- * (`opacity: 0`, never `display: none`) and the whole treatment is behind
- * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets the plain radios
- * rather than three identical ones.
- *
- * THE GROUP'S FRAME HUGS ITS PILLS. `flex: 0 0 auto` and not `1 1 auto`: the owner refused a beat
- * that drew 1240 px of rounded border around 490 px of content, and this is the one line that
- * decides it.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function weighChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-weigh {
-  flex: 0 0 auto;
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-weigh legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-weigh .options { display: inline-flex; flex: 0 0 auto; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-${scope} .chart-weigh label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-weigh input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is chosen,
-   so choosing one never moves the plot underneath it. role="status" is on the container rather than
-   on each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
-${scope} .weigh-notes {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  min-height: 3em;
-  font-size: var(--source-size);
-  color: var(--muted);
-}
-${scope} .weigh-notes p { margin: 0; }
-
-@supports selector(:has(*)) {
-  ${scope} .chart-weigh .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  ${scope} .chart-weigh label {
-    gap: 0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  ${scope} .chart-weigh label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  ${scope} .chart-weigh label:hover { color: var(--ink); }
-  ${scope} .chart-weigh label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  ${scope} .chart-weigh label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "weigh",
+    notes: { reserve: "3em" },
+  });
 }

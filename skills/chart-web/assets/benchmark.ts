@@ -96,6 +96,8 @@
 // `.pt`. Moving them is also what lets the change be INTERPOLATED rather than cut, which `display`
 // can never be — the owner's own "ça pourrait changer en lerp smooth au lieu de saccader".
 
+import { controlChromeCss } from "./control-chrome.ts";
+
 /** Where a target came from, and the only three answers this file will accept. A fourth kind of
  *  provenance is a fourth kind of invented target until someone writes down how to check it. */
 export type BenchmarkProvenance =
@@ -701,85 +703,16 @@ export function assertOneBenchmark(
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a benchmark.
  *
- * A DELIBERATE COPY of the segmented treatment `render-web.mjs` carries for `.chart-filter`,
- * `stack.ts` for `.chart-stack`, `level.ts` for `.chart-level` and `cutoff.ts` for `.chart-cutoff`,
- * and the cost is stated rather than hidden: each is emitted only for a beat that declared ITS OWN
- * control, so reaching one from another would mean shipping a control the beat does not want.
- *
- * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
- * (`opacity: 0`, never `display: none`) and the whole treatment is behind
- * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets plain radios
- * rather than five identical ones.
- *
- * `flex: 0 1 auto` on the pill rail and `display: inline-flex` on the group, so the rounded frame
- * HUGS its own pills. A rail that grew to the figure's width drew 1240 px of border around 490 px of
- * content on this branch, and the owner refused it as a box around nothing.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function benchmarkChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-benchmark {
-  flex: 0 0 auto;
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-benchmark legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-benchmark .options { display: inline-flex; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-${scope} .chart-benchmark label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-benchmark input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not a target is chosen,
-   so choosing one never moves the plot underneath it. role="status" is on the container rather than
-   on each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
-${scope} .benchmark-notes {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  font-size: var(--source-size);
-  color: var(--muted);
-}
-${scope} .benchmark-notes p { margin: 0; }
-
-@supports selector(:has(*)) {
-  ${scope} .chart-benchmark .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  ${scope} .chart-benchmark label {
-    gap: 0;
-    padding: 5px 10px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  ${scope} .chart-benchmark label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  ${scope} .chart-benchmark label:hover { color: var(--ink); }
-  /* ink-on-ground, never the accent: the accent on a bullet already means "this is the row the
-     story is about", and a control that borrowed it would make a colour that means "Pologne" also
-     mean "you clicked here". */
-  ${scope} .chart-benchmark label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  ${scope} .chart-benchmark label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "benchmark",
+    notes: { reserve: null },
+  });
 }

@@ -118,6 +118,7 @@
 // walks those points, closes them, and measures what it closed.
 
 import { answerPieces, defaultPrintedText } from "./interaction-plan.ts";
+import { controlChromeCss } from "./control-chrome.ts";
 
 /** One spoke of the fixed frame: the key the beat's own data is keyed by, and the word on the spoke
  *  — which this vocabulary never moves and never hides. */
@@ -934,96 +935,16 @@ export function assertCountChangesThePicture(
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a count.
  *
- * A DELIBERATE COPY of `foldChromeCss` and `reorderChromeCss`, not an import, and the cost is stated
- * rather than hidden — the same trade those files record against `withdrawChromeCss` and
- * `render-web.mjs`'s `.chart-filter` block. Reaching one of those would mean either shipping a
- * control this beat does not want or teaching another file's stylesheet a class it cannot see the
- * declaration for.
- *
- * ONE ROUNDED OUTLINE AROUND THE WHOLE ROW, AND EVERY OPTION BARE INSIDE IT. That is this family's
- * settled treatment and it is not a preference: a per-option edge on every pill was shipped once on
- * this branch and the owner's verdict on the result was that the grey box around each one is ugly.
- * The group is framed; a chosen option is said with ink on ground, never with an edge of its own.
- *
- * The native radios underneath are what the reader actually operates. The pills are layered ON TOP
- * (`opacity: 0`, never `display: none`) and the whole treatment is behind
- * `@supports selector(:has(*))`, so an engine that cannot draw a checked pill gets the plain radios
- * rather than four identical ones.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function countChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-count {
-  flex: 0 0 auto;
-  margin: 10px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-count legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-count .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-${scope} .chart-count label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-count input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is chosen,
-   so choosing one never moves the plot underneath it. role="status" belongs on the container rather
-   than on each note: the notes come and go, and a live region that itself comes and goes announces
-   nothing. */
-${scope} .count-notes {
-  flex: 0 0 auto;
-  margin: 4px 0 0;
-  min-height: 1.5em;
-  font-size: var(--source-size);
-  color: var(--muted);
-  /* EVERY SENTENCE IN ONE GRID CELL, AND IT IS NOT A TIDINESS DECISION. These sentences are three
-     lines of arithmetic and they wrap to different heights, so revealing one with display grew the
-     row and pushed the drawing down -- measured at 1280 px on this beat's predecessor, choosing an
-     option moved the radar 15 px. On a control whose whole product is comparing one count with
-     another, a picture that jumps when you press the pill is the defect, not the cosmetic. Stacked
-     in one cell the container is always as tall as the LONGEST sentence, whichever is showing, and
-     the plot never moves. */
-  display: grid;
-}
-${scope} .count-notes p { grid-area: 1 / 1; margin: 0; }
-
-@supports selector(:has(*)) {
-  ${scope} .chart-count .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  ${scope} .chart-count label {
-    gap: 0;
-    padding: 5px 10px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  ${scope} .chart-count label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border-radius: 999px;
-  }
-  ${scope} .chart-count label:hover { color: var(--ink); }
-  /* ink-on-ground, never the accent: the accent is what the argument is drawn in on this page, and a
-     control that borrowed it would make the one colour that means something also mean "you clicked
-     here". */
-  ${scope} .chart-count label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  ${scope} .chart-count label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "count",
+    notes: { reserve: "1.5em", stacked: true },
+  });
 }

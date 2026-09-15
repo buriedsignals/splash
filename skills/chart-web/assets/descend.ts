@@ -84,6 +84,8 @@
 // note's own key are one function's answer — because the last time two of those were derived
 // differently, an ampersand in a group name emptied a whole map with nothing red (`filter.ts`).
 
+import { controlChromeCss } from "./control-chrome.ts";
+
 /** One branch: what it is called, what it holds, and what it owes the reader. */
 export type DescendOption = {
   /** The branch's own key in the beat's data. Slugged for every string the mechanism needs. */
@@ -361,65 +363,27 @@ export function descendCss(
   return lines.join("\n");
 }
 
-/** The control's own chrome. The segmented treatment is layered ON TOP of working radios
- *  (`opacity: 0`, never `display: none`) — the line between styling a control and destroying one —
- *  and every pill clears the 24x24 CSS px minimum target size (WCAG 2.2 SC 2.5.8). */
+/**
+ * The control's own chrome, emitted ONLY for a beat that declared a descent.
+ *
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
+ */
 export function descendChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-descend {
-  flex: 0 0 auto;
-  margin: 6px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px 10px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-${scope} .chart-descend > legend {
-  float: left;
-  padding: 0 10px 0 0;
-  color: var(--muted);
-}
-${scope} .chart-descend .options { display: flex; flex-wrap: wrap; gap: 3px; }
-${scope} .chart-descend label {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  min-width: 24px;
-  padding: 1px 10px;
-  border: 1px solid var(--grid);
-  border-radius: 999px;
-  cursor: pointer;
-  color: var(--muted);
-}
-${scope} .chart-descend input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-${scope} .chart-descend label:has(input:checked) {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-${scope} .chart-descend label:has(input:focus-visible) {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-/* The row costs NOTHING until a branch is chosen: the space belongs to the sentence, not to the
+  return controlChromeCss({
+    scope,
+    name: "descend",
+    margin: "6px 0 0",
+    notes: { margin: "0", reserve: null },
+    extra: `/* The row costs NOTHING until a branch is chosen: the space belongs to the sentence, not to the
    container that would hold one. A reserved row is the right call where a note is one line and the
    plot would jump under it; here a branch's sentence wraps to three or four lines on a phone, so
    reserving one changes nothing about the jump and takes a line off the picture at every width. */
-${scope} .descend-notes { flex: 0 0 auto; margin: 0; }
-${scope} .descend-notes p { margin: 4px 0 0; }
-`.trim();
+${scope} .descend-notes p { margin: 4px 0 0; }`,
+  });
 }
 
 /**

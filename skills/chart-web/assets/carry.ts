@@ -84,6 +84,8 @@
 // rather than counted as already printed. Everything this file draws carries its own `data-carry-…`
 // names, because those are read by nothing but the stylesheet it generates.
 
+import { controlChromeCss } from "./control-chrome.ts";
+
 /** One reading of the carried member, in the grid's own units. */
 export type CarryPoint = { year: number; value: number };
 
@@ -581,79 +583,17 @@ export function carryCss(
 /**
  * The control's own chrome, emitted ONLY for a beat that declared a carry.
  *
- * A DELIBERATE COPY of the segmented treatment `render-web.mjs` gives `.chart-filter`, `floorChromeCss`
- * gives `.chart-floor` and `datumChromeCss` gives `.chart-datum`, BYTE FOR BYTE in its selected-pill
- * rule. The owner has refused that pill three times in three forms and a repair is coming as one pass
- * over all of them; a local variation would be the only one left behind when it lands. The cost of
- * the copy is stated rather than hidden: the format's own block is emitted only for a beat that
- * declared a FILTER, which a beat using this file has not and must not — nothing leaves a facet grid,
- * and a grid that hid a panel would be a comparison with a hole in it.
- *
- * `.options` takes `flex: 0 1 auto` and not `1 1 auto`: the third ruling, and the measurement behind
- * it is 1240 px of frame around 490 px of pills.
+ * ONE DRAWING, IN ONE PLACE. This used to be forty lines of fieldset, legend, pill rail and
+ * reserved note row copied byte for byte from a sibling vocabulary, with a paragraph above it
+ * explaining that the copy was deliberate and that the copies were "held together by the eye".
+ * Twenty of them were, until they were not. `control-chrome.ts` carries the drawing and the
+ * measurements behind it; what is left here is the only thing that was ever this control's own.
  */
 export function carryChromeCss({ scope }: { scope: string }): string {
-  return `
-${scope} .chart-carry {
-  flex: 0 0 auto;
-  margin: 6px 0 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: center;
-  font-size: var(--filter-size);
-}
-/* float:left is the HTML spec's own opt-out from becoming the "rendered legend" the browser lifts
-   into the fieldset's border — inside a flex container the float itself does nothing. Without it the
-   legend takes a row of its own, which this format's window-fit rule pays for in plot height. */
-${scope} .chart-carry legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
-${scope} .chart-carry .options { display: inline-flex; flex: 0 1 auto; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
-${scope} .chart-carry label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
-${scope} .chart-carry input { cursor: pointer; margin: 0; }
-
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not a country is carried,
-   so choosing one never moves the grid underneath it. role="status" is on the container rather than
-   on each note: the notes come and go by display, and a live region that itself comes and goes
-   announces nothing. */
-${scope} .carry-notes {
-  flex: 0 0 auto;
-  margin: 2px 0 0;
-  min-height: 3em;
-  font-size: var(--source-size);
-  color: var(--muted);
-}
-${scope} .carry-notes p { margin: 0; }
-
-@supports selector(:has(*)) {
-  ${scope} .chart-carry .options {
-    gap: 0;
-    padding: 2px;
-    border: 1px solid var(--grid);
-    border-radius: 999px;
-  }
-  ${scope} .chart-carry label {
-    gap: 0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color 120ms ease, color 120ms ease;
-  }
-  ${scope} .chart-carry label input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    opacity: 0;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  ${scope} .chart-carry label:hover { color: var(--ink); }
-  ${scope} .chart-carry label:has(input:checked) { background: var(--ink); color: var(--ground); }
-  ${scope} .chart-carry label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-}
-`.trim();
+  return controlChromeCss({
+    scope,
+    name: "carry",
+    margin: "6px 0 0",
+    notes: { margin: "2px 0 0", reserve: "3em" },
+  });
 }
