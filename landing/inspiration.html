@@ -313,8 +313,6 @@
   #aout{flex:0 0 auto;white-space:nowrap}
   #aemail{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
   #acct{flex-wrap:wrap}
-  #acopy{flex:0 0 auto;white-space:nowrap}
-  #acopied{flex:1 0 100%;white-space:normal}
   /* Pushed right by its own margin and not by `space-between`: the gauge only
      exists once a search has been run, and before that the lone pill fell back
      to the left. The way into the agent does not move when a search lands. */
@@ -1100,8 +1098,6 @@
     </div>
     <div class="quota" id="acct" hidden>
       <span id="aemail"></span>
-      <button type="button" id="acopy">Copy token for Indicator Labs</button>
-      <span id="acopied" role="status" hidden></span>
       <button type="button" id="aout">Sign out</button>
     </div>
     <a class="mcplink" href="#agent">
@@ -1292,32 +1288,38 @@
   /* ===================================================================== *
    * THE WIRING.
    *
-   * Every request goes to the live infoviz backend, cross-origin, and none
-   * of them carries a cookie. Three things follow:
+   * Every request to the Infoviz API goes to
+   * splash-inspiration.buriedsignals.com, cross-origin but SAME-SITE: this
+   * page is served from splash.buriedsignals.com, and both hosts sit under
+   * buriedsignals.com. Three things follow:
    *
-   * 1. THE QUOTA IS READABLE. Requests go without credentials, so the
-   *    `X-RateLimit-*` headers the API exposes stay visible to this page.
+   * 1. THE ACCOUNT IS A COOKIE THE PAGE NEVER SEES. Signing in emails a
+   *    link; its Connect button, on the API's own host, sets an HttpOnly
+   *    `SameSite=Lax` session cookie and redirects back here. Lax cookies
+   *    travel on same-site requests, so every `fetch(API…)` sends it with
+   *    `credentials: 'include'`. No token reaches this page, none is stored,
+   *    and no `Authorization` header is sent: the page learns who is signed
+   *    in only by asking `/auth/status`, on load and when the tab comes back
+   *    into view (Connect may have been pressed in another tab). Signing out
+   *    is `POST /auth/logout`, which clears the cookie. With ACCOUNT_SIGN_IN
+   *    false the status is never asked: no sign-in offer, anonymous
+   *    searches only.
    *
-   * 2. THE ACCOUNT IS A BEARER TOKEN. Signing in emails a link; the reader
-   *    presses Connect there while this page polls `/auth/token/poll` until
-   *    the API hands the token over, once. It is kept in localStorage and
-   *    sent as `Authorization: Bearer`. A 401 means it expired or was
-   *    refused: the page forgets it and carries on anonymously. With
-   *    ACCOUNT_SIGN_IN false none of it runs: no sign-in offer, no stored
-   *    token, anonymous searches only.
+   * 2. THE QUOTA IS READABLE. The API answers this origin with credentials
+   *    allowed and exposes its `X-RateLimit-*` headers, so the gauge reads
+   *    them off every search, signed in or not.
    *
    * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. One `fetch` with the
-   *    public anon key calls `get_random_posts`. Its `Authorization` header
-   *    is that anon key, never the reader's token.
+   *    public anon key calls `get_random_posts`, without credentials. Its
+   *    `Authorization` header is that anon key, never anything of the
+   *    reader's.
    * ===================================================================== */
 
-  const API   = 'https://infoviz.design';
+  const API   = 'https://splash-inspiration.buriedsignals.com';
   const SB    = 'https://towumekminbldlabbyss.supabase.co';
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
-  const TOKEN_KEY = 'infoviz.token';
-  const ACCOUNT_SIGN_IN = true; // the sign-in for more searches infoviz.design offered; false leaves the page anonymous
-  const INDICATOR_LABS_ACCEPTS_INFOVIZ = false; // flipped when an Indicator Labs release stores INFOVIZ_TOKEN (spec 2b-2)
+  const ACCOUNT_SIGN_IN = true; // the sign-in for more searches the Infoviz gallery offers; false leaves the page anonymous
 
   const PER_PAGE = 10;
   /* SIX, NOT THREE. Three was the right number under a hero that took the
@@ -1336,37 +1338,20 @@
   let searched = false;  // featured, or a real result set
   let busy = false;
   let limit = 5, left = null;
-  let account = null;    // {token, email, expires_at} once signed in
-  let polling = 0;       // bumps on every sign-in, so a stale poll loop stops itself
+  let account = null;    // {email} while the API says this browser's session is signed in
+  let era = 0;           // bumps on sign-out, so a status answer already on its way is dropped
 
   /* ---------------------------------------------------------- the account */
-  /* The account lives in this browser only. Storage can be refused (private
-     windows, blocked site data); then the sign-in lasts as long as the page. */
-  const loadAccount = () => {
-    if (!ACCOUNT_SIGN_IN) { account = null; return; }
-    try {
-      const saved = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
-      const live = saved && typeof saved.token === 'string' && saved.token
-        && typeof saved.email === 'string' && saved.email
-        && !(saved.expires_at && Date.parse(saved.expires_at) <= Date.now());
-      account = live ? saved : null;
-    } catch { account = null; }
-  };
-  const saveAccount = (next) => {
+  /* The account is whatever `/auth/status` last said about the session
+     cookie. The page keeps nothing of it between loads. */
+  const setAccount = (next) => {
     account = next;
-    try {
-      if (next) localStorage.setItem(TOKEN_KEY, JSON.stringify(next));
-      else localStorage.removeItem(TOKEN_KEY);
-    } catch { /* storage refused: nothing to do, `account` still holds it */ }
     drawAccount();
   };
-  const authHeaders = () => (account ? { 'Authorization': 'Bearer ' + account.token } : {});
   const drawAccount = () => {
     $('acct').hidden = !account;
     $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
     $('aemail').title = account ? account.email : '';
-    $('acopy').hidden = !INDICATOR_LABS_ACCEPTS_INFOVIZ;
-    $('acopied').hidden = true;
   };
 
   /* ------------------------------------------------------------ the quota */
@@ -1580,8 +1565,8 @@
   /* ---------------------------------------------------------- the search */
   const ask = (q) => fetch(API + '/api/graphics/examples', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    credentials: 'omit',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ query: q }),
   });
 
@@ -1597,14 +1582,7 @@
     loading('Searching the gallery');
 
     try {
-      const had = account;
-      let res = await ask(q);
-      /* A refused token is forgotten, and the search happens anyway. */
-      if (res.status === 401 && had) {
-        if (account) saveAccount(null);
-        limit = 5; left = null;
-        res = await ask(q);
-      }
+      const res = await ask(q);
       readLimits(res);
 
       if (res.status === 429) {
@@ -1646,7 +1624,7 @@
     } catch (err) {
       all = [];
       box('ink', 'No answer', 'The gallery did not come back.',
-          esc(err.message || 'The request failed before it reached infoviz.design.'),
+          esc(err.message || 'The request failed before it reached the Infoviz gallery.'),
           '<button class="btn" type="button" id="retry">Try again</button>');
       const r = $('retry');
       if (r) r.addEventListener('click', () => search(q));
@@ -1789,7 +1767,8 @@
     + 'We\'ll email you a Connect link from Infoviz, the service behind this gallery.'));
 
   /* Closing the panel does not stop a sign-in in progress: the reader may
-     close it, open the email, press Connect, and this page still signs in. */
+     close it, open the email, press Connect, and this page signs in when it
+     comes back into view. */
   const closeModal = () => {
     veil.removeAttribute('data-open');
     $('vmsg').hidden = true;
@@ -1807,83 +1786,28 @@
     msg.className = 'mmsg ' + kind;
     msg.textContent = text;
   };
-  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  async function waitForConnect(requestId, intervalSeconds, run) {
-    /* The server's 410 is authoritative on when a sign-in is over; a deadline
-       computed from `expiresAt` only protects against a browser clock that
-       runs fast, which would otherwise give up on a link that is still good. */
-    const deadline = Date.now() + 16 * 60 * 1000;
-    while (run === polling && Date.now() < deadline) {
-      await wait(Math.max(1, Number(intervalSeconds) || 3) * 1000);
-      if (run !== polling) return;
-      let res;
-      try {
-        res = await fetch(API + '/auth/token/poll', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'omit',
-          body: JSON.stringify({ request_id: requestId }),
-        });
-      } catch { continue; }   // a dropped connection mid-wait is not an answer; ask again
-      if (run !== polling) return;
-      if (res.status === 202) continue;
-      if (res.status === 429 || (res.status >= 500 && res.status < 600)) continue;
-      if (res.status === 200) {
-        let d;
-        try { d = await res.json(); } catch {
-          say('ko', 'Sign-in failed. Send a new link to try again.');
-          $('vform').hidden = false;
-          return;
-        }
-        if (run !== polling) return;
-        if (!(typeof d.token === 'string' && d.token && typeof d.email === 'string' && d.email)) {
-          say('ko', 'Sign-in failed. Send a new link to try again.');
-          $('vform').hidden = false;
-          return;
-        }
-        saveAccount({ token: d.token, email: d.email, expires_at: d.expires_at });
-        say('ok', 'Connected as ' + d.email + '.');
-        await refreshAccount();
-        /* The anonymous 429 box may still be on screen behind the modal; a
-           reader who just signed in should not come back to a box that still
-           says the day is over. */
-        if ($('signin')) box('ink', 'Signed in', limit + ' searches a day now.', 'Search again to continue.');
-        setTimeout(closeModal, 1500);
-        return;
-      }
-      if (res.status === 410) break;   // this sign-in is over
-      say('ko', 'Sign-in failed. Send a new link to try again.');
-      $('vform').hidden = false;
-      return;
-    }
-    if (run !== polling) return;
-    say('ko', 'The sign-in link expired. Send a new one.');
-    $('vform').hidden = false;
-  }
-
   $('vform').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = $('vbtn');
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      const res = await fetch(API + '/auth/token/start', {
+      const res = await fetch(API + '/auth/send-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'omit',
+        credentials: 'include',
         body: JSON.stringify({ email: $('vmail').value }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
         say('ko', res.status === 422
           ? 'That email address does not look right.'
-          : (d.error || 'Something went wrong.'));
+          : res.status === 429
+            ? 'Too many sign-in links for now. Please try again later.'
+            : (d.error || 'Something went wrong.'));
         return;
       }
-      const run = ++polling;
       $('vform').hidden = true;
-      say('ok', 'Check your email and press Connect. This page signs in on its own.');
-      waitForConnect(d.request_id, d.poll_interval, run);
+      say('ok', 'Check your email and press Connect. You\'ll come back here signed in.');
     } catch {
       say('ko', 'Network error. Please try again.');
     } finally {
@@ -1891,45 +1815,58 @@
     }
   });
 
-  $('aout').addEventListener('click', () => {
-    polling++;
-    saveAccount(null);
+  $('aout').addEventListener('click', async () => {
+    era++;
+    try {
+      await fetch(API + '/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { /* offline: the next status probe says what the session really is */ }
+    era++;   // and again: a probe sent while the logout was on its way saw the old cookie
+    setAccount(null);
     limit = 5; left = null; drawQuota();
   });
 
-  /* The token goes to the clipboard, never onto the page: the reader pastes it into Indicator Labs,
-     whose protected prompt keeps it in the operating system's credential store. */
-  let copiedTimer = 0;
-  $('acopy').addEventListener('click', async () => {
-    if (!INDICATOR_LABS_ACCEPTS_INFOVIZ) return;
-    if (!account) return;
-    const note = $('acopied');
-    try {
-      await navigator.clipboard.writeText(account.token);
-      note.textContent = 'Copied. Paste it in Indicator Labs → Connected services → Infoviz account → Enter token…';
-    } catch {
-      note.textContent = 'Your browser refused the clipboard.';
-    }
-    note.hidden = false;
-    clearTimeout(copiedTimer);
-    copiedTimer = setTimeout(() => { note.hidden = true; }, 8000);
-  });
-
   /* ------------------------------------------------------- the auth probe */
-  /* With a token, ask what it is worth today; a refused one is forgotten. */
+  /* One question about the session cookie: who, if anyone, is signed in, and
+     what that is worth today. Asked on load and each time the tab comes back
+     into view, never on a timer. */
+  let probing = false;
   async function refreshAccount() {
-    if (!account) return;
+    if (!ACCOUNT_SIGN_IN || probing) return;
+    probing = true;
+    const run = era;
     try {
-      const res = await fetch(API + '/auth/status', { headers: authHeaders(), credentials: 'omit' });
-      if (res.status === 401) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
-      if (!res.ok) return;
+      const res = await fetch(API + '/auth/status', { credentials: 'include' });
+      if (run !== era || !res.ok) return;
       const d = await res.json();
-      if (d.authenticated !== true) { saveAccount(null); limit = 5; left = null; drawQuota(); return; }
+      if (run !== era) return;
+      if (!(d.authenticated === true && d.has_session === true
+            && typeof d.email === 'string' && d.email)) {
+        if (account) { setAccount(null); limit = 5; left = null; drawQuota(); }
+        return;
+      }
+      const arrived = !account;
+      setAccount({ email: d.email });
       limit = Number(d.daily_limit) || limit;
       if (typeof d.queries_remaining === 'number') left = d.queries_remaining;
       drawQuota();
+      if (!arrived) return;
+      /* The anonymous 429 box may still be on screen; a reader who just
+         signed in should not come back to a box that still says the day is
+         over. Nor to a panel still asking them to check their email. */
+      if ($('signin')) box('ink', 'Signed in', limit + ' searches a day now.', 'Search again to continue.');
+      if (veil.hasAttribute('data-open')) {
+        $('vform').hidden = true;
+        say('ok', 'Connected as ' + d.email + '.');
+        setTimeout(closeModal, 1500);
+      }
     } catch { /* the gauge stays on what the last search said */ }
+    finally { probing = false; }
   }
+
+  addEventListener('focus', refreshAccount);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshAccount();
+  });
 
   /* ------------------------------------------------------- the arrival */
   /* ONE observer for everything that arrives on scroll — the page's static
@@ -1955,7 +1892,7 @@
   }, { rootMargin: '0px 0px -14% 0px', threshold: 0.08 });
   for (const el of document.querySelectorAll('.up')) io.observe(el);
 
-  loadAccount(); drawAccount(); featured(); refreshAccount();
+  drawAccount(); featured(); refreshAccount();
 })();
 </script>
 
