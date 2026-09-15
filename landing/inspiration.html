@@ -1302,9 +1302,9 @@
    *    presses Connect there while this page polls `/auth/token/poll` until
    *    the API hands the token over, once. It is kept in localStorage and
    *    sent as `Authorization: Bearer`. A 401 means it expired or was
-   *    refused: the page forgets it and carries on anonymously. While
-   *    ACCOUNT_SIGN_IN is false (access moves to Navigator), none of it runs:
-   *    no sign-in offer, no stored token, anonymous searches only.
+   *    refused: the page forgets it and carries on anonymously. With
+   *    ACCOUNT_SIGN_IN false none of it runs: no sign-in offer, no stored
+   *    token, anonymous searches only.
    *
    * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. One `fetch` with the
    *    public anon key calls `get_random_posts`. Its `Authorization` header
@@ -1316,7 +1316,7 @@
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
   const TOKEN_KEY = 'infoviz.token';
-  const ACCOUNT_SIGN_IN = false; // access and rights move to Navigator; until then this page searches anonymously
+  const ACCOUNT_SIGN_IN = true; // the sign-in for more searches infoviz.design offered; false leaves the page anonymous
   const INDICATOR_LABS_ACCEPTS_INFOVIZ = false; // flipped when an Indicator Labs release stores INFOVIZ_TOKEN (spec 2b-2)
 
   const PER_PAGE = 10;
