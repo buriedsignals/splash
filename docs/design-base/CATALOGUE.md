@@ -57,7 +57,7 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | # | form | refs | static | web | video | scrolly |
 | ---: | --- | ---: | :---: | :---: | :---: | :---: |
 | 01 | Cartogram | 1 | ✅ | ◦ | ◦ | ◦ |
-| 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ◦ |
+| 02 | Choropleth | 1 | ✅ | ◦ | ◦ | ✅ |
 | 03 | Contour / isoline | 1 | ✅ | ◦ | ◦ | ◦ |
 | 04 | Dot density | 3 | ✅ | ◦ | ◦ | ◦ |
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
@@ -65,11 +65,12 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
 | 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ◦ |
 
-**Maps: 8 of 8 done in static, 0 of 8 in scrolly, 0 in web or video.**
+**Maps: 8 of 8 done in static, 1 of 8 in scrolly, 0 in web or video.**
 
 The eight map scrolly beats listed below were drawn in SVG from a Natural Earth extract clipped to a fixed window, so
 countries outside it are missing as soon as the view leaves it. The owner ruled on 2026-09-15 that they are redone
-through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.md`): unticked until then.
+through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.md` and its 2026-09-15 addendum): unticked
+until then. The choropleth is the first redone and validated.
 
 ## What is done, beat by beat
 
@@ -148,7 +149,7 @@ through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.
 | Treemap | scrolly | `proof/scrolly-treemap-europe-capacity` |
 | Waterfall | scrolly | `proof/scrolly-germany-electricity-bridge` |
 | Cartogram | scrolly | `proof/scrolly-cartogram-europe-lowcarbon` — SVG, to redo on MapTiler |
-| Choropleth | scrolly | `proof/scrolly-choropleth-europe-lowcarbon` — SVG, to redo on MapTiler |
+| Choropleth | scrolly | `proof/scrolly-choropleth-europe-lowcarbon` — live MapTiler, flat map (pilot, validated 2026-09-15) |
 | Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` — SVG, to redo on MapTiler |
 | Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` — SVG, to redo on MapTiler |
 | Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` — SVG, to redo on MapTiler |
