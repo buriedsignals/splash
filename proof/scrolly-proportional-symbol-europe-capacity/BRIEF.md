@@ -9,9 +9,11 @@ type: proportional-symbol
 phone to a wide desktop.
 
 The `proportional symbol` type in the scrolly format, drawn once per filed direction from the same stations, scale,
-claim and assertions as `static-proportional-symbol-europe-capacity`. The basemap is the Natural Earth geometry of
-the sibling scrolly map beats, in an equal-area projection, tinted by `plateTints` — not the static plate's baked
-MapTiler image, which a camera that moves cannot re-frame.
+claim and assertions as `static-proportional-symbol-europe-capacity`. The map is a live MapTiler map (flat Web
+Mercator) driven by `plan.mjs` (addendum 2026-09-15): every country comes from the basemap, the circles are circle
+layers over it, one per rank band, and the largest station's name is a symbol layer. One frozen image per card is
+baked from the same plan under the live map (`fallback/`). The page carries `__MAPTILER_KEY__`; the key is
+substituted at delivery.
 
 ## The choreography
 
@@ -29,17 +31,25 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
 
 ## Precision
 
-- **Laid out in the reader's pixels**: the largest circle takes a radius the stage allows and every other the radius
-  its capacity's area gives it; the key's circles are computed by the same function. The close-up grows radii gently,
-  so a crowd opens without the key's scale breaking.
+- **Area is capacity**: a circle's radius is √(MW / 6,000 MW) times the largest station's radius, and the largest
+  takes the radius the SVG beat gave it at the whole-map camera on a 1280 × 800 page (27.8 px). Every other camera and
+  stage takes it through one zoom interpolation set at mount, growing by 2^(0.35 · Δzoom) — the SVG's gentle close-up
+  growth. No frame sets a radius.
+- **Largest first, with constant bindings**: the stations are split into rank bands (1, 2–10, 11–100, 101–193,
+  194–1,000, the rest), each into nuclear and not; a band's opacity climbs as the count passes its ranks. The plate's
+  cut (193 stations of 400 MW or more) is a band edge.
 - **The counter is the scroll's own**: it reads the count the reader has reached and the running share of the power,
   from a cumulative sum computed in node.
-- **A phone keeps the largest station clear of the resting card**: the whole-map camera there holds it in the upper
-  third of the stage; the close-up still centres its subject both ways.
+- **The key states the scale at the whole-map camera** on the reader's stage, by the same radius rule; its circles
+  fade while the camera travels onto the close-up, where they would no longer be true.
+- **A phone keeps the largest station clear of the resting card**: on a stage taller than the study window the whole
+  map sits at the bottom of the stage (`camAlignY: 1`); the close-up centres France's nuclear sites on both axes.
 - **Every sentence is asserted**: the largest station is the Ukrainian 6,000 MW nuclear site at Zaporizhzhia's
   coordinates, a hundred stations are under 2 % of the sites and over a third of the power, most of them nuclear,
-  nuclear is under 1 % of the sites and over 30 % of the power, the cut carries over half of it.
+  nuclear is under 1 % of the sites and over 30 % of the power, the cut carries over half of it; the named station
+  and every French nuclear site are in their card's view on a desktop and a phone stage.
 
 ## Directions
 
-`creme`, `nocturne`, `rapport` — `renders/<id>.html`, from `render-directions-scrolly.mjs`.
+`creme` — `renders/creme.html`, from `render-directions-scrolly.mjs` (live map). `nocturne` and `rapport` are still the
+SVG pages until the owner has seen creme.

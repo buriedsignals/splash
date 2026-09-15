@@ -6,38 +6,42 @@
  * arriving largest first while a counter keeps their share of the sites and of the power, nuclear isolated, the field
  * filled to all 8,900 until it closes, then the static plate's cut.
  *
- * THE STATIC PLATE'S RULES ARE THE FLOOR: area proportional to capacity, the radius on a square root and the key's
- * circles computed by the same function; hollow circles, so a large one never erases the small ones under it; the
- * basemap gives up its contrast; the cut is printed on the plate with its reason.
+ * THE MAP IS A LIVE MAPTILER MAP (flat Web Mercator) DRIVEN BY THE PLAN (`plan.mjs`): the circles and the largest
+ * station's name are MapLibre layers over the basemap's own land and sea, and the scroll moves the camera and the
+ * paint (`symbol-drive.mjs`). Outside the map, and so outside the plan: the counter and its notes above it, the key
+ * and the cut below it.
  *
- * `symbol-drive.mjs` paints the map on a canvas in the reader's pixels. What is rendered here is the last card's
- * picture as an SVG, for a reader without a script.
+ * THE STATIC PLATE'S RULES ARE THE FLOOR: area proportional to capacity, the key's circles computed from the same
+ * radius at the whole-map camera they are read with; hollow circles, so a large one never erases the small ones under it; the
+ * basemap gives up its contrast; the cut is printed with its reason.
+ *
+ * UNDER THE LIVE MAP, ONE FROZEN IMAGE PER CARD (`live-map-cards.mjs`). THE MARKUP IS CARD 1; a reader without a
+ * script gets the last card — the plate's cut, its note and its key.
  */
 
 import type { CSSProperties } from "react";
 import {
   adjustToContrast,
-  mix,
-  NON_TEXT_CONTRAST_MIN,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
+import {
+  CardImages,
+  noScriptCss,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
 type Style = Record<string, string | number>;
-type Box = { x: number; y: number; w: number; h: number };
 
 export function DirectedProportionalScrolly({
-  width,
-  height,
-  land,
-  stations,
-  subjectFuel,
+  plan,
+  fallbacks,
+  reference,
   cumulative,
-  threshold,
-  europeBox,
-  zoomBox,
-  largest,
+  maxMw,
+  firstCounter,
+  firstSwatchPx,
   sizes,
-  tints,
+  circle,
   words,
   alt,
   regs,
@@ -45,21 +49,21 @@ export function DirectedProportionalScrolly({
   accent,
   ink,
   muted,
+  water,
 }: {
-  width: number;
-  height: number;
-  land: string;
-  /** [x, y, fuel index, capacity in MW], largest first */
-  stations: [number, number, number, number][];
-  subjectFuel: number;
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  reference: { width: number; height: number };
   /** running share of the capacity, in %, after each station largest first */
   cumulative: number[];
-  threshold: number;
-  europeBox: Box;
-  zoomBox: Box;
-  largest: string;
+  maxMw: number;
+  /** the counter as card 1 reads it */
+  firstCounter: string;
+  /** the largest station's radius, in CSS px, at the whole-map camera on the stage the page is measured at
+   *  (1280 × 800): the key's first paint, and the box each of its circles is reserved */
+  firstSwatchPx: number;
   sizes: { mw: number; label: string }[];
-  tints: { water: string; land: string };
+  circle: string;
   words: {
     unit: string;
     counter: string;
@@ -67,7 +71,6 @@ export function DirectedProportionalScrolly({
     cutNote: string;
     circleIs: string;
     cut: string;
-    total: string;
   };
   alt: string;
   regs: Record<
@@ -78,12 +81,8 @@ export function DirectedProportionalScrolly({
   accent: string;
   ink: string;
   muted: string;
+  water: string;
 }) {
-  const { water, land: landFill } = tints;
-  const coast = mix(landFill, ink, 0.12);
-  const circle =
-    adjustToContrast(accent, landFill, NON_TEXT_CONTRAST_MIN) ?? accent;
-  const subject = adjustToContrast(ink, landFill, TEXT_CONTRAST_MIN) ?? ink;
   const accentInk =
     adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
   const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
@@ -100,25 +99,25 @@ export function DirectedProportionalScrolly({
     alignItems: "center",
     gap: "6px",
   };
-  const maxMw = stations[0][3];
-  const staticR = (mw: number) => 14 * Math.sqrt(mw / maxMw);
+  const scope = '[data-part="symbols"]';
+  const shapes = shapeSelectionCss(scope, reference);
+  const noScript =
+    noScriptCss(scope, fallbacks.length - 1, [
+      '[data-part="cut-note"]',
+      '[data-part="cut"]',
+    ]) + `${scope} [data-part="counter"]{opacity:0!important}`;
+  // The key's ring is inset by 1.5 px, so its centre line sits on the map's ring: a diameter of 2·r + 1.5.
+  // EACH CIRCLE SITS CENTRED IN A BOX OF FIXED SIZE: the driver resizes it for the stage, and a key row that grew
+  // with it would shrink the stage the map's zoom is read from.
+  const swatch = (mw: number) =>
+    `${2 * firstSwatchPx * Math.sqrt(mw / maxMw) + 1.5}px`;
 
   return (
     <div
+      data-part="symbols"
       role="img"
       aria-label={alt}
-      data-symbols={JSON.stringify({
-        width,
-        height,
-        land,
-        stations,
-        subjectFuel,
-        cumulative,
-        threshold,
-        europeBox,
-        zoomBox,
-        colours: { water, land: landFill, coast, circle, subject },
-      })}
+      data-symbols={JSON.stringify({ cumulative, maxMw })}
       style={{
         position: "absolute",
         inset: 0,
@@ -130,6 +129,11 @@ export function DirectedProportionalScrolly({
         padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
       }}
     >
+      <noscript
+        style={{ display: "none" }}
+        dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }}
+      />
+      <style dangerouslySetInnerHTML={{ __html: shapes }} />
       <div
         style={{
           display: "flex",
@@ -146,9 +150,9 @@ export function DirectedProportionalScrolly({
           <span
             data-part="counter"
             data-template={words.counter}
-            style={{ ...regs.value, ...slot, color: inkOnGround, opacity: 0 }}
+            style={{ ...regs.value, ...slot, color: inkOnGround }}
           >
-            {words.total}
+            {firstCounter}
           </span>
           <span
             data-part="subject-note"
@@ -158,7 +162,7 @@ export function DirectedProportionalScrolly({
           </span>
           <span
             data-part="cut-note"
-            style={{ ...regs.value, ...slot, color: accentInk }}
+            style={{ ...regs.value, ...slot, color: accentInk, opacity: 0 }}
           >
             {words.cutNote}
           </span>
@@ -174,61 +178,18 @@ export function DirectedProportionalScrolly({
           background: water,
         }}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMidYMid slice"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <path
-            d={land}
-            fill={landFill}
-            fillRule="evenodd"
-            stroke={coast}
-            strokeWidth={0.6}
-          />
-          {stations
-            .filter((s) => s[3] >= threshold)
-            .map((s, i) => (
-              <circle
-                key={i}
-                cx={s[0]}
-                cy={s[1]}
-                r={staticR(s[3])}
-                fill="none"
-                stroke={circle}
-                strokeWidth={s[2] === subjectFuel ? 1.4 : 0.9}
-              />
-            ))}
-        </svg>
-        <canvas
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div
+          data-part="live"
+          style={{ position: "absolute", inset: 0, opacity: 0 }}
+        />
+        <script
+          type="application/json"
+          data-part="plan"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(plan).replace(/</g, "\\u003c"),
           }}
         />
-        <span
-          data-part="largest"
-          style={{
-            ...regs.annot,
-            position: "absolute",
-            left: 0,
-            top: 0,
-            color: inkOnGround,
-            whiteSpace: "nowrap",
-            textShadow: `0 0 2px ${landFill}, 0 0 3px ${landFill}, 0 0 4px ${landFill}`,
-            opacity: 0,
-          }}
-        >
-          {largest}
-        </span>
       </div>
 
       <div style={{ display: "grid", gap: "4px" }}>
@@ -244,20 +205,35 @@ export function DirectedProportionalScrolly({
           {sizes.map((s) => (
             <span key={s.mw} style={keyItem}>
               <span
-                data-mw={s.mw}
                 style={{
+                  position: "relative",
                   display: "inline-block",
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  boxShadow: `inset 0 0 0 1.5px ${circle}`,
+                  width: swatch(s.mw),
+                  height: swatch(s.mw),
                 }}
-              />
+              >
+                <span
+                  data-mw={s.mw}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: swatch(s.mw),
+                    height: swatch(s.mw),
+                    borderRadius: "50%",
+                    boxShadow: `inset 0 0 0 1.5px ${circle}`,
+                  }}
+                />
+              </span>
               {s.label}
             </span>
           ))}
         </span>
-        <span data-part="cut" style={{ ...regs.axis, color: mutedInk }}>
+        <span
+          data-part="cut"
+          style={{ ...regs.axis, color: mutedInk, opacity: 0 }}
+        >
           {words.cut}
         </span>
       </div>
