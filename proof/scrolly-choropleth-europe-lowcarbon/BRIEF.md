@@ -37,6 +37,12 @@ Each direction keeps its own palette and faces.
   level-0 polygon below tile zoom 4, so it is painted from its level-1 units below zoom 4 (absent from tiles at zoom ≤ 1).
   The fills are split into one layer per class and kept/filtered group, so every bound opacity is data-constant: a
   binding that read `iso_a2` made MapLibre reload every tile on every frame (`validateScrollyPlan` refuses it now).
+- **The coast is the basemap's.** The class fills, the no-data fill and the borders come from MapTiler Countries,
+  whose coast is generalised per zoom, so they are drawn beneath the basemap's water (`beneath: "water"`, mounted before
+  the style's first water fill): the coast a reader sees is the basemap's own. Measured on creme against a basemap-only
+  capture, the Countries geometry stood over the sea by 1.5–3.6 CSS px on average (Norwegian fjords, Dalmatia,
+  Montenegro, the Aegean, the Peloponnese); beneath the water, 0.01–0.19 px, 0.55 px at Montenegro where the ring
+  crosses the coast. Inland, borders stay Countries' polygon edges, visibly straight-segmented at the close-up.
 - **Names as symbol layers at the beat's seats.** `seats.json` freezes, in [lon, lat], the most interior point of each
   country's largest Natural Earth ring (the SVG version's own seats, matched to 0.001 frame units; provenance at the top
   of the file, written by `seats.mjs`). Faces are the ones MapTiler really serves, each compared with the Noto Sans

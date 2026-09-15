@@ -60,12 +60,15 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
     const reached = clamp(["-", ["*", { $state: "classes" }, n], g.klass]);
     const paint = { paint: { "fill-color": classFills[g.klass], "fill-opacity": 0 }, bindings: { "fill-opacity": g.kept ? reached : ["*", reached, ["-", 1, { $state: "filter" }]] } };
     const byCode = ["match", ["get", ISO], g.members, true, false];
-    classLayers.push({ id: g.id, type: "fill", source: countries, sourceLayer: LAYER, filter: ["all", ["==", ["get", LEVEL], 0], byCode], ...paint });
+    // BENEATH THE BASEMAP'S WATER: the coast a reader sees is the basemap's, never MapTiler Countries' coarser one
+    // (spec §1.3, the two coastlines; owner's choice 2026-09-15). Inland, the fills and borders are Countries'.
+    classLayers.push({ id: g.id, type: "fill", beneath: "water", source: countries, sourceLayer: LAYER, filter: ["all", ["==", ["get", LEVEL], 0], byCode], ...paint });
     const small = g.members.filter((code) => SMALL_BELOW_Z4.includes(code));
     if (small.length)
       classLayers.push({
         id: `${g.id}-small`,
         type: "fill",
+        beneath: "water",
         source: countries,
         sourceLayer: LAYER,
         maxzoom: 4,
@@ -114,6 +117,7 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
       {
         id: "missing",
         type: "fill",
+        beneath: "water",
         source: countries,
         sourceLayer: LAYER,
         filter: ["all", ["==", ["get", LEVEL], 0], ["match", ["get", ISO], missing.map((m) => m.iso2), true, false]],
@@ -125,6 +129,9 @@ export function choroplethPlan({ tints, classFills, missingFill, border, shares,
       {
         id: "borders",
         type: "line",
+        // Countries has only polygons, so its outlines trace its coast as well as its borders: beneath the
+        // water too, or the coarser coast is drawn back over the sea as a line.
+        beneath: "water",
         source: countries,
         sourceLayer: LAYER,
         filter: ["==", ["get", LEVEL], 0],
