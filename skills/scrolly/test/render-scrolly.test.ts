@@ -1,5 +1,5 @@
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createElement } from "react";
@@ -20,7 +20,10 @@ import {
 } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep, measureProgress } from "../assets/interaction.mjs";
-import { assertFontsEmbedded, embeddedFacesInHtml } from "../scripts/typefaces.mjs";
+import {
+  assertFontsEmbedded,
+  embeddedFacesInHtml,
+} from "../scripts/typefaces.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other format's
@@ -1054,5 +1057,38 @@ describe("render — the seed's own runner", () => {
     for (const step of STEPS_META) {
       for (const p of step.prose(facts)) expect(html).toContain(p);
     }
+  });
+});
+
+describe("vendor scripts", () => {
+  const baseArgs = {
+    steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+    title: "t",
+    source: "s",
+    ground: "#FFFFFF",
+    outDir: "/tmp/scrolly-test-vendor",
+    name: "vendor-test.html",
+  };
+
+  it("should inline a vendor script in the head, before the reveal driver runs", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-probe.html",
+      vendor: [{ css: ".vendor-probe{}", js: "window.__vendorProbe = 1;" }],
+    });
+    const html = readFileSync(outPath, "utf8");
+    const head = html.slice(0, html.indexOf("</head>"));
+    expect(head).toContain("window.__vendorProbe = 1;");
+    expect(head).toContain(".vendor-probe{}");
+  });
+
+  it("should refuse a vendor script that closes its own script tag", async () => {
+    await expect(
+      renderScrolly({
+        ...baseArgs,
+        name: "vendor-bad.html",
+        vendor: [{ js: "</script>" }],
+      }),
+    ).rejects.toThrow(/closing script tag/);
   });
 });

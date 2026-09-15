@@ -84,6 +84,7 @@ async function renderScrolly({
   eyebrow = null,
   lang = "en",
   reveal = null,
+  vendor = [],
 }) {
   if (!(proseLane >= 0 && proseLane < 0.6))
     throw new Error(
@@ -147,6 +148,13 @@ async function renderScrolly({
     if (/<\/script/i.test(reveal.driver))
       throw new Error("reveal.driver contains a closing script tag and cannot be inlined");
   }
+
+  for (const v of vendor)
+    if (/<\/script/i.test(v.js ?? "") || (/<\/style/i.test(v.css ?? "")))
+      throw new Error("a vendor asset contains a closing script tag and cannot be inlined");
+  const vendorHead = vendor
+    .map((v) => `${v.css ? `<style>${v.css}</style>` : ""}${v.js ? `<script>${v.js}</script>` : ""}`)
+    .join("\n");
 
   const frameHtml = steps
     .map((step, i) => {
@@ -213,6 +221,7 @@ initReveal(document.querySelector('[data-reveal="visual"]'), ${JSON.stringify(re
   const page = (css) => `<!doctype html>
 <html lang="${lang}">
 <head>
+${vendorHead}
 <meta charset="utf-8">
 <title>${escapeHtml(titleForms[0])}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
