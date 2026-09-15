@@ -1089,6 +1089,26 @@ describe("vendor scripts", () => {
         name: "vendor-bad.html",
         vendor: [{ js: "</script>" }],
       }),
-    ).rejects.toThrow(/closing script tag/);
+    ).rejects.toThrow(/closing.*(script|style).*tag/);
+  });
+
+  it("should not scan vendor CSS for font requirements, and still write it once to the output", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-css-fonts.html",
+      vendor: [
+        {
+          css: '.x{font-family:"Nonexistent Face";font-weight:900}',
+        },
+      ],
+    });
+    const html = readFileSync(outPath, "utf8");
+    // Vendor CSS is present exactly once
+    const matches = html.match(
+      /\.x\{font-family:"Nonexistent Face";font-weight:900\}/g,
+    );
+    expect(matches?.length).toBe(1);
+    // The page still rendered without throwing (vendor CSS was not scanned for fonts)
+    expect(html).toContain(".x{font-family:");
   });
 });

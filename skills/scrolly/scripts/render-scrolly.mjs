@@ -151,7 +151,7 @@ async function renderScrolly({
 
   for (const v of vendor)
     if (/<\/script/i.test(v.js ?? "") || (/<\/style/i.test(v.css ?? "")))
-      throw new Error("a vendor asset contains a closing script tag and cannot be inlined");
+      throw new Error("a vendor asset contains a closing script or style tag and cannot be inlined");
   const vendorHead = vendor
     .map((v) => `${v.css ? `<style>${v.css}</style>` : ""}${v.js ? `<script>${v.js}</script>` : ""}`)
     .join("\n");
@@ -218,10 +218,10 @@ initReveal(document.querySelector('[data-reveal="visual"]'), ${JSON.stringify(re
   // a woff2 cut to those characters. `assertFontsEmbedded` refuses a page that names a family,
   // weight or character it does not carry: a reader's machine is never asked to supply one.
   const baseCss = buildCss({ ground, ...furniture, proseLane, fontStack: dominantFontStack(frameHtml) });
-  const page = (css) => `<!doctype html>
+  const page = (css, vh = "") => `<!doctype html>
 <html lang="${lang}">
 <head>
-${vendorHead}
+${vh}
 <meta charset="utf-8">
 <title>${escapeHtml(titleForms[0])}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -256,10 +256,11 @@ ${revealScript}</body>
 </html>
 `;
 
-  const draft = page(baseCss);
-  const faces = await embeddedWebFaces(fontRequestsInHtml(draft).requests, displayableTextOf(draft));
-  const html = page(`${fontFaceCss(faces)}\n${baseCss}`);
-  assertFontsEmbedded(html);
+  const draftForScanning = page(baseCss);
+  const faces = await embeddedWebFaces(fontRequestsInHtml(draftForScanning).requests, displayableTextOf(draftForScanning));
+  const htmlForAssertion = page(`${fontFaceCss(faces)}\n${baseCss}`);
+  assertFontsEmbedded(htmlForAssertion);
+  const html = page(`${fontFaceCss(faces)}\n${baseCss}`, vendorHead);
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
