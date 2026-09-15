@@ -184,23 +184,42 @@ export function markScaleOf(plan, scale, layerId = "mw-marks") {
   return (layer && layer.radius) === "fixed" ? 1 : scale;
 }
 
+/** One MapLibre source per distinct vector URL, so two layers reading the same tiles fetch them once;
+ *  a GeoJSON layer keeps a source named after itself, as before. */
+export function sourceIdOf(layer) {
+  if (layer.source && layer.source.url) return `src:${layer.source.url.replace(/[?#].*$/, "")}`;
+  return layer.id;
+}
+
 /** Run inside the page. Sources first, then layers in plan order — a leader drawn over its own word
  *  is a scratch.
  *
  *  A layer that declares a `radius` strategy gets its `circle-radius` from `radiusPaintOf` rather
  *  than from its own paint. Adding a circle layer with NO radius at all would draw MapLibre's own
  *  default 5px for one frame, which is a visible flash of the wrong circle — so the strategy is
- *  applied at mount, and a camera-scaled layer is re-derived once the camera has actually fitted. */
+ *  applied at mount, and a camera-scaled layer is re-derived once the camera has actually fitted.
+ *
+ *  A layer that reads a VECTOR source must name its source layer: without one MapLibre adds a layer
+ *  that matches no feature and draws nothing, silently — the empty-layer shape again. */
 export function mountPlan(map, plan) {
-  for (const layer of plan.layers)
-    if (!map.getSource(layer.id)) map.addSource(layer.id, { type: "geojson", data: layer.data });
+  for (const layer of plan.layers) {
+    const id = sourceIdOf(layer);
+    if (map.getSource(id)) continue;
+    if (layer.source) {
+      if (!layer.sourceLayer)
+        throw new Error(`layer "${layer.id}" reads a vector source and names no source layer — it would draw nothing`);
+      map.addSource(id, { type: layer.source.type, url: layer.source.url });
+    } else map.addSource(id, { type: "geojson", data: layer.data });
+  }
   for (const layer of plan.layers) {
     const paint = { ...(layer.paint || {}) };
     if (layer.radius) paint["circle-radius"] = radiusPaintOf(layer, plan, cameraScale(plan, map));
     map.addLayer({
       id: layer.id,
       type: layer.type,
-      source: layer.id,
+      source: sourceIdOf(layer),
+      ...(layer.sourceLayer ? { "source-layer": layer.sourceLayer } : {}),
+      ...(layer.filter ? { filter: layer.filter } : {}),
       ...(layer.minzoom === undefined ? {} : { minzoom: layer.minzoom }),
       ...(layer.maxzoom === undefined ? {} : { maxzoom: layer.maxzoom }),
       ...(layer.layout ? { layout: layer.layout } : {}),
