@@ -27,7 +27,10 @@ import {
   assertRestoreDeclaration,
   assertOneRestore,
   restoreClearOf,
+  restoreCrowdingOf,
+  restoreDisplacementOf,
   restoreNamesOf,
+  restoreRelaxation,
   restoreSlugOf,
 } from "../../skills/map-web/assets/restore.ts";
 import { DirectedCartogramWeb } from "./DirectedCartogramWeb.tsx";
@@ -178,30 +181,28 @@ const gridPlace = new Map(
   seats.map((s) => [s.code, { cx: s.col * CELL + TILE / 2, cy: s.row * CELL + TILE / 2, side: TILE }]),
 );
 
-// Stage 2 — the PLACE given back: equal squares on their true centroids, the largest scale at which
-// every centre keeps half a cell of the frame on each side.
-{
-  var placeStage = (() => {
-    const xs = CODES.map((c) => shapes.get(c).cx);
-    const ys = CODES.map((c) => shapes.get(c).cy);
-    const x0 = Math.min(...xs);
-    const x1 = Math.max(...xs);
-    const y0 = Math.min(...ys);
-    const y1 = Math.max(...ys);
-    const s = Math.min((FRAME.width - TILE) / (x1 - x0), (FRAME.height - TILE) / (y1 - y0));
-    const ox = (FRAME.width - (x1 - x0) * s) / 2 - x0 * s;
-    const oy = (FRAME.height - (y1 - y0) * s) / 2 - y0 * s;
-    return new Map(
-      CODES.map((c) => [c, { cx: ox + shapes.get(c).cx * s, cy: oy + shapes.get(c).cy * s, side: TILE }]),
-    );
-  })();
-}
+/** WHERE EVERY COUNTRY REALLY IS, with equal squares — the seed the PLACE stage relaxes from, and
+ *  also the yardstick the FILED GRID is measured against. The scale is the largest at which every
+ *  true centre keeps half a cell of frame on each side. */
+const trueEqual = (() => {
+  const xs = CODES.map((c) => shapes.get(c).cx);
+  const ys = CODES.map((c) => shapes.get(c).cy);
+  const x0 = Math.min(...xs);
+  const x1 = Math.max(...xs);
+  const y0 = Math.min(...ys);
+  const y1 = Math.max(...ys);
+  const s = Math.min((FRAME.width - TILE) / (x1 - x0), (FRAME.height - TILE) / (y1 - y0));
+  const ox = (FRAME.width - (x1 - x0) * s) / 2 - x0 * s;
+  const oy = (FRAME.height - (y1 - y0) * s) / 2 - y0 * s;
+  return new Map(
+    CODES.map((c) => [c, { cx: ox + shapes.get(c).cx * s, cy: oy + shapes.get(c).cy * s, side: TILE }]),
+  );
+})();
 
-// Stage 3 — the SIZE given back too: ONE scale carries the position AND the side, so each square has
-// exactly the area its country has at that scale. The scale is the largest at which the whole
-// assembly, squares included, still fits the frame — which is a linear function of s, so it is
-// solved rather than searched.
-const areaStage = (() => {
+/** WHERE EVERY COUNTRY REALLY IS, at its own area — the seed the SIZE stage relaxes from. ONE scale
+ *  carries the position AND the side, so each square has exactly the area its country has at that
+ *  scale. */
+const trueArea = (() => {
   const half = (c) => Math.sqrt(shapes.get(c).area) / 2;
   const loX = Math.min(...CODES.map((c) => shapes.get(c).cx - half(c)));
   const hiX = Math.max(...CODES.map((c) => shapes.get(c).cx + half(c)));
@@ -218,9 +219,23 @@ const areaStage = (() => {
   );
 })();
 
+// ── THE RELAXATION ────────────────────────────────────────────────────────────────────────────
+// Squares dropped on their true centroids collide: 125 pairs over 38 of the 41 cells at the true
+// place, 40 over 35 at the true area, measured on this very geometry. That pile was shipped once
+// with every boundary drawn over it, and the owner called it illegible a second time. The answer is
+// not a nudge and not a casing: it is the instrument this case has had since Demers — each square
+// keeps its AREA exactly, and the positions are relaxed until no two overlap, each staying as close
+// to its own centroid as that allows. What it costs is measured below and printed on the plate.
+const seedOf = (map) => CODES.map((c) => ({ key: c, cx: map.get(c).cx, cy: map.get(c).cy, side: map.get(c).side }));
+const placeRelaxed = restoreRelaxation(seedOf(trueEqual), { frame: FRAME, where: "chaque case près de sa place" });
+const areaRelaxed = restoreRelaxation(seedOf(trueArea), { frame: FRAME, where: "chaque case à sa surface" });
+const placeStage = new Map(placeRelaxed.places.map((p) => [p.key, p]));
+const areaStage = new Map(areaRelaxed.places.map((p) => [p.key, p]));
+
 /** A stage's places, with each square's declared share of the drawing — checked against the squares
- *  themselves by `assertRestoreDeclaration`. */
-const placesOf = (map) => {
+ *  themselves by `assertRestoreDeclaration` — and where that square's country really is, which is
+ *  what makes the price of the relaxation a measured number rather than a claim. */
+const placesOf = (map, anchors) => {
   const sum = CODES.reduce((s, c) => s + map.get(c).side ** 2, 0);
   return CODES.map((c) => ({
     key: c,
@@ -228,13 +243,18 @@ const placesOf = (map) => {
     cy: map.get(c).cy,
     side: map.get(c).side,
     areaShare: map.get(c).side ** 2 / sum,
+    ax: anchors.get(c).cx,
+    ay: anchors.get(c).cy,
   }));
 };
 
 const STAGE_GEOMETRY = [
-  { key: "pays", places: placesOf(gridPlace) },
-  { key: "lieu", places: placesOf(placeStage) },
-  { key: "surface", places: placesOf(areaStage) },
+  // The filed grid declares anchors too, and it is not decoration: a hand-drawn tile grid displaces
+  // every country and has never said by how much. Measured by the same instrument, it turns out to
+  // be the least faithful of the three stages by a factor of two and a half.
+  { key: "pays", places: placesOf(gridPlace, trueEqual) },
+  { key: "lieu", relaxed: true, places: placesOf(placeStage, new Map(placeRelaxed.places.map((p) => [p.key, { cx: p.ax, cy: p.ay }]))) },
+  { key: "surface", relaxed: true, places: placesOf(areaStage, new Map(areaRelaxed.places.map((p) => [p.key, { cx: p.ax, cy: p.ay }]))) },
 ];
 
 // ── what each stage costs and gives, measured on the geometry ─────────────────────────────────
@@ -242,11 +262,29 @@ const geometryOnly = {
   label: "x",
   frame: FRAME,
   tiles: CODES.map((c) => ({ key: c, label: NAMES[c], nameWidth: 0, nameHeight: 0, lift: "fill" })),
-  stages: STAGE_GEOMETRY.map((s) => ({ key: s.key, label: s.key, announce: s.key, places: s.places })),
+  stages: STAGE_GEOMETRY.map((s) => ({
+    key: s.key,
+    label: s.key,
+    announce: s.key,
+    relaxed: s.relaxed,
+    places: s.places,
+  })),
 };
 const clear = new Map(restoreClearOf(geometryOnly).map((s) => [s.slug, s.clear.length]));
+/** WHAT EACH STAGE COSTS THE TRUTH, and what it no longer costs the reader. The first map is the
+ *  overlap the relaxation removed; the second is the price it paid to remove it. Both are printed
+ *  on the plate and neither is typed. */
+const piles = new Map(restoreCrowdingOf(geometryOnly).map((s) => [s.slug, s]));
+const spread = new Map(restoreDisplacementOf(geometryOnly).map((s) => [s.slug, s]));
+const pctOf = (slug, which) => fr(spread.get(slug)[which].share * 100, 1);
 const travelOf = (map, code) =>
   Math.hypot(map.get(code).cx - gridPlace.get(code).cx, map.get(code).cy - gridPlace.get(code).cy) / CELL;
+/** How far ONE cell ends up from its own country, in the stage it is asked about — the price of the
+ *  relaxation, per country, so a reader who asks about a square is told what that square gave up. */
+const displacedOf = (slug, code) => {
+  const place = STAGE_GEOMETRY.find((s) => s.key === slug).places.find((p) => p.key === code);
+  return Math.hypot(place.cx - place.ax, place.cy - place.ay);
+};
 const travels = CODES.map((c) => ({ code: c, cells: travelOf(placeStage, c) })).sort((a, b) => b.cells - a.cells);
 const medianTravel = [...travels].map((t) => t.cells).sort((a, b) => a - b)[Math.floor(travels.length / 2)];
 const scaleOf = (code) => areaStage.get(code).side / TILE;
@@ -259,11 +297,23 @@ console.log(
     `${fr((shapes.get(biggest).area / drawnArea) * 100)} % du dessin à ${fr(readings.get(biggest).share)} %`,
 );
 console.log(
-  `cases dégagées — grille ${clear.get("pays")}/41 · au vrai lieu ${clear.get("lieu")}/41 · ` +
+  `cases dégagées — grille ${clear.get("pays")}/41 · près du vrai lieu ${clear.get("lieu")}/41 · ` +
     `à la vraie surface ${clear.get("surface")}/41 · trajet médian ${fr(medianTravel, 2)} case · ` +
     `le plus long ${NAMES[travels[0].code]} ${fr(travels[0].cells, 2)} · échelle ` +
     `${NAMES[biggestScale]} x${fr(scaleOf(biggestScale), 2)} contre ${NAMES[smallestScale]} ` +
-    `x${fr(scaleOf(smallestScale), 3)}\n`,
+    `x${fr(scaleOf(smallestScale), 3)}`,
+);
+for (const key of ["pays", "lieu", "surface"])
+  console.log(
+    `  ${key.padEnd(8)} paires qui se recouvrent ${String(piles.get(key).pairs).padStart(3)} ` +
+      `sur ${String(piles.get(key).touched.length).padStart(2)}/41 cases · écart au vrai centroïde ` +
+      `médian ${fr(spread.get(key).median.units, 1).padStart(5)} u (${pctOf(key, "median")} % de la ` +
+      `largeur) · pire ${NAMES[spread.get(key).worst.key]} ${fr(spread.get(key).worst.units, 1)} u ` +
+      `(${pctOf(key, "worst")} %)`,
+  );
+console.log(
+  `  relaxation — ${placeRelaxed.sweeps} balayages puis x${fr(placeRelaxed.scale, 3)} pour le lieu · ` +
+    `${areaRelaxed.sweeps} puis x${fr(areaRelaxed.scale, 3)} pour la surface\n`,
 );
 
 // ── the classes ───────────────────────────────────────────────────────────────────────────────
@@ -292,10 +342,14 @@ const tiles = CODES.map((code) => {
     value: r ? fr(r.share, 0) : "—",
     detail: {
       pays: plain(`${stem} · une case égale, comme les 40 autres`),
-      lieu: plain(`${stem} · sa case est à ${fr(travelOf(placeStage, code), 2)} case(s) de sa vraie place`),
+      lieu: plain(
+        `${stem} · sa case a voyagé de ${fr(travelOf(placeStage, code), 2)} case(s) depuis la grille ` +
+          `et s'arrête à ${fr(displacedOf("lieu", code), 0)} unités de son vrai centroïde`,
+      ),
       surface: plain(
-        `${stem} · son carré occupe ${fr((shapes.get(code).area / drawnArea) * 100, 2)} % du dessin ` +
-          `et vaut ${fr(scaleOf(code), 3)} fois la case que la grille lui donnait`,
+        `${stem} · son carré occupe ${fr((shapes.get(code).area / drawnArea) * 100, 2)} % du dessin, ` +
+          `vaut ${fr(scaleOf(code), 3)} fois la case que la grille lui donnait, et s'arrête à ` +
+          `${fr(displacedOf("surface", code), 0)} unités de son vrai centroïde`,
       ),
     },
   };
@@ -317,36 +371,45 @@ const claimNote =
   `choroplèthe à ${fr(readings.get(biggest).share)} %, et tire la première moyenne vers le bas. ` +
   `${missing} case sans lecture ${YEAR}, en creux.`;
 const readingLine =
-  `Lecture : rendez à la carte le lieu, puis la surface, et regardez la moyenne. Survolez, touchez ` +
-  `ou tabulez une case pour son détail.`;
+  `Lecture : rendez à la carte le lieu, puis la surface, et regardez la moyenne. Chaque carré garde ` +
+  `exactement sa surface et part de son vrai centroïde ; il n'en est écarté que de ce qu'il faut ` +
+  `pour n'en recouvrir aucun autre, et chaque étape dit de combien. Survolez, touchez ou tabulez ` +
+  `une case pour son détail.`;
 const source = `Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · ${YEAR}`;
 
+// THE WORDS MAY NOT CLAIM WHAT THE RELAXATION DOES NOT DO. A square is near its centroid, not on
+// it, so no pill says "à sa place" and every revealed sentence carries the gap it really leaves —
+// worst and median, as a share of the map's width, against the same figure for the filed grid,
+// which charges more and has never said so. What IS exact is the surface, and that pill says so.
 const STAGE_WORDS = {
   pays: {
     label: "une case par pays",
     announce: `une case par pays — le cartogramme tel qu'il est déposé : 41 cases égales, moyenne ${fr(byCountry)} %`,
   },
   lieu: {
-    label: "chaque case à sa place",
+    label: "chaque case près de sa place",
     announce:
-      `chaque case à sa place — les mêmes 41 cases, posées sur les vrais centroïdes ; la moyenne ` +
-      `ne bouge pas`,
+      `chaque case près de sa place — les mêmes 41 cases, parties des vrais centroïdes et écartées ` +
+      `jusqu'à ce qu'aucune n'en recouvre une autre ; la moyenne ne bouge pas`,
     note: plain(
-      `Le LIEU ne pèse rien : toujours ${fr(byCountry)} % par pays. Ce qui change est la lisibilité — ` +
-        `${clear.get("lieu")} des 41 cases restent dégagées. Plus long trajet : la ` +
-        `${NAMES[travels[0].code]}, ${fr(travels[0].cells, 2)} cases ; médiane ${fr(medianTravel, 2)}.`,
+      `Le LIEU ne pèse rien : toujours ${fr(byCountry)} % par pays. Les cases partent des vrais ` +
+        `centroïdes et sont écartées jusqu'à ce qu'aucune n'en recouvre une autre ; ce qu'il en ` +
+        `coûte est ${pctOf("lieu", "median")} % de la largeur de la carte en médiane et ` +
+        `${pctOf("lieu", "worst")} % au pire (${NAMES[spread.get("lieu").worst.key]}) — la grille ` +
+        `déposée, elle, est à ${pctOf("pays", "median")} % en médiane.`,
     ),
   },
   surface: {
     label: "chaque case à sa surface",
     announce:
-      `chaque case à sa surface — chaque carré à la surface de son pays ; la moyenne tombe au ` +
-      `chiffre du choroplèthe`,
+      `chaque case à sa surface — chaque carré à la surface exacte de son pays, écarté jusqu'à ne ` +
+      `plus recouvrir ses voisins ; la moyenne tombe au chiffre du choroplèthe`,
     note: plain(
-      `La SURFACE rend le chiffre du choroplèthe : ${fr(byArea)} %. Le carré de la ` +
+      `La SURFACE rend le chiffre du choroplèthe : ${fr(byArea)} %. Chaque carré garde exactement ` +
+        `la surface de son pays ; seule sa position cède, de ${pctOf("surface", "median")} % de la ` +
+        `largeur en médiane et ${pctOf("surface", "worst")} % au pire. Le carré de la ` +
         `${NAMES[biggestScale]} vaut ${fr(scaleOf(biggestScale), 2)} fois sa case, celui de ` +
-        `${NAMES[smallestScale]} ${fr(scaleOf(smallestScale), 3)}. ${clear.get("surface")} cases sur ` +
-        `41 restent dégagées : la surface écarte les petits pays au lieu de les empiler.`,
+        `${NAMES[smallestScale]} ${fr(scaleOf(smallestScale), 3)}.`,
     ),
   },
 };
@@ -364,9 +427,11 @@ const alt =
   `Une grille de cases carrées disposées à peu près comme l'Europe, une par pays, toutes de la même ` +
   `taille et teintées selon la part bas-carbone de leur électricité. Les cases les plus foncées sont ` +
   `au nord et à l'ouest ; la case de la ${NAMES[biggest]}, qui occupe presque les trois quarts d'un ` +
-  `choroplèthe, n'est ici qu'une case parmi ${tiles.length}. Un contrôle rend à chaque case sa vraie ` +
-  `place, puis sa vraie surface : la première étape ne change pas la moyenne (${fr(byCountry)} %), la ` +
-  `seconde la fait tomber à ${fr(byArea)} %, qui est le chiffre du choroplèthe.`;
+  `choroplèthe, n'est ici qu'une case parmi ${tiles.length}. Un contrôle rapproche chaque case de sa vraie ` +
+  `place, puis sa vraie surface — les carrés partant de leur centroïde et n'étant écartés que de ce ` +
+  `qu'il faut pour n'en recouvrir aucun autre : la première étape ne change pas la moyenne ` +
+  `(${fr(byCountry)} %), la seconde la fait tomber à ${fr(byArea)} %, qui est le chiffre du ` +
+  `choroplèthe.`;
 
 const interaction = {
   earns: plain(
@@ -467,6 +532,9 @@ function declarationFor(direction) {
       label: STAGE_WORDS[stage.key].label,
       announce: STAGE_WORDS[stage.key].announce,
       note: STAGE_WORDS[stage.key].note,
+      // Saying it is a promise that is then checked: zero overlap, anchors declared, and no square
+      // pushed past the ceiling. The filed grid says nothing and is measured anyway.
+      relaxed: stage.relaxed,
       places: stage.places,
     })),
   };
@@ -481,15 +549,15 @@ function totalsFor(declaration) {
   return {
     pays: plain(
       `Moyenne européenne pondérée par PAYS : ${fr(byCountry)} % · 41 cases égales, ` +
-        `${named.get("pays")} noms`,
+        `${named.get("pays")} noms · aucun recouvrement`,
     ),
     lieu: plain(
-      `Moyenne européenne pondérée par PAYS : ${fr(byCountry)} % · 41 cases égales à leur vraie ` +
-        `place, ${named.get("lieu")} noms`,
+      `Moyenne européenne pondérée par PAYS : ${fr(byCountry)} % · 41 cases égales près de leur ` +
+        `vraie place, ${named.get("lieu")} noms · aucun recouvrement`,
     ),
     surface: plain(
       `Moyenne européenne pondérée par la SURFACE : ${fr(byArea)} % · 41 cases à leur vraie ` +
-        `surface, ${named.get("surface")} noms`,
+        `surface, ${named.get("surface")} noms · aucun recouvrement`,
     ),
   };
 }

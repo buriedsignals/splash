@@ -142,6 +142,13 @@ export type RestorePlace = {
   /** The centre, in the frame's user units. */
   cx: number;
   cy: number;
+  /** WHERE THE COUNTRY REALLY IS, in this stage's own units — the centre the square would have if
+   *  nothing else were on the sheet. It is not where the square is drawn, and the gap between the
+   *  two IS the price of the relaxation, which `restoreDisplacementOf` reads and the beat prints.
+   *  Optional, because the filed grid has an anchor for measurement only while a relaxed stage MUST
+   *  carry one — `assertRestoreDeclaration` refuses a relaxed stage without it. */
+  ax?: number;
+  ay?: number;
   /** ONE side. A cell is a square in every stage, and this is where that is made structural rather
    *  than checked: there is no second number to write. */
   side: number;
@@ -153,6 +160,14 @@ export type RestorePlace = {
 /** One position of the control. The first declared is the default and carries no `note`. */
 export type RestoreStage = {
   key: string;
+  /** This stage's squares were RELAXED: seeded on the true centroids and pushed apart until no two
+   *  overlap, each keeping its area exactly. Saying so is a promise that is then CHECKED — a
+   *  relaxed stage that still piles squares, or that carries no anchors, or that displaces a square
+   *  further than its ceiling, is refused. */
+  relaxed?: boolean;
+  /** How far this stage may displace a square from its true centre, as a share of the frame's
+   *  width. Defaults to `RESTORE_DISPLACEMENT_CEILING`; a stage may tighten it, never loosen it. */
+  ceiling?: number;
   /** The visible pill text. */
   label: string;
   /** The accessible name, which must CONTAIN the visible label (WCAG 2.5.3). */
@@ -441,6 +456,196 @@ export function restoreTravelOf(declaration: RestoreDeclaration): {
 }
 
 /**
+ * THE RELAXATION, AND WHY IT IS THE INSTRUMENT RATHER THAN A FUDGE.
+ *
+ * Squares dropped on their true centroids COLLIDE, and badly: on the beat this file was written
+ * for, 125 pairs over 38 of 41 cells at the true place and 40 pairs over 35 at the true area. That
+ * collision is a true fact about the geography a tile grid trades away, and the first answer this
+ * file shipped was to make it VISIBLE — a cased boundary around every square, which raised the
+ * worst readable edge from 1,18:1 to 1,79:1. The owner read that page and called it illegible a
+ * second time, and he was right: a visible pile is still a pile. Forty-one squares stacked into one
+ * blob cannot be read no matter how well each outline is drawn.
+ *
+ * The established instrument for exactly this is a cartogram RELAXATION — Dorling's for circles,
+ * DEMERS' for squares, which is this case. It holds three things at once:
+ *
+ *   THE AREA IS NEVER TOUCHED. A square's side is its quantity; the relaxation only ever moves
+ *     centres, so `side² / Σside²` — the share the stage declares and `assertRestoreDeclaration`
+ *     checks to 1e-9 — is exactly the same before and after. The number the page prints is drawn.
+ *   THE ARRANGEMENT IS KEPT. Each square starts at its true centroid and is only ever pushed by a
+ *     square it actually overlaps, along the axis it overlaps LEAST, so the cheapest separation is
+ *     the one taken and nothing is re-sorted, re-packed or re-laid-out.
+ *   THE OVERLAP GOES TO ZERO. That is the exit condition, not a target: the sweep repeats until no
+ *     pair is closer than its own two half-sides plus the ground gap, and this function THROWS with
+ *     the residue if it cannot get there.
+ *
+ * TWO CHOICES INSIDE IT, BOTH MEASURED RATHER THAN ASSUMED.
+ *
+ *   A pair is separated in proportion to the OTHER square's area, so a small country gives way to a
+ *   large one. On a cartogram that is the meaningful weighting: a square's area is its quantity, so
+ *   the reading with the most at stake in a position is the one that keeps it. It costs nothing on
+ *   a stage of equal squares, where the two shares are one half each by construction.
+ *
+ *   Each sweep removes only `RESTORE_RELAX_DAMPING` of a pair's overlap. Removing all of it is the
+ *   obvious thing to write and it is measurably worse: the pushes overshoot, neighbours ricochet,
+ *   and the arrangement settles further from the truth than it needs to. Measured on the beat's own
+ *   `lieu` stage: full pushes settle at a worst displacement of 18,2 % of the frame's width, damped
+ *   pushes at 14,7 %, for the same zero overlaps.
+ *
+ * AND THEN THE WHOLE ASSEMBLY IS FITTED BACK INTO THE FRAME, once, by a single uniform scale about
+ * its own centre. Uniform is the only kind allowed: it cannot re-introduce an overlap, and it leaves
+ * every area SHARE untouched, which is the one quantity this page prints.
+ *
+ * WHAT THIS COSTS, AND THE COST IS THE READER'S TO SEE. A square no longer sits exactly where its
+ * country is. `restoreDisplacementOf` measures that gap per stage — worst and median, in user units
+ * and as a share of the frame's width — and the beat prints it. The comparison worth making is with
+ * the filed grid, which charges the same price silently: on this beat the hand-drawn grid sits a
+ * median 16,4 % of the frame's width from the true centroids, and the relaxed stage 6,5 %.
+ */
+export const RESTORE_RELAX_DAMPING = 0.7;
+
+/** The ground the relaxation leaves between two squares, in the seed's user units. It is NOT
+ *  cosmetic: each square is drawn with its own one-pixel outline, and two outlines that meet read as
+ *  one line belonging to neither square. Three units is a shade under three device pixels at the
+ *  width this format ships at — wider than the two half-strokes that meet in it, which is the whole
+ *  requirement. */
+export const RESTORE_RELAX_GAP = 3;
+
+/** How far a relaxed stage may displace a square from its true centre before the page is refused
+ *  rather than shipped, as a share of the frame's width. A quarter of the map is the point past
+ *  which a reader relocating their own country would be wrong about which neighbour it sits by —
+ *  the relocation being the entire thing this stage gives back. A stage may tighten it. */
+export const RESTORE_DISPLACEMENT_CEILING = 0.25;
+
+/** A square as it is handed to the relaxation: where its country really is, and the side its
+ *  quantity earns it. Neither is negotiable; only the centre moves. */
+export type RestoreSeed = { key: string; cx: number; cy: number; side: number };
+
+export function restoreRelaxation(
+  seed: RestoreSeed[],
+  {
+    frame,
+    gap = RESTORE_RELAX_GAP,
+    damping = RESTORE_RELAX_DAMPING,
+    sweeps = 20000,
+    where = "this stage",
+  }: {
+    frame: { width: number; height: number };
+    gap?: number;
+    damping?: number;
+    sweeps?: number;
+    where?: string;
+  },
+): {
+  places: (RestoreSeed & { ax: number; ay: number })[];
+  scale: number;
+  sweeps: number;
+} {
+  const items = seed.map((s) => ({ key: s.key, cx: s.cx, cy: s.cy, side: s.side, ax: s.cx, ay: s.cy }));
+  let used = 0;
+  let live = 0;
+  for (; used < sweeps; used += 1) {
+    live = 0;
+    for (let i = 0; i < items.length; i += 1)
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i];
+        const b = items[j];
+        const need = (a.side + b.side) / 2 + gap;
+        const dx = b.cx - a.cx;
+        const dy = b.cy - a.cy;
+        const ox = need - Math.abs(dx);
+        const oy = need - Math.abs(dy);
+        if (ox <= 1e-9 || oy <= 1e-9) continue;
+        live += 1;
+        // The share each one gives up is the OTHER's area: a small country gives way to a large one.
+        const ma = a.side * a.side;
+        const mb = b.side * b.side;
+        const both = ma + mb;
+        if (ox < oy) {
+          // Two squares sharing a centre have no direction to be pushed along; the key breaks the
+          // tie so that two runs of the same beat write the same bytes.
+          const way = dx === 0 ? (a.key < b.key ? -1 : 1) : Math.sign(dx);
+          a.cx -= way * ox * damping * (mb / both);
+          b.cx += way * ox * damping * (ma / both);
+        } else {
+          const way = dy === 0 ? (a.key < b.key ? -1 : 1) : Math.sign(dy);
+          a.cy -= way * oy * damping * (mb / both);
+          b.cy += way * oy * damping * (ma / both);
+        }
+      }
+    if (live === 0) break;
+  }
+  if (live > 0)
+    throw new Error(
+      `${where}: the relaxation still leaves ${live} pair(s) of squares overlapping after ${used} ` +
+        "sweeps. The areas are exact and may not be touched, so what is left to give is the frame: " +
+        "either the squares are too big for the sheet they are being put back on, or two centres " +
+        "coincide. Shipping the pile is not the third option — the owner has refused it twice.",
+    );
+
+  const loX = Math.min(...items.map((p) => p.cx - p.side / 2));
+  const hiX = Math.max(...items.map((p) => p.cx + p.side / 2));
+  const loY = Math.min(...items.map((p) => p.cy - p.side / 2));
+  const hiY = Math.max(...items.map((p) => p.cy + p.side / 2));
+  const scale = Math.min(frame.width / (hiX - loX), frame.height / (hiY - loY));
+  const ox = (frame.width - (hiX - loX) * scale) / 2 - loX * scale;
+  const oy = (frame.height - (hiY - loY) * scale) / 2 - loY * scale;
+  return {
+    scale,
+    sweeps: used,
+    places: items.map((p) => ({
+      key: p.key,
+      cx: ox + p.cx * scale,
+      cy: oy + p.cy * scale,
+      side: p.side * scale,
+      // The anchor rides the same transform, so the displacement below is measured in the frame the
+      // reader is actually looking at rather than in the space the sweep happened to run in.
+      ax: ox + p.ax * scale,
+      ay: oy + p.ay * scale,
+    })),
+  };
+}
+
+/**
+ * WHAT THE RELAXATION COST, PER STAGE — the number the owner is owed and the one nobody was
+ * measuring when a page full of collisions rendered green.
+ *
+ * Read off the anchors a stage declares, in that stage's own drawn frame, which is the frame the
+ * reader sees. A stage that declares no anchors reports none rather than pretending to zero: the
+ * filed grid is measurable this way too, and on this beat it is the comparison that matters, since
+ * a hand-drawn tile grid displaces every country far further than the relaxation does and has never
+ * said so.
+ */
+export function restoreDisplacementOf(declaration: RestoreDeclaration): {
+  slug: string;
+  relaxed: boolean;
+  anchored: boolean;
+  worst: { key: string; units: number; share: number } | null;
+  median: { units: number; share: number } | null;
+}[] {
+  return declaration.stages.map((stage) => {
+    const slug = restoreSlugOf(stage.key);
+    const anchored = stage.places.every(
+      (p) => Number.isFinite(p.ax as number) && Number.isFinite(p.ay as number),
+    );
+    if (!anchored)
+      return { slug, relaxed: !!stage.relaxed, anchored, worst: null, median: null };
+    const gaps = stage.places
+      .map((p) => ({ key: p.key, units: Math.hypot(p.cx - (p.ax as number), p.cy - (p.ay as number)) }))
+      .sort((a, b) => a.units - b.units);
+    const mid = gaps[Math.floor(gaps.length / 2)];
+    const worst = gaps[gaps.length - 1];
+    return {
+      slug,
+      relaxed: !!stage.relaxed,
+      anchored,
+      worst: { key: worst.key, units: worst.units, share: worst.units / declaration.frame.width },
+      median: { units: mid.units, share: mid.units / declaration.frame.width },
+    };
+  });
+}
+
+/**
  * Everything that can be refused before a single element is written.
  *
  * `where` is quoted into every message so a runner rendering three directions says which one.
@@ -585,6 +790,44 @@ export function assertRestoreDeclaration(
       );
   }
 
+  // A RELAXED STAGE KEEPS ITS PROMISE, OR IT IS NOT SHIPPED.
+  //
+  // `relaxed` says three things at once — the areas were held exact, the squares were pushed apart
+  // until none overlapped, and each one stayed as close to its true centre as that allowed — and all
+  // three are checked here rather than trusted. The area half is already checked above, on every
+  // stage. What is left is the overlap and the price.
+  const crowding = new Map(restoreCrowdingOf(declaration).map((c) => [c.slug, c]));
+  const displacement = new Map(restoreDisplacementOf(declaration).map((d) => [d.slug, d]));
+  for (const stage of stages) {
+    if (!stage.relaxed) continue;
+    const slug = restoreSlugOf(stage.key);
+    const spread = displacement.get(slug);
+    if (!spread?.anchored)
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.label)} says its squares were relaxed and does ` +
+          "not say where their countries really are. A displacement nobody can measure is a " +
+          "displacement nobody has to report, and the reader is owed the price of this method.",
+      );
+    const pile = crowding.get(slug);
+    if (pile && pile.pairs > 0)
+      throw new Error(
+        `${where}: the stage ${JSON.stringify(stage.label)} says its squares were relaxed and still ` +
+          `piles ${pile.pairs} pair(s) over ${pile.touched.length} of ${tiles.length} cells. ` +
+          "Relaxed means the overlap went to zero; a stage that claims it and draws a pile is the " +
+          "picture the owner refused twice, under a word that says it was fixed.",
+      );
+    const ceiling = stage.ceiling ?? RESTORE_DISPLACEMENT_CEILING;
+    if (spread.worst && spread.worst.share > ceiling)
+      throw new Error(
+        `${where}: in ${JSON.stringify(stage.label)} the relaxation pushes ` +
+          `${JSON.stringify(spread.worst.key)} ${spread.worst.units.toFixed(1)} user units — ` +
+          `${(spread.worst.share * 100).toFixed(1)} % of the frame's width — off its own centroid, ` +
+          `past the ${(ceiling * 100).toFixed(0)} % this stage allows. Past that a reader looking for ` +
+          "their own country finds it beside the wrong neighbour, which is the one thing giving the " +
+          "place back was for.",
+      );
+  }
+
   // THE DEFAULT PLATE MUST BE A MAP AND NOT A PATTERN. Forty anonymous squares is the failure this
   // variant's own type sheet files; the default is also the page a reader with no script receives.
   const named = restoreNamesOf(declaration);
@@ -718,6 +961,13 @@ export function restoreCss(
   const travel = restoreTravelOf(declaration);
   const names = new Map(restoreNamesOf(declaration).map((s) => [s.slug, new Set(s.named)]));
   const crowded = new Map(restoreCrowdingOf(declaration).map((c) => [c.slug, c.pairs > 0]));
+  /* NO DEAD CSS, AND THE CENSUS IS WHAT DECIDES. The separator layer answers ONE question — what a
+     square that is painted over another square still shows of itself — and a map whose every stage
+     is relaxed to zero overlap never asks it. Emitting the layer's rules anyway would leave a
+     stylesheet talking about elements no page draws, which is exactly what `filterCss`, `floorCss`
+     and `sideCss` return the empty string rather than do. `assertOneRestore` makes the other half
+     of this true: the moment a stage does collide, the outlines become compulsory again. */
+  const collides = [...crowded.values()].some(Boolean);
   const homeSide = new Map(declaration.stages[0].places.map((p) => [p.key, p.side]));
   /* THE CASING IS IN USER UNITS AND THE SQUARE IT CASES IS NOT A FIXED SIZE. Across these stages a
      side runs from 455 units to 1,9 — a ratio of 245 to 1 — so a casing that is a constant on the
@@ -755,11 +1005,15 @@ export function restoreCss(
     `   boundary of its own instead of dissolving into whichever fill was painted last. \`opacity\``,
     `   on an always-rendered element, never \`display\`, so the layer can be interpolated like`,
     `   everything else that changes here. */`,
-    `${scope} [data-restore-edge] { transform-box: fill-box; transform-origin: center; transform: translate(0px, 0px) scale(1); opacity: ${crowded.get(defaultSlug) ? 1 : 0}; }`,
-    ...declaration.tiles.map(
-      (tile) =>
-        `${scope} [data-restore-edge="${tile.key}"][data-restore-cased] { stroke-width: ${round(casingFor(tile.key, 1))}; }`,
-    ),
+    ...(collides
+      ? [
+          `${scope} [data-restore-edge] { transform-box: fill-box; transform-origin: center; transform: translate(0px, 0px) scale(1); opacity: ${crowded.get(defaultSlug) ? 1 : 0}; }`,
+          ...declaration.tiles.map(
+            (tile) =>
+              `${scope} [data-restore-edge="${tile.key}"][data-restore-cased] { stroke-width: ${round(casingFor(tile.key, 1))}; }`,
+          ),
+        ]
+      : []),
   ];
   for (const key of declaration.tiles.map((t) => t.key))
     if (!names.get(defaultSlug)?.has(key))
@@ -780,8 +1034,12 @@ export function restoreCss(
       if (!still)
         lines.push(
           `${on} [data-restore-cell="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
-          `${on} [data-restore-edge="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
-          `${on} [data-restore-edge="${move.key}"][data-restore-cased] { stroke-width: ${round(casingFor(move.key, move.k))}; }`,
+          ...(collides
+            ? [
+                `${on} [data-restore-edge="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px) scale(${round(move.k)}); }`,
+                `${on} [data-restore-edge="${move.key}"][data-restore-cased] { stroke-width: ${round(casingFor(move.key, move.k))}; }`,
+              ]
+            : []),
           `${on} [data-restore-name="${move.key}"] { transform: translate(${round(move.dx)}px, ${round(move.dy)}px); }`,
         );
       // The opacity rule is emitted for EVERY cell of every stage, not only for the ones that
@@ -791,7 +1049,8 @@ export function restoreCss(
         `${on} [data-restore-name="${move.key}"] { opacity: ${named.has(move.key) ? 1 : 0}; }`,
       );
     }
-    lines.push(`${on} [data-restore-edge] { opacity: ${crowded.get(stage.slug) ? 1 : 0}; }`);
+    if (collides)
+      lines.push(`${on} [data-restore-edge] { opacity: ${crowded.get(stage.slug) ? 1 : 0}; }`);
     const note = declaration.stages.find((s) => restoreSlugOf(s.key) === stage.slug)?.note;
     if (note) lines.push(`${on} [data-stack-note="${stage.slug}"] { display: revert; }`);
   }
@@ -802,7 +1061,11 @@ export function restoreCss(
     `     same duration, same easing, so a cell and the word naming it arrive together. */`,
     `  ${scope} [data-restore-cell] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
     `  ${scope} [data-restore-name] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
-    `  ${scope} [data-restore-edge] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}, stroke-width ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
+    ...(collides
+      ? [
+          `  ${scope} [data-restore-edge] { transition: transform ${travelMs}ms ${RESTORE_TRAVEL_EASING}, opacity ${travelMs}ms ${RESTORE_TRAVEL_EASING}, stroke-width ${travelMs}ms ${RESTORE_TRAVEL_EASING}; }`,
+        ]
+      : []),
     `}`,
   );
   return lines.join("\n");
@@ -890,6 +1153,52 @@ export function assertOneRestore(
           "vocabulary a beat brings with it has to emit its own rules: without them every plate is " +
           "drawn on top of every other and every attribute is still perfectly correct.",
       );
+  }
+
+  // THE PLATE ANSWERS FROM WHERE THE SQUARE IS, AND THE TWO ARE WRITTEN BY DIFFERENT HANDS.
+  //
+  // The travelling square's position comes from the STYLESHEET this file generates; the answering
+  // point's position is written into the markup BY THE BEAT, once per stage. Nothing but this check
+  // holds the two together, and the failure it catches is the one this whole split exists to
+  // prevent: a plate baked at the wrong stage's coordinates answers for a place its square is not
+  // at, silently and in every direction at once. It is also the only refusal here that reads a
+  // number off the page rather than an attribute's presence.
+  for (const stage of declaration.stages) {
+    const slug = restoreSlugOf(stage.key);
+    const chunk = String(html)
+      .split(/<svg\b/)
+      .slice(1)
+      .find((part) => new RegExp(`data-restore-plate="${slug}"`).test(part.slice(0, part.indexOf(">") + 1)));
+    if (!chunk) continue;
+    const body = chunk.slice(0, chunk.indexOf("</svg>") < 0 ? undefined : chunk.indexOf("</svg>"));
+    const at = new Map(stage.places.map((place) => [place.key, place]));
+    const found = new Set<string>();
+    for (const tag of body.match(/<circle[^>]*>/g) ?? []) {
+      const ref = /\sdata-mark-ref="([^"]*)"/.exec(tag);
+      const cx = /\scx="([-0-9.eE]+)"/.exec(tag);
+      const cy = /\scy="([-0-9.eE]+)"/.exec(tag);
+      if (!ref || !cx || !cy) continue;
+      const place = at.get(ref[1]);
+      if (!place) continue;
+      found.add(ref[1]);
+      const off = Math.hypot(Number(cx[1]) - place.cx, Number(cy[1]) - place.cy);
+      if (off > RESTORE_STILL_FLOOR)
+        throw new Error(
+          `${where}: in the stage ${JSON.stringify(slug)} the point that answers for ` +
+            `${JSON.stringify(ref[1])} sits at (${Number(cx[1]).toFixed(1)}, ${Number(cy[1]).toFixed(1)}) ` +
+            `and its square is at (${place.cx.toFixed(1)}, ${place.cy.toFixed(1)}) — ${off.toFixed(1)} ` +
+            "user units apart. The drawing and the hit plate are separate elements precisely so that " +
+            "nothing that answers ever moves; a plate baked at another stage's coordinates makes " +
+            "every reading on this stage a reading of somewhere else.",
+        );
+    }
+    for (const place of stage.places)
+      if (!found.has(place.key))
+        throw new Error(
+          `${where}: the stage ${JSON.stringify(slug)} places ${JSON.stringify(place.key)} and its hit ` +
+            "plate carries no point for it. A square a reader cannot ask about is a square that only " +
+            "has a colour, which is this type sheet's own accessibility trap.",
+        );
   }
 
   for (const slug of slugs.slice(1))

@@ -28,9 +28,10 @@ lecteur et jamais un effet de bord.
 
 Ce que la grille a pris, exactement, est en deux morceaux, et les deux se mesurent :
 
-1. **le LIEU** — où chaque pays est réellement. La Suède est à 5,27 cases de sa place, la médiane des
-   41 vaut 1,97 case, et la Macédoine du Nord est à 0,17 case de la sienne.
-2. **la SURFACE** — ce que chaque pays pèse sur une carte. Le carré de la Russie vaut **5,42 fois**
+1. **le LIEU** — où chaque pays est réellement. La grille déposée est à **16,4 % de la largeur de la
+   carte** du vrai centroïde en médiane, et à 43,9 % pour la Suède : c'est ce que la grille a pris,
+   mesuré, et elle ne l'a jamais dit.
+2. **la SURFACE** — ce que chaque pays pèse sur une carte. Le carré de la Russie vaut **5,33 fois**
    la case que la grille lui donne ; celui de Malte en vaut **0,022**.
 
 Et c'est le second morceau, pas le premier, qui fabrique le chiffre : rendre le lieu ne change pas
@@ -47,7 +48,7 @@ cartographique réel et nommable, pas un cran de potentiomètre :
 | pastille | ce que la case reprend | l'objet | la moyenne |
 | --- | --- | --- | --- |
 | **une case par pays** *(défaut)* | rien | le cartogramme en cases, tel qu'il est déposé | **65,1 %** |
-| chaque case à sa place | le LIEU | des carrés égaux aux vrais centroïdes (un cartogramme de Demers) | **65,1 %** |
+| chaque case près de sa place | le LIEU | des carrés égaux relaxés depuis les vrais centroïdes (Demers) | **65,1 %** |
 | chaque case à sa surface | le LIEU et la SURFACE | le cartogramme non contigu par la surface — le choroplèthe, en carrés | **44,9 %** |
 
 **Une case reste toujours un carré.** Une étape déclare un centre et UN côté ; il n'y a pas de place
@@ -55,16 +56,84 @@ pour un facteur par axe, donc aucune étape ne peut aplatir un pays. Le chemin d
 est donc `translate() scale()` — une similitude, continue et exacte, ce qui est précisément ce que
 l'arbitrage n°4 demande (« ça pourrait changer en lerp smooth au lieu de saccader »).
 
+### La relaxation, et pourquoi elle est l'instrument et non un arrangement
+
+Des carrés déposés sur leurs vrais centroïdes se recouvrent, et ici massivement : **125 paires sur
+38 des 41 cases** au vrai lieu, **40 paires sur 35** à la vraie surface. La première réponse de ce
+beat a été de rendre ce tas VISIBLE — une frontière cuirassée sur chaque carré, qui a fait passer la
+pire frontière lisible de 1,18:1 à 1,79:1. **Le propriétaire a lu la page et l'a déclarée illisible
+une seconde fois** (« le positionnement au filtre rend les trucs illisibles »), et il a raison : un
+tas bien dessiné reste un tas.
+
+L'instrument établi pour ce cas exact est la **relaxation de cartogramme** — Dorling pour les
+cercles, **Demers pour les carrés**, qui est ce cas. Elle tient trois choses à la fois :
+
+- **la surface n'est JAMAIS touchée.** Le côté d'un carré EST sa quantité ; la relaxation ne déplace
+  que des centres, donc `côté² / Σcôté²` — la part que l'étape déclare et que
+  `assertRestoreDeclaration` contrôle à 1e-9 — est exactement la même avant et après. Le chiffre que
+  la page imprime est dessiné.
+- **l'agencement relatif est conservé.** Chaque carré part de son vrai centroïde et n'est poussé que
+  par un carré qu'il recouvre réellement, le long de l'axe où il le recouvre le MOINS : la
+  séparation la moins chère est celle qui est prise, rien n'est re-trié ni re-empaqueté.
+- **le recouvrement tombe à zéro.** C'est la condition d'arrêt, pas une cible : le balayage se répète
+  jusqu'à ce qu'aucune paire ne soit plus proche que ses deux demi-côtés plus le jour de fond, et la
+  fonction LÈVE une erreur chiffrée si elle n'y arrive pas. Aucune page ne part avec un tas.
+
+Deux choix à l'intérieur, tous deux mesurés : une paire se sépare **au prorata de la surface de
+l'autre** (un petit pays cède devant un grand — sur un cartogramme, la surface EST la quantité, donc
+la lecture qui a le plus à perdre dans une position est celle qui la garde), et chaque balayage ne
+retire que **0,7** du recouvrement d'une paire — retirer tout est ce qu'on écrit spontanément et
+c'est mesurablement pire : les poussées dépassent, les voisins ricochent, et l'agencement se pose
+plus loin de la vérité que nécessaire (18,2 % contre 14,7 % de pire écart, pour le même zéro
+recouvrement).
+
+### Ce que ça coûte, dit et non caché
+
+| étape | paires qui se recouvrent | écart au vrai centroïde, médiane | pire écart |
+| --- | --- | --- | --- |
+| une case par pays *(la grille déposée)* | **0** | **181,3 u — 16,4 % de la largeur** | Suède 484,9 u — 43,9 % |
+| chaque case près de sa place | **0** | **84,2 u — 7,6 %** | Serbie 190,3 u — 17,2 % |
+| chaque case à sa surface | **0** | **17,6 u — 1,6 %** | Slovénie 59,8 u — 5,4 % |
+
+**La comparaison qui met le prix en proportion est la grille déposée elle-même**, qui facture le
+même prix en silence et en facture DAVANTAGE : une grille en cases dessinée à la main est deux fois
+plus loin des vrais centroïdes que l'étape relaxée. Chaque étape imprime son écart dans sa phrase, et
+chaque case répond avec le sien. Aucun carré n'est placé où il est par souci de propreté ; chacun est
+aussi près de son pays que le zéro recouvrement le permet.
+
+Et le prix est BORNÉ plutôt que constaté : `RESTORE_DISPLACEMENT_CEILING` refuse une étape relaxée
+qui pousserait un carré à plus d'un quart de la largeur de la carte de son centroïde — au-delà, un
+lecteur qui cherche son propre pays le trouve à côté du mauvais voisin, ce qui est la seule chose que
+rendre le lieu servait à faire.
+
+### Ce que la relaxation a retiré du dessin
+
+- **la couche de frontières cuirassées** — le recensement (`restoreCrowdingOf`) ne trouve plus une
+  seule paire en collision dans aucune étape, donc la couche n'a plus rien à séparer : 82 rectangles
+  invisibles et leurs règles sont partis. `restore.ts` GARDE le recensement et garde le refus : dès
+  qu'une étape empile à nouveau, les contours redeviennent obligatoires et la page est refusée sans
+  eux.
+- **le halo des noms** — il existait pour qu'un mot survive aux frontières qui le traversaient. Plus
+  de frontières, plus de recouvrement : un nom est seul sur son propre remplissage, c'est-à-dire
+  exactement la condition contre laquelle son encre a été mesurée. Un halo qui peint du remplissage
+  sur du remplissage est de l'encre que personne ne voit.
+
+### Ce que les mots de la plaque ne disent plus
+
+Une pastille ne dit plus « chaque case à sa place » : un carré est **près** de son centroïde, pas
+dessus. Ce qui reste exact est la SURFACE, et cette pastille-là le dit. Chaque phrase révélée porte
+l'écart réellement laissé.
+
 ### Ce que chaque étape révèle, et chaque chiffre est lu sur la géométrie, jamais tapé
 
-- **chaque case à sa place** — la moyenne ne bouge pas d'un millième : 65,1 % avant, 65,1 % après.
-  Ce qui bouge, c'est la lisibilité : des 41 cases, **12 restent dégagées** et 29 se recouvrent. Le
-  pays le plus déplacé est la Suède (5,27 cases) ; la médiane vaut 1,97 case.
+- **chaque case près de sa place** — la moyenne ne bouge pas d'un millième : 65,1 % avant, 65,1 %
+  après. Ce qui bouge, c'est la lisibilité, et elle bouge dans le bon sens : **les 41 cases restent
+  dégagées** (contre 12 avant la relaxation), donc les 41 noms sont lisibles. Le trajet depuis la
+  grille vaut 2,01 case en médiane, 4,07 pour la Suède.
 - **chaque case à sa surface** — la moyenne tombe à **44,9 %**, le chiffre du choroplèthe, parce que
   c'est le même dessin. La Russie prend 73,1 % de l'encre à 35,9 % bas-carbone ; son carré vaut 5,42
   cases de côté contre 0,022 pour Malte, soit un rapport de **245 pour 1** entre les deux côtés.
-  **20 cases sur 41 restent dégagées** — plus qu'à l'étape précédente, parce que rendre la surface
-  écarte les petits pays au lieu de les empiler.
+  **41 cases sur 41 restent dégagées** après relaxation — contre 20 avant.
 
 Le défaut ne révèle rien : ce n'est pas une contre-épreuve, c'est la revendication que le titre
 énonce, et `assertRestoreDeclaration` refuse une phrase sous le défaut.
@@ -139,6 +208,18 @@ le beat passe maintenant lui-même.
    n'a pas le droit d'éteindre une étiquette gênante.
 5. **Une étape qui ne bouge rien** — le défaut sous un second nom, le refus de
    `directed-interaction.md` dans les unités de ce fichier.
+5bis. **Une étape qui se dit relaxée et ne l'est pas.** `relaxed: true` dit trois choses — surfaces
+   exactes, zéro recouvrement, et chaque carré aussi près de son centroïde que ça le permet — et les
+   trois sont CONTRÔLÉES : une étape relaxée qui ne déclare pas où sont vraiment ses pays est
+   refusée (un écart que personne ne peut mesurer est un écart que personne n'a à rapporter), une
+   étape relaxée qui empile encore est refusée avec le compte des paires, et une étape qui pousse un
+   carré au-delà de son plafond est refusée avec le nombre.
+5ter. **Une plaque de clic cuite aux coordonnées d'une autre étape.** Lu sur la page écrite : le
+   point qui répond pour un pays doit être à moins d'un demi-millième du cadre du carré que l'étape
+   déclare. C'est le seul refus de ce fichier qui lit un NOMBRE sur la page plutôt que la présence
+   d'un attribut, et il tient ensemble les deux moitiés que la séparation dessin/plaque a créées :
+   la position du carré vient de la feuille de style que `restore.ts` génère, celle du point est
+   écrite par le BEAT.
 6. **Une case qui n'est pas un carré** — structurel : une étape déclare UN côté.
 7. Et les refus que les frères tiennent déjà, réhérités plutôt que réinventés : le dessin qui
    RÉPOND (`.pt` dans le `<svg>` qui voyage), le dessin non `aria-hidden`, une étape sans plaque de

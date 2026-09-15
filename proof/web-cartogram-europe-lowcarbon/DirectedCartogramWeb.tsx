@@ -18,11 +18,40 @@
  * THE PLACE (where each country really is) and THE SIZE (what it really weighs on a map). The
  * control hands them back one at a time, and the order is the argument:
  *
- *   une case par pays        the beat as filed. 65,1 % by country.
- *   chaque case à sa place   equal squares at their true centroids. STILL 65,1 % — giving back the
- *                            place does not move the average by a thousandth.
- *   chaque case à sa surface each square at its country's true area. 44,9 % — the choropleth's own
- *                            figure, because this IS the choropleth, drawn in squares.
+ *   une case par pays          the beat as filed. 65,1 % by country.
+ *   chaque case près de sa place   equal squares, RELAXED from their true centroids. STILL 65,1 % —
+ *                            giving back the place does not move the average by a thousandth.
+ *   chaque case à sa surface   each square at its country's true area, relaxed the same way. 44,9 %
+ *                            — the choropleth's own figure, because this IS the choropleth, in
+ *                            squares.
+ *
+ * THE RELAXATION, AND WHAT IT COSTS, IN PLAIN TERMS.
+ *
+ * Squares dropped on their true centroids overlap, and on this map they overlap catastrophically:
+ * 125 pairs over 38 of the 41 cells at the true place, 40 pairs over 35 at the true area. The first
+ * answer this beat shipped was to make that pile VISIBLE — a cased outline on every square, which
+ * raised the worst readable boundary from 1,18:1 to 1,79:1 — and the owner read the result and
+ * called it illegible a second time. He was right. A well-drawn pile is still a pile.
+ *
+ * So the squares are now RELAXED, which is what a cartogram of this family has always meant:
+ * Dorling's method for circles, DEMERS' for squares. Each square keeps its area EXACTLY — the
+ * quantity is never touched, and `assertRestoreDeclaration` still checks side²/Σside² against the
+ * share the stage declares to 1e-9 — and only the centres move, by the smallest push that takes two
+ * squares off each other, repeated until none overlap at all.
+ *
+ * THE PRICE IS THAT A SQUARE NO LONGER SITS EXACTLY ON ITS COUNTRY, and this page states it rather
+ * than hiding it: every stage prints the gap it leaves, worst and median, as a share of the map's
+ * width, and every cell answers with its own. The comparison that puts it in proportion is the
+ * filed grid itself, which charges the same price silently and charges MORE of it — a hand-drawn
+ * tile grid sits about two and a half times further from the true centroids than the relaxed stage
+ * does. Nothing on this page is placed where it is for tidiness; every square is as close to its
+ * country as zero overlap allows.
+ *
+ * WHAT THAT REMOVED. With no stage colliding, the separator layer this beat carried — two outlines
+ * per cell, revealed by the collision census — has nothing to separate, so it is gone, and so is the
+ * halo that kept names readable where those outlines crossed them. `restore.ts` keeps the census and
+ * keeps the refusal: the moment any stage piles squares again, the outlines become compulsory and
+ * the page is refused without them.
  *
  * A reader who does both, in that order, has proved with their own hand that a tile cartogram's
  * distortion is a distortion of WEIGHT and not of position. A still has to pick one weighting and
@@ -74,7 +103,6 @@ import {
   restoreSlugOf,
   restoreCellAttrs,
   restoreNameAttrs,
-  restoreEdgeAttrs,
   restorePlateAttrs,
 } from "../../skills/map-web/assets/restore.ts";
 
@@ -144,22 +172,6 @@ export function DirectedCartogramWeb({
     mix(ground, accent, 0.14 + (i / (classes.length - 1)) * 0.86),
   );
   const edge = mix(ground, ink, 0.32);
-  /** WHAT SEPARATES ONE FILL FROM THE NEXT, measured on the pairs that REALLY collide rather than
-   *  on every pair that could. A ground-coloured gap is the separator a map wants — it is the page
-   *  showing between the tiles, it adds no ink, and it cannot be misread as a value. Measured
-   *  against the 125 colliding pairs of `lieu` and the 40 of `surface`, it holds everywhere except
-   *  where the palest class meets the palest class: TUR/CYP at the true place and ROU/MDA at the
-   *  true area both sit at 1,24:1 on the light grounds and 1,31:1 on the dark one, which is not a
-   *  gap a reader can see. So the gap is CASED: the tile's own soft edge is redrawn over it, and
-   *  that line carries exactly those two pairs, at 1,71:1 on `creme`, 2,03:1 on `nocturne` and
-   *  1,81:1 on `rapport` against the palest class.
-   *
-   *  The alternative measured and rejected was a separator sought for the best worst case over all
-   *  six paints, which lands on the direction's own ink — 2,78:1, 1,49:1 and 2,96:1. It separates
-   *  better on paper and was worse on the page: on `nocturne` it is a near-white wireframe over 41
-   *  squares, it is the heaviest ink on the page, and it competes with the names, which are also
-   *  near-white. Rendered and looked at before being dropped. */
-  const gap = ground;
 
   /** The dose that moves a cell off its OWN painted fill far enough to be seen — sought, not fixed,
    *  which is the owner's second ruling taken literally. */
@@ -410,81 +422,18 @@ export function DirectedCartogramWeb({
           })}
 
 
-          {/* THE SEPARATOR LAYER — every square's own boundary, drawn ABOVE every fill and revealed
-              only in the stages the geometry says collide.
-
-              WHAT THIS COSTS. A second rect per cell and a heavier line than the tile's own edge, in
-              the direction's ink rather than in a step off the ground. In the filed grid the layer
-              is at `opacity: 0` and costs nothing but its markup; in `lieu` it is 41 outlines over a
-              pile 38 cells deep, which is busy — but busy is what that stage MEASURES, and the
-              alternative was worse in a way that cannot be argued back: the tile's own edge sits at
-              1,18:1 against the second class on `creme`, 1,13:1 on `nocturne` and 1,20:1 on
-              `rapport`, so the moment two mid-ramp squares touch, the line between them is not
-              there. That is the whole of what the owner saw.
-
-              WHY NOT TRANSPARENCY, the usual answer to colliding marks: opacity under 1 would make a
-              deep pile DARKER, and on this page darker is a class. A reader would read crowding as
-              a low-carbon reading. Recolouring the ramp to show geometry is the one thing a
-              choropleth-coloured cartogram may never do, so the separation had to be a line.
-
-              WHY NOT A GROUND-COLOURED HALO, the other usual answer: measured on the delivered
-              ramps it is worse than the ink everywhere and worst exactly where it is needed — two
-              adjacent palest squares separated by a line of page sit at 1,24:1 on `creme` and
-              `rapport`, which is the same invisibility under a different name. */}
-          {order.map((code) => {
-            const tile = byCode.get(code) as Tile;
-            const seat = home.get(code) as any;
-            return (
-              <g key={`e-${code}`}>
-                <rect
-                  {...restoreEdgeAttrs(code)}
-                  pointerEvents="none"
-                  x={seat.cx - seat.side / 2}
-                  y={seat.cy - seat.side / 2}
-                  width={seat.side}
-                  height={seat.side}
-                  rx={3}
-                  fill="none"
-                  stroke={gap}
-                  data-restore-cased=""
-                />
-                <rect
-                  {...restoreEdgeAttrs(code)}
-                  pointerEvents="none"
-                  x={seat.cx - seat.side / 2}
-                  y={seat.cy - seat.side / 2}
-                  width={seat.side}
-                  height={seat.side}
-                  rx={3}
-                  fill="none"
-                  stroke={edge}
-                  strokeWidth={1}
-                  strokeDasharray={tile.klass === null ? "3 3" : undefined}
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
-            );
-          })}
-
-          {/* THE NAMES, EACH HALOED IN ITS OWN CELL'S FILL. The halo is not decoration and it is
-              not here for the filed grid, where a name sits alone on its own square and needs
-              nothing: it is what lets a name survive the separator layer, whose boundaries cross
-              behind any word sitting near the edge of a crowded square. `paint-order: stroke` puts
-              the halo UNDER the glyph, so the ink a reader reads is still the ink measured against
-              that cell's own fill and the halo only clears what is behind it.
-
-              THE HALO IS THE CELL'S OWN FILL, and it has to be. A name is only ever drawn on a
-              square nothing later covers, so its glyphs already sit on that fill; haloing in the
-              fill restores exactly the condition the ink was measured against. The first attempt
-              haloed in the page's GROUND and was rendered and rejected: on `nocturne` the bright
-              classes take a DARK ink, so a navy halo around a navy glyph ate the word. A halo has
-              to be what the ink is not, and the fill already is.
-
-              THE NAMES. One group per cell, TRANSLATED with its square and never scaled by it, and
+          {/* THE NAMES. One group per cell, TRANSLATED with its square and never scaled by it, and
               faded out exactly when the square can no longer hold the word — which `restore.ts`
               derives from the sides and the overlaps rather than taking on trust. `opacity` is a
               property on an element that is ALWAYS rendered, which is the only kind of change CSS
-              can interpolate. */}
+              can interpolate.
+
+              NO HALO, AND THAT IS A CONSEQUENCE OF THE RELAXATION. The names used to be stroked in
+              their own cell's fill, to survive the boundary lines that crossed behind any word near
+              the edge of a crowded square. No stage crowds any more and there are no boundary lines
+              left, so a name sits alone on its own fill — which is the exact condition its ink was
+              measured against. A halo painting fill over fill is ink nobody can see, so it is gone
+              with the layer it was answering. */}
           {order.map((code) => {
             const tile = byCode.get(code) as Tile;
             const seat = home.get(code) as any;
@@ -503,10 +452,6 @@ export function DirectedCartogramWeb({
                   x={seat.cx}
                   y={seat.cy - 9}
                   fill={on}
-                  stroke={fill}
-                  strokeWidth={3}
-                  strokeLinejoin="round"
-                  paintOrder="stroke"
                   fontFamily={String(regs.axis.fontFamily)}
                   fontSize={12}
                   fontWeight={600}
@@ -520,10 +465,6 @@ export function DirectedCartogramWeb({
                   x={seat.cx}
                   y={seat.cy + 10}
                   fill={on}
-                  stroke={fill}
-                  strokeWidth={3}
-                  strokeLinejoin="round"
-                  paintOrder="stroke"
                   fontFamily={String(regs.value.fontFamily)}
                   fontSize={13}
                   fontWeight={700}
