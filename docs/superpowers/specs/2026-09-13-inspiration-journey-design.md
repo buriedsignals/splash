@@ -47,25 +47,27 @@ no gate, no obligation to produce a visual. Two surfaces, one back-end:
 |---|---|
 | D1 | Both surfaces: an agent skill and the web page. |
 | D2 | Agent returns the raw list from a single query. |
-| D3 | Anonymous by default; the journalist may connect an infoviz account at setup for the signed-in quota. |
-| D4 | Account connection = email + magic link + polling (one flow for agent and web). |
+| D3 | Anonymous by default; a signed-in account (10/day) on the web page, and in the agent under Indicator Labs only (see D9-D12). |
+| D4 | Account sign-in = email + magic link + Connect + polling, on the web page; the agent receives the token through Indicator Labs (D9 revised). |
 | D5 | Domain untouched. |
 | D6 | Web page signs in the same way infoviz.design does, through the D4 flow and a Bearer token. |
-| D7 | The token is stored in Engine's credential broker as `INFOVIZ_TOKEN`. |
+| D7 | For the agent, the token is stored in Engine's credential broker as `INFOVIZ_TOKEN` (pasted in Indicator Labs). |
 | D8 | The inspiration journey is independent of the storyboard. |
 
 ## Architecture
 
 ```
- journalist (agent)                journalist (browser)
-        │                                   │
- skills/inspiration                landing/inspiration.html
-   search.mjs ── Bearer? ──┐        ┌── Bearer? (localStorage)
-   connect.mjs ── start/poll ─┐  ┌─ start/poll
-        │                  │  │  │  │
-        ▼                  ▼  ▼  ▼  ▼
-   Engine broker        infoviz back-end (HF Space, API only)
-   INFOVIZ_TOKEN        /api/graphics/examples · /auth/token/* · /auth/status
+ journalist (agent, Goose under Indicator Labs)      journalist (browser)
+        │                                                  │
+ Splash MCP  search_inspiration                     landing/inspiration.html
+   ├─ bsig keys status INFOVIZ_TOKEN                  ├─ start → Connect → poll → Bearer (localStorage)
+   ├─ stored → bsig run splash inspiration-search     └─ "Copy token for Indicator Labs"
+   │            (Engine injects INFOVIZ_TOKEN)                     │ paste
+   └─ else → direct anonymous search                               ▼
+        │                                           Indicator Labs → Connected services
+        ▼                                           → Infoviz account → Enter token (Engine broker)
+ infoviz back-end (HF Space, API only)
+ /api/graphics/examples · /auth/token/* · /auth/status
 ```
 
 ### Part 1 — infoviz back-end (repo `~/Sites/Professional/infoviz`, dedicated branch)
@@ -173,7 +175,10 @@ Measured on Engine `origin/main` 52fed4f and Splash (why):
 **2b-1 — safe before the Engine release**:
 - Already built and kept (2026-09-15): `search.mjs` optional `token` (Bearer, a blank token is no token) and reason
   `invalid-token`; `format.mjs` reconnect sentence ("Your Infoviz account needs reconnecting: Indicator Labs →
-  Connected services → Infoviz → Reconnect."), `engine-failed` sentence and `accountNeedsReconnect` prefix;
+  Connected services → Infoviz → Reconnect." — reworded 2026-09-15 to "Your Infoviz account needs a new token: sign in on
+  https://splash.buriedsignals.com/inspiration.html, copy the token, then Indicator Labs → Connected services → Infoviz
+  account → Replace token…"), `engine-failed` sentence (closed detail: "it took too long" / "Indicator Labs reported an
+  error") and `accountNeedsReconnect` prefix;
   `sealed-search.mjs` (bounded `{query}`, `INFOVIZ_TOKEN`, one anonymous retry on `invalid-token` flagged
   `accountNeedsReconnect`); `run-operation.mjs` `inspiration-search` (query 1-1000 after trim → sealed entry).
 - Removed: `skills/inspiration/scripts/managed.mjs`, `engine.mjs` and their tests (they duplicated the bridge
@@ -186,7 +191,12 @@ Measured on Engine `origin/main` 52fed4f and Splash (why):
     failure is `engine-failed` and nothing searches again.
   - Self-install (no `SPLASH_BSIG_PATH`): the direct anonymous search.
   - Returns `formatInspiration(result)` as text plus the structured result; the tool description says to pass only
-    the journalist's subject and never a credential.
+    the journalist's subject, never a credential, and not to retry or run the search another way if it fails.
+  - Engine redacts every emitted line with `(?:cj_|on_|sk-|fw_)[A-Za-z0-9_-]{8,}`, which ordinary URLs and titles
+    match (`flood-risk-map…`). The sealed entry therefore prints `{"b64": base64(JSON result)}` (standard base64 has
+    no `_` or `-`) and the MCP service decodes it before the shape check.
+  - Timeouts: key status 10 s, run 48 s; an `engine-failed` detail is one of "it took too long" / "Indicator Labs
+    reported an error", never Engine's raw text.
   - The decision lives in `apps/goose/inspiration.mjs` with `invokeEngineFn` and `searchFn` injected; tests never
     spawn a process. The bridge's `status()` is not used: it refuses IDs outside `CREDENTIAL_IDS` until 2b-2.
 - `skills/inspiration/SKILL.md`: when the host exposes the Splash tool `search_inspiration`, call it with the
@@ -194,13 +204,15 @@ Measured on Engine `origin/main` 52fed4f and Splash (why):
   account is done or said in chat.
 - **Web page** (`landing/inspiration.html`): when signed in, a **"Copy token for Indicator Labs"** button next to Sign
   out; it copies `account.token` to the clipboard (never shows it) and confirms "Copied. Paste it in Indicator Labs →
-  Connected services → Infoviz → Enter token…". The token is never rendered in the page.
+  Connected services → Infoviz account → Enter token…". The token is never rendered in the page. The button stays
+  hidden behind `INDICATOR_LABS_ACCEPTS_INFOVIZ = false` until an Indicator Labs release stores `INFOVIZ_TOKEN`.
 
 **2b-2 — only once the Engine release is live**:
 - `INFOVIZ_TOKEN` in `apps/goose/contract.mjs` `CREDENTIAL_IDS`, `installer/setup/engine-bridge.mjs`
   `CREDENTIAL_POLICIES`, `apps/goose/self-managed.mjs` `PROVIDERS` (self-install row: "Available with Indicator
   Labs only"), `installer/setup/legacy-env.mjs`, and the tests that pin those lists. Not in `.env.example`
   (self-installs stay anonymous). No preflight capability (the studio's Connected services row covers status).
+- `landing/inspiration.html`: `INDICATOR_LABS_ACCEPTS_INFOVIZ = true` (shows the copy button).
 
 ### Part 3 — `inspiration` skill (Splash), anonymous
 
@@ -253,9 +265,9 @@ So Part 3 ships the **anonymous** journey only; everything account-related in th
 | Case | Agent | Web |
 |---|---|---|
 | Network / timeout | "infoviz is unreachable", no retry loop | inline error, search stays usable |
-| 429 | reset time + connect hint if anonymous | gauge at 0 + reset time + sign-in hint |
-| 401 on Bearer | one anonymous call + "reconnect your account" | token cleared, back to anonymous |
-| Poll `410` | "link expired, run connect again" | "link expired, try again" |
+| 429 | reset time (no account talk in chat) | gauge at 0 + reset time + sign-in hint |
+| 401 on Bearer (agent, Indicator Labs) | one anonymous call + "needs a new token" sentence | token cleared, back to anonymous |
+| Poll `410` (web sign-in) | — | "link expired, send a new one" |
 | Empty result | "nothing found for that subject" | empty state |
 
 ## Testing
@@ -263,9 +275,10 @@ So Part 3 ships the **anonymous** journey only; everything account-related in th
 - **infoviz back-end** (pytest, the repo's own runner): token flow — start, pending poll, confirm, single
   delivery, expiry, reuse refused; Bearer accepted by search and `/auth/status`; cookie path unchanged;
   app boots without `frontend/` and without `app/mcp/`.
-- **Splash fast lane** (`bun test`): `search.mjs` and `connect.mjs` with stubbed `fetchFn` for every row of
-  the error table; `probeInfoviz`; preflight capability; routing line present. Each guard verified by
-  mutation (break the code, watch the test go red).
+- **Splash fast lane** (`bun test`): `search.mjs`, `format.mjs`, `sealed-search.mjs` with stubbed `fetchFn`/`searchFn`;
+  `apps/goose/inspiration.mjs` with a faked `invokeEngineFn` that applies Engine's key-shape redaction to its output;
+  the `search_inspiration` tool through an in-memory MCP client; the runner's `inspiration-search` case; routing line
+  present. Each guard verified by mutation (break the code, watch the test go red).
 - **Splash live lane** (`*.live.test.ts`): one real anonymous search, skipped explicitly without network.
 - **Web**: browser-use against the page served locally, pointed at the branch back-end (local uvicorn or a
   preview Space): anonymous search, 429, sign-in, signed-in search, sign-out.
