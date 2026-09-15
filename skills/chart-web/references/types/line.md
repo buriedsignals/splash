@@ -1,6 +1,6 @@
 # Line — in web
 
-Worked example: `proof/web-line-swiss-co2` (2026-09-12), from `proof/co2-suisse`.
+Worked example: `proof/web-line-swiss-co2` (2026-09-15), from `proof/co2-suisse`.
 
 - **The gesture is `ask-a-mark`**, on the format's shared `assets/interaction.mjs` and declared in
   `BRIEF.md` through `assets/interaction-plan.ts`: no bespoke vocabulary, because the reader's move

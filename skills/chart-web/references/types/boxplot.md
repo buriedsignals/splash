@@ -1,6 +1,6 @@
 # Box plot — in web
 
-Worked example: `proof/web-boxplot-france-co2-decades` (2026-09-12).
+Worked example: `proof/web-boxplot-france-co2-decades` (2026-09-15).
 
 - **The gesture**: the reader parks one decade's OWN THREE LEVELS — Q1, median, Q3 — flat across all
   eight boxes, and reads every other box against that band instead of against the axis.

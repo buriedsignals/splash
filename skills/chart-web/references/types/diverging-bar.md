@@ -1,6 +1,6 @@
 # Diverging bar — in web
 
-Worked example: `proof/web-diverging-bar-eu-per-capita` (2026-09-12), from `proof/static-diverging-bar-eu-per-capita`.
+Worked example: `proof/web-diverging-bar-eu-per-capita` (2026-09-15), from `proof/static-diverging-bar-eu-per-capita`.
 
 - **The gesture**: the reader chooses the zero, and all twenty-seven bars re-aim at once — each
   shortening, lengthening, or crossing the rule and coming out the other side in the other sign's

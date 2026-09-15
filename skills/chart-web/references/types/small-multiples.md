@@ -1,6 +1,6 @@
 # Small multiples — in web
 
-Worked example: `proof/web-small-multiples-solar-eu-six` (2026-09-12), from
+Worked example: `proof/web-small-multiples-solar-eu-six` (2026-09-15), from
 `proof/static-small-multiples-lowcarbon`.
 
 - **Vocabulary: `chart-web/assets/carry.ts`** — one of the six carried into ALL SIX FRAMES at once,

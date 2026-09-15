@@ -1,6 +1,6 @@
 # Streamgraph — in web
 
-Worked example: `proof/web-streamgraph-swiss-electricity` (2026-09-12), from
+Worked example: `proof/web-streamgraph-swiss-electricity` (2026-09-15), from
 `proof/static-streamgraph-swiss-electricity`.
 
 - **Vocabulary: `chart-web/assets/floor.ts`**, a vocabulary written for this beat.

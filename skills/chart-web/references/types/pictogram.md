@@ -1,6 +1,6 @@
 # Pictogram — in web
 
-Worked example: `proof/web-pictogram-europe-lowcarbon` (2026-09-12), from
+Worked example: `proof/web-pictogram-europe-lowcarbon` (2026-09-15), from
 `proof/static-pictogram-europe-lowcarbon`.
 
 - **Vocabulary: `chart-web/assets/unit.ts`**, written for this beat — native radios plus build-time

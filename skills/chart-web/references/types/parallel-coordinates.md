@@ -1,6 +1,6 @@
 # Parallel coordinates — in web
 
-Worked example: `proof/web-parallel-coordinates-electricity` (2026-09-12), from
+Worked example: `proof/web-parallel-coordinates-electricity` (2026-09-15), from
 `proof/static-parallel-coordinates-electricity-mix`.
 
 - **Vocabulary: `chart-web/assets/brush.ts`** — five NAMED bands over three of the seven rails, as

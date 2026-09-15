@@ -1,6 +1,6 @@
 # Marimekko — in web
 
-Worked example: `proof/web-marimekko-electricity-mix` (2026-09-12), from
+Worked example: `proof/web-marimekko-electricity-mix` (2026-09-15), from
 `proof/static-marimekko-electricity-mix`.
 
 - **Vocabulary: `chart-web/assets/hold.ts`** (with `assets/stack.ts` as its neighbour) — three native

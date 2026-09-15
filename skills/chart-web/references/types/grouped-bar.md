@@ -1,6 +1,6 @@
 # Grouped bar — in web
 
-Worked example: `proof/web-grouped-bar-wind-vs-solar` (2026-09-12), from `proof/static-wind-vs-solar`.
+Worked example: `proof/web-grouped-bar-wind-vs-solar` (2026-09-15), from `proof/static-wind-vs-solar`.
 
 - **The gesture**: the reader chooses a country and its own two levels lie flat across the other five,
   each in its series' own ink.

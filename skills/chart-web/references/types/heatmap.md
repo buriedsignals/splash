@@ -1,6 +1,6 @@
 # Heatmap — in web
 
-Worked example: `proof/web-heatmap-europe-electricity` (2026-09-12), from `proof/static-heatmap-europe-electricity`.
+Worked example: `proof/web-heatmap-europe-electricity` (2026-09-15), from `proof/static-heatmap-europe-electricity`.
 
 - **The gesture**: the reader raises the FLOOR and watches which cells survive it.
 - **Start from what a ramp cannot do.** Colour ranks; it does not measure — and a sequential ramp's low

@@ -1,6 +1,6 @@
 # Bar and column — in web
 
-Worked example: `proof/web-bar-top-emitters-2024` (2026-09-12), from `proof/static-bar-top-emitters-2024`.
+Worked example: `proof/web-bar-top-emitters-2024` (2026-09-15), from `proof/static-bar-top-emitters-2024`.
 
 - **The gesture**: the reader picks one column as the reference, and the countries below it LEAVE
   THEIR BANDS AND STACK on each other beside it, one on the next, until the tower reaches its height.

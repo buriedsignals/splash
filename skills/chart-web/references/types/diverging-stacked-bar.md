@@ -1,6 +1,6 @@
 # Diverging stacked bar — in web
 
-Worked example: `proof/web-diverging-stacked-electricity` (2026-09-12), from `proof/static-diverging-stacked-electricity`.
+Worked example: `proof/web-diverging-stacked-electricity` (2026-09-15), from `proof/static-diverging-stacked-electricity`.
 
 - **The gesture**: the reader moves the CUT — where the ordered scale stops meaning one thing and
   starts meaning its opposite — and nothing is added, removed or re-measured.

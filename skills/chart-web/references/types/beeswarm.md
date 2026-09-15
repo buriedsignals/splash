@@ -1,6 +1,6 @@
 # Beeswarm — in web
 
-Worked example: `proof/web-beeswarm-co2-per-person` (2026-09-12), from `proof/static-beeswarm-co2-per-person`.
+Worked example: `proof/web-beeswarm-co2-per-person` (2026-09-15), from `proof/static-beeswarm-co2-per-person`.
 
 - **The gesture**: the reader chooses the UNIT the swarm is thick in — people, countries, tonnes — and
   the same 213 marks at the same 213 values re-pack around the answer.

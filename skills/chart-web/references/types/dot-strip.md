@@ -1,6 +1,6 @@
 # Dot strip — in web
 
-Worked example: `proof/web-dot-strip-lowcarbon-spread` (2026-09-12), from `proof/static-dot-strip-lowcarbon-spread`.
+Worked example: `proof/web-dot-strip-lowcarbon-spread` (2026-09-15), from `proof/static-dot-strip-lowcarbon-spread`.
 
 - **The gesture**: the reader chooses WHAT COUNTS — four rungs, each taking one more source out of the
   numerator, the denominator never changing — and every dot takes a new position on the same rail.

@@ -1,6 +1,6 @@
 # Treemap — in web
 
-Worked example: `proof/web-treemap-europe-capacity` (2026-09-12), from
+Worked example: `proof/web-treemap-europe-capacity` (2026-09-15), from
 `proof/static-treemap-europe-capacity`.
 
 - **Vocabulary: `chart-web/assets/descend.ts`** — choosing a source throws the frame away and

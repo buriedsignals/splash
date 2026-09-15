@@ -1,6 +1,6 @@
 # Dumbbell — in web
 
-Worked example: `proof/web-dumbbell-life-expectancy-gains` (2026-09-12).
+Worked example: `proof/web-dumbbell-life-expectancy-gains` (2026-09-15).
 
 - **The gesture**: the reader lays one country's OWN TWO LEVELS across the other nine, stood UP rather
   than laid flat because on this shape the value axis is horizontal.

@@ -1,6 +1,6 @@
 # Stacked bar — in web
 
-Worked example: `proof/web-stacked-bar-lowcarbon-growth` (2026-09-12), from
+Worked example: `proof/web-stacked-bar-lowcarbon-growth` (2026-09-15), from
 `proof/static-stacked-bar-lowcarbon-growth`.
 
 - **Vocabulary: `chart-web/assets/rebase.ts`**, written for this beat.

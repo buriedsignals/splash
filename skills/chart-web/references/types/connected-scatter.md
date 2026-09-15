@@ -1,6 +1,6 @@
 # Connected scatter — in web
 
-Worked example: `proof/web-connected-scatter-lowcarbon` (2026-09-12), from `proof/static-connected-scatter-lowcarbon`.
+Worked example: `proof/web-connected-scatter-lowcarbon` (2026-09-15), from `proof/static-connected-scatter-lowcarbon`.
 
 - **The gesture**: the reader chooses which reading the arrowhead is AIMED at, and the hypotenuse the
   plate never decomposes is drawn as its own two legs.

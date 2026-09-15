@@ -1,6 +1,6 @@
 # Area — in web
 
-Worked example: `proof/web-area-swiss-co2` (2026-09-12), from `proof/static-area-swiss-co2`.
+Worked example: `proof/web-area-swiss-co2` (2026-09-15), from `proof/static-area-swiss-co2`.
 
 - **The gesture**: the reader stands a reference up at a year they choose, and the surface
   re-partitions on it — the seam leaves the author's 1986 and travels, so the accent block IS their

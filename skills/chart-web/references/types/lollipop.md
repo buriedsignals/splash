@@ -1,6 +1,6 @@
 # Lollipop — in web
 
-Worked example: `proof/web-lollipop-co2-per-person` (2026-09-12), from
+Worked example: `proof/web-lollipop-co2-per-person` (2026-09-15), from
 `proof/static-lollipop-co2-per-person`.
 
 - **Vocabulary: `chart-web/assets/level.ts`**, `y` marks, unwidened — radios plus CSS generated at

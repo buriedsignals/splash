@@ -1,6 +1,6 @@
 # Pie and donut — in web
 
-Worked example: `proof/web-donut-world-co2-share` (2026-09-12), from
+Worked example: `proof/web-donut-world-co2-share` (2026-09-15), from
 `proof/static-donut-world-co2-share`.
 
 - **Vocabulary: `chart-web/assets/level.ts`** — the reader picks a country and it takes the ring.

@@ -1,6 +1,6 @@
 # Scatter — in web
 
-Worked example: `proof/web-scatter-income-life-expectancy` (2026-09-12), from
+Worked example: `proof/web-scatter-income-life-expectancy` (2026-09-15), from
 `proof/static-income-life-expectancy`.
 
 - **Vocabulary: `chart-web/assets/level.ts`** — the reader parks a yardstick on a case, and it is ink

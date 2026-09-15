@@ -1,6 +1,6 @@
 # Sankey — in web
 
-Worked example: `proof/web-sankey-electricity-sources` (2026-09-12), from
+Worked example: `proof/web-sankey-electricity-sources` (2026-09-15), from
 `proof/static-sankey-electricity-sources`.
 
 - **Vocabulary: `chart-web/assets/trace.ts`**, which refuses an option whose drawn segments plus its

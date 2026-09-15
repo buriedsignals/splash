@@ -1,6 +1,6 @@
 # Bump — in web
 
-Worked example: `proof/web-bump-emitter-rank` (2026-09-12), from `proof/static-bump-emitter-rank`.
+Worked example: `proof/web-bump-emitter-rank` (2026-09-15), from `proof/static-bump-emitter-rank`.
 
 - **The gesture**: the reader follows one line and is told the field the chart does not draw — who it
   passed, by name, at every crossing.

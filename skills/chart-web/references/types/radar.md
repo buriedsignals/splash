@@ -1,6 +1,6 @@
 # Radar — in web
 
-Worked example: `proof/web-radar-electricity-mix` (2026-09-12), from
+Worked example: `proof/web-radar-electricity-mix` (2026-09-15), from
 `proof/static-radar-electricity-mix`.
 
 - **Vocabulary: `chart-web/assets/count.ts`**, which holds the arithmetic refusing a subset that

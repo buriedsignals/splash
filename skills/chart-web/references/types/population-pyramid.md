@@ -1,6 +1,6 @@
 # Population pyramid — in web
 
-Worked example: `proof/web-population-pyramid-switzerland` (2026-09-12), from
+Worked example: `proof/web-population-pyramid-switzerland` (2026-09-15), from
 `proof/static-swiss-age-pyramid`.
 
 - **Vocabulary: `chart-web/assets/fold.ts`**, guarded by `assertFoldDeclaration`, which refuses a

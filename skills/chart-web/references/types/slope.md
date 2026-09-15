@@ -1,6 +1,6 @@
 # Slope — in web
 
-Worked example: `proof/web-slope-europe-lowcarbon` (2026-09-12), from
+Worked example: `proof/web-slope-europe-lowcarbon` (2026-09-15), from
 `proof/static-slope-europe-lowcarbon`.
 
 - **Vocabulary: `chart-web/assets/level.ts`**, which lays a chosen country's own two levels flat

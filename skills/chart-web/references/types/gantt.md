@@ -1,6 +1,6 @@
 # Gantt — in web
 
-Worked example: `proof/web-gantt-top-ten-tenure` (2026-09-12), from `proof/static-gantt-top-ten-tenure`.
+Worked example: `proof/web-gantt-top-ten-tenure` (2026-09-15), from `proof/static-gantt-top-ten-tenure`.
 
 - **The gesture**: the reader chooses WHERE EACH BAR'S OWN ZERO IS PUT — the shared calendar, each
   row's own entry, or the held years with interruptions closed.

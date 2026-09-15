@@ -1,6 +1,6 @@
 # Bullet — in web
 
-Worked example: `proof/web-bullet-low-carbon-share` (2026-09-12), from `proof/static-bullet-low-carbon-share`.
+Worked example: `proof/web-bullet-low-carbon-share` (2026-09-15), from `proof/static-bullet-low-carbon-share`.
 
 - **The gesture**: the reader chooses the TARGET, and every verdict on the page is re-derived from it.
 - **Start from the verdict, which is half data and half decision.** A bullet is the only type whose

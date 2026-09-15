@@ -1,6 +1,6 @@
 # Calendar heatmap — in web
 
-Worked example: `proof/web-calendar-heatmap-geneva` (2026-09-12), from `proof/static-calendar-heatmap-geneva`.
+Worked example: `proof/web-calendar-heatmap-geneva` (2026-09-15), from `proof/static-calendar-heatmap-geneva`.
 
 - **The gesture**: the reader moves the threshold that defines the streak, and watches which end of the
   headline holds.

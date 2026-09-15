@@ -1,6 +1,6 @@
 # Waterfall — in web
 
-Worked example: `proof/web-waterfall-germany-bridge` (2026-09-12), from
+Worked example: `proof/web-waterfall-germany-bridge` (2026-09-15), from
 `proof/static-germany-electricity-bridge`.
 
 - **Vocabulary: `chart-web/assets/withdraw.ts`**, the third file in the `filter.ts` / `stack.ts`

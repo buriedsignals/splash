@@ -1,6 +1,6 @@
 # Histogram — in web
 
-Worked example: `proof/web-histogram-carbon-footprint` (2026-09-12), from `proof/static-carbon-footprint-spread`.
+Worked example: `proof/web-histogram-carbon-footprint` (2026-09-15), from `proof/static-carbon-footprint-spread`.
 
 - **The gesture**: the reader stands the distribution's OWN QUANTILES up across the plot — the readings
   no choice of bins can move.
