@@ -25,6 +25,11 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
+import {
+  CardImages,
+  noScriptCss,
+  shapeSelectionCss,
+} from "../../skills/scrolly/scripts/live-map-cards.mjs";
 
 export type Name = { iso: string; text: string; role: "odd" };
 type Style = Record<string, string | number>;
@@ -83,16 +88,14 @@ export function DirectedChoroplethScrolly({
   });
   const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const scope = '[data-part="choropleth"]';
-  // WHICH SHAPE OF CARD IMAGE, read off the STAGE's own aspect: the live map fits the reference ground by the
-  // stage's height when the stage is wider than the reference and by its width otherwise, and each shape is
-  // baked for one of the two (`render-directions-scrolly.mjs`, `WIDE_ASPECT`).
-  const shapes =
-    `${scope} [data-part="stage"]{container-type:size}` +
-    `@container (aspect-ratio < ${reference.width}/${reference.height}){${scope} [data-shape="wide"]{display:none}}` +
-    `@container (aspect-ratio >= ${reference.width}/${reference.height}){${scope} [data-shape="tall"]{display:none}}`;
-  const noScript =
-    `${scope} [data-fallback]{opacity:0!important}` +
-    `${scope} [data-fallback="${fallbacks.length - 1}"],${scope} [data-part="key"],${scope} [data-class-swatch],${scope} [data-part="top-count"]{opacity:1!important}`;
+  // The shape of card image is chosen by the stage's own aspect; the no-JS picture is the last card with its key
+  // and counter (`live-map-cards.mjs`).
+  const shapes = shapeSelectionCss(scope, reference);
+  const noScript = noScriptCss(scope, fallbacks.length - 1, [
+    '[data-part="key"]',
+    "[data-class-swatch]",
+    '[data-part="top-count"]',
+  ]);
 
   return (
     <div
@@ -146,33 +149,8 @@ export function DirectedChoroplethScrolly({
           background: water.water,
         }}
       >
-        {/* EACH CARD AT THE READER'S DENSITY, chosen by a media query and not by `srcset`'s `2x`: Chrome
-            treats an inlined data URI as already cached and so always takes the densest candidate, which
-            gave a 1x screen the 2x bake anyway (measured 2026-09-15). Fitted `cover` and centred, which on a
-            stage of the shape's aspect scales it by exactly the live map's own zoom shift. */}
-        {fallbacks.flatMap((card, k) =>
-          (["wide", "tall"] as const).map((shape) => (
-            <picture key={`${shape}${k}`}>
-              <source
-                media="(min-resolution: 1.5dppx)"
-                srcSet={card[shape].x2}
-              />
-              <img
-                data-fallback={k}
-                data-shape={shape}
-                src={card[shape].x1}
-                alt=""
-                style={abs({
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  opacity: k === first.card ? 1 : 0,
-                })}
-              />
-            </picture>
-          )),
-        )}
+        {/* One `<picture>` per card and shape, at the reader's density, fitted `cover`; the markup shows card 1. */}
+        <CardImages fallbacks={fallbacks} first={first.card} />
         <div data-part="live" style={abs({ inset: 0, opacity: 0 })} />
         <script
           type="application/json"

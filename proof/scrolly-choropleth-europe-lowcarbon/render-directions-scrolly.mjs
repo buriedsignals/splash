@@ -20,14 +20,10 @@
 //
 // Usage:  set -a && . ./.env && set +a && bun proof/scrolly-choropleth-europe-lowcarbon/render-directions-scrolly.mjs
 
-import { existsSync, readdirSync } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { createRequire } from "node:module";
+import { readdirSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer-core";
 import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { adjustToContrast, mix, readPalette, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
@@ -36,15 +32,11 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces, webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
-import { bakeCards } from "#shared/map-beat/bake.mjs";
-import { assertNotFallback, mapTilerKeyIn, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
-import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, validateScrollyPlan, zoomShiftFor } from "#shared/map-beat/scrolly.mjs";
 import { plateTints, WATER_HUE } from "#shared/map-beat/tints.mjs";
 import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
-import { resolveChrome } from "../../skills/scrolly/scripts/verify-scrolly.mjs";
-import { toDataUri } from "../../skills/scrolly/scripts/inline-asset.mjs";
+import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
 import { choroplethPlan, ISO, LAYER, LEVEL } from "./plan.mjs";
 import { DirectedChoroplethScrolly } from "./DirectedChoroplethScrolly.tsx";
 
@@ -58,32 +50,11 @@ const NB = "\u00A0";
 const BOUNDS = [[-25, 34], [42, 68]];
 const FRAME = { width: 1000, height: 760 };
 const FALLBACK = join(HERE, "fallback");
-/** Where a direction's card image lives. Module-level and handed the direction's id: built as closures inside the
- *  direction loop, Bun 1.3.5 returned the FIRST direction's paths on later iterations and inlined creme's images
- *  into nocturne's and rapport's pages (caught 2026-09-15 by the swap measurement). */
-const stemOf = (id, shape, scale) => `${id}-${shape}@${scale}x`;
-const pngOf = (id, k, shape, scale) => join(FALLBACK, `${stemOf(id, shape, scale)}-${k + 1}.png`);
-const webpOf = (id, k, shape, scale) => join(FALLBACK, `${stemOf(id, shape, scale)}-${k + 1}.webp`);
-const unbaked = (id, k, shape, scale) => !existsSync(webpOf(id, k, shape, scale)) && !existsSync(pngOf(id, k, shape, scale));
-const fallbackUri = async (id, k, shape, scale) => toDataUri(await readFile(webpOf(id, k, shape, scale)), "image/webp");
 
 /** The view the join is asserted at: a desktop stage. */
 const JOIN_VIEW = { width: 1168, height: 566 };
-/** THE CARD IMAGES ARE BAKED AT THE STAGE THE LAYOUT PUBLISHES, measured on the direction's own page: `wide`
- *  at a 1280 × 800 viewport, `tall` at 375 × 812 (`measureStages`). The live map fits the reference ground by
- *  the stage's height when the stage is wider than the reference (1280 × 973) and by its width otherwise, so
- *  `wide` keeps the stage's height and is baked wider (aspect `WIDE_ASPECT`), `tall` keeps the stage's width and
- *  is baked taller (`TALL_ASPECT`). Shown `object-fit: cover` and centred, each image is then scaled by exactly
- *  the live map's own zoom shift on every stage whose aspect lies between the reference's and its own, and not
- *  scaled at all on the measured stage: the frozen card and the live map meet to the pixel. */
-const WIDE_ASPECT = 2.5;
-const TALL_ASPECT = 0.47;
-const MEASURED_VIEWPORTS = { wide: { width: 1280, height: 800 }, tall: { width: 375, height: 812 } };
-/** A length at least `min` whose difference from `stage` is even, so the centred crop falls on whole pixels. */
-const evenFrom = (min, stage) => {
-  const n = Math.ceil(min);
-  return (n - stage) % 2 === 0 ? n : n + 1;
-};
+/** THE CARD IMAGES — measured stages, two shapes, two densities, lossless WebP, the own-bakes check — are
+ *  `skills/scrolly/scripts/live-map-cards-bake.mjs`'s; this beat decides only what they picture. */
 
 const RENEWABLE = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh"];
 const NUCLEAR = "nuclear_generation__twh";
@@ -250,81 +221,11 @@ console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPe
 console.log(`${french(ODD_ONE)} ${one(value.get(ODD_ONE))} · voisins ${neighbours.map((i) => `${french(i)} ${one(value.get(i))}`).join(", ")}\n`);
 
 // ── the live map: its key, its faces, its tiles, its frozen cards ──────────────────────────────
-const key = mapTilerKeyIn(process.env);
-if (!key)
-  throw new Error(
-    "no MapTiler key in the environment: this render proves the faces MapTiler serves, the join against its " +
-      "Countries tiles and bakes the card images, and none of that can be faked. Run it with the worktree's .env loaded.",
-  );
-const PLACEHOLDER = "__MAPTILER" + "_KEY__";
-const keyed = (value) => JSON.parse(JSON.stringify(value).split(PLACEHOLDER).join(key));
-
-/** MAPTILER SERVES FACES, NOT FAMILIES, and answers 200 with Noto Sans for a face it does not have. A
- *  register's family and weight become the face name MapTiler uses, and the bytes it returns are
- *  compared with the fallback's before the face is written into a layer. */
-const FACE_WEIGHTS = { 400: "Regular", 500: "Medium", 700: "Bold" };
-const servedFaces = new Map();
-async function maptilerFaceOf(register, role) {
-  const family = String(register.fontFamily).split(",")[0].trim().replace(/^["']|["']$/g, "");
-  const weight = FACE_WEIGHTS[Number(register.fontWeight)];
-  if (!weight) throw new Error(`no MapTiler face name for ${family} at weight ${register.fontWeight} (the ${role} register)`);
-  const italic = register.fontStyle === "italic";
-  const suffix = [italic && weight === "Regular" ? null : weight, italic ? "Italic" : null].filter(Boolean).join(" ");
-  const face = `${family} ${suffix}`;
-  if (!servedFaces.has(face)) {
-    const bytes = await maptilerGlyphs(face, "0-255", key);
-    assertNotFallback(bytes, await maptilerGlyphs(`Zzz Fictive ${suffix}`, "0-255", key), face);
-    assertNotFallback(bytes, await maptilerGlyphs(`Noto Sans ${suffix}`, "0-255", key), face);
-    servedFaces.set(face, bytes.length);
-  }
-  return face;
-}
+// The key proves the faces MapTiler serves, the join against its Countries tiles, and bakes the card images.
+const cards = await openLiveMapCards();
+const { key, styleDoc } = cards;
+const driver = `${cards.mapScript}\n${await readFile(join(HERE, "choropleth-drive.mjs"), "utf8")}`;
 const trackingEm = (register) => Number.parseFloat(register.letterSpacing ?? "0") / Number.parseFloat(register.fontSize);
-
-const require = createRequire(import.meta.url);
-const maplibreJs = await readFile(require.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
-const maplibreCss = await readFile(require.resolve("maplibre-gl/dist/maplibre-gl.css"), "utf8");
-const mapScript = await scrollyMapScript();
-const driver = `${mapScript}\n${await readFile(join(HERE, "choropleth-drive.mjs"), "utf8")}`;
-const styleDoc = await (await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)).json();
-if (!styleDoc.glyphs) throw new Error("the dataviz style carries no glyph endpoint");
-const unkeyedStyle = JSON.parse(JSON.stringify(styleDoc).split(key).join(PLACEHOLDER));
-const MAPLIBRE_VERSION = JSON.parse(await readFile(require.resolve("maplibre-gl/package.json"), "utf8")).version;
-const TRUNK_DIGEST = createHash("sha256")
-  .update((await Promise.all(["bake.mjs", "mount.mjs", "style.mjs", "scrolly.mjs", "scrolly-live.mjs"].map((f) => readFile(join(HERE, "../../shared/map-beat", f), "utf8")))).join("\0"))
-  .digest("hex");
-
-const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars"] });
-/** THE STAGE A RENDERED PAGE PUBLISHES at each measured viewport, in the whole CSS pixels the live runtime
- *  reads (`clientWidth`, `clientHeight`). Read WITH the page's scripts, once its faces are loaded: the header
- *  sets the longest title form that fits (`fitTitle`), so a phone's stage is taller than the no-script layout's. */
-async function measureStages(file) {
-  const out = {};
-  for (const [shape, viewport] of Object.entries(MEASURED_VIEWPORTS)) {
-    const page = await browser.newPage();
-    try {
-      await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
-      await page.goto(`file://${file}`, { waitUntil: "load" });
-      await page.evaluate(() => document.fonts.ready.then(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))));
-      out[shape] = await page.evaluate(() => {
-        const stage = document.querySelector('[data-part="stage"]');
-        return { width: stage.clientWidth, height: stage.clientHeight };
-      });
-    } finally {
-      await page.close();
-    }
-  }
-  return out;
-}
-
-async function mapPage() {
-  const page = await browser.newPage();
-  await page.setContent(
-    `<style>${maplibreCss} html,body{margin:0} #map{position:absolute;inset:0}</style><div id="map"></div><script>${maplibreJs}</script>` +
-      `<script>${mapScript}\nwindow.__mountPlan = mountPlan;</script>`,
-  );
-  return page;
-}
 
 const shares = Object.fromEntries([...studySet].map((iso) => [iso2Of(iso), value.has(iso) ? value.get(iso) : null]));
 
@@ -362,7 +263,7 @@ async function assertJoin(page) {
 }
 
 const refused = [];
-const joinPage = await mapPage();
+const joinPage = await cards.mapPage();
 try {
   console.log(`join: ${Object.keys(shares).length} study countries found among ${await assertJoin(joinPage)} codes in MapTiler Countries`);
 } finally {
@@ -385,10 +286,10 @@ try {
       const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN) ?? direction.accent;
       const inkOnGround = adjustToContrast(ink, direction.ground, TEXT_CONTRAST_MIN) ?? ink;
       const fonts = {
-        axis: await maptilerFaceOf(regs.axis, "axis"),
+        axis: await cards.faceOf(regs.axis, "axis"),
         axisSize: Number.parseFloat(regs.axis.fontSize),
         axisTracking: trackingEm(regs.axis),
-        annot: await maptilerFaceOf(regs.annot, "annot"),
+        annot: await cards.faceOf(regs.annot, "annot"),
         annotSize: Number.parseFloat(regs.annot.fontSize),
         annotTracking: trackingEm(regs.annot),
         ink: inkOnGround,
@@ -460,7 +361,7 @@ try {
             driver,
             apply: "applyChoroplethState",
           },
-          vendor: [{ js: maplibreJs, css: maplibreCss }],
+          vendor: [{ js: cards.maplibreJs, css: cards.maplibreCss }],
           title,
           eyebrow: EYEBROW,
           source,
@@ -471,105 +372,19 @@ try {
           name: `${id}.html`,
         });
 
-      // THE STAGE FIRST: a draft page with blank card images publishes the same layout (images are absolutely
-      // placed), and its stages are what the cards are baked at.
-      const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
-      const blankShape = { size: { width: 1, height: 1 }, cards: STATES.map(() => ({ odd: [0, 0], zoom: 0 })) };
-      const draft = await renderPage(
-        STATES.map(() => ({ wide: { x1: BLANK, x2: BLANK }, tall: { x1: BLANK, x2: BLANK } })),
-        { wide: blankShape, tall: blankShape },
-      );
-      const stages = await measureStages(draft.outPath);
-      const SIZES = {
-        wide: { width: evenFrom(stages.wide.height * WIDE_ASPECT, stages.wide.width), height: stages.wide.height },
-        tall: { width: stages.tall.width, height: evenFrom(stages.tall.width / TALL_ASPECT, stages.tall.height) },
-      };
-
-      // THE CARD IMAGES ARE BAKED ONLY WHEN WHAT THEY PICTURE HAS CHANGED: the plan (key-free) and the sizes.
-      // The page behind the bake is the STAGE's own ground (the water tint): whatever the canvas leaves
-      // transparent shows it, never a white page.
-      const stageGround = tints.water;
-      // TWO DENSITIES PER CARD, 2x AND 1x, chosen by the page's `<picture>` media queries: a 1x screen shown the 2x
-      // picture at half size reads the map's words thinner than the live 1x canvas that replaces them (recorded on
-      // 2026-09-15, the owner's "les fonts changent").
-      const SCALES = [2, 1];
-      const SHAPES = Object.keys(SIZES);
-      // The hash covers everything the pixels depend on besides the plan: the style document (key taken back
-      // out), the MapLibre that draws it, and the trunk code that mounts, sweeps and paints it — a MapTiler
-      // restyle or a trunk change re-bakes the card images instead of leaving them behind the live map.
-      const planHash = createHash("sha256")
-        .update(JSON.stringify({ plan, sizes: SIZES, stageGround, scales: SCALES, style: unkeyedStyle, maplibre: MAPLIBRE_VERSION, trunk: TRUNK_DIGEST }))
-        .digest("hex");
-      const recordPath = join(FALLBACK, `${id}.json`);
-      const variants = SHAPES.flatMap((shape) => SCALES.map((scale) => [shape, scale]));
-      let record = existsSync(recordPath) ? JSON.parse(await readFile(recordPath, "utf8")) : null;
-      if (!record || record.planHash !== planHash || STATES.some((_, k) => variants.some(([shape, scale]) => unbaked(id, k, shape, scale)))) {
-        await mkdir(FALLBACK, { recursive: true });
-        const page = await mapPage();
-        try {
-          await page.evaluate((ground) => {
-            document.documentElement.style.background = ground;
-            document.body.style.background = ground;
-          }, stageGround);
-          const shapes = {};
-          for (const [shape, scale] of variants) {
-            const baked = await bakeCards({
-              page,
-              plan: { ...keyed(plan), style: keyed(styleDoc) },
-              cameras,
-              size: SIZES[shape],
-              glyphsUrl: styleDoc.glyphs,
-              tints: plan.tints,
-              keepLabels: [],
-              statesForCards: STATES,
-              outDir: FALLBACK,
-              stem: stemOf(id, shape, scale),
-              project: [plan.oddSeat],
-              scale,
-            });
-            shapes[shape] = { size: SIZES[shape], cards: baked.map((b) => ({ odd: b.projected[0].map((v) => Math.round(v * 10) / 10), zoom: b.zoom })) };
-          }
-          record = { planHash, shapes };
-          await writeFile(recordPath, `${JSON.stringify(record, null, 2)}\n`);
-          console.log(`${id}: baked ${STATES.length} cards at ${SHAPES.map((shape) => `${SIZES[shape].width} × ${SIZES[shape].height}`).join(" and ")}`);
-        } finally {
-          await page.close();
-        }
-      }
-      // THE BAKES TRAVEL AS LOSSLESS WEBP: the same pixels as the PNG the browser wrote, in about 40 % of its bytes.
-      for (const [k] of STATES.entries())
-        for (const [shape, scale] of variants) {
-          if (!existsSync(pngOf(id, k, shape, scale))) continue;
-          try {
-            execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", "-exact", pngOf(id, k, shape, scale), "-o", webpOf(id, k, shape, scale)]);
-          } catch (error) {
-            throw new Error(`cwebp could not encode ${pngOf(id, k, shape, scale)} (brew install webp): ${error.message}`);
-          }
-          await rm(pngOf(id, k, shape, scale));
-        }
-      const fallbacks = [];
-      for (const [k] of STATES.entries())
-        fallbacks.push({
-          wide: { x1: await fallbackUri(id, k, "wide", 1), x2: await fallbackUri(id, k, "wide", 2) },
-          tall: { x1: await fallbackUri(id, k, "tall", 1), x2: await fallbackUri(id, k, "tall", 2) },
-        });
-      // The page carries this direction's own bakes, never another's (see `stemOf`).
-      const own = new Set();
-      for (const f of readdirSync(FALLBACK).filter((f) => f.startsWith(`${id}-`) && f.endsWith(".webp")))
-        own.add(toDataUri(await readFile(join(FALLBACK, f)), "image/webp"));
-      const inlined = fallbacks.flatMap((card) => Object.values(card).flatMap((pair) => Object.values(pair)));
-      if (inlined.some((u) => !own.has(u)) || new Set(inlined).size !== inlined.length)
-        throw new Error(`a card image inlined for ${id} is not one of ${id}'s own bakes`);
-
-      const { outPath } = await renderPage(fallbacks, record.shapes);
-      // The written page must publish the stages its cards were baked at, or the frozen card and the live map part.
-      const published = await measureStages(outPath);
-      for (const shape of SHAPES) {
-        const baked = SIZES[shape];
-        const at = published[shape];
-        const kept = shape === "wide" ? at.height === baked.height : at.width === baked.width;
-        if (!kept) throw new Error(`the ${shape} stage measured ${at.width} × ${at.height} on the written page, and its cards were baked for ${baked.width} × ${baked.height}`);
-      }
+      // THE PAGE BEHIND THE BAKE IS THE STAGE's own ground (the water tint): whatever the canvas leaves transparent
+      // shows it, never a white page. Albania's seat is read back per card, for the chip lifted over the image.
+      const { outPath } = await renderWithCardImages(cards, {
+        id,
+        plan,
+        states: STATES,
+        fallbackDir: FALLBACK,
+        stageGround: tints.water,
+        project: [plan.oddSeat],
+        cardOf: (baked) => ({ odd: baked.projected[0].map((v) => Math.round(v * 10) / 10), zoom: baked.zoom }),
+        blankCard: { odd: [0, 0], zoom: 0 },
+        renderPage,
+      });
       console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")} · faces ${fonts.axis} / ${fonts.annot}`);
     } catch (error) {
       await rm(join(OUT, `${id}.html`), { force: true });
@@ -578,9 +393,9 @@ try {
     }
   }
 } finally {
-  await browser.close();
+  await cards.close();
 }
-console.log(`faces served by MapTiler, each checked against the Noto Sans fallback: ${[...servedFaces.keys()].join(", ")}`);
+console.log(`faces served by MapTiler, each checked against the Noto Sans fallback: ${[...cards.servedFaces.keys()].join(", ")}`);
 if (refused.length) {
   console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
   process.exitCode = 1;

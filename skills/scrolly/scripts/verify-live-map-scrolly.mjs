@@ -12,11 +12,12 @@
 //
 // Usage: bun skills/scrolly/scripts/verify-live-map-scrolly.mjs <page.html> [--viewports 1280x800,375x812]
 
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { existsSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
+import { writeKeyedCopy } from "./live-map-cards-bake.mjs";
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
  *  `skills/scrolly/scripts/verify-scrolly.mjs`'s own copy for why these are duplicated rather than
@@ -61,12 +62,8 @@ const viewports = viewportsArg.split(",").map((v) => v.split("x").map(Number));
 const key = mapTilerKeyIn(process.env);
 if (!key) throw new Error("no MapTiler key in the environment");
 
-const placeholder = "__MAPTILER" + "_KEY__";
-const html = readFileSync(resolve(pagePath), "utf8");
-if (!html.includes(placeholder)) throw new Error(`${pagePath} carries no key placeholder — is it a live map page?`);
-const dir = mkdtempSync(join(tmpdir(), "live-scrolly-"));
-const keyed = join(dir, "page.html");
-writeFileSync(keyed, html.split(placeholder).join(key));
+const copy = writeKeyedCopy(resolve(pagePath), key);
+const keyed = copy.path;
 
 const failures = [];
 const notes = [];
@@ -151,7 +148,7 @@ try {
     await browser.close();
   }
 } finally {
-  rmSync(dir, { recursive: true, force: true });
+  copy.remove();
 }
 
 if (notes.length) console.log(notes.join("\n"));

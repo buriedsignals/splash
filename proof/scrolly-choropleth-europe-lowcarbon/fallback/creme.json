@@ -1,5 +1,5 @@
 {
-  "planHash": "1e6aa197d28acae260cea327593cff7c22c85c3e0fea027ca149169dbb2297a4",
+  "planHash": "c815bfc2617c5564553fdc750e1260354b2194934fd1ee2a5efc7bf305debf9a",
   "shapes": {
     "wide": {
       "size": {
@@ -101,5 +101,31 @@
         }
       ]
     }
+  },
+  "images": {
+    "creme-wide@2x-1.webp": "3b2c0d1546789713cdfdc258370e7430295509c20c16f3bd2db9ec0983c98f41",
+    "creme-wide@1x-1.webp": "0664196601dbf34e8d35287c9ff900389db2e1b125ec55a2981a511556ae0687",
+    "creme-tall@2x-1.webp": "e09c1a6f0ba066d47ab9fdd8af3ff0613d23ea100536f60537844e102c7c507c",
+    "creme-tall@1x-1.webp": "8b10d9bb9a1db1d9ff708873ab76ef82ab9a1adc5d947470287ea06953e67dd8",
+    "creme-wide@2x-2.webp": "100605c75f42d0d3c9f763d5cd5f2d4acaa51688d075bb9d3368e007e82b2d39",
+    "creme-wide@1x-2.webp": "7f774facf1b79e76790b5416910aa9e0d19bf28e93619996bd851d9b4fa78f32",
+    "creme-tall@2x-2.webp": "08688a3d07b27e6bc77781fbfc1d077ab0cd2d4de212d79ac1eaa33889ef7601",
+    "creme-tall@1x-2.webp": "1a36ce9e0ea4f97396c025387e0fe126799e0f751de05d38b20fb5f1e0980e0b",
+    "creme-wide@2x-3.webp": "ac061fb81fb4e2cbe5e6d098145d85410004554895e24c481fbe2edc78e1182c",
+    "creme-wide@1x-3.webp": "9677d465b51ba9e114757c4cf089bcbdd2f4143e949e13fd2ae296b870565f04",
+    "creme-tall@2x-3.webp": "a01583e1bad1ec9fec9476807d471346579d26de4239df47093cc262694c497f",
+    "creme-tall@1x-3.webp": "9620e0ba99f217b79b4bf3d33007364404d3e95cb590d7163c16dce4f7b6333c",
+    "creme-wide@2x-4.webp": "fde347c0dd9dffda9a054aa724bfe9365182dd0d4e30b590bbfcc9f01be2e62f",
+    "creme-wide@1x-4.webp": "94cf7170b951e74beb9908015253eda54cb6c7a7169c485fa4df9d234e628c96",
+    "creme-tall@2x-4.webp": "d381b0727d13fe3127dce9733852c664d98ea57ce5dc3d897660ce7da9140dad",
+    "creme-tall@1x-4.webp": "6ab719810fbcce5bc5eba0ca92e1ae3a51190f25f199188fe2cdc7d8f6813f55",
+    "creme-wide@2x-5.webp": "a8b513a2cdc32dd27668c447bcdb30238e94d279ab318d0d42776a66c76659af",
+    "creme-wide@1x-5.webp": "88f449d04a076c3d6c9a6584f6d0b0d3b89934cbca4d704ef9b94ce6ca5ad410",
+    "creme-tall@2x-5.webp": "1309b4a29f21595ae2f19dcd36a3399b24ffca43e33c7d078232ed27cba03787",
+    "creme-tall@1x-5.webp": "8f65610d79cf5654207bbbbf79a87d1f86049c12a3c11cab200a65953427f54a",
+    "creme-wide@2x-6.webp": "3c4dcd0bdf826af3665d36ef704a2255aa5e3b554eb81fa7ddbdc60fff342827",
+    "creme-wide@1x-6.webp": "f667dc876e0c2e7c377117a90954709b4bae9c035386c12e50bbb4cd9bdcc7de",
+    "creme-tall@2x-6.webp": "c0e46a97308ff8df56cd37376d50a66d92d735518f115a83de85b214ba7b0f9c",
+    "creme-tall@1x-6.webp": "6a93fcc46744e3a7624a88f3abb21760de2d52d52a74ff664f3c8489b7b2dd8d"
   }
 }
