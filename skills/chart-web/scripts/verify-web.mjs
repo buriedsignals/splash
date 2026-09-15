@@ -56,10 +56,12 @@ import { probeRevealedText, probeTypefaces } from "./typefaces.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** The widths this format claims to work at, each paired with a REAL window height rather than a
- *  generous one — the fit rule is about the height a reader actually has, and a laptop reports far
- *  less of it than its screen's spec sheet does. 1600x800 and 1920x950 are the two that were
- *  measured overflowing (102px and 101px) before `.chart-figure` gained its `max-height`; 3440x900
- *  is the ultrawide case where the old aspect-ratio chain grew the figure to 1762px. */
+ *  generous one. They used to be the WINDOW-FIT sizes — "1600x800 and 1920x950 are the two that
+ *  were measured overflowing (102px and 101px) before `.chart-figure` gained its `max-height`" —
+ *  and that clamp is gone: the owner refused the empty side gutters it produced, and a figure
+ *  taller than the window is the cost accepted in its place. The sizes stay, because they are still
+ *  the hard cases for the rule that REPLACED the fit: wide and short is exactly where a cell that
+ *  is not width-driven shrinks away from the frame's two sides. */
 const VIEWPORTS = [
   { w: 3440, h: 900, label: "ultrawide" },
   { w: 1920, h: 950, label: "desktop" },
@@ -164,10 +166,18 @@ function contrastRatio(a, b) {
 
 // ===== the checks =====
 
-/** ITEM: a web beat must fit the visible window. Measured as the document's own scroll height
- *  against the window's inner height — the one number a reader experiences as "is there a
- *  scrollbar" — plus the source line's own bottom edge, because a figure can technically fit while
- *  its last line sits under the fold of a clipped ancestor. */
+/** ITEM: a web beat must FILL THE WIDTH IT IS GIVEN, and its drawing must stay in proportion.
+ *
+ *  THE ITEM THIS REPLACES, QUOTED SO THE REVERSAL IS MET RATHER THAN LOST: "a web beat must fit the
+ *  visible window. Measured as the document's own scroll height against the window's inner height —
+ *  the one number a reader experiences as 'is there a scrollbar'." That was checked here for eleven
+ *  months and it was the wrong half of the trade. Three things cannot hold at once — a drawing in
+ *  proportion, a drawing edge to edge, a figure inside the window's height — and the owner picked
+ *  the first two on a real render: "la carte ne prend pas toute la largeur tout comme les charts."
+ *  So VERTICAL overflow is now permitted and no longer measured. What is measured instead is the
+ *  thing that had no guard at all: the cell's own width against the track the figure left it, and
+ *  the cell's own two scales against each other. Horizontal overflow stays forbidden — a reader who
+ *  has to scroll sideways to see the end of a chart has not seen the chart. */
 async function checkFit(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
@@ -188,41 +198,83 @@ async function checkFit(page, vp) {
       source: box(".chart-source"),
       xAxis: box(".chart-plot .x-axis"),
       filter: box(".chart-filter"),
+      // The cell the reader actually gets, and the track the figure actually left it. Read off the
+      // COMPUTED gutters rather than off the stylesheet's text, so a beat that overrode either one
+      // is measured as it renders and not as it was written.
+      cell: (() => {
+        const svg = document.querySelector("svg.chart");
+        const plot = document.querySelector(".chart-plot");
+        if (!svg || !plot) return null;
+        const cs = getComputedStyle(plot);
+        const px = (v) => parseFloat(v) || 0;
+        const r = svg.getBoundingClientRect();
+        const pr = plot.getBoundingClientRect();
+        const inner = pr.width - px(cs.paddingLeft) - px(cs.paddingRight);
+        return {
+          w: r.width,
+          h: r.height,
+          track: inner - px(cs.getPropertyValue("--y-gutter")) - px(cs.getPropertyValue("--end-gutter")),
+          vbW: svg.viewBox.baseVal.width,
+          vbH: svg.viewBox.baseVal.height,
+        };
+      })(),
     };
   });
-  const vOverflow = m.docH - m.innerH;
   const hOverflow = m.docW - m.innerW;
-  check(
-    vOverflow <= 1,
-    `${vp.label} ${vp.w}x${vp.h}: no vertical scroll inside the visual`,
-    `document ${m.docH}px in a ${m.innerH}px window (overflow ${vOverflow}px)`,
-  );
   check(
     hOverflow <= 1,
     `${vp.label} ${vp.w}x${vp.h}: no horizontal scroll`,
     `document ${m.docW}px in a ${m.innerW}px window`,
   );
-  check(
-    m.source.bottom <= m.innerH + 1,
-    `${vp.label} ${vp.w}x${vp.h}: the source line is on screen`,
-    `bottom at ${Math.round(m.source.bottom)}px of ${m.innerH}px`,
-  );
-  // Not every beat draws an x-axis row: a slope chart labels its own two ends, a ranking labels
-  // its rows, a small-multiples grid labels each panel. Asserting the row exists crashed this
-  // script outright on three shipped beats — a checker that dies on a sound beat is worse than one
-  // that says nothing about it.
-  if (m.xAxis)
+  if (m.cell) {
+    // THE FILL. One CSS pixel of sub-pixel rounding, not a tolerance for a design decision: the
+    // defect this replaced was 466px of empty gutter on the connected scatter and 769px on the
+    // proportional symbol map.
     check(
-      m.xAxis.bottom <= m.innerH + 1,
-      `${vp.label} ${vp.w}x${vp.h}: the x-axis is on screen`,
-      `bottom at ${Math.round(m.xAxis.bottom)}px of ${m.innerH}px`,
+      Math.abs(m.cell.w - m.cell.track) <= 1,
+      `${vp.label} ${vp.w}x${vp.h}: the drawing takes the whole track`,
+      `cell ${m.cell.w.toFixed(1)}px in a ${m.cell.track.toFixed(1)}px track`,
     );
+    // THE ISOTROPY. scaleX/scaleY against the cell's own viewBox — the number that says whether a
+    // circle is round under `preserveAspectRatio="none"`.
+    const aniso = (m.cell.w / m.cell.vbW) / (m.cell.h / m.cell.vbH);
+    check(
+      Math.abs(aniso - 1) <= 0.005,
+      `${vp.label} ${vp.w}x${vp.h}: the drawing is in proportion`,
+      `scaleX/scaleY ${aniso.toFixed(4)} (cell ${m.cell.w.toFixed(1)}x${m.cell.h.toFixed(1)}, viewBox ${m.cell.vbW}x${m.cell.vbH})`,
+    );
+  }
   check(
     m.plot.h >= 100,
     `${vp.label} ${vp.w}x${vp.h}: the plot is still a chart, not a strip`,
     `plot ${Math.round(m.plot.w)}x${Math.round(m.plot.h)}`,
   );
   return m;
+}
+
+/** EVERY POINTER PROBE NEEDS THE WHOLE FIGURE ON SCREEN, AND SINCE THE WINDOW-FIT CLAMP WAS
+ *  REMOVED IT NO LONGER IS BY DEFAULT.
+ *
+ *  `page.mouse.move` is hit-tested in VIEWPORT coordinates, and every probe in this file is a
+ *  `getBoundingClientRect` centre. A figure taller than the window therefore puts its lowest marks
+ *  — the end label above all — at a y beyond `innerHeight`, where a real mouse move lands on
+ *  nothing at all and reports "the topmost element is nothing". Measured the moment the clamp went:
+ *  two hover probes on the seed at 1600x800 failed that way, on a page that is completely sound.
+ *
+ *  Growing the WINDOW rather than scrolling the document is deliberate. Scrolling would keep the
+ *  probe honest for one element and break it for the next, and would need bookkeeping at every call
+ *  site. Hover behaviour is a function of the plot's WIDTH (marks bunched or separated), never of
+ *  the window's height — that is why `POINTER_VIEWPORTS` names two widths — so the height is free
+ *  to be whatever makes the figure visible. The width, which is the thing under test, is untouched.
+ */
+async function fitWindowToBeat(page, vp) {
+  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+  await sleep(60);
+  const docH = await page.evaluate(() => document.documentElement.scrollHeight);
+  if (docH > vp.h) {
+    await page.setViewport({ width: vp.w, height: Math.ceil(docH) + 8, deviceScaleFactor: 1 });
+    await sleep(60);
+  }
 }
 
 /** ITEM: verify hovers really work — REAL pointer events at REAL coordinates.
@@ -234,8 +286,7 @@ async function checkFit(page, vp) {
  *       the exact place the old defect lived.
  *  Every probe asserts the tooltip is visible AND carries that reading's own `data-detail`. */
 async function checkHover(page, vp) {
-  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+  await fitWindowToBeat(page, vp);
 
   // MARKS ARE DISCOVERED BY `[data-detail]`, NOT BY `.pt`. `.pt` is the SEED's own class for a
   // point on a line; it is not the format's contract and it is not what most beats draw. Measured
@@ -620,8 +671,7 @@ async function checkLevel(page, tag) {
  *  like a reader's: a control covered by something else fails here. */
 async function checkFilter(page, vp, { scripting = true } = {}) {
   const tag = scripting ? vp.label : `${vp.label} (no JS)`;
-  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+  await fitWindowToBeat(page, vp);
 
   // MOST BEATS SHIP NO FILTER, AND THAT IS THE CORRECT OUTCOME OF THIS SKILL'S OWN THREE-PART
   // TEST (`SKILL.md`, "When to use" — "most beats should not have one"). Measured across the
@@ -871,8 +921,7 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
  *  radio group. Everything here is measured off the live page: what Tab reaches, what the focus
  *  ring computes to, and what the checked pill's own contrast is. */
 async function checkControlAffordance(page, vp) {
-  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+  await fitWindowToBeat(page, vp);
 
   const present = await page.evaluate(
     () => !!document.querySelector("fieldset.chart-filter"),
@@ -1159,7 +1208,7 @@ if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });
 try {
-  console.log(`\nFIT — the whole beat inside the visible window`);
+  console.log(`\nFILL — the drawing takes the whole width, in proportion, with no sideways scroll`);
   {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });

@@ -26,6 +26,7 @@ import {
   filterOptionsForMarkup,
 } from "../assets/filter.ts";
 import {
+  assertPlotCellFillsItsTrack,
   assertPlotCellIsItsViewBox,
   buildCss,
   plotViewBoxOf,
@@ -328,15 +329,22 @@ describe("nothing caps the chart frame's own width", () => {
   });
 });
 
-// Everything in this block is the STRUCTURE of the window-fit rule, and none of it is the proof.
-// `scripts/verify-web.mjs` is the proof: it drives Chrome at seven viewport sizes and measures
-// `document.scrollHeight` against `window.innerHeight`, which is the only number a reader ever
-// experiences. What a string assertion here CAN do is stop the mechanism being deleted or quietly
-// rewritten into something that no longer clamps — measured before the fix, the seed came to 902px
-// tall in an 800px window at 1600px wide, 1051px in a 950px window at 1920px, and 1762px at
-// 3440x900; after it, 0px of overflow at every one of them, with the plot's height UNCHANGED
-// wherever the window already had room.
-describe("the beat fits the visible window", () => {
+// Everything in this block is the STRUCTURE of the width-fill rule, and none of it is the proof.
+// `scripts/verify-web.mjs` is the proof: it drives Chrome and measures the cell the reader actually
+// gets against the track the figure actually left it. What a string assertion here CAN do is stop
+// the mechanism being deleted or quietly rewritten into something that no longer fills.
+//
+// THE RULE THIS BLOCK REPLACED, AND WHY. It used to be called "the beat fits the visible window"
+// and it asserted `max-height: 100dvh` on the figure, `flex: 0 1 auto` on the plot, and a pixel
+// floor under it. That was the window-fit clamp, and it is gone. Three things cannot all hold at
+// once — the drawing keeps its own proportions, the drawing takes the whole width, the whole figure
+// fits in the window's height — and the owner arbitrated on a render: "la carte ne prend pas toute
+// la largeur tout comme les charts, fais en sorte qu'ils prennent toute la largeur en respectant
+// les marges." The clamp was what made the cell HEIGHT-driven, which is what left 954px of drawing
+// inside a 1420px track on the connected scatter at 1512x860 and 695px inside 1464px on the
+// proportional symbol map. Measured after this change, on the seed: cell 1409.0px in a 1409.1px
+// track at 1512x860, and the document 9px taller than the window — which is now the accepted cost.
+describe("the figure takes the whole width it is given", () => {
   const css = () =>
     buildCss({ plot: FRAME,
       ground: "#FFFFFF",
@@ -350,47 +358,53 @@ describe("the beat fits the visible window", () => {
     return css().slice(at, css().indexOf("}", at));
   };
 
-  it("should clamp the figure to the viewport height, with a vh fallback under the dvh", () => {
+  it("should put no height clamp on the figure — the page scrolls instead of the drawing shrinking", () => {
+    // THE MUTATION: put `max-height: 100dvh` back. The plot is then squeezed by the shortfall, the
+    // cell goes back to being driven by its height, and the empty side gutters return.
     const figure = rule(".chart-figure {");
-    expect(figure).toContain("max-height: 100dvh");
-    // The fallback must come FIRST: both declarations are valid syntax to a parser that knows
-    // dvh, and the last one wins there; an engine that does not know dvh drops that line and
-    // keeps the vh above it. Reversed, the fallback would win everywhere.
-    expect(figure.indexOf("max-height: 100vh")).toBeLessThan(
-      figure.indexOf("max-height: 100dvh"),
-    );
+    expect(figure).not.toContain("max-height");
+    expect(figure).not.toContain("100dvh");
+    expect(figure).not.toContain("100vh");
   });
 
-  it("should make the figure a flex column so the clamp has something to distribute", () => {
+  it("should make the figure a flex column, with no cap on its width", () => {
     const figure = rule(".chart-figure {");
     expect(figure).toContain("display: flex");
     expect(figure).toContain("flex-direction: column");
-    // Still no cap on the width — the fit rule must not have reintroduced the defect the fluid
-    // redesign removed.
     expect(figure).not.toContain("max-width");
     expect(figure).toContain("width: 100%");
   });
 
-  it("should let ONLY the plot absorb the shortfall — words are never squeezed", () => {
+  it("should let NOTHING squeeze the plot — not the words above it, not a shortfall below", () => {
     const stylesheet = css();
     expect(stylesheet).toContain(
       ".chart-header, .chart-source { flex: 0 0 auto; }",
     );
     const plot = rule(".chart-plot {");
-    expect(plot).toContain("flex: 0 1 auto");
+    expect(plot).toContain("flex: 0 0 auto");
+    expect(plot).not.toContain("flex: 0 1 auto");
   });
 
-  it("should give the plot an explicit pixel floor rather than letting it shrink to a strip", () => {
+  it("should carry no pixel floor under the plot — the worst stretcher the format ever measured", () => {
+    // THE MUTATION: `min-height: 120px` back on `.chart-plot`. At 375x812 it pins the height while
+    // the width collapses, and the pictogram measured 2.15x TALLER than round — worse than any
+    // wide-and-short window managed. A floor only means something for a box that can be squeezed,
+    // and this one no longer can.
     const plot = rule(".chart-plot {");
-    const floor = plot.match(/min-height:\s*(\d+)px/);
-    expect(floor).not.toBeNull();
-    const px = Number(floor![1]);
-    // Above zero, because `min-height: 0` would also satisfy flexbox's own min-height:auto
-    // override while allowing a 3px "chart"; and below the 153px the seed measures at the
-    // narrowest width this format verifies (375px), so the floor can never fire on a window this
-    // format actually ships to and change a rendering that was already correct.
-    expect(px).toBeGreaterThan(0);
-    expect(px).toBeLessThan(153);
+    expect(plot).not.toMatch(/min-height:\s*\d+px/);
+    expect(css()).not.toContain("PLOT_FLOOR");
+  });
+
+  it("should take the plot's height from its content, not from a ratio typed over the whole box", () => {
+    // THE MUTATION: `container-type: size` back, or the `aspect-ratio: auto !important` override
+    // removed. Either one hands the plot's height back to the component's own inline
+    // `aspect-ratio: totalWidth / totalHeight`, which mixes pixel gutters with viewBox units and is
+    // right at exactly one width: measured across the 40 committed beats it puts the box out by up
+    // to 115px (the diverging bar at 1464px) and 84px (the gantt).
+    const plot = rule(".chart-plot {");
+    expect(plot).toContain("container-type: inline-size;");
+    expect(plot).not.toMatch(/container-type:\s*size;/);
+    expect(plot).toContain("aspect-ratio: auto !important");
   });
 });
 
@@ -709,36 +723,42 @@ describe("the plot cell carries the ratio of its own viewBox", () => {
 
   it("should size the cell from the beat's own two numbers, not from a ratio typed here", () => {
     const css = cssFor(FRAME);
+    // WIDTH-DRIVEN, ALWAYS: the cell IS the track, and its height is the track's width times the
+    // beat's own viewBox ratio. A `min()` here would be a CONTAIN, and a contain under any height
+    // pressure hands the drive back to the height and leaves the frame's two sides empty.
+    expect(css).toContain("--cell-w: var(--track-w);");
     expect(css).toContain(
-      `--cell-w: min(var(--track-w), calc(var(--track-h) * ${FRAME.width} / ${FRAME.height}))`,
+      `--cell-h: calc(var(--track-w) * ${FRAME.height} / ${FRAME.width})`,
     );
-    expect(css).toContain(
-      `--cell-h: min(var(--track-h), calc(var(--track-w) * ${FRAME.height} / ${FRAME.width}))`,
-    );
+    expect(css).not.toContain("--track-h:");
+    expect(css).not.toContain("--cell-slack-x:");
+    expect(css).not.toContain("--cell-slack-y:");
     // The track is what is left after BOTH gutters, not after one: a beat that declares an end
-    // gutter (the bump does) otherwise measures its slack against a track 127px too wide, which is
-    // exactly how its left gutter ended up 63.5px off the drawing it labels.
+    // gutter (the bump does) otherwise draws into a track 127px wider than it actually has, which
+    // is exactly how its left gutter ended up 63.5px off the drawing it labels.
     expect(css).toContain("--track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px))");
-    expect(css).toContain("--track-h: calc(100cqh - var(--x-axis-h))");
-    expect(css).toContain("container-type: size");
+    expect(css).toContain("container-type: inline-size");
     // And a DIFFERENT beat gets its own two numbers, not the seed's: the pair is read per render,
     // off the markup, and a constant compiled in here would satisfy the seed and nothing else.
     expect(cssFor({ width: 901, height: 337 })).toContain(
-      "--cell-w: min(var(--track-w), calc(var(--track-h) * 901 / 337))",
+      "--cell-h: calc(var(--track-w) * 337 / 901)",
     );
   });
 
-  it("should give both gutters the cell's own height and carry them across its slack", () => {
+  it("should give both gutters the cell's own height, with no slack left to cross", () => {
     const css = cssFor(FRAME);
     for (const gutter of [".chart-plot .y-axis", ".chart-plot .end-axis"]) {
       const rule = css.slice(css.indexOf(gutter), css.indexOf("}", css.indexOf(gutter)));
       expect(rule).toContain("height: var(--cell-h)");
       expect(rule).toContain("margin-block: auto");
-      expect(rule).toContain("--cell-slack-x");
+      // THE MUTATION: put `transform: translateX(var(--cell-slack-x))` back. It reads as harmless
+      // — the slack is zero now — but it is a translate keyed to a property nothing defines, so it
+      // resolves to the guaranteed-invalid value and the browser drops the whole declaration.
+      expect(rule).not.toContain("transform");
     }
     const x = css.slice(css.indexOf(".chart-plot .x-axis"), css.indexOf("}", css.indexOf(".chart-plot .x-axis")));
     expect(x).toContain("width: var(--cell-w)");
-    expect(x).toContain("translateY(calc(0px - var(--cell-slack-y)))");
+    expect(x).not.toContain("transform");
   });
 
   it("should refuse to build a stylesheet with no geometry to size the cell from", () => {
@@ -771,6 +791,75 @@ describe("the plot cell carries the ratio of its own viewBox", () => {
     expect(() => assertPlotCellIsItsViewBox(stretched, "a beat")).toThrow(/carry its own viewBox/);
 
     const none = `<style>.chart-plot { display: grid; }</style><svg class="chart" viewBox="0 0 820 380"></svg>`;
-    expect(() => assertPlotCellIsItsViewBox(none, "a beat")).toThrow(/no --cell-w rule/);
+    expect(() => assertPlotCellIsItsViewBox(none, "a beat")).toThrow(/no --cell-h rule/);
+  });
+});
+
+/**
+ * THE CELL TAKES THE WHOLE WIDTH THE FIGURE LEFT IT — the second guard, and the defect that had
+ * none.
+ *
+ * The first guard above says the cell has the right SHAPE. It says nothing about its SIZE, and a
+ * cell built as `min(track, track x W/H)` is the right shape at every width and, under a height
+ * clamp, the wrong size at most of them: 954px of drawing inside a 1420px track on the connected
+ * scatter at 1512x860, 695px inside 1464px on the proportional symbol map. Nothing in the tree
+ * would have caught it. The owner read it off the render: "la carte ne prend pas toute la largeur
+ * tout comme les charts, fais en sorte qu'ils prennent toute la largeur en respectant les marges."
+ */
+describe("the plot cell fills the track the figure left it", () => {
+  const cssFor = (plot: { width: number; height: number }) =>
+    buildCss({
+      plot,
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ...deriveFurniture("#FFFFFF"),
+    });
+  const pageWith = (css: string) =>
+    `<style>${css}</style><svg class="chart" viewBox="0 0 ${FRAME.width} ${FRAME.height}"></svg>`;
+
+  it("should pass the stylesheet this format actually emits", () => {
+    expect(() => assertPlotCellFillsItsTrack(pageWith(cssFor(FRAME)), "the seed")).not.toThrow();
+  });
+
+  it("should refuse a cell wrapped in the min() that produced the empty gutters", () => {
+    // THE MUTATION THE GUARD EXISTS FOR — the exact declaration the previous pass shipped.
+    const contained = cssFor(FRAME).replace(
+      "--cell-w: var(--track-w);",
+      `--cell-w: min(var(--track-w), calc(var(--track-h) * ${FRAME.width} / ${FRAME.height}));`,
+    );
+    expect(() => assertPlotCellFillsItsTrack(pageWith(contained), "a beat")).toThrow(
+      /instead of "var\(--track-w\)"/,
+    );
+  });
+
+  it("should refuse a cell capped by any other second term, however it is spelt", () => {
+    for (const value of [
+      "min(var(--track-w), 900px)",
+      "clamp(0px, var(--track-w), 900px)",
+      "calc(var(--track-w) * 0.9)",
+      "90%",
+    ]) {
+      const capped = cssFor(FRAME).replace("--cell-w: var(--track-w);", `--cell-w: ${value};`);
+      expect([value, (() => {
+        try { assertPlotCellFillsItsTrack(pageWith(capped), "a beat"); return "shipped"; }
+        catch { return "refused"; }
+      })()]).toEqual([value, "refused"]);
+    }
+  });
+
+  it("should refuse a track measured against anything but the container less its two gutters", () => {
+    // THE MUTATION: the end gutter dropped from the track. The drawing then runs 127px wider than
+    // the column it sits in on the one beat that declares one.
+    const narrowed = cssFor(FRAME).replace(
+      "--track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px));",
+      "--track-w: calc(100cqw - var(--y-gutter));",
+    );
+    expect(() => assertPlotCellFillsItsTrack(pageWith(narrowed), "a beat")).toThrow(/--track-w is not/);
+  });
+
+  it("should refuse a page that declares no cell width at all", () => {
+    const none = `<style>.chart-plot { --track-w: calc(100cqw - var(--y-gutter) - var(--end-gutter, 0px)); }</style>` +
+      `<svg class="chart" viewBox="0 0 820 380"></svg>`;
+    expect(() => assertPlotCellFillsItsTrack(none, "a beat")).toThrow(/no --cell-w rule/);
   });
 });

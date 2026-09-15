@@ -532,9 +532,6 @@ export function ChartWebSeed({
   const end = points[points.length - 1];
   const xTicks = xTickValues(years, frame.xTickHint);
 
-  const totalWidth = yGutterPx + frame.width;
-  const totalHeight = frame.height + frame.xAxisRowPx;
-
   // ── THE ENTRANCE. Five events, in the video's own order, read off `./entrance.ts`.
   //
   // Everything below decides WHICH element belongs to which event. Two of them are DERIVED from
@@ -711,9 +708,16 @@ export function ChartWebSeed({
       <div
         className="chart-plot"
         style={{
+          // THE TWO NUMBERS THE STYLESHEET CANNOT KNOW, and no third. An `aspectRatio:
+          // `${totalWidth} / ${totalHeight}`` used to sit here and gave the plot box its height.
+          // It cannot: it mixes a gutter measured in CSS pixels with a viewBox measured in its own
+          // units, so it is only right at ONE container width — across the forty committed beats it
+          // puts the box out by as much as 115px. The plot's height is now its CONTENT's height,
+          // and its content is one cell derived from these two values plus the beat's own viewBox.
+          // See `render-web.mjs`'s `.chart-plot` rule, which overrides any inline aspect-ratio a
+          // component still carries.
           ["--y-gutter" as string]: `${yGutterPx}px`,
           ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
-          aspectRatio: `${totalWidth} / ${totalHeight}`,
         }}
       >
         <div

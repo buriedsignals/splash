@@ -136,7 +136,7 @@ look at them; each catches what the other is blind to.
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
 | Render | `scripts/render-web.mjs` | Exports the format's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
-| Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
+| Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the width fill and the drawing's own isotropy at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
@@ -164,23 +164,23 @@ reference/peak/end labels — is plain HTML positioned by `%` over the same box 
 styled from CSS with a FIXED pixel `font-size` that never tracks the `viewBox`. `web-discipline.md`'s
 "Responsive behaviour" section argues this split in full.
 
-**The window fit — the half the fluid redesign was missing.** Once width filled its container and
-height followed from `aspect-ratio`, a wider viewport bought a TALLER chart, and past a certain
-width the beat grew off the bottom of the screen: measured on the seed, 902px of figure in an 800px
-window at 1600px wide, 1051px in a 950px window at 1920px, 1762px at 3440 × 900. The 102px missing
-at 1600 × 800 were the x-axis row, the subject's own end label and the source line — a reader on a
-16" laptop met a chart whose credit and whose final value were below the fold. A beat is one thing a
-reader looks at, not a document they scroll through, so `.chart-figure` is now a flex column with
-`max-height: 100dvh` (a `100vh` declaration first, as the fallback), header/filter/source pinned at
-`flex: 0 0 auto`, and the plot alone shrinkable (`flex: 0 1 auto`) down to `PLOT_FLOOR_PX`. Words
-are never squeezed to make a chart fit; the chart is. `max-height`, never `height`, so a figure that
-already fits is untouched and reserves no empty space — verified: the plot's height is unchanged at
-2560 × 1440, 1920 × 1080, 1728 × 1000 and 1024 × 768, while every overflowing case above now measures
-0px. The cost is named in `web-discipline.md`, "The beat fits the visible window": a clamped plot is
-flatter than its canonical ratio, which is the right side of the trade against an end label nobody
-sees. **What this does not claim** is that the beat USES the window — at 375 × 812 the seed still
-draws a 153px plot in an 812px window, because height follows width. Fitting and filling are two
-rules and only the first is settled.
+**The width fill, and the window fit that was traded for it.** This paragraph used to describe a
+window-fit clamp: `.chart-figure { max-height: 100dvh }`, header/filter/source at `flex: 0 0 auto`,
+the plot alone shrinkable down to a pixel floor, so that a beat was "one thing a reader looks at, not
+a document they scroll through". That clamp is GONE, and the reason is that three things cannot hold
+at once — the drawing in its own proportions, the drawing edge to edge, the figure inside the
+window's height. The first is not negotiable (on a map it is a false geography, not a style defect),
+and the owner arbitrated the other two on a render: *« la carte ne prend pas toute la largeur tout
+comme les charts, fais en sorte qu'ils prennent toute la largeur en respectant les marges. »* So the
+plot cell is WIDTH-DRIVEN, always: `--cell-w` is the track, `--cell-h` is that width times the beat's
+own `viewBox` ratio, and `.chart-plot` takes its height from that content rather than from any ratio
+typed over the whole box. Nothing squeezes anything: `flex: 0 0 auto` everywhere, no floor, no clamp.
+The cost is stated in `web-discipline.md`, "The beat takes the whole width, and the page scrolls": on
+a wide, short window the figure runs past the fold and the DOCUMENT scrolls — the honest overflow,
+and not a second scrollbar inside the article's own. Horizontal overflow stays forbidden. **What this
+does not claim** is that the beat USES the window's height — at 375 × 812 the seed draws a 154px plot
+in an 812px window, because height follows width. Filling the width is settled; using the height is
+not.
 
 **The filter's own control.** The first shipped filter was three default radio dots with a bare word
 beside each, which reads as an unfinished form under a finished chart. It is now a segmented control
@@ -288,8 +288,8 @@ skill into a journalist's root — the whole premise — did not build.
 | The fixed pixel type sizes for title/subtitle/source/axis/label/note/filter — never tracks the viewBox | `24`/`14`/`13`/`12`/`14`/`12`/`13` | `FRAME.title`/`subtitle`/`source`/`axis`/`label`/`note`/`filter`, `ChartWebSeed.tsx` |
 | The reading-measure cap on the header block and the source line — the chart frame itself is never capped | `640px` | `.chart-header, .chart-source`, `render-web.mjs` |
 | The frame's own fixed inner margin — content never touches the frame's edge, at any width | `24` | `FRAME_PAD_PX`, `render-web.mjs` |
-| How much of the window a beat may fill before the plot starts giving height back | `100dvh` (with a `100vh` fallback first) | `.chart-figure`'s `max-height`, `render-web.mjs` |
-| Where the plot stops shrinking — below it, a short window gets a scrollbar rather than a strip | `120` | `PLOT_FLOOR_PX`, `render-web.mjs` |
+| How much of the track the drawing takes — the whole of it, with nothing wrapped round it | `var(--track-w)` | `--cell-w`, `render-web.mjs` (guarded by `assertPlotCellFillsItsTrack`) |
+| How far the drawing may depart from its own `viewBox` ratio, measured in a browser | `0.005` | `checkFit`'s isotropy check, `verify-web.mjs` |
 | The segmented filter pill's own padding and corner (the whole treatment sits behind `@supports selector(:has(*))`) | `5px 12px` / `999px` | `.chart-filter label`, `render-web.mjs` |
 | The viewport sizes the verification drives, and the two it dispatches pointers at | 7 sizes / 2 sizes | `VIEWPORTS`, `POINTER_VIEWPORTS`, `verify-web.mjs` |
 | How many marks a hover sweep probes before it starts sampling an even spread | `40` | `MAX_PROBES`, `verify-web.mjs` |
@@ -409,8 +409,8 @@ skill into a journalist's root — the whole premise — did not build.
   copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current
   render (`render-preview.mjs --check`).
 - `test/seed-fluid-frame.test.ts` — the redesign's own shape: the `<svg>` this seed draws carries no
-  `<text>` element at all, the frame's CSS never caps its own width, the figure clamps to the
-  viewport height with the plot as the only shrinkable item and an explicit pixel floor, the filter's
+  `<text>` element at all, the frame's CSS never caps its own width, the figure carries no height
+  clamp and the plot no floor while its cell fills the whole track, the filter's
   three options sit in one `.options` track inside a real `<fieldset>`/`<legend>` with the segmented
   treatment behind an `@supports selector(:has(*))` guard and no radio taken out of the focus order,
   the filter's default state shows every reading at full opacity,
