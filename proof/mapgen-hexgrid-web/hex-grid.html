@@ -59,7 +59,7 @@ body {
    its height, whichever binds first. A plate stretched to fill a shape it was not baked for is a
    lie about distance and shape (geo-discipline.md), so it is not one of the outcomes here; a
    smaller, correct map is. The plain 'width: 100%' above the 'min()' is the fallback for a browser
-   without container query units — it fills the width, exactly as this genre did before, rather
+   without container query units — it fills the width, exactly as this format did before, rather
    than collapsing. Flush LEFT when the height is what binds, so the map's edge lines up with the
    title, the legend and the caveat rather than floating away from them. */
 .mw-viewport {
@@ -68,7 +68,7 @@ body {
   width: min(100cqw, calc(100cqh * 1.6076923076923078));
   max-width: 100%;
   margin-inline: 0 auto;
-  /* 'hidden', unlike the point-symbol genre's own 'visible'. That genre lets a point LABEL spill
+  /* 'hidden', unlike the point-symbol format's own 'visible'. That format lets a point LABEL spill
      into the page's gutter because a label is a name, and a name is data. This beat draws no
      labels at all — the only thing that could spill here is half a hit target's hover wash, over
      ground the plate has already cut away. */
@@ -115,7 +115,7 @@ html.mw-live .mw-overlay .pt { pointer-events: none; }
    to be at least as wide as the canvas, which for a 359.8° study set requires either cropping the
    longitude that IS the claim or a canvas at least 0.6233 x width + 96 px tall — 1072px at this
    width, inside a 900px window. */
-html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
+html.mw-live .mw-viewport { overflow: hidden; }
 .maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* THE HIT TARGET: one HTML <button> per non-empty cell, clipped to that cell's OWN hexagon.
@@ -279,7 +279,7 @@ html.mw-live .mw-overlay .pt:hover, html.mw-live .mw-overlay .pt.pt-active { bac
 // `getBoundingClientRect()` works the same on a `<path>` as on a `<button>`.
 //
 // `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
-// verification rule, an interactive genre is verified by driving a real browser, not by asserting
+// verification rule, an interactive format is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
 /** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
@@ -309,7 +309,7 @@ function initPoints(points, tooltip) {
 
   // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each point
   // is already its own fixed-size hit target (MapWebSeed.tsx's own `HIT_TARGET_PX`), so no
-  // proximity resolution is needed the way the chart genre's shared `.hit-area` overlay needs one.
+  // proximity resolution is needed the way the chart format's shared `.hit-area` overlay needs one.
   points.forEach((point, i) => {
     point.addEventListener("pointerenter", function (evt) {
       show(point, evt.clientX, evt.clientY);
@@ -447,7 +447,7 @@ return maplibregl$1;
 // having been quietly deleted.
 //
 // The straightforward reading of the ruling — delete the plate, ship a live map — throws away four
-// things this genre already proved, all measurable: a complete no-JS render, a page that works
+// things this format already proved, all measurable: a complete no-JS render, a page that works
 // offline, a page that works when the key lapses, and a guard suite that does not need the network.
 // None of that is required by the ruling and all of it is cheap to keep, so the page ships in two
 // layers:
@@ -520,7 +520,7 @@ function planIsUnkeyed(plan) {
  * so it fits by its tighter axis.
  *
  * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
- * this genre's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
+ * this format's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
  * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
  * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
  * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
@@ -655,7 +655,7 @@ function initLiveMap(win) {
   win.__mwMap = map;
 
   // B5.3, and the owner's instruction by name: MapTiler's OWN zoom and pan controls, not a button
-  // beside the map. The compass is off because no beat in this genre rotates.
+  // beside the map. The compass is off because no beat in this format rotates.
   map.addControl(new win.maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   map.on("style.load", function () {
@@ -731,7 +731,7 @@ function initLiveMap(win) {
   return map;
 }
 
-/** The most room this genre ever leaves around the study set, in CSS pixels. A ceiling, not the
+/** The most room this format ever leaves around the study set, in CSS pixels. A ceiling, not the
  *  value — `fitPadding` below is what a fit actually uses. */
 const MAX_FIT_PADDING_PX = 48;
 
@@ -746,7 +746,7 @@ const MAX_FIT_PADDING_PX = 48;
  * Europe as a blob and five labels stacked on each other. The same camera at 375x812 is fine, so it
  * only appears on a short viewport, which is why nothing caught it.
  *
- * 9% of the shorter side keeps every container this genre has been driven at 1600 down to 768 at the
+ * 9% of the shorter side keeps every container this format has been driven at 1600 down to 768 at the
  * old 48 exactly, and hands a phone a padding proportional to what it has.
  */
 function fitPadding(map) {
@@ -923,7 +923,7 @@ function applyMarkScale(map, doc, plan) {
  * at two pixels still has a focus indicator a keyboard reader can see.
  *
  * There is deliberately no third number here. A halo derived from anything other than the mark's
- * own drawn radius is the "two numbers describing one circle" defect this genre has now paid for
+ * own drawn radius is the "two numbers describing one circle" defect this format has now paid for
  * twice — see `references/map-web-discipline.md`, "The class: one mark, two halves, two mechanisms".
  */
 const HALO_PAD_PX = 10;

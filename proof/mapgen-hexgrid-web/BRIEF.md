@@ -100,6 +100,8 @@ in the PLAN `render-web.mjs` writes into the page.
 - **Verified, not assumed:** driven with a real key at five viewports, every bin that is on canvas
   answers `queryRenderedFeatures` at its own anchor with its OWN key — 18/18, 7/7, 147/147, 99/99,
   102/102, zero mis-hits. A ring that had wrapped the wrong way would answer for other cells' ground.
+  *Those five denominators are the bins that were ON CANVAS at each viewport under the camera of the
+  day; the section below is why they were not 156, and they are now.*
 - **The leash.** The seed's derivation (`log2(frameLonSpan ÷ studyLonSpan)`) yields **0** here,
   because the study set IS the frame: a planet, 359.8° against 359.8°. A leash of zero is the one
   outcome R1 exists to forbid, so the floor comes from the beat's own inner scale instead — one hex
@@ -113,50 +115,69 @@ in the PLAN `render-web.mjs` writes into the page.
   pixel at the tightest camera the leash allows). Collapsing the two layouts into one render gave
   back the 156 duplicated hex paths and the second copy of every furniture string.
 
-## OPEN — the live camera crops the claim, and the fix is not in this beat
+## CLOSED 2026-09-15 — the live camera cropped the claim, and the fix WAS in this beat
 
-Measured 2026-08-10 by tracing every camera call on the delivered page, at five viewports. **The
-live layer opens on a view its own fallback contradicts.**
+Two rounds. Both are kept, because the second one only became available when the first one landed.
 
-| viewport | live canvas | fitted zoom | delivered zoom | longitude actually shown |
-|---|---|---|---|---|
-| 1600 × 900 | 1566 × 715 | 0.960 | **2.417** | **206.2°** of 359.8, lat 20°S–59°N |
-| 1024 × 768 | 990 × 543 | 0.490 | **2.359** | **135.7°** |
-| 768 × 1024 | 734 × 752 | 0.555 | 0.555 | 351.4° |
-| 375 × 667 | 341 × 314 | −1.06 (floored to 0) | 0 | **239.8°** |
-| 375 × 812 | 341 × 459 | −1.06 (floored to 0) | 0 | **239.8°** |
+**Round 1 (2026-08-10), in `live-map.mjs`, since fixed there.** `leash()` ended with
+`map.setMaxBounds(map.getBounds())`. At planet extent the fitted camera leaves horizontal slack, so
+`getBounds()` returns MORE than 360° of longitude; MapLibre's own `getConstrained` clamps a
+longitude range to one world width and scales the camera up. Traced at 1600 × 900: that single call
+took zoom 0.960 → **2.417**, and the map opened on 206.2° of longitude under a title claiming the
+globe. `leash()` now skips the bound when the visible span is already ≥ 360° — there is nothing to
+leash a reader to when the whole world is on screen — and `fitToStudy` drops the floor to MapLibre's
+own −2 instead of 0. Both shipped; both verified below.
 
-Two distinct causes, **both inside `skills/map-web/assets/live-map.mjs`**, which this beat
-duplicates byte-for-byte and must not fork:
+**Round 2 (2026-09-15), in this beat's own CSS, and it is the one `verify-live-map` was still
+red on.** With the camera fixed, `verify-live-map` could measure the beat for the first time and
+reported **45 of 156 bins off the canvas at 900 × 1400**. The cause is the seed's layout rule, not
+the camera: `html.mw-live .mw-viewport` released the plate's `aspect-ratio` and let the live map take
+the whole stage, on the principle that a live map has no plate aspect to preserve. On a PORTRAIT
+stage that is fatal, and it is arithmetic rather than tuning:
 
-1. **`leash()` ends with `map.setMaxBounds(map.getBounds())`.** When the fitted camera leaves
-   horizontal slack, `getBounds()` returns more than 360° of longitude; MapLibre's own
-   `getConstrained` clamps a longitude range to `[0, worldSize]` and then scales the camera up. The
-   trace shows that single call taking zoom 0.960 → 2.417 at 1600 × 900.
-   **And the slack is unavoidable for a 359.8° study set.** Avoiding the trigger needs the fitted
-   world to be at least as wide as the canvas. If longitude binds the fit, the world is exactly
-   `FIT_PADDING_PX × 2` = 96 px narrower than the canvas, always. If latitude binds, the world is
-   `(canvasH − 96) ÷ 0.6233`, and requiring that to be ≥ `canvasW` while it is also < `canvasW − 96`
-   is an empty condition. So there is no canvas size, and no choice of `studyBounds`, that avoids
-   it — it is a property of the leash, not of the beat.
-2. **`fitToStudy()` calls `map.setMinZoom(0)` before fitting.** A planet needs zoom −1.06 in a
-   341 px-wide box; the floor pins it at 0, where 512 px of world sits in a 341 px canvas and a
-   third of the globe is off-screen. Before the floor is applied the same fit reaches −1.279 (in the
-   trace, at the pre-swap container size), so MapLibre itself is willing.
+- MapLibre never wraps vertically, so `getConstrained` will not draw the world SHORTER than the
+  canvas — it raises the zoom until `worldPx ≥ canvasH`.
+- Showing all 359.8° of longitude needs `worldPx ≈ canvasW − 2 × padding`.
+- Both can hold only when `canvasH ≤ canvasW − 96`. A portrait stage never satisfies it.
 
-**Tried and reverted, because it measured worse rather than better:** keeping the plate's own aspect
-on the live viewport instead of the seed's `aspect-ratio: auto`. Canvas 1151 × 715, delivered zoom
-**3.849**, 56° of longitude. Recorded in `render-web.mjs`'s own CSS comment so nobody re-tries it.
+Measured with the aspect released, at 900 × 1400: canvas **866 × 1160**, `worldPx` pinned to exactly
+**1160**, delivered zoom **1.180**, **268.8°** of longitude, lat 85°S–85°N — 45 bins outside the box.
 
-**Candidate fixes, for the owner of `live-map.mjs`:** skip `setMaxBounds` when the visible longitude
-span is ≥ 360° (there is no horizontal leash to set — the reader already has the whole planet), and
-let `fitToStudy` drop the minimum to MapLibre's own floor rather than 0. Both are one line, and both
-are outside this beat.
+**This beat therefore does not release the aspect.** The live layer and the fallback are now the
+same box, and `verify-live-map` is green at both shapes with a real key:
 
-`live: true` is shipped anyway rather than reverted: the committed artifact carries the R1b
-placeholder, so what anyone opens from this repository is the fallback, which is correct and
-complete at every viewport (verified with a real pointer: hovering a bin in the no-key page returns
-that bin's own reading). Turning the live layer off would re-open exactly the hole the audit found.
+```
+marks    → layer "mw-bins" (fill), geography MapLibre reprojects itself
+landscape 1600x900  canvas 1151x715  zoom 0.960  scale 1.190  156/156 on screen
+portrait  900x1400  canvas  866x538  zoom 0.474  scale 0.850  156/156 on screen
+nothing is cropped, the painted highlight is a circle, a pointer gets its reading
+```
+
+The landscape camera is **unchanged** (0.960, the same zoom the released version reached): on a wide
+stage the plate's aspect was never what bound the fit.
+
+**The note that said this was "measured worse" is withdrawn, and the withdrawal is the point.** On
+2026-08-10 narrowing the live box to the plate's aspect was tried and measured canvas 1151 × 715,
+zoom **3.849**, 56° of longitude — so it was reverted and recorded as a dead end in
+`render-web.mjs`'s own CSS comment. That reading was taken while round 1's unconditional
+`setMaxBounds` was still in force, and the 3.849 was that call, not the aspect. A dead end recorded
+against the wrong cause stays recorded; re-measuring it after the cause was removed is what closed
+this.
+
+**What it costs, stated rather than hidden.** On a tall stage the map keeps its own aspect, so the
+leftover stage height is empty: 540 px of map inside a 1368 px column at 900 × 1400. That void is
+exactly what the FALLBACK has always done at a narrow shape (375 × 812: a 343 × 213 plate in a
+780 px column), so the two layers now agree where they used to disagree. A crop is a false claim; an
+empty margin is only an empty margin. Filling the stage AND keeping the claim is impossible at
+planet extent, by the inequality above.
+
+**Still true, and still outside this beat:** `live-map.mjs`'s own docblock for `applyMarkScale`
+cites `html.mw-live .mw-viewport { aspect-ratio: auto !important }` as evidence that a live map has
+no aspect to preserve. That sentence is now false for THIS beat and remains true for the seed and
+the other four map-web beats, which is why it was not edited — the file is a carried copy and
+editing it here would fork it. The scale itself is unaffected: it is `2 ** (liveZoom − bakeZoom)`,
+derived from the camera and not from the box, and `verify-live-map` measures it at 1.190 and 0.850
+inside tolerance at the two shapes above.
 
 ## B5.1 — fitting the window
 

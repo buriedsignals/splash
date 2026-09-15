@@ -531,27 +531,40 @@ body {
    hexagon, which is what B6.14a and B6.18a asked for. The buttons stay in the DOM, still
    Tab-reachable and still carrying their own aria-label — only their pointer-events go. */
 html.mw-live .mw-overlay .pt { pointer-events: none; }
-/* B5.1, and the conflict that dissolves with the ruling. The viewport keeps the PLATE's aspect,
-   because scaling a raster non-uniformly is a lie about distance and shape. A LIVE map has no plate
-   aspect to preserve — the canvas IS the container and the camera fills it — so live, the map takes
-   the whole stage. The fallback keeps its aspect-ratio, unchanged, because it is still a plate.
+/* B5.1, AND THE RULE THIS BEAT IS THE EXCEPTION TO — REWRITTEN 2026-09-15, ON MEASUREMENTS.
+   The seed's rule is that a LIVE map has no plate aspect to preserve: the canvas IS the container
+   and the camera fills it, so `html.mw-live .mw-viewport` released the aspect and took the whole
+   stage. On a study set that is the WHOLE PLANET that rule crops the claim, and the cause is not
+   this format's:
 
-   THE LIVE CAMERA ON THIS BEAT IS WRONG AND THE FIX IS NOT IN THIS FILE. Measured 2026-08-10 by
-   tracing every camera call on the delivered page (see BRIEF.md, "The live camera crops the
-   claim"): leash() ends with map.setMaxBounds(map.getBounds()), and when the fitted camera leaves
-   horizontal slack — the world drawn narrower than the canvas, which a 359.8°-wide study set forces
-   whenever 48px of fit padding is applied — getBounds() returns more than 360° of longitude.
-   MapLibre's own getConstrained then CLAMPS that range to [0, worldSize] and scales the camera up.
-   At 1600 x 900 that is one call taking zoom 0.960 to 2.417, and the delivered map opens on 206° of
-   longitude and 20°S–59°N under a title claiming the globe.
+   MapLibre never wraps vertically, so `getConstrained` will not let the world be drawn SHORTER than
+   the canvas — it raises the zoom until it is. A 359.8°-wide study set needs `worldPx` about
+   (canvasW - 2 x padding); a stage that is taller than that forces `worldPx >= canvasH` instead,
+   and the extra zoom is paid for in longitude. Measured at 900 x 1400 with the aspect released:
+   canvas 866 x 1160, worldPx pinned to exactly 1160, delivered zoom 1.180, and only 268.8° of the
+   359.8° on screen — **45 of the 156 bins the title counts were off the canvas**
+   (`verify-live-map`, both shapes, real key). It is arithmetic, not tuning: showing every degree of
+   longitude needs canvasH <= canvasW - 2 x padding, which a portrait stage can never satisfy.
 
-   Narrowing the live box to the plate's own aspect was tried and MEASURED WORSE, not better —
-   canvas 1151 x 715, delivered zoom 3.849, 56° of longitude — so it was reverted and the seed's
-   rule stands. The reason there is no beat-local fix: avoiding the trigger needs the fitted world
-   to be at least as wide as the canvas, which for a 359.8° study set requires either cropping the
-   longitude that IS the claim or a canvas at least 0.6233 x width + 96 px tall — 1072px at this
-   width, inside a 900px window. */
-html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
+   So this beat does NOT release the aspect. Live and fallback are the same box, and both show the
+   whole planet: 1600 x 900 canvas 1151 x 715 zoom 0.960 — the SAME camera the released version
+   reached — and 900 x 1400 canvas 866 x 538 zoom 0.474, 156/156 on screen at both.
+
+   THE EARLIER NOTE HERE SAID THIS WAS 'MEASURED WORSE' (canvas 1151 x 715, zoom 3.849, 56° of
+   longitude) AND THAT IS NO LONGER TRUE. That reading was taken on 2026-08-10, when `leash()` still
+   ended with `map.setMaxBounds(map.getBounds())` unconditionally: at planet extent `getBounds()`
+   returns more than 360°, MapLibre clamps the range to one world width and scales the camera up,
+   and that single call was what produced the 3.849. `live-map.mjs` has since skipped the bound when
+   the visible span is already 360° or more, which is what makes the plate's own aspect the better
+   box rather than the worse one. Re-measured above rather than assumed.
+
+   WHAT IT COSTS, said out loud: on a tall stage the map keeps its own aspect and the leftover stage
+   height is empty — 540px of map under 1368px of column at 900 x 1400. That void is what the
+   FALLBACK has always done at a narrow shape (375 x 812: a 343 x 213 plate in a 780px column), so
+   the two layers now agree instead of disagreeing; and the alternative is a live map that drops 45
+   of the cells its own title counts. A crop is a false claim, an empty margin is only an empty
+   margin. */
+html.mw-live .mw-viewport { overflow: hidden; }
 .maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* THE HIT TARGET: one HTML <button> per non-empty cell, clipped to that cell's OWN hexagon.

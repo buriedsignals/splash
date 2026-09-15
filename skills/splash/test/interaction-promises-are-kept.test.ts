@@ -819,6 +819,17 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
   //    own polygon carries no key, so "a probe 60px inside France answers nothing" is measured by
   //    nobody. Closing it is ruling R1's `queryRenderedFeatures` rewrite of that layer.
   "proof/mapgen-dot-web/dot-population.html": { measurable: false, probed: 3 },
+  // ── the hex CARTOGRAM in web. Its drawn mark is the `<polygon>`, which carries `data-key`; its
+  //    answering element is a transparent `<circle>` INSCRIBED in that hexagon, and the circle
+  //    carries `data-detail` but no key. That is not an oversight waiting to be closed the way
+  //    `mapgen-dot-web`'s is: the probe aims 4px inside the DRAWN mark's bounding box, and a
+  //    pointy-top hexagon's box is 2·radius tall against an inscribed circle of 0.9·radius, so the
+  //    top and bottom aims land outside the element that answers, by construction. Keying the
+  //    circle would make this measurable and then immediately red for a reason that is geometry
+  //    rather than a defect. Recorded as what it is.
+  "proof/web-hex-grid-europe-protection/renders/creme.html": { measurable: false, probed: 3 },
+  "proof/web-hex-grid-europe-protection/renders/nocturne.html": { measurable: false, probed: 3 },
+  "proof/web-hex-grid-europe-protection/renders/rapport.html": { measurable: false, probed: 3 },
   // ── chart × web: the format emits NO `data-key` anywhere — 0 occurrences in every one of these
   //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
   //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"
