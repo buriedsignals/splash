@@ -14,9 +14,13 @@
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { readFile, rm } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import puppeteer from "puppeteer";
 import { fileURLToPath } from "node:url";
 import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
@@ -737,6 +741,33 @@ const interaction = {
   ],
 };
 
+// ── THE FROZEN FALLBACK, BAKED FROM THE PAGE ITSELF ───────────────────────────────────────────
+//
+// R1's second layer, and the owner found it missing the first time this beat shipped live: the
+// committed page drew the BASEMAP and no data. The plate `bake.mjs` makes is MapTiler's geography
+// and nothing else — the classes, the borders and the hollow country are MapLibre layers now, so a
+// plate baked before them pictures a map with the study rubbed out. What stands there when a key
+// lapses has to be the same picture the live map draws.
+//
+// SO THE FALLBACK IS BAKED FROM THE PAGE, not from a second pipeline: the runner renders a draft,
+// substitutes the key into a copy that lives OUTSIDE the repository, opens it, waits for the live
+// map to announce itself, photographs the map's own box, and renders again with that image. There
+// is no second plan and no second mount to disagree with the first — it is the page.
+//
+// It is re-baked only when the plan or the shape changes; the recorded hash is what decides.
+const FALLBACK_DIR = join(HERE, "fallback");
+// THE REFERENCE WINDOW, not a box: the fallback is photographed at the window the beat is reviewed
+// at, so the image is the delivered box's own shape and `slice` crops nothing there. Baked at the
+// window rather than at a typed box because the first version typed one 400 px taller, the live
+// camera fitted THAT shape, and the frozen image came back showing a different slice of the world
+// than the page shows. At 2x, so it is not soft on the screen the owner reviews on.
+const FALLBACK_WINDOW = { width: 1512, height: 860, scale: 2 };
+const BLANK_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const KEY = process.env.MAPTILER_KEY ?? process.env.REMOTION_MAPTILER_KEY ?? process.env.VITE_MAPTILER_KEY ?? "";
+const PLACEHOLDER = `__MAPTILER${"_KEY__"}`;
+const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
+
 const TABLE_CAPTION = `Les ${N} lectures, et le palier que la règle choisie leur donne`;
 const COLUMNS = ["Pays", "Part bas-carbone", "Rang", "Palier"];
 
@@ -771,12 +802,78 @@ const STYLE_MODULE = (
   await readFile(join(HERE, "..", "..", "skills", "map-web", "assets", "style.mjs"), "utf8")
 ).replace(/^export /gm, "");
 
+/**
+ * PHOTOGRAPH THE PAGE'S OWN LIVE MAP, and write it where the page will embed it.
+ *
+ * The key is substituted into a copy under the system temp directory, never beside the page and
+ * never inside the repository — `no-key-in-the-repository` scans the working tree, and it caught
+ * exactly this once already. The copy is removed whether the bake succeeds or not.
+ *
+ * It REFUSES rather than writing something: a fallback baked from a map that never loaded is a
+ * picture of the failure it exists to replace, and it would ship looking like a success.
+ */
+async function bakeFallback(pagePath, outFile, id) {
+  if (!KEY)
+    throw new Error(
+      "the frozen fallback is photographed from this page's own live map, so the bake needs a " +
+        "MapTiler key in the environment (MAPTILER_KEY). Without one the page would ship with the " +
+        "basemap and no data on it, which is the defect this bake exists to close.",
+    );
+  const html = (await readFile(pagePath, "utf8")).split(PLACEHOLDER).join(KEY);
+  const dir = mkdtempSync(join(tmpdir(), "mw-fallback-"));
+  const keyed = join(dir, `${id}.local.html`);
+  await writeFile(keyed, html);
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({
+      width: FALLBACK_WINDOW.width,
+      height: FALLBACK_WINDOW.height,
+      deviceScaleFactor: FALLBACK_WINDOW.scale,
+    });
+    await page.goto(`file://${keyed}`, { waitUntil: "networkidle0", timeout: 120000 });
+    await page.waitForFunction(() => document.documentElement.classList.contains("mw-live"), {
+      timeout: 120000,
+    });
+    // Every tile of the view drawn, not merely requested.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const map = window.__mwMap;
+          if (map.loaded() && map.areTilesLoaded()) return resolve();
+          map.once("idle", resolve);
+        }),
+    );
+    await new Promise((r) => setTimeout(r, 600));
+    const box = await page.$(".map-layer");
+    if (!box) throw new Error("the page carries no live map box to photograph");
+    await mkdir(dirname(outFile), { recursive: true });
+    const png = `${outFile}.png`;
+    const shot = await box.boundingBox();
+    await box.screenshot({ path: png });
+    // Lossless would be honest and is 4x the bytes on flat fills; `-q 92` is visually the same
+    // picture and keeps a page that already inlines MapLibre inside a megabyte and a half.
+    const encode = spawnSync("cwebp", ["-quiet", "-q", "92", png, "-o", outFile], { stdio: "inherit" });
+    if (encode.status !== 0) throw new Error(`cwebp exited with ${encode.status} baking ${id}'s fallback`);
+    rmSync(png, { force: true });
+    console.log(
+      `fallback ${id} → ${outFile.replace(`${HERE}/`, "")} · ${Math.round(shot.width)}x${Math.round(shot.height)} CSS px`,
+    );
+    return { width: Math.round(shot.width), height: Math.round(shot.height) };
+  } finally {
+    await browser.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const base = readDirection(join(DIRECTIONS, file));
   const direction = resolveDirectionFamilies(base, textPerRegister);
-  const plate = `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`;
   // The colour the plate's LAND was baked in — what the page actually paints behind every country,
   // and the only honest thing to measure the lightest class against.
   const tints = plateTints(base);
@@ -820,8 +917,12 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     changeMs: CHANGE_MS,
     smallest: SMALLEST,
   };
-  try {
-    await renderWeb({
+  // THE DRAWN BOX IS THE FALLBACK'S OWN BOX. The `<svg class="chart">` covers its stage with `slice`,
+  // so a viewBox of some other ratio crops the image rather than the stage: with the beat's
+  // near-square 900/684 in a 2,8:1 stage, `slice` scaled by width and cut the Mediterranean off the
+  // frozen picture. Measured on the delivered page, which is how it was found.
+  const pageOf = (plate, box) =>
+    renderWeb({
       component: DirectedChoroplethWeb,
       props: {
         plate,
@@ -841,8 +942,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         maplibreJs: MAPLIBRE_JS,
         tableCaption: TABLE_CAPTION,
         columns: COLUMNS,
-        aspect: CAMERA_ASPECT,
-        size: SIZE,
+        aspect: box.width / box.height,
+        size: box.width,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, claimNote,
         alt:
           `Une carte d'Europe sur fond MapTiler, chaque pays teinté selon la part bas-carbone de son ` +
@@ -859,6 +960,45 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       outDir: OUT,
       name: `${id}.html`,
     });
+
+  try {
+    const stamp = createHash("sha256")
+      .update(JSON.stringify(liveChoroplethPlan(live)))
+      .update(JSON.stringify(FALLBACK_WINDOW))
+      .digest("hex")
+      .slice(0, 16);
+    const image = join(FALLBACK_DIR, `${id}.webp`);
+    const stampFile = join(FALLBACK_DIR, `${id}.sha`);
+    let record = null;
+    if (existsSync(image) && existsSync(stampFile)) {
+      try {
+        const kept = JSON.parse(readFileSync(stampFile, "utf8"));
+        if (kept.stamp === stamp) record = kept;
+      } catch (err) {
+        record = null;
+      }
+    }
+    if (!record) {
+      // A DRAFT FIRST, with nothing under the live map, because the thing being photographed is the
+      // live map on THIS page rather than a second rendering of the same plan somewhere else.
+      await pageOf(BLANK_PNG, { width: 1464, height: 520 });
+      const shot = await bakeFallback(join(OUT, `${id}.html`), image, id);
+      await mkdir(FALLBACK_DIR, { recursive: true });
+      record = { stamp, ...shot };
+      await writeFile(stampFile, `${JSON.stringify(record)}\n`);
+    }
+    const plate = `data:image/webp;base64,${(await readFile(image)).toString("base64")}`;
+    const { outPath } = await pageOf(plate, record);
+    // THE KEYED COPY FOR REVIEW, beside the page and git-ignored — the same name and the same rule
+    // the scrolly worktree already uses (`renders/<id>.local.html`). The owner: « non, comme pour
+    // les scrolly il faut toujours une clé sinon ça sert à rien ». The COMMITTED page keeps the
+    // placeholder, because this repository is public.
+    if (KEY) {
+      const html = await readFile(outPath, "utf8");
+      if (!html.includes(PLACEHOLDER))
+        throw new Error("the rendered page carries no delivery placeholder to substitute a key into");
+      await writeFile(localPageOf(outPath), html.split(PLACEHOLDER).join(KEY));
+    }
     // The page is read back from disk, not from the string the renderer happened to return — the
     // file a reader opens is the only artefact any of these refusals is about.
     const written = await readFile(join(OUT, `${id}.html`), "utf8");

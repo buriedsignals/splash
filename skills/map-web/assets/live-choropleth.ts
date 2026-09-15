@@ -442,7 +442,12 @@ export function liveChoroplethCss({ scope }: { scope: string }): string {
     // cell carries the drawing's own viewBox ratio because an SVG must not be stretched; a live map
     // has no viewBox to protect, so it fills the width the figure has and shows the ground that width
     // gives it.
-    `${scope} .map-layer { grid-column: 1 / -1; grid-row: 1; width: auto; height: auto; margin: 0; visibility: hidden; }`,
+    // BOTH LAYERS ARE ONE BOX, AND THE BOX IS THE STAGE. The format's cell carries the drawing's own
+    // viewBox ratio so `preserveAspectRatio="none"` cannot stretch it; neither of these two is
+    // stretched — the fallback is `slice` (cover) and a live map has no ratio to protect — so both
+    // take the whole track instead of the cell inside it, which is how the scrolly sizes its stage.
+    `${scope} .map-layer, ${scope} svg.chart { grid-column: 1 / -1; grid-row: 1; width: 100%; height: 100%; min-width: 0; min-height: 0; margin: 0; }`,
+    `${scope} .map-layer { visibility: hidden; }`,
     `${live} .map-layer { visibility: visible; }`,
     // ONE BASEMAP, NOT TWO. Everything the page drew of the ground gives way to MapTiler's own, and
     // only once the live map is actually up: with no script the plate is the whole picture.
@@ -684,6 +689,19 @@ export function liveChoroplethScript(
     if (!doc.documentElement.classList.contains("mw-live")) return;
     fitToStudy();
   });
+  // AND THE STAGE CAN CHANGE SIZE WITHOUT THE WINDOW, which MapLibre never hears about. The figure is
+  // a flex column with a header whose height settles when its faces load, and this box is the one
+  // shrinkable item in it: measured while baking the frozen fallback, the camera was fitted for a
+  // 1112 px box, the box then settled at 520, and the picture came back showing half the latitude the
+  // page claims - the north kept, the Mediterranean gone, and nothing red. A MapLibre "resize" event
+  // fires only when MapLibre resizes ITSELF, so the observer is what turns a settling layout into a
+  // re-fit.
+  if (window.ResizeObserver)
+    new window.ResizeObserver(function () {
+      if (!doc.documentElement.classList.contains("mw-live")) return;
+      map.resize();
+      fitToStudy();
+    }).observe(box);
 
   // THE CONTROL. One listener on the document rather than one per radio: the pills are real radios in
   // a real fieldset, so "change" bubbles and nothing here counts them.

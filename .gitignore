@@ -41,3 +41,9 @@ brand.json
 # default (~/.cache/splash/typefaces) so nothing can be committed and a second clone reuses it.
 # This line only covers the case where SPLASH_TYPEFACE_CACHE is pointed inside the tree.
 .splash-typefaces/
+
+# The keyed, local copy of a live map beat: the committed page carries __MAPTILER_KEY__ (the
+# repository is public), and this one has the real key substituted so the map actually draws when
+# the page is opened from disk for review (owner, 2026-09-15). Same name and same rule as the
+# scrolly worktree already uses.
+proof/**/renders/*.local.html

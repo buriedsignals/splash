@@ -509,29 +509,11 @@ export function DirectedChoroplethWeb({
         style={{
           ["--y-gutter" as string]: "0px",
           ["--x-axis-h" as string]: "0px",
+          // The aspect-ratio is the box's BASIS, not its law: the format makes `.chart-plot` the one
+          // shrinkable item under the figure's `max-height: 100dvh`, so this box takes the width it
+          // is given and the height the window leaves — which is exactly what the scrolly's stage
+          // does. The two layers then COVER it; neither is stretched.
           aspectRatio: `${width} / ${height}`,
-          /**
-           * THE PLOT DOES NOT GIVE ITS HEIGHT BACK, AND THAT IS THE RULING RATHER THAN A PREFERENCE.
-           *
-           * The format makes `.chart-plot` the one shrinkable item under the figure's own
-           * `max-height: 100dvh`, so on a wide, short window the plot gives height back until the
-           * whole figure fits — and the cell, which carries the drawing's ratio, then min()s down to
-           * whatever WIDTH that shorter height allows. That is where the empty side gutters the
-           * owner refused come from: 760 px of map in a 1464 px figure at 1512x860, measured.
-           *
-           * `flex: 0 0 auto` is the one line that closes it. The plot keeps the height its ratio
-           * asks for, the cell fills the track's width, and the figure runs past the fold — which is
-           * the third choice of the trio and the one the owner took: not stretching the drawing (a
-           * false geography), not shrinking it into gutters (this refusal), but letting it run and
-           * scroll. Measured at 1512x860: the map is drawn 1464 px wide against 760, and the
-           * document is 1418 px tall in an 860 px window.
-           *
-           * The alternative — a box short enough for the document to fit — was baked and looked at:
-           * a 2,7:1 window on this study set shows about 179° of longitude, Europe in the middle
-           * third with Greenland and Siberia around it. Filling the width is free on a live map;
-           * filling it inside a fixed height is not, and this is where the bill arrives.
-           */
-          flex: "0 0 auto",
         }}
       >
         <div className="y-axis" />
@@ -547,7 +529,9 @@ export function DirectedChoroplethWeb({
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="none"
+          // COVER, never stretch and never letterbox: `slice` is SVG's `object-fit: cover`, which is
+          // what the scrolly's own fallback images use.
+          preserveAspectRatio="xMidYMid slice"
           data-plate=""
         >
           <desc>{alt}</desc>
