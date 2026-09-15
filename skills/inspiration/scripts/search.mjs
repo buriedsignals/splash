@@ -3,8 +3,6 @@
 // once, under one deadline that covers the request and its body, and returns either the list or
 // the reason there is none. It never throws.
 
-import { formatInspiration } from "./format.mjs";
-
 export const INFOVIZ_API = "https://infoviz.design";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 export const MAX_QUERY_LENGTH = 1000;
@@ -155,8 +153,6 @@ export async function searchInspiration({
   }
 }
 
-const STDIN_LIMIT_BYTES = 64 * 1024;
-
 /**
  * Reads the CLI's own argv (never the subject) so an unknown flag is refused before anything runs.
  * `--json` prints the structured result instead of markdown; `--stdin` reads the subject from
@@ -182,29 +178,4 @@ export function parseArgs(argv) {
     positionals.push(arg);
   }
   return { query: positionals.join(" "), asJson, readStdin, error: null };
-}
-
-async function readStdinSubject(stream) {
-  const chunks = [];
-  let total = 0;
-  for await (const chunk of stream) {
-    total += chunk.length;
-    chunks.push(chunk);
-    if (total >= STDIN_LIMIT_BYTES) break;
-  }
-  return Buffer.concat(chunks).subarray(0, STDIN_LIMIT_BYTES).toString("utf8").trim();
-}
-
-if (import.meta.main) {
-  const parsed = parseArgs(process.argv.slice(2));
-  if (parsed.error) {
-    console.error(
-      `Usage: search.mjs [--json] [--stdin] <subject>\n${parsed.error}`,
-    );
-    process.exit(2);
-  }
-  const query = parsed.readStdin ? await readStdinSubject(process.stdin) : parsed.query;
-  const result = await searchInspiration({ query });
-  console.log(parsed.asJson ? JSON.stringify(result, null, 2) : formatInspiration(result));
-  if (!result.ok) process.exitCode = 1;
 }
