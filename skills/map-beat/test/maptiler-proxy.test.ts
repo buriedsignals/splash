@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   startMapTilerProxy,
   stripKey,
@@ -7,6 +10,38 @@ import {
 
 const K = "abc123SECRET";
 const ORIGIN = "http://127.0.0.1:4321";
+
+function fixtureUpstream(
+  bodies: Record<string, string | Uint8Array>,
+  status = 200,
+) {
+  let hits = 0;
+  const server = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    fetch(req) {
+      hits++;
+      const body = bodies[new URL(req.url).pathname];
+      if (body === undefined || status !== 200)
+        return new Response("no", { status: status === 200 ? 404 : status });
+      return new Response(body, {
+        headers: {
+          "content-type":
+            typeof body === "string"
+              ? "application/json"
+              : "application/x-protobuf",
+        },
+      });
+    },
+  });
+  return {
+    origin: `http://127.0.0.1:${server.port}`,
+    stop: () => server.stop(true),
+    get hits() {
+      return hits;
+    },
+  };
+}
 
 describe("stripKey", () => {
   it("should route MapTiler URLs through the proxy", () => {
@@ -130,5 +165,91 @@ describe("startMapTilerProxy", () => {
     const combined = stdout + stderr;
     expect(combined).toContain("STATUS 502");
     expect(combined).not.toContain(K);
+  });
+});
+
+describe("the proxy's tile cache", () => {
+  it("should answer a second identical request from disk without reaching the upstream", async () => {
+    const upstream = fixtureUpstream({
+      "/tiles/countries/1/1/1.pbf": new Uint8Array([1, 2, 3]),
+    });
+    const cacheDir = mkdtempSync(join(tmpdir(), "proxy-cache-"));
+    const proxy = startMapTilerProxy({
+      key: "SECRET123",
+      upstreamBase: upstream.origin,
+      cacheDir,
+    });
+    try {
+      for (let i = 0; i < 2; i++)
+        expect(
+          new Uint8Array(
+            await (
+              await fetch(`${proxy.origin}/maptiler/tiles/countries/1/1/1.pbf`)
+            ).arrayBuffer(),
+          ),
+        ).toEqual(new Uint8Array([1, 2, 3]));
+      expect(upstream.hits).toBe(1);
+      expect(proxy.counts["cache hit"]).toBe(1);
+    } finally {
+      proxy.stop();
+      upstream.stop();
+    }
+  });
+
+  it("should never write the key into a cached file, and serve a cached style at a new proxy's origin", async () => {
+    const upstream = fixtureUpstream({
+      "/maps/dataviz/style.json": JSON.stringify({
+        glyphs:
+          "https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=SECRET123",
+      }),
+    });
+    const cacheDir = mkdtempSync(join(tmpdir(), "proxy-cache-"));
+    const first = startMapTilerProxy({
+      key: "SECRET123",
+      upstreamBase: upstream.origin,
+      cacheDir,
+    });
+    await (
+      await fetch(`${first.origin}/maptiler/maps/dataviz/style.json`)
+    ).text();
+    first.stop();
+    for (const f of readdirSync(cacheDir))
+      expect(readFileSync(join(cacheDir, f), "latin1")).not.toContain(
+        "SECRET123",
+      );
+    const second = startMapTilerProxy({
+      key: "SECRET123",
+      upstreamBase: upstream.origin,
+      cacheDir,
+    });
+    try {
+      const doc = await (
+        await fetch(`${second.origin}/maptiler/maps/dataviz/style.json`)
+      ).json();
+      expect(doc.glyphs).toBe(
+        `${second.origin}/maptiler/fonts/{fontstack}/{range}.pbf`,
+      );
+      expect(upstream.hits).toBe(1);
+    } finally {
+      second.stop();
+      upstream.stop();
+    }
+  });
+
+  it("should not cache an upstream error", async () => {
+    const upstream = fixtureUpstream({}, 503);
+    const cacheDir = mkdtempSync(join(tmpdir(), "proxy-cache-"));
+    const proxy = startMapTilerProxy({
+      key: "SECRET123",
+      upstreamBase: upstream.origin,
+      cacheDir,
+    });
+    try {
+      await fetch(`${proxy.origin}/maptiler/tiles/x.pbf`);
+      expect(readdirSync(cacheDir)).toEqual([]);
+    } finally {
+      proxy.stop();
+      upstream.stop();
+    }
   });
 });

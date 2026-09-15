@@ -8,8 +8,23 @@
 // (DNS, refused, timeout) is caught and turned into a plain 502: the error object and the message a
 // fetch failure carries can themselves contain the keyed URL, so neither is ever logged.
 
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
 const PREFIX = "/maptiler/";
 const CORS_HEADERS = { "access-control-allow-origin": "*" };
+
+/** Outside every worktree: a cache is reusable across beats and never a candidate for `git add`. */
+export const DEFAULT_CACHE_DIR = join(homedir(), ".cache", "splash-maptiler");
+const ORIGIN_TOKEN = "__PROXY_ORIGIN__";
+
+/** A cached response's file stem: the path and the query WITHOUT the key, hashed — the name carries no key. */
+function cacheStemFor(requestUrl) {
+  const params = [...requestUrl.searchParams].filter(([k]) => k !== "key").sort(([a], [b]) => a.localeCompare(b));
+  return createHash("sha256").update(`${requestUrl.pathname}?${new URLSearchParams(params)}`).digest("hex");
+}
 
 // Content types the proxy passes through as raw bytes, untouched: real binary payloads never carry
 // a readable key, and running them through `stripKey`'s text replacements would corrupt them. Every
@@ -66,7 +81,7 @@ function kindOf(pathname) {
  * origin other than the one it is given — a request can change the path and query it asks for, never
  * the host the proxy talks to.
  */
-export function startMapTilerProxy({ key, upstreamBase = "https://api.maptiler.com" }) {
+export function startMapTilerProxy({ key, upstreamBase = "https://api.maptiler.com", cacheDir = null }) {
   const counts = {};
   let origin = "";
   const server = Bun.serve({
@@ -77,16 +92,28 @@ export function startMapTilerProxy({ key, upstreamBase = "https://api.maptiler.c
       const upstream = upstreamUrlFor(url, key, upstreamBase);
       if (!upstream) return new Response("not found", { status: 404, headers: CORS_HEADERS });
       const kind = kindOf(url.pathname);
+      const stem = cacheDir ? join(cacheDir, cacheStemFor(url)) : null;
+      if (stem && existsSync(`${stem}.meta`)) {
+        counts["cache hit"] = (counts["cache hit"] ?? 0) + 1;
+        const { contentType, binary } = JSON.parse(readFileSync(`${stem}.meta`, "utf8"));
+        const headers = { ...CORS_HEADERS, "content-type": contentType };
+        const body = readFileSync(`${stem}.body`);
+        return new Response(binary ? body : body.toString("utf8").replaceAll(ORIGIN_TOKEN, origin), { status: 200, headers });
+      }
       try {
         const res = await fetch(upstream);
         counts[`${kind} ${res.status}`] = (counts[`${kind} ${res.status}`] ?? 0) + 1;
         const contentType = res.headers.get("content-type") ?? "";
         const headers = { ...CORS_HEADERS, "content-type": contentType };
-        if (isBinaryResponse(contentType, url.pathname)) {
-          return new Response(await res.arrayBuffer(), { status: res.status, headers });
+        const binary = isBinaryResponse(contentType, url.pathname);
+        const bytes = binary ? await res.arrayBuffer() : null;
+        const text = binary ? null : stripKey(await res.text(), key, origin);
+        if (stem && res.status === 200) {
+          mkdirSync(cacheDir, { recursive: true });
+          writeFileSync(`${stem}.body`, binary ? new Uint8Array(bytes) : text.replaceAll(origin, ORIGIN_TOKEN));
+          writeFileSync(`${stem}.meta`, JSON.stringify({ contentType, binary }));
         }
-        const text = stripKey(await res.text(), key, origin);
-        return new Response(text, { status: res.status, headers });
+        return new Response(binary ? bytes : text, { status: res.status, headers });
       } catch {
         // Never log the caught error: a fetch failure's own message can carry the upstream URL,
         // key included, and that is exactly what must not enter a saved log.
