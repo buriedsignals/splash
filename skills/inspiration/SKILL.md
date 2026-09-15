@@ -35,6 +35,10 @@ Five rules shape it:
 
 ## When to use
 
+- If the host exposes the Splash MCP tool `search_inspiration`, call it with the journalist's
+  subject and do not run `cli.mjs`. If it returns a failure, say it and stop — never run the search
+  again another way. The tool uses the journalist's Infoviz account only under Indicator Labs;
+  elsewhere it searches anonymously, like the command.
 - The journalist asks what has already been done on a subject, wants examples, precedent or
   inspiration — with or without a story, with or without the intent to produce anything.
 - Run it with the journalist's subject as they said it. If they gave no subject, ask for one before
@@ -89,11 +93,12 @@ The markdown form is what the journalist reads; `--json` prints the structured r
 when code needs it — never both for the same search. Both exit with code 1 when there is no list.
 
 When the host exposes the Splash MCP tool `search_inspiration`, call it with the journalist's subject
-instead of running a command: it uses the Infoviz account connected in Indicator Labs (10 searches a
-day instead of 5) and returns the same text. Nothing about the account is ever done or said in chat;
-if the account needs reconnecting, the text says so in its first line. The journalist connects the
-account once, outside chat: sign in on https://splash.buriedsignals.com/inspiration.html, press
-"Copy token for Indicator Labs", paste it in Indicator Labs → Connected services → Infoviz.
+instead of running a command: under Indicator Labs, with an Infoviz account connected there, 10
+searches a day instead of 5 — and it returns the same text. Nothing about the account is ever done
+or said in chat; if the account needs reconnecting, the text says so in its first line. The
+journalist connects the account once, outside chat: sign in on
+https://splash.buriedsignals.com/inspiration.html, press "Copy token for Indicator Labs", paste it in
+Indicator Labs → Connected services → Infoviz account → Enter token….
 
 ```js
 import { searchInspiration } from "./scripts/search.mjs";

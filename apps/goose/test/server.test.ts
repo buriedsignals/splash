@@ -80,7 +80,7 @@ async function fixture(
 }
 
 describe("production Splash MCP studio opener", () => {
-  it("exposes only open_splash and no MCP App resource", async () => {
+  it("exposes only open_splash when no inspiration service is wired, and no MCP App resource", async () => {
     const { client } = await fixture();
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name)).toEqual(["open_splash"]);

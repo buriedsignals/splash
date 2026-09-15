@@ -140,7 +140,7 @@ export function createServer({ statusProvider, studio, onToolCall = () => {}, in
       {
         title: "Search inspiration",
         description:
-          "Search the infoviz.design gallery once for what newsrooms have already published on a subject. Pass only the journalist's subject, never a credential. Uses the journalist's Infoviz account when Indicator Labs has one. Show the returned text to the journalist as it is.",
+          "Search the infoviz.design gallery once for what newsrooms have already published on a subject. Pass only the journalist's subject, never a credential. Uses the journalist's Infoviz account when Indicator Labs has one. Show the returned text to the journalist as it is. Do not retry or run the search another way if it fails.",
         inputSchema: exactObject({ query: z.string().min(1).max(1000) }),
       },
       async ({ query }) => {
