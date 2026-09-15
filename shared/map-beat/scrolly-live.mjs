@@ -8,6 +8,12 @@
 // MapLibre animates nothing (`fadeDuration: 0`, `jumpTo`, paint set per frame); the projection is the
 // plan's, flat Web Mercator by default; every card camera and the samples between them are warmed through MapLibre's own
 // tile cache before the live layer is revealed; the per-card fallback images stay underneath.
+//
+// THE PLAN IT READS: `styleUrl` (carries the key placeholder until delivery), `styleName` (named in a
+// refusal), `tints`, `keepLabels` (sources of case-insensitive RegExps), `projection`, `cameras` (pure
+// camera fields, one per card), `statesForCards` (each card's full state), `referenceWidth` and
+// `referenceHeight`, `warmSamples`, and `layers` (mounted by `mountPlan`, painted through `bindings`).
+// The map's words use the style's own glyph endpoint: a page embeds no glyphs.
 
 const KEY_PLACEHOLDER = "__MAPTILER" + "_KEY__";
 
@@ -80,21 +86,6 @@ function disableBoundTransitions(map, plan) {
       map.setPaintProperty(layer.id, property + "-transition", { duration: 0, delay: 0 }, { validate: false });
 }
 
-function registerEmbeddedGlyphs(maplibregl, glyphs) {
-  if (!glyphs) return null;
-  maplibregl.addProtocol("splash-glyphs", async function (params) {
-    const match = /^splash-glyphs:\/\/([^/]+)\/(\d+-\d+)\.pbf$/.exec(params.url);
-    const stack = match && glyphs[decodeURIComponent(match[1])];
-    const b64 = stack && stack[match[2]];
-    if (!b64) throw new Error(`no embedded glyphs for ${params.url}`);
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
-    return { data: bytes.buffer };
-  });
-  return "splash-glyphs://{fontstack}/{range}.pbf";
-}
-
 function initScrollyMap(root, plan, options) {
   const win = (options && options.window) || root.ownerDocument.defaultView;
   if (!plan || !plan.styleUrl || plan.styleUrl.indexOf(KEY_PLACEHOLDER) >= 0) return null;
@@ -102,7 +93,6 @@ function initScrollyMap(root, plan, options) {
   const container = root.querySelector('[data-part="live"]');
   if (!container) return null;
 
-  const glyphsUrl = registerEmbeddedGlyphs(win.maplibregl, plan.glyphs);
   // Cameras are authored for `plan.referenceWidth` (and `plan.referenceHeight`, when a plan names
   // one); a smaller stage sees the same ground `zoomShiftFor` levels further out, so a phone — and a
   // wide, short desktop — keeps the card's whole subject in view.
@@ -117,14 +107,23 @@ function initScrollyMap(root, plan, options) {
   handle.apply = function (state) {
     applyScrollyMap(handle, state);
   };
-  // THE FIRST CAUSE WINS. A mount failure and a later runtime "error" event can both reach here;
-  // only the first is kept, so a reader debugging a blank map reads what actually broke it rather
-  // than whatever fired last.
+  // ONLY A MAP THAT CANNOT BE SHOWN IS A FAILED MAP. A failed mount, or a style that never loads, leaves
+  // nothing to show before the first reveal: that is fatal, and the frozen card images stay the picture.
+  // Any other MapLibre `error` — one tile or glyph request refused, on either map, before or after the
+  // reveal — is recorded in `data-live-warning` and changes nothing else: marking a shown map failed put
+  // frozen images under a moving live map and kept the warmed map from ever taking over.
+  // THE FIRST CAUSE WINS in both attributes, so a reader debugging reads what broke first.
+  const warn = function (message) {
+    if (root.dataset.liveWarning === undefined) root.dataset.liveWarning = message;
+  };
   const fail = function (message) {
     if (handle.failed) return;
+    if (handle.ready) return warn(message);
     handle.failed = true;
     root.dataset.liveError = message;
   };
+  // A map whose own mount failed never takes over, even when the other map is already on screen.
+  const broken = new Set();
   const firstState = function () {
     return handle.last || handle.pending || { ...plan.cameras[0], ...(plan.statesForCards && plan.statesForCards[0]) };
   };
@@ -166,20 +165,27 @@ function initScrollyMap(root, plan, options) {
       maxTileCacheSize: 800,
       canvasContextAttributes: { preserveDrawingBuffer: !!(options && options.preserveDrawingBuffer) },
     });
+    let styleLoaded = false;
     map.once("style.load", function () {
+      styleLoaded = true;
       try {
         // A flat Web Mercator map unless the plan names another projection (owner's ruling, addendum §7.1).
         map.setProjection({ type: plan.projection || "mercator" });
-        if (glyphsUrl) map.setGlyphs(glyphsUrl);
         assertLiveStyleAnswered(applyLiveStyle(map, { tints: plan.tints, keepLabels: (plan.keepLabels || []).map((s) => new RegExp(s, "i")) }), plan.styleName || plan.styleUrl);
         mountPlan(map, plan);
         disableBoundTransitions(map, plan);
       } catch (err) {
+        broken.add(map);
         fail((err && err.message) || "the live style failed to mount");
       }
     });
     map.on("error", function (event) {
-      fail((event && event.error && event.error.message) || "map error");
+      const message = (event && event.error && event.error.message) || "map error";
+      // Before its style has loaded, an error means this map will never draw: nothing to show.
+      if (!styleLoaded) {
+        broken.add(map);
+        fail(message);
+      } else warn(message);
     });
     return map;
   };
@@ -254,7 +260,7 @@ function initScrollyMap(root, plan, options) {
       // A FAILED MOUNT NEVER REVEALS. The warm still ran — it touches only the camera, not the layers a
       // failed mount may never have added — but a live layer nobody finished painting is worse than the
       // fallback plate underneath it.
-      if (handle.failed) {
+      if (handle.failed || broken.has(warmMap)) {
         root.dataset.liveWarm = warm.warmed + ":" + Math.round(warm.ms);
         return;
       }

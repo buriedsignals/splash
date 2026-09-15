@@ -51,6 +51,8 @@ export function viewOf(state) {
  *  fallback bake. */
 export function zoomShiftFor(plan, width, height) {
   if (!plan || !plan.referenceWidth) return 0;
+  // A stage with no size yet (a hidden tab, a 0-size iframe) keeps the authored camera: log2(0) is -Infinity.
+  if (!(width > 0) || (plan.referenceHeight && !(height > 0))) return 0;
   const ratio = plan.referenceHeight ? Math.min(width / plan.referenceWidth, height / plan.referenceHeight) : width / plan.referenceWidth;
   return Math.log2(ratio);
 }

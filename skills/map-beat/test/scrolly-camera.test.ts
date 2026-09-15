@@ -51,4 +51,14 @@ describe("the zoom shift a stage applies to an authored camera", () => {
   it("should not shift a camera when the plan names no reference stage", () => {
     expect(zoomShiftFor({}, 320, 100)).toBe(0);
   });
+
+  it("should not shift a camera when the stage has no width or height yet", () => {
+    // A hidden tab or a 0-size iframe reads clientWidth 0: log2(0) is -Infinity, and MapLibre clamps that to
+    // its minZoom, so the map and the warm would be drawn for a world nobody is looking at.
+    expect([
+      zoomShiftFor({ referenceWidth: 1280 }, 0, 800),
+      zoomShiftFor({ referenceWidth: 1280, referenceHeight: 800 }, 1280, 0),
+      zoomShiftFor({ referenceWidth: 1280, referenceHeight: 800 }, -4, 800),
+    ]).toEqual([0, 0, 0]);
+  });
 });

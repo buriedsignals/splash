@@ -68,7 +68,7 @@ describe("scrolly paint bindings", () => {
     expect(out[0]).toContain('layer "classes": "fill-opacity" reads feature data (get)');
   });
 
-    it("should throw when a token names a field the state does not carry", () => {
+  it("should throw when a token names a field the state does not carry", () => {
     expect(() => bindState({ $state: "gone" }, {})).toThrow(/gone/);
   });
 });

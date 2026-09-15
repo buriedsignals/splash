@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -48,20 +48,38 @@ function resolveChrome() {
 
 const CHROME = resolveChrome();
 let browser: puppeteer.Browser;
+const temps: string[] = [];
+const pages: puppeteer.Page[] = [];
+const newPage = async () => {
+  const page = await browser.newPage();
+  pages.push(page);
+  return page;
+};
+const tempDir = () => {
+  const dir = mkdtempSync(join(tmpdir(), "cards-"));
+  temps.push(dir);
+  return dir;
+};
 beforeAll(async () => {
   browser = await puppeteer.launch({
     executablePath: CHROME,
     args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
 });
-afterAll(async () => browser?.close());
+afterEach(async () => {
+  for (const page of pages.splice(0)) await page.close();
+});
+afterAll(async () => {
+  await browser?.close();
+  for (const dir of temps) rmSync(dir, { recursive: true, force: true });
+});
 
 describe.skipIf(!key)("per-card fallback bake", () => {
   it("should write one PNG per card at twice the published size", async () => {
     const style = await (
       await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)
     ).json();
-    const page = await browser.newPage();
+    const page = await newPage();
     const js = readFileSync(
       require.resolve("maplibre-gl/dist/maplibre-gl.js"),
       "utf8",
@@ -69,7 +87,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
     await page.setContent(
       `<div id="map" style="position:absolute;inset:0"></div><script>${js}</script><script>window.__mountPlan=()=>{}</script>`,
     );
-    const outDir = mkdtempSync(join(tmpdir(), "cards-"));
+    const outDir = tempDir();
     const cameras = [
       cameraFields({ center: [10, 50], zoom: 3 }),
       cameraFields({ center: [20, 41.3], zoom: 6 }),
@@ -98,7 +116,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
     const style = await (
       await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)
     ).json();
-    const page = await browser.newPage();
+    const page = await newPage();
     const js = readFileSync(require.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
     await page.setContent(
       `<div id="map" style="position:absolute;inset:0"></div><script>${js}</script><script>window.__mountPlan=()=>{}</script>`,
@@ -113,7 +131,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
       tints: { water: "#aaccee", land: "#f4f1ea" },
       keepLabels: [],
       statesForCards: cameras,
-      outDir: mkdtempSync(join(tmpdir(), "cards-")),
+      outDir: tempDir(),
       stem: "probe",
       scale: 1,
     });
@@ -125,7 +143,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
     const style = await (
       await fetch(`https://api.maptiler.com/maps/dataviz/style.json?key=${key}`)
     ).json();
-    const page = await browser.newPage();
+    const page = await newPage();
     const js = readFileSync(
       require.resolve("maplibre-gl/dist/maplibre-gl.js"),
       "utf8",
@@ -151,7 +169,7 @@ describe.skipIf(!key)("per-card fallback bake", () => {
       tints: { water: "#aaccee", land: "#f4f1ea" },
       keepLabels: [],
       statesForCards: cameras,
-      outDir: mkdtempSync(join(tmpdir(), "cards-")),
+      outDir: tempDir(),
       stem: "probe",
       project: [[20, 41.3]],
     });

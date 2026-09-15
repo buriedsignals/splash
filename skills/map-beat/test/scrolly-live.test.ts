@@ -593,6 +593,86 @@ describe("the scrolly map runtime in a browser", () => {
     }
   }, 60_000);
 
+  it("should keep a shown map in charge when a map error fires after the reveal, and record it as a warning", async () => {
+    // ONE FAILED TILE OR GLYPH REQUEST IS NOT A FAILED MAP. Any MapLibre `error` event used to mark the whole
+    // live map failed, even on screen: the driver then showed frozen card images under a moving live map and
+    // the warmed map never took over.
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const live = root.querySelector("[data-part=live]") as HTMLElement;
+        let readyFired = false;
+        const handle = (window as any).initScrollyMap(
+          root,
+          { ...plan, warmSamples: 40, referenceWidth: 800 },
+          { window, warmTimeoutMs: 2000, onReady: () => (readyFired = true) },
+        );
+        await new Promise<void>((resolve) => {
+          const check = () => (root.dataset.liveShown ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        const warmBeforeError = root.dataset.liveWarm !== undefined;
+        for (const map of handle.maps) map.fire("error", { error: new Error("a tile request failed: 404") });
+        handle.apply({ ...plan.cameras[1], reveal: 0.25 });
+        await new Promise<void>((resolve) => {
+          const check = () => (root.dataset.liveWarm !== undefined ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        return {
+          warmBeforeError,
+          readyFired,
+          failed: handle.failed,
+          ready: handle.ready,
+          liveError: root.dataset.liveError,
+          liveWarning: root.dataset.liveWarning,
+          live: live.style.opacity,
+          opacity: handle.map.getPaintProperty("square", "fill-opacity"),
+        };
+      }, plan);
+      expect(result).toEqual({
+        warmBeforeError: false,
+        readyFired: true,
+        failed: false,
+        ready: true,
+        liveError: undefined,
+        liveWarning: "a tile request failed: 404",
+        live: "1",
+        opacity: 0.25,
+      });
+    } finally {
+      await page.close();
+    }
+  }, 120_000);
+
+  it("should fail and never reveal when the style itself cannot load, so the frozen images stay", async () => {
+    const page = await browser.newPage();
+    try {
+      await page.setViewport({ width: 800, height: 600 });
+      await loadRuntime(page);
+      const result = await page.evaluate(async (plan) => {
+        const root = document.getElementById("root")!;
+        const handle = (window as any).initScrollyMap(root, { ...plan, styleUrl: "data:application/json,not-a-style" }, { window, warmTimeoutMs: 2000 });
+        await new Promise<void>((resolve) => {
+          const check = () => (root.dataset.liveError !== undefined ? resolve() : requestAnimationFrame(check));
+          check();
+        });
+        await new Promise((r) => setTimeout(r, 500));
+        return {
+          failed: handle.failed,
+          ready: handle.ready,
+          live: (root.querySelector("[data-part=live]") as HTMLElement).style.opacity,
+          shown: root.dataset.liveShown,
+        };
+      }, plan);
+      expect(result).toEqual({ failed: true, ready: false, live: "0", shown: undefined });
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
   it("should record the first error and never reveal the container when the style sweep answers no tint", async () => {
     const page = await browser.newPage();
     try {
