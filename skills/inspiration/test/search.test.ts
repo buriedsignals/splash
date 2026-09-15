@@ -274,6 +274,16 @@ describe("searchInspiration with an account token", () => {
       status: 401,
     });
   });
+
+  it("should send no authorization header for a whitespace-only token", async () => {
+    let headers: Record<string, string> = {};
+    const fetchFn = async (_url, init) => {
+      headers = init.headers;
+      return answer([])();
+    };
+    await searchInspiration({ query: "floods", fetchFn, token: "   " });
+    expect("authorization" in headers).toBe(false);
+  });
 });
 
 describe("normaliseItems", () => {

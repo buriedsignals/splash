@@ -273,9 +273,7 @@ describe("formatInspiration and the Infoviz account", () => {
       quota: { limit: 5, remaining: 4, resetsAt: null },
       accountNeedsReconnect: true,
     });
-    expect(text).toMatch(/Your Infoviz account needs reconnecting/);
-    expect(text).toContain("Nothing in the gallery for");
-    expect(text).toContain("4 of 5 searches left today.");
+    expect(text).toBe(`${RECONNECT}\n\nNothing in the gallery for “floods”.\n\n4 of 5 searches left today.`);
   });
 
   it("should put the reconnect sentence before an anonymous failure", () => {
@@ -286,8 +284,7 @@ describe("formatInspiration and the Infoviz account", () => {
       quota: { limit: 5, remaining: 0, resetsAt: null },
       accountNeedsReconnect: true,
     });
-    expect(text).toMatch(/Your Infoviz account needs reconnecting/);
-    expect(text).toContain("The gallery's daily limit is reached");
+    expect(text).toBe(`${RECONNECT}\n\nThe gallery's daily limit is reached (5 searches a day). It resets at midnight UTC.`);
   });
 
   it("should say Indicator Labs could not run the search", () => {

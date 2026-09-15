@@ -101,6 +101,7 @@ export async function searchInspiration({
   if (!subject) return { ok: false, reason: "empty-query" };
   if (subject.length > MAX_QUERY_LENGTH) return { ok: false, reason: "query-too-long", limit: MAX_QUERY_LENGTH };
 
+  const bearer = typeof token === "string" ? token.trim() : "";
   const controller = new AbortController();
   const exchange = (async () => {
     const response = await fetchFn(`${apiBase}/api/graphics/examples`, {
@@ -108,7 +109,7 @@ export async function searchInspiration({
       headers: {
         "content-type": "application/json",
         "user-agent": USER_AGENT,
-        ...(typeof token === "string" && token ? { authorization: `Bearer ${token}` } : {}),
+        ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
       },
       body: JSON.stringify({ query: subject }),
       signal: controller.signal,
@@ -116,7 +117,7 @@ export async function searchInspiration({
     const quota = readQuota(response.headers);
     const body = await response.json().catch(() => null);
 
-    if (response.status === 401 && typeof token === "string" && token) {
+    if (response.status === 401 && bearer) {
       return { ok: false, reason: "invalid-token" };
     }
 
