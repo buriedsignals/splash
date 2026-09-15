@@ -11,12 +11,13 @@ import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
 const CREDENTIAL_ID = "INFOVIZ_TOKEN";
 const OPERATION_ID = "inspiration-search";
 
-// The 10 s status read matches the studio's own per-key budget; the 48 s run bound keeps a stalled
-// Engine from holding the tool call open indefinitely. Engine's own 45 s operation timeout only
-// starts once the operation actually execs, so Splash's own bound can fire first — in which case
-// the journalist reads "it took too long" and nothing searches again.
+// The 10 s status read matches the studio's own per-key budget; the 40 s run bound keeps a stalled
+// Engine from holding the tool call open indefinitely, and both together stay well under an MCP
+// client's 60 s. The search itself gives up after 15 s and retries at most once, so 40 s leaves room
+// for Engine's work before exec (hashing the runtime, reading the keychain). Engine's own 45 s
+// timeout fires later; either way the journalist reads "it took too long" and nothing searches again.
 export const KEY_STATUS_TIMEOUT_MS = 10_000;
-export const OPERATION_TIMEOUT_MS = 48_000;
+export const OPERATION_TIMEOUT_MS = 40_000;
 
 function terminal(outcome) {
   const events = Array.isArray(outcome?.events) ? outcome.events : [];

@@ -195,7 +195,7 @@ Measured on Engine `origin/main` 52fed4f and Splash (why):
   - Engine redacts every emitted line with `(?:cj_|on_|sk-|fw_)[A-Za-z0-9_-]{8,}`, which ordinary URLs and titles
     match (`flood-risk-map…`). The sealed entry therefore prints `{"b64": base64(JSON result)}` (standard base64 has
     no `_` or `-`) and the MCP service decodes it before the shape check.
-  - Timeouts: key status 10 s, run 48 s; an `engine-failed` detail is one of "it took too long" / "Indicator Labs
+  - Timeouts: key status 10 s, run 40 s (together ≤ 50 s, under an MCP client's 60 s); an `engine-failed` detail is one of "it took too long" / "Indicator Labs
     reported an error", never Engine's raw text.
   - The decision lives in `apps/goose/inspiration.mjs` with `invokeEngineFn` and `searchFn` injected; tests never
     spawn a process. The bridge's `status()` is not used: it refuses IDs outside `CREDENTIAL_IDS` until 2b-2.

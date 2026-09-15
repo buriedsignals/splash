@@ -353,6 +353,10 @@ describe("createInspirationService", () => {
     expect(f.engineCalls[1].options).toEqual({
       timeoutMs: OPERATION_TIMEOUT_MS,
     });
+    // An MCP client gives up on a tool call after 60 s; both bounds together leave it 10 s of margin.
+    expect(KEY_STATUS_TIMEOUT_MS + OPERATION_TIMEOUT_MS).toBeLessThanOrEqual(
+      50_000,
+    );
   });
 
   it("should report a well-formed-but-empty run result as unreadable without a second search", async () => {
