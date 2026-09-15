@@ -153,6 +153,38 @@ describe("the control's chrome is one drawing", () => {
     for (const { name, css } of withChrome) expect(`${name}: ${css}`).toMatch(/min-height: 24px/);
   });
 
+  // A READER WHO ASKED FOR NO MOTION GETS NONE, AND THIS IS THE CHROME THAT USED TO IGNORE THEM.
+  // The pill's transition was declared outside every media query, so twelve chrome animations were
+  // still running under `prefers-reduced-motion: reduce` on a beat whose own travel correctly
+  // snapped — on every vocabulary that calls this module, which is every beat with a control. The
+  // shape of the fix is the corpus idiom: the declarations that SET the state stay outside the
+  // query, the clock that interpolates them goes inside it, so `reduce` gets the new picture
+  // already in place rather than no picture.
+  const QUERY = "@media (prefers-reduced-motion: no-preference) {";
+
+  it("should put every animation this chrome emits behind prefers-reduced-motion", () => {
+    for (const { name, css } of withChrome) {
+      const at = css.indexOf(QUERY);
+      expect([name, at > 0]).toEqual([name, true]);
+      // Nothing that moves may be declared where `reduce` cannot switch it off.
+      expect(`${name}: ${css.slice(0, at)}`).not.toMatch(/\b(transition|animation)(-[a-z]+)?\s*:/);
+      expect(`${name}: ${css.slice(at)}`).toMatch(/transition:\s*background-color/);
+    }
+  });
+
+  it("should leave the chosen state itself outside the query, so reduce still shows it", () => {
+    for (const { name, css } of withChrome) {
+      const at = css.indexOf(QUERY);
+      const checked = css.indexOf("label:has(input:checked)");
+      const hover = css.indexOf("label:hover");
+      const focus = css.indexOf("label:has(input:focus-visible)");
+      const outside = (i: number) => i > 0 && i < at;
+      expect([name, outside(checked), outside(hover), outside(focus)]).toEqual([
+        name, true, true, true,
+      ]);
+    }
+  });
+
   it("should layer the pills over radios that still work", () => {
     for (const { name, css } of withChrome) {
       expect(`${name}: ${css}`).toContain("opacity: 0");
