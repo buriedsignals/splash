@@ -17,6 +17,7 @@ import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.
 import { copyOf as stillCopyOf, loadSubject, rampFor } from "../static-choropleth-europe-lowcarbon/beat.mjs";
 import { CLIP_MARGIN, FRAME, unmeasuredNeighboursOf, videoGeometry } from "./geometry.mjs";
 import { haloOf, layoutFor, mapRegistersOf, pillOf, SLOT_REGISTERS, widthOf } from "./layout.mjs";
+import { SEATS } from "./map-plan.mjs";
 import { closeUpViewBox, overviewViewBox, placePills, toStage } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
 import { CHOROPLETH_VIDEO_TIMING } from "./timing-contract.ts";
@@ -67,7 +68,7 @@ export function loadBeat() {
   const subject = loadSubject({ dir: join(HERE, "..", "static-choropleth-europe-lowcarbon") });
   const geometry = videoGeometry(subject);
   const states = statesFor(subject, geometry);
-  return { subject, geometry, states, copy: copyOf(subject) };
+  return { subject, geometry, states, copy: copyOf(subject), mapSeats: SEATS };
 }
 
 export function copyOf(subject) {
