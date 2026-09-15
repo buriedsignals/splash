@@ -1158,7 +1158,7 @@
       your agent. Name a subject and it brings back what newsrooms have published on
       it — no story to open, nothing to produce.</p>
       <p class="mhint">Install Splash, then ask your agent for inspiration on a subject.
-      Searches from the agent are limited too, per address.</p>
+      Searches from the agent are limited too: five a day per address, without an account.</p>
       <a class="btn" href="docs/">How Splash works</a>
     </div>
   </div>
@@ -1611,7 +1611,13 @@
         const d = await res.json().catch(() => ({}));
         limit = Number(d.limit) || limit; left = 0; drawQuota();
         all = [];
-        if (account || !ACCOUNT_SIGN_IN) {
+        if (!ACCOUNT_SIGN_IN) {
+          box('ink', 'Limit reached',
+              limit + ' searches a day, and that was the ' + (limit === 5 ? 'fifth' : 'last') + '.',
+              'The count resets at midnight UTC.');
+          return;
+        }
+        if (account) {
           box('ink', 'Limit reached',
               limit + ' searches a day, and that was the last.',
               'The count resets at midnight UTC.');
