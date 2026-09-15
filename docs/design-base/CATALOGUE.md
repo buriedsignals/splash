@@ -63,9 +63,9 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 | 05 | Flow map | 1 | ✅ | ◦ | ◦ | ◦ |
 | 06 | Hex grid | 2 | ✅ | ◦ | ◦ | ◦ |
 | 07 | Locator | 1 | ✅ | ◦ | ◦ | ◦ |
-| 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ◦ |
+| 08 | Proportional symbol | 2 | ✅ | ◦ | ◦ | ✅ |
 
-**Maps: 8 of 8 done in static, 1 of 8 in scrolly, 0 in web or video.**
+**Maps: 8 of 8 done in static, 2 of 8 in scrolly, 0 in web or video.**
 
 The eight map scrolly beats listed below were drawn in SVG from a Natural Earth extract clipped to a fixed window, so
 countries outside it are missing as soon as the view leaves it. The owner ruled on 2026-09-15 that they are redone
@@ -155,7 +155,7 @@ until then. The choropleth is the first redone and validated.
 | Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` — SVG, to redo on MapTiler |
 | Hex grid | scrolly | `proof/scrolly-hex-grid-europe-protection` — SVG, to redo on MapTiler |
 | Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` — SVG, to redo on MapTiler |
-| Proportional symbol | scrolly | `proof/scrolly-proportional-symbol-europe-capacity` — SVG, to redo on MapTiler |
+| Proportional symbol | scrolly | `proof/scrolly-proportional-symbol-europe-capacity` — live MapTiler, flat map (validated 2026-09-15) |
 
 ## What is next, by how much evidence backs it
 
