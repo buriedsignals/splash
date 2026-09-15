@@ -15,7 +15,7 @@ function reachedOf(i, n) {
   return clamp(["-", ["*", { $state: "arrive" }, n], i]);
 }
 
-export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, countRadius, weightLargestPx }) {
+export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, countRadius, countOpacityCap, weightLargestPx }) {
   const points = (stations) => ({
     type: "FeatureCollection",
     features: stations.map((s) => ({ type: "Feature", properties: { r: s.r }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })),
@@ -30,16 +30,18 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
       id: `count-${bucket.fuel}`,
       type: "circle",
       data: points(bucket.stations),
+      // A FIELD READS AS DENSITY ONLY IF THE DENSEST CELL STILL SHOWS GAPS: opacity capped below full so
+      // overlapping dots blend into a texture rather than fusing into one black mass (owner, 2026-09-15 — pure
+      // black at full opacity read as a solid shape, not as 8,900 separate points).
       paint: { "circle-radius": countRadius, "circle-color": colours.dot, "circle-opacity": 0 },
-      bindings: { "circle-opacity": ["*", reached, ["-", 1, { $state: "weight" }], stepBack] },
+      bindings: { "circle-opacity": ["*", reached, ["-", 1, { $state: "weight" }], stepBack, countOpacityCap] },
     });
     layers.push({
       id: `weight-${bucket.fuel}`,
       type: "circle",
       data: points(bucket.stations),
-      // AN ORDINARY DOT STAYS THE SAME COLOUR AT A WEIGHT AS AT A COUNT — no second, weaker neutral: a colour
-      // diluted toward the land to look "faint" reads as mud once it sits ON the land (measured, owner 2026-09-15:
-      // a grey at 3.09:1 against land, barely over the mark floor and easily lost under overlapping circles).
+      // Same colour at a weight as at a count, full strength: an area big enough to carry a value reads fine
+      // solid; it is only the COUNT field, at thousands of overlapping tiny dots, that needs the opacity cap.
       paint: { "circle-radius": weightRadius, "circle-color": colours.dot, "circle-opacity": 0 },
       bindings: { "circle-opacity": ["*", reached, { $state: "weight" }, stepBack] },
     });
@@ -47,6 +49,8 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
   layers.push({
     id: "count-nuclear",
     type: "circle",
+    // NUCLEAR IS A DOT LIKE ANY OTHER, PLUS A RING (below): the ring carries the distinction, not a second dot
+    // colour — two dot colours on the same field would itself be two classes fighting for the same reading.
     data: points(nuclear),
     paint: { "circle-radius": countRadius, "circle-color": colours.dot, "circle-opacity": 0 },
     bindings: { "circle-opacity": ["*", { $state: "subject" }, ["-", 1, { $state: "weight" }]] },
@@ -54,25 +58,24 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
   layers.push({
     id: "weight-nuclear",
     type: "circle",
-    // THE FAINT FILL UNDER THE SUBJECT'S RING IS THE RING'S OWN STRONG COLOUR AT LOW ALPHA, never a colour
-    // pre-diluted toward the land: diluting the hex first is what turned the ordinary dots' weight-fill to mud
-    // (see `weight-${fuel}`, above); alpha keeps the hue legible while still reading as "faint" under the ring.
     data: points(nuclear),
-    paint: { "circle-radius": weightRadius, "circle-color": colours.ring, "circle-opacity": 0 },
-    bindings: { "circle-opacity": ["*", { $state: "subject" }, { $state: "weight" }, 0.4] },
+    paint: { "circle-radius": weightRadius, "circle-color": colours.dot, "circle-opacity": 0 },
+    bindings: { "circle-opacity": ["*", { $state: "subject" }, { $state: "weight" }] },
   });
+  // THE RING IS THE SUBJECT'S OWN, DISTINCT TREATMENT — the ink, thin — never the dot's own colour at a
+  // different strength: a ring in the same hue as the field it isolates from reads as one more of the same dots.
   layers.push({
     id: "ring-nuclear-count",
     type: "circle",
     data: points(nuclear),
-    paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colours.ring, "circle-stroke-width": 1.4, "circle-stroke-opacity": 0 },
+    paint: { "circle-radius": 4, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colours.ring, "circle-stroke-width": 1, "circle-stroke-opacity": 0 },
     bindings: { "circle-stroke-opacity": ["*", { $state: "subject" }, ["-", 1, { $state: "weight" }]] },
   });
   layers.push({
     id: "ring-nuclear-weight",
     type: "circle",
     data: points(nuclear),
-    paint: { "circle-radius": weightRadius, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colours.ring, "circle-stroke-width": 1.4, "circle-stroke-opacity": 0 },
+    paint: { "circle-radius": weightRadius, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colours.ring, "circle-stroke-width": 1, "circle-stroke-opacity": 0 },
     bindings: { "circle-stroke-opacity": ["*", { $state: "subject" }, { $state: "weight" }] },
   });
   return {

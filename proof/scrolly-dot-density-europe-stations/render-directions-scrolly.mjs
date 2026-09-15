@@ -170,7 +170,12 @@ if (buckets.reduce((a, b) => a + b.stations.length, 0) !== total - nuclear.lengt
 const nuclearPoints = nuclear.map(asPoint);
 
 const WEIGHT_LARGEST_PX = 46;
-const COUNT_RADIUS_PX = 1.5;
+/** THE STATIC PLATE'S OWN COUNT-DOT RANGE, taken at its low end: the field has to show gaps in its densest
+ *  cell, not fuse into a mass (owner, 2026-09-15). */
+const COUNT_RADIUS_PX = 1.2;
+/** THE OPACITY THE DENSEST OVERLAP STILL CANNOT PASS: two or three dots stacked read as a slightly stronger
+ *  patch of the same texture, not as a solid fill — measured against the densest cell, below. */
+const COUNT_OPACITY_CAP = 0.55;
 const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW`, px: Math.max(1.2, Math.sqrt(mw / maxMw) * WEIGHT_LARGEST_PX * 2) }));
 
 const textPerRegister = {
@@ -204,10 +209,13 @@ try {
     try {
       const tints = plateTints(direction);
       // MEASURED AGAINST THE BASEMAP'S OWN TINTS (`tints.land`, `tints.water` — what the live sweep actually
-      // paints), not the page ground: a mark sits on the map, never on the header's paper (owner, 2026-09-15).
+      // paints), not the page ground: a mark sits on the map, never on the header's paper. THE DOT IS THE
+      // DIRECTION'S OWN PALETTE (the accent), pushed only as far as the 3:1 mark floor needs — never pure black:
+      // a field of 8,900 black dots read as a solid mass, not as a density (owner, 2026-09-15). The subject's ring
+      // is the ink instead, thin, so it reads as an outline over the field rather than a second dot colour.
       const colours = {
-        dot: adjustToContrast(adjustToContrast(ink, tints.land, NON_TEXT_CONTRAST_MIN) ?? ink, tints.water, NON_TEXT_CONTRAST_MIN) ?? ink,
-        ring: adjustToContrast(adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent, tints.water, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+        dot: adjustToContrast(adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent, tints.water, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
+        ring: adjustToContrast(adjustToContrast(ink, tints.land, NON_TEXT_CONTRAST_MIN) ?? ink, tints.water, NON_TEXT_CONTRAST_MIN) ?? ink,
       };
       if (contrast(colours.dot, colours.ring) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear ring (${colours.ring}) measure ${contrast(colours.dot, colours.ring).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
       const plan = dotDensityPlan({
@@ -220,6 +228,7 @@ try {
         referenceWidth: REFERENCE.width,
         referenceHeight: REFERENCE.height,
         countRadius: COUNT_RADIUS_PX,
+        countOpacityCap: COUNT_OPACITY_CAP,
         weightLargestPx: WEIGHT_LARGEST_PX,
       });
       const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
