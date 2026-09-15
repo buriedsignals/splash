@@ -1,0 +1,677 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 66.5,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 7.065625,
+      "transform": "uppercase",
+      "lead": 81.1283508,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 8.210526315789474,
+      "transform": "uppercase",
+      "lead": 35.999508000000006,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 31.58,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 3.789599999999999,
+      "transform": "none",
+      "lead": 37.895482088,
+      "fill": "#a5a4b8"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 44.21,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 53.05127495600001,
+      "fill": "#4FE0C0"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 30,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 3.599999999999999,
+      "transform": "none",
+      "lead": 35.999508000000006,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 66.5,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 7.065625,
+      "transform": "uppercase",
+      "lead": 81.1283508,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "SANTÉ · ESPÉRANCE DE VIE",
+      "x": 85,
+      "y": 424.6099853515625,
+      "width": 615.0821455654345
+    },
+    "title": [
+      {
+        "text": "LA POLOGNE A GAGNÉ 5,0 ANS",
+        "x": 85,
+        "y": 510.43610866113283,
+        "width": 1228.7370057106018
+      },
+      {
+        "text": "D’ESPÉRANCE DE VIE DEPUIS",
+        "x": 85,
+        "y": 591.5644594611329,
+        "width": 1175.054986667633
+      },
+      {
+        "text": "2000, LES ÉTATS-UNIS 2,5",
+        "x": 85,
+        "y": 672.6928102611329,
+        "width": 1008.3229521751404
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : Nations unies, World Population Prospects (2024), via Our World in Data",
+        "x": 4.493098754882813,
+        "y": 26.753108520507812,
+        "width": 1483.6196923494338
+      }
+    ],
+    "halo": 8.986197509765626,
+    "width": 1523,
+    "height": 38,
+    "at": {
+      "x": 85,
+      "y": 982
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "grid": "#3c3b66",
+    "past": "#3a6c7e",
+    "present": "#53e1c1",
+    "connector": "#3ca29b",
+    "guide": "#a7a6b9",
+    "ring": "#53e1c1",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "name": "#ffffff",
+      "muted": "#a7a6b9",
+      "pair": "#53e1c1",
+      "count": "#ffffff"
+    }
+  },
+  "strokes": {
+    "connector": 14.77923801432,
+    "axis": 1.5158399999999999,
+    "guide": 2.27376,
+    "ring": 3.0316799999999997
+  },
+  "plot": {
+    "left": 381.96578485878536,
+    "right": 1699.5475670898766,
+    "top": 124.7618305305125,
+    "foot": 916.9140220444438,
+    "axisY": 924.4931184620438
+  },
+  "ring": {
+    "x": 85,
+    "width": 1750,
+    "height": 75.21521915139313,
+    "rx": 13.202536525232189
+  },
+  "ticks": [
+    {
+      "text": "74",
+      "width": 40.76977978668213,
+      "x": 462.93333975245133,
+      "y": 959.8942058464406,
+      "at": 483.31822964579237
+    },
+    {
+      "text": "76",
+      "width": 40.01186047515869,
+      "x": 666.017188982227,
+      "y": 959.8942058464406,
+      "at": 686.0231192198064
+    },
+    {
+      "text": "78",
+      "width": 40.42240200958252,
+      "x": 868.5168077890291,
+      "y": 959.8942058464406,
+      "at": 888.7280087938204
+    },
+    {
+      "text": "80",
+      "width": 43.233021840667725,
+      "x": 1069.8163874475006,
+      "y": 959.8942058464406,
+      "at": 1091.4328983678345
+    },
+    {
+      "text": "82",
+      "width": 40.67504225692749,
+      "x": 1273.8002668133847,
+      "y": 959.8942058464406,
+      "at": 1294.1377879418485
+    },
+    {
+      "text": "84",
+      "width": 44.36990080795288,
+      "x": 1474.657727111886,
+      "y": 959.8942058464406,
+      "at": 1496.8426775158625
+    },
+    {
+      "text": "86 ans",
+      "width": 121.01456789779662,
+      "x": 1576.112707834124,
+      "y": 959.8942058464406,
+      "at": 1699.5475670898766
+    }
+  ],
+  "rows": [
+    {
+      "key": "France",
+      "levelRank": 4,
+      "gainRank": 1,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 994.5196906624988
+      },
+      "b": {
+        "x": 1428.4601830180688
+      },
+      "name": {
+        "text": "France",
+        "width": 125.08838801193237,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+4,3",
+        "width": 92.35468316078186,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Germany",
+      "levelRank": 6,
+      "gainRank": 8,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 894.4341514353282
+      },
+      "b": {
+        "x": 1231.0661615508945
+      },
+      "name": {
+        "text": "Allemagne",
+        "width": 201.7646493332863,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+3,3",
+        "width": 86.07686638832092,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Italy",
+      "levelRank": 2,
+      "gainRank": 4,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1051.6013875665406
+      },
+      "b": {
+        "x": 1468.0281774629163
+      },
+      "name": {
+        "text": "Italie",
+        "width": 93.91891627120971,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+4,1",
+        "width": 79.9758837223053,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Japan",
+      "levelRank": 0,
+      "gainRank": 6,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1210.907160282758
+      },
+      "b": {
+        "x": 1569.0360239376473
+      },
+      "name": {
+        "text": "Japon",
+        "width": 109.23522025432587,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+3,5",
+        "width": 86.16528344154358,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Netherlands",
+      "levelRank": 5,
+      "gainRank": 5,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 901.9038266161309
+      },
+      "b": {
+        "x": 1310.1109332402812
+      },
+      "name": {
+        "text": "Pays-Bas",
+        "width": 168.03718640060424,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+4,0",
+        "width": 95.27254509925842,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Poland",
+      "levelRank": 9,
+      "gainRank": 0,
+      "pair": true,
+      "subject": true,
+      "a": {
+        "x": 447.36851747984156
+      },
+      "b": {
+        "x": 952.8739710995179
+      },
+      "name": {
+        "text": "Pologne",
+        "width": 153.69986453781127,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+5,0",
+        "width": 89.96734642982483,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Spain",
+      "levelRank": 3,
+      "gainRank": 2,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1031.8680665665106
+      },
+      "b": {
+        "x": 1463.426776469586
+      },
+      "name": {
+        "text": "Espagne",
+        "width": 159.57375827560423,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+4,3",
+        "width": 92.35468316078186,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "Switzerland",
+      "levelRank": 1,
+      "gainRank": 3,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1074.6083925331916
+      },
+      "b": {
+        "x": 1492.1399240777448
+      },
+      "name": {
+        "text": "Suisse",
+        "width": 116.53020624923705,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+4,1",
+        "width": 79.9758837223053,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "United Kingdom",
+      "levelRank": 7,
+      "gainRank": 7,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 873.4339248754618
+      },
+      "b": {
+        "x": 1223.3431052581243
+      },
+      "name": {
+        "text": "Royaume-Uni",
+        "width": 253.6189685783386,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+3,5",
+        "width": 86.16528344154358,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    },
+    {
+      "key": "United States",
+      "levelRank": 8,
+      "gainRank": 9,
+      "pair": true,
+      "subject": false,
+      "a": {
+        "x": 767.692919229177
+      },
+      "b": {
+        "x": 1020.9220025295134
+      },
+      "name": {
+        "text": "États-Unis",
+        "width": 195.164421068573,
+        "x": 98.2634187308,
+        "dy": 10.43719482421875
+      },
+      "gain": {
+        "text": "+2,5",
+        "width": 86.82843804359436,
+        "x": 1724.5585852679565,
+        "dy": 14.721923828125
+      }
+    }
+  ],
+  "slots": [
+    164.36944010620905,
+    243.5846592576022,
+    322.7998784089953,
+    402.0150975603884,
+    481.2303167117816,
+    560.4455358631747,
+    639.6607550145678,
+    718.875974165961,
+    798.091193317354,
+    877.3064124687472
+  ],
+  "start": 447.36851747984156,
+  "legend": {
+    "dots": [
+      {
+        "x": 391.81861020166536,
+        "y": 89.0865478515625
+      },
+      {
+        "x": 541.5771299260384,
+        "y": 89.0865478515625
+      }
+    ],
+    "labels": [
+      {
+        "text": "2000",
+        "width": 90.3503793633461,
+        "x": 409.2505319621454,
+        "y": 99.52374267578125
+      },
+      {
+        "text": "2023",
+        "width": 84.35018099908828,
+        "x": 559.0090516865184,
+        "y": 99.52374267578125
+      }
+    ]
+  },
+  "counter": {
+    "0": {
+      "text": "0 en hausse",
+      "width": 270.47673404216766,
+      "x": 1545.8503125461891,
+      "y": 99.52374267578125
+    },
+    "1": {
+      "text": "1 en hausse",
+      "width": 257.5674556195736,
+      "x": 1559.017776537235,
+      "y": 99.52374267578125
+    },
+    "2": {
+      "text": "2 en hausse",
+      "width": 266.45365557074547,
+      "x": 1549.9538525870398,
+      "y": 99.52374267578125
+    },
+    "3": {
+      "text": "3 en hausse",
+      "width": 266.453633826226,
+      "x": 1549.9538747664496,
+      "y": 99.52374267578125
+    },
+    "4": {
+      "text": "4 en hausse",
+      "width": 270.74200105667114,
+      "x": 1545.5797401913956,
+      "y": 99.52374267578125
+    },
+    "5": {
+      "text": "5 en hausse",
+      "width": 266.54204565286636,
+      "x": 1549.8636947032765,
+      "y": 99.52374267578125
+    },
+    "6": {
+      "text": "6 en hausse",
+      "width": 268.4430731534958,
+      "x": 1547.9246466526342,
+      "y": 99.52374267578125
+    },
+    "7": {
+      "text": "7 en hausse",
+      "width": 267.6031143665314,
+      "x": 1548.781404615338,
+      "y": 99.52374267578125
+    },
+    "8": {
+      "text": "8 en hausse",
+      "width": 269.5483376979828,
+      "x": 1546.7972768172576,
+      "y": 99.52374267578125
+    },
+    "9": {
+      "text": "9 en hausse",
+      "width": 268.44308948516846,
+      "x": 1547.9246299943284,
+      "y": 99.52374267578125
+    },
+    "10": {
+      "text": "10 en hausse",
+      "width": 287.3207820355892,
+      "x": 1528.669383592899,
+      "y": 99.52374267578125
+    }
+  },
+  "dotR": 9.852825342880001,
+  "halo": 9.459476928710938,
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "travel": 0,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 0,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 570,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 54
+    },
+    "reveal": {
+      "start": 105,
+      "duration": 120
+    },
+    "subject": {
+      "start": 225,
+      "duration": 210
+    },
+    "conclusion": {
+      "start": 435,
+      "duration": 75
+    },
+    "hold": {
+      "start": 510,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}
