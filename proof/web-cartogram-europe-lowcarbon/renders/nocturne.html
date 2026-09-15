@@ -116,37 +116,49 @@ body {
   width: 100%;
   padding: 24px;
   display: grid;
-  /* Column 1 hugs the drawing (the plot is 'width: max-content' below, and what it holds is sized
-     from the height it has). Column 2 takes EVERYTHING that is left, down to its own measure. That
-     pair is the whole no-empty-surplus rule: there is no third place for width to go. */
-  grid-template-columns: minmax(0, auto) minmax(var(--aside-min), 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  /* COLUMN 1 IS THE DRAWING, AT AN EXPLICIT WIDTH. Column 2 takes EVERYTHING that is left, down to
+     its own measure — that pair is the whole no-empty-surplus rule: there is no third place for
+     width to go.
+     THE WIDTH IS TYPED OUT HERE AND NOT LEFT TO 'auto', and this is the defect that made the first
+     build of this arrangement overflow. A grid sizes its COLUMNS before its ROWS, so an 'auto'
+     column asks the plot how wide it wants to be while the row's height is still unknown — and a
+     box whose width comes from its height cannot answer. Measured on the cartogram at 1512x860:
+     the track resolved to 1014.3px, the plot then laid out at 1158px, and it ran 120px over the
+     column beside it. 'max-content', 'min-content' and 'fit-content(100%)' all gave the identical
+     1014.3px, so it is not a choice of keyword — it is that the question cannot be answered in that
+     pass. Asked as arithmetic instead, it always can be. */
+  grid-template-columns:
+    min(
+      calc(100% - var(--aside-min) - var(--aside-gap)),
+      calc((100dvh - var(--frame-pad) * 2 - 0px) * 1104 / 828 + 0px)
+    )
+    minmax(var(--aside-min), 1fr);
+  /* EVERY ROW IS SIZED BY THE WORDS IN IT, and the drawing spans all of them. The drawing does not
+     need a row to tell it how tall it is any more — its width comes from the window's height above
+     and its height from its own ratio — so nothing here has to be flexible. It did once, and the
+     cost of getting that wrong is worth recording: with row 1 'minmax(0, 1fr)' the first block of
+     the column shared that row with the drawing, the row was sized as the LEFTOVER rather than as
+     the block, and the title, the control, the key and the reading all printed on top of one
+     another. */
   grid-auto-rows: min-content;
+  align-content: start;
   column-gap: var(--aside-gap);
   row-gap: 10px;
   height: 100vh;
   height: 100dvh;
-  /* The container the drawing's own cap is measured against. 'inline-size' and not 'size': only the
-     WIDTH is ever asked of it, and inline-size is the one a beat that declares its own container on
-     this same element (the bump and the lollipop both do) can shadow without breaking anything. */
-  container-type: inline-size;
   --aside-min: 271px;
   --aside-gap: 24px;
-  /* The room the drawing has, once the column is paid and the beat's own gutters are taken out.
-     Used by the cell below as a CAP ON ITS HEIGHT, never on its width: capping the width of a box
-     that carries an aspect-ratio leaves the height where it was and breaks the ratio, which is the
-     one thing that may not happen here. */
-  --room-w: calc(100cqw - var(--aside-min) - var(--aside-gap) - var(--y-gutter, 0px) - var(--end-gutter, 0px));
+  /* The frame's own inset, as a property, because the column arithmetic above has to take it out of
+     the window's height and the two must never disagree about how much it is. */
+  --frame-pad: 24px;
+  /* NO CONTAINER QUERY UNIT IN THE COLUMN ARITHMETIC, and this cost a whole build to learn: an
+     element is NOT its own query container, so '100cqw' written in a rule ON '.chart-figure'
+     resolves against the viewport while the same token written on a DESCENDANT resolves against the
+     figure's content box. Measured, the two differed by exactly the frame's own padding — 48px —
+     and the drawing came out 48px narrower than the column it was given. '100%' inside
+     'grid-template-columns' is the figure's own content box by definition, and the figure's height
+     is '100dvh' because this rule sets it: neither needs a container at all. */
 }
-/* THE THREE PLACEMENTS, and nothing else is named. A <style> a beat inlines is display:none in the
-   UA sheet and is therefore not a grid item at all. */
-.chart-figure > .chart-header { grid-column: 1 / -1; }
-/* Spanning rather than '2 / -1': '-1' is the end of the EXPLICIT grid, and the column beside the
-   drawing makes implicit rows. Measured: with '2 / -1' the plot resolves to zero height and the
-   drawing disappears without a word. */
-.chart-figure > .chart-plot { grid-column: 1; grid-row: 2 / span 60; }
-.chart-figure > :not(.chart-header):not(.chart-plot) { grid-column: 2; min-width: 0; }
-
 /* Everything except the plot keeps its natural height: words are never squeezed to make a chart
    fit, the chart is. */
 .chart-header, .chart-source { flex: 0 0 auto; }
@@ -167,12 +179,23 @@ body {
 
 .chart-plot {
   position: relative;
-  /* The height the grid left, and a width that hugs what is drawn in it. 'max-content' is what
-     makes column 1 exactly the drawing's own width plus the beat's declared gutters, so the surplus
-     the column gets is the REAL surplus and never a gutter with a label on it. */
-  height: 100%;
-  width: max-content;
+  /* The height and the width the grid gave it, both definite. Column 1's width
+     is exactly the drawing's own width plus the beat's declared gutters — arithmetic, not an
+     intrinsic guess — so the surplus the column gets is the REAL surplus and never a gutter with a
+     label on it. */
+  height: auto;
+  align-self: start;
+  width: 100%;
   min-width: 0;
+  /* THE INLINE aspect-ratio FORTY COMPONENTS STILL SET ON THIS BOX IS OVERRIDDEN HERE, and an
+     important author declaration is the one thing that outranks a normal inline one. It used to be
+     this box's only height source and it cannot be one now: it mixes a gutter measured in CSS pixels
+     with a viewBox measured in its own units, so it is right at exactly ONE container width — across
+     the forty committed beats it puts the box out by as much as 115px. Left in place it also fights
+     the hug below outright: measured on the diverging stacked bar at 1512, the plot came out
+     1176px wider than the drawing in it and ran 852px off the side of the document; on the cartogram
+     it overran the column beside it. The trunk decides this box's size, both axes, alone. */
+  aspect-ratio: auto !important;
   display: grid;
   /* THREE COLUMNS, THE THIRD NORMALLY EMPTY. The format has always had a left gutter and an
      x-axis band; a beat whose marks END somewhere meaningful (the bump's final ranks) also needs a
@@ -181,9 +204,24 @@ body {
      Declared here, defaulting to nothing, it costs a beat that has no end gutter exactly zero.
      The middle column is 'auto': it takes the drawing's own width, which the rule below derives
      from the height this box was given. */
-  grid-template-columns: var(--y-gutter) auto var(--end-gutter, 0px);
-  grid-template-rows: 1fr var(--x-axis-h);
+  grid-template-columns: var(--y-gutter) 1fr var(--end-gutter, 0px);
+  grid-template-rows: auto var(--x-axis-h);
 }
+/* TWO PLACEMENTS, AND THE HEADER IS IN THE COLUMN WITH THE REST OF THE WORDS.
+   It was above, full width, for one draft. It cannot be: a full-width header of UNKNOWN height
+   cannot be subtracted from the window in CSS, and the drawing's width is the window's height minus
+   that header. Every formulation that kept it there needed a number nobody has. In the column the
+   arithmetic closes exactly, and what the column holds stops being a caption and becomes the
+   figure's whole text — the claim, the caveat, the key, the control and its notes, every reading
+   sentence and the source. That is the answer to "a column holding one short sentence is just a
+   gutter with a label": this one holds the beat's words.
+   Spanning rather than '1 / -1': '-1' is the end of the EXPLICIT grid, and the column beside the
+   drawing makes implicit rows. Measured: with '1 / -1' the plot resolves to zero height and the
+   drawing disappears without a word.
+   A <style> a beat inlines is display:none in the UA sheet and is therefore not a grid item. */
+.chart-figure > .chart-plot { grid-column: 1; grid-row: 1 / span 60; }
+.chart-figure > :not(.chart-plot) { grid-column: 2; min-width: 0; }
+
 /* THE DRAWING IS SIZED BY ITS HEIGHT AND SHAPED BY ITS OWN viewBox, and that is what makes
    preserveAspectRatio="none" a uniform SCALE rather than a distortion.
    'height: 100%' is the row the grid left after the x-axis band; 'aspect-ratio' turns it into a
@@ -201,10 +239,9 @@ svg.chart,
 .chart-plot > [class*="-layer"] {
   grid-column: 2;
   grid-row: 1;
-  height: 100%;
-  max-height: calc(var(--room-w) * 828 / 1104);
+  width: 100%;
+  height: auto;
   aspect-ratio: 1104 / 828;
-  width: auto;
   min-width: 0;
   min-height: 0;
   margin: auto;
@@ -218,18 +255,14 @@ svg.chart { display: block; }
   grid-row: 1;
   position: relative;
   height: 100%;
-  max-height: calc(var(--room-w) * 828 / 1104);
   min-height: 0;
-  margin-block: auto;
 }
 .chart-plot .end-axis {
   grid-column: 3;
   grid-row: 1;
   position: relative;
   height: 100%;
-  max-height: calc(var(--room-w) * 828 / 1104);
   min-height: 0;
-  margin-block: auto;
 }
 /* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
    svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
@@ -255,21 +288,18 @@ svg.chart { display: block; }
    UNDERNEATH. The threshold is not typed: it is the beat's own gutters plus the column's measure
    twice -- once for the column, once as the floor under the drawing beside it -- where the floor is
    itself the drawing's own aspect applied to that measure (a drawing whose SHORT side is under the
-   reading measure of the words next to it has stopped being the subject of the figure). One
-   '@media (max-width:)' block, which is the one this format's doctrine allows; nothing in it caps
-   the frame and nothing in it takes content away. Stacked, the figure's height goes back to its
+   reading measure of the words next to it has stopped being the subject of the figure). ONE width
+   query, which is the one this format's doctrine allows; nothing in it caps the frame and nothing
+   in it takes content away. Stacked, the figure's height goes back to its
    content: a phone scrolls, which it was always going to do. */
-@media (max-width: 704.99px) {
+@media (max-width: 704px) {
   .chart-figure {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
     height: auto;
-    --room-w: calc(100cqw - var(--y-gutter, 0px) - var(--end-gutter, 0px));
   }
-  .chart-figure > .chart-header,
   .chart-figure > .chart-plot,
-  .chart-figure > :not(.chart-header):not(.chart-plot) { grid-column: 1; grid-row: auto; }
-  .chart-plot { height: auto; width: 100%; }
+  .chart-figure > :not(.chart-plot) { grid-column: 1; grid-row: auto; }
   svg.chart,
   .chart-plot .overlay,
   .chart-plot > [class*="-layer"],
@@ -279,7 +309,7 @@ svg.chart { display: block; }
   .chart-plot .overlay,
   .chart-plot > [class*="-layer"] { width: 100%; }
   .chart-plot .y-axis,
-  .chart-plot .end-axis { height: calc(var(--room-w) * 828 / 1104); }
+  .chart-plot .end-axis { height: calc((var(--room-w) - var(--y-gutter, 0px) - var(--end-gutter, 0px)) * 828 / 1104); }
 }
 
 .axis-label {
