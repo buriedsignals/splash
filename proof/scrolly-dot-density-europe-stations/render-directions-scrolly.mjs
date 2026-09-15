@@ -171,11 +171,10 @@ const nuclearPoints = nuclear.map(asPoint);
 
 const WEIGHT_LARGEST_PX = 46;
 /** THE STATIC PLATE'S OWN COUNT-DOT RANGE, taken at its low end: the field has to show gaps in its densest
- *  cell, not fuse into a mass (owner, 2026-09-15). */
-const COUNT_RADIUS_PX = 1.2;
-/** THE OPACITY THE DENSEST OVERLAP STILL CANNOT PASS: two or three dots stacked read as a slightly stronger
- *  patch of the same texture, not as a solid fill — measured against the densest cell, below. */
-const COUNT_OPACITY_CAP = 0.55;
+ *  cell, not fuse into a mass. TEXTURE COMES FROM THIS RADIUS, NOT FROM OPACITY: every dot is fully opaque
+ *  (owner, 2026-09-15 — a partial-opacity fill next to the fully-opaque weight-mode circles and the nuclear
+ *  ring read as an unexplained "some circles have a border and some don't"). */
+const COUNT_RADIUS_PX = 0.9;
 const sizes = [100, 1000, 5000].map((mw) => ({ mw, label: `${n0(mw)}${NB}MW`, px: Math.max(1.2, Math.sqrt(mw / maxMw) * WEIGHT_LARGEST_PX * 2) }));
 
 const textPerRegister = {
@@ -228,7 +227,6 @@ try {
         referenceWidth: REFERENCE.width,
         referenceHeight: REFERENCE.height,
         countRadius: COUNT_RADIUS_PX,
-        countOpacityCap: COUNT_OPACITY_CAP,
         weightLargestPx: WEIGHT_LARGEST_PX,
       });
       const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];

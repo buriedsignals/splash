@@ -15,7 +15,7 @@ function reachedOf(i, n) {
   return clamp(["-", ["*", { $state: "arrive" }, n], i]);
 }
 
-export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, countRadius, countOpacityCap, weightLargestPx }) {
+export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, statesForCards, referenceWidth, referenceHeight, countRadius, weightLargestPx }) {
   const points = (stations) => ({
     type: "FeatureCollection",
     features: stations.map((s) => ({ type: "Feature", properties: { r: s.r }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } })),
@@ -30,11 +30,13 @@ export function dotDensityPlan({ tints, buckets, nuclear, colours, cameras, stat
       id: `count-${bucket.fuel}`,
       type: "circle",
       data: points(bucket.stations),
-      // A FIELD READS AS DENSITY ONLY IF THE DENSEST CELL STILL SHOWS GAPS: opacity capped below full so
-      // overlapping dots blend into a texture rather than fusing into one black mass (owner, 2026-09-15 — pure
-      // black at full opacity read as a solid shape, not as 8,900 separate points).
+      // EVERY STATION DOT IS ONE TREATMENT: filled, no stroke, fully opaque — no partial transparency, which
+      // read as an inconsistent "some circles have a border" against the fully-opaque weight-mode fills and the
+      // nuclear ring (owner, 2026-09-15). Density comes from the RADIUS (`countRadius`, chosen small), not from
+      // opacity: a field reads as texture because the marks are small enough to leave gaps, not because they are
+      // faded.
       paint: { "circle-radius": countRadius, "circle-color": colours.dot, "circle-opacity": 0 },
-      bindings: { "circle-opacity": ["*", reached, ["-", 1, { $state: "weight" }], stepBack, countOpacityCap] },
+      bindings: { "circle-opacity": ["*", reached, ["-", 1, { $state: "weight" }], stepBack] },
     });
     layers.push({
       id: `weight-${bucket.fuel}`,
