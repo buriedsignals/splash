@@ -43,6 +43,11 @@ them one after the other, on the same dots (`skills/scrolly/references/directed-
 - **Every sentence is asserted**: nuclear under 1 % of sites and over 30 % of capacity, the most concentrated
   fuel; the close-up's country is the one with most of the sites, and its nuclear site outweighs its solar site
   by more than a hundred times.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered. `nocturne` refused at first — its dot
+  and the nuclear disc measured 1.16:1 apart, both walked to the same land floor from the same accent — fixed
+  by mixing the disc further toward the ink until it clears 1.5:1 from the dot (`render-directions-scrolly.mjs`).
+  `verify-scrolly.mjs` and `verify-live-map-scrolly.mjs` clean on all three; a swap check on `creme` at
+  1280×800 and 375×812 shows only the live map's own place labels added.
 
 ## Directions
 

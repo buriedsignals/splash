@@ -217,13 +217,21 @@ try {
       // the land tint: the stroke that separates two overlapping discs, a gap rather than a black outline lost
       // once discs fuse.
       const walked = (c, on, floor) => adjustToContrast(c, on, floor) ?? c;
-      const colours = {
-        land: tints.land,
-        dot: walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN),
-        subject: walked(mix(direction.accent, ink, 0.35), tints.land, NON_TEXT_CONTRAST_MIN),
-        barBack: mix(tints.land, walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN), 0.18),
-      };
-      if (contrast(colours.dot, colours.subject) < 1.5) throw new Error(`the dot (${colours.dot}) and the nuclear disc (${colours.subject}) measure ${contrast(colours.dot, colours.subject).toFixed(2)}:1 apart — under the 1.5:1 floor two neighbouring classes need`);
+      const dot = walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN);
+      // The nuclear disc is the accent mixed toward the ink — the richer half of the same hue family, not a
+      // second competing colour (unchanged intent). Walked toward the land floor alone, a direction whose ink
+      // sits close to its own accent (nocturne, measured 2026-09-16: 1.16:1) can land the two so close they
+      // read as one class; mixing further toward the ink keeps the same family and opens the gap.
+      let subject = null;
+      for (const ratio of [0.35, 0.5, 0.65, 0.8, 1]) {
+        const candidate = walked(mix(direction.accent, ink, ratio), tints.land, NON_TEXT_CONTRAST_MIN);
+        if (contrast(dot, candidate) >= 1.5) {
+          subject = candidate;
+          break;
+        }
+      }
+      if (!subject) throw new Error(`no mix of the accent toward the ink separates the nuclear disc from the ordinary dot (${dot}) by 1.5:1 on ${tints.land}`);
+      const colours = { land: tints.land, dot, subject, barBack: mix(tints.land, dot, 0.18) };
       const plan = dotDensityPlan({
         tints: { water: tints.water, land: tints.land },
         fuels: others,
