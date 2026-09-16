@@ -1,0 +1,65 @@
+/**
+ * SCAFFOLD STUB — Directed%%Name%%. Read skills/map-beat/references/types/%%TYPE%%.md and this type's own
+ * worked example before writing the layout/layers below.
+ */
+
+import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { registerOf } from "#shared/design-base/register.mjs";
+
+const FRAME = { width: 960, height: 540 };
+
+/** SCAFFOLD: where and how large this direction draws its map — read off the worked example's own
+ *  mapGeometryFor before writing this. Minimal placeholder: the whole frame is the map rectangle. */
+export function mapGeometryFor({ direction }: { title: string[]; limits: string[]; reading: string[]; source: string; direction: any }) {
+  const PAD = direction.pad;
+  return { mapX: PAD, mapY: PAD, mapW: FRAME.width - PAD * 2, mapH: FRAME.height - PAD * 2 };
+}
+
+export function Directed%%Name%%({
+  plate,
+  title,
+  limits,
+  reading,
+  source,
+  alt,
+  eyebrow,
+  direction,
+}: {
+  plate: string;
+  title: string[];
+  limits: string[];
+  reading: string[];
+  source: string;
+  alt: string;
+  eyebrow: string;
+  direction: any;
+}) {
+  const { width, height } = FRAME;
+  const { muted } = deriveFurniture(direction.ground);
+  const PAD = direction.pad;
+  const eyebrowReg = registerOf(direction, "eyebrow");
+  const display = registerOf(direction, "display");
+  const body = registerOf(direction, "body");
+  const set = (text: string, r: { transform: string }) => applyCase(text, r.transform);
+  const g = mapGeometryFor({ title, limits, reading, source, direction });
+
+  // SCAFFOLD: layers — this beat's own classes, borders, leaders and placed words, drawn on top of the
+  // plate. Read the worked example's own placementsFor/layersFor before writing this region.
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={alt}>
+      <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
+      <image href={plate} x={g.mapX} y={g.mapY} width={g.mapW} height={g.mapH} />
+      <text x={PAD} y={PAD + eyebrowReg.fontSize} {...eyebrowReg}>
+        {set(eyebrow, eyebrowReg)}
+      </text>
+      <text x={PAD} y={PAD + eyebrowReg.fontSize + display.fontSize} {...display}>
+        {set(title[0], display)}
+      </text>
+      <text x={PAD} y={height - PAD} {...body} fill={muted}>
+        {set(source, body)}
+      </text>
+    </svg>
+  );
+}

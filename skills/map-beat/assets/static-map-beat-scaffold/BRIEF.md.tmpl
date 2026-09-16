@@ -1,0 +1,39 @@
+---
+format: static
+type: %%TYPE%%
+---
+
+# Beat — SCAFFOLD: the claim, as the title says it (static map)
+
+**Type:** %%TYPE%%. **Medium/format:** map / **static**. **Size:** landscape (`sizeFor`, `scripts/sizes.mjs`).
+
+SCAFFOLD: the subject, the frozen data and geometry (`data.csv`/`shapes.geojson`, credited here) and the
+claim — every number and every geographic fact derived from the frozen files and asserted in
+`render-directions.mjs`, never typed.
+
+## The choreography
+
+SCAFFOLD: read `skills/map-beat/references/types/%%TYPE%%.md` for this type's own rules and the worked example
+it names, then write the argument the plate draws: what the map OWNS (a class, a border, the ringed subject, a
+placed word) versus what MapTiler's own basemap already draws.
+
+## Precision
+
+SCAFFOLD: what is laid out in the reader's pixels, and the list of assertions `render-directions.mjs` checks the
+data and the geography against.
+
+## The owner's rules — checked before the render
+
+- [ ] The geography is MapTiler's and is never redrawn; a layer marks only what belongs to the study.
+- [ ] Every number the plate shows is reproducible from the beat's own frozen data, or carries a written
+      `grounded-by-hand` reason.
+- [ ] The plate is baked in the direction's own tints (`#shared/map-beat/tints.mjs`), never a fixed pair typed
+      here.
+- [ ] ONE art direction, composed from this beat's own PALETTE.md and text — never the three filed demo
+      directions, except for a catalogue proof (`--filed`).
+- [ ] The alt text (`role="img" aria-label`) says what the map shows, not that it is a map.
+
+## Direction
+
+One — the composer's best candidate for this beat's own PALETTE.md and text (`render-directions.mjs`):
+`renders/<id>.png` + `.svg`. `--filed` renders `creme`, `nocturne`, `rapport` instead, for a catalogue proof.

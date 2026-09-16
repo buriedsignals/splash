@@ -1,0 +1,142 @@
+// %%BEAT_PATH%%/render-directions.mjs
+//
+// SCAFFOLD STUB — read skills/map-beat/references/types/%%TYPE%%.md before writing anything below. Every
+// SCAFFOLD placeholder must be replaced before this renders — or even reaches the network:
+// `assertWritten` refuses first, and nothing above it calls `bake.mjs` or MapTiler.
+//
+// ONE ART DIRECTION BY DEFAULT: the composer's best candidate for this beat's own PALETTE.md and its own
+// text. `--filed` renders every filed demo direction instead; `--only <label>` narrows to one of those.
+//
+// Usage:  bun %%BEAT_PATH%%/render-directions.mjs [--filed] [--only <label>]
+
+import { spawnSync } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderStill } from "#shared/chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
+import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";
+import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { makePlan, validatePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
+import { BEAT } from "./bake.mjs";
+import { Directed%%Name%%, mapGeometryFor } from "./Directed%%Name%%.tsx";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = join(HERE, "renders");
+const SCAFFOLD_MARK = "SCAFFOLD";
+
+// SCAFFOLD: data loading — this beat's own frozen data and shapes, read from HERE (readFileSync(join(HERE,
+// "data.csv")), readFileSync(join(HERE, "shapes.geojson"))). Coerce every field used to a number.
+const shapes = [];
+
+// SCAFFOLD: assertions — the claim this beat makes, checked against `shapes`, INCLUDING the geography.
+
+// SCAFFOLD: card sentences
+const title = ["SCAFFOLD the title"];
+const limits = ["SCAFFOLD the standfirst"];
+const reading = ["SCAFFOLD the reading line"];
+const source = "SCAFFOLD the source credit";
+const alt = "SCAFFOLD the alt text";
+const eyebrow = "SCAFFOLD the eyebrow";
+
+/** Refuses while a placeholder is still in the copy — before this file ever spawns `bake.mjs` or reaches
+ *  MapTiler. */
+function assertWritten() {
+  const copy = JSON.stringify({ title, limits, reading, source, alt, eyebrow });
+  if (copy.includes(SCAFFOLD_MARK)) throw new Error(`the copy still carries ${SCAFFOLD_MARK} placeholders — write it before rendering (render-directions.mjs)`);
+  if (shapes.length === 0) throw new Error(`${SCAFFOLD_MARK}: shapes is still empty — load this beat's own frozen data and geometry before rendering (render-directions.mjs)`);
+}
+assertWritten();
+
+const textPerRegister = {
+  display: title.join(" "),
+  eyebrow,
+  body: limits.join(" "),
+  axis: "",
+  annot: reading.join(" "),
+  value: "",
+};
+
+const RUN_ARGS = process.argv.slice(2);
+const FILED = RUN_ARGS.includes("--filed");
+const ONLY_AT = RUN_ARGS.indexOf("--only");
+const ONLY = ONLY_AT === -1 ? null : RUN_ARGS[ONLY_AT + 1];
+if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only takes a label");
+
+// A composed direction's own `id` (e.g. "creme/creme/the newsroom" — colour/type/space) is not a filename;
+// a filed direction's is already a plain slug — labelOf makes both safe as `renders/<label>.png`.
+const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const all = filedDirections();
+const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+/** SCAFFOLD: how many ranked levels of evidence this beat's own claim distinguishes. */
+const BEAT_FACTS = { evidenceLevels: 3 };
+let chosen;
+if (FILED) {
+  chosen = all.map((d) => ({ label: labelOf(d.id), direction: d }));
+  console.log("every filed demo direction (--filed): a catalogue proof, not a production render");
+} else {
+  const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
+  if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${composeReport(composition, { beat: BEAT_FACTS })}`);
+  console.log(composeReport(composition, { beat: BEAT_FACTS }));
+  chosen = composition.offered.slice(0, 1).map((d) => ({ label: labelOf(d.id), direction: d }));
+}
+if (ONLY !== null && !chosen.some((d) => d.label === ONLY)) throw new Error(`--only takes one of ${chosen.map((d) => d.label).join(", ")}`);
+chosen = chosen.filter((d) => ONLY === null || d.label === ONLY);
+console.log("");
+
+const PLANS_DIR = await mkdtemp(join(tmpdir(), "static-map-scaffold-plans-"));
+const plateDir = (id) => join(HERE, "plate", id);
+async function ensurePlate(id, { planPath, drawn, water, land }) {
+  const result = spawnSync("bun", [join(HERE, "bake.mjs"), "--size", `${drawn.width}x${drawn.height}`, "--plan", planPath, "--water", water, "--land", land, "--out", plateDir(id)], { cwd: HERE, stdio: "inherit" });
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
+}
+
+const refused = [];
+for (const { label: id, direction: chosenDirection } of chosen) {
+  const direction = resolveDirectionFamilies(chosenDirection, textPerRegister);
+  try {
+    // SCAFFOLD: the layout and the layers — this beat's own picture, measured. Read the worked example's
+    // own mapGeometryFor/placementsFor/layersFor before writing this region.
+    const g = mapGeometryFor({ title, limits, reading, source, direction });
+    const drawn = drawnSizeOf(g);
+    const plan = makePlan({ style: { name: BEAT.style }, camera: { bounds: BEAT.bounds, drawn }, layers: [] });
+    const violations = [...validatePlan(plan), ...validateExpressions(plan)];
+    if (violations.length) throw new Error(`the plan for ${id} is not renderable:\n  ${violations.join("\n  ")}`);
+    assertNoDoubledBasemap(plan);
+    const planPath = join(PLANS_DIR, `${id}.plan.json`);
+    await writeFile(planPath, JSON.stringify(plan));
+    await ensurePlate(id, { planPath, drawn, water: direction.ground, land: direction.ground });
+
+    await renderStill({
+      element: createElement(Directed%%Name%%, {
+        plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,
+        title,
+        limits,
+        reading,
+        source,
+        alt,
+        eyebrow,
+        direction,
+      }),
+      width: 960,
+      height: 540,
+      outDir: OUT,
+      name: id,
+      scale: 2,
+    });
+    console.log(`-> renders/${id}.png`);
+  } catch (error) {
+    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    refused.push({ id, why: error.message });
+    console.log(`REFUSED — ${error.message}`);
+  }
+}
+await rm(PLANS_DIR, { recursive: true, force: true });
+if (refused.length) {
+  console.log(`refused by ${refused.length}: ${refused.map((r) => r.id).join(", ")}`);
+  process.exitCode = 1;
+}

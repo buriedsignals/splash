@@ -1,0 +1,126 @@
+// %%BEAT_PATH%%/render-directions.mjs
+//
+// SCAFFOLD STUB — read skills/chart-beat/references/types/%%TYPE%%.md before writing anything below.
+// Every SCAFFOLD placeholder must be replaced before this renders: `assertWritten` refuses first.
+//
+// ONE ART DIRECTION BY DEFAULT: the composer's best candidate for this beat's own PALETTE.md and its own
+// text. `--filed` renders every filed demo direction instead (a catalogue or demo proof, never a
+// production render); `--only <label>` narrows to one of those.
+//
+// Usage:  bun %%BEAT_PATH%%/render-directions.mjs [--filed] [--only <label>]
+
+import { rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderStill } from "#shared/chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
+import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
+import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";
+import { Directed%%Name%% } from "./Directed%%Name%%.tsx";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = join(HERE, "renders");
+const SCAFFOLD_MARK = "SCAFFOLD";
+
+// SCAFFOLD: data loading — read this beat's own frozen data (readFileSync(join(HERE, "data.csv"), "utf8")
+// or similar), coerce every field used to a number, and throw on anything unusable.
+const data = [];
+
+// SCAFFOLD: assertions — the claim this beat makes, checked against `data`. A beat whose numbers drift
+// must refuse to render, not ship a stale claim: `if (…) throw new Error(…)`.
+
+// SCAFFOLD: card sentences — this beat's own title, standfirst, reading line, source and alt. Longest
+// form first in each array; the component's own ladder spends the shortest that still fits.
+const title = ["SCAFFOLD the title"];
+const limits = ["SCAFFOLD the standfirst"];
+const reading = ["SCAFFOLD the reading line"];
+const source = "SCAFFOLD the source credit";
+const alt = "SCAFFOLD the alt text";
+const eyebrow = "SCAFFOLD the eyebrow";
+
+/** Refuses while a placeholder is still in the copy — named, so a cold run is told what is missing
+ *  instead of guessing from a stack trace. */
+function assertWritten() {
+  const copy = JSON.stringify({ title, limits, reading, source, alt, eyebrow, data });
+  if (copy.includes(SCAFFOLD_MARK)) throw new Error(`the copy still carries ${SCAFFOLD_MARK} placeholders — write it before rendering (render-directions.mjs)`);
+  if (data.length === 0) throw new Error(`${SCAFFOLD_MARK}: data is still empty — load this beat's own frozen data before rendering (render-directions.mjs)`);
+}
+assertWritten();
+
+const textPerRegister = {
+  display: title.join(" "),
+  eyebrow,
+  body: limits.join(" "),
+  axis: "",
+  annot: reading.join(" "),
+  value: "",
+};
+
+const RUN_ARGS = process.argv.slice(2);
+const FILED = RUN_ARGS.includes("--filed");
+const ONLY_AT = RUN_ARGS.indexOf("--only");
+const ONLY = ONLY_AT === -1 ? null : RUN_ARGS[ONLY_AT + 1];
+if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only takes a label");
+
+// A composed direction's own `id` (e.g. "creme/creme/the newsroom" — colour/type/space) is not a filename;
+// a filed direction's is already a plain slug — labelOf makes both safe as `renders/<label>.png`.
+const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const all = filedDirections();
+const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+/** SCAFFOLD: how many ranked levels of evidence this beat's own claim distinguishes — the composer
+ *  wants that many distinguishable voices. */
+const BEAT_FACTS = { evidenceLevels: 3 };
+let chosen;
+if (FILED) {
+  chosen = all.map((d) => ({ label: labelOf(d.id), direction: d }));
+  console.log("every filed demo direction (--filed): a catalogue proof, not a production render");
+} else {
+  const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
+  if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${composeReport(composition, { beat: BEAT_FACTS })}`);
+  console.log(composeReport(composition, { beat: BEAT_FACTS }));
+  chosen = composition.offered.slice(0, 1).map((d) => ({ label: labelOf(d.id), direction: d }));
+}
+if (ONLY !== null && !chosen.some((d) => d.label === ONLY)) throw new Error(`--only takes one of ${chosen.map((d) => d.label).join(", ")}`);
+chosen = chosen.filter((d) => ONLY === null || d.label === ONLY);
+console.log("");
+
+// SCAFFOLD: the facts this beat's arbiter reads — `beatFacts(data, { subject, … })`, the same shape the
+// type sheet's worked example passes it.
+const facts = beatFacts(data, {});
+const offered = applicableTreatments(facts);
+
+const refused = [];
+for (const { label: id, direction: chosenDirection } of chosen) {
+  const direction = resolveDirectionFamilies(chosenDirection, textPerRegister);
+  try {
+    await renderStill({
+      // SCAFFOLD: the marks — this beat's own props, read by Directed%%Name%%.
+      element: createElement(Directed%%Name%%, {
+        data,
+        title,
+        limits,
+        reading,
+        source,
+        alt,
+        eyebrow,
+        direction,
+        treatments: offered.map((t) => t.id),
+      }),
+      width: 960,
+      height: 540,
+      outDir: OUT,
+      name: id,
+      scale: 2,
+    });
+    console.log(`-> renders/${id}.png`);
+  } catch (error) {
+    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    refused.push({ id, why: error.message });
+    console.log(`REFUSED — ${error.message}`);
+  }
+}
+if (refused.length) {
+  console.log(`refused by ${refused.length}: ${refused.map((r) => r.id).join(", ")}`);
+  process.exitCode = 1;
+}

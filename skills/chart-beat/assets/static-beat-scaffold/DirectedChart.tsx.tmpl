@@ -1,0 +1,58 @@
+/**
+ * SCAFFOLD STUB — Directed%%Name%%. Read skills/chart-beat/references/types/%%TYPE%%.md and
+ * assets/ChartSeed.tsx (this skill's own seed) before writing the marks below.
+ */
+
+import { deriveFurniture, measureText } from "#shared/chart-beat/render-still.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { gapOf, leadOf, registerOf } from "#shared/design-base/register.mjs";
+
+const FRAME = { width: 960, height: 540 };
+
+export function Directed%%Name%%({
+  data,
+  title,
+  limits,
+  reading,
+  source,
+  alt,
+  eyebrow,
+  direction,
+  treatments,
+}: {
+  data: unknown[];
+  title: string[];
+  limits: string[];
+  reading: string[];
+  source: string;
+  alt: string;
+  eyebrow: string;
+  direction: any;
+  treatments: string[];
+}) {
+  const { width, height } = FRAME;
+  const { ink, muted, grid } = deriveFurniture(direction.ground);
+  const PAD = direction.pad;
+  const display = registerOf(direction, "display");
+  const eyebrowReg = registerOf(direction, "eyebrow");
+  const body = registerOf(direction, "body");
+  const set = (text: string, r: { transform: string }) => applyCase(text, r.transform);
+
+  // SCAFFOLD: marks — pure geometry from `data`, drawn with `direction.ground`, `direction.accent` and
+  // the furniture derived above. Read references/static-discipline.md before writing this region.
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={alt}>
+      <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
+      <text x={PAD} y={PAD + eyebrowReg.fontSize} {...eyebrowReg}>
+        {set(eyebrow, eyebrowReg)}
+      </text>
+      <text x={PAD} y={PAD + eyebrowReg.fontSize + gapOf(eyebrowReg, 0.75) + display.fontSize} {...display}>
+        {set(title[0], display)}
+      </text>
+      <text x={PAD} y={height - PAD} {...body} fill={muted}>
+        {set(source, body)}
+      </text>
+    </svg>
+  );
+}

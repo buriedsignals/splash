@@ -1,0 +1,162 @@
+// %%BEAT_PATH%%/bake.mjs
+//
+// SCAFFOLD STUB — one MapTiler basemap plate, mounted with this beat's own plan before the shutter. The
+// mechanism (`bakePlan`, `mountPlan`, `transformStyle`) lives in `#shared/map-beat`; what stays local is the
+// camera (`BEAT.bounds`), the style name, finding Chrome and writing the camera facts. Read
+// skills/map-beat/references/types/%%TYPE%%.md and this beat's own worked example before changing `BEAT`.
+//
+// Usage:
+//   bun %%BEAT_PATH%%/bake.mjs --plan /tmp/creme.plan.json --water '#cedde1' --land '#f4f1e3' --out plate/creme
+
+import { existsSync, readdirSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import puppeteer from "puppeteer";
+import { assertRangesServed, bakePlan, rangesNeededBy } from "#shared/map-beat/bake.mjs";
+import { assertNotFallback, DEFAULT_RANGES, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
+import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
+import { validateExpressions } from "#shared/map-beat/mount.mjs";
+import { validatePlan } from "#shared/map-beat/plan.mjs";
+import { assertNoDoubledBasemap } from "#shared/map-beat/style.mjs";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** SCAFFOLD: this beat's own camera — the bounds that hold its whole study set, and the MapTiler style. */
+export const BEAT = {
+  bounds: [
+    [-25, 34],
+    [42, 68],
+  ],
+  style: "dataviz-light",
+};
+
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
+
+const argv = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const at = argv.indexOf(name);
+  return at >= 0 ? argv[at + 1] : fallback;
+};
+
+function resolveChrome() {
+  const candidates = [];
+  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
+  const cache = join(homedir(), ".cache/puppeteer/chrome");
+  if (existsSync(cache))
+    for (const build of readdirSync(cache).sort().reverse())
+      candidates.push(
+        join(cache, build, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+        join(cache, build, "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+        join(cache, build, "chrome-linux64/chrome"),
+      );
+  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+  const found = candidates.find((path) => existsSync(path));
+  if (!found) throw new Error(`no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`);
+  return found;
+}
+
+function parseEnvFile(text) {
+  const env = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\S+)\s*$/.exec(line);
+    if (match) env[match[1]] = match[2];
+  }
+  return env;
+}
+
+export function drawnSizeFor(plan, sizeArg) {
+  const drawn = plan?.camera?.drawn;
+  if (!drawn?.width || !drawn?.height) throw new Error("the plan carries no camera.drawn — the layout publishes the size a map is baked at.");
+  if (sizeArg === null || sizeArg === undefined) return { width: drawn.width, height: drawn.height };
+  const [width, height] = String(sizeArg).split("x").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) throw new Error(`--size must be <width>x<height>, got ${JSON.stringify(sizeArg)}`);
+  if (width !== drawn.width || height !== drawn.height) throw new Error(`--size says ${width}x${height}, the plan's camera.drawn says ${drawn.width}x${drawn.height}.`);
+  return { width: drawn.width, height: drawn.height };
+}
+
+export function assertPlanIsRenderable(plan, where = "the plan handed to this bake") {
+  const violations = [...validatePlan(plan), ...validateExpressions(plan)];
+  if (violations.length) throw new Error(`${where} is not renderable:\n  ${violations.join("\n  ")}`);
+  assertNoDoubledBasemap(plan);
+  return plan;
+}
+
+async function assertFacesServed(plan, key) {
+  const faces = [...new Set(plan.layers.flatMap((l) => l.layout?.["text-font"] ?? []))];
+  const words = plan.layers.flatMap((l) => (l.data?.features ?? []).map((f) => f.properties?.name).filter((n) => typeof n === "string"));
+  const ranges = [...new Set([...DEFAULT_RANGES, ...rangesNeededBy(words)])];
+  const served = [];
+  for (const face of faces) {
+    const suffix = face.split(" ").slice(1).join(" ") || "Regular";
+    const fallback = await maptilerGlyphs(`Zzz Fictive ${suffix}`, "0-255", key);
+    assertNotFallback(await maptilerGlyphs(face, "0-255", key), fallback, face);
+  }
+  for (const range of ranges) {
+    const bodies = await Promise.all(faces.map((face) => maptilerGlyphs(face, range, key)));
+    if (bodies.every((b) => b.length > 0)) served.push(range);
+  }
+  assertRangesServed(words, served);
+  return { faces, ranges: served, words: words.length };
+}
+
+async function bake() {
+  const sizeArg = flag("--size", null);
+  const outDir = flag("--out", join(HERE, "plate"));
+  const planPath = flag("--plan", null);
+  const keyPath = flag("--env", join(HERE, "../../.env"));
+  const styleName = flag("--style", BEAT.style);
+  const water = flag("--water", null);
+  const land = flag("--land", null);
+  if (!planPath) throw new Error("no --plan: this bake mounts the beat's plan, it does not invent one");
+  if (!water || !land) throw new Error("no --water/--land: a plate is baked in the direction's own tints");
+
+  const env = parseEnvFile(await readFile(keyPath, "utf8"));
+  const key = env.MAPTILER_KEY ?? ["REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"].map((a) => env[a]).find(Boolean);
+  if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
+
+  const plan = JSON.parse(await readFile(planPath, "utf8"));
+  assertPlanIsRenderable(plan, planPath);
+  const { width, height } = drawnSizeFor(plan, sizeArg);
+
+  const styleRes = await fetch(`https://api.maptiler.com/maps/${styleName}/style.json?key=${key}`);
+  if (!styleRes.ok) throw new Error(`MapTiler refused the ${styleName} style: ${styleRes.status}`);
+  const styleDoc = await styleRes.json();
+  const served = await assertFacesServed(plan, key);
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: resolveChrome(),
+    args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--hide-scrollbars"],
+  });
+  const page = await browser.newPage();
+  await page.setContent(
+    `<!doctype html><html><head><link href="${MAPLIBRE_CSS}" rel="stylesheet"/><script src="${MAPLIBRE}"></script><style>html,body{margin:0;padding:0}#map{width:${width}px;height:${height}px}</style></head><body><div id="map"></div></body></html>`,
+    { waitUntil: "load" },
+  );
+  await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
+  await page.addScriptTag({ content: `${await scrollyMapScript()}\nwindow.__mountPlan = mountPlan;` });
+
+  await mkdir(outDir, { recursive: true });
+  const platePath = join(outDir, "plate.png");
+  const started = Date.now();
+  const { camera: read } = await bakePlan({
+    page,
+    plan: { ...plan, style: styleDoc },
+    glyphsUrl: styleDoc.glyphs,
+    tints: { water, land },
+    keepLabels: [],
+    outPath: platePath,
+  });
+  await browser.close();
+
+  const geometry = { frame: { width, height }, bounds: BEAT.bounds, style: styleName, water, land, zoom: Math.round(read.zoom * 1000) / 1000, frameCorners: read.frameCorners };
+  const geometryPath = join(outDir, "geometry.json");
+  await writeFile(geometryPath, JSON.stringify(geometry));
+
+  console.log(`baked in ${Date.now() - started}ms · ${plan.layers.length} plan layers · zoom ${geometry.zoom}\nfaces served: ${served.faces.join(", ")} · ranges ${served.ranges.join(", ")} over ${served.words} words\nplate    → ${platePath}\ngeometry → ${geometryPath}`);
+}
+
+if (import.meta.main) await bake();
