@@ -1,0 +1,53 @@
+{
+  "planHash": "b28281dfa25b844421253c918621a47df9c32ec3d190cfc234ae0a4f92bb36b4",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1654,
+        "height": 661
+      },
+      "cards": [
+        {
+          "zoom": 2.774650271732967
+        },
+        {
+          "zoom": 2.774650271732967
+        },
+        {
+          "zoom": 4.424650271732967
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 375,
+        "height": 799
+      },
+      "cards": [
+        {
+          "zoom": 1.2788186904958807
+        },
+        {
+          "zoom": 1.2788186904958807
+        },
+        {
+          "zoom": 2.928818690495881
+        }
+      ]
+    }
+  },
+  "images": {
+    "creme-creme-the-newsroom-wide@2x-1.webp": "663f4a122c717eeb8be34f1da09145f6bbd986830d7d4c64b821dbe0550a6d40",
+    "creme-creme-the-newsroom-wide@1x-1.webp": "13b55e90afa00a888a9bf9a87d404364a3ee3b23040e84ce8088f58393b76c7e",
+    "creme-creme-the-newsroom-tall@2x-1.webp": "7a553c89b131c37329e5b91dcd79b76362d2c2f83a4afb5a50d19bddd81403d0",
+    "creme-creme-the-newsroom-tall@1x-1.webp": "d6332a0f817c5210c122cf4adb1b50dcd188e5f1c1c7b587a9451f86b61fc337",
+    "creme-creme-the-newsroom-wide@2x-2.webp": "c60f81262cb4627b8e23e7c489d50c30e7d402e03c0532652545b12d126c5d68",
+    "creme-creme-the-newsroom-wide@1x-2.webp": "62dfc9f82a643090fa98b2659fa1d595f5d4623e7cfd20c4205b47ae87aac35d",
+    "creme-creme-the-newsroom-tall@2x-2.webp": "a3daa2e94e3055c10091648076bc0ff37047ea40c1dccb68f64edf951c450d9b",
+    "creme-creme-the-newsroom-tall@1x-2.webp": "5ea4f0333bbbd53b1ff34518a300c1a06257ea28419d1d02c741f633678b1795",
+    "creme-creme-the-newsroom-wide@2x-3.webp": "258f1539f9a573149d80e9d558fdfdd5242d5cba6b909c3817ce2a28ce30d73e",
+    "creme-creme-the-newsroom-wide@1x-3.webp": "9053cd1f68639fbbbb7187a2d88317c3638bbd1cfb4aef45ee57fd5334594a83",
+    "creme-creme-the-newsroom-tall@2x-3.webp": "b7e635d790e1ff011ed4650108ed56a581067c7abfe1a5c81b44d94bd1321e7b",
+    "creme-creme-the-newsroom-tall@1x-3.webp": "8c75cfdcf577ce4426274a75e44cb9d7b3afe572688ecc6745eb346584bd1ae4"
+  }
+}
