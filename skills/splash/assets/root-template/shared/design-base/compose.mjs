@@ -19,7 +19,9 @@
 //
 // What drives it instead is measurable:
 //   - THE NEWSROOM. Its recorded ground and accent win whenever it has recorded them — which is
-//     what `PALETTE.md` already decides for every beat, and says so in prose.
+//     what `PALETTE.md` already decides for every beat, and says so in prose. Its recorded
+//     TYPEFACES win the same way, on the same terms: a declared face sets the registers it can
+//     serve, and one that cannot is named with its reason in the report rather than dropped.
 //   - THE BEAT'S OWN FACTS. `BRIEF.md` ranks its evidence; a beat with four ranked levels needs
 //     four mutually distinguishable registers, and that is a number, not a taste.
 //   - THE CORPUS. Type and space come from directions actually measured on published work.
@@ -31,7 +33,7 @@ import { REGISTERS } from "#shared/chart-beat/registers.mjs";
 import { contrast, TEXT_CONTRAST_MIN, LARGE_TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { missingGlyphs } from "#shared/chart-beat/glyph-coverage.mjs";
-import { LADDERS } from "./resolve-families.mjs";
+import { assignHouseFaces, LADDERS } from "./resolve-families.mjs";
 import {
   hsl,
   hueGap,
@@ -102,10 +104,18 @@ export function guardDirection(direction, textPerRegister) {
     // The family here is still a ROLE; the ladder decides the face, and a role whose whole ladder
     // fails this beat's text is a role this candidate cannot honour.
     const ladder = LADDERS[r.family];
+    const text = textPerRegister?.[name] ?? "";
     if (ladder) {
-      const text = textPerRegister?.[name] ?? "";
       if (text && !ladder.some((family) => missingGlyphs(family, text).length === 0))
         problems.push(`no ${r.family} face can set the ${name} register's text`);
+    } else if (r.familySource === "newsroom" && text) {
+      // A CONCRETE FACE THE NEWSROOM PUT HERE IS ASKED THE SAME QUESTION, not excused from it
+      // because there is no ladder behind it to walk. `assignHouseFaces` has already refused a
+      // face that cannot serve, so this is the second lock rather than the first — a caller that
+      // hands a house-faced direction straight to the guard still gets it checked.
+      const missing = missingGlyphs(r.family, text);
+      if (missing.length)
+        problems.push(`the newsroom's ${r.family} cannot set the ${name} register's text (${missing.slice(0, 4).join(", ")})`);
     }
   }
 
@@ -234,7 +244,7 @@ function toHsl(hex) {
  * Widening the search does not widen what passes: every candidate still faces the same three
  * guards a filed direction faces, on its own real ground.
  *
- * @param {{ground?: string, accent?: string}} newsroom  what the newsroom has recorded
+ * @param {{ground?: string, accent?: string, typefaces?: string[]|string}} newsroom  what the newsroom has recorded
  * @param {Array<object>} filed                          the filed directions
  * @param {Array<object>} [palettes]                     colour candidates; the filed ones by default
  * @param {{evidenceLevels?: number}} beat               the beat's own facts, from its BRIEF
@@ -251,6 +261,25 @@ export function composeDirections({
   const wanted = beat.evidenceLevels ?? 4;
   const offered = [];
   const refused = [];
+
+  // THE NEWSROOM'S RECORDED FACES ARE NOT A CANDIDATE AMONG MANY EITHER. The colour axis already
+  // collapses to a house that recorded one; type does the same, for the same reason and with the
+  // same limit — a house face enters only where it passes the base's own guards, and every face
+  // that cannot is named with its reason in `typefaces.refused` so the report can say so. A
+  // newsroom that records no typefaces changes nothing: every register keeps its role's ladder.
+  const houseFaces = houseTypefacesOf(newsroom);
+  const houseType = new Map();
+  const faceRefusals = [];
+  for (const type of filed) {
+    const assignment = houseFaces.length
+      ? assignHouseFaces(type, houseFaces, textPerRegister)
+      : { families: {}, used: [], refused: [] };
+    houseType.set(type.id, assignment);
+    // ONE LINE PER FACE, not one per direction it was tried against: the same face refused for the
+    // same reason three times over is one fact a journalist has to read once.
+    for (const entry of assignment.refused)
+      if (!faceRefusals.some((seen) => seen.family === entry.family)) faceRefusals.push(entry);
+  }
 
   // The newsroom's recorded palette is not one candidate among many: where it exists it is THE
   // palette, and the colour axis collapses to it. `PALETTE.md` already decides this for every beat,
@@ -273,6 +302,8 @@ export function composeDirections({
     for (const space of filed)
       for (const palette of housePalette) {
         const sameThroughout = type.id === space.id && palette.from === type.id;
+        const house = houseType.get(type.id);
+        const registers = house.used.length ? inHouseFaces(type.registers, house.families) : type.registers;
         const candidate = {
           // THREE SLOTS, ALWAYS, WHEN ANYTHING IS COMPOSED. A first version deduplicated the
           // names, and `creme` type + `nocturne` space + `creme` palette collided with the same
@@ -291,7 +322,8 @@ export function composeDirections({
           header: space.header,
           headRule: space.headRule,
           stroke: space.stroke,
-          registers: type.registers,
+          registers,
+          typefaces: { used: house.used, refused: house.refused },
           provenance: {
             ground:
               palette.groundSource === "newsroom"
@@ -301,7 +333,11 @@ export function composeDirections({
               palette.accentSource === "newsroom"
                 ? "the newsroom's recorded palette"
                 : provenanceOf(palette.accent, palette.accentSource, palette.from, palette.measuredFrom),
-            registers: `${type.id}, measured on ${type.measuredFrom}`,
+            registers:
+              `${type.id}, measured on ${type.measuredFrom}` +
+              (house.used.length
+                ? `, set in the newsroom's ${house.used.map((u) => `${u.family} (${u.registers.join(", ")})`).join(" and ")}`
+                : ""),
             space: `${space.id}, measured on ${space.measuredFrom}`,
           },
         };
@@ -352,11 +388,41 @@ export function composeDirections({
     }
     shortList.push(candidate);
   }
-  return { offered: shortList, refused, held, alike };
+  return {
+    offered: shortList,
+    refused,
+    held,
+    alike,
+    // WHAT BECAME OF EVERY DECLARED HOUSE FACE, whether or not one reached a candidate. A run that
+    // used none and said nothing is the defect this field exists to end.
+    typefaces: {
+      declared: houseFaces,
+      used: shortList.flatMap((c) => c.typefaces?.used ?? []),
+      refused: faceRefusals,
+    },
+  };
+}
+
+/** The newsroom's declared families, most prominent first — a list or the profile's comma string. */
+export function houseTypefacesOf(newsroom) {
+  const raw = newsroom?.typefaces;
+  if (!raw) return [];
+  const items = Array.isArray(raw) ? raw : String(raw).split(",");
+  return items.map((item) => String(item).trim()).filter(Boolean);
+}
+
+/** A direction's registers with each role that won a house face carrying that face instead. */
+function inHouseFaces(registers, families) {
+  const out = {};
+  for (const [name, spec] of Object.entries(registers)) {
+    const family = families[spec.family];
+    out[name] = family ? { ...spec, family, familySource: "newsroom" } : spec;
+  }
+  return out;
 }
 
 /** What the journalist is shown: the short list, the provenance, and what was refused and why. */
-export function report({ offered, refused, held }, { beat = {} } = {}) {
+export function report({ offered, refused, held, typefaces }, { beat = {} } = {}) {
   const lines = [];
   const shown = held ?? offered.length;
   lines.push(
@@ -376,6 +442,30 @@ export function report({ offered, refused, held }, { beat = {} } = {}) {
         `${beat.evidenceLevels ?? 4} ranked levels of evidence`,
     );
   });
+  // THE HOUSE FACES, SAID OUT LOUD EITHER WAY. A newsroom that declared faces is told which of them
+  // set which registers, and — one line per face, naming the face and the reason — which could not
+  // and why. Silence here is what sent the cold run of 2026-09-15 out in a corpus face with nothing
+  // in the report to notice.
+  if (typefaces?.declared?.length) {
+    lines.push("");
+    lines.push(`the newsroom declares ${typefaces.declared.join(", ")}:`);
+    const named = new Set();
+    for (const use of typefaces.used ?? []) {
+      const key = `${use.family} ${use.registers.join(",")}`;
+      if (named.has(key)) continue;
+      named.add(key);
+      lines.push(`   ${use.family} sets ${use.registers.join(", ")}`);
+    }
+    for (const entry of typefaces.refused ?? [])
+      if (!(typefaces.used ?? []).some((u) => u.family === entry.family))
+        lines.push(`   ${entry.family} — ${entry.reason}`);
+    for (const family of typefaces.declared)
+      if (
+        !(typefaces.used ?? []).some((u) => u.family === family) &&
+        !(typefaces.refused ?? []).some((r) => r.family === family)
+      )
+        lines.push(`   ${family} — not needed: the direction's roles were filled before the list reached it`);
+  }
   if (refused.length) {
     lines.push("");
     lines.push(`${refused.length} were tried and refused:`);

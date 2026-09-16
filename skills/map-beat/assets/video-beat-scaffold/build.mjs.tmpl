@@ -84,7 +84,7 @@ export function assertWritten(beat) {
 
 // ── the direction ─────────────────────────────────────────────────────────────────────────────────────────────
 
-/** The newsroom's identity: its ground and primary accent, or null when it has none on record — and why. */
+/** The newsroom's identity: its ground, its primary accent and its declared faces, or null when it has none on record — and why. */
 export function newsroomOf(root = ROOT) {
   const path = join(root, "NEWSROOM.md");
   if (!existsSync(path)) return { newsroom: null, note: "no NEWSROOM.md at the root: composed without a newsroom palette" };
@@ -92,7 +92,12 @@ export function newsroomOf(root = ROOT) {
   if (isDeclinedProfile(profile)) return { newsroom: null, note: "the newsroom declined a house profile: composed without a newsroom palette" };
   const errors = validateNewsroom(profile);
   if (errors.length) throw new Error(`NEWSROOM.md is not a complete profile (${errors.join("; ")}) — complete it, or record a decline`);
-  return { newsroom: { ground: profile.ground, accent: profile.brandColor }, note: `composed for ${profile.name}: ground ${profile.ground}, accent ${profile.brandColor} (NEWSROOM.md)` };
+  // `typefaces` travels with the palette: the composer gives a declared house face the registers it can serve and
+  // names in its report every face it could not use, with the reason. Dropping the field here is what made the house
+  // faces invisible — a newsroom filled the line in and nothing downstream ever read it.
+  const typefaces = (profile.typefaces ?? "").split(",").map((face) => face.trim()).filter(Boolean);
+  const faces = typefaces.length ? `, faces ${typefaces.join(", ")}` : "";
+  return { newsroom: { ground: profile.ground, accent: profile.brandColor, typefaces }, note: `composed for ${profile.name}: ground ${profile.ground}, accent ${profile.brandColor}${faces} (NEWSROOM.md)` };
 }
 
 export const filedDirections = () =>

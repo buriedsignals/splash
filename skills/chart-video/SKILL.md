@@ -67,6 +67,17 @@ The flags are the scaffolded runner's (see the scaffold's header). The composer'
 `--filed` render. A proof beat's `PALETTE.md` is the newsroom answer the composer reads
 (`readPalette`), not the colour a filed render draws in.
 
+**The newsroom's typefaces are part of that identity.** `NEWSROOM.md`'s `typefaces` line is a ladder,
+most prominent first, and `composeDirections` walks it against the direction's own roles in the
+direction's prominence order: the first declared face that can serve the `display` register's role
+takes it, the next face takes the next role, and a role the list does not reach keeps its own ladder.
+A face is used only when it passes the guards every ladder entry passes — there is a file for it at
+the weights and slants those registers ask for, and it covers the words they set, read out of the
+face's own cmap — and **a face that cannot is printed in the report, one line, naming the face and
+the reason** (`not installed`, `no coverage for this beat's words`, or the guard that refused it). No
+guard is relaxed to admit a house face. Read the report before the render: `the newsroom declares …`
+is the block that says which faces went in and which did not.
+
 ### The worked example, file by file
 
 Every chart example has the same split (`proof/video-area-swiss-co2`):
@@ -149,6 +160,23 @@ relative path into this skill. A skill itself may import neither out of its own 
 
 Sizes: landscape 1920×1080 (`typeScale` 2.5, floor 30 px), square 1080×1080 and portrait 1080×1920
 (3.0, floor 36 px; portrait keeps a safe band, `assertWithinStage`).
+
+## The copy's language
+
+Every word a beat draws is in ONE language, and which one is decided by the first of these that
+answers — never by the data, the source or the subject:
+
+1. **The journalist's request.** They asked in French, the beat is French. Nothing downstream
+   overrules the person who asked.
+2. **`NEWSROOM.md`'s `languages`, primary first.** It records every language the newsroom publishes
+   in, most-used first (`newsroomLanguages(profile)` in `skills/splash/scripts/newsroom.mjs` reads it,
+   and the singular `language` an older profile carries); the primary is the answer.
+3. **The static sibling**, when neither of the two above says anything: the beat reads in the
+   language its own family already reads in.
+
+A French request beside an English profile is not a contradiction to settle by taste — rule 1 wins.
+The scaffolded `BRIEF.md` carries a **The copy's language** section; name the language and the rule
+that chose it there, before any copy is written.
 
 ## When to use
 

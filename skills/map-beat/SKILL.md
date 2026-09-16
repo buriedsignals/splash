@@ -63,6 +63,24 @@ composed by `composeDirections`, best guarded candidate first. A **newsroom run*
 direction (`--candidates <n>` for the top n to choose from); a **proof beat** renders the three filed
 directions (`--filed`). The flags are the scaffolded runner's (see the scaffold's header).
 
+**The newsroom's typefaces are part of that identity.** `NEWSROOM.md`'s `typefaces` line is a ladder,
+most prominent first, and `composeDirections` walks it against the direction's own roles in the
+direction's prominence order: the first declared face that can serve the `display` register's role
+takes it, the next face takes the next role, and a role the list does not reach keeps its own ladder.
+A face is only ever used when it passes the guards every ladder entry passes — there is a file for it
+at the weights and slants those registers ask for, and it covers the words they set — and **a face
+that cannot is printed in the report, one line, naming the face and the reason** (not installed, no
+coverage for this beat's words, or the guard that refused it). No guard is relaxed to admit a house
+face; read the report before the render and say which line applies.
+
+**On a map, one more thing is true of a house face.** MapLibre draws no font file: it reads the SDF
+glyphs MapTiler serves, and MapTiler serves seventeen families (`SERVED_BY_MAPTILER` in
+`shared/design-base/typefaces.mjs`). A composed house face outside those seventeen sets the PANEL
+type fine and makes the map's own labels refuse at bake — `assertNotFallback` in
+`shared/map-beat/glyphs.mjs` catches the substitution MapTiler would otherwise serve as Noto Sans
+with a 200. That refusal is the guard working; the answer is to set the map's labels in a served
+family (or bake glyphs), not to relax it.
+
 And from the runtime already beside this skill:
 
 - **`beatFacts(data, options)` + `applicableTreatments(facts)`** (`#shared/chart-beat/treatments.mjs`)
@@ -86,6 +104,23 @@ And from the runtime already beside this skill:
 
 Records in the twin: `docs/design-base/CATALOGUE.md`, `docs/design-base/treatments/`,
 `docs/design-base/references/`, `docs/design-base/METHOD.md`.
+
+## The copy's language
+
+Every word a beat draws is in ONE language, and which one is decided by the first of these that
+answers — never by the data, the source or the subject:
+
+1. **The journalist's request.** They asked in French, the beat is French. Nothing downstream
+   overrules the person who asked.
+2. **`NEWSROOM.md`'s `languages`, primary first.** It records every language the newsroom publishes
+   in, most-used first (`newsroomLanguages(profile)` in `skills/splash/scripts/newsroom.mjs` reads it,
+   and the singular `language` an older profile carries); the primary is the answer.
+3. **The static sibling**, when neither of the two above says anything: the beat reads in the
+   language its own family already reads in.
+
+A French request beside an English profile is not a contradiction to settle by taste — rule 1 wins.
+The scaffolded `BRIEF.md` carries a **The copy's language** section; name the language and the rule
+that chose it there, before any copy is written.
 
 ## The one gotcha that will waste your day (read first)
 

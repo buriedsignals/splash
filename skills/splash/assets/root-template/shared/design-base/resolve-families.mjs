@@ -18,6 +18,7 @@
 
 import { missingGlyphs } from "#shared/chart-beat/glyph-coverage.mjs";
 import { REGISTERS } from "#shared/chart-beat/registers.mjs";
+import { typefaceFile } from "#shared/chart-beat/typefaces.mjs";
 
 /**
  * CANDIDATES PER ROLE, BEST FIRST — AND EVERY ONE IS A GOOGLE FONT THAT MAPTILER SERVES.
@@ -79,8 +80,106 @@ export function resolveFamily(role, text) {
 }
 
 /**
+ * THE NEWSROOM'S OWN FACES, AND THE ONLY WAY THEY REACH A RENDER.
+ *
+ * THE DEFECT, MEASURED ON THE COLD RUN OF 2026-09-15. `NEWSROOM.md` declared `typefaces: Space
+ * Grotesk, Courier New`; the composed direction was set in Merriweather and Open Sans; and the
+ * report said nothing at all. A profile field a newsroom fills in and the tree then ignores is
+ * worse than a field that does not exist: it reads as a promise. Either the house face is used, or
+ * the run says which face it could not use and why — there is no third outcome.
+ *
+ * WHY THE LIST IS A LADDER AND NOT A ROLE MAP. `NEWSROOM.md` says "the house fonts, most prominent
+ * first" and nothing more: it does not say which of them is the newsroom's serif and which its
+ * mono, and no measurement here could tell us. So the list is walked in its declared order against
+ * the DIRECTION'S OWN roles in ITS prominence order — the role the `display` register sets first,
+ * then each further role as `REGISTERS` reaches it. The most prominent house face sets the most
+ * prominent voice. A role for which the list is exhausted keeps its ladder, so a newsroom that
+ * declares one face still gets it on its display and a corpus face everywhere else, and the two
+ * stay two families — which is one of the axes `distinguishableRegisters` counts.
+ *
+ * NOTHING IS RELAXED TO LET A FACE THROUGH. A house face faces the same two questions every ladder
+ * candidate faces, and one more that a ladder never has to ask because every ladder entry was
+ * checked when the ladder was written:
+ *   - IS THERE A FILE — at every weight and slant the role's registers actually ask for. `Courier
+ *     New` is not a Google family; Google answers the name with no TrueType face, and that is what
+ *     "not installed" looks like from here.
+ *   - DOES IT COVER the words those registers set on this beat, read out of the face's own cmap.
+ * A face that fails either is refused BY NAME AND WITH THE REASON, and is out of the ladder for the
+ * rest of this direction: a face that cannot set the beat's most prominent words is not this beat's
+ * house face, and quietly demoting it to the axis labels would be a taste decision wearing a
+ * fallback's clothes.
+ *
+ * @param {object} direction  a filed direction, its registers still carrying roles
+ * @param {string[]} faces    the newsroom's declared families, most prominent first
+ * @param {Record<string, string>} textPerRegister  what each register sets on this beat
+ * @returns {{families: Record<string, string>, used: Array<{role: string, family: string, registers: string[]}>, refused: Array<{family: string, reason: string}>}}
+ */
+export function assignHouseFaces(direction, faces, textPerRegister = {}) {
+  const order = [];
+  const registersOfRole = new Map();
+  for (const name of REGISTERS) {
+    const spec = direction?.registers?.[name];
+    if (!spec) continue;
+    if (!registersOfRole.has(spec.family)) {
+      registersOfRole.set(spec.family, []);
+      order.push(spec.family);
+    }
+    registersOfRole.get(spec.family).push(name);
+  }
+
+  const families = {};
+  const used = [];
+  const refused = [];
+  const ladder = (faces ?? []).map((face) => String(face).trim()).filter(Boolean);
+  let next = 0;
+
+  for (const role of order) {
+    const names = registersOfRole.get(role);
+    const text = names.map((name) => textPerRegister?.[name] ?? "").join("");
+    while (next < ladder.length) {
+      const family = ladder[next];
+      next += 1;
+      const reason = whyAFaceCannotServe(family, names.map((name) => direction.registers[name]), text);
+      if (reason) {
+        refused.push({ family, reason });
+        continue;
+      }
+      families[role] = family;
+      used.push({ role, family, registers: names });
+      break;
+    }
+  }
+  return { families, used, refused };
+}
+
+/** Why `family` cannot set these registers' words on this beat, or `null` when it can. */
+function whyAFaceCannotServe(family, specs, text) {
+  try {
+    typefaceFile(family, 400);
+  } catch (error) {
+    return /no font file for/.test(error.message)
+      ? "not installed — Google Fonts serves no face under that name"
+      : error.message.split("\n")[0];
+  }
+  const wanted = new Map();
+  for (const spec of specs) wanted.set(`${spec.weight}${spec.italic ? "i" : ""}`, spec);
+  for (const spec of wanted.values()) {
+    try {
+      typefaceFile(family, spec.weight, { italic: Boolean(spec.italic) });
+    } catch (error) {
+      return `refused at ${spec.weight}${spec.italic ? " italic" : ""}, which these registers ask for — ${error.message.split("\n")[0]}`;
+    }
+  }
+  const missing = missingGlyphs(family, text);
+  if (missing.length) return `no coverage for this beat's words — it has no ${missing.slice(0, 4).join(", ")}`;
+  return null;
+}
+
+/**
  * A filed direction with every register's abstract role replaced by a concrete family that covers
- * this beat's own text.
+ * this beat's own text. A register whose family is ALREADY concrete — the newsroom's own face, put
+ * there by `assignHouseFaces`, or a direction delivered with its families resolved — keeps it, and
+ * is held to the same coverage question rather than excused from it.
  *
  * @param {object} direction  as read by `read-direction.mjs`
  * @param {Record<string, string>} textPerRegister  what each register will set on this beat
@@ -91,6 +190,13 @@ export function resolveDirectionFamilies(direction, textPerRegister) {
   for (const name of REGISTERS) {
     const spec = direction.registers[name];
     const text = textPerRegister[name] ?? "";
+    if (!LADDERS[spec.family] && spec.familySource === "newsroom") {
+      const why = whyAFaceCannotServe(spec.family, [spec], text);
+      if (why) throw new Error(`the ${name} register's house face "${spec.family}" cannot set this beat: ${why}`);
+      registers[name] = { ...spec };
+      decisions.push({ register: name, role: spec.family, family: spec.family, refused: [], source: "newsroom" });
+      continue;
+    }
     const { family, refused } = resolveFamily(spec.family, text);
     registers[name] = { ...spec, family };
     decisions.push({ register: name, role: spec.family, family, refused });
