@@ -157,9 +157,11 @@ function whyAFaceCannotServe(family, specs, text) {
   try {
     typefaceFile(family, 400);
   } catch (error) {
-    return /no font file for/.test(error.message)
-      ? "not installed — Google Fonts serves no face under that name"
-      : error.message.split("\n")[0];
+    if (/no font file for/.test(error.message))
+      return "not installed — Google Fonts serves no face under that name";
+    if (/cannot fetch the typeface/.test(error.message))
+      return "not installed — no file for it here, and Google Fonts answered nothing for the name (or this machine has no network)";
+    return error.message.split(" — ")[0].split("\n")[0];
   }
   const wanted = new Map();
   for (const spec of specs) wanted.set(`${spec.weight}${spec.italic ? "i" : ""}`, spec);
