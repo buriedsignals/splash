@@ -75,11 +75,18 @@ face; read the report before the render and say which line applies.
 
 **On a map, one more thing is true of a house face.** MapLibre draws no font file: it reads the SDF
 glyphs MapTiler serves, and MapTiler serves seventeen families (`SERVED_BY_MAPTILER` in
-`shared/design-base/typefaces.mjs`). A composed house face outside those seventeen sets the PANEL
-type fine and makes the map's own labels refuse at bake — `assertNotFallback` in
-`shared/map-beat/glyphs.mjs` catches the substitution MapTiler would otherwise serve as Noto Sans
-with a 200. That refusal is the guard working; the answer is to set the map's labels in a served
-family (or bake glyphs), not to relax it.
+`shared/design-base/typefaces.mjs`). A composed house face outside those seventeen cannot set the
+map's own labels — asking for it returns Noto Sans with a 200, which `assertNotFallback` in
+`shared/map-beat/glyphs.mjs` catches.
+
+**The owner's ruling (2026-09-16): the face is kept.** It sets the title, the key, the counters —
+every word outside the map, which is most of the type on the frame — and only the labels MapLibre
+itself draws stand in for it. `mapLabelFamily(family, { role })` says which family they take: the
+first on the register's OWN role ladder that MapTiler serves, so those labels keep the role's voice;
+it returns what it stood in for, and the runner prints that line beside the refused faces, because a
+reader comparing the panel to the map must be told why the two differ. Carry the result as
+`mapFamily` on the register — `maptilerFace` reads it before `fontFamily`. Refusing the whole face
+over a dozen place names is the one answer this ruling forbids.
 
 And from the runtime already beside this skill:
 

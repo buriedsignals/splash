@@ -20,6 +20,7 @@ import { composeDirections, report as reportComposition } from "#shared/design-b
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { mapLabelFamily } from "#shared/map-beat/glyphs.mjs";
 import { isDeclinedProfile, parseNewsroom, validateNewsroom } from "%%UP%%/skills/splash/scripts/newsroom.mjs";
 import { applyCase } from "%%UP%%/skills/map-beat/scripts/registers.mjs";
 import { CREDIT_ONE_LINE, haloOf, pillOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "%%UP%%/skills/map-beat/scripts/shots.mjs";
@@ -174,6 +175,16 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
   const scaled = videoRegistersOf(resolved, SIZE);
   const k = scaled.axis.fontSize / resolved.axis.fontSize;
   const registers = { ...scaled, ...mapRegistersOf(scaled, k) };
+  // THE MAP'S OWN LABELS, WHEN THE HOUSE FACE IS NOT ONE MAPTILER SERVES (the owner's ruling, 2026-09-16):
+  // the face keeps every word outside the map; only these stand in, on the register's own role ladder,
+  // and the swap is said out loud rather than discovered by comparing the panel to the map.
+  const roleOf = (name) => direction.decisions?.find((d) => d.register === name)?.role ?? "sans";
+  for (const [name, r] of Object.entries(registers)) {
+    const { family, stoodInFor } = mapLabelFamily(r.fontFamily, { role: roleOf(name) });
+    if (!stoodInFor) continue;
+    registers[name] = { ...r, mapFamily: family };
+    console.log(`${label}: the map's labels in the ${name} register are set in ${family} — MapTiler does not serve ${stoodInFor}`);
+  }
   const row = sizeFor(SIZE);
   for (const [name, r] of Object.entries(registers)) if (!(r.fontSize >= row.minTypePx)) throw new Error(`${label}: register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
   const frame = { width: row.width, height: row.height };
