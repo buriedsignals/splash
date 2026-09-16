@@ -12,15 +12,23 @@ describe("scrolly — the canon's assets", () => {
   });
 
   it("should carry its own baked map plate — a real JPEG, not a placeholder file", async () => {
-    const raw = await readFile(join(ASSETS, "sample-data", "potomac-plate.jpg"));
+    const raw = await readFile(
+      join(ASSETS, "sample-data", "potomac-plate.jpg"),
+    );
     // JPEG SOI marker + JFIF/EXIF app segment: proof this is a real decoded raster, not a stub.
     expect(raw.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
     expect(raw.length).toBeGreaterThan(10000);
   });
 
   it("should carry its own frozen readings and station file, beside the beat that credits them", async () => {
-    const csv = await readFile(join(ASSETS, "sample-data", "potomac-2024.csv"), "utf8");
-    const rdb = await readFile(join(ASSETS, "sample-data", "potomac-station.rdb"), "utf8");
+    const csv = await readFile(
+      join(ASSETS, "sample-data", "potomac-2024.csv"),
+      "utf8",
+    );
+    const rdb = await readFile(
+      join(ASSETS, "sample-data", "potomac-station.rdb"),
+      "utf8",
+    );
     // A beat whose render reads its data from somewhere else cannot be audited at all — the single
     // strongest argument this project has for freezing data beside the artifact.
     expect(csv.split("\n")[0]).toBe("date,discharge_cfs");
@@ -108,9 +116,12 @@ describe("scrolly — a vehicle, not a new format of chart", () => {
     for await (const file of glob.scan({ cwd: SKILL_ROOT })) {
       if (file.startsWith("test/")) continue;
       const src = await readFile(join(SKILL_ROOT, file), "utf8");
-      // A cheap, narrow probe (not the full literal/escape-aware scan the shared guard runs): any
-      // relative specifier that climbs above this skill's own root.
-      const climbs = src.match(/["'`]\.\.\/\.\.\//g);
+      // A cheap, narrow probe (not the full literal/escape-aware scan the shared guard runs): an
+      // import or export specifier that climbs above this skill's own root. Only specifiers count —
+      // a filesystem path handed to join()/readFile() crosses no module boundary.
+      const climbs = src.match(
+        /\b(?:from|import|require\s*\()\s*["'`]\.\.\/\.\.\//g,
+      );
       if (climbs) offenders.push(`${file}: ${climbs.join(", ")}`);
     }
     expect(offenders).toEqual([]);
