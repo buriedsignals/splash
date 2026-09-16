@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: small-multiples
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les seize ont tous progressé, et ceux qui partaient de plus bas le plus (video)

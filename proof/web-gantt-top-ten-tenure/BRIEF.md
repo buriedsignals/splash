@@ -1,6 +1,8 @@
 ---
 format: web
 type: gantt
+medium: chart
+grounding: supported
 ---
 
 # Beat — 16 pays sont passés par le top 10 mondial des émetteurs, 6 n'en sont jamais sortis (web)

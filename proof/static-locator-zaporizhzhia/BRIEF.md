@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: locator
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — Where Europe's largest low-carbon power station is

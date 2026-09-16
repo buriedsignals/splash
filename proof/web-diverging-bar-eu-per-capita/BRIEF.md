@@ -1,6 +1,8 @@
 ---
 format: web
 type: diverging-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Croatie est le seul pays de l'Union à émettre plus de CO₂ par personne qu'en 1990 (web)

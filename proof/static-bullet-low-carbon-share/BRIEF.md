@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: bullet
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Poland has gained 17 points of low-carbon electricity since 2015, and is still the only one of the six under half

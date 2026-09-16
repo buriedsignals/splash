@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: pictogram
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Europe's electricity sits at the two ends

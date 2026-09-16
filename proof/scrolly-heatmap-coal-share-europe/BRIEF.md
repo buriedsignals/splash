@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: heatmap
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le charbon a reculé dans les douze pays européens qui en dépendaient le plus ; seule la Pologne reste au-dessus de la moitié (scrolly)

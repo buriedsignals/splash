@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: contour
+medium: map
+grounding: supported
 ---
 
 # Beat — La moitié de l'Europe est à moins de 132 km de la mer (video)

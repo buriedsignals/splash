@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: grouped-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — Dans 5 de ces 6 pays l'éolien devance le solaire — la Suisse est l'exception (scrolly)

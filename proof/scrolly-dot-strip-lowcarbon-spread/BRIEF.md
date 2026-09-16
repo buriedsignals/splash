@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: dot strip
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le plancher européen est monté de 30 points, le plafond de 2 (scrolly)

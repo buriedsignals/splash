@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: proportional-symbol
+medium: map
+grounding: supported
 ---
 
 # Beat — Un centième des sites porte plus d'un tiers de la puissance bas-carbone d'Europe (video)

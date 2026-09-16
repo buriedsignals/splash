@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: gantt
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Six countries have never left the world's top ten emitters since 1990

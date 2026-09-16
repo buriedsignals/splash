@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: boxplot
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les émissions de CO₂ par Français ont culminé dans les années 1970 (scrolly)

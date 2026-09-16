@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: connected-scatter
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Tous plus propres chez eux, cinq plus légers en Europe

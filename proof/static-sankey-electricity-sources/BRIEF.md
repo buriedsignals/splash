@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: sankey
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — The nuclear power of these six countries is 84 % French

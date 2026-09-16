@@ -1,6 +1,8 @@
 ---
 format: web
 type: parallel-coordinates
+medium: chart
+grounding: supported
 ---
 
 # Beat — 5 pays sur 16 tirent plus de 25 % de leur électricité du nucléaire, 10 plus de 20 % de l'éolien (web)

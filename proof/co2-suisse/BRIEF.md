@@ -1,3 +1,10 @@
+---
+format: static
+medium: chart
+type: line
+grounding: supported
+---
+
 # Beat 1 — la courbe repasse sous 1967
 
 **Prouve :** que les émissions territoriales suisses de 2024 sont passées sous leur niveau de 1967.

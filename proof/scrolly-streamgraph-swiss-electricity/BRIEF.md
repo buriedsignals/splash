@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: streamgraph
+medium: chart
+grounding: supported
 ---
 
 # Beat — En 2016, le solaire est devenu la troisième source d'électricité suisse (scrolly)

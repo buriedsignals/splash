@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: bump
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — India has risen from eighth to third among the world's biggest CO₂ emitters

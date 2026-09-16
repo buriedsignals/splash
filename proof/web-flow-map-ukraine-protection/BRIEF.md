@@ -1,6 +1,8 @@
 ---
 format: web
 type: flow-map
+medium: map
+grounding: supported
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire en Europe (web)

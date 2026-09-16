@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: radar
+medium: chart
+grounding: supported
 ---
 
 # Beat — La France et l'Allemagne produisent presque autant d'électricité, avec des mix opposés (scrolly)

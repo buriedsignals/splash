@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: scatter
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — beyond $30,000, income buys far less extra life expectancy

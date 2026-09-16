@@ -1,6 +1,8 @@
 ---
 format: web
 type: streamgraph
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le solaire suisse est passé de 0,01 à 7,89 TWh, troisième source depuis 2016 (web)

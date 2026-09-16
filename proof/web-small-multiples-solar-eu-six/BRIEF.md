@@ -1,6 +1,8 @@
 ---
 format: web
 type: small-multiples
+medium: chart
+grounding: supported
 ---
 
 # Beat — La France a multiplié sa part solaire par 40 et reste la courbe la plus plate des six (web)

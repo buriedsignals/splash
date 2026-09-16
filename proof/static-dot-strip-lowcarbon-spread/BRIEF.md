@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: dot-strip
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le plancher européen est monté de 30 points, le plafond de 2

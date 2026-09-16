@@ -1,6 +1,8 @@
 ---
 format: web
 type: population-pyramid
+medium: chart
+grounding: supported
 ---
 
 # Beat — La tranche la plus large de la Suisse est celle des 55-59 ans (web)

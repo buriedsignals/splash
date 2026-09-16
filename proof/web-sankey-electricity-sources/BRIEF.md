@@ -1,6 +1,8 @@
 ---
 format: web
 type: sankey
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le lecteur suit UNE source d'un bout à l'autre, et l'arithmétique du trajet est écrite (web)

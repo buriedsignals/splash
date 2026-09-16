@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: grouped-bar
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Switzerland is the outlier: solar beats wind

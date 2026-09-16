@@ -1,6 +1,8 @@
 ---
 format: web
 type: lollipop
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Chine a triplé son CO₂ par personne ; l'écart avec l'Américain moyen est passé de 7,5 à 1,7 (web)

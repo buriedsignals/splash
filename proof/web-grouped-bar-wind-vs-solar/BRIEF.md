@@ -1,6 +1,8 @@
 ---
 format: web
 type: grouped-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Suisse est la seule des six où le solaire dépasse l'éolien (web)

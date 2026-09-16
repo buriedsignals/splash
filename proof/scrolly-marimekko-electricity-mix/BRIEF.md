@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: marimekko
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le charbon fait 12 % de l'électricité de ces six pays, et il tient dans deux colonnes (scrolly)

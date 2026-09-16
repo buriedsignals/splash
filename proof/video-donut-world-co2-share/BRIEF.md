@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: donut
+medium: chart
+grounding: supported
 ---
 
 # Beat — En 2000 les États-Unis émettaient un quart du CO₂ mondial et la Chine un septième ; en 2023, c'est l'inverse (video)

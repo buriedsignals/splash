@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: dot-density
+medium: map
+grounding: supported
 ---
 
 # Beat — 72 réacteurs sur 8 900 centrales bas-carbone, et un tiers de la puissance (video)

@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: dumbbell
+medium: chart
+grounding: supported
 ---
 
 # Beat — Tous les dix ont gagné des années de vie ; la Pologne 5,0 ans, les États-Unis 2,5 (video)

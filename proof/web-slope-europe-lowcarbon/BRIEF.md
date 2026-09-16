@@ -1,6 +1,8 @@
 ---
 format: web
 type: slope
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les seize ont tous gagné de l'électricité bas-carbone, un seul a dépassé la France (web)

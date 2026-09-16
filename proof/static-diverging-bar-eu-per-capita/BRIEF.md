@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: diverging-bar
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Croatia is the only EU country emitting more CO₂ per person than in 1990

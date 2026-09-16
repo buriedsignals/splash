@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: histogram
+medium: chart
+grounding: supported
 ---
 
 # Beat — 6 pays sur 10 émettent moins de 4 tonnes de CO₂ par personne (scrolly)

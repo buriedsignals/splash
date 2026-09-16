@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: area
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — La moitié du CO₂ suisse depuis 1858 a été émise après 1986

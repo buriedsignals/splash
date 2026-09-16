@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: waterfall
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Germany generated 143 fewer terawatt-hours in 2024 than 2015

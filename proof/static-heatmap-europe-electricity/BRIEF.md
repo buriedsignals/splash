@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: heatmap
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Three routes to low-carbon electricity, 12 European countries × 9 sources

@@ -1,6 +1,8 @@
 ---
 format: web
 type: boxplot
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le CO₂ par personne des Français a culminé dans les années 1970 (web)

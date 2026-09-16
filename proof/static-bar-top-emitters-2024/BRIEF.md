@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: column
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — China emitted more CO₂ in 2024 than the next five countries put together

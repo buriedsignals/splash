@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: streamgraph
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Solar became Switzerland's third source of electricity in 2016

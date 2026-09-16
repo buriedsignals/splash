@@ -1,6 +1,8 @@
 ---
 format: web
 type: heatmap
+medium: chart
+grounding: supported
 ---
 
 # Beat — 7 pays européens tirent plus de 94 % de leur électricité de sources bas-carbone (web)

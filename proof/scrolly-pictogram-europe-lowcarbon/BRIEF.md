@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: pictogram
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'Europe électrique est aux deux bouts : 6 pays seulement au milieu (scrolly)

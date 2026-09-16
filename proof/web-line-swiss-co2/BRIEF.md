@@ -1,6 +1,8 @@
 ---
 format: web
 type: line
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le CO₂ suisse est repassé sous son niveau de 1967, 57 ans effacés (web)

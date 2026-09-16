@@ -1,6 +1,8 @@
 ---
 format: web
 type: proportional-symbol
+medium: map
+grounding: supported
 ---
 
 # Beat — Cinq pays portent 55 % de la capacité bas-carbone européenne (web)

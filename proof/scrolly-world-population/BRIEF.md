@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: area
+medium: chart
+grounding: supported
 ---
 
 # Beat — La population mondiale a dépassé 8 milliards en 2022 (scrolly)

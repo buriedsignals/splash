@@ -1,6 +1,8 @@
 ---
 format: web
 type: scatter
+medium: chart
+grounding: supported
 ---
 
 # Beat — Au-delà de 30 000 $ par personne, le revenu n'achète presque plus d'années de vie (web)

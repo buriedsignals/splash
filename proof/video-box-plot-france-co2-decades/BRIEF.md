@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: boxplot
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les émissions de CO2 par personne en France ont culminé dans les années 1970 (video)

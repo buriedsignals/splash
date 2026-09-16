@@ -1,6 +1,8 @@
 ---
 format: web
 type: waterfall
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'électricité allemande a perdu 143 TWh entre 2015 et 2024 (web)

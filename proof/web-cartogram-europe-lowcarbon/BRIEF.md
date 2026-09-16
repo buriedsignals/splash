@@ -1,6 +1,8 @@
 ---
 format: web
 type: cartogram
+medium: map
+grounding: supported
 ---
 
 # Beat — Le lecteur rend à l'Europe la géographie que la grille lui a prise (web)

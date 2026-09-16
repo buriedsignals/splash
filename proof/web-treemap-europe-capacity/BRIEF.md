@@ -1,6 +1,8 @@
 ---
 format: web
 type: treemap
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'Europe compte 453 GW bas-carbone, et l'eau et l'atome en portent encore 79 % (web)

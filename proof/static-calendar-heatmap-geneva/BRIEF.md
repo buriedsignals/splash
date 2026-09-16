@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: calendar-heatmap
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Geneva held 31 days in a row at or above 20 °C in 2024

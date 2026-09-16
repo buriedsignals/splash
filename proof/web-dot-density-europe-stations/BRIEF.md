@@ -1,6 +1,8 @@
 ---
 format: web
 type: dot-density
+medium: map
+grounding: supported
 ---
 
 # Beat — Sur 8 299 centrales bas-carbone européennes, 72 sont nucléaires (web)

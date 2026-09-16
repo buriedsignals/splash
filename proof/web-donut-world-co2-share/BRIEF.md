@@ -1,6 +1,8 @@
 ---
 format: web
 type: donut
+medium: chart
+grounding: supported
 ---
 
 # Beat — En 2000, États-Unis 24,4 % du CO₂ mondial et Chine 14,7 % ; en 2023, l'inverse (web)

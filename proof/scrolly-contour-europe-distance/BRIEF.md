@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: contour
+medium: map
+grounding: supported
 ---
 
 # Beat — La moitié de l'Europe est à moins de 132 km de la mer, et aucun point à plus de 682 km (scrolly)

@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: heatmap
+medium: chart
+grounding: supported
 ---
 
 # Beat — Trois chemins vers une électricité bas-carbone, 12 pays européens × 9 sources (video)

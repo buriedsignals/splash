@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: dot-density
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — 72 reactors among 8,900 low-carbon power stations

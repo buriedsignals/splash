@@ -1,6 +1,8 @@
 ---
 format: web
 type: contour
+medium: map
+grounding: supported
 ---
 
 # Beat — La moitié de l'Europe est à moins de 133 km de la mer (web)

@@ -1,6 +1,8 @@
 ---
 format: web
 type: connected-scatter
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les seize ont tous nettoyé leur électricité, et cinq pèsent moins qu'avant (web)

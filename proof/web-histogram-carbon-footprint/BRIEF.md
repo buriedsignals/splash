@@ -1,6 +1,8 @@
 ---
 format: web
 type: histogram
+medium: chart
+grounding: supported
 ---
 
 # Beat — 127 pays sur 213 émettent moins de 4 tonnes de CO₂ par personne (web)

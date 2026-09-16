@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: hex-grid
+medium: map
+grounding: supported
 ---
 
 # Beat — Par habitant, ce n'est pas l'Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants (video)

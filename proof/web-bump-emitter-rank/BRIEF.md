@@ -1,6 +1,8 @@
 ---
 format: web
 type: bump
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂ (web)

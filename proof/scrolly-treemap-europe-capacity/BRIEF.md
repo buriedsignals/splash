@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: treemap
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'eau et l'atome portent encore 77 % du bas-carbone européen — mais 10 pays ont déjà basculé (scrolly)

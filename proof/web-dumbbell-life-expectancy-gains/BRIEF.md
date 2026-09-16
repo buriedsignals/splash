@@ -1,6 +1,8 @@
 ---
 format: web
 type: dumbbell
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les dix ont tous gagné des années de vie depuis 2000 (web)

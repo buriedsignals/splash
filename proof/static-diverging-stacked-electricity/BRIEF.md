@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: diverging-stacked-bar
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Nuclear holds the centre: in France it outweighs fossil and renewables put together

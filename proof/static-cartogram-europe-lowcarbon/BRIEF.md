@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: cartogram
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — Compté par pays 65,1 % ; compté au kilomètre carré 44,9 %

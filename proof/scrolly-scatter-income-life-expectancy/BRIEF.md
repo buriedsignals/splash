@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: scatter
+medium: chart
+grounding: supported
 ---
 
 # Beat — Au-delà de 30 000 $ par personne, l'espérance de vie tient dans une bande 3 fois plus étroite (scrolly)

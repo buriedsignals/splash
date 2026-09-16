@@ -1,6 +1,8 @@
 ---
 format: web
 type: hex-grid
+medium: map
+grounding: supported
 ---
 
 # Beat — Le taux dépend de la case qu'on regarde : le Liechtenstein passe de 23,9 à 1,8 pour 1 000 sans qu'un seul pays bouge (web)

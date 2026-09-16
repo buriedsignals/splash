@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: cartogram
+medium: map
+grounding: supported
 ---
 
 # Beat — Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 % (scrolly)

@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: connected-scatter
+medium: chart
+grounding: supported
 ---
 
 # Beat — Tous plus propres chez eux, 5 plus légers en Europe (video)

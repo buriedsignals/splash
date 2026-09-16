@@ -1,6 +1,8 @@
 ---
 format: web
 type: pictogram
+medium: chart
+grounding: supported
 ---
 
 # Beat — Seize pays sur quarante sont au-dessus de 75 % bas-carbone, et ils ne font qu'un tiers de l'électricité (web)

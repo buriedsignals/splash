@@ -1,6 +1,8 @@
 ---
 format: web
 type: marimekko
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les deux tuiles de charbon ont presque la même surface, et elles ne disent pas la même chose (web)

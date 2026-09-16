@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: dumbbell
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Life expectancy gains, ten countries, 2000-2023

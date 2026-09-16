@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: diverging-stacked-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — En France, le nucléaire pèse plus que le fossile et le renouvelable réunis (video)

@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: slope
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les seize pays ont tous gagné du bas-carbone depuis 2000 ; un seul a doublé la France (video)

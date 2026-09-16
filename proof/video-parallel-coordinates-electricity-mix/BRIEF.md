@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: parallel-coordinates
+medium: chart
+grounding: supported
 ---
 
 # Beat — 2 pays sur 16 ont plus de 25 % de nucléaire et plus de 20 % d’éolien (video)

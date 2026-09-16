@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: boxplot
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — France's per-capita CO₂ emissions peaked in the 1970s

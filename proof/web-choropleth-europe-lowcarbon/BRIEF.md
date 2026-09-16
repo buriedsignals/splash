@@ -1,6 +1,8 @@
 ---
 format: web
 type: choropleth
+medium: map
+grounding: supported
 ---
 
 # Beat — La carte montre sept pays parce qu'on a choisi de couper à 94 % (web)

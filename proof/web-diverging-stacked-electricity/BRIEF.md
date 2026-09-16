@@ -1,6 +1,8 @@
 ---
 format: web
 type: diverging-stacked-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le nucléaire décide seul de quel côté penche la France (web)

@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: small-multiples
+medium: chart
+grounding: supported
 ---
 
 # Beat — Tous ont progressé, et les plus bas le plus vite (scrolly)

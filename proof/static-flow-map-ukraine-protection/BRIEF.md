@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: flow-map
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire ; l'Allemagne et la Pologne en accueillent la moitié

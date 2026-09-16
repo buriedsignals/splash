@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: population-pyramid
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Switzerland's population bulges at ages 55-59

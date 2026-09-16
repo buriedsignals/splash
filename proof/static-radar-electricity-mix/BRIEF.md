@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: radar
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — France and Germany make nearly the same electricity from opposite mixes

@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: bar and column
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Chine a émis plus de CO₂ en 2024 que les cinq pays suivants réunis (scrolly)

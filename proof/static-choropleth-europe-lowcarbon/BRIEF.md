@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: choropleth
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — The low-carbon block is the north-west, and Albania

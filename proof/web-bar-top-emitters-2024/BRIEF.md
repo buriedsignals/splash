@@ -1,6 +1,8 @@
 ---
 format: web
 type: column
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Chine a émis plus de CO₂ en 2024 que les 5 pays suivants réunis (web)

@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: locator
+medium: map
+grounding: supported
 ---
 
 # Beat — La plus grosse centrale bas-carbone d'Europe est en Ukraine (video)

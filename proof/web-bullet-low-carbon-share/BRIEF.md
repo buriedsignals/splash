@@ -1,6 +1,8 @@
 ---
 format: web
 type: bullet
+medium: chart
+grounding: supported
 ---
 
 # Beat — Six pays, six barres, et le verdict change avec la cible (web)

@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: slope
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — All sixteen rose, and one country overtook France

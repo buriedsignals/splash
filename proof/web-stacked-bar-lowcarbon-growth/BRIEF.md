@@ -1,6 +1,8 @@
 ---
 format: web
 type: stacked-bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'Espagne a ajouté plus d'électricité bas-carbone que la France depuis 2000 (web)

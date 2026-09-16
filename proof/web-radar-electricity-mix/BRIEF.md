@@ -1,6 +1,8 @@
 ---
 format: web
 type: radar
+medium: chart
+grounding: supported
 ---
 
 # Beat — France et Allemagne produisent presque autant d'électricité et n'ont presque aucune source en commun (web)

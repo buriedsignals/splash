@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: marimekko
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le charbon, 12 % de l’électricité de six pays, tient dans deux colonnes (video)

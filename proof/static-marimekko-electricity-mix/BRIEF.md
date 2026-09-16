@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: marimekko
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Coal is 12 % of these six countries' electricity, and it sits in two columns

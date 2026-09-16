@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: diverging stacked bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le nucléaire tient le centre : en France il pèse plus que le fossile et le renouvelable réunis (scrolly)

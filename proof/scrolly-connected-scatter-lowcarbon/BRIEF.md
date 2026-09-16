@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: connected scatter
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les 16 pays ont tous nettoyé leur électricité, 5 pèsent pourtant moins dans le bas-carbone européen (scrolly)

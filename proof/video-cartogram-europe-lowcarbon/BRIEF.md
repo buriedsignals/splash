@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: cartogram
+medium: map
+grounding: supported
 ---
 
 # Beat — Par pays 65,1 % ; au km² 44,9 % (video)

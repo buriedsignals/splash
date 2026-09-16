@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: calendar-heatmap
+medium: chart
+grounding: supported
 ---
 
 # Beat — 31 jours d'affilée au-dessus de 20 °C à Genève en 2024 (video)

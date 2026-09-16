@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: population-pyramid
+medium: chart
+grounding: supported
 ---
 
 # Beat — Les femmes passent devant les hommes à partir de 60-64 ans (scrolly)

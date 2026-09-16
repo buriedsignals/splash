@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: bar
+medium: chart
+grounding: supported
 ---
 
 # Beat — La Chine a émis plus de CO₂ que les cinq pays suivants réunis (video)

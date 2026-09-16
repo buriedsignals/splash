@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: choropleth
+medium: map
+grounding: supported
 ---
 
 # Beat — Sept pays européens dépassent 94 % d'électricité bas-carbone — six au nord-ouest, et l'Albanie (scrolly)

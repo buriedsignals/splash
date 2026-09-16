@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: histogram
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — six in ten countries emit under 4 tonnes of CO2 per person

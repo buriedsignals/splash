@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: parallel-coordinates
+medium: chart
+grounding: supported
 ---
 
 # Beat — Deux pays sur 16 font les deux : plus de 25 % de nucléaire et plus de 20 % d'éolien (scrolly)

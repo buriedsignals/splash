@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: small-multiples
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — All sixteen rose, and the lowest starters rose fastest

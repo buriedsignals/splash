@@ -1,6 +1,8 @@
 ---
 format: scrolly
 type: calendar heatmap
+medium: chart
+grounding: supported
 ---
 
 # Beat — Genève a tenu 31 jours d'affilée au-dessus de 20 °C en 2024 (scrolly)

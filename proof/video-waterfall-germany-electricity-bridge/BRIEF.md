@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: waterfall
+medium: chart
+grounding: supported
 ---
 
 # Beat — L'Allemagne a produit 143 TWh d'électricité de moins en 2024 qu'en 2015 (video)

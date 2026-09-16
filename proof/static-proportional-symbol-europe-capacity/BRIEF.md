@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: proportional-symbol
+format: static
+medium: map
+grounding: supported
 ---
 
 # Beat — A hundredth of the sites carries a third of the power

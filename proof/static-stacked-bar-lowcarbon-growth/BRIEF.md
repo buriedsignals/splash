@@ -1,6 +1,9 @@
 ---
 size: landscape
 type: stacked-bar
+format: static
+medium: chart
+grounding: supported
 ---
 
 # Beat — Spain added more low-carbon electricity than France

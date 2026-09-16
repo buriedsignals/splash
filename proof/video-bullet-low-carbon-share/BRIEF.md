@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: bullet
+medium: chart
+grounding: supported
 ---
 
 # Beat — Pologne : +17,3 points de bas-carbone depuis 2015, toujours la seule sous la moitié (video)

@@ -1,6 +1,8 @@
 ---
 format: web
 type: locator
+medium: map
+grounding: supported
 ---
 
 # Beat — À quelle distance faut-il reculer pour que « la plus grosse d'Europe » soit vraie ? (web)

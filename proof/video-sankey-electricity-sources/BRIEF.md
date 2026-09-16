@@ -2,6 +2,8 @@
 format: video
 size: landscape
 type: sankey
+medium: chart
+grounding: supported
 ---
 
 # Beat — Le nucléaire de ces six pays est français à 84 % (video)
