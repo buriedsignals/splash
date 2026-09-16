@@ -61,6 +61,23 @@ step that is never skipped is the fifth.
 | 6 | close the holes — `grep -n SCAFFOLD <beat>` — TDD the refusals as you go | the runner refuses to render until every one is closed |
 | 7 | render three directions, open the keyed `.local.html`, DRIVE it, screenshot at 1600/1024/768/375 | the pages |
 
+### The type index
+
+Each sheet states what the type argues in this export, its reader gestures, what an interaction of
+this type must NOT do, the precision to assert, the devices its worked example implements and the
+worked example's own CODE.
+
+| type | sheet | web worked example | the gesture it spends |
+| --- | --- | --- | --- |
+| Cartogram | `references/types/cartogram.md` | `proof/web-cartogram-europe-lowcarbon` | `restore` |
+| Choropleth | `references/types/choropleth.md` | `proof/web-choropleth-europe-lowcarbon` | `classing` |
+| Contour / isoline | `references/types/contour-isoline.md` | `proof/web-contour-europe-distance` | `live-contour` |
+| Dot density | `references/types/dot-density.md` | `proof/web-dot-density-europe-stations` | `live-dot-density` |
+| Flow map | `references/types/flow-map.md` | `proof/web-flow-map-ukraine-protection` | `live-flow` |
+| Hex grid | `references/types/hex-grid.md` | `proof/web-hex-grid-europe-protection` | `pool` |
+| Locator | `references/types/locator.md` | `proof/web-locator-zaporizhzhia` | `vantage` |
+| Proportional symbol | `references/types/proportional-symbol.md` | `proof/web-proportional-symbol-europe-capacity` | `area-scale` |
+
 **What is reused is the MECHANISM, never the gesture.** The scaffold removes typing, not thinking.
 It generates roughly **1 050 lines** of a beat's **2 200–2 650** — the plate cache, the camera
 agreement check, the MapLibre inlining, the fallback bake, the keyed copy, the direction loop, the
