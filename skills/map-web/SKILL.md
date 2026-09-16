@@ -266,6 +266,49 @@ value can be measuring the wrong box (a wrapper that has already been overridden
 percentage resolved against the wrong ancestor) and report a "pass" while the picture itself clips,
 letterboxes, or leaves a gutter. Trust the picture.
 
+## The editorial chain in a run
+
+What the journalist retained at Gate 2 is readable by code at every later step, and a step that
+stops reading it breaks a named test rather than degrading quietly. Spec: `docs/splash/2026-09-17-editorial-chain-spec.md`.
+
+1. **One art direction per run, and this skill never composes a second.** `DIRECTION.md` sits at
+   the story root beside `PALETTE.md`, composed once from `NEWSROOM.md` and the subject
+   (`composeRunDirection` / `readRunDirection`, `shared/design-base/run-direction.mjs`) and
+   inherited by all four exports. The scaffold REFUSES before writing anything when it is not
+   reachable, naming the command that produces it — `assertRunDirection`, the same shape as the
+   `PALETTE.md` refusal. `--filed` is the catalogue-only escape, for a proof that deliberately
+   renders the three filed demo directions.
+
+2. **The type sheet becomes a frame, never a choreography.** `choreographyFrame`
+   (`shared/editorial/frame.mjs`), through this skill's own `chainFrameFor`, reads
+   `references/types/<type>.md` into the export's required shape, the type's gesture vocabulary
+   (OPEN — an unlisted atom is an addition the sheet owes) and its prohibitions, each citable by
+   id. It returns no rows, no cards and no shots: a web beat's choreography — what the reader's pointer and keyboard can change, and the baked fallback it degrades to — is
+   AUTHORED, per subject.
+
+3. **The scaffold writes both sections EMPTY.** `withChainSections` puts the table's headers and
+   the frame quoted as a comment into `BRIEF.md`, with no rows and no value block, and
+   `scaffoldRequirements` (`scripts/precision.mjs`) lists what
+   `requiredAssertions` already fixes from the type and the format. The two the journalist answers
+   at G1 — the claim's shape and its grounding — are named as owed, never guessed. A scaffold that
+   pre-filled a row would be the clone factory this chain exists to prevent.
+
+4. **The beat's author fills the table; the harvest reads it back.**
+   `bun scripts/migrate-briefs.mjs --harvest --beat <dir>` runs `parseChoreography` and
+   `parsePrecision` (`scripts/choreography.mjs`, `scripts/precision.mjs`) over what the
+   beat now declares, writes the two `splash:` value blocks into those same sections and adds
+   `derived: v1` to the front matter. Nothing already written is edited, reflowed or translated.
+
+5. **Two corpus guards then hold it.** `checkChoreography` and `checkPrecision` — reachable
+   through the scaffold, which re-exports both — back
+   `skills/splash/test/a-choreography-is-declared-and-its-own.test.ts` and
+   `skills/splash/test/precision-covers-what-the-chain-requires.test.ts`, which run over every beat
+   carrying `derived: v1`. They assert that a choreography is declared, that it is this beat's own
+   and not its type's worked example, and that it violates none of its type's stated prohibitions.
+   They never compare it to an expected choreography.
+
+Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-owed.md`.
+
 ## Architecture
 
 | Layer | File | Role |

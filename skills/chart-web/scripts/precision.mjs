@@ -17,7 +17,7 @@
 // an answer a reader has to ask for (`askAnswers`), or nowhere. The ids and the readings are the
 // journalist's; only the verdict is mechanical.
 
-import { assertionId } from "#shared/editorial/frame.mjs";
+import { assertionId, requiredAssertions } from "#shared/editorial/frame.mjs";
 import {
   answerPieces,
   askAnswers,
@@ -126,4 +126,50 @@ export function checkPrecision(declared, { required = [], data = {} } = {}) {
       });
   }
   return out;
+}
+
+// ── THE EMPTY PRECISION SECTION A SCAFFOLD WRITES ──────────────────────────────────────────────
+//
+// It states what the CHAIN requires of this beat and answers none of it. Which numbers satisfy a
+// requirement, at what rounding and in what unit, is read off the subject's own data and written
+// by the journalist (spec §1.4).
+
+/**
+ * `## Precision`, empty: the requirements listed, every one of them unanswered.
+ * @param {Array<{id: string, because: string}>} required `requiredAssertions`' own output
+ */
+export function renderPrecisionSection(required = []) {
+  return [
+    "## Precision",
+    "",
+    "<!-- WHAT THE CHAIN REQUIRES OF THIS BEAT. Each line is a requirement, not an answer: which",
+    "     number satisfies it, at what rounding and in what unit, is read off this beat's own",
+    "     frozen data and written below by you.",
+    "",
+    ...required.map((r) => `  ${r.id}  (${r.because})`),
+    "-->",
+    "",
+    "SCAFFOLD: the rules this beat holds itself to, one bullet each, bold lead first — and, for every",
+    "requirement quoted above, which of those rules answers it.",
+    "",
+  ].join("\n");
+}
+
+/**
+ * THE REQUIREMENTS A SCAFFOLD CAN ALREADY STATE — and the two it may not.
+ *
+ * `requiredAssertions` draws on four sources. Two are known the moment a type and a format are
+ * chosen: the type sheet's own `## Precision to assert`, and where the assertion may land. Two are
+ * the journalist's answers at G1 — the claim's SHAPE and its GROUNDING — and at scaffold time no
+ * beat has them yet. They are therefore NAMED AS OWED in the section this renders, never guessed:
+ * a guessed `supported` is a beat asserting a number the journalist said could not be verified.
+ *
+ * The literal `supported` below is a sentinel that lets `requiredAssertions` run at all; every row
+ * it produces from the grounding is filtered straight back out.
+ */
+export function scaffoldRequirements(sheet, format) {
+  return requiredAssertions(
+    { format, claim: { shape: "none", grounding: "supported" } },
+    sheet,
+  ).filter((requirement) => requirement.because !== "grounding");
 }

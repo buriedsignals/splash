@@ -37,6 +37,82 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { defaultLanguage, depthIndependentPaths, languageAwareNumbers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, requiredLocalAssets } from "./depth-independent.mjs";
 
+// ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
+//
+// A scaffold is the ONLY place a beat's files are written, so it is where the chain has to be read
+// or the chain reaches nothing. Three reads, and one refusal:
+//
+//   the type SHEET  → `choreographyFrame` → the vocabulary and the prohibitions quoted for the
+//                     author, in a section that carries NO ROWS AND NO BLOCK (R-D: a scaffold that
+//                     pre-filled a row would be the clone factory this whole chain exists to stop);
+//   `scaffoldRequirements` → the precision requirements a type and a format already fix, with the
+//                     two the journalist answers at G1 named as owed rather than guessed;
+//   `DIRECTION.md`  → refused when unreachable, in the same shape as the PALETTE.md refusal and
+//                     naming the command that produces it. `--filed` is the catalogue-only escape.
+//
+// `checkChoreography` and `checkPrecision` are re-exported below, so a beat's own verifier reaches
+// the chain through the scaffold that wrote the beat rather than finding its own copy, and so
+// `skills/splash/test/the-chain-is-read-end-to-end.test.ts` can see this scaffold joined to them.
+//
+// The node builtins are imported under their own names here because these eight files each import
+// a different subset of them already; aliasing keeps this block identical in all eight.
+
+import { existsSync as chainExists, readFileSync as chainRead } from "node:fs";
+import { join as chainJoin, relative as chainRelative } from "node:path";
+import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
+import { replaceSection } from "#shared/editorial/derived.mjs";
+import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
+import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
+
+export { checkChoreography, checkPrecision };
+
+/** This scaffold's own export. */
+export const CHAIN_FORMAT = "scrolly";
+
+/** Where this export's type sheets live — a function, so it does not race this file's own consts. */
+const chainSheets = () => chainJoin(import.meta.dirname, "..", "references", "types");
+
+/** The parsed sheet and the frame it supplies for one type. It returns no choreography. */
+export function chainFrameFor(type) {
+  const path = chainJoin(chainSheets(), `${type}.md`);
+  const sheet = chainExists(path) ? parseTypeSheet(chainRead(path, "utf8")) : {};
+  return { sheet, frame: choreographyFrame({ format: CHAIN_FORMAT }, sheet) };
+}
+
+/**
+ * The BRIEF with its two chain sections rewritten EMPTY — headers, the frame quoted, no rows.
+ *
+ * `note` is the provenance line a `--from` scaffold owes its author ("this beat's code was
+ * scaffolded from X; read that beat before writing this table"). It is kept because it is about
+ * where the CODE came from, not about what the choreography should be — and rewriting the section
+ * would otherwise drop it on the floor.
+ */
+export function withChainSections(brief, type, note = "") {
+  const { sheet, frame } = chainFrameFor(type);
+  const choreography = renderChoreographySection(frame) + (note ? `\n${note}\n` : "");
+  const precision = renderPrecisionSection(scaffoldRequirements(sheet, CHAIN_FORMAT));
+  const out = replaceSection(brief, choreography.split("\n")[0], choreography);
+  return replaceSection(out, precision.split("\n")[0], precision);
+}
+
+/**
+ * Refuses before anything is written when the run's one art direction is not reachable.
+ *
+ * TWO EXEMPTIONS, AND NEITHER IS A HEURISTIC. `--filed` is the author saying out loud that this
+ * beat renders the three filed demo directions. And a beat under `proof/` is the catalogue, which
+ * R-A names as THE exception — the proofs render the three filed directions precisely to show the
+ * art direction is a parameter of the run. The exemption is by explicit path prefix, exactly as
+ * `skills/splash/test/a-production-run-has-one-direction.test.ts` writes its own, and never by a
+ * guess at what a directory name means.
+ */
+export function assertRunDirection(root, beatDir, filed) {
+  const relative = chainRelative(root, beatDir).split("\\").join("/");
+  if (filed || relative.startsWith("proof/") || directionReachable(beatDir)) return;
+  throw new Error(directionRefusalMessage({ relBeatDir: relative }));
+}
+
+
 const HERE = import.meta.dirname;
 const TEMPLATES = join(HERE, "..", "assets", "scrolly-map-beat-scaffold");
 export const DEFAULT_ROOT = resolve(HERE, "..", "..", "..");
@@ -369,7 +445,10 @@ export function adaptFromBeat({ root, fromBeat, values, shapeMismatch = null }) 
  * reported back on the result so the caller can say so loudly too.
  * @returns {{ written: string[], fromBeat: string | null, shapeMismatch: { assumedShape: string, subjectShape: string } | null }}
  */
-export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component, from, shape, generic = false }) {
+export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component, from, shape, generic = false, filed = false }) {
+  // The provenance line a `--from` scaffold owes its author, carried into the empty
+  // choreography section by `withChainSections` rather than injected into the template by hand.
+  let scaffoldedFrom = "";
   const { beatDir, values } = tokensFor({ root, type, beat, component });
   const briefTemplate = fill(readFileSync(join(templates, "BRIEF.md.tmpl"), "utf8"), values);
   let planned;
@@ -388,10 +467,8 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
     const mismatchNote = shapeMismatch
       ? `\n\nSHAPE MISMATCH: scaffolded from a worked example recorded as "${shapeMismatch.assumedShape}" data; this beat's own subject looks like "${shapeMismatch.subjectShape}". \`grep -rn "SHAPE MISMATCH" .\` in this beat finds the regions that must change first.\n`
       : "";
-    const brief = briefTemplate.replace(
-      "## The choreography",
-      `## The choreography\n\nSCAFFOLD: this beat's code was scaffolded \`--from ${fromBeat}\` — read that beat's own BRIEF.md and its\nrunner/plan/driver/directed component (marked SCAFFOLD: where they are its own subject) before writing this table.${mismatchNote}`,
-    );
+    scaffoldedFrom = `SCAFFOLD: this beat's code was scaffolded \`--from ${fromBeat}\` — read that beat's own BRIEF.md and its\nrunner/plan/driver/directed component (marked SCAFFOLD: where they are its own subject) before writing this table.${mismatchNote}`;
+    const brief = briefTemplate;
     planned = Object.entries({ ...adapted, "BRIEF.md": brief });
     const missing = requiredLocalAssets(Object.values(adapted), Object.keys(adapted)).filter((name) => !existsSync(join(beatDir, name)));
     if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: resolve(root, fromBeat), missing }));
@@ -399,6 +476,11 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
   if (!paletteReachable(beatDir)) throw new Error(paletteRefusalMessage({ root, relBeatDir: relative(root, beatDir) }));
   const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
   if (collisions.length) throw new Error(`${relative(root, beatDir)} already has ${collisions.join(", ")} — the scaffold never overwrites a file`);
+  // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
+  const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
+  if (briefAt >= 0)
+    planned[briefAt] = ["BRIEF.md", withChainSections(planned[briefAt][1], type, scaffoldedFrom)];
+  assertRunDirection(root, beatDir, filed);
   mkdirSync(beatDir, { recursive: true });
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
   return { written: planned.map(([target]) => target).sort(), fromBeat, shapeMismatch };
@@ -409,12 +491,17 @@ export function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; ) {
     const flag = argv[i];
+    if (flag === "--filed") {
+      out.filed = true;
+      i += 1;
+      continue;
+    }
     if (flag === "--generic") {
       out.generic = true;
       i += 1;
       continue;
     }
-    if (!known.has(flag)) throw new Error(`unknown argument ${JSON.stringify(flag)} — takes --type, --beat, --component, --from, --shape, --generic`);
+    if (!known.has(flag)) throw new Error(`unknown argument ${JSON.stringify(flag)} — takes --type, --beat, --component, --from, --shape, --generic, --filed`);
     if (argv[i + 1] === undefined || argv[i + 1].startsWith("--")) throw new Error(`${flag} takes a value`);
     out[flag.slice(2)] = argv[i + 1];
     i += 2;
@@ -427,7 +514,7 @@ if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const generic = Boolean(args.generic);
-    const { written, shapeMismatch } = scaffoldBeat({ templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component, from: args.from, shape: args.shape, generic });
+    const { written, shapeMismatch } = scaffoldBeat({ templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component, filed: Boolean(args.filed), from: args.from, shape: args.shape, generic });
     const next = generic
       ? `Next: read skills/scrolly/references/types/${args.type}.md, write BRIEF.md's choreography, then the SCAFFOLD stubs (grep -rn SCAFFOLD ${args.beat}).`
       : `Next: grep -rn SCAFFOLD ${args.beat} and work through each marked region; BRIEF.md names the beat it was adapted from — read its own BRIEF.md too.`;

@@ -582,3 +582,53 @@ describe("every SKILL.md's structural claims about code hold true", () => {
   });
 });
 
+
+/**
+ * THE EXPORT SKILLS' RUN SECTIONS NAME THE CHAIN THEY ACTUALLY CALL.
+ *
+ * Added with the editorial chain (`docs/splash/2026-09-17-editorial-chain-spec.md`, §3's last
+ * row). The failure mode it closes is the one this whole file exists for, one layer up: a scaffold
+ * now reads the retained proposal's frame and refuses on a missing `DIRECTION.md`, and a SKILL.md
+ * that does not say so leaves a run improvising the step that was just wired. Renaming
+ * `checkChoreography` without touching SKILL.md is exactly the drift that left the scrolly run
+ * section unreadable for weeks.
+ *
+ * WHAT IS ASSERTED, and deliberately no more: each of the seven export skills that write a beat's
+ * own files names, somewhere in its SKILL.md, the four entry points its scaffold and its verifier
+ * call — `choreographyFrame`, `scaffoldRequirements`, `parseChoreography`, `checkChoreography` —
+ * and `DIRECTION.md`. `dw-beat` is excluded by name: rendering is delegated, so it carries the
+ * static precision pair and NO choreography (spec §2.5), and there is no composed frame of ours
+ * whose reading order it could claim to have set.
+ *
+ * MUTATIONS RUN (2026-09-17, task 13)
+ *   - renamed `checkChoreography` out of `skills/scrolly/SKILL.md` → RED, naming that skill and
+ *     that entry point. Restored → green.
+ */
+describe("each export SKILL.md names the chain entry points its own code calls", () => {
+  const EXPORTS = [
+    "scrolly",
+    "chart-video",
+    "chart-web",
+    "chart-beat",
+    "map-beat",
+    "map-web",
+    "image-beat",
+  ];
+  const ENTRY_POINTS = [
+    "choreographyFrame",
+    "scaffoldRequirements",
+    "parseChoreography",
+    "checkChoreography",
+    "DIRECTION.md",
+  ];
+
+  it("should name every one of them, in every export skill", async () => {
+    const offenders: string[] = [];
+    for (const skill of EXPORTS) {
+      const text = await readFile(join(SKILLS, skill, "SKILL.md"), "utf8");
+      for (const entry of ENTRY_POINTS)
+        if (!text.includes(entry)) offenders.push(`${skill}/SKILL.md never names \`${entry}\``);
+    }
+    expect(offenders).toEqual([]);
+  });
+});

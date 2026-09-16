@@ -100,7 +100,11 @@ describe("the six-row event table, read", () => {
   it("should take start and duration from the contract, not from the table", () => {
     expect(declared.shots[3].start).toBe(BAR_VIDEO_TIMING.subject.start);
     expect(declared.shots[3].duration).toBe(BAR_VIDEO_TIMING.subject.duration);
-    expect(brief).not.toContain(String(BAR_VIDEO_TIMING.subject.start));
+    // The number is in the beat's own value block now (the harvest wrote the JOIN there), so what
+    // is asserted is that it is nowhere in the PROSE AND THE TABLE — which is where the plan's
+    // "not from the table" actually bites.
+    const beforeTheBlocks = brief.slice(0, brief.indexOf("```json splash:"));
+    expect(beforeTheBlocks).not.toContain(String(BAR_VIDEO_TIMING.subject.start));
   });
 
   it("should read column five as datum ids, never as the sentence it is written in", () => {

@@ -176,3 +176,34 @@ export function readRunDirection(dir, { stopAt } = {}) {
       `Looked in:\n  ${searched.join("\n  ")}`,
   );
 }
+
+/**
+ * WHETHER A RUN'S DIRECTION IS REACHABLE FROM A BEAT — the `paletteReachable` shape, for L3.
+ *
+ * A beat's colours are a journalist's decision and a scaffold refuses early rather than failing
+ * deep inside a render (`chart-beat/scripts/static-plumbing.mjs`'s own `paletteReachable`). A
+ * run's ART DIRECTION is the same kind of decision and now gets the same treatment: composed once
+ * per run, inherited by all four exports, redefinable by none (R-A).
+ */
+export function directionReachable(dir) {
+  try {
+    readRunDirection(dir);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The refusal, naming the exact command that produces the missing file. */
+export function directionRefusalMessage({ relBeatDir }) {
+  return [
+    `${relBeatDir} has no DIRECTION.md reachable (readRunDirection walks up from the beat and found none).`,
+    "A production run is produced in ONE art direction, composed from NEWSROOM.md and this story's subject, " +
+      "inherited by all four exports and redefinable by none. It is not scaffolded silently and it is never " +
+      "defaulted to one of the three filed demo directions.",
+    "Compose it and record it at the story root, beside PALETTE.md:",
+    "  bun -e 'import { composeRunDirection, writeRunDirection } from \"#shared/design-base/run-direction.mjs\"; " +
+      "writeRunDirection(\"<story>\", composeRunDirection({ /* newsroom, filed, subject, textPerRegister, grounds */ }).chosen);'",
+    "A CATALOGUE PROOF is the one exception (R-A): pass --filed to render the three filed directions instead.",
+  ].join("\n\n");
+}

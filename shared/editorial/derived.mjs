@@ -106,3 +106,30 @@ export function readDerivedBlock(text, name) {
   assertNoProse(parsed);
   return parsed;
 }
+
+/**
+ * A BRIEF's `## <heading>` section, replaced whole — the seam the eight scaffolds write through.
+ *
+ * A scaffold writes the EMPTY section: the export's table headers, the type sheet's vocabulary and
+ * prohibitions quoted as a comment for the author, no rows and no block (spec §2.5). The templates
+ * already carry a `## The choreography` and a `## Precision`, so the scaffold replaces rather than
+ * appends — two of either would leave the author guessing which one is read.
+ *
+ * Appends the section when the text carries none, so a template that never had one still gets it.
+ */
+export function replaceSection(text, heading, body) {
+  const lines = String(text).split(/\r?\n/);
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const opens = new RegExp(`^${escaped}\\b`, "i");
+  let start = -1;
+  let end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (start < 0 && opens.test(lines[i])) start = i;
+    else if (start >= 0 && /^##\s/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  if (start < 0) return `${String(text).replace(/\s*$/, "")}\n\n${body.replace(/\s*$/, "")}\n`;
+  return [...lines.slice(0, start), ...body.split(/\r?\n/), "", ...lines.slice(end)].join("\n");
+}

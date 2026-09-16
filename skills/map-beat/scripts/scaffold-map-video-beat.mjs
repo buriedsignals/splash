@@ -49,6 +49,82 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
+// ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
+//
+// A scaffold is the ONLY place a beat's files are written, so it is where the chain has to be read
+// or the chain reaches nothing. Three reads, and one refusal:
+//
+//   the type SHEET  → `choreographyFrame` → the vocabulary and the prohibitions quoted for the
+//                     author, in a section that carries NO ROWS AND NO BLOCK (R-D: a scaffold that
+//                     pre-filled a row would be the clone factory this whole chain exists to stop);
+//   `scaffoldRequirements` → the precision requirements a type and a format already fix, with the
+//                     two the journalist answers at G1 named as owed rather than guessed;
+//   `DIRECTION.md`  → refused when unreachable, in the same shape as the PALETTE.md refusal and
+//                     naming the command that produces it. `--filed` is the catalogue-only escape.
+//
+// `checkChoreography` and `checkPrecision` are re-exported below, so a beat's own verifier reaches
+// the chain through the scaffold that wrote the beat rather than finding its own copy, and so
+// `skills/splash/test/the-chain-is-read-end-to-end.test.ts` can see this scaffold joined to them.
+//
+// The node builtins are imported under their own names here because these eight files each import
+// a different subset of them already; aliasing keeps this block identical in all eight.
+
+import { existsSync as chainExists, readFileSync as chainRead } from "node:fs";
+import { join as chainJoin, relative as chainRelative } from "node:path";
+import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
+import { replaceSection } from "#shared/editorial/derived.mjs";
+import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
+import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
+
+export { checkChoreography, checkPrecision };
+
+/** This scaffold's own export. */
+export const CHAIN_FORMAT = "video";
+
+/** Where this export's type sheets live — a function, so it does not race this file's own consts. */
+const chainSheets = () => chainJoin(import.meta.dirname, "..", "references", "types", "video");
+
+/** The parsed sheet and the frame it supplies for one type. It returns no choreography. */
+export function chainFrameFor(type) {
+  const path = chainJoin(chainSheets(), `${type}.md`);
+  const sheet = chainExists(path) ? parseTypeSheet(chainRead(path, "utf8")) : {};
+  return { sheet, frame: choreographyFrame({ format: CHAIN_FORMAT }, sheet) };
+}
+
+/**
+ * The BRIEF with its two chain sections rewritten EMPTY — headers, the frame quoted, no rows.
+ *
+ * `note` is the provenance line a `--from` scaffold owes its author ("this beat's code was
+ * scaffolded from X; read that beat before writing this table"). It is kept because it is about
+ * where the CODE came from, not about what the choreography should be — and rewriting the section
+ * would otherwise drop it on the floor.
+ */
+export function withChainSections(brief, type, note = "") {
+  const { sheet, frame } = chainFrameFor(type);
+  const choreography = renderChoreographySection(frame) + (note ? `\n${note}\n` : "");
+  const precision = renderPrecisionSection(scaffoldRequirements(sheet, CHAIN_FORMAT));
+  const out = replaceSection(brief, choreography.split("\n")[0], choreography);
+  return replaceSection(out, precision.split("\n")[0], precision);
+}
+
+/**
+ * Refuses before anything is written when the run's one art direction is not reachable.
+ *
+ * TWO EXEMPTIONS, AND NEITHER IS A HEURISTIC. `--filed` is the author saying out loud that this
+ * beat renders the three filed demo directions. And a beat under `proof/` is the catalogue, which
+ * R-A names as THE exception — the proofs render the three filed directions precisely to show the
+ * art direction is a parameter of the run. The exemption is by explicit path prefix, exactly as
+ * `skills/splash/test/a-production-run-has-one-direction.test.ts` writes its own, and never by a
+ * guess at what a directory name means.
+ */
+export function assertRunDirection(root, beatDir, filed) {
+  const relative = chainRelative(root, beatDir).split("\\").join("/");
+  if (filed || relative.startsWith("proof/") || directionReachable(beatDir)) return;
+  throw new Error(directionRefusalMessage({ relBeatDir: relative }));
+}
+
+
 const HERE = import.meta.dirname;
 const SKILL = "map-beat";
 const TEMPLATES = join(HERE, "..", "assets", "video-beat-scaffold");
@@ -151,9 +227,17 @@ export function fill(template, values) {
  * even when it appeared since the check) and each file written with an exclusive flag.
  * @returns {string[]} the files written, relative to the beat
  */
-export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, medium, type, beat, staticBeat, component }) {
+export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, medium, type, beat, staticBeat, component, filed = false }) {
+  // No `--from` provenance here: this scaffold fills its own templates rather than adapting
+  // another beat's code, so the empty choreography section carries the frame and nothing else.
+  const scaffoldedFrom = "";
   const { beatDir, staticDir, values } = tokensFor({ root, skill, medium, type, beat, staticBeat, component });
   const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
+  // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
+  const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
+  if (briefAt >= 0)
+    planned[briefAt] = ["BRIEF.md", withChainSections(planned[briefAt][1], type, scaffoldedFrom)];
+  assertRunDirection(root, beatDir, filed);
   mkdirSync(beatDir);
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
   copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
@@ -161,12 +245,20 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, med
 }
 
 export function parseArgs(argv) {
-  const known = new Set(["--type", "--beat", "--static", "--component"]);
+  const known = new Set(["--type", "--beat", "--static", "--component", "--filed"]);
   const out = {};
-  for (let i = 0; i < argv.length; i += 2) {
-    if (!known.has(argv[i])) throw new Error(`unknown argument ${JSON.stringify(argv[i])} — takes --type, --beat, --static, --component`);
+  for (let i = 0; i < argv.length; ) {
+    // `--filed` is the catalogue-only escape from the DIRECTION.md refusal, and it is the
+    // one flag here that takes no value.
+    if (argv[i] === "--filed") {
+      out.filed = true;
+      i += 1;
+      continue;
+    }
+    if (!known.has(argv[i])) throw new Error(`unknown argument ${JSON.stringify(argv[i])} — takes --type, --beat, --static, --component, --filed`);
     if (argv[i + 1] === undefined || argv[i + 1].startsWith("--")) throw new Error(`${argv[i]} takes a value`);
     out[argv[i].slice(2)] = argv[i + 1];
+    i += 2;
   }
   for (const required of ["type", "beat", "static"]) if (!out[required]) throw new Error(`--${required} is required`);
   return out;
@@ -175,7 +267,7 @@ export function parseArgs(argv) {
 if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, skill: SKILL, medium: "map", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component });
+    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, skill: SKILL, medium: "map", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed) });
     console.log(
       `scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\nNext: BRIEF.md's choreography, the plan's bounds and layers, then measure.mjs with the .env loaded, then the SCAFFOLD stubs (grep -n SCAFFOLD ${args.beat}).`,
     );

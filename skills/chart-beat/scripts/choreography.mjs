@@ -265,3 +265,53 @@ export function checkChoreography(declared, frame = {}) {
 
   return out;
 }
+
+// ── THE EMPTY SECTION A SCAFFOLD WRITES ────────────────────────────────────────────────────────
+//
+// Spec §2.5: at scaffold time a beat gets the export's table headers, the type sheet's vocabulary
+// and prohibitions quoted as a comment for the author, and NO ROWS AND NO BLOCK. A scaffold that
+// pre-filled a row would be the clone factory R-D forbids — it is the one place where "helpfully"
+// seeding a table turns 40 pieces into one piece rendered 40 times.
+//
+// The beat gains `derived: v1` and its blocks only when its author fills the table and runs
+// `bun scripts/migrate-briefs.mjs --harvest --beat <dir>`.
+
+/** The frame, quoted for the author — never a suggestion of what to write, only of what is owed. */
+function frameComment(frame, lines) {
+  const vocabulary = (frame?.vocabulary ?? []).map((atom) => `  ${atom}`);
+  const prohibitions = (frame?.prohibitions ?? []).map((p) => `  ${p.id ?? "(no id)"} — ${p.says}`);
+  return [
+    "<!-- THE FRAME THIS TYPE SUPPLIES. The choreography itself is yours, written from the subject.",
+    ...lines,
+    "",
+    vocabulary.length ? "  gestures this type records (the list is OPEN — add to the sheet):" : "",
+    ...vocabulary,
+    prohibitions.length ? "" : "",
+    prohibitions.length ? "  a choreography of this type must NOT:" : "",
+    ...prohibitions,
+    "",
+    `  worked example: ${frame?.workedExample ?? "(none filed)"}`,
+    "-->",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+/** `## The choreography`, empty: the station table's headers, the frame quoted, and no rows. */
+export function renderChoreographySection(frame) {
+  return [
+    "## The choreography",
+    "",
+    frameComment(frame, [
+      "     A static frame is choreographed IN SPACE, not in time, and it is never \"none\": where the",
+      "     eye enters, the sequence the marks and annotations lead it through, what is subordinate",
+      `     to what, and at which station the claim lands. The stations: ${STATION_ORDER.join(" → ")}.`,
+    ]),
+    "",
+    "**The eye enters at** `<role>`. **The claim lands at** `<station>`.",
+    "",
+    "| station | carries | subordinate to |",
+    "| --- | --- | --- |",
+    "",
+  ].join("\n");
+}
