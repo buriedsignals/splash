@@ -263,10 +263,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_BG"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -336,10 +340,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_CZ"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -409,10 +417,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_DK"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -482,10 +494,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_FI"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -555,10 +571,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_DE"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -628,10 +648,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_GR"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -701,10 +725,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_HU"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -774,10 +802,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_NL"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -847,10 +879,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_PL"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -920,10 +956,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_RO"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -993,10 +1033,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_SI"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
@@ -1066,10 +1110,14 @@
         },
         "bindings": {
           "fill-color": [
-            "step",
+            "interpolate",
+            [
+              "linear"
+            ],
             {
               "$state": "k_GB"
             },
+            0,
             "#4b412b",
             1,
             "#716244",
