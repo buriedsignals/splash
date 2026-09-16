@@ -54,7 +54,7 @@ export function applyContourState(root, state) {
   applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-  const shown = Boolean(c.handle.map && c.handle.ready);
+  const shown = Boolean(c.handle && c.handle.map && c.handle.ready);
   const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
   c.fallbacks.forEach((img) => {
     const opacity = !shown && Number(img.dataset.fallback) === card ? "1" : "0";
@@ -69,7 +69,7 @@ export function applyContourState(root, state) {
     paintSweep(c.image.data, c.sweep.bytesDecoded, { level, stepKm: c.sweep.stepKm, rimKm: Math.max(c.sweep.stepKm * 2, 6), front: level < c.deepest, tint: c.tintRgb, rim: c.rimRgb });
     c.ctx.putImageData(c.image, 0, 0);
   }
-  for (const map of c.handle.maps) {
+  for (const map of c.handle ? c.handle.maps : []) {
     mountSweepOn(map, c.canvas, c.sweep.coordinates);
     const source = map.getSource(SWEEP);
     if (source) {

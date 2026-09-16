@@ -45,6 +45,14 @@ A contour map measures everywhere; the scroll makes that measurement happen in f
 - **The land step is measured**: the static plate's 0.085 of the ink is the floor, raised until land and sea
   clear `SEA_LAND_MIN` (on `nocturne`'s navy the floor alone left the coast unreadable). Every line and number
   is floored against both the bare land and the fill.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered. `verify-scrolly.mjs` refused all
+  three at first — `c.handle.map` read on a null handle when no key is in the page (`contour-drive.mjs`
+  never guarded `c.handle` itself the way the sibling maps do) — fixed to check `c.handle` first. Now clean.
+  `verify-live-map-scrolly.mjs`'s bare-canvas sample flags most of the mobile stage on every card but the
+  close-up; a screenshot of the same card shows ordinary land, so this reads as the guard's tight colour
+  threshold catching this beat's own deliberately subtle land/sea step (`SEA_LAND_MIN`), not a blank canvas —
+  left as observed, not changed, since fixing the shared guard's threshold is outside this beat. Swap check
+  on `creme` clean at both viewports (labels only).
 
 ## Directions
 
