@@ -1,0 +1,133 @@
+// %%BEAT_PATH%%/render-directions-scrolly.mjs — %%BEAT%%'s own %%TYPE%% scrolly, rendered once per DIRECTION.
+// SCAFFOLD: read skills/scrolly/references/types/%%TYPE%%.md for this type's own scroll gestures before writing
+// the choreography, Directed%%Name%%Scrolly.tsx and %%TYPE%%-drive.mjs.
+//
+// ONE ART DIRECTION BY DEFAULT: composed from this beat's own PALETTE.md (or an ancestor's) and its own text,
+// through composeDirections — a production run renders exactly one. --filed renders the three filed demo
+// directions instead, for a catalogue proof only. --only <id> picks one of whichever set is rendered.
+//
+// Usage: bun %%BEAT_PATH%%/render-directions-scrolly.mjs [--filed] [--only <id>]
+
+import { readdirSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const DIRECTIONS = join(HERE, "%%UP%%", "docs", "design-base", "directions");
+const OUT = join(HERE, "renders");
+/** The no-break space, written as its escape — number formatting helpers live at #shared/design-base/web.mjs. */
+const NB = "\u00A0";
+const SCAFFOLD_MARK = "SCAFFOLD";
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
+const FILED = process.argv.includes("--filed");
+
+// ── SCAFFOLD: the readings, and this beat's own assertions ──────────────────────────────────────
+// Freeze the data beside this beat (a data.csv, credited in BRIEF.md), load it here and derive every figure the
+// beat says out loud from it — never a hand-typed number. Throw a named error when the data does not support the
+// claim, so a beat whose numbers drifted refuses to render rather than shipping a stale one.
+function loadSubject() {
+  throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% has no data loaded yet — freeze its CSV beside the beat and read it here (render-directions-scrolly.mjs, loadSubject)`);
+}
+
+// ── the words ──────────────────────────────────────────────────────────────────────────────────
+const EYEBROW = `${SCAFFOLD_MARK} eyebrow`;
+const title = [`${SCAFFOLD_MARK} the title, its longest form`, `${SCAFFOLD_MARK} a shorter title`];
+const prose = [[`${SCAFFOLD_MARK} card 1's prose`], [`${SCAFFOLD_MARK} card 2's prose`]];
+const source = `${SCAFFOLD_MARK} Source : …`;
+const words = { unit: `${SCAFFOLD_MARK} unit` };
+const alt = `${SCAFFOLD_MARK} the alt text a reader without the picture gets`;
+if ([title.join(""), prose.flat().join(""), source, JSON.stringify(words), alt].some((s) => s.includes(SCAFFOLD_MARK)))
+  throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% still carries placeholder copy — write the title, prose, source, words and alt before rendering (render-directions-scrolly.mjs)`);
+
+const subject = loadSubject();
+
+/** SCAFFOLD: one state per card — see %%TYPE%%-drive.mjs for what each field paints. Card count must match prose. */
+const STATES = prose.map(() => ({ note: 0 }));
+if (STATES.length !== prose.length) throw new Error(`${SCAFFOLD_MARK}: STATES carries ${STATES.length} states for ${prose.length} cards of prose — one state per card`);
+
+// ── only past this point is the heavy machinery (the rasteriser, the design base, renderScrolly) loaded — a
+// beat still carrying placeholder copy refuses above, without ever touching any of it. ──────────────────────
+const { createElement } = await import("react");
+const { deriveFurniture } = await import("#shared/chart-beat/render-still.mjs");
+const { readPalette } = await import("#shared/chart-beat/colour.mjs");
+const { readDirection } = await import("#shared/design-base/read-direction.mjs");
+const { composeDirections, report } = await import("#shared/design-base/compose.mjs");
+const { resolveDirectionFamilies } = await import("#shared/design-base/resolve-families.mjs");
+const { webRegisters } = await import("#shared/design-base/web.mjs");
+const { EYEBROW_TO_DISPLAY, gapOf, registerOf } = await import("#shared/design-base/register.mjs");
+const { renderScrolly } = await import("%%UP%%/skills/scrolly/scripts/render-scrolly.mjs");
+const { Directed%%Name%%Scrolly } = await import("./Directed%%Name%%Scrolly.tsx");
+
+const textPerRegister = {
+  display: title.join(" "),
+  eyebrow: EYEBROW,
+  body: `${prose.flat().join(" ")} ${source}`,
+  axis: words.unit,
+  annot: "",
+  value: Object.values(words).join(" "),
+};
+
+const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort().map((f) => readDirection(join(DIRECTIONS, f)));
+const newsroom = readPalette(HERE);
+const BEAT_FACTS = { evidenceLevels: 3 }; // SCAFFOLD: how many ranked levels of evidence BRIEF.md names
+const composition = composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister });
+console.log(report(composition, { beat: BEAT_FACTS }));
+console.log("");
+
+const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const chosen = FILED
+  ? filed.map((d) => ({ id: labelOf(d.id), direction: d }))
+  : (() => {
+      if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${report(composition, { beat: BEAT_FACTS })}`);
+      return [{ id: labelOf(composition.offered[0].id), direction: composition.offered[0] }];
+    })();
+if (ONLY && !chosen.some((c) => c.id === ONLY)) throw new Error(`--only takes one of ${chosen.map((c) => c.id).join(", ")}`);
+const toRender = chosen.filter((c) => !ONLY || c.id === ONLY);
+
+const driver = await readFile(join(HERE, "%%TYPE%%-drive.mjs"), "utf8");
+const refused = [];
+for (const { id, direction: picked } of toRender) {
+  const direction = resolveDirectionFamilies(picked, textPerRegister);
+  const { ink, muted, grid } = deriveFurniture(direction.ground);
+  const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
+  try {
+    const { outPath } = await renderScrolly({
+      steps: prose.map((p, i) => ({ id: `card-${i + 1}`, prose: p })),
+      reveal: {
+        element: createElement(Directed%%Name%%Scrolly, {
+          // SCAFFOLD: this type's own shape, derived from `subject` above.
+          words,
+          alt,
+          regs,
+          stroke: direction.stroke ?? {},
+          ground: direction.ground,
+          accent: direction.accent,
+          ink,
+          muted,
+          grid,
+        }),
+        states: STATES,
+        driver,
+        apply: "apply%%Name%%State",
+      },
+      title,
+      eyebrow: EYEBROW,
+      source,
+      ground: direction.ground,
+      type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+      lang: "en", // SCAFFOLD: the beat's own language
+      outDir: OUT,
+      name: `${id}.html`,
+    });
+    console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
+  } catch (error) {
+    await rm(join(OUT, `${id}.html`), { force: true });
+    refused.push({ id, why: error.message });
+    console.log(`${id} REFUSED — ${error.message}`);
+  }
+}
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  process.exitCode = 1;
+}

@@ -1,0 +1,92 @@
+/**
+ * SCAFFOLD — %%Name%%'s own visual, drawn through the design base and CHOREOGRAPHED by the scroll. Read
+ * skills/scrolly/references/types/%%TYPE%%.md for this type's own scroll gestures, and
+ * skills/scrolly/references/directed-type-choreography.md for the repertoire, before filling this in.
+ *
+ * %%TYPE%%-drive.mjs lays out every mark in the reader's pixels on each paint (seat%%Name%%/apply%%Name%%State).
+ * What is rendered here is the last card's picture, for a reader without a script — and the CARRIER, the JSON
+ * payload on data-%%TYPE%% every field the driver reads back with JSON.parse.
+ *
+ * SCAFFOLD: the marks (SVG geometry keyed by data-part/data-mark), the labels moved per state, and every prop
+ * this component needs from the runner beyond the ones already wired below.
+ */
+import type { CSSProperties } from "react";
+import { adjustToContrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+
+/** SCAFFOLD: one id per header note the driver toggles exclusively — see the boxplot beat's NOTES for the shape. */
+export const NOTES = ["note"] as const;
+
+export function Directed%%Name%%Scrolly({
+  words,
+  alt,
+  regs,
+  stroke,
+  ground,
+  accent,
+  ink,
+  muted,
+  grid,
+}: {
+  words: Record<(typeof NOTES)[number] | "unit", string>;
+  alt: string;
+  regs: Record<"display" | "eyebrow" | "body" | "axis" | "annot" | "value", Record<string, string | number>>;
+  stroke: { rule?: number; hairline?: number };
+  ground: string;
+  accent: string;
+  ink: string;
+  muted: string;
+  grid: string;
+}) {
+  const accentInk = adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
+  const mutedInk = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
+  const inkOnGround = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
+  const rule = stroke.rule ?? 1;
+  const abs = (extra: CSSProperties): CSSProperties => ({ position: "absolute", left: 0, top: 0, whiteSpace: "nowrap", ...extra });
+  const slot: CSSProperties = { gridArea: "1 / 1", justifySelf: "end", textAlign: "right" };
+
+  return (
+    <div
+      role="img"
+      aria-label={alt}
+      data-%%TYPE%%={JSON.stringify({
+        // SCAFFOLD: the geometry the driver seats off — every field seat%%Name%% reads back with JSON.parse.
+        notes: NOTES,
+      })}
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: ground,
+        display: "grid",
+        gridTemplateRows: "auto minmax(0, 1fr)",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        rowGap: "10px",
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+      }}
+    >
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: "4px 16px" }}>
+        <span style={{ ...regs.axis, color: mutedInk, fontWeight: 700 }}>{words.unit}</span>
+        <span style={{ display: "grid", marginLeft: "auto" }}>
+          {NOTES.map((k) => (
+            <span key={k} data-note={k} style={{ ...regs.value, ...slot, color: accentInk, opacity: 0 }}>
+              {words[k]}
+            </span>
+          ))}
+        </span>
+      </div>
+
+      <div data-part="stage" style={{ position: "relative", minHeight: 0 }}>
+        <svg
+          data-part="field"
+          xmlns="http://www.w3.org/2000/svg"
+          stroke={inkOnGround}
+          strokeWidth={rule}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible" }}
+        >
+          {/* SCAFFOLD: the type's own marks, data-part/data-mark keyed for the driver to seat and paint. */}
+        </svg>
+        {/* SCAFFOLD: the type's own labels, absolutely positioned spans (abs({ ...regs.axis, color: mutedInk })) the
+            driver moves per state. */}
+      </div>
+    </div>
+  );
+}

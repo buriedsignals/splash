@@ -1,0 +1,46 @@
+// SCAFFOLD — the painting function for %%Name%%'s one visual, inlined by renderScrolly's `reveal` option. Read
+// skills/scrolly/references/types/%%TYPE%%.md and the choreography written in this beat's own BRIEF.md before
+// filling this in: a STATE, field by field, is what the scroll interpolates continuously — see STATES in
+// render-directions-scrolly.mjs.
+//
+// EVERYTHING IS LAID OUT IN THE READER'S PIXELS on each paint: one value scale, fitted (never anchored at zero
+// unless the type sheet says so), for every picture.
+
+export function apply%%Name%%State(root, state, context) {
+  const carrier = root.querySelector("[data-%%TYPE%%]");
+  if (!carrier) return;
+  if (context.resized || !root.__%%name%%) seat%%Name%%(root, carrier);
+  const c = root.__%%name%%;
+  const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  const SW = c.stage.clientWidth;
+  const SH = c.stage.clientHeight;
+  if (!(SW > 0 && SH > 0)) return;
+  c.svg.setAttribute("viewBox", `0 0 ${SW} ${SH}`);
+  // A stage this narrow drops the labels that would collide — reuse below wherever a mark's own label is placed.
+  const narrow = SW < 560;
+
+  // SCAFFOLD: paint every mark from `state`'s own fields (eased/clamped as the choreography needs), using `set`
+  // for SVG attributes and Object.assign(node.style, {...}) for absolutely-positioned labels.
+
+  c.notes.forEach((node, k) => {
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
+  });
+
+  function set(el, attrs) {
+    for (const [key, v] of Object.entries(attrs)) el.setAttribute(key, String(v));
+  }
+}
+
+function seat%%Name%%(root, carrier) {
+  const data = root.__%%name%%Data || (root.__%%name%%Data = JSON.parse(carrier.getAttribute("data-%%TYPE%%")));
+  const stage = root.querySelector('[data-part="stage"]');
+  const q = (sel) => stage.querySelector(sel);
+  root.__%%name%% = {
+    ...data,
+    stage,
+    svg: q('[data-part="field"]'),
+    notes: data.notes.map((k) => root.querySelector(`[data-note="${k}"]`)),
+    // SCAFFOLD: every other node the paint step reads, queried once here.
+  };
+}

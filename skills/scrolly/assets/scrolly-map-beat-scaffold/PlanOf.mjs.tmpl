@@ -1,0 +1,31 @@
+// SCAFFOLD — %%Name%%'s own live-map plan (shared/map-beat's own contract: `shared/map-beat/mount.mjs`,
+// `shared/map-beat/scrolly.mjs`). Read skills/scrolly/references/types/%%TYPE%%.md before filling this in.
+//
+// FLAT WEB MERCATOR, no `pitch`/`bearing` unless the type sheet asks for one. Every bound paint is
+// DATA-CONSTANT (`validateScrollyPlan` in the runner refuses one that is not): MapLibre relays out a whole
+// source whenever a data-driven paint changes, so a mark's size/colour travels through a `{ $state: "…" }`
+// EXPRESSION bound to one of this beat's own STATES fields, never through per-feature data that changes between
+// cards. A layer that fills from MapTiler's own Countries tileset and wants the finer basemap coast to show
+// through goes `beneath: "water"` (`mountPlan`, `beforeIdFor`) — most types never need it.
+
+const KEY = "__MAPTILER" + "_KEY__";
+
+/** SCAFFOLD: this beat's own layers — each `{ id, type, data, paint, bindings, beneath? }`; `bindings` are the
+ *  `{ $state: "…" }` expressions the plan APPLIES onto `paint` at each card, never raw feature data. */
+export function %%name%%PlanOf({ tints, cameras, statesForCards, referenceWidth, referenceHeight }) {
+  return {
+    styleUrl: `https://api.maptiler.com/maps/dataviz/style.json?key=${KEY}`,
+    styleName: "dataviz",
+    tints,
+    cameras,
+    statesForCards,
+    referenceWidth,
+    referenceHeight,
+    warmSamples: 3,
+    degreesPerPixel: 1,
+    // SCAFFOLD: this type's own layers. Example shape (delete once real layers are written):
+    //   { id: "mark", type: "circle", data: geojsonOf(subject), paint: { "circle-color": colours.accent,
+    //     "circle-radius": 4, "circle-opacity": 0 }, bindings: { "circle-opacity": { $state: "arrive" } } }
+    layers: [],
+  };
+}

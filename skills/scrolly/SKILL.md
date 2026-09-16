@@ -293,6 +293,37 @@ real beat writes its own runner in that same shape — never editing this skill'
 | The WCAG floor `renderScrolly`'s own panel-contrast tripwire enforces | `4.5` | `renderScrolly`, `render-scrolly.mjs` |
 | The drawn step's own illustrated water level and day label (never a plotted value) | `{ waterLevelT, dayLabel }` | `DRAWN_VARIANT`, `render-scrolly.mjs` |
 
+## Producing a scrolly in a run
+
+1. **Pick the type** from the catalogue table below and **read its sheet** (`references/types/<type>.md`):
+   what it argues, the scroll gestures that suit it, what a choreography must not do, the precision to
+   assert, and its worked `proof/scrolly-<type>-*` example.
+2. **Scaffold the plumbing** rather than copying it by hand from the worked example — a cold run was
+   measured copying ~400-500 identical lines per beat. `bun skills/scrolly/scripts/scaffold-scrolly-beat.mjs
+   --type <type> --beat proof/scrolly-<subject>` for a chart type;
+   `bun skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type <type> --beat proof/scrolly-<subject>`
+   for a map type. Both take `--component <PascalName>` and refuse a `--type` with no sheet, an existing
+   beat folder, or a `--beat` not directly under `proof/` (or a story's own `beats/`, when scaffolding
+   inside a Splash run). Every file it writes carries `SCAFFOLD` markers for the beat's own work: the data
+   and its assertions, the claim, the copy, the choreography (`STATES`), the marks and the paint.
+3. **Write the claim/assertions/choreography/marks** the scaffold marked — `grep -rn SCAFFOLD <beat>` finds
+   every stub. The runner throws a named error while any copy is still a placeholder, so it refuses to
+   render rather than shipping a stub.
+4. **Fast loop**: render with the live composed direction (`.local.html` for a map beat, so it opens
+   directly against MapTiler with no proxy) and look at it in a browser before driving anything.
+5. **Owner review**: drive it continuously (`scripts/verify-scrolly.mjs`, and
+   `scripts/verify-live-map-scrolly.mjs` for a map beat) — see "The one gotcha" above — and get the owner's
+   read on the choreography.
+6. **Final pass**: bake (drop `--no-bake` for a map beat, so the committed card images are fresh) and run
+   the guards (`test/scroll-integrity.test.ts`, `test/render-scrolly.test.ts`) before delivery.
+
+**ONE ART DIRECTION IN A PRODUCTION RUN, not the three filed demo directions.** The scaffolded runner
+composes a direction from the beat's own `PALETTE.md` (or an ancestor's) and its own text
+(`composeDirections`, `shared/design-base/compose.mjs`) and renders exactly that one by default — the same
+rule the video skill's own runners follow. `--filed` renders `creme`, `nocturne`, `rapport` instead, for a
+catalogue proof only (every worked example under `proof/scrolly-*` still renders all three, because a
+catalogue proof is what they are); a production beat never ships all three.
+
 ## Per-type sheets
 
 Every catalogue chart and map type has its own sheet: what it argues, the scroll gestures that suit
@@ -380,6 +411,11 @@ example. Read the type's sheet before writing its choreography.
   skill needs nothing else on disk to show. Regenerate with `bun scripts/render-preview.mjs`.
 - `scripts/render-scrolly.mjs` — `renderScrolly` (media-agnostic machinery) above the CONFIG marker;
   `SEED`, `DRAWN_VARIANT`, `buildFrame` and `render` below it.
+- `scripts/scaffold-scrolly-beat.mjs` — scaffolds a chart scrolly's plumbing (the runner, the directed
+  component, the driver, `BRIEF.md`) from `assets/scrolly-beat-scaffold/`, the beat's own work left as
+  `SCAFFOLD` stubs. See "Producing a scrolly in a run" above.
+- `scripts/scaffold-scrolly-map-beat.mjs` — the map sibling: the same plumbing plus the live-map plan
+  skeleton, from `assets/scrolly-map-beat-scaffold/`.
 - `scripts/bake-plate.mjs` — the map track's bake. Run once; re-run only if the camera or the
   station changes.
 - `scripts/render-preview.mjs` — renders `DrawnGraphicFrame` standalone to `assets/preview.png` or
