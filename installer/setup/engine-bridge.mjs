@@ -10,7 +10,6 @@ const MAX_CANDIDATE_BYTES = 16 << 10;
 const CREDENTIAL_ID_SET = new Set(CREDENTIAL_IDS);
 const CREDENTIAL_POLICIES = new Map([
   ["MAPTILER_KEY", ["provider-request-required", "validate-before-atomic-replacement"]],
-  ["MAPTILER_DELIVERY_KEY", ["saved-unverified-origin-attestation", "attest-before-atomic-replacement"]],
   ["DATAWRAPPER_TOKEN", ["authenticated-account-request", "validate-before-atomic-replacement"]],
   ["CLOUDFLARE_API_TOKEN", ["token-and-account-verified-pages-scope-attested", "validate-before-atomic-replacement"]],
 ]);
@@ -32,10 +31,18 @@ const FAILURE_MESSAGES = new Map([
 ]);
 export const CREDENTIAL_CONTRACT_MESSAGE = "Update or repair Engine before changing Splash credentials.";
 
-function safeEnvironment(source = process.env) {
+/**
+ * The environment an Engine child receives. Loader hooks and anything that
+ * looks like a credential are dropped. When Engine launched this process with
+ * SPLASH_ENGINE_HOME (the Splash MCP runs under a scratch HOME that sandboxes
+ * Bun and the browser), HOME is restored to the journalist's real home for the
+ * Engine child only: on macOS the keychain search list follows HOME, so under
+ * the scratch home every stored key read as "not stored".
+ */
+export function engineEnvironment(source = process.env) {
   const exact = new Set([
     "BASH_ENV", "ENV", "NODE_OPTIONS", "NODE_PATH", "BUN_OPTIONS", "BUN_INSTALL_CACHE_DIR",
-    "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH",
+    "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "SPLASH_ENGINE_HOME",
   ]);
   const env = {};
   for (const [name, value] of Object.entries(source)) {
@@ -44,6 +51,8 @@ function safeEnvironment(source = process.env) {
     if (CREDENTIAL_ID_SET.has(upper) || /(?:_API_KEY|_ACCESS_KEY|_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIALS?)$/i.test(upper)) continue;
     env[name] = value;
   }
+  const journalistHome = source.SPLASH_ENGINE_HOME;
+  if (typeof journalistHome === "string" && isAbsolute(journalistHome)) env.HOME = journalistHome;
   return env;
 }
 
@@ -95,7 +104,7 @@ function isSameExecutableIdentity(actual, expected) {
 
 async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
   const child = Bun.spawn([programPath, "--json", ...args], {
-    env: safeEnvironment(),
+    env: engineEnvironment(),
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",
@@ -113,7 +122,11 @@ async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
       readBounded(child.stderr, child, "Engine stderr"),
       child.exited,
     ]);
-    if (timedOut) throw new Error("Engine credential operation timed out");
+    if (timedOut) {
+      const error = new Error("Engine credential operation timed out");
+      error.code = "ENGINE_TIMEOUT";
+      throw error;
+    }
     return { events: parseEvents(stdout), stderr, exitCode };
   } finally {
     clearTimeout(timer);
@@ -235,18 +248,13 @@ function exactContext(id, context) {
   if (!context || typeof context !== "object" || Array.isArray(context)) throw new Error("validation context must be an object");
   const expected = id === "CLOUDFLARE_API_TOKEN"
     ? ["cloudflareAccountId", "pagesScopeAttested"]
-    : id === "MAPTILER_DELIVERY_KEY"
-      ? ["originRestrictionsAttested"]
-      : [];
+    : [];
   const actual = Object.keys(context).sort();
   if (JSON.stringify(actual) !== JSON.stringify(expected.sort())) throw new Error("validation context does not match the credential contract");
   if (id === "CLOUDFLARE_API_TOKEN") {
     if (!/^[0-9a-f]{32}$/i.test(context.cloudflareAccountId ?? "") || context.pagesScopeAttested !== true) {
       throw new Error("Cloudflare validation requires its account id and Pages scope attestation");
     }
-  }
-  if (id === "MAPTILER_DELIVERY_KEY" && context.originRestrictionsAttested !== true) {
-    throw new Error("MapTiler delivery validation requires origin-restriction attestation");
   }
   return context;
 }
@@ -428,6 +436,13 @@ function normalizedListContract(data) {
   });
 }
 
+export const ENGINE_TIMEOUT_REASON =
+  "The Engine did not answer in time. Approve any macOS keychain prompt for Indicator Labs, or re-enter this key from Indicator Labs, then refresh.";
+
+export function engineTimeout(id) {
+  return Object.freeze({ ok: false, id, status: "engine-timeout", outcome: "engine-timeout", reason: ENGINE_TIMEOUT_REASON, written: false });
+}
+
 function normalizedFailure(event, id) {
   const data = event?.data;
   const allowed = new Set(["rejected", "conflict", "lock-timeout", "lock-failed"]);
@@ -466,11 +481,12 @@ export function createEngineBridge({ executable, invoke = invokeEngine } = {}) {
   let validatedContract = null;
   const launcher = invoke === invokeEngine ? createSessionLauncher(executable) : null;
 
-  async function call(args, input = "", candidate = "") {
+  async function call(args, input = "", candidate = "", timeoutMs = undefined) {
     const result = launcher
-      ? await launcher.run(args, input)
+      ? await launcher.run(args, input, timeoutMs)
       : await invoke(executable, args, input, {
           expectedExecutableIdentity: boundExecutableIdentity,
+          ...(timeoutMs === undefined ? {} : { timeoutMs }),
         });
     const event = terminal(result, candidate);
     return { result, event };
@@ -509,13 +525,17 @@ export function createEngineBridge({ executable, invoke = invokeEngine } = {}) {
       return contract;
     },
 
-    async status(id) {
+    async status(id, { timeoutMs } = {}) {
       requireCredentialId(id);
       let result;
       let event;
       try {
-        ({ result, event } = await call(["keys", "status", id]));
-      } catch {
+        ({ result, event } = await call(["keys", "status", id], "", "", timeoutMs));
+      } catch (error) {
+        // A status read that outlives its deadline is almost always the
+        // operating system waiting for the journalist to approve keychain
+        // access for this Engine build; say so instead of a generic error.
+        if (error?.code === "ENGINE_TIMEOUT") return engineTimeout(id);
         return normalizedFailure(null, id);
       }
       if (result.exitCode !== 0 || event.event !== "result") return normalizedFailure(event, id);

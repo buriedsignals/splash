@@ -1614,17 +1614,16 @@ describe("exportDirFor", () => {
  * names which one, and the hand-over says plainly what the newsroom is shipping and what it costs
  * them — the recommendation is MADE, in the file they keep, rather than enforced in a refusal.
  *
- * MUTATION (run in a copy under /tmp): restore the throw, i.e. make `substituteKeys` refuse when
- * `MAPTILER_DELIVERY_KEY` is absent and `MAPTILER_KEY` is present. "should deliver the development
- * key rather than block" and the two hand-over tests below redden.
+ * MUTATION (run in a copy under /tmp): make `substituteKeys` refuse when only `MAPTILER_KEY` is
+ * present. "should deliver the key rather than block" and the two hand-over tests below redden.
+ *
+ * Since 2026-09-10 there is one MapTiler key; the separate origin-restricted delivery key is gone.
  */
-describe("substituteKeys — R1b clause 4, the delivered key", () => {
+describe("substituteKeys — the delivered key", () => {
   const page = "style.json?key=__MAPTILER" + '_KEY__"';
 
-  it("should substitute the second, domain-restricted key", () => {
-    expect(
-      substituteKeys(page, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe('style.json?key=restricted-key"');
+  it("should substitute the newsroom's MapTiler key", () => {
+    expect(substituteKeys(page, { MAPTILER_KEY: "newsroom-key" })).toBe('style.json?key=newsroom-key"');
   });
 
   it("should leave the placeholder alone when no key is configured at all", () => {
@@ -1634,32 +1633,23 @@ describe("substituteKeys — R1b clause 4, the delivered key", () => {
     expect(substituteKeys(page, {})).toBe(page);
   });
 
-  it("should deliver the development key rather than block, when it is the only one", () => {
+  it("should deliver the key rather than block", () => {
     expect(substituteKeys(page, { MAPTILER_KEY: "development-key" })).toBe(
       'style.json?key=development-key"',
     );
   });
 
-  it("should name which key went in, so the hand-over can say so", () => {
-    expect(mapKeyState(page, { MAPTILER_DELIVERY_KEY: "restricted-key" })).toBe(
-      "restricted",
-    );
-    expect(mapKeyState(page, { MAPTILER_KEY: "development-key" })).toBe(
-      "development",
-    );
+  it("should name whether a key went in, so the hand-over can say so", () => {
+    expect(mapKeyState(page, { MAPTILER_KEY: "newsroom-key" })).toBe("live");
     expect(mapKeyState(page, {})).toBe("unkeyed");
     expect(mapKeyState("<p>no map here</p>", { MAPTILER_KEY: "k" })).toBe(
       "none",
     );
   });
 
-  it("should prefer the delivery key even when the development key is also set", () => {
-    expect(
-      substituteKeys(page, {
-        MAPTILER_DELIVERY_KEY: "restricted-key",
-        MAPTILER_KEY: "development-key",
-      }),
-    ).toBe('style.json?key=restricted-key"');
+  it("should ignore the retired delivery-key variable", () => {
+    expect(substituteKeys(page, { MAPTILER_DELIVERY_KEY: "old-restricted-key" })).toBe(page);
+    expect(mapKeyState(page, { MAPTILER_DELIVERY_KEY: "old-restricted-key" })).toBe("unkeyed");
   });
 });
 
@@ -1687,22 +1677,17 @@ describe("the key rule reads the artifact, not the environment", () => {
     expect(substituteKeys(chartPage, { MAPTILER_KEY: "development-key" })).toBe(
       chartPage,
     );
-    expect(
-      substituteKeys(chartPage, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe(chartPage);
     expect(substituteKeys(chartPage, {})).toBe(chartPage);
   });
 
   it("should still decide on a page that does carry a key slot", () => {
     // The scoping must not blunt the rule: the same environment, on a real map artifact, is still
     // handled — this is the line between "scoped" and "switched off".
-    expect(
-      substituteKeys(mapPage, { MAPTILER_DELIVERY_KEY: "restricted-key" }),
-    ).toBe('style.json?key=restricted-key"');
+    expect(substituteKeys(mapPage, { MAPTILER_KEY: "newsroom-key" })).toBe('style.json?key=newsroom-key"');
     expect(substituteKeys(mapPage, {})).toContain("__MAPTILER" + "_KEY__");
   });
 
-  it("should keep a placeholder record, deliver a development-key copy, and explain both", async () => {
+  it("should keep a placeholder record, deliver a keyed copy, and explain both", async () => {
     await rm(join(beatDir, "renders", "still.png"));
     await rm(join(beatDir, "renders", "still.svg"));
     await writeFile(join(beatDir, "renders", "map.html"), mapPage);
@@ -1721,9 +1706,9 @@ describe("the key rule reads the artifact, not the environment", () => {
       'style.json?key=development-key"',
     );
     const readme = await readFile(join(exportDir, "HANDOVER.md"), "utf8");
-    expect(readme).toContain("development");
+    expect(readme).toContain("the key it carries");
     expect(readme).toContain("100% of its spending limit");
-    expect(readme).toContain("MAPTILER_DELIVERY_KEY");
+    expect(readme).toContain("Allowed HTTP origins");
     expect(readme).toContain("`map.html`** — the placeholder record");
     expect(readme).toContain("`keyed/map.html`** — the live page — publish this file");
     expect(readme).not.toContain("development-key");

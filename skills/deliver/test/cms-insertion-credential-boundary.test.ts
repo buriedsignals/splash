@@ -250,7 +250,7 @@ async function materialiseCms(kind: "we-publish" | "livingdocs"): Promise<void> 
     storiesRoot,
     storyId: "story",
     outputId: "1-map",
-    env: { MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL },
+    env: { MAPTILER_KEY: SENTINEL_CREDENTIAL },
     cms:
       kind === "we-publish"
         ? {
@@ -339,7 +339,7 @@ describe("CMS insertion credential boundary", () => {
       storyId: "story",
       outputId: "1-map",
       env: {
-        MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+        MAPTILER_KEY: SENTINEL_CREDENTIAL,
         CLOUDFLARE_ACCOUNT_ID: "account",
         CLOUDFLARE_API_TOKEN: "cloudflare-token",
         TMPDIR: controlledTempRoot,
@@ -369,7 +369,7 @@ describe("CMS insertion credential boundary", () => {
         storyId: "story",
         outputId: "1-map",
         env: {
-          MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+          MAPTILER_KEY: SENTINEL_CREDENTIAL,
           CLOUDFLARE_ACCOUNT_ID: "account",
           CLOUDFLARE_API_TOKEN: "cloudflare-token",
           TMPDIR: controlledTempRoot,
@@ -405,7 +405,7 @@ describe("CMS insertion credential boundary", () => {
           storyId: "story",
           outputId: "1-map",
           env: {
-            MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+            MAPTILER_KEY: SENTINEL_CREDENTIAL,
             CLOUDFLARE_ACCOUNT_ID: "account",
             CLOUDFLARE_API_TOKEN: "cloudflare-token",
             TMPDIR: foreignTempRoot,
@@ -440,7 +440,7 @@ describe("CMS insertion credential boundary", () => {
         storyId: "story",
         outputId: "1-map",
         env: {
-          MAPTILER_DELIVERY_KEY: SENTINEL_CREDENTIAL,
+          MAPTILER_KEY: SENTINEL_CREDENTIAL,
           CLOUDFLARE_ACCOUNT_ID: "account",
           CLOUDFLARE_API_TOKEN: "cloudflare-token",
           TMPDIR: repositoryTempRoot,

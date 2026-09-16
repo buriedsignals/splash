@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import catalog from "../../catalog/visual-catalog.json" with { type: "json" };
+import { cloudflareAccountStatus } from "./contract.mjs";
 import {
   EXPORT_SIZES,
   mutateStoryboardRevisioned,
@@ -23,6 +24,7 @@ const USABLE_CREDENTIAL_STATES = new Set([
   "ready",
   "partially-verified",
   "saved-unverified",
+  "provided-unverified",
 ]);
 
 function stable(value) {
@@ -59,16 +61,9 @@ export function capabilitySnapshotFromStatus(status, catalogue = catalog) {
   // The hosted-delivery setting is satisfied only by a Cloudflare receipt whose validated
   // account matches the CURRENT newsroom profile; a token bound to a previous account must
   // close the capability until it is revalidated against the recorded account.
-  const currentAccountId = /^[0-9a-f]{32}$/.test(status?.newsroom?.cloudflareAccountId ?? "")
-    ? status.newsroom.cloudflareAccountId
-    : null;
+  const { accountId: currentAccountId, matches: accountMatches } = cloudflareAccountStatus(status);
   const settingAvailable = new Set();
-  for (const row of credentials.values()) {
-    const receiptAccount = row?.validation?.evidence?.cloudflareAccountId;
-    if (receiptAccount && currentAccountId && receiptAccount === currentAccountId) {
-      settingAvailable.add("cloudflare-account-id");
-    }
-  }
+  if (accountMatches) settingAvailable.add("cloudflare-account-id");
   const available = [];
   const reasons = {};
   for (const definition of catalogue.capabilities ?? []) {
@@ -585,6 +580,17 @@ export function createSelectionService({
 
   async function read({ bindingContext } = {}) {
     const descriptor = await storyBinding.revalidate(bindingContext);
+    const currentState = await stateProvider(descriptor.canonicalPath);
+    if (["intake", "framing"].includes(currentState?.phase)) {
+      const catalogue = await catalogProvider();
+      const capabilities = normalizeCapabilities(await capabilityProvider());
+      return {
+        schemaVersion: SELECTION_SCHEMA_VERSION,
+        story: { storyId: descriptor.storyId, canonicalPath: descriptor.canonicalPath },
+        phase: currentState.phase, gate: null, slot: null, evidence: {}, choices: [],
+        revisions: { story: `sha256:${createHash("sha256").update(JSON.stringify(currentState)).digest("hex")}`, catalogue: visualCatalogRevision(catalogue), capabilities: capabilities.generation },
+      };
+    }
     const storyboardPath = join(descriptor.canonicalPath, "STORYBOARD.md");
     const before = await readStableStoryboard(storyboardPath);
     const [state, providedCatalogue, providedCapabilities] = await Promise.all([

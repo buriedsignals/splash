@@ -129,6 +129,29 @@ not a missing default.
 `;
 
 describe("runPreflight — dependencies and the newsroom's identity are the only hard stops", () => {
+  it("uses process.env when env is omitted and respects an explicit empty env", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const previous = process.env.MAPTILER_KEY;
+    process.env.MAPTILER_KEY = "preflight-test-key";
+    try {
+      const urls: string[] = [];
+      const report = await runPreflight({ root, fetchFn: async (url) => {
+        urls.push(url);
+        return okFetch();
+      } });
+      expect(report.ready).toBe(true);
+      expect(report.capabilities.map.available).toBe(true);
+      expect(urls).toContain("https://api.maptiler.com/maps/dataviz/style.json?key=preflight-test-key");
+      const isolated = await runPreflight({ root, env: {}, fetchFn: okFetch });
+      expect(isolated.ready).toBe(true);
+      expect(Object.values(isolated.capabilities).every((c) => !c.available)).toBe(true);
+    } finally {
+      if (previous === undefined) delete process.env.MAPTILER_KEY;
+      else process.env.MAPTILER_KEY = previous;
+    }
+  });
+
   it("should report not ready when node_modules is absent", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
@@ -532,11 +555,10 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
       expect(row.fill).toBeTruthy();
       expect(row.fill).toContain(variable);
       expect(row.fill).toContain("Indicator Labs");
-      expect(row.fill).toContain("Open source");
-      expect(row.fill).toContain("bsig stdin/keychain flow");
-      expect(row.fill).toContain("private prompt");
-      expect(row.fill).toContain("Splash Readiness");
-      expect(row.fill).not.toContain(".env");
+      expect(row.fill).toContain("Self-install");
+      expect(row.fill).toContain("process environment");
+      expect(row.fill).toContain("Splash Credentials");
+      expect(row.fill).not.toContain("bsig stdin/keychain flow");
     }
   });
 

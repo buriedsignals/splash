@@ -2,6 +2,7 @@
 
 import { lstat, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4";
@@ -24,6 +25,9 @@ import {
 import { createSetupSessionManager } from "./setup-session.mjs";
 import { createStoryBinding } from "./story-binding.mjs";
 import { createStudioSessionManager } from "./studio/session.mjs";
+import { readCredentialStatuses } from "./studio/credential-status.mjs";
+import { createSettingsService } from "../../installer/setup/settings-service.mjs";
+import { readNewsroom } from "../../installer/setup/newsroom-store.mjs";
 
 export { renderAppHtml };
 
@@ -51,12 +55,6 @@ const NO_ARGUMENTS = exactObject({}).optional();
 
 function textResult(text, structuredContent) {
   return { content: [{ type: "text", text }], structuredContent };
-}
-
-function requiredEnvironment(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Splash MCP environment is missing ${name}`);
-  return value;
 }
 
 function terminalResult(result) {
@@ -139,11 +137,15 @@ export function createServer({ statusProvider, studio, onToolCall = () => {} } =
 }
 
 export async function productionDependencies({
-  checkoutRoot = requiredEnvironment("SPLASH_CHECKOUT_ROOT"),
-  newsroomPath = requiredEnvironment("SPLASH_NEWSROOM_PATH"),
-  bsigPath = requiredEnvironment("SPLASH_BSIG_PATH"),
+  checkoutRoot = process.env.SPLASH_CHECKOUT_ROOT ?? join(import.meta.dirname, "..", ".."),
+  newsroomPath = process.env.SPLASH_NEWSROOM_PATH ?? join(homedir(), ".config", "splash", "NEWSROOM.md"),
+  bsigPath = process.env.SPLASH_BSIG_PATH,
   legacyEnvPath = join(checkoutRoot, ".env"),
 } = {}) {
+  if (!bsigPath) {
+    const { selfManagedDependencies } = await import("./self-managed.mjs");
+    return selfManagedDependencies({ checkoutRoot, newsroomPath, profileProvider: readStableProfile });
+  }
   const bridge = createEngineBridge({ executable: bsigPath });
   const statusProvider = {
     async read() {
@@ -182,12 +184,7 @@ export async function productionDependencies({
       try {
         keyList = await bridge.list();
         if (keyList.ok && keyList.broker?.status !== "unavailable") {
-          credentials = await Promise.all(
-            keyList.keys.map(async (row) => {
-              const status = await bridge.status(row.id);
-              return { ...row, ...status, metadata: status.metadata ?? row.metadata };
-            }),
-          );
+          credentials = await readCredentialStatuses(bridge, keyList.keys);
         }
       } catch {
         keyList = {
@@ -201,7 +198,11 @@ export async function productionDependencies({
           keys: [],
         };
       }
-      return buildPublicStatus({ preflight, keyList, credentials });
+      const status = buildPublicStatus({ preflight, keyList, credentials });
+      const saved = await readNewsroom(newsroomPath).catch(() => null);
+      const account = saved?.profile?.cloudflareAccountId;
+      if (/^[0-9a-f]{32}$/i.test(account ?? "")) status.newsroom.cloudflareAccountId = account.toLowerCase();
+      return { ...status, installation: "engine" };
     },
   };
   const setupManager = createSetupSessionManager({
@@ -241,12 +242,45 @@ export async function productionDependencies({
   });
   return {
     statusProvider,
+    settings: createSettingsService({ newsroomPath }),
     setupManager,
     storyBinding,
     selection,
     recommendation,
     studio,
   };
+}
+
+/**
+ * End the server when the agent is gone. The SDK's stdio transport only
+ * closes on malformed input, and an open studio keeps the event loop alive,
+ * so without this the MCP process (and the studio's loopback listener) would
+ * outlive the agent until something killed the tree. Both the protocol close
+ * and stdin EOF close the studio and exit; the studio child closes on its
+ * own parent-EOF as well, so nothing listens after this returns.
+ */
+export function wireShutdown(server, studio, { stdin = process.stdin, exit = (code) => process.exit(code), signals = process } = {}) {
+  let done = false;
+  const shutdown = () => {
+    if (done) return;
+    done = true;
+    try {
+      studio.close();
+    } catch {
+      // closing is best effort; the process ends either way
+    }
+    setTimeout(() => exit(0), 250).unref?.();
+  };
+  stdin.on("end", shutdown);
+  stdin.on("close", shutdown);
+  const previous = server.server.onclose;
+  server.server.onclose = () => {
+    previous?.();
+    shutdown();
+  };
+  signals.on("SIGTERM", shutdown);
+  signals.on("SIGINT", shutdown);
+  return shutdown;
 }
 
 export async function main() {
@@ -256,6 +290,7 @@ export async function main() {
     studio: dependencies.studio,
   });
   await server.connect(new StdioServerTransport());
+  wireShutdown(server, dependencies.studio);
   console.error(`Splash MCP server running on stdio (contract ${ENGINE_SPLASH_CONTRACT_MIN})`);
 }
 

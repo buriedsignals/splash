@@ -471,7 +471,29 @@ request body and never call the Engine mutation boundary. Indicator Labs remains
 path. Open-source users configure the same IDs through Engine's protected `bsig` stdin/keychain flow
 outside Splash, entering values through a private prompt rather than chat or command arguments.
 
-The key-status and newsroom destinations are semantic keyboard-operable tabs. The newsroom writer
+As of 2026-09-10, the studio has one navigation row: **Credentials**, **Design**, and
+**Graphics**. Design edits in the same authenticated session; it no longer opens another
+setup page. The standalone installer uses the same template, styles, and settings editor with
+the two settings tabs. Cloudflare account ID belongs in Credentials and can be saved before
+the design profile is complete. CMS fields and the profile-decline button are absent from the
+form; existing stored configuration is preserved. Self-installs use injected environment keys
+without requiring Engine, and only that installation mode shows the shared credential notice.
+
+The September 10 follow-up fixes three reproduced studio defects. Early G2a steps awaiting
+a visual slot, ID or takeaway show agent guidance; the chooser appears when medium selection
+is actually available. Only the latest Graphics read may update the shared chooser, including
+failure messages and overlapping refreshes. Cloudflare cards and the connection summary share
+the hosted-delivery account check: absent or mismatched validation evidence requires review.
+Real STORYBOARD fixtures and delayed-response client tests cover these cases. Chrome fixtures
+also pass the three regressions and the existing tabs, settings, reload, story progression and
+mobile flows. Pre-commit validation passed: fast lane 2,309 tests, heavy lane 1,394 tests,
+and the focused studio/installer suite 170 tests. Three live Datawrapper tests and one managed
+map-browser test were skipped. Test-lane, matrix, survey, catalogue, landing and journalist
+installation CTA checks passed. Engine doctor could not run because `bsig` was unavailable in
+both the normal and interactive shell. These results do not close the remaining live-provider
+or release-host verification rows below.
+
+The newsroom writer
 uses a revision digest plus an adjacent cross-process lock held across final reread, fsynced temp
 write, and atomic rename; it preserves unowned front matter and prose. Declining a profile and
 replacing that decision each require a separate confirmation. Optional non-secret Cloudflare/CMS
@@ -526,13 +548,12 @@ tree, dependency tree, and exact server entrypoint before launch. Engine passes 
 of its own running executable to the MCP child; no PATH-resolved `bsig`, credential, browser selector,
 or checkout `.env` reaches the server.
 
-The bundled resource has an empty network allowlist and two destinations: Readiness and Choose
-visual. Readiness separates hard blockers, runtime state, broker state, and each optional credential
-status/acquisition link. It has no credential input. Explicit setup action starts U4 as a separate
-child; the one-time loopback capability is returned only by an app-only tool, never the model-visible
-open/status result or parent lifecycle state. The client tries the documented host open-link channel,
-then a fixed local-opener tool, while distinguishing host denial, host error, missing capability,
-expired session, and opener failure.
+The localhost studio uses the shared Credentials, Design, and Graphics shell. It accepts
+non-secret design and account settings through authenticated, origin-checked routes, while provider
+key inputs remain absent. Status feedback stays inside its destination even when an operation
+finishes after navigation. Reload resumes the authenticated session, and cookies are scoped by
+controller port so opening a second studio does not invalidate the first. The one-use opening
+capability remains outside model-visible results.
 
 A model-visible nomination asks Engine's closed `story-inspect` operation to canonicalize one story
 beneath the adopted stories root and does not bind it. The confirmation challenge exists only in an
@@ -545,9 +566,8 @@ its other products. Doctor now distinguishes missing registration, disabled regi
 changed value, and the exact runnable app. Uninstall refuses to remove a disabled or modified entry;
 an already-missing owned entry does not block cleanup of unrelated Engine-owned state.
 
-Canonical Splash guidance and pre-flight remedies now route new credentials to the protected
-Readiness action. The root `.env` writer remains explicitly legacy code and is no longer presented as
-the production answer.
+Canonical Splash guidance and pre-flight remedies route users to Credentials and their
+installation’s credential source. The root `.env` writer remains legacy code.
 
 Focused verification with host loopback access on 2026-08-14:
 

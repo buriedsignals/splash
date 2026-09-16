@@ -214,10 +214,10 @@ Full reasoning for both halves of the closing offer: `references/forms-detail.md
 
 A map × web beat renders with a placeholder where its MapTiler key belongs; delivery substitutes the
 real key only inside one explicit custody boundary (never a committed artifact). `carriesMapKey`
-decides per-artifact whether this applies at all; `mapKeyState` (`none`/`restricted`/`development`/
+decides per-artifact whether this applies at all; `mapKeyState` (`none`/`live`/
 `unkeyed`) says which key went in and what the hand-over must tell the journalist. Every refusal in
 this path states the situation and stops — it never names a route around itself. Full detail and the
-four-state table: `references/maptiler-key-and-refusals.md`.
+three-state table: `references/maptiler-key-and-refusals.md`.
 
 ## Library and compatibility example
 

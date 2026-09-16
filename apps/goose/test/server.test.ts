@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { buildPublicStatus } from "../contract.mjs";
-import { createServer, renderAppHtml } from "../server.mjs";
+import { createServer, renderAppHtml, wireShutdown } from "../server.mjs";
 
 const close: Array<() => Promise<void>> = [];
 const roots: string[] = [];
@@ -109,15 +109,47 @@ describe("production Splash MCP studio opener", () => {
 
   it("bundles the localhost studio without credential inputs or MCP tool names", async () => {
     const html = await renderAppHtml();
-    expect(html).toContain("Readiness");
-    expect(html).toContain("Choose visual");
-    expect(html).toContain("Inspect this story");
+    expect(html).toContain('data-route="credentials"');
+    expect(html).toContain('data-route="design"');
+    expect(html).not.toContain("/api/setup/start");
+    expect(html).toContain('data-story-only>Graphics</button>');
+    expect(html).toContain('id="choose-title">Graphics</h2>');
+    expect(html).toContain("Choose folder…");
+    expect(html).toContain("Starting a new story?");
     expect(html).toContain("/api/status");
-    expect(html).toContain("Open-source users");
-    expect(html).toContain("bsig");
+    expect(html).toContain("process environment");
+    expect(html).toContain('id="credential-guidance" class="setup-notice"');
     expect(html).not.toContain("start_splash_setup");
     expect(html).not.toContain("open_splash_setup_locally");
     expect(html).not.toMatch(/type=["']password|API[_ -]?key input/i);
+  });
+
+  it("closes the studio and exits when the agent ends the protocol, even with the studio open", async () => {
+    const { EventEmitter } = await import("node:events");
+    const closes: string[] = [];
+    const exits: number[] = [];
+    const studio = {
+      async start() {},
+      async openLocally() { return { ok: true, status: "opened" }; },
+      close() { closes.push("close"); },
+    };
+    const server = createServer({
+      statusProvider: { async read() { return compatibleStatus(); } },
+      studio,
+    });
+    const stdin = new EventEmitter();
+    const signals = new EventEmitter();
+    wireShutdown(server, studio, { stdin: stdin as never, exit: (code) => { exits.push(code); }, signals: signals as never });
+    stdin.emit("end");
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(closes).toEqual(["close"]);
+    expect(exits).toEqual([0]);
+    // A second signal is idempotent: one close, one exit.
+    signals.emit("SIGTERM");
+    server.server.onclose?.();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(closes).toEqual(["close"]);
+    expect(exits).toEqual([0]);
   });
 
   it("keeps raw production stdio initialization free of lifecycle envelopes", async () => {

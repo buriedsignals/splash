@@ -137,7 +137,6 @@ describe("Splash app protocol boundary", () => {
   it("keeps a compatible real bridge list available through public MCP status", async () => {
     const policies = {
       MAPTILER_KEY: ["provider-request-required", "validate-before-atomic-replacement"],
-      MAPTILER_DELIVERY_KEY: ["saved-unverified-origin-attestation", "attest-before-atomic-replacement"],
       DATAWRAPPER_TOKEN: ["authenticated-account-request", "validate-before-atomic-replacement"],
       CLOUDFLARE_API_TOKEN: ["token-and-account-verified-pages-scope-attested", "validate-before-atomic-replacement"],
     } as const;

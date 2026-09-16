@@ -100,9 +100,9 @@ function validateChanges(changes) {
   }
 }
 
-function applyChanges(current, changes) {
+function applyChanges(current, changes, preserveDecision = false) {
   const next = { ...(current ?? {}) };
-  delete next.decision;
+  if (!preserveDecision) delete next.decision;
   for (const [field, value] of Object.entries(changes)) {
     if (value === null || value.trim() === "") delete next[field];
     else next[field] = value.trim();
@@ -127,6 +127,9 @@ function render(text, profile, declined) {
   while (retained.length > 0 && retained.at(-1) === "") retained.pop();
   if (declined) {
     retained.push("decision: declined");
+    for (const field of SERVICE_FIELDS) {
+      if (profile[field]) retained.push(`${field}: ${JSON.stringify(profile[field])}`);
+    }
   } else {
     for (const field of MANAGED_FIELDS) {
       const value = profile[field];
@@ -168,11 +171,13 @@ export async function updateNewsroom(path, {
 } = {}, {
   acquireLock = acquireTargetLock,
   beforeRename,
+  accountOnly = false,
 } = {}) {
   if (typeof expectedRevision !== "string" || !/^sha256:[0-9a-f]{64}$/.test(expectedRevision)) {
     throw new Error("expected newsroom revision is required");
   }
   validateChanges(changes);
+  if (accountOnly && (decline || Object.keys(changes).some(field => field !== "cloudflareAccountId"))) throw new Error("Only the Cloudflare account ID can be updated here");
   if (decline && confirmDecline !== true) throw new Error("declining newsroom setup requires separate confirmation");
   if (decline && Object.keys(changes).length > 0) throw new Error("a decline cannot also submit newsroom fields");
 
@@ -186,17 +191,19 @@ export async function updateNewsroom(path, {
       conflict.code = "REVISION_CONFLICT";
       throw conflict;
     }
-    if (current.declined && !decline && confirmReplaceDecline !== true) {
+    if (current.declined && !decline && !accountOnly && confirmReplaceDecline !== true) {
       throw new Error("replacing a recorded newsroom decline requires separate confirmation");
     }
 
     let profile = {};
     if (!decline) {
-      profile = applyChanges(current.profile, changes);
-      const errors = validateNewsroom(profile);
+      profile = applyChanges(current.profile, changes, accountOnly);
+      const errors = accountOnly
+        ? (profile.cloudflareAccountId && !/^[0-9a-f]{32}$/i.test(profile.cloudflareAccountId) ? ["Cloudflare account ID must contain 32 hexadecimal characters"] : [])
+        : validateNewsroom(profile);
       if (errors.length > 0) throw new Error(`NEWSROOM.md is invalid: ${errors.join("; ")}`);
     }
-    const text = render(source.text, profile, decline);
+    const text = render(source.text, profile, decline || (accountOnly && current.declined));
     if (Buffer.byteLength(text) > MAX_NEWSROOM_BYTES) throw new Error("NEWSROOM.md exceeds the size limit");
     await replaceAtomically(path, text, source.mode, beforeRename);
     return publicSnapshot({ exists: true, text, mode: source.mode });
@@ -206,3 +213,7 @@ export async function updateNewsroom(path, {
 }
 
 export const NEWSROOM_MANAGED_FIELDS = MANAGED_FIELDS;
+
+export function updateCloudflareAccount(path, { expectedRevision, cloudflareAccountId }) {
+  return updateNewsroom(path, { expectedRevision, changes: { cloudflareAccountId } }, { accountOnly: true });
+}

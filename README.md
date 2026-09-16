@@ -8,7 +8,7 @@
 
 [Workflow](#workflow) | [Delivery](#delivery-and-delivery) | [Install](#install) | [Story Directory](#story-directory)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![16 Skills](https://img.shields.io/badge/skills-16-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-Engine_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
+[![License: MIT](https://img.shields.io/badge/license-MIT-00c853?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)[![16 Skills](https://img.shields.io/badge/skills-16-0080ff?style=for-the-badge&logo=bookstack&logoColor=white)](#workflow)[![4 Formats](https://img.shields.io/badge/formats-web_·_video_·_scrolly_·_static-aa00ff?style=for-the-badge&logo=layout&logoColor=white)](#workflow)[![Local-first](https://img.shields.io/badge/local_first-your_credentials_+_owned_files-00bfa5?style=for-the-badge&logo=shield&logoColor=white)](#credentials)
 
 [![Stars](https://img.shields.io/github/stars/buriedsignals/splash?style=flat-square&logo=github&label=Stars)](https://github.com/buriedsignals/splash/stargazers)[![Issues](https://img.shields.io/github/issues/buriedsignals/splash?style=flat-square&logo=github&label=Issues)](https://github.com/buriedsignals/splash/issues)[![Last Commit](https://img.shields.io/github/last-commit/buriedsignals/splash?style=flat-square&logo=github&label=Last%20Commit)](https://github.com/buriedsignals/splash/commits)[![Contributors](https://img.shields.io/github/contributors/buriedsignals/splash?style=flat-square&logo=github&label=Contributors)](https://github.com/buriedsignals/splash/graphs/contributors)
 
@@ -27,8 +27,8 @@ directory.
 
 It is a skill pack used through an AI assistant rather than a hosted
 application. The implementation is local-first: stories and newsroom
-configuration live outside the replaceable Splash checkout, credentials stay
-in the operating system's protected store through Engine, and every delivery
+configuration live outside the replaceable Splash checkout, credential storage
+is managed by Engine or chosen by the self-installing user, and every delivery
 is a file or directory the newsroom controls.
 
 ## What Splash Does
@@ -107,22 +107,60 @@ delivery keeps the prior export intact until replacement completes.
 
 ## Credentials
 
-Credentials are stored through Engine's operating-system credential broker —
-never in MCP arguments, model context, committed files, or Splash's loopback
-pages. The Splash studio and setup page report the exact credential IDs, status,
-and provider links; neither accepts a secret.
+Splash has two credential paths:
 
-Indicator Labs users save credentials in the desktop app. For an open-source
-installation, a trusted local agent can prepare Engine's protected `bsig`
-stdin/keychain flow for the exact ID while the user enters the value only through
-a private operating-system or terminal prompt. Never place a value in chat,
-command arguments, shell history, a repository file, or a Splash page. Refresh
-Readiness after setup. Map craft's provider-bearing bake is a fixed Engine
-operation: each beat supplies a strict story-local `MAP-BAKE.json`, and Engine
-verifies camera, GeoJSON/data digests, managed browser, and installed runtime
-before hydrating `MAPTILER_KEY`.
+- **Indicator Labs / Engine:** the desktop app manages provider keys in the OS
+  credential store. Splash uses Engine for status and provider operations.
+- **Self-install from this repository:** Splash reads credentials from its
+  process environment. You choose where to store them: your agent configuration,
+  a password manager, a secret-store launcher, or a `.env` file. Engine is optional.
+
+For self-installs, we recommend a private `.env` file outside the checkout, such
+as `~/.config/splash/.env`, readable only by your account. That location is a
+recommendation, not a path Splash searches. Load any chosen file explicitly:
+
+```sh
+bun --env-file=/absolute/path/to/.env apps/goose/studio/open.mjs
+```
+
+Or inject environment variables with your preferred launcher and use
+`bun --no-env-file apps/goose/studio/open.mjs`. The MCP entry point is
+`apps/goose/server.mjs`; use the same environment-file argument or configure
+its environment through your agent. Bun's [environment-file documentation](https://github.com/oven-sh/bun/blob/main/docs/runtime/environment-variables.mdx)
+explains explicit file loading and default `.env` discovery.
+
+| Variable | Used for |
+| --- | --- |
+| `MAPTILER_KEY` | Map production, preview and the live tiles of published maps |
+| `DATAWRAPPER_TOKEN` | Datawrapper chart production |
+| `CLOUDFLARE_API_TOKEN` | Hosted embeds; grant Pages: Edit for the chosen account |
+| `CLOUDFLARE_ACCOUNT_ID` | Account used with the Cloudflare token |
+
+Only supply credentials for capabilities you use. Provider links appear in
+the studio’s **Credentials** tab, where you can also save the non-secret Cloudflare
+account ID. **Design** holds the newsroom’s identity, colours and typefaces;
+**Graphics** opens a story and shows its next visual decision. These tabs
+share one browser session. Existing CMS configuration is preserved but is not
+part of the settings form.
+
+Restart the self-managed MCP or studio after changing its environment;
+Refresh status rechecks the values already loaded by that process. Pass the same
+environment to the craft scripts your agent runs. Splash does not move or store
+self-managed credentials, and no browser or MCP input accepts key values.
+Keep values out of chat and version control.
+
+`SPLASH_BSIG_PATH` selects Engine-managed operation explicitly. Leave it unset
+for a self-install; having `bsig` somewhere on `PATH` does not select Engine.
 
 ## Install
+
+Two routes, one decision:
+
+- **Indicator Labs / Engine.** Managed installation, credentials, updates, and
+  repair through the desktop app or Engine CLI.
+- **Self-install.** Point your agent at this repository. Install the runtime and
+  skills, provide your chosen credential environment, and run Splash directly.
+  You manage dependencies, browser installation, and updates.
 
 Managed journalist install is Indicator Labs on Mac or Windows. Join at
 [buriedsignals.com/join](https://buriedsignals.com/join). Indicator Labs adds
@@ -165,7 +203,7 @@ check, run `bsig doctor --product splash`.
 
 ## Install from source (agents)
 
-Engine is the supported path above. An agent pointed at this repository can
+An agent pointed at this repository can
 install the runtime set without cloning the whole repository: `install-set.txt`
 names the directories a runtime needs; everything else is documentation, proofs,
 and development tooling.
@@ -177,19 +215,69 @@ git sparse-checkout set $(grep -v '^#' install-set.txt)
 bun install --frozen-lockfile --production --ignore-scripts
 ```
 
-Rendering drives Chrome: an installed Google Chrome is found automatically, or
-set `CHROME_PATH`, or run `bunx @puppeteer/browsers install chrome@stable`.
+Launch the studio directly; Engine is not required:
 
-Then link the skills into your agent's skills directory (Windows: use
+```sh
+bun --env-file=/absolute/path/to/.env apps/goose/studio/open.mjs
+```
+
+For MCP, register `bun` with arguments
+`["--env-file=/absolute/path/to/.env", "/absolute/path/to/splash/apps/goose/server.mjs"]`.
+If your agent or secret manager supplies the environment, replace the env-file
+argument with `--no-env-file`. Set `SPLASH_NEWSROOM_PATH` if you want a profile
+location other than `~/.config/splash/NEWSROOM.md`.
+
+Browser-based rendering and verification require Chrome or Chromium separately
+from skill discovery and preflight readiness (static SVG/PNG charts use Resvg).
+In cloud/Linux sessions with Chromium already installed, set its executable path
+in the environment used to run Splash, for example:
+
+```bash
+export CHROME_PATH="$(command -v chromium || command -v chromium-browser)"
+test -n "$CHROME_PATH" && test -x "$CHROME_PATH"
+```
+
+If that check fails, install Chrome with `bunx @puppeteer/browsers install chrome@stable`
+and set `CHROME_PATH` to the executable path it prints. Do not assume Chromium
+on `PATH` will be detected automatically; successful preflight is not a render test.
+
+For Claude Code, prefer the [plugin install](https://code.claude.com/docs/en/plugin-marketplaces)
+to avoid collisions with other packs' skill names. From the checkout above:
+
+```bash
+claude plugin marketplace add "$PWD"
+claude plugin install splash@splash-dev --scope user
+claude plugin list --json
+```
+
+In the listed `installPath` for `splash@splash-dev`, run
+`bun install --frozen-lockfile --production --ignore-scripts` as well: the plugin
+runs from Claude's cache, not the source checkout. Repeat this after plugin updates.
+Start a new Claude Code session and invoke `/splash:splash` (agent tool:
+`Skill(splash:splash)`). All 16 skills use the `splash:` namespace, including
+`splash:analyst`, `splash:deliver`, and `splash:palette`; `splash-dev` is the
+marketplace name, not the skill prefix. For a session using the installed source
+checkout directly, `claude --plugin-dir "$PWD"` provides the same namespace.
+
+For other agents, or as a Claude fallback without plugin support, link each skill
+into your agent's skills directory (Windows: use
 `New-Item -ItemType Junction` in place of `ln -s`):
 
 | Agent | Link |
 |---|---|
-| Goose, Cursor, Codex, Gemini (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
-| Claude Code | `ln -s "$PWD" ~/.claude/skills/splash` |
+| Goose, Cursor (shared agents store) | `mkdir -p ~/.agents/skills/splash && for s in skills/*/; do ln -s "$PWD/$s" ~/.agents/skills/splash/$(basename "$s"); done` |
+| Codex CLI, ChatGPT Desktop | `mkdir -p ~/.codex/skills && for s in skills/*/; do ln -s "$PWD/$s" ~/.codex/skills/$(basename "$s"); done` — Codex lists them as `splash:<skill>`, the namespace taken from the link target |
+| Claude standalone fallback (unprefixed names) | `mkdir -p ~/.claude/skills && for s in skills/*/; do ln -s "$PWD/$s" ~/.claude/skills/$(basename "$s"); done` |
+| Gemini CLI | no links: `ln -s AGENTS.md GEMINI.md` and run from the checkout root |
 
-These are the same links Engine creates; a later Engine install adopts or
-replaces them. Provider keys are never read from this checkout — see
+In the tested Claude Cowork and ChatGPT Desktop hosts, the skill listing
+rebuilds at turn boundaries, not on filesystem change: freshly linked skills
+become visible on the agent's next turn. An immediate `Unknown skill: splash` in
+the installing turn is not evidence of a failed install; wait for the next turn
+before troubleshooting.
+
+A later Engine install adopts or replaces unmanaged skill links. For the two
+credential paths, see
 [Credentials](#credentials).
 
 ## Skills

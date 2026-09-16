@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { chmod, mkdir, mkdtemp, open, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { readNewsroom, updateNewsroom } from "../setup/newsroom-store.mjs";
 import { acquireTargetLock } from "../setup/target-lock.mjs";
-import { createEngineBridge } from "../setup/engine-bridge.mjs";
+import { createEngineBridge, engineEnvironment } from "../setup/engine-bridge.mjs";
 import { startSetupController } from "../setup/controller.mjs";
 import { createOutboundFetchPolicy, isPublicAddress } from "../setup/outbound-fetch.mjs";
 
@@ -384,7 +384,6 @@ async function openSession(controller: Awaited<ReturnType<typeof startSetupContr
 
 const CREDENTIAL_POLICIES = {
   MAPTILER_KEY: ["provider-request-required", "validate-before-atomic-replacement"],
-  MAPTILER_DELIVERY_KEY: ["saved-unverified-origin-attestation", "attest-before-atomic-replacement"],
   DATAWRAPPER_TOKEN: ["authenticated-account-request", "validate-before-atomic-replacement"],
   CLOUDFLARE_API_TOKEN: ["token-and-account-verified-pages-scope-attested", "validate-before-atomic-replacement"],
 } as const;
@@ -569,18 +568,18 @@ describe("protected setup Engine credential contract", () => {
     { name: "missing record", change: (data) => { data.keys.pop(); } },
     { name: "duplicate record", change: (data) => { data.keys.push(structuredClone(data.keys[0])); } },
     { name: "lower envelope version", change: (data) => { data.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
-    { name: "lower record version", change: (data) => { data.keys[3].metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
+    { name: "lower record version", change: (data) => { data.keys[2].metadata.contractVersion = ENGINE_SPLASH_CONTRACT_MIN - 1; } },
     { name: "wrong row storage", change: (data) => { data.keys[1].storageKind = "raw"; } },
     { name: "wrong metadata storage", change: (data) => { data.keys[2].metadata.storageKind = "raw"; } },
     {
       name: "missing validator",
       change: (data) => {
-        data.keys[3].validatable = false;
-        data.keys[3].metadata.validatorAvailable = false;
+        data.keys[2].validatable = false;
+        data.keys[2].metadata.validatorAvailable = false;
       },
     },
     { name: "wrong validator policy", change: (data) => { data.keys[0].metadata.validatorPolicy = "weaker-policy"; } },
-    { name: "wrong replacement policy", change: (data) => { data.keys[3].metadata.replacementBehavior = "replace-without-validation"; } },
+    { name: "wrong replacement policy", change: (data) => { data.keys[2].metadata.replacementBehavior = "replace-without-validation"; } },
     { name: "mismatched metadata identity", change: (data) => { data.keys[2].metadata.id = "MAPTILER_KEY"; } },
     { name: "malformed candidate bound", change: (data) => { data.keys[1].metadata.candidateMaxBytes = 0; } },
   ];
@@ -680,7 +679,7 @@ describe("protected setup Engine credential contract", () => {
     expect([replacement.status, removal.status, migration.status]).toEqual([410, 410, 410]);
     expect(refusal).toEqual({
       code: "credential-input-disabled",
-      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
+      message: "This Splash page reports credential status only. Supply credentials through your installation's configured credential source.",
     });
     expect(calls.some(({ args }) => args[1] === "replace" || args[1] === "remove")).toBe(false);
     expect(calls.some(({ input }) => input.includes(candidate))).toBe(false);
@@ -1122,7 +1121,7 @@ describe("protected setup Engine credential contract", () => {
     expect(oversized.status).toBe(410);
     expect(await oversized.json()).toEqual({
       code: "credential-input-disabled",
-      message: "This Splash page reports credential status only. Indicator Labs users save keys in the desktop app; open-source users use Engine's protected bsig stdin/keychain flow outside Splash.",
+      message: "This Splash page reports credential status only. Supply credentials through your installation's configured credential source.",
     });
     expect(calls.some(({ input }) => input.includes("oversized-canary"))).toBe(false);
   });
@@ -1137,10 +1136,14 @@ describe("token-bound loopback setup controller", () => {
     expect(page.headers.get("referrer-policy")).toBe("no-referrer");
     const html = await page.text();
     expect(html).not.toContain(controller.capability);
-    expect(html).toContain("Indicator Labs");
-    expect(html).toContain("Open-source users");
-    expect(html).toContain("Credential ID:");
-    expect(html).toContain("bsig stdin/keychain flow");
+    expect(html).not.toContain("Splash reads credentials from its process environment");
+    expect(html).toContain('data-route="credentials"');
+    expect(html).toContain('data-route="design"');
+    expect(html).not.toContain("Splash pre-flight");
+    expect(html).not.toContain("cmsEndpoint");
+    expect(html).not.toContain("Record that no house profile");
+    expect(html).not.toContain("bsig keys replace");
+    expect(html).not.toContain("Configure this exact ID");
     expect(html).not.toContain("Paste a new value");
     expect(html).not.toContain('type="password"');
     expect(html).not.toContain("type='password'");
@@ -1154,7 +1157,7 @@ describe("token-bound loopback setup controller", () => {
 
     const { response, cookie } = await openSession(controller);
     expect(response.status).toBe(200);
-    expect(cookie).toStartWith("splash_setup=");
+    expect(cookie).toStartWith("splash_setup_");
     const reused = await fetch(`${controller.origin}/session`, {
       method: "POST",
       headers: { origin: controller.origin, "content-type": "application/json" },
@@ -1571,5 +1574,23 @@ fi
     expect(await child.exited).toBe(0);
     expect(captured).not.toContain(candidate);
     for (const line of captured.trim().split("\n")) expect(() => JSON.parse(line)).not.toThrow();
+  });
+});
+
+describe("Engine child environment", () => {
+  test("restores the journalist home handed over by Engine and drops the handoff variable", () => {
+    const env = engineEnvironment({
+      PATH: "/usr/bin",
+      HOME: "/scratch/splash/operations/mcp-1/home",
+      SPLASH_ENGINE_HOME: "/Users/reporter",
+      MAPTILER_KEY: "leak-canary",
+      NODE_OPTIONS: "--require evil",
+    });
+    expect(env).toEqual({ PATH: "/usr/bin", HOME: "/Users/reporter" });
+  });
+
+  test("keeps the inherited home when no handoff is present or it is not absolute", () => {
+    expect(engineEnvironment({ HOME: "/Users/reporter" })).toEqual({ HOME: "/Users/reporter" });
+    expect(engineEnvironment({ HOME: "/scratch/home", SPLASH_ENGINE_HOME: "relative/home" })).toEqual({ HOME: "/scratch/home" });
   });
 });

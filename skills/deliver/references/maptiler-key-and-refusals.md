@@ -19,19 +19,18 @@ An artifact that does carry the slot receives one of four `mapKeyState` values:
 | state | private/live behavior | committable behavior | what the hand-over says |
 | --- | --- | --- | --- |
 | `none` | no substitution | copied unchanged | nothing — it is not a map delivery |
-| `restricted` | `MAPTILER_DELIVERY_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; its key is restricted to newsroom domains |
-| `development` | `MAPTILER_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; the development key is readable and billed by usage, plus how to record a restricted key |
+| `live` | `MAPTILER_KEY` enters only the keyed page or hosted send | placeholder remains | publish the keyed page; the key is readable and billed by usage, plus how to restrict it by origin in MapTiler Cloud |
 | `unkeyed` | no live page is produced | placeholder travels through | the baked layer works, but the map does not pan or zoom |
 
 The key-state recommendation does not itself block delivery. Custody checks do: owned-file delivery
 fails closed when `keyed/` collides with source material, a Git index already tracks the final keyed
 path, or Git ownership cannot be established safely. Hosted delivery refuses a temporary root inside
 any Git worktree. These refusals protect where credential bytes may exist; they never turn a
-development-key recommendation into a prohibition on publishing the journalist's work.
+key-state recommendation into a prohibition on publishing the journalist's work.
 
 Say it in the conversation too, in the journalist's own terms, at the moment the delivery lands:
 which key their page carries and what it costs them. Never as a refusal, never with a route around
-one — the state is a fact about their file, and the decision to create a restricted key is theirs.
+one — the state is a fact about their file, and the decision to restrict it by origin is theirs.
 
 ## A refusal states the situation. It never names a way around itself.
 
