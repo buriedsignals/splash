@@ -110,8 +110,14 @@ const rgbOf = (hex) => [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2),
 
 /**
  * THE SWEEP'S TEXELS AT `level`, written into `px` (RGBA, one texel per byte of `bytes`): a texel is filled when its
- * distance to the sea is under the level, the last `rimKm` in the rim's colour while the front still travels; every
+ * distance to the sea is under the level, warm at the front and cooling to the tint over `rimKm` behind it; every
  * other texel transparent. Returns how many texels it filled.
+ *
+ * NOTHING HERE MAY ARRIVE AT ONCE. The raster's bytes are quantised to `stepKm`, so a texel that flipped from clear
+ * to opaque the moment the level crossed its band made the whole ring land in one frame — the front advanced in
+ * stutters, a step every second or third frame, which reads as a jerk. A texel now comes in over the width of one
+ * band, and its colour slides with the front instead of switching at a boundary: at any frame the picture has moved
+ * by exactly as much as the level travelled.
  */
 export function paintSweep(px, bytes, { level, stepKm, rimKm, front, tint, rim }) {
   const [tr, tg, tb] = rgbOf(tint);
@@ -120,15 +126,18 @@ export function paintSweep(px, bytes, { level, stepKm, rimKm, front, tint, rim }
   for (let i = 0, j = 0; i < bytes.length; i++, j += 4) {
     const b = bytes[i];
     const inside = b === 0 ? -1 : level - (b - 1) * stepKm;
-    if (inside < 0) {
+    if (inside <= 0) {
       px[j + 3] = 0;
       continue;
     }
-    const edge = front && inside < rimKm;
-    px[j] = edge ? rr : tr;
-    px[j + 1] = edge ? rg : tg;
-    px[j + 2] = edge ? rb : tb;
-    px[j + 3] = 255;
+    /** How far the front has moved past this texel's band, over the band's own width: its share of the ink. */
+    const arrived = clamp01(inside / stepKm);
+    /** How far behind the front it now sits, over the rim's width: 0 at the front, 1 once the rim has passed. */
+    const cooled = front ? clamp01(inside / rimKm) : 1;
+    px[j] = Math.round(rr + (tr - rr) * cooled);
+    px[j + 1] = Math.round(rg + (tg - rg) * cooled);
+    px[j + 2] = Math.round(rb + (tb - rb) * cooled);
+    px[j + 3] = Math.round(255 * arrived);
     filled++;
   }
   return filled;

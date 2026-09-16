@@ -73,7 +73,7 @@ describe("the contour video's camera and sweep", () => {
     ).toBeLessThanOrEqual(sweep.stepKm);
   });
 
-  it("should fill a texel once the level passes its distance, the last rim's width in the rim's colour, and clear the rest", () => {
+  it("should fill a texel once the level passes its distance, warm at the front and cooling inward, and clear the rest", () => {
     const px = new Uint8ClampedArray(4 * 4);
     const filled = paintSweep(px, Uint8Array.from([0, 1, 11, 41]), {
       level: 33,
@@ -84,9 +84,39 @@ describe("the contour video's camera and sweep", () => {
       rim: "#ff0000",
     });
     expect(filled).toBe(2);
+    // Outside the land, transparent; 33 km deep, the tint; 3 km behind the front, halfway from the rim to the tint.
     expect([...px]).toEqual([
-      0, 0, 0, 0, 16, 32, 48, 255, 255, 0, 0, 255, 0, 0, 0, 0,
+      0, 0, 0, 0, 16, 32, 48, 255, 136, 16, 24, 255, 0, 0, 0, 0,
     ]);
+  });
+
+  // THE SWEEP MUST NOT ADVANCE BY WHOLE RINGS. The raster's bytes are quantised to `stepKm`, so a texel that flips
+  // from clear to opaque the instant the level crosses its band makes the front jump a ring at a time — measured on
+  // the first render, one frame in three changed while the two between it stood still.
+  it("should bring a texel in over the width of one band, a fraction of a band at a time", () => {
+    const bytes = Uint8Array.from([11]);
+    const alphaAt = (level: number) => {
+      const px = new Uint8ClampedArray(4);
+      paintSweep(px, bytes, {
+        level,
+        stepKm: 3,
+        rimKm: 6,
+        front: true,
+        tint: "#102030",
+        rim: "#ff0000",
+      });
+      return px[3];
+    };
+    expect(alphaAt(30)).toBe(0);
+    expect(alphaAt(30.5)).toBe(43);
+    expect(alphaAt(31.5)).toBe(128);
+    expect(alphaAt(33)).toBe(255);
+    // No step between two neighbouring levels is worth more than the travel that earned it.
+    for (let level = 29; level <= 34; level += 0.1) {
+      expect(
+        Math.abs(alphaAt(level + 0.1) - alphaAt(level)),
+      ).toBeLessThanOrEqual(255 * (0.1 / 3) + 1);
+    }
   });
 });
 
@@ -180,9 +210,20 @@ for (const id of ["creme", "nocturne", "rapport"]) {
 
     it("should seat every line's number wholly over land, so its halo never stands on the sea", () => {
       const r = props.registers.axis;
-      for (const [level, l] of Object.entries(props.labels) as [string, any][]) {
-        const box = { x: l.x - l.width / 2, y: l.y - 0.75 * r.fontSize, width: l.width, height: r.fontSize };
-        expect([level, land(box).count === land(box).total]).toEqual([level, true]);
+      for (const [level, l] of Object.entries(props.labels) as [
+        string,
+        any,
+      ][]) {
+        const box = {
+          x: l.x - l.width / 2,
+          y: l.y - 0.75 * r.fontSize,
+          width: l.width,
+          height: r.fontSize,
+        };
+        expect([level, land(box).count === land(box).total]).toEqual([
+          level,
+          true,
+        ]);
       }
     });
 
