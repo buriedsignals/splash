@@ -18,10 +18,12 @@
 // them reasoning about a beat none of them was written for.
 //
 // So the drawing lives here once, and a vocabulary calls it with its own class stem. What stays a
-// per-vocabulary decision is only what is genuinely per-vocabulary: how many lines of sentence the
-// control has to reserve under it, whether its rail wraps or scrolls, and whatever extra layer the
-// beat's own geometry needs. Everything else — the pill, its states, the note row's shape — is one
-// decision with one place to change it.
+// per-vocabulary decision is only what is genuinely per-vocabulary: whether its rail wraps or
+// scrolls, and whatever extra layer the beat's own geometry needs. Everything else — the pill, its
+// states, the note row's shape AND ITS DEPTH — is one decision with one place to change it. How
+// deep the note row is used to be on that list; it was a number each vocabulary typed, it was
+// measured wrong on 34 of 58 committed beats, and it is now derived by the browser instead. See
+// "THE SENTENCE THE CONTROL OWES THE READER" below.
 //
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // THE CHOSEN OPTION IS NOT A SLAB OF INK, AND THAT IS THE REVERSAL THIS FILE CARRIES.
@@ -97,20 +99,35 @@ export type ControlRail = "wrap" | "scroll";
 export type ControlChromeNotes = {
   /** Margin above the note row. Defaults to `4px 0 0`. */
   margin?: string;
-  /** `min-height` for the reserved row, or `null` for a row that costs nothing until a sentence
-   *  appears. Defaults to `1.5em` — one line, which is what a one-line sentence needs so that
-   *  choosing an option never pushes the plot down. */
-  reserve?: string | null;
-  /** Why THIS control reserves what it reserves — emitted as a CSS comment beside the value, because
-   *  a reserved height is measured on a real sentence at a real width and the measurement is the
-   *  only thing that makes the number defensible. */
-  why?: string;
-  /** Stack every sentence in one grid cell instead of letting the shown one size the row. For a
-   *  control whose sentences wrap to different heights: revealing one then grows the row and pushes
-   *  the drawing down — measured at 15px of radar movement on one beat. Stacked, the container is
-   *  always as tall as the LONGEST sentence and the plot never moves. */
-  stacked?: boolean;
+
+  /** @deprecated and REFUSED — see `assertNoNumberedReserve`. A hand-authored `min-height` was how
+   *  this row used to be reserved, and it is the defect this module now holds. */
+  reserve?: never;
+  /** @deprecated and REFUSED — it documented the number. */
+  why?: never;
+  /** @deprecated and REFUSED — stacking is no longer optional; it is the mechanism. */
+  stacked?: never;
 };
+
+/** The three keys that used to carry a hand-authored reserve. A call site still passing one is
+ *  refused by name rather than ignored: a number that silently stops being read is worse than one
+ *  that was never removed. */
+const RETIRED_NOTE_KEYS = ["reserve", "why", "stacked"] as const;
+
+function assertNoNumberedReserve(name: string, notes: object): void {
+  for (const key of RETIRED_NOTE_KEYS)
+    if (key in notes)
+      throw new Error(
+        `control chrome (${name}): notes.${key} no longer exists. The note row is now reserved by ` +
+          `STACKING every sentence in one grid cell, so it is exactly as deep as its deepest ` +
+          `sentence at whatever width the reader's window happens to be — there is no number to ` +
+          `author and none to carry to the next subject. What this costs you: the sentences must ` +
+          `stay IN FLOW, so hide the ones that are not showing with \`visibility: hidden\` and ` +
+          `show one with \`visibility: visible\`, never with \`display: none\` / \`display: revert\`. ` +
+          `\`the-note-row-reserves-its-deepest-sentence.test.ts\` refuses the display spelling and ` +
+          `\`verify-web.mjs\` measures the row's depth on the delivered page.`,
+      );
+}
 
 export type ControlChrome = {
   /** The page-level scope every rule is prefixed with, e.g. `.chart-figure`. */
@@ -167,12 +184,8 @@ export function controlChromeCss({
       `control chrome: ${JSON.stringify(name)} is not a class stem. It becomes .chart-<name> and ` +
         `.<name>-notes, so it must be lowercase letters, digits and hyphens.`,
     );
-  const {
-    margin: notesMargin = "4px 0 0",
-    reserve = "1.5em",
-    why,
-    stacked = false,
-  } = notes;
+  assertNoNumberedReserve(name, notes);
+  const { margin: notesMargin = "4px 0 0" } = notes;
 
   const block = `.chart-${name}`;
   const note = `.${name}-notes`;
@@ -242,29 +255,44 @@ ${scope} ${block} label { position: relative; display: inline-flex; align-items:
 ${scope} ${block} input { cursor: pointer; margin: 0; }
 
 ${comment(
-  "THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is chosen, " +
-    'so choosing one never moves the plot underneath it. role="status" belongs on the container ' +
-    "rather than on each note: the notes come and go by display, and a live region that itself comes " +
-    "and goes announces nothing.",
+  "THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A " +
+    "NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves " +
+    "the plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by " +
+    "default, one line — and that was measured wrong on 34 of 58 committed beats: a sentence that " +
+    "wraps to three or four lines at a narrow width does not fit in a row reserved for one, so the " +
+    "plot lost up to 53px the moment a reader touched the control. Seven of the 34 were wrong at " +
+    "1600px too, and this skill's own seed was one of them. A per-beat floor could not have closed " +
+    "it either: the depth a sentence needs is a function of the READER'S width, which no build-time " +
+    "number knows.",
+  "",
+)}
+${comment(
+  "SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once, " +
+    "so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the " +
+    "window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is " +
+    "authored and nothing transfers to the next subject.",
+  "",
+)}
+${comment(
+  "WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not " +
+    "showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with " +
+    "`visibility: visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell " +
+    "entirely, the cell collapses to whichever one is showing, and this reservation becomes a " +
+    "no-op — which is " +
+    'exactly what "stacked" was, as an opt-in, on the three vocabularies that asked for it while ' +
+    "still hiding by display. A live region announces the change either way: both spellings remove " +
+    'the sentence from the accessibility tree, and role="status" is on the CONTAINER, which never ' +
+    "comes and goes.",
   "",
 )}
 ${scope} ${note} {
   flex: 0 0 auto;
   margin: ${notesMargin};
-${reserve === null ? "" : `${why ? `${comment(why, "  ")}\n` : ""}  min-height: ${reserve};\n`}  font-size: var(--source-size);
-  color: var(--muted);${
-    stacked
-      ? `\n${comment(
-          "EVERY SENTENCE IN ONE GRID CELL. These sentences wrap to different heights, so revealing " +
-            "one with display grew the row and pushed the drawing down. Stacked in one cell the " +
-            "container is always as tall as the LONGEST sentence, whichever is showing, and the " +
-            "plot never moves.",
-          "  ",
-        )}\n  display: grid;`
-      : ""
-  }
+  display: grid;
+  font-size: var(--source-size);
+  color: var(--muted);
 }
-${scope} ${note} p { ${stacked ? "grid-area: 1 / 1; " : ""}margin: 0; }
+${scope} ${note} p { grid-area: 1 / 1; margin: 0; }
 ${extra ? `\n${extra.trim()}\n` : ""}
 @supports selector(:has(*)) {
 ${railSegmented}

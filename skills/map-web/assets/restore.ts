@@ -985,7 +985,7 @@ export function restoreCss(
     `   narrows with, and the reason this control needs no script and survives one being blocked.`,
     `   The cells are ONE drawing and they TRAVEL; what display still swaps is the transparent hit`,
     `   plates, the line of average and the revealed sentence. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     `${scope} svg.chart[data-restore-plate] { display: none; }`,
     `${scope} svg.chart[data-restore-plate="${defaultSlug}"] { display: block; }`,
@@ -1052,7 +1052,7 @@ export function restoreCss(
     if (collides)
       lines.push(`${on} [data-restore-edge] { opacity: ${crowded.get(stage.slug) ? 1 : 0}; }`);
     const note = declaration.stages.find((s) => restoreSlugOf(s.key) === stage.slug)?.note;
-    if (note) lines.push(`${on} [data-stack-note="${stage.slug}"] { display: revert; }`);
+    if (note) lines.push(`${on} [data-stack-note="${stage.slug}"] { visibility: visible; }`);
   }
 
   lines.push(

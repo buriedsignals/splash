@@ -1343,7 +1343,11 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
       // sentence. The slack is for the paragraphs' own margins, which a vocabulary may set.
       const SLACK = 12;
       const tooShallow = noteRowAtLanding.height + 1 < deepest.height;
-      const tooDeep = noteRowAtLanding.height > deepest.height + SLACK;
+      // Only meaningful once every sentence is in flow: a row whose sentences are all removed by
+      // their display measures 0px each, and "deeper than its deepest sentence" would then be the
+      // check above's finding said a second time in the wrong units.
+      const tooDeep =
+        outOfFlow.length === 0 && noteRowAtLanding.height > deepest.height + SLACK;
       check(
         !tooShallow && !tooDeep,
         `${who}: the note row is exactly as deep as its deepest sentence`,

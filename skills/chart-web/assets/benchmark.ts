@@ -713,6 +713,5 @@ export function benchmarkChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "benchmark",
-    notes: { reserve: null },
   });
 }

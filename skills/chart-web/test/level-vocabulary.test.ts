@@ -381,7 +381,7 @@ describe("the stylesheet is the whole mechanism, and it is generated", () => {
   const css = levelCss(PLAN as any, CSS_ARGS);
 
   it("should hide every sentence and every reference by default", () => {
-    expect(css).toContain(".chart-figure [data-level-note] { display: none; }");
+    expect(css).toContain(".chart-figure [data-level-note] { visibility: hidden; }");
     expect(css).toContain(".chart-figure [data-level-rule] { opacity: 0; }");
   });
 
@@ -390,7 +390,7 @@ describe("the stylesheet is the whole mechanism, and it is generated", () => {
       '.chart-figure:has(#chart-level-che:checked) [data-level-rule="che:wind"], ' +
         '.chart-figure:has(#chart-level-che:checked) [data-level-rule="che:solar"] { opacity: 1; }',
     );
-    expect(css).toContain('.chart-figure:has(#chart-level-che:checked) [data-level-note="che"] { display: revert; }');
+    expect(css).toContain('.chart-figure:has(#chart-level-che:checked) [data-level-note="che"] { visibility: visible; }');
   });
 
   it("should take the ring OFF EVERYTHING before it puts one on the chosen country", () => {

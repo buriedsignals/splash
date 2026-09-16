@@ -558,7 +558,7 @@ export function carryCss(
     `${scope} [data-carry-shape] { opacity: 0; }`,
     `${scope} [data-carry-verdict] { opacity: 0; }`,
     `${scope} [data-carry-own] { opacity: 1; }`,
-    `${scope} [data-level-note] { display: none; }`,
+    `${scope} [data-level-note] { visibility: hidden; }`,
     `@media (prefers-reduced-motion: no-preference) {`,
     `  ${scope} [data-carry-shape] { transition: opacity ${fadeMs}ms ${ease}; }`,
     `  ${scope} [data-carry-verdict] { transition: opacity ${fadeMs}ms ${ease}; }`,
@@ -574,7 +574,7 @@ export function carryCss(
       // The panel's own wash steps aside for the shape being laid into it. Two translucent hills
       // read through one another as a third hill that is in neither country's data.
       `${at} [data-carry-own] { opacity: 0; }`,
-      `${at} [data-level-note="${slug}"] { display: revert; }`,
+      `${at} [data-level-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -594,6 +594,6 @@ export function carryChromeCss({ scope }: { scope: string }): string {
     scope,
     name: "carry",
     margin: "6px 0 0",
-    notes: { margin: "2px 0 0", reserve: "3em" },
+    notes: { margin: "2px 0 0" },
   });
 }

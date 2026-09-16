@@ -310,7 +310,6 @@ export function DirectedFlowMapWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "measure",
-      notes: { reserve: null, stacked: true },
     }),
     flowMeasureCss(measures, {
       scope: SCOPE,

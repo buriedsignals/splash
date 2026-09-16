@@ -303,7 +303,6 @@ export function DirectedContourWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "stack",
-      notes: { reserve: null, stacked: true },
     }),
     steppingCss({
       steps,

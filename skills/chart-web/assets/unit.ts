@@ -560,7 +560,7 @@ export function unitCss(
     `/* The unit this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     `${scope} svg.chart[data-unit] { display: none; }`,
     `${scope} svg.chart[data-unit="${defaultSlug}"] { display: block; }`,
@@ -590,7 +590,7 @@ export function unitCss(
       `${at} [data-stack-total] { display: none; }`,
       `${at} [data-stack-total="${slug}"] { display: revert; }`,
     );
-    if (option.note) lines.push(`${at} [data-stack-note="${slug}"] { display: revert; }`);
+    if (option.note) lines.push(`${at} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -633,7 +633,7 @@ export function assertOneUnit(
   need("[data-cell] { width: 0px; }", "every cell would keep whatever width its attribute gave it, in every state at once");
   need(`[data-stack-total] { display: none; }`, "all four states' figures would print at once");
   need(`[data-stack-total="${defaultSlug}"] { display: revert; }`, "the default field would print no figure at all");
-  need(`[data-stack-note] { display: none; }`, "every option's sentence would print at once");
+  need(`[data-stack-note] { visibility: hidden; }`, "every option's sentence would print at once");
   need(`svg.chart[data-unit] { display: none; }`, "every option's answering layer would be reachable at once");
 
   // AND THE BLANKETS MUST COME FIRST, WHICH IS A SEPARATE FACT FROM THEIR BEING PRESENT. Two
@@ -696,6 +696,5 @@ export function unitChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "unit",
-    notes: { reserve: "3em" },
   });
 }

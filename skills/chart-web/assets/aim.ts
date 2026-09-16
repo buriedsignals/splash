@@ -650,7 +650,7 @@ export function aimCss(
     // here, in a real browser, three directions at once, before it was renamed.
     `${scope} [data-stack-total] { display: none; }`,
     `${scope} [data-stack-total="${AIM_NONE_SLUG}"] { display: revert; }`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
   ];
   for (const arrow of arrows) {
     const at = place(arrow.tail, arrow.head);
@@ -674,7 +674,7 @@ export function aimCss(
     lines.push(
       `${at} [data-stack-total] { display: none; }`,
       `${at} [data-stack-total="${slug}"] { display: revert; }`,
-      `${at} [data-stack-note="${slug}"] { display: revert; }`,
+      `${at} [data-stack-note="${slug}"] { visibility: visible; }`,
     );
     for (const head of option.heads) {
       const placed = place(drawn.get(head.key)!.tail, { x: head.x, y: head.y });
@@ -747,7 +747,7 @@ export function assertOneAim(
       `an SVG element's initial transform-origin is the CENTRE of the viewBox, so without this every arrow swings about the middle of the plate`);
   need(`[data-stack-total] { display: none; }`, "all four states' figures would print at once");
   need(`[data-stack-total="${AIM_NONE_SLUG}"] { display: revert; }`, "the default plate would print no figure at all");
-  need(`[data-stack-note] { display: none; }`, "every option's sentence would print at once");
+  need(`[data-stack-note] { visibility: hidden; }`, "every option's sentence would print at once");
   for (const key of keys)
     for (const which of ["shaft", "head"])
       need(`[data-aim-${which}="${key}"] { transform: translate(`, `${key} would be drawn at the origin of the viewBox rather than at its own tail`);
@@ -761,7 +761,7 @@ export function assertOneAim(
           `choosing ${JSON.stringify(option.label)} would leave ${key} aimed where the default plate points it`);
     need(`${at} [data-stack-total] { display: none; }`, `choosing ${JSON.stringify(option.label)} would print two figures`);
     need(`${at} [data-stack-total="${slug}"] { display: revert; }`, `choosing ${JSON.stringify(option.label)} would print no figure`);
-    need(`${at} [data-stack-note="${slug}"] { display: revert; }`, `choosing ${JSON.stringify(option.label)} would reveal no sentence`);
+    need(`${at} [data-stack-note="${slug}"] { visibility: visible; }`, `choosing ${JSON.stringify(option.label)} would reveal no sentence`);
   }
 }
 
@@ -778,16 +778,13 @@ export function aimChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "aim",
-    notes: {
-      reserve: "4.2em",
-      why:
-        "THREE LINES, RESERVED, AND THE NUMBER IS MEASURED RATHER THAN CHOSEN. The longest of this "
-        + "control's sentences carries a total in TWh at both dates, a growth rate, a counterfactual "
-        + "and the threshold the claim turns on, and it sets to two lines at 1440 and three from 1024 "
-        + "down. Reserving fewer would push the plot down the moment an option was chosen, which is "
-        + "the plot moving under the control this row exists to stop. Below about 700 it wraps "
-        + "further and the plot does move; that is the narrow-width debt this format pays elsewhere "
-        + "too, and it is stated here rather than hidden.",
-    },
+    // THE ROW USED TO RESERVE 4.2em HERE, and the paragraph beside it read that three lines was
+    // "measured rather than chosen" — measured at 1440 and at 1024, and it ended by conceding that
+    // below about 700 the sentence wraps further and the plot does move. That concession was the
+    // defect: this control's sentence carries a total in TWh at both dates, a growth rate, a
+    // counterfactual and the threshold the claim turns on, so how deep it sets is a function of the
+    // reader's width and no build-time number can hold it. `control-chrome.ts` now stacks every
+    // sentence in one grid cell and lets the browser measure, so the row is right at 1440, at 700
+    // and at 375 without anybody writing a number down.
   });
 }

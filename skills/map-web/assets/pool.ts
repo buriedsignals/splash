@@ -462,7 +462,7 @@ export function poolCss(
     `${scope} [data-pool] { ${property}: ${unsetFill}; }`,
     `${scope} [data-pool-figure] { display: none; }`,
     `${scope} [data-pool-seam] { opacity: 0; }`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
   ];
   const emitFills = (at: string, slug: string) => {
     for (let klass = 0; klass < classCount; klass += 1)
@@ -487,9 +487,9 @@ export function poolCss(
       `${at} [data-pool-figure="${slug}"] { display: inline; }`,
       `${at} [data-pool-seam] { opacity: 0; }`,
       `${at} [data-pool-seam="${slug}"] { opacity: 1; }`,
-      `${at} [data-stack-note] { display: none; }`,
+      `${at} [data-stack-note] { visibility: hidden; }`,
     );
-    if (grain.note) lines.push(`${at} [data-stack-note="${slug}"] { display: revert; }`);
+    if (grain.note) lines.push(`${at} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -572,7 +572,7 @@ export function assertOnePool(
     "the default map would print no number at all",
   );
   need("[data-pool-seam] { opacity: 0; }", "every grain's block outline would be drawn at once");
-  need("[data-stack-note] { display: none; }", "every grain's sentence would print at once");
+  need("[data-stack-note] { visibility: hidden; }", "every grain's sentence would print at once");
 
   // AND THE BLANKETS MUST COME FIRST, WHICH IS A SEPARATE FACT FROM THEIR BEING PRESENT. Two
   // attribute selectors score identically; source order is the entire mechanism.

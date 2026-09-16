@@ -245,13 +245,13 @@ export function filterCss(
   const lines: string[] = [
     `/* The filter this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   One rule per option, over [data-filter] — every element drawn from a hidden datum goes with it. */`,
-    `${scope} [data-filter-note] { display: none; }`,
+    `${scope} [data-filter-note] { visibility: hidden; }`,
   ];
   for (const option of declaration.options) {
     const slug = slugOf(option.label);
     lines.push(
       `${scope}:has(#${idPrefix}-${slug}:checked) [data-filter]:not([data-filter~="${slug}"]) { display: none; }`,
-      `${scope}:has(#${idPrefix}-${slug}:checked) [data-filter-note="${slug}"] { display: revert; }`,
+      `${scope}:has(#${idPrefix}-${slug}:checked) [data-filter-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");

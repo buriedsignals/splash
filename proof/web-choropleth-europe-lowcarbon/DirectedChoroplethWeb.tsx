@@ -333,7 +333,6 @@ export function DirectedChoroplethWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "classing",
-      notes: { reserve: null, stacked: true },
       extra: classingKeyCss({ scope: SCOPE }),
     }),
     classingCss(classing, {

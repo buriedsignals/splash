@@ -210,17 +210,33 @@ body {
 .chart-figure .chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-filter input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .filter-notes {
   flex: 0 0 auto;
   margin: 4px 0 8px;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
 }
-.chart-figure .filter-notes p { margin: 0; }
+.chart-figure .filter-notes p { grid-area: 1 / 1; margin: 0; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-filter .options {
@@ -487,15 +503,16 @@ svg.chart { display: block; }
 }
 #tooltip[hidden] { display: none; }
 
+
 /* The filter this beat declared: 3 options over "Ne garder que les parts d'au moins".
    One rule per option, over [data-filter] — every element drawn from a hidden datum goes with it. */
-.chart-figure [data-filter-note] { display: none; }
+.chart-figure [data-filter-note] { visibility: hidden; }
 .chart-figure:has(#chart-filter-5:checked) [data-filter]:not([data-filter~="5"]) { display: none; }
-.chart-figure:has(#chart-filter-5:checked) [data-filter-note="5"] { display: revert; }
+.chart-figure:has(#chart-filter-5:checked) [data-filter-note="5"] { visibility: visible; }
 .chart-figure:has(#chart-filter-15:checked) [data-filter]:not([data-filter~="15"]) { display: none; }
-.chart-figure:has(#chart-filter-15:checked) [data-filter-note="15"] { display: revert; }
+.chart-figure:has(#chart-filter-15:checked) [data-filter-note="15"] { visibility: visible; }
 .chart-figure:has(#chart-filter-25:checked) [data-filter]:not([data-filter~="25"]) { display: none; }
-.chart-figure:has(#chart-filter-25:checked) [data-filter-note="25"] { display: revert; }
+.chart-figure:has(#chart-filter-25:checked) [data-filter-note="25"] { visibility: visible; }
 </style>
 </head>
 <body>

@@ -481,7 +481,7 @@ export function rebaseCss(
     `   from the common zero, over ${JSON.stringify(declaration.label)}. Radios plus :checked/:has(),`,
     `   generated once at build time — the same mechanism filter.ts narrows with, and the reason this`,
     `   control needs no script and survives one being blocked. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-rebase-rail] { left: 0; width: 0%; }`,
   ];
   lines.push(
@@ -498,7 +498,7 @@ export function rebaseCss(
       lines.push(
         `${on} [data-rebase-rail="${band.row}"] { width: ${widthOf(band.value)}%; }`,
       );
-    if (option.note) lines.push(`${on} [data-stack-note="${slug}"] { display: revert; }`);
+    if (option.note) lines.push(`${on} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -564,14 +564,12 @@ export function rebaseChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "rebase",
-    notes: {
-      reserve: "3em",
-      // Measured on the longest of the four sentences this beat reveals, in the widest of the three
-      // directions, at 375 CSS px: three lines. Stacked, so the row is always as tall as the
-      // LONGEST sentence and choosing an option never pushes the plot down.
-      why: "three lines: the longest of this control's sentences at the narrowest verified width",
-      stacked: true,
-    },
+    // THE ROW USED TO RESERVE 3em HERE and ask for `stacked: true` beside it. The stacking was
+    // inert: this vocabulary hid its unchosen sentences with `display: none`, which takes them out
+    // of the grid cell, so the cell collapsed to whichever one was showing and the 3em was doing
+    // all the work alone. Both are gone — `control-chrome.ts` stacks unconditionally and the
+    // sentences below are hidden with `visibility`, which keeps them in flow where they can be
+    // measured.
     // THE RAIL LANE. An HTML layer sharing the plot's own grid cell, so a rail's length is a
     // percentage of the same box the <svg> fills and is therefore exact at every reader width —
     // which an SVG geometry property under preserveAspectRatio="none" would also be, but only

@@ -396,7 +396,7 @@ export function traceCss(
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, stack.ts moves with, level.ts lays across and withdraw.ts subtracts with, and`,
     `   the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-trace-note] { display: none; }`,
+    `${scope} [data-trace-note] { visibility: hidden; }`,
     `${scope} [data-trace-stated] { display: none; }`,
     `${scope} [data-dest-share] { display: none; }`,
     `@media (prefers-reduced-motion: no-preference) {`,
@@ -428,7 +428,7 @@ export function traceCss(
     lines.push(
       `${at} [data-dest-share="${slug}"] { display: revert; }`,
       `${at} [data-trace-stated="${slug}"] { display: revert; }`,
-      `${at} [data-trace-note="${slug}"] { display: revert; }`,
+      `${at} [data-trace-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -489,6 +489,5 @@ export function traceChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "trace",
-    notes: { reserve: "1.5em" },
   });
 }

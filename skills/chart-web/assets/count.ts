@@ -945,6 +945,5 @@ export function countChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "count",
-    notes: { reserve: "1.5em", stacked: true },
   });
 }

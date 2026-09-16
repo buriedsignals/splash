@@ -589,7 +589,7 @@ export function withdrawCss(
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with and stack.ts moves with, and the reason this control needs no script and`,
     `   survives one being blocked. */`,
-    `${scope} [data-withdraw-note] { display: none; }`,
+    `${scope} [data-withdraw-note] { visibility: hidden; }`,
     `${scope} [data-restated] { display: none; }`,
     // The replacement connectors are drawn in every state and revealed in one. `opacity` and not
     // `display`, because they are SVG geometry inside the plate's own stacking order and a
@@ -672,7 +672,7 @@ export function withdrawCss(
       `${at} [data-value="${option.close.key}"] { opacity: 0; }`,
       `${at} [data-span="${slug}"] { opacity: 1; }`,
       `${at} [data-restated="${slug}"] { display: revert; }`,
-      `${at} [data-withdraw-note="${slug}"] { display: revert; }`,
+      `${at} [data-withdraw-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -744,6 +744,5 @@ export function withdrawChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "withdraw",
-    notes: { reserve: "1.5em" },
   });
 }

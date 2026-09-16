@@ -118,17 +118,33 @@ body {
 .chart-figure .chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-filter input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .filter-notes {
   flex: 0 0 auto;
   margin: 4px 0 8px;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
 }
-.chart-figure .filter-notes p { margin: 0; }
+.chart-figure .filter-notes p { grid-area: 1 / 1; margin: 0; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-filter .options {
@@ -149,7 +165,6 @@ body {
     border-radius: 999px;
     line-height: 1.2;
     white-space: nowrap;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
   }
   .chart-figure .chart-filter label input {
     position: absolute;
@@ -179,6 +194,22 @@ body {
     color: var(--ink);
   }
   .chart-figure .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+/* THE ONLY MOTION THIS CHROME EMITS, AND IT IS EMITTED LAST, INSIDE @media
+   (prefers-reduced-motion: no-preference), where `reduce` cannot reach it. It used to be one more
+   declaration in the pill's own rule, outside every query — so a reader who had asked their system
+   for no motion still got twelve chrome animations on a page whose own travel correctly snapped,
+   on every vocabulary that calls this module, which is every beat with a control. The three
+   declarations that SET the chosen state stay outside: the wash, the ring and the darkened words
+   arrive instantly under `reduce` rather than not at all. Top level and last, which is the idiom
+   every vocabulary already uses for its own motion (side.ts, reorder.ts, count.ts) rather than a
+   second convention; and outside the @supports block, where nesting a query is refused, because in
+   an engine without :has() nothing here changes a colour at all and a transition over changes that
+   never happen costs a reader nothing. */
+@media (prefers-reduced-motion: no-preference) {
+  .chart-figure .chart-filter label {
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
 }
 
 .chart-plot {
@@ -380,21 +411,22 @@ svg.chart { display: block; }
 }
 #tooltip[hidden] { display: none; }
 
+
 /* The filter this beat declared: 6 options over "Filter by region".
    One rule per option, over [data-filter] — every element drawn from a hidden datum goes with it. */
-.chart-figure [data-filter-note] { display: none; }
+.chart-figure [data-filter-note] { visibility: hidden; }
 .chart-figure:has(#chart-filter-africa:checked) [data-filter]:not([data-filter~="africa"]) { display: none; }
-.chart-figure:has(#chart-filter-africa:checked) [data-filter-note="africa"] { display: revert; }
+.chart-figure:has(#chart-filter-africa:checked) [data-filter-note="africa"] { visibility: visible; }
 .chart-figure:has(#chart-filter-asia:checked) [data-filter]:not([data-filter~="asia"]) { display: none; }
-.chart-figure:has(#chart-filter-asia:checked) [data-filter-note="asia"] { display: revert; }
+.chart-figure:has(#chart-filter-asia:checked) [data-filter-note="asia"] { visibility: visible; }
 .chart-figure:has(#chart-filter-europe:checked) [data-filter]:not([data-filter~="europe"]) { display: none; }
-.chart-figure:has(#chart-filter-europe:checked) [data-filter-note="europe"] { display: revert; }
+.chart-figure:has(#chart-filter-europe:checked) [data-filter-note="europe"] { visibility: visible; }
 .chart-figure:has(#chart-filter-north-america:checked) [data-filter]:not([data-filter~="north-america"]) { display: none; }
-.chart-figure:has(#chart-filter-north-america:checked) [data-filter-note="north-america"] { display: revert; }
+.chart-figure:has(#chart-filter-north-america:checked) [data-filter-note="north-america"] { visibility: visible; }
 .chart-figure:has(#chart-filter-oceania:checked) [data-filter]:not([data-filter~="oceania"]) { display: none; }
-.chart-figure:has(#chart-filter-oceania:checked) [data-filter-note="oceania"] { display: revert; }
+.chart-figure:has(#chart-filter-oceania:checked) [data-filter-note="oceania"] { visibility: visible; }
 .chart-figure:has(#chart-filter-south-america:checked) [data-filter]:not([data-filter~="south-america"]) { display: none; }
-.chart-figure:has(#chart-filter-south-america:checked) [data-filter-note="south-america"] { display: revert; }
+.chart-figure:has(#chart-filter-south-america:checked) [data-filter-note="south-america"] { visibility: visible; }
 </style>
 <style>
 

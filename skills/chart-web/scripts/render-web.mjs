@@ -80,24 +80,22 @@ import {
 const FILTER_SCOPE = ".chart-figure";
 const FILTER_ID_PREFIX = "chart-filter";
 
-/** THE ONE KNOB THIS TRUNK CHROME CANNOT SET, AND WHY IT SETS NOTHING.
+/** THE KNOB THIS TRUNK CHROME COULD NOT SET, AND THE MECHANISM THAT MADE IT UNNECESSARY.
  *
- *  A vocabulary reserves a measured number of lines under its control so that choosing an option
- *  never pushes the plot down. This chrome cannot: it is emitted once for EVERY beat that declares a
- *  filter, and those beats' sentences are not one length. Measured on the three that declare one
- *  today: `web-income-life-expectancy` writes 38 characters ("Showing Africa — 49 of 164
- *  countries."), the seed 39, and `web-heatmap-europe-electricity` 215 — one sentence that sets on
- *  a single 18px line at 1512 and at 375, and another that wraps to four lines at 1512 and to nine
- *  at 375. Any single number here would be right for one of them and wrong for the other, which is
- *  worse than none: an over-reserve is dead space under every filter beat in the corpus, and an
- *  under-reserve is the defect the reserve exists to stop, still present and now also lying.
+ *  This block used to hold `FILTER_NOTE_RESERVE = null` and a paragraph explaining why no number
+ *  could go there. The paragraph's measurement was right and is worth keeping: this chrome is
+ *  emitted once for EVERY beat that declares a filter, and those beats' sentences are not one
+ *  length — `web-income-life-expectancy` writes 38 characters ("Showing Africa — 49 of 164
+ *  countries."), the seed 39, and `web-heatmap-europe-electricity` 215, one sentence that sets on a
+ *  single 18px line at 1512 and at 375, another that wraps to four lines at 1512 and to nine at
+ *  375. Any single number would have been right for one and wrong for the other.
  *
- *  So `null` — the row costs nothing until a sentence appears, which is exactly what this chrome
- *  has always done. What it buys instead, and did not have before, is the live region: the notes now
- *  sit in one `.filter-notes` container carrying `role="status"`, so a narrowed view is ANNOUNCED
- *  rather than merely drawn. Reserving it per beat needs a per-beat knob and is recorded, not
- *  smuggled in under a number nobody measured. */
-const FILTER_NOTE_RESERVE = null;
+ *  Its conclusion — reserve nothing — was the wrong half of the choice. Reserving nothing is not
+ *  neutral: it means the seed's own plot drops 18px the moment a reader touches the control, at
+ *  1600 as well as at 375, measured by `verify-web.mjs` on this skill's own output. The reserve is
+ *  no longer a number anyone sets: `control-chrome.ts` stacks every sentence in one grid cell, so
+ *  the row is as deep as the DEEPEST sentence at the reader's own width — 39 characters or 215, at
+ *  1512 or at 375 — and this trunk chrome needs no knob because there is nothing left to decide. */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -706,7 +704,6 @@ function filterChromeCss() {
       // The block this replaced spent the same 8px on the paragraph itself; it is spent on the row
       // now, so it is there whether or not a sentence is showing.
       margin: "4px 0 8px",
-      reserve: FILTER_NOTE_RESERVE,
     },
   });
 }

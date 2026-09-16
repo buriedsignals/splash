@@ -559,10 +559,11 @@ describe("the filter — declared by the beat, default view complete, native con
         scope: ".chart-figure",
         name: "filter",
         // The same two arguments the renderer passes, restated rather than imported: the equality
-        // then fails if EITHER the module's drawing or this format's use of it drifts. `reserve:
-        // null` because this one chrome serves every filter beat and their sentences run from 38
-        // characters to 215 — see `FILTER_NOTE_RESERVE` for why no single number is defensible.
-        notes: { margin: "4px 0 8px", reserve: null },
+        // then fails if EITHER the module's drawing or this format's use of it drifts. There is no
+        // reserve to restate: this one chrome serves every filter beat and their sentences run from
+        // 38 characters to 215, and the row now takes its depth from the deepest sentence the
+        // browser measures rather than from a number this file could get wrong for one of them.
+        notes: { margin: "4px 0 8px" },
       }),
     );
   });

@@ -169,9 +169,9 @@ describe.each(IMPLEMENTATIONS)("%s", (_name, F) => {
     });
 
     it("reveals only the checked option's own note", () => {
-      expect(css).toContain(".s [data-filter-note] { display: none; }");
+      expect(css).toContain(".s [data-filter-note] { visibility: hidden; }");
       expect(css).toContain(
-        '.s:has(#f-western-europe:checked) [data-filter-note="western-europe"] { display: revert; }',
+        '.s:has(#f-western-europe:checked) [data-filter-note="western-europe"] { visibility: visible; }',
       );
     });
   });

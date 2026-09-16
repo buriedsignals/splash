@@ -917,7 +917,7 @@ export function sideCss(
     `   time — the same mechanism filter.ts narrows with, and the reason this control needs no script`,
     `   and survives one being blocked. The bands are ONE drawing and they TRAVEL; what display still`,
     `   swaps is the transparent hit plates, the gutter totals and the revealed sentence. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     `${scope} svg.chart[data-side-plate] { display: none; }`,
     `${scope} svg.chart[data-side-plate="${defaultSlug}"] { display: block; }`,
@@ -951,7 +951,7 @@ export function sideCss(
         );
     for (const lean of cut.leans)
       lines.push(`${on} [data-side-net="${lean.row}"] { left: ${place(lean.net)}%; }`);
-    if (cut.note) lines.push(`${on} [data-stack-note="${slug}"] { display: revert; }`);
+    if (cut.note) lines.push(`${on} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
 
   lines.push(
@@ -1124,13 +1124,10 @@ export function sideChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "side",
-    notes: {
-      stacked: true,
-      reserve: "3em",
-      why:
-        "Two lines at the frame's own width, which is what the longest of this beat's three revealed " +
-        "sentences takes there, measured in Chrome rather than guessed; stacked in one cell so the " +
-        "tallest is always what the row is, and choosing a cut never moves the plot.",
-    },
+    // THE ROW USED TO RESERVE 3em HERE and ask for `stacked: true` beside it, on the reasoning that
+    // the tallest sentence is what the row should be. That reasoning is right and the mechanism was
+    // not: the sentences were hidden with `display: none`, so nothing was ever stacked and the 3em
+    // was the whole reservation. `control-chrome.ts` stacks unconditionally now, and the rules
+    // below hide with `visibility` so the cell can see all three at once.
   });
 }

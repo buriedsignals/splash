@@ -700,7 +700,7 @@ export function qualifyCss(
     `/* The ladder this beat declared: ${declaration.options.length} rungs over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     `${scope} svg.chart[data-qualify] { display: none; }`,
     `${scope} svg.chart[data-qualify="${defaultSlug}"] { display: block; }`,
@@ -737,7 +737,7 @@ export function qualifyCss(
       );
     }
     if (option.note)
-      lines.push(`${on} [data-stack-note="${slug}"] { display: revert; }`);
+      lines.push(`${on} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -844,6 +844,5 @@ export function qualifyChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "qualify",
-    notes: { reserve: "3em" },
   });
 }

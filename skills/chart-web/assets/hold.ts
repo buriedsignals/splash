@@ -520,7 +520,7 @@ export function holdCss(
     // The default transform of the HTML label layer, so a beat writes ONE calc() for four states
     // instead of a rule per label per option.
     `${scope} [data-col-label] { --fx-tx: 0; --fx-ty: 0; --fx-sx: 1; --fx-sy: 1; }`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     // The motion, and it is the only motion this control has. Under `reduce` the whole block does
     // not exist, so there is no transition to override and no branch anywhere.
@@ -551,7 +551,7 @@ export function holdCss(
       );
     }
     lines.push(
-      `${at} [data-stack-note="${slug}"] { display: revert; }`,
+      `${at} [data-stack-note="${slug}"] { visibility: visible; }`,
       `${at} [data-stack-total="${slug}"] { display: revert; }`,
     );
     if (quiet.length)

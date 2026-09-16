@@ -328,7 +328,6 @@ export function DirectedDotMapWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "stack",
-      notes: { reserve: null, stacked: true },
     }),
     dotValueCss(live, { scope: SCOPE, idPrefix: DOT_ID_PREFIX }),
     liveDotDensityCss({ scope: SCOPE }),

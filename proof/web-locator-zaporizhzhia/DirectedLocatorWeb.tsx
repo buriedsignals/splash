@@ -226,7 +226,6 @@ export function DirectedLocatorWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "vantage",
-      notes: { reserve: null, stacked: true },
     }),
     vantageCss(vantage, {
       scope: SCOPE,

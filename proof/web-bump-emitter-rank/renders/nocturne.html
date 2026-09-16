@@ -422,17 +422,33 @@ svg.chart { display: block; }
 .chart-figure .chart-follow label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-follow input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .follow-notes {
   flex: 0 0 auto;
   margin: 4px 0 0;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
 }
-.chart-figure .follow-notes p { margin: 0; }
+.chart-figure .follow-notes p { grid-area: 1 / 1; margin: 0; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-follow .options {
@@ -503,7 +519,7 @@ svg.chart { display: block; }
 /* The follow this beat declared: 5 option(s) over "Suivre une ligne",
    walked across 35 steps. Radios plus :checked/:has(), generated once at
    build time — the same mechanism filter.ts narrows with, and the reason this needs no script. */
-.chart-figure [data-follow-note] { display: none; }
+.chart-figure [data-follow-note] { visibility: hidden; }
 .chart-figure [data-follow-ring] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .chart-figure [data-follow-ring] { transition: opacity 220ms ease; }
@@ -514,33 +530,33 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-follow-usa:checked) [data-follow-label] { color: var(--muted); font-weight: 600; }
 .chart-figure:has(#chart-follow-usa:checked) [data-follow-line="USA"] { stroke: var(--label-ink); stroke-width: 2.6; }
 .chart-figure:has(#chart-follow-usa:checked) [data-follow-label="USA"] { color: var(--label-ink); font-weight: 700; }
-.chart-figure:has(#chart-follow-usa:checked) [data-follow-note="usa"] { display: revert; }
+.chart-figure:has(#chart-follow-usa:checked) [data-follow-note="usa"] { visibility: visible; }
 .chart-figure:has(#chart-follow-usa:checked) [data-follow-ring="usa-0"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-line] { stroke: var(--dim-ink); }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-label] { color: var(--muted); font-weight: 600; }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-line="RUS"] { stroke: var(--label-ink); stroke-width: 2.6; }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-label="RUS"] { color: var(--label-ink); font-weight: 700; }
-.chart-figure:has(#chart-follow-rus:checked) [data-follow-note="rus"] { display: revert; }
+.chart-figure:has(#chart-follow-rus:checked) [data-follow-note="rus"] { visibility: visible; }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-ring="rus-0"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-rus:checked) [data-follow-ring="rus-1"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-line] { stroke: var(--dim-ink); }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-label] { color: var(--muted); font-weight: 600; }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-line="CHN"] { stroke: var(--label-ink); stroke-width: 2.6; }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-label="CHN"] { color: var(--label-ink); font-weight: 700; }
-.chart-figure:has(#chart-follow-chn:checked) [data-follow-note="chn"] { display: revert; }
+.chart-figure:has(#chart-follow-chn:checked) [data-follow-note="chn"] { visibility: visible; }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-ring="chn-0"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-chn:checked) [data-follow-ring="chn-1"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-jpn:checked) [data-follow-line] { stroke: var(--dim-ink); }
 .chart-figure:has(#chart-follow-jpn:checked) [data-follow-label] { color: var(--muted); font-weight: 600; }
 .chart-figure:has(#chart-follow-jpn:checked) [data-follow-line="JPN"] { stroke: var(--label-ink); stroke-width: 2.6; }
 .chart-figure:has(#chart-follow-jpn:checked) [data-follow-label="JPN"] { color: var(--label-ink); font-weight: 700; }
-.chart-figure:has(#chart-follow-jpn:checked) [data-follow-note="jpn"] { display: revert; }
+.chart-figure:has(#chart-follow-jpn:checked) [data-follow-note="jpn"] { visibility: visible; }
 .chart-figure:has(#chart-follow-jpn:checked) [data-follow-ring="jpn-0"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-line] { stroke: var(--dim-ink); }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-label] { color: var(--muted); font-weight: 600; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-line="DEU"] { stroke: var(--label-ink); stroke-width: 2.6; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-label="DEU"] { color: var(--label-ink); font-weight: 700; }
-.chart-figure:has(#chart-follow-deu:checked) [data-follow-note="deu"] { display: revert; }
+.chart-figure:has(#chart-follow-deu:checked) [data-follow-note="deu"] { visibility: visible; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-ring="deu-0"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-ring="deu-1"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }
 .chart-figure:has(#chart-follow-deu:checked) [data-follow-ring="deu-2"] { opacity: 1; stroke: var(--label-ink); stroke-width: 2; }

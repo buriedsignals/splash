@@ -537,7 +537,7 @@ export function levelCss(
     `/* The yardstick this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with and stack.ts moves with, and the reason this control needs no script. */`,
-    `${scope} [data-level-note] { display: none; }`,
+    `${scope} [data-level-note] { visibility: hidden; }`,
     `${scope} [data-level-rule] { opacity: 0; }`,
     // The only motion this control has. Under `reduce` the whole block does not exist, so there is
     // no transition to override and no branch anywhere — the shape `render-web.mjs`'s own entrance
@@ -577,7 +577,7 @@ export function levelCss(
         ),
         at,
       ) + ` { opacity: 1; }`,
-      `${at} [data-level-note="${slug}"] { display: revert; }`,
+      `${at} [data-level-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -596,6 +596,5 @@ export function levelChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "level",
-    notes: { reserve: "1.5em" },
   });
 }

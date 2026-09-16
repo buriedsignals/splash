@@ -745,7 +745,7 @@ export function brushCss(
     `   narrows with and withdraw.ts re-runs an arithmetic with, and the reason this control needs`,
     `   no script and survives one being blocked. A continuous drag would need one; named bands are`,
     `   the version of this gesture the format can promise. */`,
-    `${scope} [data-brush-note] { display: none; }`,
+    `${scope} [data-brush-note] { visibility: hidden; }`,
     // The bands are drawn in every state and revealed in one. A reveal is two-state — painted or
     // not painted — so an opacity here is not a colour anybody has to read at an intermediate
     // value, which is the whole of this file's rule against the property.
@@ -782,7 +782,7 @@ export function brushCss(
       // the pills can see WHICH of the axes the selection was made on.
       `${at} [data-brush-axis="${option.axis}"] { stroke: ${deep}; stroke-width: ${round(weight.rail)}; }`,
       `${at} [data-brush-band="${slug}"] { opacity: 1; }`,
-      `${at} [data-brush-note="${slug}"] { display: revert; }`,
+      `${at} [data-brush-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -864,6 +864,5 @@ export function brushChromeCss({
   return controlChromeCss({
     scope,
     name: "brush",
-    notes: { reserve: "1.5em" },
   });
 }

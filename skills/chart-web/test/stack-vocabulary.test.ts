@@ -201,9 +201,9 @@ describe("the stylesheet is the whole mechanism, and every selector carries its 
   });
 
   it("hides every sentence by default and reveals one per option", () => {
-    expect(css).toContain(".chart-figure [data-stack-note] { display: none; }");
-    expect(css).toContain('[data-stack-note="chn"] { display: revert; }');
-    expect(css).toContain('[data-stack-note="usa"] { display: revert; }');
+    expect(css).toContain(".chart-figure [data-stack-note] { visibility: hidden; }");
+    expect(css).toContain('[data-stack-note="chn"] { visibility: visible; }');
+    expect(css).toContain('[data-stack-note="usa"] { visibility: visible; }');
   });
 
   it("carries each column's own translation, in the geometry's own units", () => {
@@ -383,7 +383,7 @@ describe("a beat whose marks carry their own categorical fills repaints neither 
     });
     // Everything else the option does is still there — the movement, the sentence, the seam.
     expect(css).toContain('[data-col="IND"] { transform: translate(-90px, -168px); }');
-    expect(css).toContain('[data-stack-note="chn"] { display: revert; }');
+    expect(css).toContain('[data-stack-note="chn"] { visibility: visible; }');
     expect(css).toContain("stroke: var(--ground); stroke-width: 2;");
     // And not one rule repaints a fill to the value the mark already carries.
     expect(css).not.toContain("fill:");

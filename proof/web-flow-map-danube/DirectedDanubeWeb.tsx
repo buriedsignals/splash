@@ -287,7 +287,6 @@ export function DirectedDanubeWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "measure",
-      notes: { reserve: null, stacked: true },
     }),
     flowMeasureCss(measures, {
       scope: SCOPE,

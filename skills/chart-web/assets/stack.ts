@@ -417,7 +417,7 @@ export function stackCss(
     `/* The stack this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-stack-total] { display: none; }`,
     // The motion, and it is the only motion this control has. Under `reduce` the whole block does
     // not exist, so there is no transition to override and no branch anywhere — `render-web.mjs`'s
@@ -504,7 +504,7 @@ export function stackCss(
           // would otherwise stay behind on the baseline. Taking them away is the honest fallback —
           // it is what this file did for every beat before the carry existed.
           `${each("data-value", option.onto.map((m) => m.key))} { opacity: 0; }`,
-      `${at} [data-stack-note="${slug}"] { display: revert; }`,
+      `${at} [data-stack-note="${slug}"] { visibility: visible; }`,
       `${at} [data-stack-total="${slug}"] { display: revert; }`,
     );
     // The seam, grouped: a tower of one accent is one shape, and a reader asked to count six
@@ -558,6 +558,5 @@ export function stackChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "stack",
-    notes: { reserve: "1.5em" },
   });
 }

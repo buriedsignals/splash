@@ -514,7 +514,7 @@ export function datumCss(
     `/* The datum this beat declared: ${declaration.options.length + 1} references over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-datum-note] { display: none; }`,
+    `${scope} [data-datum-note] { visibility: hidden; }`,
     // The bars. `transform-box`/`transform-origin` are stated rather than inherited: the initial
     // origin of an SVG transform is the centre of the reference box in some engines and the view-box
     // origin in others, and a scaleX about the wrong origin puts every bar somewhere else.
@@ -564,8 +564,8 @@ export function datumCss(
     }
     lines.push(`${at} [data-datum-num] { display: none; }`);
     lines.push(`${at} [data-datum-num="${slug}"] { display: inline; }`);
-    lines.push(`${at} [data-datum-note] { display: none; }`);
-    lines.push(`${at} [data-datum-note="${slug}"] { display: revert; }`);
+    lines.push(`${at} [data-datum-note] { visibility: hidden; }`);
+    lines.push(`${at} [data-datum-note="${slug}"] { visibility: visible; }`);
   };
 
   place(scope, DATUM_NONE_SLUG, declaration.base);
@@ -590,7 +590,7 @@ export function datumChromeCss({ scope }: { scope: string }): string {
     scope,
     name: "datum",
     margin: "6px 0 0",
-    notes: { margin: "2px 0 0", reserve: "3em" },
+    notes: { margin: "2px 0 0" },
     extra: `/* The value labels' own layer. It shares the plot's grid cell with the svg and with .overlay, and
    pointer-events:none is load-bearing for the same reason it is on .overlay: a plain div over the
    whole plot intercepts every pointer event before it reaches the hit area beneath it. */

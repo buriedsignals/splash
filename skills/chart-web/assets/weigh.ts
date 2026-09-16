@@ -657,7 +657,7 @@ export function weighCss(
     `/* The weighing this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-weigh-note] { display: none; }`,
+    `${scope} [data-weigh-note] { visibility: hidden; }`,
     `${scope} svg.chart[data-weigh] { display: none; }`,
     `${scope} svg.chart[data-weigh="${defaultSlug}"] { display: block; }`,
     // The centre of mass in the DEFAULT state, generated here rather than written inline on the
@@ -678,7 +678,7 @@ export function weighCss(
       `${at} [data-weigh-centre] { left: ${round((option.centre / width) * 100)}%; }`,
     );
     if (option.note)
-      lines.push(`${at} [data-weigh-note="${slug}"] { display: revert; }`);
+      lines.push(`${at} [data-weigh-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -780,6 +780,5 @@ export function weighChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "weigh",
-    notes: { reserve: "3em" },
   });
 }

@@ -466,10 +466,22 @@ describe("driven: a filtered value disappears whole", () => {
           }
 
           // THE READER-FACING CONSEQUENCE: a narrowed view says so, and the whole view does not.
+          //
+          // A CLIENT RECT IS NOT ENOUGH TO CALL A SENTENCE DRAWN, and this is why. The note row is
+          // reserved by STACKING every sentence in one grid cell and hiding the unchosen ones with
+          // `visibility: hidden` (`control-chrome.ts`), so that the row is as deep as its deepest
+          // sentence at the reader's own width and the plot never moves. A `visibility: hidden`
+          // element keeps its box — it is exactly what pays for the reservation — so counting boxes
+          // reported all three of this beat's sentences as printed at once, on a page where a reader
+          // sees one. `verify-web.mjs` reads the computed style for the same reason.
           const note = await page.evaluate(() => {
             const shown = [
               ...document.querySelectorAll<HTMLElement>("[data-filter-note]"),
-            ].filter((e) => e.getClientRects().length > 0);
+            ].filter((e) => {
+              if (e.getClientRects().length === 0) return false;
+              const cs = getComputedStyle(e);
+              return cs.visibility !== "hidden" && Number(cs.opacity) !== 0;
+            });
             return shown.map((e) => (e.textContent ?? "").trim());
           });
           if (isAll && note.length > 0)

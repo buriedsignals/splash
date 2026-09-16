@@ -621,7 +621,7 @@ export function alignCss(
     // The graduations' words: every state's set is drawn, one is shown. `visibility` rides with
     // `opacity` so the six-sevenths nobody is reading are out of the accessibility tree too.
     `${scope} [data-align-tick] { opacity: 0; visibility: hidden; }`,
-    `${scope} [data-align-note] { display: none; }`,
+    `${scope} [data-align-note] { visibility: hidden; }`,
     `@media (prefers-reduced-motion: no-preference) {`,
     `  ${scope} [data-align-bar] { transition: transform ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
     `  ${scope} [data-align-value] { transition: left ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1), transform ${moveMs}ms cubic-bezier(0.4, 0, 0.2, 1); }`,
@@ -670,8 +670,8 @@ export function alignCss(
     }
     lines.push(`${at} [data-align-tick] { opacity: 0; visibility: hidden; }`);
     lines.push(`${at} [data-align-tick="${slug}"] { opacity: 1; visibility: visible; }`);
-    lines.push(`${at} [data-align-note] { display: none; }`);
-    lines.push(`${at} [data-align-note="${slug}"] { display: revert; }`);
+    lines.push(`${at} [data-align-note] { visibility: hidden; }`);
+    lines.push(`${at} [data-align-note="${slug}"] { visibility: visible; }`);
   };
 
   place(scope, ALIGN_NONE_SLUG, declaration.base);
@@ -709,7 +709,7 @@ export function assertAlignStylesheet(
         "the centre of the reference box in some engines, so every interval would be placed from a " +
         "point that depends on the browser",
     );
-  for (const marker of ["[data-align-tick] { opacity: 0", "[data-align-note] { display: none"])
+  for (const marker of ["[data-align-tick] { opacity: 0", "[data-align-note] { visibility: hidden"])
     if (!css.includes(marker))
       throw new Error(`${where}: the blanket \`${marker}…\` is missing — every state's words would print at once`);
   const states = alignStates(declaration);
@@ -730,7 +730,7 @@ export function assertAlignStylesheet(
     const at = state.slug === ALIGN_NONE_SLUG ? scope : `${scope}:has(#${alignOptionId(idPrefix, state.slug)}:checked)`;
     if (!css.includes(`${at} [data-align-tick="${state.slug}"] { opacity: 1`))
       throw new Error(`${where}: state ${JSON.stringify(state.slug)} shows no graduation words`);
-    if (!css.includes(`${at} [data-align-note="${state.slug}"] { display: revert; }`))
+    if (!css.includes(`${at} [data-align-note="${state.slug}"] { visibility: visible; }`))
       throw new Error(`${where}: state ${JSON.stringify(state.slug)} reveals no caption, which this type may not do without`);
   }
 }
@@ -749,7 +749,7 @@ export function alignChromeCss({ scope }: { scope: string }): string {
     scope,
     name: "align",
     margin: "6px 0 0",
-    notes: { margin: "2px 0 0", reserve: "3em" },
+    notes: { margin: "2px 0 0" },
     extra: `/* The travelling figures' own layer. It shares the plot's grid cell with the svg and with .overlay,
    and pointer-events:none is load-bearing for the same reason it is on .overlay: a plain div over
    the whole plot intercepts every pointer event before it reaches the hit area beneath it. */

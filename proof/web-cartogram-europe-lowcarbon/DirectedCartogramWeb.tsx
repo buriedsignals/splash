@@ -209,15 +209,11 @@ export function DirectedCartogramWeb({
     controlChromeCss({
       scope: SCOPE,
       name: "restore",
-      notes: {
-        stacked: true,
-        reserve: "3em",
-        why:
-          "Two lines at the frame's own width, which is what the longer of this beat's two " +
-          "revealed sentences takes there, measured in Chrome rather than guessed; stacked in one " +
-          "cell so the tallest is always what the row is, and choosing a stage never moves the " +
-          "plot down under the reader's pointer while forty-one cells are in the air.",
-      },
+      // THE ROW USED TO RESERVE 3em HERE, with `stacked: true` beside it, on the reasoning that the
+      // tallest of this beat's two sentences is what the row should be. The reasoning was right and
+      // the number was the wrong instrument: `control-chrome.ts` stacks unconditionally now and the
+      // browser measures the depth, so choosing a stage never moves the plot down under the
+      // reader's pointer at the frame's own width OR at any other.
     }),
     restoreCss(restore, { scope: SCOPE, idPrefix: RESTORE_ID_PREFIX }),
     // The cell the pointed point speaks for, lit ACROSS the split between the drawing and the hit

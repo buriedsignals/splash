@@ -541,7 +541,7 @@ export function followCss(
     `/* The follow this beat declared: ${declaration.options.length} option(s) over ${JSON.stringify(declaration.label)},`,
     `   walked across ${declaration.steps.length} steps. Radios plus :checked/:has(), generated once at`,
     `   build time — the same mechanism filter.ts narrows with, and the reason this needs no script. */`,
-    `${scope} [data-follow-note] { display: none; }`,
+    `${scope} [data-follow-note] { visibility: hidden; }`,
     `${scope} [data-follow-ring] { opacity: 0; }`,
     // The only motion this control has. Under `reduce` the whole block does not exist, so there is no
     // transition to override and no branch anywhere — the shape `render-web.mjs`'s own entrance rules
@@ -564,7 +564,7 @@ export function followCss(
       `${at} [data-follow-label] { color: ${dim.ink}; font-weight: ${dim.weight}; }`,
       `${at} [data-follow-line="${option.key}"] { stroke: ${lit.stroke}; stroke-width: ${lit.width}; }`,
       `${at} [data-follow-label="${option.key}"] { color: ${lit.ink}; font-weight: ${lit.weight}; }`,
-      `${at} [data-follow-note="${slug}"] { display: revert; }`,
+      `${at} [data-follow-note="${slug}"] { visibility: visible; }`,
     );
     // One rule per ring rather than one selector group: a group would need every selector to carry
     // the scope (`A B, C` is `(A B), (C)`, the refusal `level.ts` states), and a ring is cheap.
@@ -630,6 +630,5 @@ export function followChromeCss({ scope }: { scope: string }): string {
     scope,
     name: "follow",
     rail: "scroll",
-    notes: { reserve: null },
   });
 }

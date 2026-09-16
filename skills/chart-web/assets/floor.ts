@@ -583,7 +583,7 @@ export function floorCss(
     `/* The floor this beat declared: ${declaration.options.length} options over ${JSON.stringify(declaration.label)}.`,
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, and the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-floor-note] { display: none; }`,
+    `${scope} [data-floor-note] { visibility: hidden; }`,
     `${scope} [data-floor-axis] { display: none; }`,
     // `display: inline` and not `revert` on the plates: these are SVG <g>, whose only meaningful
     // distinction is none/not-none, and `inline` says so without asking what a UA sheet reverts to.
@@ -612,7 +612,7 @@ export function floorCss(
     lines.push(
       `${at} [data-floor-plate] { display: none; }`,
       `${at} [data-floor-plate="${slug}"] { display: inline; }`,
-      `${at} [data-floor-note="${slug}"] { display: revert; }`,
+      `${at} [data-floor-note="${slug}"] { visibility: visible; }`,
       `${at} [data-floor-axis="${slug}"] { display: revert; }`,
       // THE GUTTER IS THE FORMAT'S OWN GRID COLUMN, and this file names it for the same reason
       // `stackChromeCss` names `.chart-filter`'s treatment: the axis an option earns has nowhere
@@ -641,14 +641,10 @@ export function floorChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "floor",
-    notes: {
-      reserve: "3em",
-      why:
-        "TWO LINES, RESERVED, AND THE NUMBER IS MEASURED RATHER THAN CHOSEN. A one-line sentence "
-        + "needs one; a floor's sentence has to carry a band's start, its turning points, its end and "
-        + "what it comes to as a share, and on the beat this was written for that sets to two lines "
-        + "at 1280 and still two at 900. Reserving one meant choosing an option pushed the plot down "
-        + "28 CSS pixels, which is the plot moving under the control this row exists to stop.",
-    },
+    // THE ROW USED TO RESERVE 3em HERE, measured at 1280 and at 900 on the one beat this was
+    // written for. A floor's sentence carries a band's start, its turning points, its end and what
+    // it comes to as a share, so it is long, and how many lines that is depends on the reader's
+    // width and on the beat's own words — neither of which a number in this file knows.
+    // `control-chrome.ts` stacks the sentences and lets the browser measure instead.
   });
 }

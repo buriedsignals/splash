@@ -266,14 +266,15 @@ export function DirectedHexGridWeb({
       scope: SCOPE,
       name: "pool",
       rail: "wrap",
-      // NOT RESERVED, AND THE REASON IT USED TO BE IS ALREADY ANSWERED BY `stacked`. The reserve
-      // said: "The two sentences wrap to two and three lines at 375px on this beat's own words, and
-      // a revealed sentence that grows its row pushes the whole map down." Stacked in one grid cell
-      // the row is ALWAYS as tall as the longest sentence, so the map does not move whichever is
-      // showing — which is the whole of what the reserve was buying, at the price of 3.6em of map
-      // before the reader has chosen anything. On a map beat that price is the defect (see
-      // MAP_DRAWING_SHARE), so it is not paid twice.
-      notes: { reserve: null, stacked: true },
+      // NOT RESERVED BY A NUMBER, AND THE REASON IT USED TO BE IS ANSWERED BY THE STACKING. The
+      // reserve said: "The two sentences wrap to two and three lines at 375px on this beat's own
+      // words, and a revealed sentence that grows its row pushes the whole map down." That was
+      // true, and asking for `stacked: true` beside it did not fix it: this vocabulary hid its
+      // unchosen sentence by its display, which takes it out of the grid cell, so the cell was only
+      // ever as tall as whichever sentence was showing. Both halves live in `control-chrome.ts`
+      // now — it stacks every control's sentences and the vocabularies hide with `visibility` — so
+      // the row is as tall as the longest whichever is showing, without 3.6em of map being paid
+      // for before the reader has chosen anything (see MAP_DRAWING_SHARE).
       extra: poolFigureCss({ scope: SCOPE }),
     }),
     // THE GESTURE'S SCRIPT-FREE HALF. The map's cells are MapLibre layers now and no stylesheet

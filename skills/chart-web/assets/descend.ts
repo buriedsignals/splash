@@ -143,10 +143,18 @@ export function magnificationOf(option: DescendOption): number {
 }
 
 /** Refuses every declaration that would render a descent that lies, before anything is drawn. */
-export function assertDescendDeclaration(declaration: DescendDeclaration): void {
+export function assertDescendDeclaration(
+  declaration: DescendDeclaration,
+): void {
   const where = "descend declaration";
-  if (!declaration || typeof declaration !== "object" || Array.isArray(declaration))
-    throw new Error(`${where}: expected an object, got ${JSON.stringify(declaration)}`);
+  if (
+    !declaration ||
+    typeof declaration !== "object" ||
+    Array.isArray(declaration)
+  )
+    throw new Error(
+      `${where}: expected an object, got ${JSON.stringify(declaration)}`,
+    );
 
   for (const field of ["label", "rootLabel", "rootAnnounce"] as const)
     if (typeof declaration[field] !== "string" || !declaration[field].trim())
@@ -162,10 +170,14 @@ export function assertDescendDeclaration(declaration: DescendDeclaration): void 
     );
 
   if (!Array.isArray(declaration.rootKeys) || declaration.rootKeys.length === 0)
-    throw new Error(`${where}: \`rootKeys\` is what the root view draws, and it cannot be empty`);
+    throw new Error(
+      `${where}: \`rootKeys\` is what the root view draws, and it cannot be empty`,
+    );
   const root = new Set(declaration.rootKeys);
   if (root.size !== declaration.rootKeys.length)
-    throw new Error(`${where}: the root's keys are not unique — a cell would belong to two views`);
+    throw new Error(
+      `${where}: the root's keys are not unique — a cell would belong to two views`,
+    );
 
   if (!Array.isArray(declaration.options) || declaration.options.length < 1)
     throw new Error(
@@ -176,7 +188,9 @@ export function assertDescendDeclaration(declaration: DescendDeclaration): void 
   const seen = new Map<string, string>();
   for (const option of declaration.options) {
     if (typeof option?.key !== "string" || !option.key.trim())
-      throw new Error(`${where}: every branch needs a key — got ${JSON.stringify(option)}`);
+      throw new Error(
+        `${where}: every branch needs a key — got ${JSON.stringify(option)}`,
+      );
     const slug = descendSlugOf(option.key);
     const at = `${where}: branch ${JSON.stringify(option.key)}`;
     if (!slug) throw new Error(`${at} slugs to an empty string — rename it`);
@@ -208,7 +222,11 @@ export function assertDescendDeclaration(declaration: DescendDeclaration): void 
           `${JSON.stringify(option.note)}`,
       );
 
-    if (!Number.isFinite(option.parentShare) || option.parentShare <= 0 || option.parentShare > 1)
+    if (
+      !Number.isFinite(option.parentShare) ||
+      option.parentShare <= 0 ||
+      option.parentShare > 1
+    )
       throw new Error(
         `${at}: \`parentShare\` is this branch's share of the root total and must sit in (0, 1] — ` +
           `got ${JSON.stringify(option.parentShare)}`,
@@ -228,7 +246,9 @@ export function assertDescendDeclaration(declaration: DescendDeclaration): void 
       );
 
     if (!Array.isArray(option.keys) || option.keys.length === 0)
-      throw new Error(`${at}: draws no cell — a branch that empties the frame is not a reading`);
+      throw new Error(
+        `${at}: draws no cell — a branch that empties the frame is not a reading`,
+      );
     if (new Set(option.keys).size !== option.keys.length)
       throw new Error(`${at}: its keys are not unique`);
     const strangers = option.keys.filter((key) => !root.has(key));
@@ -243,9 +263,14 @@ export function assertDescendDeclaration(declaration: DescendDeclaration): void 
 
 /** Every view the page draws, root first. One list, so the markup, the stylesheet and the guard
  *  cannot disagree about what exists. */
-export function descendViewSlugs(declaration: DescendDeclaration | null | undefined): string[] {
+export function descendViewSlugs(
+  declaration: DescendDeclaration | null | undefined,
+): string[] {
   if (!declaration) return [];
-  return [DESCEND_ROOT_SLUG, ...declaration.options.map((o) => descendSlugOf(o.key))];
+  return [
+    DESCEND_ROOT_SLUG,
+    ...declaration.options.map((o) => descendSlugOf(o.key)),
+  ];
 }
 
 /** Which keys each view draws, by slug. The index `assertOneDescent` reads the markup against. */
@@ -270,7 +295,10 @@ export function descendOptionId(idPrefix: string, slug: string): string {
  * target, its label box. Both attributes together, never one of them: the guard below reads the
  * markup back and refuses the half-tagged datum that is how a label ends up in the wrong view.
  */
-export function descendCellAttrs(slug: string, key: string): Record<string, string> {
+export function descendCellAttrs(
+  slug: string,
+  key: string,
+): Record<string, string> {
   return { "data-view": slug, "data-cell": key };
 }
 
@@ -285,7 +313,13 @@ export function descendLayerAttrs(slug: string): Record<string, string> {
 export function descendOptionsForMarkup(
   declaration: DescendDeclaration | null | undefined,
   idPrefix: string,
-): { id: string; slug: string; label: string; announce: string; isRoot: boolean }[] {
+): {
+  id: string;
+  slug: string;
+  label: string;
+  announce: string;
+  isRoot: boolean;
+}[] {
   if (!declaration) return [];
   return [
     {
@@ -351,13 +385,13 @@ export function descendCss(
       `${JSON.stringify(declaration.label)}, plus the way back out.`,
     `   One rule per view, over [data-view] — every element drawn inside a view that is not the`,
     `   chosen one goes with it, whatever kind of element it is. */`,
-    `${scope} [data-descend-note] { display: none; }`,
+    `${scope} [data-descend-note] { visibility: hidden; }`,
   ];
   for (const slug of descendViewSlugs(declaration)) {
     const at = `${scope}:has(#${descendOptionId(idPrefix, slug)}:checked)`;
     lines.push(
       `${at} [data-view]:not([data-view="${slug}"]) { display: none; }`,
-      `${at} [data-descend-note="${slug}"] { display: revert; }`,
+      `${at} [data-descend-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -377,11 +411,13 @@ export function descendChromeCss({ scope }: { scope: string }): string {
     scope,
     name: "descend",
     margin: "6px 0 0",
-    notes: { margin: "0", reserve: null },
-    extra: `/* The row costs NOTHING until a branch is chosen: the space belongs to the sentence, not to the
-   container that would hold one. A reserved row is the right call where a note is one line and the
-   plot would jump under it; here a branch's sentence wraps to three or four lines on a phone, so
-   reserving one changes nothing about the jump and takes a line off the picture at every width. */
+    notes: { margin: "0" },
+    extra: `/* This row used to cost NOTHING until a branch was chosen, on the argument that a branch's
+   sentence wraps to three or four lines on a phone, so reserving ONE line changed nothing about
+   the jump and took a line off the picture at every width. The argument was right about the number
+   and wrong about the conclusion: what it described is the jump, not a reason to accept it. The row
+   is now as deep as the deepest branch sentence at the reader's own width, whatever that is, and
+   the picture pays for the deepest sentence once instead of jumping every time a branch is taken. */
 ${scope} .descend-notes p { margin: 4px 0 0; }`,
   });
 }

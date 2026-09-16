@@ -430,7 +430,7 @@ export function foldCss(
     `   Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts`,
     `   narrows with, stack.ts moves with, level.ts measures with and withdraw.ts subtracts with, and`,
     `   the reason this control needs no script and survives one being blocked. */`,
-    `${scope} [data-fold-note] { display: none; }`,
+    `${scope} [data-fold-note] { visibility: hidden; }`,
     `${scope} [data-fold-crossing] { display: none; }`,
     `${scope} [data-fold-profile] { opacity: 0; }`,
     `@media (prefers-reduced-motion: no-preference) {`,
@@ -443,7 +443,7 @@ export function foldCss(
     lines.push(
       `${at} [data-fold-profile="${slug}"] { opacity: 1; }`,
       `${at} [data-fold-crossing="${slug}"] { display: revert; }`,
-      `${at} [data-fold-note="${slug}"] { display: revert; }`,
+      `${at} [data-fold-note="${slug}"] { visibility: visible; }`,
     );
   }
   return lines.join("\n");
@@ -508,6 +508,5 @@ export function foldChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "fold",
-    notes: { reserve: "1.5em" },
   });
 }

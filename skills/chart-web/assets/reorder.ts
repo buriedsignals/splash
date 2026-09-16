@@ -1040,6 +1040,5 @@ export function reorderChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "reorder",
-    notes: { reserve: "1.5em", stacked: true },
   });
 }

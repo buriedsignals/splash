@@ -429,7 +429,7 @@ export function cutoffCss(
     `   over ${JSON.stringify(declaration.label)}. Radios plus :checked/:has(), generated once at`,
     `   build time — the same mechanism filter.ts narrows with, stack.ts moves with and level.ts`,
     `   measures with, and the reason this control needs no script. */`,
-    `${scope} [data-cutoff-note] { display: none; }`,
+    `${scope} [data-cutoff-note] { visibility: hidden; }`,
     // Hidden, never removed: `visibility` keeps the region in the layout it was drawn in, so
     // revealing one can never reflow the geometry underneath it.
     `${scope} [data-cutoff-region] { visibility: hidden; }`,
@@ -451,7 +451,7 @@ export function cutoffCss(
       `${at} [data-cutoff-region^="${slug}:"] { visibility: visible; }`,
     );
     if (option !== null)
-      lines.push(`${at} [data-cutoff-note="${slug}"] { display: revert; }`);
+      lines.push(`${at} [data-cutoff-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -469,6 +469,5 @@ export function cutoffChromeCss({ scope }: { scope: string }): string {
   return controlChromeCss({
     scope,
     name: "cutoff",
-    notes: { reserve: "1.5em" },
   });
 }
