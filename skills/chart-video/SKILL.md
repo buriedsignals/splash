@@ -34,7 +34,7 @@ Read in this order, then write.
 | 3 | the worked example `proof/video-<type>-…` (index below) | the beat's split into files (table below) |
 | 4 | scaffold the plumbing | Scaffold: `bun skills/chart-video/scripts/scaffold-video-beat.mjs …` (see the script's header) |
 | 5 | `BRIEF.md`: the choreography shot by shot, each shot tied to an event | the design; no code before it |
-| 6 | TDD `states.mjs` / `timing-contract.ts` / `scene.mjs`, then the frame | green tests before any render |
+| 6 | TDD `states.mjs` / `timing-contract.ts` / `scene.mjs`, then the frame | green tests before any render — the subject-agnostic maths comes from `scripts/series.mjs` (below), never copied into the beat |
 | 7 | `--look <dir>`, open the PNGs, fix, then the renders | the mp4s |
 
 **The rules, in brief** (`directed-type-choreography.md` holds the owner's words):
@@ -155,11 +155,26 @@ relative path into this skill. A skill itself may import neither out of its own 
 | `sizeFor`, `frameInsetFor`, `assertTypeFloor`, `assertDeliveredSize`, `readPngSize` | `shared/chart-video/sizes.mjs` (copy of `scripts/sizes.mjs`) | `#shared/chart-video/sizes.mjs` |
 | `EVENT_ORDER`, `endOf`, `progressOf`, `checkTiming`, `BeatTiming` | `shared/chart-video/timing.ts` (copy of `assets/timing.ts`) | `#shared/chart-video/timing.ts` |
 | `clamp01`, `ease`, `lerp` (the easing helpers) | `skills/scrolly/assets/reveal.mjs` | `../../skills/scrolly/assets/reveal.mjs` |
+| `fieldAtOf`, `moveOf`, `drawnTo`, `areaPath`, `polylinePath`, `curveTopOver`, `widestOf`, `firstCrossing` (+ `clamp01`, `ease`, `lerp`, `round1`) | `skills/chart-video/scripts/series.mjs` | `../../skills/chart-video/scripts/series.mjs` |
 | `readDirection`, `registerOf`, `EYEBROW_TO_DISPLAY`, `resolveDirectionFamilies`, `composeDirections`, `report` | `shared/design-base/` | `#shared/design-base/<file>.mjs` |
 | `readPalette`, `mix`, `contrast`, `adjustToContrast`; `deriveFurniture` | `shared/chart-beat/colour.mjs`; `shared/chart-beat/render-still.mjs` | `#shared/chart-beat/...` |
 
 Sizes: landscape 1920×1080 (`typeScale` 2.5, floor 30 px), square 1080×1080 and portrait 1080×1920
 (3.0, floor 36 px; portrait keeps a safe band, `assertWithinStage`).
+
+## What the beat takes, and what it must write itself
+
+`scripts/series.mjs` holds the arithmetic every beat needs and no beat should own: the easing, the
+field accumulator (`fieldAtOf` — a beat declares only its `WINDOWS` and `LINEAR` and takes the rest),
+a series drawn to a clock (`reachAlong`, `drawnTo`) and its outline and surface (`polylinePath`,
+`areaPath`), staggered moves (`moveOf`), the room a word has over a curve (`curveTopOver`,
+`standsClearOfCurve`), the widest measured text (`widestOf`), a crossing and a gap (`firstCrossing`,
+`firstYearGap`). It is subject-agnostic and unit-tested; a beat that writes any of it out again is
+carrying a copy, and the copy is what drifts.
+
+What never moves into the skill: **the argument, the gestures, the layout and the composition**.
+They are the beat's whole reason to exist, and a parameterised chart that could draw them all would
+draw none of them well.
 
 ## The copy's language
 
