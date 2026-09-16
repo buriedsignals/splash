@@ -79,7 +79,9 @@ export function tokensFor({ root, type, beat, component }) {
   const sheet = join(root, "skills", "scrolly", "references", "types", `${type}.md`);
   if (!existsSync(sheet)) throw new Error(`--type ${JSON.stringify(type)} has no sheet at skills/scrolly/references/types/${type}.md — see the per-type list in skills/scrolly/SKILL.md`);
   const beatDir = beatDirOf(root, beat, "--beat");
-  const name = component ?? componentNameOf(basename(beatDir), type);
+  // The templates already append "Scrolly" to %%Name%% (Directed%%Name%%Scrolly) — strip a caller-supplied
+  // trailing "Scrolly" (matching the worked examples' own DirectedXScrolly naming) so it isn't doubled.
+  const name = (component ?? componentNameOf(basename(beatDir), type)).replace(/Scrolly$/, "");
   if (!PASCAL.test(name)) throw new Error(`--component must be a PascalCase name, got ${JSON.stringify(name)}`);
   return {
     beatDir,

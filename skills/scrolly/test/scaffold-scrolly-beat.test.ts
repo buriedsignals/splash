@@ -185,6 +185,31 @@ describe("scaffold-scrolly-beat (chart)", () => {
     );
   });
 
+  it("should not double the Scrolly suffix when --component is already given one", () => {
+    const name = `.scaffold-test-scrolly-chart-suffix-${STAMP}`;
+    const dir = join(PROOF, name);
+    removeProbe(dir, name);
+    try {
+      const result = run(CHART_SCRIPT, [
+        "--type",
+        "boxplot",
+        "--beat",
+        `proof/${name}`,
+        "--component",
+        "ScaffoldProbeScrolly",
+      ]);
+      expect(result.status).toBe(0);
+      expect(existsSync(join(dir, "DirectedScaffoldProbeScrolly.tsx"))).toBe(
+        true,
+      );
+      expect(
+        existsSync(join(dir, "DirectedScaffoldProbeScrollyScrolly.tsx")),
+      ).toBe(false);
+    } finally {
+      removeProbe(dir, name);
+    }
+  });
+
   it("should give the runner the composed direction by default, --filed for the demo set, and refuse to render with a named SCAFFOLD error", () => {
     const runner = readFileSync(
       join(CHART_BEAT, "render-directions-scrolly.mjs"),
@@ -223,6 +248,31 @@ describe("scaffold-scrolly-map-beat (map)", () => {
       MAP_BEAT,
       MAP_EXPECTED.filter((f) => !f.endsWith(".md")),
     );
+  });
+
+  it("should not double the Scrolly suffix when --component is already given one", () => {
+    const name = `.scaffold-test-scrolly-map-suffix-${STAMP}`;
+    const dir = join(PROOF, name);
+    removeProbe(dir, name);
+    try {
+      const result = run(MAP_SCRIPT, [
+        "--type",
+        "dot-density",
+        "--beat",
+        `proof/${name}`,
+        "--component",
+        "ScaffoldProbeScrolly",
+      ]);
+      expect(result.status).toBe(0);
+      expect(existsSync(join(dir, "DirectedScaffoldProbeScrolly.tsx"))).toBe(
+        true,
+      );
+      expect(
+        existsSync(join(dir, "DirectedScaffoldProbeScrollyScrolly.tsx")),
+      ).toBe(false);
+    } finally {
+      removeProbe(dir, name);
+    }
   });
 
   it("should refuse to render with a named SCAFFOLD error before touching the network", () => {
