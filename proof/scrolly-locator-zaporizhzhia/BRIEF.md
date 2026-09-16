@@ -34,6 +34,9 @@ A locator answers "where"; the scroll starts from the whole continent and closes
   when no side is free.
 - **Every sentence is asserted**: the largest station in Ukraine and at 6,000 MW, the next three French, Ukraine the
   only country with no reported generation, every country label and the station inside their countries.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered, `verify-scrolly.mjs` and
+  `verify-live-map-scrolly.mjs` clean on all three, a frozen-image-to-live-map swap check on `creme` at
+  1280×800 and 375×812 shows only the live map's own place labels added — no other check failed.
 
 ## The regions
 
