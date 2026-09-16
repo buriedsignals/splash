@@ -93,10 +93,6 @@ crossing the fewest other lines. Every text the count can show is measured in Bu
   map whose cells are all sea; the key and the curve stand in the column under it, each over at most 3 % land, and the
   lines' numbers keep clear of all three.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-contour-europe-distance` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-contour-europe-distance` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedContourField.tsx` (the marks), `bake.mjs` (the plate). `BRIEF.md` records the choreography table, not the shape. `skills/map-beat/scripts/scaffold-static-map-beat.mjs --type contour-isoline --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

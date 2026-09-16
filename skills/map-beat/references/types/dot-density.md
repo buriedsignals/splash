@@ -82,10 +82,6 @@ radius they grow to (a bucket's radius the root of its members' mean square), so
 expression per layer bound to the frame's weight — a `["get", …]` radius would relay out the source every frame. The
 camera holds every unit; the key and the credit stand on the measured open sea, clear of every disc at its largest.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-dot-density-europe-stations` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-dot-density-europe-stations` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedDotDensity.tsx` (the marks), `bake.mjs` (the plate). `BRIEF.md` records the choreography table, not the shape. `skills/map-beat/scripts/scaffold-static-map-beat.mjs --type dot-density --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

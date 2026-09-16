@@ -56,10 +56,6 @@ within the same group. Assign the palette so adjacent bars in a group don't pair
 or two cool ones; the safety a CVD-safe set promises is a property of which colours end up sitting
 next to each other, not just a property of the set they were both drawn from.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-wind-vs-solar` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-wind-vs-solar` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedGroupedBar.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type grouped-bar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

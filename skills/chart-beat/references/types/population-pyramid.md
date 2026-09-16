@@ -43,10 +43,6 @@ position — left versus right — so the colour pairing is reinforcing a differ
 already makes, not carrying it alone; that redundancy is exactly why this type stays legible
 even in greyscale, provided the mirrored positions are still there to read.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-swiss-age-pyramid` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-swiss-age-pyramid` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedPyramid.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type population-pyramid --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

@@ -52,10 +52,6 @@ against the calendar's actual background — not an assumed white page — becau
 frequently the densest grid of individually-meaningful cells in this whole set, and a vanishing bottom
 third of the ramp here means an entire season's worth of low readings reads as blank.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-calendar-heatmap-geneva` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-calendar-heatmap-geneva` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedCalendarHeatmap.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type calendar-heatmap --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

@@ -41,10 +41,6 @@ value label sitting next to it. If outliers get numbers, render those numbers in
 box's fill or stroke color — check the actual contrast of the label against its real background,
 not against an assumption of white.
 
-## The worked example in this tree
+## Worked example
 
-`proof/more-boxplot-france-co2-decades` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/more-boxplot-france-co2-decades` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedBoxplot.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type boxplot --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

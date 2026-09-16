@@ -269,6 +269,39 @@ default `-1`) → `<name>-final-frame.png`; `"mp4"` → `<name>.mp4`. Returns `{
 - **Names** in the map are `symbol` layers at frozen seats, shown only once the camera has settled; the
   credit (with "© MapTiler © OpenStreetMap") sits where the measured grid shows sea and no word.
 
+## Producing a static beat in a run
+
+**Prerequisite — `PALETTE.md` must already be recorded**, a journalist decision from `skills/palette`
+(once `NEWSROOM.md` is resolved), never defaulted here. The scaffolded runner refuses immediately, by
+name, when it is missing.
+
+1. **Pick the type** from `references/types/` and **read its sheet**: what it argues and its `##
+   Worked example` — the validated static beat this type adapts from.
+2. **Scaffold the plumbing** rather than writing it by hand — `bun
+   skills/map-beat/scripts/scaffold-static-map-beat.mjs --type <type> --beat proof/static-<subject>
+   --component <PascalName>`. This skill's other scaffold, `scaffold-map-video-beat.mjs` above, is the
+   VIDEO genre; this one is static. By default it copies the type sheet's own worked example — its
+   `render-directions.mjs`, its one `Directed<Type>.tsx`, its `bake.mjs`, and every OTHER local
+   sibling `.mjs` file the runner imports (a beat's own `beat.mjs`/`plate-cache.mjs` split, when it
+   has one) — renamed, and rewrites the "render all three filed directions unconditionally" plumbing
+   every hand-written static beat still carries into the composed-direction-default convention below.
+   `--from <beat>` adapts a named beat instead; `--generic` writes the old fully empty stub, required
+   only for a type whose sheet names no worked example yet. Refuses only an unknown `--type`, a
+   `--beat` not under `proof/` (or a story's `beats/`), a real file collision, missing frozen data or
+   geometry the worked example's own readers assume sits beside the beat, or a `PALETTE.md` it cannot
+   reach.
+3. **Write the claim/assertions/layers** the scaffold marked — `grep -rn SCAFFOLD <beat>` finds every
+   region, across the runner, the directed component, `bake.mjs` and any sibling file.
+4. **Render and look** — `bun <beat>/render-directions.mjs`; the first render bakes the plate
+   (`MAPTILER_KEY` in `.env`), later ones reuse it unless the plan's own digest changed
+   (`plate-cache.mjs`'s convention, when the worked example carries one).
+5. **Owner review**: apply `doctrine`'s design rubric to the pixels.
+
+**ONE ART DIRECTION IN A PRODUCTION RUN**, not the three filed demo directions: the scaffolded runner
+composes one from the beat's own `PALETTE.md` and text (`composeDirections`,
+`#shared/design-base/index.mjs`) and renders only that by default. `--filed` renders `creme`,
+`nocturne`, `rapport` instead — a catalogue or demo proof, never a production render.
+
 ## Architecture
 
 | Layer | File | Role |
@@ -420,6 +453,19 @@ The seed's (`Co2MapStill.tsx`, baked `Co2MapVideo.tsx`). A live video's knobs ar
 - `scripts/bake-plate.mjs` — the camera, the gate, the plate, the projection, the culling. Refuses a
   frame taller than its geography can fill BEFORE the capture (`assertStageServesGeography`), and
   records what the camera's scale implies into `geometry.json`'s `extent` key.
+- `scripts/scaffold-static-map-beat.mjs` — the static plumbing scaffold ("Producing a static beat in
+  a run" above), the sibling of `scaffold-map-video-beat.mjs` for the static genre: `--from`/default
+  adapts a type's own worked example (its runner, its `Directed*.tsx`, its `bake.mjs`, and every
+  other local sibling `.mjs` its runner imports), `--generic` the empty stub
+  (`assets/static-map-beat-scaffold/*.tmpl`).
+- `scripts/static-plumbing.mjs` — this skill's own copy of `chart-beat`'s (skills never import across
+  a skill boundary at runtime): `paletteReachable`/`paletteRefusalMessage`,
+  `requiredLocalAssets`/`missingAssetsMessage`, `composedDirectionDefault`,
+  `markDividers`/`markBefore` — see `chart-beat/SKILL.md`'s own entry.
+- `test/scaffold-static-map-beat.test.ts` — `--generic` parses and refuses to render with a named
+  `SCAFFOLD` error before ever spawning `bake.mjs` or reaching MapTiler; the default `--from` path
+  copies `beat.mjs`/`plate-cache.mjs`-style siblings and marks every subject-specific region
+  `SCAFFOLD`; missing frozen geometry refuses before writing anything.
 - `scripts/extent-range.mjs` — the camera probe for B4.1. Drives the same `fitBounds`, style and
   capture gate at all six rungs of the ladder — planet to city — from a catalogue passed in with
   `--data`, and writes the plates and the numbers to `output-proof/extent-range/`. It ships no data

@@ -71,10 +71,6 @@ And say what the floor still costs, rather than papering over it. On a white gro
 cannot be drawn as almost nothing — the palest cell is a mid-grey. If the alt text calls it "pale
 grey", a reader who cannot see the grid has been told something the grid does not show.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-heatmap-europe-electricity` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-heatmap-europe-electricity` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedHeatmap.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type heatmap --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

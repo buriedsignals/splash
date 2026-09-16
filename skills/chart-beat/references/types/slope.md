@@ -66,10 +66,6 @@ line's end-value label in that same accent hue is exactly the move that has prev
 contrast in this codebase. Keep every value label in the page's neutral ink; let the line itself, not
 its printed number, carry the accent.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-slope-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-slope-europe-lowcarbon` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedSlope.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type slope --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

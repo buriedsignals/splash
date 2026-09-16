@@ -59,10 +59,6 @@ labels belong in the page's neutral ink, never in either dot's own colour — a 
 a dot's accent hue has previously failed WCAG contrast here and had to be moved off the mark's colour
 entirely.
 
-## The worked example in this tree
+## Worked example
 
-`proof/more-dumbbell-life-expectancy-gains` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/more-dumbbell-life-expectancy-gains` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedDumbbell.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type dumbbell --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

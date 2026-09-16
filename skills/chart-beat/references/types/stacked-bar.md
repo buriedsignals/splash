@@ -57,10 +57,6 @@ that fixed it generalises cleanly to every stacked bar: the mark carries the hue
 the value, and the two are never allowed to be the same colour, no matter how well that colour
 passed its own test as a fill.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-stacked-bar-lowcarbon-growth` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-stacked-bar-lowcarbon-growth` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedStackedBar.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type stacked-bar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

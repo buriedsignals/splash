@@ -52,10 +52,6 @@ context lines being exempt from the categorical-palette CVD check is a deliberat
 in this codebase, not an oversight — but it only stays a safe carve-out as long as those lines are
 genuinely unaccented background, never quietly pressed into carrying meaning of their own.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-parallel-coordinates-electricity-mix` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-parallel-coordinates-electricity-mix` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedParallelCoordinates.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type parallel-coordinates --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

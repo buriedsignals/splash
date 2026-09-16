@@ -50,10 +50,6 @@ printed inside a coloured fill — but if a value or duration label is ever adde
 the same real-contrast-against-the-actual-fill discipline the rest of this family uses applies here
 too.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-gantt-top-ten-tenure` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-gantt-top-ten-tenure` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedGantt.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type gantt --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

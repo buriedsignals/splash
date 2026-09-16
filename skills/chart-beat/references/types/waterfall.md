@@ -45,10 +45,6 @@ enough to need rotating — truncate from the end (keep the readable start), and
 label a bounded strip of vertical room rather than letting a long name push the whole plot area
 around or run into the source line underneath it.
 
-## The worked example in this tree
+## Worked example
 
-`proof/static-germany-electricity-bridge` — a **directed** beat of this type: written by hand under the doctrine, taken through a
-filed direction, its six registers and the arbiter's applicable treatments, and rendered in all
-three filed directions. Read its `BRIEF.md` before writing a new one: it records which of this
-sheet's rules the beat spent, which it refused, and the measurement behind each refusal. It is a
-worked example, not a component to import — nothing here is parameterised.
+`proof/static-germany-electricity-bridge` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions.mjs` (data, assertions, words), `DirectedWaterfall.tsx` (the marks). `BRIEF.md` records the choreography table, not the shape. `skills/chart-beat/scripts/scaffold-static-beat.mjs --type waterfall --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.

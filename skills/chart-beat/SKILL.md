@@ -166,6 +166,37 @@ and exposes `getBBox()`, which is what makes a **measured** gutter possible at a
   with its measurement named — a FAIL is fixed before the journalist is asked, never presented
   as a question.
 
+## Producing a beat in a run
+
+**Prerequisite — `PALETTE.md` must already be recorded**, a journalist decision from `skills/palette`
+(once `NEWSROOM.md` is resolved), never defaulted here. The scaffolded runner refuses immediately, by
+name, when it is missing.
+
+1. **Pick the type** from `references/types/` and **read its sheet**: what it argues, the one thing
+   that goes wrong, and its `## Worked example` — the validated beat this type adapts from.
+2. **Scaffold the plumbing** rather than writing it by hand — `bun
+   skills/chart-beat/scripts/scaffold-static-beat.mjs --type <type> --beat proof/static-<subject>
+   --component <PascalName>`. By default it copies the type sheet's own worked example (its
+   `render-directions.mjs` and `Directed<Type>.tsx`), renamed, and rewrites the "render all three
+   filed directions unconditionally" plumbing every hand-written static beat still carries into the
+   composed-direction-default convention `chart-video`/`chart-web`/`scrolly` already use (below).
+   `--from <beat>` adapts a named beat instead; `--generic` writes the old fully empty stub, required
+   only for a type whose sheet names no worked example yet. Works into a beat folder that may already
+   exist (`analyst`'s `data.json`/`DATA-NOTES.md`, written first); refuses only an unknown `--type`, a
+   `--beat` not under `proof/` (or a story's `beats/`), a real file collision, or a `PALETTE.md` it
+   cannot reach.
+3. **Write the claim/assertions/marks** the scaffold marked — `grep -rn SCAFFOLD <beat>` finds every
+   region. Data missing beside the beat that the worked example's own reader assumes (its `data.csv`
+   or similar) is named and refused before anything is written.
+4. **Render and look** — `bun <beat>/render-directions.mjs` — on the ground the newsroom actually
+   uses, at the size it will actually ship at (step 7 of "How it works" above).
+5. **Owner review**: apply `doctrine`'s design rubric to the pixels (above).
+
+**ONE ART DIRECTION IN A PRODUCTION RUN**, not the three filed demo directions: the scaffolded runner
+composes one from the beat's own `PALETTE.md` and text (`composeDirections`,
+`#shared/design-base/index.mjs`) and renders only that by default. `--filed` renders `creme`,
+`nocturne`, `rapport` instead — a catalogue or demo proof, never a production render.
+
 ## Quick start
 
 This is what a real beat, written into an installed Splash root, actually imports —
@@ -317,6 +348,20 @@ by an ordinary relative path — that import is for this skill's own tests
 - `scripts/inspect-render.mjs` — `inspectSvg`: contrast against the real ground, alt-text
   presence, root `<title>` leakage. Vendored the same way, alongside `render-still.mjs`, at
   `assets/root-template/shared/chart-beat/inspect-render.mjs`.
+- `scripts/scaffold-static-beat.mjs` — the plumbing scaffold ("Producing a beat in a run" above):
+  `--from`/default adapts a type's own worked example, `--generic` the empty stub
+  (`assets/static-beat-scaffold/*.tmpl`).
+- `scripts/static-plumbing.mjs` — `paletteReachable`/`paletteRefusalMessage` (the PALETTE.md
+  prerequisite, checked at scaffold time), `requiredLocalAssets`/`missingAssetsMessage` (a worked
+  example's own frozen data, refused when missing beside the new beat), `composedDirectionDefault`
+  (rewrites a copied worked example's "render all three filed directions" loop into the ONE
+  composed direction by default / `--filed` convention), `markDividers`/`markBefore` (the `SCAFFOLD:`
+  banners). Its own copy backs `map-beat`'s static scaffold too (skills never import across a skill
+  boundary at runtime).
+- `test/scaffold-static-beat.test.ts` — `--generic` parses and refuses to render with a named
+  `SCAFFOLD` error before drawing anything; the default `--from` path marks every subject-specific
+  region `SCAFFOLD` and rewrites the composed-direction default; a real file collision and an
+  unreachable `PALETTE.md` both refuse before writing anything.
 - `test/annotation-ink.test.ts` — the arithmetic above, on real pairs out of this corpus, with the
   two mutations that redden it printed in its header.
 - `test/render-still.test.ts` — `bun:test` coverage: the ink pole on a mid grey, the muted contrast
