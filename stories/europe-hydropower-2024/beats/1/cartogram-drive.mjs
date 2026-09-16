@@ -125,7 +125,7 @@ export function applyEuropeHydroState(root, state) {
     [c.byCountry, state.country],
   ]) {
     const target = Number(node.dataset.value);
-    const text = node.dataset.template.replace("{n}", (target * clamp(value * 2)).toFixed(1).replace(".", ","));
+    const text = node.dataset.template.replace("{n}", (target * clamp(value * 2)).toFixed(1));
     if (node.textContent !== text) node.textContent = text;
     node.style.opacity = String(value);
   }

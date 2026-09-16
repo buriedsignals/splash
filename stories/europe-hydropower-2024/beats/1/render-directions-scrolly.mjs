@@ -1,20 +1,16 @@
-// SCAFFOLD: scaffolded --from proof/scrolly-cartogram-europe-lowcarbon — this file is that beat's own code, renamed for this one. The
-// header comment below, and every region marked SCAFFOLD:, describe proof/scrolly-cartogram-europe-lowcarbon's own subject; rewrite them
-// for this beat's. Read proof/scrolly-cartogram-europe-lowcarbon/BRIEF.md alongside this code before changing the choreography.
-// Europe's low-carbon electricity, rendered once per FILED DIRECTION into a self-contained scrolly page.
+// Europe's 2024 hydropower, rendered once per FILED DIRECTION into a self-contained scrolly page.
 // The `cartogram` type in the scrolly format, on a live MapTiler map while it shows geography, the tiles
-// outside it once it leaves (addendum 2026-09-15 §5).
+// outside it once it leaves (the same live-map handover as the sibling low-carbon cartogram).
 //
-// THE SUBJECT, CHOREOGRAPHED — kept exactly as validated 2026-09-15 (« Trois façons de compter »), moved onto
-// the live map for its geographic half:
+// THE SUBJECT, CHOREOGRAPHED:
 //
 //   1. the map — every country as its territory, shaded by class, live;
-//   2. the country that takes the most room, picked out on the map; the area-weighted mean counts up;
-//   3. the handover, then the morph — every country shrinks or swells into one equal tile; the country
-//      mean counts up;
-//   4. every tile resized to the electricity its country produces; the production-weighted mean counts up;
-//   5. the three means on one rule, the tiles stepping back;
-//   6. the equal tiles again, the country with no reading named.
+//   2. Russia, the single largest producer, picked out on the map; "1 country" counts up to its own share;
+//   3. the handover, then the morph — every country shrinks or swells into one equal tile; "3 countries"
+//      (Russia, Norway, Turkey) counts up;
+//   4. every tile resized to the hydro TWh its country produced; "5 countries" (+ France, Sweden) counts up;
+//   5. the three counters on one rule, the tiles stepping back — one true concentration, counted three ways;
+//   6. the equal tiles again, Ukraine (no 2024 reading) named.
 //
 // Usage:  set -a && . ./.env && set +a && bun stories/europe-hydropower-2024/beats/1/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
@@ -33,23 +29,23 @@ import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/regis
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
-import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
-import { openLiveMapCards, renderWithCardImages } from "../../skills/scrolly/scripts/live-map-cards-bake.mjs";
-import { areaOf } from "./cartogram-geometry.mjs";
+import { renderScrolly } from "../../../../skills/scrolly/scripts/render-scrolly.mjs";
+import { openLiveMapCards, renderWithCardImages } from "../../../../skills/scrolly/scripts/live-map-cards-bake.mjs";
 import { cartogramGeometry, cartogramMapPlan, fitCamera, iso2Of, projectorOf, withWidestName } from "./plan.mjs";
 import { DirectedEuropeHydroScrolly } from "./DirectedEuropeHydroScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
+// FIX (not in the scaffold): a story beat sits four levels below repo root (stories/<story>/beats/<n>/),
+// not two (proof/<name>/, the worked example's own depth) — the scaffolded two-".." path resolved to a
+// directory that does not exist and `readdirSync` threw. `stories/europe-coal-electricity-2024/beats/1/`
+// carries the same unfixed bug.
+const DIRECTIONS = join(HERE, "..", "..", "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 const FALLBACK = join(HERE, "fallback");
 const YEAR = 2024;
-const EYEBROW = "Énergie · Europe";
+const EYEBROW = "Energy · Europe";
 const NB = " ";
 const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
-
-const CLEAN = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh", "nuclear_generation__twh"];
-const FOSSIL = ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"];
 
 /** The layout is designed, not derived — the static plate's own grid, unchanged. */
 const GRID = [
@@ -72,112 +68,98 @@ const MARGIN = 900;
  *  over the map's middle (the same band the prose card and the beam sit in on every other card). */
 const RUSSIA_SEAT = [42, 65];
 
-// SCAFFOLD: data loading — proof/scrolly-cartogram-europe-lowcarbon's own reader. Point this at this beat's own frozen data and
-// keep the shape (fields coerced to numbers, throw on anything unusable).
+// Data loading — hydro generation TWh per country, this beat's own frozen copy of the CSV
+// (fields coerced to numbers, null preserved as no-data, throw on anything unusable).
 const csv = (await readFile(join(HERE, "data.csv"), "utf8")).trim().split(/\r?\n/);
 const header = csv[0].split(",");
-const share = new Map();
-const production = new Map();
-let cleanSum = 0;
-let totalSum = 0;
+const hydro = new Map();
 for (const line of csv.slice(1)) {
   const raw = Object.fromEntries(header.map((h, i) => [h, line.split(",")[i]]));
   if (Number(raw.year) !== YEAR) throw new Error(`${raw.entity} is not ${YEAR}`);
-  const clean = CLEAN.reduce((s, k) => s + Number(raw[k] || 0), 0);
-  const total = clean + FOSSIL.reduce((s, k) => s + Number(raw[k] || 0), 0);
-  share.set(raw.code, total > 0 ? (clean / total) * 100 : null);
-  production.set(raw.code, total);
-  cleanSum += clean;
-  totalSum += total;
+  const v = raw.hydro_generation__twh;
+  hydro.set(raw.code, v === "" || v === undefined ? null : Number(v));
 }
 
 const placed = [];
 GRID.forEach((line, row) =>
   line.trim().split(/\s+/).forEach((code, col) => {
     if (code === "..") return;
-    if (!share.has(code)) throw new Error(`the grid places ${code} and the data has no such code`);
+    if (!hydro.has(code)) throw new Error(`the grid places ${code} and the data has no such code`);
     placed.push({ iso: code, col, row });
   }),
 );
-const missingFromGrid = [...share.keys()].filter((c) => !placed.some((p) => p.iso === c));
-// SCAFFOLD: assertions — proof/scrolly-cartogram-europe-lowcarbon's own claim, checked against its data. Rewrite every check against
-// this beat's own figures; a beat whose numbers drift must refuse to render, not ship a stale claim.
+const missingFromGrid = [...hydro.keys()].filter((c) => !placed.some((p) => p.iso === c));
 if (missingFromGrid.length) throw new Error(`the data has ${missingFromGrid.join(", ")} and the grid has no tile for them`);
 for (const p of placed) iso2Of(p.iso); // every studied country joins MapTiler Countries, or refuses loudly here
 
 const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
-const area = {};
-for (const f of geo.features) area[f.properties.iso] = (area[f.properties.iso] ?? 0) + areaOf(f);
 
-// ── SCAFFOLD: THE CLAIM, ASSERTED — the static beat's own two checks, unchanged ────────────────────────────
-const withData = [...share.entries()].filter(([, v]) => v !== null);
-const byCountry = withData.reduce((s, [, v]) => s + v, 0) / withData.length;
-const areaSum = withData.reduce((s, [c]) => s + (area[c] ?? 0), 0);
-const byArea = withData.reduce((s, [c, v]) => s + v * (area[c] ?? 0), 0) / areaSum;
-if (!(byCountry - byArea > 15)) throw new Error(`the headline says the two readings are twenty points apart; they are ${(byCountry - byArea).toFixed(1)}`);
-const widest = withData.reduce((a, b) => ((area[b[0]] ?? 0) > (area[a[0]] ?? 0) ? b : a));
-if (!(share.get(widest[0]) < byCountry)) throw new Error(`a card says the largest country is below the country mean; ${widest[0]} is not`);
-const widestShare = ((area[widest[0]] ?? 0) / areaSum) * 100;
-const unreported = [...share.entries()].filter(([, v]) => v === null).map(([c]) => c);
-const byProduction = (cleanSum / totalSum) * 100;
-if (!(byArea < byProduction && byProduction < byCountry)) throw new Error(`card 5 orders the means km² < kWh < country; they are ${byArea.toFixed(1)}, ${byProduction.toFixed(1)}, ${byCountry.toFixed(1)}`);
-const byOutput = withData.map(([c]) => c).sort((a, b) => production.get(b) - production.get(a));
-if (byOutput[0] !== widest[0] || byOutput[1] !== "FRA") throw new Error(`card 4 says Russia then France produce most; they are ${byOutput[0]} and ${byOutput[1]}`);
-const smallestTwo = byOutput.slice(-2).sort();
-if (smallestTwo.join() !== "LUX,MLT") throw new Error(`card 4 names Malta and Luxembourg the smallest producers; they are ${smallestTwo.join(", ")}`);
-if (unreported.length !== 1) throw new Error(`the sixth card names one country with no reading; there are ${unreported.length}`);
+// ── THE CLAIM, ASSERTED — recomputed from the frozen data every render, never typed ────────────────
+const withData = [...hydro.entries()].filter(([, v]) => v !== null);
+const totalHydro = withData.reduce((s, [, v]) => s + v, 0);
+const ranked = withData.map(([c]) => c).sort((a, b) => hydro.get(b) - hydro.get(a));
+const shareOfTop = (n) => (ranked.slice(0, n).reduce((s, c) => s + hydro.get(c), 0) / totalHydro) * 100;
+const leader = ranked[0];
+if (leader !== "RUS") throw new Error(`the claim says Russia is the largest hydro producer; the largest is ${leader}`);
+const top1Share = shareOfTop(1);
+const top3Share = shareOfTop(3);
+const top5Share = shareOfTop(5);
+if (!(top1Share > 20)) throw new Error(`Russia alone is claimed near a quarter of Europe's hydro; it is ${top1Share.toFixed(1)}%`);
+if (!(top3Share > top1Share && top5Share > top3Share)) throw new Error(`the three counters must grow: 1=${top1Share.toFixed(1)} 3=${top3Share.toFixed(1)} 5=${top5Share.toFixed(1)}`);
+if (!(top5Share > 60)) throw new Error(`the headline says the top five are almost two-thirds; they are ${top5Share.toFixed(1)}%`);
+const top5 = ranked.slice(0, 5);
+if (top5.join() !== "RUS,NOR,TUR,FRA,SWE") throw new Error(`the top five producers are claimed as Russia, Norway, Turkey, France, Sweden; they are ${top5.join(", ")}`);
+const unreported = [...hydro.entries()].filter(([, v]) => v === null).map(([c]) => c);
+if (unreported.length !== 1 || unreported[0] !== "UKR") throw new Error(`the last card names Ukraine as the one country with no 2024 reading; unreported is ${unreported.join(", ") || "none"}`);
+const smallestTwo = ranked.slice(-2).sort();
+if (smallestTwo.join() !== "CYP,MLT") throw new Error(`the smallest producers are claimed as Cyprus and Malta; they are ${smallestTwo.join(", ")}`);
 
-const BREAKS = [40, 60, 75, 94];
+const BREAKS = [1, 5, 15, 50];
 const CLASS_COUNT = BREAKS.length + 1;
 const classOf = (v) => (v === null ? null : BREAKS.filter((b) => v >= b).length);
-const NAMES = {
-  RUS: { name: "Russie", article: "la Russie" },
-  UKR: { name: "Ukraine", article: "l’Ukraine" },
-  FRA: { name: "France", article: "la France" },
-};
+const NAMES = { RUS: "Russia", NOR: "Norway", TUR: "Turkey", FRA: "France", SWE: "Sweden", UKR: "Ukraine", CYP: "Cyprus", MLT: "Malta" };
 const nameOf = (iso) => {
-  if (!NAMES[iso]) throw new Error(`${iso} is named by a card and this beat has no French name for it`);
+  if (!NAMES[iso]) throw new Error(`${iso} is named by a card and this beat has no name recorded for it`);
   return NAMES[iso];
 };
-const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-const one = (v) => plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
-const twh = (iso) => plainSpaces(Math.round(production.get(iso)).toLocaleString("fr-FR"));
+const one = (v) => plainSpaces(v.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+const twh = (iso) => plainSpaces(Math.round(hydro.get(iso)).toLocaleString("en-GB"));
 
-// ── SCAFFOLD: the live map's own camera and shapes, ONE coordinate space with the tile grid ────────────────
+// ── the live map's own camera and shapes, ONE coordinate space with the tile grid ────────────────
 const camera = fitCamera({ west: WINDOW[0], south: WINDOW[1], east: WINDOW[2], north: WINDOW[3] }, FRAME);
 const project = projectorOf(camera, FRAME);
 const geometry = cartogramGeometry({ geo, placed }, { project, stage: FRAME, margin: MARGIN });
-const countries = geometry.countries.map((c) => ({ ...c, value: share.get(c.iso), classIndex: classOf(share.get(c.iso)), twh: production.get(c.iso) }));
-const widestClassIndex = classOf(share.get(widest[0]));
+const countries = geometry.countries.map((c) => ({ ...c, value: hydro.get(c.iso), classIndex: classOf(hydro.get(c.iso)), twh: hydro.get(c.iso) ?? 0 }));
+const leaderClassIndex = classOf(hydro.get(leader));
 
-// ── SCAFFOLD: the words ──────────────────────────────────────────────────────────────────────────────────
-// SCAFFOLD: card sentences — proof/scrolly-cartogram-europe-lowcarbon's own title, prose, words and alt. Rewrite for this beat's own
-// subject; keep the no-break space escapes and the register split (display/body/axis/annot/value).
+// ── the words ────────────────────────────────────────────────────────────────────────────────────
 const title = [
-  `Compté par pays, le bas-carbone européen est à ${one(byCountry)}${NB}% ; compté au kilomètre carré, à ${one(byArea)}${NB}%`,
-  `Par pays ${one(byCountry)}${NB}% de bas-carbone ; par territoire ${one(byArea)}${NB}%`,
-  `Le bas-carbone européen, compté trois fois`,
+  `Five countries produced ${one(top5Share)} % of Europe's 2024 hydropower — Russia alone, ${one(top1Share)} %`,
+  `Europe's hydropower, concentrated in a handful of countries`,
+  `Just five countries produced ${one(top5Share)} % of Europe's hydro in 2024`,
 ];
 const prose = [
-  [`Part d’électricité bas-carbone de ${countries.length} pays européens en ${YEAR}, sur la carte : chaque pays prend la place de son territoire.`],
-  [`Sur une carte, l’encre suit le territoire : ${nameOf(widest[0]).article} pèse ${Math.round(widestShare)}${NB}% de celui de ces pays, à ${one(share.get(widest[0]))}${NB}% de bas-carbone. Au kilomètre carré, la moyenne tombe à ${one(byArea)}${NB}%.`],
-  [`Donnons à chaque pays la même place : une tuile égale, rangée à peu près comme la carte. Une tuile, une voix : comptée par pays, la moyenne monte à ${one(byCountry)}${NB}%.`],
-  [`Donnons maintenant à chaque tuile la taille de sa production. ${capital(nameOf(byOutput[0]).article)} reste la plus grande, ${twh(byOutput[0])}${NB}TWh, devant ${nameOf("FRA").article}, ${twh("FRA")}${NB}; Malte et le Luxembourg ne sont plus qu’un point. Au kilowattheure, ${one(byProduction)}${NB}%.`],
-  [`Trois moyennes, toutes vraies : ${one(byArea)}${NB}% au kilomètre carré, ${one(byProduction)}${NB}% au kilowattheure, ${one(byCountry)}${NB}% par pays. Chaque dessin n’en montre qu’une.`],
-  [`${capital(nameOf(unreported[0]).article)} n’a pas de donnée ${YEAR} : sa tuile reste vide. La disposition est dessinée à la main pour rester reconnaissable ; elle n’est mesurée sur rien.`],
+  [`2024 hydro generation of ${countries.length} European countries, on the map: each country takes the place of its own territory.`],
+  [`${nameOf(leader)} alone generated ${twh(leader)} TWh of hydropower in 2024 — ${one(top1Share)} % of everything Europe's hydro plants produced.`],
+  [`Give every country the same room: one equal tile, arranged roughly as the map. Add Norway and Turkey and the top three already reach ${one(top3Share)} %.`],
+  [`Now resize each tile to the hydro TWh its country actually produced. ${nameOf("FRA")} and ${nameOf("SWE")} complete the top five — ${one(top5Share)} % from just five of ${withData.length} reporting countries.`],
+  [`One country already a quarter, three near half, five nearly two-thirds: three counts of the same concentration.`],
+  [`${nameOf("UKR")} has no 2024 reading: its tile stays empty. The other thirty-plus countries in this panel share what is left.`],
 ];
-const source = "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · fond de carte © MapTiler © OpenStreetMap";
-const byAreaCounter = { template: `au km²${NB}: {n}${NB}%`, value: Number(byArea.toFixed(1)) };
-const byProductionCounter = { template: `au kWh${NB}: {n}${NB}%`, value: Number(byProduction.toFixed(1)) };
-const byCountryCounter = { template: `par pays${NB}: {n}${NB}%`, value: Number(byCountry.toFixed(1)) };
-const subjectNote = `${nameOf(widest[0]).name} · ${Math.round(widestShare)}${NB}% du territoire · ${one(share.get(widest[0]))}${NB}%`;
-const widestMapLabel = `${nameOf(widest[0]).name.toUpperCase()} · ${one(share.get(widest[0]))}${NB}%`;
-const missingNote = `${nameOf(unreported[0]).name} · donnée non rapportée`;
+const source = "Source: Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · basemap © MapTiler © OpenStreetMap";
+const top1Counter = { template: `1 country : {n} %`, value: Number(top1Share.toFixed(1)) };
+const top3Counter = { template: `3 countries : {n} %`, value: Number(top3Share.toFixed(1)) };
+const top5Counter = { template: `5 countries : {n} %`, value: Number(top5Share.toFixed(1)) };
+const subjectNote = `${nameOf(leader)} · ${twh(leader)} TWh · ${one(top1Share)} %`;
+const leaderMapLabel = `${nameOf(leader).toUpperCase()} · ${one(top1Share)} %`;
+const missingNote = `${nameOf(unreported[0])} · no 2024 reading`;
 const alt =
-  `Carte de l’Europe qui devient un cartogramme en tuiles : ${countries.length} pays teintés par leur part d’électricité ` +
-  `bas-carbone en ${YEAR}. Comptée par pays la moyenne est de ${one(byCountry)} % ; pondérée par le territoire, ${one(byArea)} %.`;
+  `Map of Europe that becomes a tiled cartogram: ${countries.length} countries tinted by their 2024 hydro generation. ` +
+  `Five of them produced ${one(top5Share)} % of the continent's hydropower; Russia alone, ${one(top1Share)} %.`;
 
-/** One state per card; see `cartogram-drive.mjs`. Unchanged from the validated 2026-09-15 choreography. */
+/** One state per card; see `cartogram-drive.mjs`. `area`/`country`/`production` drive the three counters
+ *  (top-1/top-3/top-5 share) — reusing the sibling low-carbon cartogram's three-counter mechanism for a
+ *  single-metric concentration claim instead of three different means. */
 const STATES_RAW = [
   { morph: 0, size: 0, subject: 0, area: 0, country: 0, production: 0, rule: 0, missing: 0 },
   { morph: 0, size: 0, subject: 1, area: 1, country: 0, production: 0, rule: 0, missing: 0 },
@@ -188,23 +170,16 @@ const STATES_RAW = [
 ];
 /** The live map's camera never moves; every card carries it, plus which card it is (`cartogram-drive.mjs`). */
 const STATES = STATES_RAW.map((state, k) => ({ ...state, ...camera, card: k }));
-/** ONLY CARDS 1–2 ARE EVER A DISTINCT LIVE-MAP PICTURE (`subject` is the map's only bound field, and it is
- *  0 on every card from 3 on): baking a frozen image per scroll card would bake the same bytes four times
- *  over and the fallback guard refuses that. So only these two are ever baked. Every card still gets its own
- *  fallback entry (`CARD_TO_BAKE`, below): a card whose `subject` is 0 points at card 1's bake, the one
- *  card whose `subject` is 1 points at card 2's — the picture that actually matches its own state, tile
- *  cards included, with no new bytes baked and so nothing for the fallback guard to refuse. */
 const BAKE_STATES = STATES.slice(0, 2);
-/** Card index → which of the two bakes is its own picture. */
 const CARD_TO_BAKE = STATES_RAW.map((state) => (state.subject ? 1 : 0));
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${prose.flat().join(" ")} ${source}`,
-  axis: `${countries.map((c) => c.iso).join(" ")} ${BREAKS.map((b) => `${b}${NB}%`).join(" ")} part bas-carbone de la production donnée non rapportée`,
-  annot: `${subjectNote} ${missingNote} ${widestMapLabel}`,
-  value: `${byAreaCounter.template} ${byProductionCounter.template} ${byCountryCounter.template} 0123456789, 0 50 100`,
+  axis: `${countries.map((c) => c.iso).join(" ")} ${BREAKS.map((b) => `${b} TWh`).join(" ")} hydro generation no 2024 reading`,
+  annot: `${subjectNote} ${missingNote} ${leaderMapLabel}`,
+  value: `${top1Counter.template} ${top3Counter.template} ${top5Counter.template} 0123456789, 0 50 100`,
 };
 
 const filed = readdirSync(DIRECTIONS)
@@ -213,7 +188,7 @@ const filed = readdirSync(DIRECTIONS)
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
 const BEAT_FACTS = { evidenceLevels: CLASS_COUNT };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
-console.log(`par pays ${byCountry.toFixed(1)} · au kWh ${byProduction.toFixed(1)} · au km² ${byArea.toFixed(1)} · ${widest[0]} ${widestShare.toFixed(0)} % du territoire\n`);
+console.log(`1 country ${top1Share.toFixed(1)} · 3 countries ${top3Share.toFixed(1)} · 5 countries ${top5Share.toFixed(1)} · leader ${leader}\n`);
 
 // ── the live map: its key, its faces, its frozen cards ─────────────────────────────────────────
 const cards = await openLiveMapCards();
@@ -253,7 +228,7 @@ try {
       const annotPx = Number.parseFloat(String(regs.annot.fontSize));
       let mapPlan = cartogramMapPlan({
         countries,
-        widest: widest[0],
+        widest: leader,
         colours,
         strokes,
         cameras: BAKE_STATES.map(() => camera),
@@ -263,19 +238,19 @@ try {
       });
       mapPlan = withWidestName(mapPlan, {
         at: RUSSIA_SEAT,
-        text: widestMapLabel,
+        text: leaderMapLabel,
         register: { fontSize: annotPx },
         face,
         ink: inkOnGround,
         halo: strokes.halo,
-        haloColour: classFills[widestClassIndex],
+        haloColour: classFills[leaderClassIndex],
       });
       const violations = [...validateScrollyPlan(mapPlan, STATES), ...validateExpressions(mapPlan)];
       if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
 
       const renderPage = (fallbacks, shapes) =>
         renderScrolly({
-          steps: prose.map((p, i) => ({ id: ["carte", "territoire", "tuiles", "production", "moyennes", "vide"][i], prose: p })),
+          steps: prose.map((p, i) => ({ id: ["map", "leader", "tiles", "resize", "counts", "missing"][i], prose: p })),
           reveal: {
             element: createElement(DirectedEuropeHydroScrolly, {
               plan: { ...mapPlan, fallback: shapes },
@@ -286,14 +261,14 @@ try {
               countries,
               width: FRAME.width,
               height: FRAME.height,
-              breaks: BREAKS.map((b) => `${b}${NB}%`),
-              unit: "part bas-carbone de la production",
-              missingLabel: "donnée non rapportée",
-              subject: widest[0],
+              breaks: BREAKS.map((b) => `${b}${NB}TWh`),
+              unit: "hydro generation, TWh",
+              missingLabel: "no 2024 reading",
+              subject: leader,
               subjectNote,
-              byArea: byAreaCounter,
-              byCountry: byCountryCounter,
-              byProduction: byProductionCounter,
+              byArea: top1Counter,
+              byCountry: top3Counter,
+              byProduction: top5Counter,
               missingNote,
               alt,
               regs,
@@ -309,7 +284,7 @@ try {
           source,
           ground: direction.ground,
           type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
-          lang: "fr",
+          lang: "en",
           outDir: OUT,
           name: `${id}.html`,
         });

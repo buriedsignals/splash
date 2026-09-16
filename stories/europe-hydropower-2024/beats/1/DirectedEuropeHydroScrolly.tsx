@@ -27,7 +27,7 @@ import {
   CardImages,
   noScriptCss,
   shapeSelectionCss,
-} from "../../skills/scrolly/scripts/live-map-cards.mjs";
+} from "../../../../skills/scrolly/scripts/live-map-cards.mjs";
 
 export type Country = {
   iso: string;
@@ -183,7 +183,7 @@ export function DirectedEuropeHydroScrolly({
           >
             {counter.template.replace(
               "{n}",
-              counter.value.toFixed(1).replace(".", ","),
+              counter.value.toFixed(1),
             )}
           </span>
         ))}
@@ -387,7 +387,7 @@ export function DirectedEuropeHydroScrolly({
                 >
                   {counter.template.replace(
                     "{n}",
-                    counter.value.toFixed(1).replace(".", ","),
+                    counter.value.toFixed(1),
                   )}
                 </span>
               </div>
