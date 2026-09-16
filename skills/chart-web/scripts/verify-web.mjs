@@ -145,20 +145,39 @@ function probe(x, y) {
   return { x: Math.round(x), y: Math.round(y) };
 }
 
-/** WCAG relative luminance / contrast, on `rgb(r, g, b)` strings as `getComputedStyle` returns
- *  them. Duplicated here rather than reached for across a skill boundary, same rule as everything
- *  else in this file. */
+/** WCAG relative luminance / contrast, on the colour strings `getComputedStyle` actually returns.
+ *  Duplicated here rather than reached for across a skill boundary, same rule as everything else in
+ *  this file.
+ *
+ *  TWO SPELLINGS, NOT ONE, AND THE SECOND IS THE ONE THAT MATTERS HERE. This used to strip every
+ *  non-digit and split on commas, which reads `rgb(0, 0, 0)` correctly and reads
+ *  `color(srgb 0.799843 0.845882 0.88502)` as NaN — and the chosen pill's background IS that second
+ *  spelling, because `control-chrome.ts` paints it with `color-mix(in srgb, …)` and Chrome serialises
+ *  a computed `color-mix` in the `color()` function. The contrast check therefore reported `NaN:1`
+ *  on every beat with a control the moment it stopped being skipped, i.e. it had never once measured
+ *  the thing it was written to measure. */
+function parseColour(css) {
+  const text = String(css).trim();
+  const srgb = text.match(/^color\(\s*srgb\s+([\d.eE+-]+)\s+([\d.eE+-]+)\s+([\d.eE+-]+)/);
+  if (srgb) return [Number(srgb[1]), Number(srgb[2]), Number(srgb[3])];
+  const nums = text.match(/[\d.eE+-]+/g);
+  if (!nums || nums.length < 3) return null;
+  return nums.slice(0, 3).map((n) => Number(n) / 255);
+}
+
 function contrastRatio(a, b) {
   const lum = (css) => {
-    const [r, g, b2] = css
-      .replace(/[^\d,.]/g, "")
-      .split(",")
-      .slice(0, 3)
-      .map((n) => Number(n) / 255)
-      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    const parsed = parseColour(css);
+    if (!parsed || parsed.some((c) => !Number.isFinite(c))) return null;
+    const [r, g, b2] = parsed.map((c) =>
+      c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+    );
     return 0.2126 * r + 0.7152 * g + 0.0722 * b2;
   };
-  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  const la = lum(a);
+  const lb = lum(b);
+  if (la === null || lb === null) return null;
+  const [hi, lo] = [la, lb].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 }
 
@@ -615,409 +634,877 @@ async function checkLevel(page, tag) {
   }
 }
 
-/** ITEM: verify the filter with REAL clicks — the picture changes, and the DEFAULT state already
- *  shows the whole claim. `page.mouse.click` at the pill's own centre, so the click is hit-tested
- *  like a reader's: a control covered by something else fails here. */
-async function checkFilter(page, vp, { scripting = true } = {}) {
-  const tag = scripting ? vp.label : `${vp.label} (no JS)`;
-  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+/** ITEM: the view a reader LANDS ON already carries the whole claim.
+ *
+ *  True of every beat, whether or not it declares a control, so it is measured for every beat. It
+ *  used to live inside the filter branch and therefore only ran on a beat that had no filter.
+ */
+async function checkDefaultView(page, tag) {
+  // LET THE ENTRANCE LAND FIRST. A beat may animate its labels in (`assets/entrance.ts`), and this
+  // check used to read the page 60 ms after the viewport changed — mid-fade, where the seed's own
+  // reference, peak and end labels all compute to `opacity: 0`. It never showed, because on a beat
+  // WITH a control this branch was never reached at all; the moment the control stopped being
+  // skipped, the format's own seed reported three argument-bearing words as undrawn. The claim here
+  // is about the picture a reader ends up looking at, not about a frame 60 ms into it; whether the
+  // entrance is itself an ADDITION rather than a prerequisite is `scripts/verify-entrance.mjs`'s
+  // question, not this one's.
+  await freezeMotion(page);
+  await page
+    .evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+    )
+    .catch(() => undefined);
   await sleep(60);
-
-  // MOST BEATS SHIP NO FILTER, AND THAT IS THE CORRECT OUTCOME OF THIS SKILL'S OWN THREE-PART
-  // TEST (`SKILL.md`, "When to use" — "most beats should not have one"). Measured across the
-  // thirteen shipped web beats: none of them carries a filter. So a hard assumption that
-  // `#period-late` exists made this whole script unusable on them, which is the wrong way round —
-  // the format's own doctrine says the filter is the exception. Absent, the filter checks are
-  // skipped ALOUD; present but malformed, they still fail.
-  const filter = await page.evaluate(() => {
-    const fs = document.querySelector("fieldset.chart-filter");
-    if (!fs) return null;
-    const radios = Array.prototype.map.call(
-      fs.querySelectorAll("input[type=radio]"),
-      (i) => i.id,
+  const rest = await page.evaluate(() => {
+    const marks = Array.prototype.map.call(
+      document.querySelectorAll("[data-detail], .seg, .pt"),
+      (el) => Number(getComputedStyle(el).opacity),
     );
-    return { radios };
-  });
-  if (!filter) {
-    skip(
-      `${tag}: the filter's own behaviour`,
-      "this beat ships no filter — the expected outcome of the three-part test in SKILL.md",
-    );
-    // The invariant the filter checks were REALLY protecting still applies to a beat without one:
-    // the view a reader lands on must already carry the whole claim, with nothing dimmed and
-    // every argument-bearing word drawn. That part is checked for every beat, filter or not.
-    const rest = await page.evaluate(() => {
-      const marks = Array.prototype.map.call(
-        document.querySelectorAll("[data-detail], .seg, .pt"),
-        (el) => Number(getComputedStyle(el).opacity),
-      );
-      const words = Array.prototype.map
-        .call(
-          document.querySelectorAll(
-            // `:not([data-stack-total])` — a word whose visibility is OWNED BY A DECLARED CONTROL
-            // is not part of the default view, and this check is about the default view. The
-            // stack's sentences (`.stack-notes p`) have always been in exactly that position and
-            // were never scanned only because they sit outside `.overlay`; a tower's total has to
-            // sit ON the plot, at the top of the tower it measures, so it lands inside it. What
-            // must stay true — that the reader lands on the whole claim with nothing dimmed — is
-            // unchanged: the seven totals belong to seven options nobody has chosen.
-            // `:not([data-fits-its-mark])` is the second exclusion and it is a DIFFERENT
-            // ownership from the first. A stack total is hidden by a control nobody has touched;
-            // one of these is a figure printed INSIDE its own mark, which its mark is sometimes
-            // too small to hold — and that is not a decision a build can make, because the plot's
-            // height in CSS pixels is not a function of its width (`.chart-figure` caps at
-            // `100dvh`). `proof/webx-electricity-mix` asks a size container per band and measures
-            // the answer in the reader's own pixels: of its eighteen bands, twelve are thick
-            // enough for a line of the value register at 1280 wide and eleven at 375. A beat that made the
-            // same call at build time would be right at one size and wrong at every other, which
-            // is exactly what it used to do. Every one of those bands still answers its column's
-            // hover, tap and Tab with the share to two decimals.
-            //
-            // THE HOLE THIS OPENS IS MEASURED RATHER THAN TRUSTED: a beat that marked every word
-            // and drew none of them would slip past an exclusion alone, so the marked words get a
-            // check of their own below.
-            //
-            // `:not([data-level-rule])` is the SAME ownership as the stack total's, one
-            // vocabulary over. A yardstick's own reference and the name it writes at that
-            // reference belong to an option nobody has chosen yet; they are drawn once, at their
-            // own coordinate, and revealed by `:checked` (`assets/level.ts`). Counting them as
-            // part of the default view would mean a beat could only ship a yardstick by drawing
-            // every option's answer at once, which is the picture the control exists to avoid.
-            // The hole it opens is held to something below, by clicking: the words a level owns
-            // must actually become drawn when their own option is chosen.
-            ".chart-title, .chart-caveat, .chart-source," +
-              " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark]):not([data-level-rule])",
-          ),
-          (el) => {
-            const cs = getComputedStyle(el);
-            return {
-              text: el.textContent.trim().slice(0, 30),
-              opacity: Number(cs.opacity),
-              hidden: cs.display === "none" || cs.visibility === "hidden",
-            };
-          },
-        )
-        .filter((w) => w.text.length > 0);
-      const fitted = Array.prototype.map
-        .call(
-          document.querySelectorAll(".chart-plot .overlay [data-fits-its-mark]"),
-          (el) => {
-            const cs = getComputedStyle(el);
-            return {
-              text: el.textContent.trim().slice(0, 30),
-              drawn:
-                Number(cs.opacity) === 1 &&
-                cs.display !== "none" &&
-                cs.visibility !== "hidden",
-            };
-          },
-        )
-        .filter((w) => w.text.length > 0);
-      return { marks, words, fitted };
-    });
-    check(
-      rest.marks.length > 0 && rest.marks.every((o) => o === 1),
-      `${tag}: the default view dims nothing — the full claim is on screen`,
-      `${rest.marks.length} marks, opacities ${[...new Set(rest.marks)].join("/")}`,
-    );
-    // The exclusion above, held to something. A figure printed inside its own mark is allowed to
-    // go when the mark cannot hold it; a page on which they have ALL gone is a page that prints no
-    // figures at all, and the exclusion would have made that invisible.
-    if (rest.fitted.length)
-      check(
-        rest.fitted.some((w) => w.drawn),
-        `${tag}: the figures printed inside their own marks are not all suppressed at once`,
-        `${rest.fitted.filter((w) => w.drawn).length} of ${rest.fitted.length} drawn at this size`,
-      );
-    check(
-      rest.words.length > 0 && rest.words.every((w) => w.opacity === 1 && !w.hidden),
-      `${tag}: every argument-bearing word is drawn unconditionally`,
-      `${rest.words.length} words checked`,
-    );
-    // THE EXCLUSION ABOVE, HELD TO SOMETHING, and held by CLICKING rather than by reading the
-    // markup. A yardstick is radios plus generated CSS and nothing else, so this works with the
-    // script disabled exactly as it works with it on — which is the whole claim `level.ts` makes
-    // and the one a reader without JavaScript is owed. A beat that tagged every word
-    // `data-level-rule` and wired no option to reveal it would slip past the exclusion alone.
-    await checkLevel(page, tag);
-    return;
-  }
-  check(
-    filter.radios.length >= 2,
-    `${tag}: the filter is a real radio group`,
-    `radios: ${filter.radios.join(", ") || "none"}`,
-  );
-  if (filter.radios.length < 2) return;
-
-  const state = () =>
-    page.evaluate(() => {
-      const opacities = (sel) =>
-        Array.prototype.map.call(document.querySelectorAll(sel), (el) =>
-          Number(getComputedStyle(el).opacity),
-        );
-      const seen = (sel) => {
-        const el = document.querySelector(sel);
-        if (!el) return null;
-        const cs = getComputedStyle(el);
-        const r = el.getBoundingClientRect();
-        return {
-          text: el.textContent.trim(),
-          opacity: Number(cs.opacity),
-          display: cs.display,
-          visibility: cs.visibility,
-          w: Math.round(r.width),
-          h: Math.round(r.height),
-        };
-      };
-      const byPeriod = (period) => ({
-        seg: opacities(`.seg[data-period="${period}"]`),
-        pt: opacities(`.pt[data-period="${period}"]`),
-      });
-      return {
-        checked: (document.querySelector("input[name=period]:checked") ?? {}).id ?? null,
-        early: byPeriod("early"),
-        late: byPeriod("late"),
-        furniture: {
-          title: seen(".chart-title"),
-          caveat: seen(".chart-caveat"),
-          source: seen(".chart-source"),
-          reference: seen(".note.reference-label"),
-          peak: seen(".note.peak-label"),
-          end: seen(".end-label"),
+    const words = Array.prototype.map
+      .call(
+        document.querySelectorAll(
+          // `:not([data-stack-total])` — a word whose visibility is OWNED BY A DECLARED CONTROL
+          // is not part of the default view, and this check is about the default view. The
+          // stack's sentences (`.stack-notes p`) have always been in exactly that position and
+          // were never scanned only because they sit outside `.overlay`; a tower's total has to
+          // sit ON the plot, at the top of the tower it measures, so it lands inside it. What
+          // must stay true — that the reader lands on the whole claim with nothing dimmed — is
+          // unchanged: the seven totals belong to seven options nobody has chosen.
+          // `:not([data-fits-its-mark])` is the second exclusion and it is a DIFFERENT
+          // ownership from the first. A stack total is hidden by a control nobody has touched;
+          // one of these is a figure printed INSIDE its own mark, which its mark is sometimes
+          // too small to hold — and that is not a decision a build can make, because the plot's
+          // height in CSS pixels is not a function of its width (`.chart-figure` caps at
+          // `100dvh`). `proof/webx-electricity-mix` asks a size container per band and measures
+          // the answer in the reader's own pixels: of its eighteen bands, twelve are thick
+          // enough for a line of the value register at 1280 wide and eleven at 375. A beat that made the
+          // same call at build time would be right at one size and wrong at every other, which
+          // is exactly what it used to do. Every one of those bands still answers its column's
+          // hover, tap and Tab with the share to two decimals.
+          //
+          // THE HOLE THIS OPENS IS MEASURED RATHER THAN TRUSTED: a beat that marked every word
+          // and drew none of them would slip past an exclusion alone, so the marked words get a
+          // check of their own below.
+          //
+          // `:not([data-level-rule])` is the SAME ownership as the stack total's, one
+          // vocabulary over. A yardstick's own reference and the name it writes at that
+          // reference belong to an option nobody has chosen yet; they are drawn once, at their
+          // own coordinate, and revealed by `:checked` (`assets/level.ts`). Counting them as
+          // part of the default view would mean a beat could only ship a yardstick by drawing
+          // every option's answer at once, which is the picture the control exists to avoid.
+          // The hole it opens is held to something below, by clicking: the words a level owns
+          // must actually become drawn when their own option is chosen.
+          ".chart-title, .chart-caveat, .chart-source," +
+            " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark]):not([data-level-rule])",
+        ),
+        (el) => {
+          const cs = getComputedStyle(el);
+          return {
+            text: el.textContent.trim().slice(0, 30),
+            opacity: Number(cs.opacity),
+            hidden: cs.display === "none" || cs.visibility === "hidden",
+          };
         },
-      };
-    });
-
-  const argumentIntact = (s, where) => {
-    for (const [name, f] of Object.entries(s.furniture)) {
-      check(
-        f !== null && f.opacity === 1 && f.display !== "none" && f.visibility !== "hidden" && f.w > 0 && f.h > 0,
-        `${tag}: ${where} — the ${name} is still fully drawn`,
-        f ? `opacity ${f.opacity}, ${f.w}x${f.h}, "${f.text.slice(0, 40)}"` : "missing",
-      );
-    }
-  };
-
-  // DEFAULT — the only state a no-JS, no-CSS-override reader lands on. It must already carry the
-  // whole claim: every segment and every point at full opacity, nothing dimmed.
-  const initial = await state();
-  check(initial.checked === "period-all", `${tag}: default state is "All years"`, `checked: ${initial.checked}`);
-  const allFull = [...initial.early.seg, ...initial.late.seg, ...initial.early.pt, ...initial.late.pt];
+      )
+      .filter((w) => w.text.length > 0);
+    const fitted = Array.prototype.map
+      .call(
+        document.querySelectorAll(".chart-plot .overlay [data-fits-its-mark]"),
+        (el) => {
+          const cs = getComputedStyle(el);
+          return {
+            text: el.textContent.trim().slice(0, 30),
+            drawn:
+              Number(cs.opacity) === 1 &&
+              cs.display !== "none" &&
+              cs.visibility !== "hidden",
+          };
+        },
+      )
+      .filter((w) => w.text.length > 0);
+    return { marks, words, fitted };
+  });
   check(
-    allFull.length > 0 && allFull.every((o) => o === 1),
+    rest.marks.length > 0 && rest.marks.every((o) => o === 1),
     `${tag}: the default view dims nothing — the full claim is on screen`,
-    `${allFull.length} marks, opacities ${[...new Set(allFull)].join("/")}`,
+    `${rest.marks.length} marks, opacities ${[...new Set(rest.marks)].join("/")}`,
   );
-  argumentIntact(initial, "default");
-
-  const pillBox = async (id) => {
-    const r = await page.evaluate((sel) => {
-      const input = document.querySelector(sel);
-      const label = input.closest("label");
-      const b = label.getBoundingClientRect();
-      return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: Math.round(b.width), h: Math.round(b.height) };
-    }, `#${id}`);
-    // Rounded before it ever reaches page.mouse — see `probe`'s own comment for the fractional
-    // coordinate that silently does nothing.
-    return { ...r, ...probe(r.x, r.y) };
-  };
-
-  for (const [id, dimmed, kept] of [
-    ["period-early", "late", "early"],
-    ["period-late", "early", "late"],
-  ]) {
-    const box = await pillBox(id);
-    // WCAG 2.2 SC 2.5.8 (minimum target size, 24x24 CSS px). Measured, because the pill treatment
-    // makes the LABEL the target and hides the native dot — a shrunken pill would silently be a
-    // worse target than the plain radio it replaced.
+  // The exclusion above, held to something. A figure printed inside its own mark is allowed to
+  // go when the mark cannot hold it; a page on which they have ALL gone is a page that prints no
+  // figures at all, and the exclusion would have made that invisible.
+  if (rest.fitted.length)
     check(
-      box.w >= 24 && box.h >= 24,
-      `${tag}: the "${id}" control is a 24px+ target`,
-      `${box.w}x${box.h}`,
+      rest.fitted.some((w) => w.drawn),
+      `${tag}: the figures printed inside their own marks are not all suppressed at once`,
+      `${rest.fitted.filter((w) => w.drawn).length} of ${rest.fitted.length} drawn at this size`,
     );
-    await page.mouse.click(box.x, box.y);
-    await sleep(200); // past the 120ms opacity transition
-    const after = await state();
-    check(after.checked === id, `${tag}: a real click at (${Math.round(box.x)}, ${Math.round(box.y)}) selects ${id}`, `checked: ${after.checked}`);
-    const dim = [...after[dimmed].seg, ...after[dimmed].pt];
-    const full = [...after[kept].seg, ...after[kept].pt];
-    check(
-      dim.length > 0 && dim.every((o) => o > 0 && o < 0.5),
-      `${tag}: ${id} dims the ${dimmed} marks — the picture really changed`,
-      `${dim.length} marks at ${[...new Set(dim)].join("/")}`,
-    );
-    check(
-      full.length > 0 && full.every((o) => o === 1),
-      `${tag}: ${id} leaves the ${kept} marks untouched`,
-      `${full.length} marks at ${[...new Set(full)].join("/")}`,
-    );
-    argumentIntact(after, id);
-  }
-
-  // Back to the default, by a real click, and the dimming must lift again.
-  const allBox = await pillBox("period-all");
-  await page.mouse.click(allBox.x, allBox.y);
-  await sleep(200);
-  const restored = await state();
-  const restoredAll = [...restored.early.seg, ...restored.late.seg, ...restored.early.pt, ...restored.late.pt];
   check(
-    restored.checked === "period-all" && restoredAll.every((o) => o === 1),
-    `${tag}: clicking back to "All years" restores every mark`,
-    `${restoredAll.length} marks at ${[...new Set(restoredAll)].join("/")}`,
+    rest.words.length > 0 && rest.words.every((w) => w.opacity === 1 && !w.hidden),
+    `${tag}: every argument-bearing word is drawn unconditionally`,
+    `${rest.words.length} words checked`,
+  );
+  // THE EXCLUSION ABOVE, HELD TO SOMETHING, and held by CLICKING rather than by reading the
+  // markup. A yardstick is radios plus generated CSS and nothing else, so this works with the
+  // script disabled exactly as it works with it on — which is the whole claim `level.ts` makes
+  // and the one a reader without JavaScript is owed. A beat that tagged every word
+  // `data-level-rule` and wired no option to reveal it would slip past the exclusion alone.
+  await checkLevel(page, tag);
+}
+
+// ===== the control surface =====
+//
+// THE SELECTOR CONTRACT, AND WHY IT IS THE ONE IT IS.
+//
+// Everything below this line used to be keyed on `fieldset.chart-filter` and on the ids
+// `#period-all` / `#period-early` / `#period-late`, which belonged to a seed that has not existed
+// for a long time. Two consequences, both measured rather than argued:
+//
+//   1. **The seed's own verification crashed.** `bun scripts/verify-web.mjs` with no `--file`
+//      renders this skill's seed, whose control is `name="chart-filter"`, and the old checks read
+//      `input[name=period]:checked` — `null.closest` mid-run, after six failures that were the
+//      checker's own staleness rather than the page's.
+//   2. **Every shipped beat took the skip branch, and the runner still exited 0.** Measured the day
+//      this was rewritten, across the 58 committed web beats: 44 ship a control and NOT ONE of them
+//      is a `chart-filter` with `period-*` ids. `proof/web-heatmap-coal-share-europe` reported
+//      `99 passed, 0 failed, 5 skipped` with its entire cutoff control unverified;
+//      `proof/web-calendar-heatmap-geneva` shipped the same way. A dead control shipped green.
+//
+// So the contract is taken from the ONE place a control is actually drawn — `assets/control-chrome.ts`,
+// `controlChromeCss({ scope, name })` — rather than from a list of vocabulary names this file would
+// have to be edited to extend:
+//
+//     <fieldset class="chart-NAME">
+//       <legend>…the beat's own words…</legend>
+//       <div class="options">
+//         <label><input type="radio" name="…" id="…" [checked] [value]>…words…</label>
+//         …
+//       </div>
+//     </fieldset>
+//     <div class="NAME-notes" role="status"> <p data-SOMETHING-note="KEY">…</p> … </div>
+//
+// **A control is any `<fieldset>` on the page.** That is the whole discovery rule, and it is
+// deliberately not "any of these 25 known stems": a beat may write its own vocabulary (measured:
+// `proof/web-flow-map-danube` ships `chart-measure`, which exists in no assets directory), and a
+// verifier that enumerated stems would have gone quiet on exactly the beat nobody else checked.
+//
+// THREE THINGS ARE READ OFF THE PAGE RATHER THAN DERIVED FROM THE STEM, because all three were
+// measured to differ from it on committed beats:
+//
+//   - the radio group's `name` — `chart-restore` ships `name="chart-stack"`, `chart-measure` ships
+//     `name="mw-stack"`, and six other beats ship a third spelling;
+//   - the option's key — usually the `value` attribute, but `proof/web-sankey-electricity-sources`
+//     ships radios with no `value` at all, so the key falls back to the id with the group's own
+//     common prefix removed;
+//   - the notes' attribute — `.restore-notes` holds `data-stack-note`, `.carry-notes` holds
+//     `data-level-note`. Only the CONTAINER's class follows the stem, and that is what is matched.
+//
+// NOTHING HERE SKIPS. A beat with no fieldset has no control surface, which is a fact about the beat
+// and is reported as a passing measurement; a beat WITH one gets every check below, and a fieldset
+// that does not answer them goes red. The one skip that remains anywhere near a control is gone:
+// "I do not know how to check this" was the defect.
+
+/** How far apart two frames of the same rectangle really are, in DECODED PIXELS.
+ *
+ *  WHY NOT BYTE EQUALITY, WHICH IS WHAT THIS FILE USED TO DO. Two screenshots of an IDLE page, taken
+ *  150 ms apart with no input, no animation and no keyframe rule anywhere in the document, are not
+ *  byte-identical: measured on `proof/web-heatmap-coal-share-europe`, three consecutive frames of
+ *  the same 1552x473 plot came back 38661, 38660 and 38661 bytes. Chrome's rasteriser jitters a
+ *  handful of anti-aliased text edges between composites. A byte comparison therefore answers
+ *  "did anything at all happen, including nothing" — it would call an idle page changed, and there
+ *  is no threshold to loosen because a PNG byte count is not a picture. So both frames are DECODED
+ *  on a canvas and compared per channel, and the caller is handed a pixel count it can weigh against
+ *  that page's own measured jitter.
+ *
+ *  Decoded in a SEPARATE blank page, never in the page under test: drawing an `<img>` and a
+ *  `<canvas>` into the document being verified would be the checker altering its own subject.
+ *
+ *  Duplicated rather than imported from `map-web`, which reached the same conclusion for the same
+ *  reason — nothing in a skill may import out of it. */
+const PIXEL_TOLERANCE = 6;
+
+async function comparePixels(darkroom, a, b) {
+  const url = (buf) => `data:image/png;base64,${Buffer.from(buf).toString("base64")}`;
+  return darkroom.evaluate(
+    async (aUrl, bUrl, tolerance) => {
+      const load = (src) =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error("frame failed to decode"));
+          img.src = src;
+        });
+      const [ia, ib] = await Promise.all([load(aUrl), load(bUrl)]);
+      if (ia.width !== ib.width || ia.height !== ib.height)
+        return { sameSize: false, diffPixels: Infinity, totalPixels: 0 };
+      const canvas = document.createElement("canvas");
+      canvas.width = ia.width;
+      canvas.height = ia.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(ia, 0, 0);
+      const da = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(ib, 0, 0);
+      const db = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let diffPixels = 0;
+      for (let i = 0; i < da.length; i += 4)
+        if (
+          Math.abs(da[i] - db[i]) > tolerance ||
+          Math.abs(da[i + 1] - db[i + 1]) > tolerance ||
+          Math.abs(da[i + 2] - db[i + 2]) > tolerance
+        )
+          diffPixels += 1;
+      return { sameSize: true, diffPixels, totalPixels: da.length / 4 };
+    },
+    url(a),
+    url(b),
+    PIXEL_TOLERANCE,
   );
 }
 
-/** ITEM: the filter controls must read as a considered treatment AND stay a keyboard-operable
- *  radio group. Everything here is measured off the live page: what Tab reaches, what the focus
- *  ring computes to, and what the checked pill's own contrast is. */
-async function checkControlAffordance(page, vp) {
-  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
-  await sleep(60);
+/** A rectangle, its settled frame, and the jitter THAT rectangle actually shows on THIS page.
+ *
+ *  The floor is measured rather than chosen: two frames of the same idle rectangle, back to back,
+ *  and whatever they disagree about is what this page's rasteriser does on its own. Anything a
+ *  click has to beat is four times that, and never fewer than eight pixels — so a control that
+ *  changes nothing cannot borrow the noise, and a page that is quiet gets a tight floor rather than
+ *  a generous constant. It is also an anti-vacuity pin: a rectangle too noisy to compare says so. */
+async function baselineOf(page, darkroom, clip) {
+  const first = await page.screenshot({ clip, encoding: "binary" });
+  await sleep(40);
+  const second = await page.screenshot({ clip, encoding: "binary" });
+  const jitter = await comparePixels(darkroom, first, second);
+  return {
+    clip,
+    frame: second,
+    noise: jitter.diffPixels,
+    totalPixels: jitter.totalPixels,
+    floor: Math.max(8, jitter.diffPixels * 4),
+  };
+}
 
-  const present = await page.evaluate(
-    () => !!document.querySelector("fieldset.chart-filter"),
+/** Take every animation and transition on the page to its END STATE, instantly and deterministically.
+ *
+ *  Every assertion below compares two PNG frames of the same rectangle, so anything still moving
+ *  when the shutter opens is a coin toss rather than a measurement: a chrome pill mid-fade, a
+ *  vocabulary's own reveal mid-travel, a flow map's looping dash. Durations are collapsed rather
+ *  than removed (`.001s`, one iteration) so a `forwards` animation still LANDS on the picture it was
+ *  going to land on — what is frozen is the travel, never the destination. Injected from the
+ *  automation world, so it holds with the page's own scripting disabled too. */
+async function freezeMotion(page) {
+  await page.evaluate(() => {
+    if (document.getElementById("verify-freeze")) return;
+    const style = document.createElement("style");
+    style.id = "verify-freeze";
+    style.textContent =
+      "*, *::before, *::after { animation-duration: .001s !important;" +
+      " animation-delay: 0s !important; animation-iteration-count: 1 !important;" +
+      " transition-duration: .001s !important; transition-delay: 0s !important; }";
+    document.head.appendChild(style);
+  });
+  await sleep(50);
+}
+
+/** Park the pointer off everything and take the keyboard off everything, then wait for the page to
+ *  stop moving.
+ *
+ *  BOTH HALVES ARE LOAD-BEARING AND BOTH WERE ALMOST FORGOTTEN. `page.mouse.click` leaves the
+ *  pointer ON the pill it just clicked, so `:hover { color: var(--ink) }` fires — and a frame taken
+ *  there differs from the rest frame even with the whole chosen-state rule deleted, which is
+ *  precisely a hollow guard. Clicking a radio also focuses it, so the focus outline would do the
+ *  same job a second time. Neither may be allowed to stand in for the wash and the ring. */
+async function quiesce(page) {
+  await page.mouse.move(2, 2);
+  await page.evaluate(() => {
+    if (document.activeElement && document.activeElement !== document.body)
+      document.activeElement.blur();
+  });
+  await page
+    .evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+    )
+    .catch(() => undefined);
+  await sleep(50);
+}
+
+/** Every control on the page, read off the page. See the contract note above for why each field is
+ *  measured rather than derived from the class stem. */
+async function discoverControls(page) {
+  return page.evaluate(() => {
+    const drawn = (el) => {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return (
+        Number(cs.opacity) === 1 &&
+        cs.display !== "none" &&
+        cs.visibility !== "hidden" &&
+        r.width > 0 &&
+        r.height > 0
+      );
+    };
+    return Array.prototype.map.call(document.querySelectorAll("fieldset"), (fs, index) => {
+      const stemClass = Array.prototype.find.call(fs.classList, (c) =>
+        /^chart-[a-z][a-z0-9-]*$/.test(c),
+      );
+      const stem = stemClass ? stemClass.slice("chart-".length) : null;
+      const radios = Array.prototype.slice.call(fs.querySelectorAll("input[type=radio]"));
+      const inputs = Array.prototype.slice.call(fs.querySelectorAll("input, select, textarea, button"));
+      const legend = fs.querySelector("legend");
+
+      // The key: the `value` attribute where the beat wrote one, else the id with the group's own
+      // longest shared id prefix removed (`chart-trace-nuclear` → `nuclear`), cut at a hyphen so a
+      // key is never sliced through the middle of a word.
+      const ids = radios.map((i) => i.id || "");
+      let prefix = "";
+      if (ids.length > 1 && ids.every(Boolean)) {
+        let i = 0;
+        while (i < ids[0].length && ids.every((id) => id[i] === ids[0][i])) i += 1;
+        prefix = ids[0].slice(0, i).replace(/[^-]*$/, "");
+      }
+
+      const notesBox = stem ? document.querySelector(`.${stem}-notes`) : null;
+      const notes = notesBox
+        ? Array.prototype.map
+            .call(notesBox.querySelectorAll("*"), (el) => {
+              const attr = Array.prototype.find.call(el.attributes, (a) =>
+                /^data-[a-z0-9-]+-note$/.test(a.name),
+              );
+              return attr ? { attr: attr.name, key: attr.value, drawn: drawn(el) } : null;
+            })
+            .filter(Boolean)
+        : null;
+
+      return {
+        index,
+        stem,
+        className: fs.className,
+        inFigure: !!fs.closest(".chart-figure"),
+        legend: legend ? legend.textContent.trim() : null,
+        names: Array.from(new Set(radios.map((i) => i.name))),
+        radioCount: radios.length,
+        // Anything in the fieldset that is NOT a native radio: the classic way a "designed" control
+        // stops being one is a <button> or a <div role=radio> standing in for the real thing.
+        foreignControls: inputs.length - radios.length,
+        notesSelector: stem ? `.${stem}-notes` : null,
+        notesPresent: !!notesBox,
+        notesRole: notesBox ? notesBox.getAttribute("role") : null,
+        notes,
+        options: radios.map((i) => {
+          const label = i.closest("label");
+          const cs = getComputedStyle(i);
+          return {
+            id: i.id || null,
+            key: i.getAttribute("value") || (i.id ? i.id.slice(prefix.length) : null),
+            checked: i.checked,
+            words: label ? label.textContent.trim() : null,
+            ariaLabel: i.getAttribute("aria-label"),
+            removedFromTree: cs.display === "none" || cs.visibility === "hidden",
+          };
+        }),
+      };
+    });
+  });
+}
+
+/** Every class stem the page's own stylesheet draws control chrome for.
+ *
+ *  `controlChromeCss` emits exactly one signature nothing else on the page emits — `.chart-NAME
+ *  .options` — so a stem found here with no `<fieldset>` under it is chrome for a control that was
+ *  never drawn. That is not hypothetical: `assets/filter.ts` was written because 21 of 21 committed
+ *  pages shipped `.chart-filter` CSS and not one of them contained the fieldset. Dead machinery in
+ *  a delivered file, and nothing mechanical ever said so. */
+async function checkNoDeadControlChrome(page, drawnStems) {
+  const styled = await page.evaluate(() => {
+    let css = "";
+    for (const sheet of Array.prototype.slice.call(document.styleSheets)) {
+      let rules;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue; // a cross-origin sheet: not ours, and not our chrome
+      }
+      for (const rule of Array.prototype.slice.call(rules)) css += `${rule.cssText}\n`;
+    }
+    const found = new Set();
+    for (const m of css.matchAll(/\.chart-([a-z][a-z0-9-]*)\s+\.options\b/g)) found.add(m[1]);
+    for (const m of css.matchAll(/fieldset\.chart-([a-z][a-z0-9-]*)\b/g)) found.add(m[1]);
+    return Array.from(found).sort();
+  });
+  const orphans = styled.filter((stem) => !drawnStems.includes(stem));
+  check(
+    orphans.length === 0,
+    `chrome: every control this page STYLES is a control this page DRAWS`,
+    orphans.length
+      ? `${orphans.map((s) => `.chart-${s}`).join(", ")} — chrome for a control with no <fieldset>: dead machinery in a delivered file`
+      : `${styled.length} styled / ${drawnStems.length} drawn${styled.length ? ` (${styled.map((s) => `.chart-${s}`).join(", ")})` : ""}`,
   );
-  if (!present) {
-    skip(
-      `${vp.label}: the filter control's own affordance`,
-      "this beat ships no filter, so there is no control to reach or ring",
-    );
+}
+
+/**
+ * ITEM: EVERY control this beat ships, driven by real clicks, and judged on what the page REPAINTS.
+ *
+ * Reading values back out of the DOM is what a hollow guard does: `:checked` moving proves the
+ * browser still implements radios, not that the beat wired anything to it. So the three assertions
+ * that matter here are all frame comparisons of the SAME rectangle, taken with the pointer parked
+ * and the keyboard blurred so neither `:hover` nor the focus ring can stand in for the answer:
+ *
+ *   1. choosing an option REPAINTS THE PLOT — the check a dead control fails;
+ *   2. choosing it does not MOVE the plot — the whole reason `control-chrome.ts` reserves a row for
+ *      the sentence, and the thing that makes (1) an honest pixel comparison rather than a
+ *      comparison of two different rectangles;
+ *   3. the chosen pill is PAINTED chosen — the wash, the ring and the darkened words, measured as a
+ *      frame rather than as a computed style, because a computed style is a claim about the box and
+ *      only the rendered frame is a claim about what a reader can see.
+ */
+async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}) {
+  const tag = scripting ? vp.label : `${vp.label} (no JS)`;
+  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+  await freezeMotion(page);
+  await quiesce(page);
+
+  const controls = await discoverControls(page);
+  await checkNoDeadControlChrome(
+    page,
+    controls.map((c) => c.stem).filter(Boolean),
+  );
+
+  // A beat with no control is a fact about the beat, not a check the runner could not perform —
+  // and `SKILL.md`'s own three-part test says most beats should not have one. Announced as a
+  // measurement, so the summary can never show a run that verified nothing as a clean run.
+  if (controls.length === 0) {
+    check(true, `${tag}: this beat declares no control`, "no <fieldset> on the page");
     return;
   }
 
-  const structure = await page.evaluate(() => {
-    const fs = document.querySelector("fieldset.chart-filter");
-    const inputs = Array.prototype.slice.call(document.querySelectorAll("input[name=period]"));
-    return {
-      isFieldset: !!fs,
-      hasLegend: !!(fs && fs.querySelector("legend")),
-      legendText: fs && fs.querySelector("legend") ? fs.querySelector("legend").textContent.trim() : null,
-      radios: inputs.length,
-      allNativeRadios: inputs.every((i) => i.tagName === "INPUT" && i.type === "radio"),
-      // A hidden-from-the-tree control is the classic way a "designed" filter stops being a
-      // control at all. Neither is allowed here, so both are measured.
-      removedFromTree: inputs.filter((i) => {
-        const cs = getComputedStyle(i);
-        return cs.display === "none" || cs.visibility === "hidden";
-      }).length,
-      labelledBy: inputs.map((i) => (i.closest("label") ? i.closest("label").textContent.trim() : null)),
-    };
-  });
-  check(structure.isFieldset && structure.hasLegend, `control: still a <fieldset> with a <legend>`, `legend "${structure.legendText}"`);
-  check(structure.radios === 3 && structure.allNativeRadios, `control: still three native radios`, `${structure.radios} found`);
-  check(structure.removedFromTree === 0, `control: no radio is display:none / visibility:hidden`, `${structure.removedFromTree} removed`);
-  check(
-    structure.labelledBy.every((t) => t && t.length > 0),
-    `control: every radio carries its own visible label text`,
-    structure.labelledBy.join(" | "),
-  );
+  for (const control of controls) {
+    const who = `${tag}: ${control.className || `fieldset #${control.index}`}`;
 
-  // Keyboard reach, by real key presses from the top of the document — not `.focus()`.
-  await page.evaluate(() => {
-    document.body.focus();
-    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
-  });
-  let reached = null;
-  for (let i = 0; i < 12 && !reached; i++) {
-    await page.keyboard.press("Tab");
-    reached = await page.evaluate(() => {
-      const a = document.activeElement;
-      return a && a.name === "period" ? a.id : null;
-    });
-  }
-  check(!!reached, `control: Tab alone reaches the radio group`, `focus landed on ${reached}`);
-
-  if (reached) {
-    // THE FOCUS RING, MEASURED IN PIXELS RATHER THAN IN COMPUTED STYLE — and the reason is a
-    // defect this check itself had. The first version of it accepted an outline on EITHER the
-    // pill or the `<input>`, and passed against a deliberately broken copy with the pill's ring
-    // deleted: the input still reported the user agent's own `outline: auto 1px`, which paints
-    // absolutely nothing, because the segmented treatment makes that input `opacity: 0`. A
-    // computed style is a claim about the box; only the rendered frame is a claim about what a
-    // reader can see. So: screenshot the control with nothing focused, screenshot it again with
-    // the keyboard on it, and require the two frames to DIFFER. A focus indicator that changes no
-    // pixel is not an indicator, whatever the cascade says about it.
-    const clip = await page.evaluate(() => {
-      const r = document.querySelector(".chart-filter").getBoundingClientRect();
-      return { x: Math.max(0, r.left - 6), y: Math.max(0, r.top - 6), width: r.width + 12, height: r.height + 12 };
-    });
-    await page.mouse.move(2, 2); // park the pointer off the control so :hover cannot confound this
-    const focusedShot = await page.screenshot({ clip, encoding: "binary" });
-    await page.evaluate(() => document.activeElement.blur());
-    await sleep(80);
-    const restShot = await page.screenshot({ clip, encoding: "binary" });
-    // Byte comparison written out rather than `Buffer.equals`: `page.screenshot` hands back a
-    // plain `Uint8Array` here, and calling a Buffer method on it throws — which is how this very
-    // check was first caught only comparing LENGTHS.
-    const differs = (() => {
-      if (focusedShot.length !== restShot.length) return true;
-      for (let i = 0; i < focusedShot.length; i++)
-        if (focusedShot[i] !== restShot[i]) return true;
-      return false;
-    })();
+    // ── structure ────────────────────────────────────────────────────────────────────────────────
     check(
-      differs,
-      `control: keyboard focus changes what is on screen`,
-      `focused frame ${focusedShot.length}B vs unfocused ${restShot.length}B over a ${Math.round(clip.width)}x${Math.round(clip.height)} clip — ${differs ? "different" : "IDENTICAL, so nothing is drawn for focus"}`,
+      !!control.stem,
+      `${who} names its vocabulary with a chart-<name> class`,
+      control.className
+        ? `class "${control.className}"`
+        : "no class at all — nothing can find its notes, its chrome or its stem",
     );
+    check(
+      control.inFigure,
+      `${who} sits inside the figure it operates`,
+      control.inFigure ? "inside .chart-figure" : "outside .chart-figure",
+    );
+    check(
+      !!control.legend && control.legend.length > 0,
+      `${who} is a <fieldset> with a <legend> that says what it narrows on`,
+      control.legend ? `"${control.legend}"` : "no legend — an unnamed control",
+    );
+    check(
+      control.radioCount >= 2,
+      `${who} offers a real choice`,
+      `${control.radioCount} native radios`,
+    );
+    check(
+      control.foreignControls === 0,
+      `${who} is native radios and nothing else`,
+      `${control.foreignControls} non-radio control(s) inside the fieldset`,
+    );
+    check(
+      control.names.length === 1 && !!control.names[0],
+      `${who} is ONE radio group`,
+      `name(s): ${control.names.join(", ") || "none"}`,
+    );
+    check(
+      control.options.every((o) => !o.removedFromTree),
+      `${who}: no radio is display:none / visibility:hidden`,
+      `${control.options.filter((o) => o.removedFromTree).length} removed from the tree`,
+    );
+    check(
+      control.options.every((o) => (o.words && o.words.length > 0) || (o.ariaLabel && o.ariaLabel.length > 0)),
+      `${who}: every option carries its own words`,
+      control.options.map((o) => o.words || o.ariaLabel || "∅").join(" | ").slice(0, 120),
+    );
+    check(
+      control.options.filter((o) => o.checked).length === 1,
+      `${who}: exactly one option is chosen when the reader lands`,
+      `${control.options.filter((o) => o.checked).length} checked`,
+    );
+    if (control.radioCount < 2 || control.names.length !== 1 || !control.names[0]) continue;
+    const initial = control.options.find((o) => o.checked);
+    if (!initial) continue;
 
-    // ...and the cause, named, so a failure above says WHERE to look. Only an indicator the
-    // reader can actually see counts: an outline on a fully transparent input does not.
-    await page.evaluate(() => document.querySelector("#period-all").focus());
-    const ring = await page.evaluate(() => {
-      const input = document.querySelector("#period-all");
-      const label = input.closest("label");
-      const paints = (el) => {
-        let o = 1;
-        for (let n = el; n && n.nodeType === 1; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+    // ── the rectangles every frame below is compared over ────────────────────────────────────────
+    const boxOf = async (selector) =>
+      page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
         const r = el.getBoundingClientRect();
-        return o > 0.05 && r.width > 0 && r.height > 0;
-      };
-      const ind = (el) => {
-        const cs = getComputedStyle(el);
         return {
-          outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`,
-          boxShadow: cs.boxShadow,
-          hasOutline: cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0,
-          hasShadow: cs.boxShadow !== "none",
-          paints: paints(el),
+          x: Math.max(0, Math.floor(r.left)),
+          y: Math.max(0, Math.floor(r.top)),
+          width: Math.ceil(r.width),
+          height: Math.ceil(r.height),
         };
-      };
-      return { label: ind(label), input: ind(input) };
-    });
-    const visible =
-      (ring.label.paints && (ring.label.hasOutline || ring.label.hasShadow)) ||
-      (ring.input.paints && (ring.input.hasOutline || ring.input.hasShadow));
+      }, selector);
+
+    const plotBox = await boxOf(".chart-plot");
+    check(!!plotBox && plotBox.width > 0 && plotBox.height > 0, `${who}: the plot it operates has a box`, plotBox ? `${plotBox.width}x${plotBox.height}` : "no .chart-plot");
+    if (!plotBox) continue;
+
+    const pillBox = async (id) =>
+      page.evaluate((radioId) => {
+        const input = document.getElementById(radioId);
+        if (!input) return null;
+        const el = input.closest("label") ?? input;
+        const r = el.getBoundingClientRect();
+        return {
+          clip: {
+            x: Math.max(0, Math.floor(r.left) - 3),
+            y: Math.max(0, Math.floor(r.top) - 3),
+            width: Math.ceil(r.width) + 6,
+            height: Math.ceil(r.height) + 6,
+          },
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+        };
+      }, id);
+
+    const shot = (clip) => page.screenshot({ clip, encoding: "binary" });
+    const apart = async (a, b) => (await comparePixels(darkroom, a, b)).diffPixels;
+
+    // The clip is taken ONCE, from the state a reader lands on, and reused for every frame. Two
+    // shots of two different rectangles differ trivially, which would make the whole comparison
+    // decorative; (2) below is what keeps this rectangle honest.
+    const plotClip = { ...plotBox };
+    const plotBase = await baselineOf(page, darkroom, plotClip);
+    const plotAtRest = plotBase.frame;
     check(
-      visible,
-      `control: the focus indicator is on something that actually paints`,
-      `pill outline "${ring.label.outline}" (paints: ${ring.label.paints}), input outline "${ring.input.outline}" (paints: ${ring.input.paints})`,
+      plotBase.noise * 4 < plotBase.totalPixels * 0.01,
+      `${who}: the drawing is still enough between two frames to compare at all`,
+      `${plotBase.noise}/${plotBase.totalPixels} pixels differ between two idle frames of the same ${plotClip.width}x${plotClip.height} rectangle — a click must beat ${plotBase.floor}`,
     );
 
-    // Arrow keys move the selection — the behaviour a reader expects from a radio group, and the
-    // one a hand-rolled widget usually loses.
-    const before = await page.evaluate(() => document.querySelector("input[name=period]:checked").id);
+    // Rest frames for every option that is NOT chosen yet, taken now, before anything is clicked.
+    const geometry = new Map();
+    const restPill = new Map();
+    for (const option of control.options) {
+      if (!option.id) continue;
+      const box = await pillBox(option.id);
+      if (!box) continue;
+      geometry.set(option.id, box);
+      check(
+        box.w >= 24 && box.h >= 24,
+        `${who}: the "${option.key ?? option.id}" option is a 24px+ target (WCAG 2.2 SC 2.5.8)`,
+        `${box.w}x${box.h}`,
+      );
+      if (!option.checked) restPill.set(option.id, await baselineOf(page, darkroom, box.clip));
+    }
+    const chosenPillAtStart = geometry.has(initial.id)
+      ? await baselineOf(page, darkroom, geometry.get(initial.id).clip)
+      : null;
+
+    // ── each option, chosen for real ─────────────────────────────────────────────────────────────
+    const notesDrawnSomewhere = new Set();
+    for (const option of control.options) {
+      if (option.checked || !option.id || !geometry.has(option.id)) continue;
+      const at = probe(geometry.get(option.id).cx, geometry.get(option.id).cy);
+
+      // The hit test BEFORE the click, so a control covered by something else names its cause
+      // rather than only its symptom.
+      const topmost = await page.evaluate(
+        (p) => {
+          const el = document.elementFromPoint(p.x, p.y);
+          return el ? { inside: !!el.closest("label"), what: `${el.tagName.toLowerCase()}.${el.getAttribute("class") ?? ""}` } : null;
+        },
+        at,
+      );
+      check(
+        !!topmost && topmost.inside,
+        `${who}: a real click at the "${option.key}" pill lands on the pill`,
+        topmost ? `topmost element there is ${topmost.what}` : "nothing at that pixel",
+      );
+
+      await page.mouse.click(at.x, at.y);
+      await quiesce(page);
+
+      const now = await page.evaluate(
+        (name) => {
+          const el = document.querySelector(`input[name="${name}"]:checked`);
+          return el ? el.id : null;
+        },
+        control.names[0],
+      );
+      check(
+        now === option.id,
+        `${who}: the click chooses "${option.key}"`,
+        `checked: ${now ?? "nothing"}`,
+      );
+
+      // (2) THE PLOT DID NOT MOVE. Its reserved note row is what buys this, and without it the
+      // frame comparison below would be comparing two different rectangles.
+      const movedTo = await boxOf(".chart-plot");
+      const shifted =
+        Math.abs(movedTo.x - plotBox.x) > 1 ||
+        Math.abs(movedTo.y - plotBox.y) > 1 ||
+        Math.abs(movedTo.width - plotBox.width) > 1 ||
+        Math.abs(movedTo.height - plotBox.height) > 1;
+      check(
+        !shifted,
+        `${who}: choosing "${option.key}" does not move the drawing`,
+        `${plotBox.x},${plotBox.y} ${plotBox.width}x${plotBox.height} → ${movedTo.x},${movedTo.y} ${movedTo.width}x${movedTo.height}`,
+      );
+
+      // (1) THE PICTURE REALLY CHANGED. The one check a control wired to nothing cannot pass.
+      const plotNow = await shot(plotClip);
+      const plotMoved = await apart(plotNow, plotAtRest);
+      check(
+        plotMoved > plotBase.floor,
+        `${who}: choosing "${option.key}" repaints the drawing`,
+        `${plotMoved} of ${plotBase.totalPixels} pixels differ from the landing view, against this rectangle's own ${plotBase.floor}-pixel noise floor${plotMoved > plotBase.floor ? "" : " — this option changes nothing a reader can see"}` +
+          // SAID OUT LOUD RATHER THAN QUIETLY BANKED. The clip is the landing rectangle; if the
+          // drawing moved out from under it, this comparison is between two different pieces of
+          // the page and its green means nothing. The check above is the one to fix first.
+          (shifted
+            ? " — BUT the drawing moved under the clip, so this green is not evidence: fix the reserved note row first"
+            : ""),
+      );
+
+      // (3) THE PILL IS PAINTED CHOSEN — wash, ring and darkened words, as a frame.
+      const pillNow = await shot(geometry.get(option.id).clip);
+      const before = restPill.get(option.id);
+      const pillMoved = before ? await apart(pillNow, before.frame) : 0;
+      check(
+        !!before && pillMoved > before.floor,
+        `${who}: the "${option.key}" pill is PAINTED as the chosen one`,
+        before
+          ? `${pillMoved} of ${before.totalPixels} pixels differ from its own rest frame, against a ${before.floor}-pixel floor${pillMoved > before.floor ? "" : " — nothing marks the chosen option except the invisible radio"}`
+          : "no frame to compare",
+      );
+
+      // The sentence the control owes the reader: at most the chosen option's own, never another's.
+      const notesNow = await page.evaluate((sel) => {
+        const box = document.querySelector(sel);
+        if (!box) return null;
+        return Array.prototype.map
+          .call(box.querySelectorAll("*"), (el) => {
+            const attr = Array.prototype.find.call(el.attributes, (a) =>
+              /^data-[a-z0-9-]+-note$/.test(a.name),
+            );
+            if (!attr) return null;
+            const cs = getComputedStyle(el);
+            const r = el.getBoundingClientRect();
+            return {
+              key: attr.value,
+              drawn:
+                Number(cs.opacity) === 1 &&
+                cs.display !== "none" &&
+                cs.visibility !== "hidden" &&
+                r.width > 0 &&
+                r.height > 0,
+              text: el.textContent.trim().slice(0, 60),
+            };
+          })
+          .filter(Boolean);
+      }, control.notesSelector);
+      if (notesNow && notesNow.length) {
+        const shown = notesNow.filter((n) => n.drawn);
+        for (const n of shown) notesDrawnSomewhere.add(n.key);
+        check(
+          shown.length <= 1 && shown.every((n) => n.key === option.key),
+          `${who}: "${option.key}" draws its own sentence and nobody else's`,
+          shown.length ? shown.map((n) => `${n.key}: "${n.text}"`).join(" + ") : "none drawn",
+        );
+      }
+    }
+
+    // The default pill, the other way round: it was chosen at the start and is at rest now, so the
+    // same comparison can be made for it without ever needing a state the reader cannot reach.
+    if (chosenPillAtStart && geometry.has(initial.id)) {
+      const restNow = await shot(geometry.get(initial.id).clip);
+      const moved = await apart(chosenPillAtStart.frame, restNow);
+      check(
+        moved > chosenPillAtStart.floor,
+        `${who}: the landing option's pill is PAINTED as the chosen one`,
+        `${moved} of ${chosenPillAtStart.totalPixels} pixels differ between its chosen and its rest frame, against a ${chosenPillAtStart.floor}-pixel floor${moved > chosenPillAtStart.floor ? "" : " — nothing marks the landing option"}`,
+      );
+    }
+
+    // Every sentence in the note row belongs to an option a reader can actually choose. A note no
+    // option reveals is markup nobody will ever read, and the row that reserves height for it is
+    // height taken off the plot for nothing.
+    if (control.notes && control.notes.length) {
+      check(
+        !!control.notesRole,
+        `${who}: the note row is a live region`,
+        `${control.notesSelector} role="${control.notesRole ?? "none"}"`,
+      );
+      const unreachable = Array.from(new Set(control.notes.map((n) => n.key))).filter(
+        (k) => !notesDrawnSomewhere.has(k),
+      );
+      // The landing option's own note, if it has one, is drawn at load rather than by a click, so
+      // it is credited here rather than counted against the row.
+      const atLanding = control.notes.filter((n) => n.drawn).map((n) => n.key);
+      const orphaned = unreachable.filter((k) => !atLanding.includes(k));
+      check(
+        orphaned.length === 0,
+        `${who}: every sentence the note row reserves height for is reachable`,
+        orphaned.length ? `never drawn by any option: ${orphaned.join(", ")}` : `${control.notes.length} sentences, all reachable`,
+      );
+    }
+
+    // Back to where the reader landed, by a real click: the picture must come back exactly.
+    if (geometry.has(initial.id)) {
+      const home = geometry.get(initial.id);
+      const at = probe(home.cx, home.cy);
+      await page.mouse.click(at.x, at.y);
+      await quiesce(page);
+      const restored = await shot(plotClip);
+      const drift = await apart(restored, plotAtRest);
+      check(
+        drift <= plotBase.floor,
+        `${who}: choosing "${initial.key}" again restores the landing picture`,
+        `${drift} of ${plotBase.totalPixels} pixels still differ from the landing view, against a ${plotBase.floor}-pixel noise floor`,
+      );
+    }
+  }
+}
+
+/** ITEM: every control stays a keyboard-operable radio group, and a keyboard reader can SEE where
+ *  they are.
+ *
+ *  All of it measured off the live page: what Tab reaches, what the focus ring paints, what an
+ *  arrow key does, and what the chosen pill's own contrast is. The focus check is a frame
+ *  comparison for a recorded reason — an earlier version accepted an outline on EITHER the pill or
+ *  the `<input>`, and passed against a copy with the pill's ring deleted, because the input still
+ *  reported the user agent's `outline: auto 1px` while sitting at `opacity: 0`. A focus indicator
+ *  that changes no pixel is not an indicator, whatever the cascade says about it. */
+async function checkControlAffordance(page, darkroom, vp) {
+  await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+  await freezeMotion(page);
+  await quiesce(page);
+
+  const controls = await discoverControls(page);
+  if (controls.length === 0) {
+    check(true, `${vp.label}: this beat declares no control to reach or ring`, "no <fieldset> on the page");
+    return;
+  }
+
+  for (const control of controls) {
+    const who = `${vp.label}: ${control.className || `fieldset #${control.index}`}`;
+    if (control.names.length !== 1 || !control.names[0] || control.radioCount < 2) continue;
+    const group = control.names[0];
+
+    // Keyboard reach, by real key presses from the top of the document — never `.focus()`, which
+    // does not hit-test and would pass through a control buried under something else.
+    await page.evaluate(() => {
+      document.body.focus();
+      if (document.activeElement && document.activeElement !== document.body)
+        document.activeElement.blur();
+    });
+    let reached = null;
+    for (let i = 0; i < 40 && !reached; i++) {
+      await page.keyboard.press("Tab");
+      reached = await page.evaluate(
+        (name) => {
+          const a = document.activeElement;
+          return a && a.name === name ? a.id : null;
+        },
+        group,
+      );
+    }
+    check(!!reached, `${who}: Tab alone reaches the group`, reached ? `focus landed on ${reached}` : `never focused a "${group}" radio in 40 presses`);
+    if (!reached) continue;
+
+    const clip = await page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.floor(r.left) - 6),
+        y: Math.max(0, Math.floor(r.top) - 6),
+        width: Math.ceil(r.width) + 12,
+        height: Math.ceil(r.height) + 12,
+      };
+    }, `fieldset.${control.className.split(/\s+/)[0]}`);
+    if (clip) {
+      await page.mouse.move(2, 2); // :hover may not stand in for the focus ring
+      await sleep(60);
+      const focusedShot = await page.screenshot({ clip, encoding: "binary" });
+      await page.evaluate(() => document.activeElement && document.activeElement.blur());
+      await sleep(80);
+      const rest = await baselineOf(page, darkroom, clip);
+      const moved = (await comparePixels(darkroom, focusedShot, rest.frame)).diffPixels;
+      check(
+        moved > rest.floor,
+        `${who}: keyboard focus changes what is on screen`,
+        `${moved} of ${rest.totalPixels} pixels differ over a ${clip.width}x${clip.height} clip, against a ${rest.floor}-pixel noise floor${moved > rest.floor ? "" : " — nothing is drawn for focus"}`,
+      );
+
+      // ...and the cause, named, so a red above says WHERE to look. Only an indicator on something
+      // that actually paints counts: an outline on a fully transparent input does not.
+      await page.evaluate((id) => document.getElementById(id)?.focus(), reached);
+      const ring = await page.evaluate((id) => {
+        const input = document.getElementById(id);
+        const label = input.closest("label") ?? input;
+        const paints = (el) => {
+          let o = 1;
+          for (let n = el; n && n.nodeType === 1; n = n.parentElement)
+            o *= Number(getComputedStyle(n).opacity);
+          const r = el.getBoundingClientRect();
+          return o > 0.05 && r.width > 0 && r.height > 0;
+        };
+        const ind = (el) => {
+          const cs = getComputedStyle(el);
+          return {
+            outline: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineColor}`,
+            hasOutline: cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0,
+            hasShadow: cs.boxShadow !== "none",
+            paints: paints(el),
+          };
+        };
+        return { label: ind(label), input: ind(input) };
+      }, reached);
+      check(
+        (ring.label.paints && (ring.label.hasOutline || ring.label.hasShadow)) ||
+          (ring.input.paints && (ring.input.hasOutline || ring.input.hasShadow)),
+        `${who}: the focus indicator is on something that actually paints`,
+        `pill outline "${ring.label.outline}" (paints: ${ring.label.paints}), input outline "${ring.input.outline}" (paints: ${ring.input.paints})`,
+      );
+    }
+
+    // Arrow keys move the selection — what a reader expects of a radio group, and the first thing a
+    // hand-rolled widget loses.
+    await page.evaluate((id) => document.getElementById(id)?.focus(), reached);
+    const before = await page.evaluate((name) => document.querySelector(`input[name="${name}"]:checked`)?.id ?? null, group);
     await page.keyboard.press("ArrowRight");
     await sleep(120);
-    const after = await page.evaluate(() => document.querySelector("input[name=period]:checked").id);
-    check(after !== before, `control: ArrowRight moves the selection`, `${before} → ${after}`);
-  }
+    const after = await page.evaluate((name) => document.querySelector(`input[name="${name}"]:checked`)?.id ?? null, group);
+    check(after !== null && after !== before, `${who}: ArrowRight moves the selection`, `${before} → ${after}`);
 
-  // The checked pill's own legibility. The treatment inverts to ink-on-ground; whatever ground a
-  // newsroom brings, the pair must still clear WCAG 1.4.3 for body text.
-  const contrast = await page.evaluate(() => {
-    const input = document.querySelector("input[name=period]:checked");
-    const label = input.closest("label");
-    const cs = getComputedStyle(label);
-    return { fg: cs.color, bg: cs.backgroundColor };
-  });
-  const ratio = contrastRatio(contrast.fg, contrast.bg);
-  const opaque = !/rgba\([^)]*,\s*0\s*\)/.test(contrast.bg);
-  check(
-    !opaque || ratio >= 4.5,
-    `control: the checked pill's own text clears 4.5:1`,
-    `${contrast.fg} on ${contrast.bg} = ${ratio.toFixed(2)}:1`,
-  );
+    // The chosen pill's own legibility. The treatment washes the accent into the ground; whatever
+    // ground a newsroom brings, the pair must still clear WCAG 1.4.3 for body text.
+    const contrast = await page.evaluate((name) => {
+      const input = document.querySelector(`input[name="${name}"]:checked`);
+      if (!input) return null;
+      const cs = getComputedStyle(input.closest("label") ?? input);
+      return { fg: cs.color, bg: cs.backgroundColor };
+    }, group);
+    if (contrast) {
+      const ratio = contrastRatio(contrast.fg, contrast.bg);
+      // A pill whose background is fully transparent sits on the page's own ground, which is
+      // measured elsewhere; there is no pair to weigh here. Anything else must be weighable, and a
+      // colour this file cannot read is a FAILURE rather than a pass — `NaN >= 4.5` is false in
+      // JavaScript, so an unparsed colour used to read as a red for the wrong reason and, before
+      // that, as nothing at all.
+      const transparent = /rgba\([^)]*,\s*0\s*\)/.test(contrast.bg) || contrast.bg === "transparent";
+      check(
+        transparent || (ratio !== null && ratio >= 4.5),
+        `${who}: the chosen pill's own text clears 4.5:1`,
+        transparent
+          ? `${contrast.fg} on a transparent pill — weighed against the ground elsewhere`
+          : `${contrast.fg} on ${contrast.bg} = ${ratio === null ? "UNREADABLE" : `${ratio.toFixed(2)}:1`}`,
+      );
+    }
+  }
 }
 
 /** ITEM: the words on the page are set in the typeface the page asked for, and not in the bridge
@@ -1158,6 +1645,9 @@ if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
 if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });
+// A blank page that exists only to DECODE frames. The comparison needs an `<img>` and a `<canvas>`,
+// and putting either into the page under test would be the checker altering its own subject.
+const darkroom = await browser.newPage();
 try {
   console.log(`\nFIT — the whole beat inside the visible window`);
   {
@@ -1218,34 +1708,42 @@ try {
     await page.close();
   }
 
-  console.log(`\nFILTER — real clicks, with scripting on`);
+  console.log(`\nDEFAULT VIEW — the picture a reader lands on carries the whole claim`);
   for (const vp of POINTER_VIEWPORTS) {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
-    await checkFilter(page, vp);
+    await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+    await sleep(60);
+    await checkDefaultView(page, vp.label);
+    await page.close();
+  }
+
+  console.log(`\nCONTROLS — every control this beat ships, driven by real clicks`);
+  for (const vp of POINTER_VIEWPORTS) {
+    const page = await browser.newPage();
+    await page.goto(`file://${filePath}`, { waitUntil: "load" });
+    await checkControlSurface(page, darkroom, vp);
     if (wantShots) {
-      // Only when the beat HAS a filter — the same conditionality the checks themselves use. This
-      // line assumed `#period-late` and crashed the run on every filterless beat, which is all
-      // fifteen shipped ones.
-      const filtered = await page.evaluate(() => {
-        const last = document.querySelector(
-          "fieldset.chart-filter input[type=radio]:last-of-type",
-        );
-        if (!last) return false;
-        last.click();
+      // The LAST option of the LAST control, chosen for real — whatever vocabulary it is. This
+      // block used to read `fieldset.chart-filter … :last-of-type` and photographed nothing at all
+      // on the 44 committed beats whose control is not a filter.
+      const chose = await page.evaluate(() => {
+        const sets = document.querySelectorAll("fieldset");
+        if (!sets.length) return false;
+        const radios = sets[sets.length - 1].querySelectorAll("input[type=radio]");
+        if (!radios.length) return false;
+        radios[radios.length - 1].click();
         return true;
       });
-      if (filtered) {
+      if (chose) {
         await sleep(200);
-        await page.screenshot({
-          path: join(outDir, `filter-${vp.w}x${vp.h}.png`),
-        });
+        await page.screenshot({ path: join(outDir, `control-chosen-${vp.w}x${vp.h}.png`) });
       }
     }
     await page.close();
   }
 
-  console.log(`\nFILTER — real clicks, with JavaScript DISABLED`);
+  console.log(`\nCONTROLS — the same controls, with JavaScript DISABLED`);
   {
     const page = await browser.newPage();
     await page.setJavaScriptEnabled(false);
@@ -1254,16 +1752,17 @@ try {
     // measurements below are honest: the PAGE's own inline script never ran.
     const ranAnyway = await page.evaluate(() => !!document.querySelector(".pt-active"));
     check(!ranAnyway, `no JS: the page's own script really did not run`);
-    await checkFilter(page, POINTER_VIEWPORTS[0], { scripting: false });
-    if (wantShots) await page.screenshot({ path: join(outDir, `nojs-filter.png`) });
+    await checkDefaultView(page, `${POINTER_VIEWPORTS[0].label} (no JS)`);
+    await checkControlSurface(page, darkroom, POINTER_VIEWPORTS[0], { scripting: false });
+    if (wantShots) await page.screenshot({ path: join(outDir, `nojs-controls.png`) });
     await page.close();
   }
 
-  console.log(`\nCONTROL — the filter is still a keyboard-operable radio group`);
+  console.log(`\nCONTROLS — still keyboard-operable radio groups, with a ring a reader can see`);
   for (const vp of POINTER_VIEWPORTS) {
     const page = await browser.newPage();
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
-    await checkControlAffordance(page, vp);
+    await checkControlAffordance(page, darkroom, vp);
     if (wantShots) {
       // One Tab from a blurred document lands on the group's own checked radio — so this frame is
       // the focus ring as a keyboard reader sees it, not a frame taken after focus moved on.
@@ -1273,7 +1772,7 @@ try {
       await page.keyboard.press("Tab");
       await sleep(80);
       const box = await page.evaluate(() => {
-        const el = document.querySelector(".chart-filter");
+        const el = document.querySelector("fieldset");
         if (!el) return null;
         const r = el.getBoundingClientRect();
         return {
@@ -1283,8 +1782,7 @@ try {
           height: r.height + 16,
         };
       });
-      // No filter, no control to photograph — the last of the `.chart-filter` assumptions that
-      // crashed this script on the fifteen beats that ship without one.
+      // No fieldset, no control to photograph.
       if (box)
         await page.screenshot({
           path: join(outDir, `control-focus-${vp.w}.png`),
