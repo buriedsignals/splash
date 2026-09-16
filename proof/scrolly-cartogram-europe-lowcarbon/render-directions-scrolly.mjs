@@ -181,9 +181,13 @@ const STATES_RAW = [
 const STATES = STATES_RAW.map((state, k) => ({ ...state, ...camera, card: k }));
 /** ONLY CARDS 1–2 ARE EVER A DISTINCT LIVE-MAP PICTURE (`subject` is the map's only bound field, and it is
  *  0 on every card from 3 on): baking a frozen image per scroll card would bake the same bytes four times
- *  over and the fallback guard refuses that. So only these two are baked; `cartogram-drive.mjs` clamps a
- *  later card's fallback to card 2's — the map's last real picture before the handover. Noted for the owner. */
+ *  over and the fallback guard refuses that. So only these two are ever baked. Every card still gets its own
+ *  fallback entry (`CARD_TO_BAKE`, below): a card whose `subject` is 0 points at card 1's bake, the one
+ *  card whose `subject` is 1 points at card 2's — the picture that actually matches its own state, tile
+ *  cards included, with no new bytes baked and so nothing for the fallback guard to refuse. */
 const BAKE_STATES = STATES.slice(0, 2);
+/** Card index → which of the two bakes is its own picture. */
+const CARD_TO_BAKE = STATES_RAW.map((state) => (state.subject ? 1 : 0));
 
 const textPerRegister = {
   display: title.join(" "),
@@ -266,7 +270,9 @@ try {
           reveal: {
             element: createElement(DirectedCartogramScrolly, {
               plan: { ...mapPlan, fallback: shapes },
-              fallbacks,
+              // Every card gets its own fallback entry, reusing the two real bakes' bytes (`CARD_TO_BAKE`) —
+              // no new images, so the fallback guard sees nothing duplicated.
+              fallbacks: CARD_TO_BAKE.map((i) => fallbacks[i]),
               reference: FRAME,
               countries,
               width: FRAME.width,

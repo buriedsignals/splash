@@ -1,0 +1,43 @@
+{
+  "planHash": "cc855ab45e505cdfd895610b6a26b2882eb22320091c0f7a1dfc14942e2a1b3b",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1430,
+        "height": 572
+      },
+      "cards": [
+        {
+          "zoom": 2.5350829298807738
+        },
+        {
+          "zoom": 2.5350829298807738
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "zoom": 1.1851404588238148
+        },
+        {
+          "zoom": 1.1851404588238148
+        }
+      ]
+    }
+  },
+  "images": {
+    "rapport-wide@2x-1.webp": "5e573e78198e0d643aef4c64c37b113c915ece2c601dd7289af3923e1d7cd77e",
+    "rapport-wide@1x-1.webp": "f11166916f7b0b6fcb2cc1035d8cdcd8500c4f5c2aab54aedc37410ae63b3e0e",
+    "rapport-tall@2x-1.webp": "248ae009564284fa1a52526200e8b41e3f16654373fe279286ed430c8ca4e635",
+    "rapport-tall@1x-1.webp": "e6665be279207c16af8ca57a8a4f5d4c9d6d040dc13bd0e9fe410535957f831e",
+    "rapport-wide@2x-2.webp": "aa82367a587761838e5b390db998a317b0cbd09d2b6794557ba6801ceeca987e",
+    "rapport-wide@1x-2.webp": "57e5a5452d23116a0fb042462e7e2dab78d66f998731ed8ede4cd6029289ba13",
+    "rapport-tall@2x-2.webp": "37421c36d3b664853a2746055cdb12c22240d23affc862827c30dfc482fafa83",
+    "rapport-tall@1x-2.webp": "4ccbf9d06c99b575178f02669ebedeca75490d9d5e68a243adc8000ee68238f3"
+  }
+}

@@ -50,6 +50,13 @@ weight, the electricity each country produces, so the reader sees that every mea
   map, so its edges line up with the title; inside that box the frame is fitted and the view widened to the
   box's aspect (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), with geography drawn far enough past the
   frame that no side of the row is left bare.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered, now with a fallback for every card,
+  tile cards included (before, only cards 1–2 had one). Only cards 1–2 are ever a distinct live-map picture
+  (`subject` is the map's only bound field); every card index now points at whichever of the two bakes
+  matches its own `subject` value (`CARD_TO_BAKE` in `render-directions-scrolly.mjs`) — no new bytes baked,
+  so the fallback guard sees nothing duplicated. `verify-scrolly.mjs` refused all three at first (`c.handle.map`
+  read on a null handle with no key) — fixed the same way as the sibling maps. Now clean;
+  `verify-live-map-scrolly.mjs` clean on all three; swap check on `creme` clean at both viewports.
 
 ## Directions
 

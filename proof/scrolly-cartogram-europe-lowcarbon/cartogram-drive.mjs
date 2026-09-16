@@ -44,7 +44,7 @@ export function applyCartogramState(root, state) {
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const ease2 = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
-  const shown = Boolean(c.handle.map && c.handle.ready);
+  const shown = Boolean(c.handle && c.handle.map && c.handle.ready);
   const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
   c.fallbacks.forEach((img) => {
     const opacity = !shown && Number(img.dataset.fallback) === card ? "1" : "0";

@@ -1,0 +1,43 @@
+{
+  "planHash": "f516e1db827407d932683f940364b3b6a143a91f22506d9896951c3f0595761e",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1404,
+        "height": 561
+      },
+      "cards": [
+        {
+          "zoom": 2.507068553711177
+        },
+        {
+          "zoom": 2.507068553711177
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "zoom": 1.1851404588238148
+        },
+        {
+          "zoom": 1.1851404588238148
+        }
+      ]
+    }
+  },
+  "images": {
+    "nocturne-wide@2x-1.webp": "893a2f727ff9692b7f21939154a5ef6ceec2cb004d5969f15fbf8337d5c48d98",
+    "nocturne-wide@1x-1.webp": "ce53fa84d428556890ce3f19202fd6a398f16b456fca5c8e64b2a52ddb3da6e8",
+    "nocturne-tall@2x-1.webp": "8bbd246866b1f9c1a2183a330551cf5757720880f877c95cb7cf9617f227ef0c",
+    "nocturne-tall@1x-1.webp": "5a065dd146bc27667e9c2d55e3431509661d7901009b1916b00a8fe4c553ea12",
+    "nocturne-wide@2x-2.webp": "9f25ca2c63d506d7eff4a738aa7bd494efc919c23336805ae233a4e5e28bce06",
+    "nocturne-wide@1x-2.webp": "6c990b8d040a70f2ea67012bf9d2dda1916da772f090f52d5a472c55fe09ba33",
+    "nocturne-tall@2x-2.webp": "1b77c6631cfa214da90e265119061ca69ca790382f3e4d73edf0ca5d61b54169",
+    "nocturne-tall@1x-2.webp": "a2aedee39fbbe306b771fd20da175070bf7576206db7f7fbb8d47e7ea3fe7558"
+  }
+}
