@@ -76,9 +76,9 @@ other export yet.
 | Bar and column | static | `proof/static-bar-top-emitters-2024` |
 | Bar and column | video | `proof/video-bar-top-emitters-2024` — validated by the owner 2026-09-14 |
 | Beeswarm | static | `proof/static-beeswarm-co2-per-person` |
-| Beeswarm | video | `proof/video-beeswarm-co2-per-person` — built 2026-09-16, awaiting the owner |
+| Beeswarm | video | `proof/video-beeswarm-co2-per-person` — validated by the owner 2026-09-16 |
 | Box plot | static | `proof/more-boxplot-france-co2-decades` |
-| Box plot | video | `proof/video-box-plot-france-co2-decades` — built 2026-09-16, awaiting the owner |
+| Box plot | video | `proof/video-box-plot-france-co2-decades` — validated by the owner 2026-09-16 |
 | Bullet | static | `proof/static-bullet-low-carbon-share` |
 | Bullet | video | `proof/video-bullet-low-carbon-share` — validated by the owner 2026-09-14 |
 | Bump | static | `proof/static-bump-emitter-rank` |
@@ -88,69 +88,69 @@ other export yet.
 | Connected scatter | static | `proof/static-connected-scatter-lowcarbon` |
 | Connected scatter | video | `proof/video-connected-scatter-lowcarbon` — validated by the owner 2026-09-14 |
 | Dot strip | static | `proof/static-dot-strip-lowcarbon-spread` |
-| Dot strip | video | `proof/video-dot-strip-lowcarbon-spread` — built 2026-09-16, awaiting the owner |
+| Dot strip | video | `proof/video-dot-strip-lowcarbon-spread` — validated by the owner 2026-09-16 |
 | Diverging bar | static | `proof/static-diverging-bar-eu-per-capita` |
 | Diverging bar | video | `proof/video-diverging-bar-eu-per-capita` — validated by the owner 2026-09-14 |
 | Diverging stacked bar | static | `proof/static-diverging-stacked-electricity` |
-| Diverging stacked bar | video | `proof/video-diverging-stacked-electricity` — built 2026-09-16, awaiting the owner |
+| Diverging stacked bar | video | `proof/video-diverging-stacked-electricity` — validated by the owner 2026-09-16 |
 | Dumbbell | static | `proof/more-dumbbell-life-expectancy-gains` |
-| Dumbbell | video | `proof/video-dumbbell-life-expectancy-gains` — built 2026-09-16, awaiting the owner |
+| Dumbbell | video | `proof/video-dumbbell-life-expectancy-gains` — validated by the owner 2026-09-16 |
 | Gantt | static | `proof/static-gantt-top-ten-tenure` |
 | Gantt | video | `proof/video-gantt-top-ten-tenure` — validated by the owner 2026-09-14 |
 | Grouped bar | static | `proof/static-wind-vs-solar` |
 | Grouped bar | video | `proof/video-grouped-bar-wind-vs-solar` — validated by the owner 2026-09-14 |
 | Heatmap | static | `proof/static-heatmap-europe-electricity` |
-| Heatmap | video | `proof/video-heatmap-europe-electricity` — built 2026-09-16, awaiting the owner |
+| Heatmap | video | `proof/video-heatmap-europe-electricity` — validated by the owner 2026-09-16 |
 | Histogram | static | `proof/static-carbon-footprint-spread` |
-| Histogram | video | `proof/video-histogram-carbon-footprint-spread` — built 2026-09-16, awaiting the owner |
+| Histogram | video | `proof/video-histogram-carbon-footprint-spread` — validated by the owner 2026-09-16 |
 | Line | static | `proof/co2-suisse` |
 | Line | video | `proof/video-line-swiss-co2` — validated by the owner 2026-09-14 |
 | Lollipop | static | `proof/static-lollipop-co2-per-person` |
 | Lollipop | video | `proof/video-lollipop-co2-per-person` — validated by the owner 2026-09-14 |
 | Marimekko | static | `proof/static-marimekko-electricity-mix` |
-| Marimekko | video | `proof/video-marimekko-electricity-mix` — built 2026-09-16, awaiting the owner |
+| Marimekko | video | `proof/video-marimekko-electricity-mix` — validated by the owner 2026-09-16 |
 | Pie and donut | static | `proof/static-donut-world-co2-share` |
-| Pie and donut | video | `proof/video-donut-world-co2-share` — built 2026-09-16, awaiting the owner |
+| Pie and donut | video | `proof/video-donut-world-co2-share` — validated by the owner 2026-09-16 |
 | Population pyramid | static | `proof/static-swiss-age-pyramid` |
-| Population pyramid | video | `proof/video-population-pyramid-swiss-age` — built 2026-09-16, awaiting the owner |
+| Population pyramid | video | `proof/video-population-pyramid-swiss-age` — validated by the owner 2026-09-16 |
 | Radar | static | `proof/static-radar-electricity-mix` |
-| Radar | video | `proof/video-radar-electricity-mix` — built 2026-09-16, awaiting the owner |
+| Radar | video | `proof/video-radar-electricity-mix` — validated by the owner 2026-09-16 |
 | Sankey | static | `proof/static-sankey-electricity-sources` |
-| Sankey | video | `proof/video-sankey-electricity-sources` — built 2026-09-16, awaiting the owner |
+| Sankey | video | `proof/video-sankey-electricity-sources` — validated by the owner 2026-09-16 |
 | Scatter | static | `proof/static-income-life-expectancy` |
-| Scatter | video | `proof/video-scatter-income-life-expectancy` — built 2026-09-16, awaiting the owner |
+| Scatter | video | `proof/video-scatter-income-life-expectancy` — validated by the owner 2026-09-16 |
 | Streamgraph | static | `proof/static-streamgraph-swiss-electricity` |
 | Streamgraph | video | `proof/video-streamgraph-swiss-electricity` — validated by the owner 2026-09-14 |
 | Treemap | static | `proof/static-treemap-europe-capacity` |
-| Treemap | video | `proof/video-treemap-europe-capacity` — built 2026-09-16, awaiting the owner |
+| Treemap | video | `proof/video-treemap-europe-capacity` — validated by the owner 2026-09-16 |
 | Waterfall | static | `proof/static-germany-electricity-bridge` |
-| Waterfall | video | `proof/video-waterfall-germany-electricity-bridge` — built 2026-09-16, awaiting the owner |
+| Waterfall | video | `proof/video-waterfall-germany-electricity-bridge` — validated by the owner 2026-09-16 |
 | Slope | static | `proof/static-slope-europe-lowcarbon` |
 | Slope | video | `proof/video-slope-europe-lowcarbon` — validated by the owner 2026-09-14 |
 | Stacked bar | static | `proof/static-stacked-bar-lowcarbon-growth` |
-| Stacked bar | video | `proof/video-stacked-bar-lowcarbon-growth` — built 2026-09-16, awaiting the owner |
+| Stacked bar | video | `proof/video-stacked-bar-lowcarbon-growth` — validated by the owner 2026-09-16 |
 | Small multiples | static | `proof/static-small-multiples-lowcarbon` |
-| Small multiples | video | `proof/video-small-multiples-lowcarbon` — built 2026-09-16, awaiting the owner |
+| Small multiples | video | `proof/video-small-multiples-lowcarbon` — validated by the owner 2026-09-16 |
 | Parallel coordinates | static | `proof/static-parallel-coordinates-electricity-mix` |
-| Parallel coordinates | video | `proof/video-parallel-coordinates-electricity-mix` — built 2026-09-16, awaiting the owner |
+| Parallel coordinates | video | `proof/video-parallel-coordinates-electricity-mix` — validated by the owner 2026-09-16 |
 | Pictogram | static | `proof/static-pictogram-europe-lowcarbon` |
-| Pictogram | video | `proof/video-pictogram-europe-lowcarbon` — built 2026-09-16, awaiting the owner |
+| Pictogram | video | `proof/video-pictogram-europe-lowcarbon` — validated by the owner 2026-09-16 |
 | Choropleth | static | `proof/static-choropleth-europe-lowcarbon` |
-| Choropleth | video | `proof/video-choropleth-europe-lowcarbon` — live MapTiler map (pilot, awaiting the owner, 2026-09-15) |
+| Choropleth | video | `proof/video-choropleth-europe-lowcarbon` — live MapTiler map (pilot), validated by the owner 2026-09-16 |
 | Dot density | static | `proof/static-dot-density-europe-stations` |
-| Dot density | video | `proof/video-dot-density-europe-stations` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Dot density | video | `proof/video-dot-density-europe-stations` — live MapTiler map, validated by the owner 2026-09-16 |
 | Flow map | static | `proof/static-flow-map-ukraine-protection` |
-| Flow map | video | `proof/video-flow-map-ukraine-protection` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Flow map | video | `proof/video-flow-map-ukraine-protection` — live MapTiler map, validated by the owner 2026-09-16 |
 | Hex grid | static | `proof/static-hex-grid-europe-protection` |
-| Hex grid | video | `proof/video-hex-grid-europe-protection` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Hex grid | video | `proof/video-hex-grid-europe-protection` — live MapTiler map, validated by the owner 2026-09-16 |
 | Proportional symbol | static | `proof/static-proportional-symbol-europe-capacity` |
-| Proportional symbol | video | `proof/video-proportional-symbol-europe-capacity` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Proportional symbol | video | `proof/video-proportional-symbol-europe-capacity` — live MapTiler map, validated by the owner 2026-09-16 |
 | Locator | static | `proof/static-locator-zaporizhzhia` |
-| Locator | video | `proof/video-locator-zaporizhzhia` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Locator | video | `proof/video-locator-zaporizhzhia` — live MapTiler map, validated by the owner 2026-09-16 |
 | Cartogram | static | `proof/static-cartogram-europe-lowcarbon` |
-| Cartogram | video | `proof/video-cartogram-europe-lowcarbon` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Cartogram | video | `proof/video-cartogram-europe-lowcarbon` — live MapTiler map, validated by the owner 2026-09-16 |
 | Contour / isoline | static | `proof/static-contour-europe-distance` |
-| Contour / isoline | video | `proof/video-contour-europe-distance` — live MapTiler map, 2026-09-16, awaiting the owner |
+| Contour / isoline | video | `proof/video-contour-europe-distance` — live MapTiler map, validated by the owner 2026-09-16 |
 
 ## What is next, by how much evidence backs it
 
