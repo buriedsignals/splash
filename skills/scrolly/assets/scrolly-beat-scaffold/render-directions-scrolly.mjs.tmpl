@@ -8,13 +8,37 @@
 //
 // Usage: bun %%BEAT_PATH%%/render-directions-scrolly.mjs [--filed] [--only <id>]
 
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DIRECTIONS = join(HERE, "%%UP%%", "docs", "design-base", "directions");
+
+/** The Splash repo root — the nearest ancestor whose package.json declares the "#shared/*" import — found by
+ * walking up rather than counting levels, so this runner works unchanged from proof/<beat>/ or a story's own
+ * stories/<slug>/beats/<id>/. */
+function splashRoot(startDir) {
+  const looked = [];
+  for (let dir = startDir; ; ) {
+    looked.push(dir);
+    const manifest = join(dir, "package.json");
+    if (existsSync(manifest)) {
+      try {
+        if (JSON.parse(readFileSync(manifest, "utf8"))?.imports?.["#shared/*"]) return dir;
+      } catch {
+        // an unparsable package.json is not this function's business — keep walking
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) throw new Error(`no Splash root above ${startDir} — looked in:\n  ${looked.join("\n  ")}`);
+    dir = parent;
+  }
+}
+
+const ROOT = splashRoot(HERE);
+const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 /** The no-break space, written as its escape — number formatting helpers live at #shared/design-base/web.mjs. */
 const NB = "\u00A0";
@@ -40,6 +64,10 @@ const alt = `${SCAFFOLD_MARK} the alt text a reader without the picture gets`;
 if ([title.join(""), prose.flat().join(""), source, JSON.stringify(words), alt].some((s) => s.includes(SCAFFOLD_MARK)))
   throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% still carries placeholder copy — write the title, prose, source, words and alt before rendering (render-directions-scrolly.mjs)`);
 
+// PALETTE.md is a journalist decision, recorded by hand via skills/palette — nothing here defaults or writes
+// one. Checked before any heavy machinery loads, so a beat with no palette answer yet refuses immediately.
+const newsroom = readPalette(HERE);
+
 const subject = loadSubject();
 
 /** SCAFFOLD: one state per card — see %%TYPE%%-drive.mjs for what each field paints. Card count must match prose. */
@@ -50,13 +78,12 @@ if (STATES.length !== prose.length) throw new Error(`${SCAFFOLD_MARK}: STATES ca
 // beat still carrying placeholder copy refuses above, without ever touching any of it. ──────────────────────
 const { createElement } = await import("react");
 const { deriveFurniture } = await import("#shared/chart-beat/render-still.mjs");
-const { readPalette } = await import("#shared/chart-beat/colour.mjs");
 const { readDirection } = await import("#shared/design-base/read-direction.mjs");
 const { composeDirections, report } = await import("#shared/design-base/compose.mjs");
 const { resolveDirectionFamilies } = await import("#shared/design-base/resolve-families.mjs");
 const { webRegisters } = await import("#shared/design-base/web.mjs");
 const { EYEBROW_TO_DISPLAY, gapOf, registerOf } = await import("#shared/design-base/register.mjs");
-const { renderScrolly } = await import("%%UP%%/skills/scrolly/scripts/render-scrolly.mjs");
+const { renderScrolly } = await import(join(ROOT, "skills", "scrolly", "scripts", "render-scrolly.mjs"));
 const { Directed%%Name%%Scrolly } = await import("./Directed%%Name%%Scrolly.tsx");
 
 const textPerRegister = {
@@ -69,7 +96,6 @@ const textPerRegister = {
 };
 
 const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort().map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 3 }; // SCAFFOLD: how many ranked levels of evidence BRIEF.md names
 const composition = composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister });
 console.log(report(composition, { beat: BEAT_FACTS }));

@@ -1,6 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 /**
@@ -113,14 +120,40 @@ describe("scaffold-scrolly-beat (chart)", () => {
       expect(chartFirst.stdout).toContain(file);
   });
 
-  it("should refuse to scaffold over an existing beat, and change nothing", () => {
+  it("should refuse to scaffold over its own files, naming every one, and change nothing", () => {
     const before = readdirSync(CHART_BEAT).sort();
     const again = run(CHART_SCRIPT, CHART_ARGS);
-    expect([again.status, again.stderr.includes("already exists")]).toEqual([
+    expect([again.status, again.stderr.includes("already has")]).toEqual([
       1,
       true,
     ]);
+    for (const file of CHART_EXPECTED) expect(again.stderr).toContain(file);
     expect(readdirSync(CHART_BEAT).sort()).toEqual(before);
+  });
+
+  it("should scaffold into a beat folder that already exists (as analyst's own step leaves it), refusing only on a real file collision", () => {
+    const name = `.scaffold-test-scrolly-chart-existing-${STAMP}`;
+    const dir = join(PROOF, name);
+    removeProbe(dir, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "data.json"), "{}");
+    try {
+      const result = run(CHART_SCRIPT, [
+        "--type",
+        "boxplot",
+        "--beat",
+        `proof/${name}`,
+        "--component",
+        "ScaffoldProbe",
+      ]);
+      expect(result.status).toBe(0);
+      expect(readdirSync(dir).sort()).toEqual(
+        [...CHART_EXPECTED, "data.json"].sort(),
+      );
+      expect(readFileSync(join(dir, "data.json"), "utf8")).toBe("{}");
+    } finally {
+      removeProbe(dir, name);
+    }
   });
 
   it("should refuse a type with no sheet under references/types/", () => {

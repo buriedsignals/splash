@@ -295,6 +295,11 @@ real beat writes its own runner in that same shape — never editing this skill'
 
 ## Producing a scrolly in a run
 
+**Prerequisite — `PALETTE.md` must already be recorded.** It is a journalist decision, proposed and measured
+by `skills/palette`, never defaulted or auto-written by scrolly. The scaffolded runner checks for it before
+loading any heavy machinery and refuses immediately, by name, when it is missing — run `skills/palette` with
+the journalist first (once `NEWSROOM.md` is resolved), then scaffold.
+
 1. **Pick the type** from the catalogue table below and **read its sheet** (`references/types/<type>.md`):
    what it argues, the scroll gestures that suit it, what a choreography must not do, the precision to
    assert, and its worked `proof/scrolly-<type>-*` example.
@@ -302,10 +307,12 @@ real beat writes its own runner in that same shape — never editing this skill'
    measured copying ~400-500 identical lines per beat. `bun skills/scrolly/scripts/scaffold-scrolly-beat.mjs
    --type <type> --beat proof/scrolly-<subject>` for a chart type;
    `bun skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type <type> --beat proof/scrolly-<subject>`
-   for a map type. Both take `--component <PascalName>` and refuse a `--type` with no sheet, an existing
-   beat folder, or a `--beat` not directly under `proof/` (or a story's own `beats/`, when scaffolding
-   inside a Splash run). Every file it writes carries `SCAFFOLD` markers for the beat's own work: the data
-   and its assertions, the claim, the copy, the choreography (`STATES`), the marks and the paint.
+   for a map type. Both take `--component <PascalName>` and work into a beat folder that already exists
+   (analyst's own `data.json`/`DATA-NOTES.md`, written first in a Splash run) — they refuse only a
+   `--type` with no sheet, a `--beat` not directly under `proof/` (or a story's own `beats/`), or a real
+   collision with a file the scaffold would itself write. Every file it writes carries `SCAFFOLD` markers
+   for the beat's own work: the data and its assertions, the claim, the copy, the choreography
+   (`STATES`), the marks and the paint.
 3. **Write the claim/assertions/choreography/marks** the scaffold marked — `grep -rn SCAFFOLD <beat>` finds
    every stub. The runner throws a named error while any copy is still a placeholder, so it refuses to
    render rather than shipping a stub.

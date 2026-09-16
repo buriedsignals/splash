@@ -30,7 +30,9 @@
 // (STATES' fields), and the paint (the driver's own fields). The runner throws a named error — its message
 // carries SCAFFOLD_MARK — while any of the copy is still a placeholder.
 //
-// Refuses to overwrite: an existing beat folder is an error, never merged into.
+// Works into an existing beat folder — the mandatory `analyst` step already creates
+// `stories/<story>/beats/<id>/` (with data.json, DATA-NOTES.md) before scrolly ever runs. Refuses only to
+// overwrite a file it would itself write, naming every one that already exists.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -82,7 +84,6 @@ export function tokensFor({ root, type, beat, component }) {
   const sheet = join(root, "skills", "scrolly", "references", "types", `${type}.md`);
   if (!existsSync(sheet)) throw new Error(`--type ${JSON.stringify(type)} has no sheet at skills/scrolly/references/types/${type}.md — see the per-type list in skills/scrolly/SKILL.md`);
   const beatDir = beatDirOf(root, beat, "--beat");
-  if (existsSync(beatDir)) throw new Error(`${relative(root, beatDir)} already exists — the scaffold never overwrites a beat`);
   const name = component ?? componentNameOf(basename(beatDir), type);
   if (!PASCAL.test(name)) throw new Error(`--component must be a PascalCase name, got ${JSON.stringify(name)}`);
   return {
@@ -93,7 +94,6 @@ export function tokensFor({ root, type, beat, component }) {
       BEAT: basename(beatDir),
       BEAT_PATH: relative(root, beatDir).split(sep).join("/"),
       TYPE: type,
-      UP: relative(beatDir, root).split(sep).join("/"),
     },
   };
 }
@@ -107,14 +107,18 @@ export function fill(template, values) {
 }
 
 /**
- * Writes the scaffold. Every file is filled in memory first; the beat folder is then created (failing if it
- * exists, even when it appeared since the check) and each file written with an exclusive flag.
+ * Writes the scaffold. Every file is filled in memory first; then, if the beat folder already carries any of
+ * the files this scaffold would write, the whole call refuses and names every collision. Otherwise the folder
+ * is created if needed (a no-op when the beat already exists, e.g. analyst's own data.json beside it) and each
+ * file written with an exclusive flag.
  * @returns {string[]} the files written, relative to the beat
  */
 export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component }) {
   const { beatDir, values } = tokensFor({ root, type, beat, component });
   const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
-  mkdirSync(beatDir);
+  const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
+  if (collisions.length) throw new Error(`${relative(root, beatDir)} already has ${collisions.join(", ")} — the scaffold never overwrites a file`);
+  mkdirSync(beatDir, { recursive: true });
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
   return planned.map(([target]) => target).sort();
 }

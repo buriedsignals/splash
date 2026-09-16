@@ -406,9 +406,10 @@ export function parseStoryboard(text) {
 export const SURVEY_GAP =
   "the survey of the article's other angles: no SUBJECTS.md in this story's own directory. It " +
   "belongs to movement 10 of the storyboard exchange, where the angles still exist — call " +
-  "recordSurveyedSubjects({ storyDir, subjects }) there with every angle the survey found, kept " +
-  "or dropped. An article that yielded nothing else records the EMPTY survey (subjects: []): " +
-  '"there was nothing else" is an answer, and an answer is written down like any other.';
+  "recordSurveyedSubjects({ storyDir, subjects }) (skills/deliver/scripts/other-subjects.mjs) " +
+  "there with every angle the survey found, kept or dropped. An article that yielded nothing " +
+  'else records the EMPTY survey (subjects: []): "there was nothing else" is an answer, and an ' +
+  "answer is written down like any other.";
 
 /**
  * THE ONE QUESTION THAT MAKES A CLAIM'S SHAPE RECORDED RATHER THAN GUESSED — round six, task LANG.
