@@ -26,10 +26,13 @@ import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirections, guardColour, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOneClassing,
@@ -409,10 +412,12 @@ function ensurePlate(id, water, land) {
     const b = cached.bounds ?? [[0, 0], [0, 0]];
     const holds =
       b[0][0] <= STUDY.west && b[1][0] >= STUDY.east && b[0][1] <= STUDY.south && b[1][1] >= STUDY.north;
-    if (cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && holds) return;
+    if (plateWasPaintedWith(dir, { water, land }) &&
+      cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && holds) return;
     console.log(
       `the ${id} plate was baked at ${cached.frame?.width}x${cached.frame?.height} on ` +
-        `${JSON.stringify(cached.bounds)}, which ${holds ? "is the wrong frame" : "no longer holds the study set"} — re-baking…`,
+        `${JSON.stringify(cached.bounds)} in ${cached.water} / ${cached.land}; this run asks for ` +
+        `${PLATE_FRAME.join("x")} holding the study set, in ${water} / ${land} — re-baking…`,
     );
   }
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
@@ -463,6 +468,31 @@ if (!CORNERS || !(FRAME?.width > 0))
 const CAMERA_ASPECT = FRAME.width / FRAME.height;
 const width = SIZE;
 const height = Math.round((SIZE * FRAME.height) / FRAME.width);
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS BEAT'S MARKS OCCUPY, MEASURED ON THE PLATE IT BAKED.
+ *
+ *  This beat's marks are the COUNTRIES THEMSELVES — MapLibre fills over MapTiler's own Countries
+ *  tiles, joined by `iso_a2` — so the footprint measured here is those countries' own polygons, the
+ *  same ones `shapes.geojson` carries and the same coastline the plate was painted along. A fill
+ *  that IS a country cannot be seated in the sea: the largest disc that fits inside it is hundreds
+ *  of pixels across and the water under it is a coastline, not a ground. Measured rather than
+ *  asserted, because the next choropleth may colour shipping lanes.
+ */
+const toFrame = frameProjector(plateFacts);
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")));
+const OCCUPANCY = markOccupancy(
+  geo.features
+    .filter((f) => NAMES[f.properties.iso ?? f.properties.code])
+    .map((f) => ({
+      kind: "area",
+      name: f.properties.iso,
+      rings: (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates)
+        .flatMap((poly) => poly)
+        .map((ring) => ring.map(toFrame)),
+    })),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
 
 /** THE WINDOW THE CAMERA WAS ASKED TO HOLD, which is what this is measured against — never the frame
  *  it ended up with. `fitBounds` widens the frame on whichever axis does not bind, so a declared
@@ -874,7 +904,31 @@ async function bakeFallback(pagePath, outFile, id) {
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filed = readDirection(join(DIRECTIONS, file));
+  /** THE GUARD REACHES THE PAINT, WHICH IS THE HALF OF THE DANUBE'S REPAIR THAT APPLIES HERE.
+   *
+   *  What this beat draws is `direction.accent`, and until now nothing measured that colour against
+   *  the basemap it is drawn over: `composeDirections` printed a report above and its result was
+   *  dropped on the floor. `guardColour` is the same rule the composer refuses on, run on the colour
+   *  that is actually painted, against the grounds this beat's marks were MEASURED to occupy.
+   *
+   *  NOT `composeDirection`, and the reason is this beat's own record. `PALETTE.md` here is
+   *  `origin: newsroom`, and a house palette is taken WHOLE by `colourAxis` — composing would paint
+   *  all three of these renders in one ground and one accent and collapse the bench they exist to
+   *  be. The four beats in this family whose marks ARE seated on water record a hue instead, and
+   *  those do compose. */
+  const base = filed;
+  const colourProblems = guardColour(base, plateGrounds(plateTints(base, { landDose: LAND_DOSE }), OCCUPANCY));
+  if (colourProblems.length) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    const why = `the ${id} direction cannot carry this beat's colour: ${colourProblems.join("; ")}`;
+    refused.push({ id, why });
+    console.log(`${id} REFUSED — ${why}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
   // The colour the plate's LAND was baked in — what the page actually paints behind every country,
   // and the only honest thing to measure the lightest class against.

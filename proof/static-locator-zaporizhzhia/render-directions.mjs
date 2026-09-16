@@ -18,9 +18,12 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { composeDirection, composeDirections, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedLocator } from "./DirectedLocator.tsx";
 
@@ -127,7 +130,10 @@ const plateDir = (id) => join(HERE, "plate", id);
 const BOUNDS = [WINDOW.west, WINDOW.south, WINDOW.east, WINDOW.north].map((v) => v.toFixed(4)).join(",");
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on
+  // `existsSync` alone is blind to the pair it was baked in, so a change to the trunk's tints ships
+  // over a stale basemap in silence — which is exactly what happened to the Danube's three plates.
+  if (plateWasPaintedWith(dir, { water, land })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, bounds ${BOUNDS})…`);
   const result = spawnSync(
     "bun",
@@ -251,6 +257,32 @@ const subject = {
   lines: ["Zaporijjia", `${n0(biggest.capacity_mw)} MW installés`],
 };
 
+
+/** MARKS AND GROUND IN ONE SPACE. `project` already puts a degree where the plate put it, in VIEW
+ *  units; the plate's pixels are FRAME.width wide on the same camera, so one multiply carries a mark
+ *  onto the ground under it. */
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")), {
+  scale: FRAME.width / VIEW,
+});
+/** The narrowest map the three filed directions draw this beat at — the camera every component-side
+ *  length below is put in VIEW units against, because a mark is smallest there. */
+const NARROWEST_MAP = 596;
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS PIN OCCUPIES, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  This plate has exactly ONE mark in the accent — the station the story is about, a 5 px dot inside
+ *  a ring. The settlements are furniture and the three waters are words; neither is drawn in the
+ *  accent, so neither is what `guardColour` is asking about. And a camera framed on a river station
+ *  is the one locator where the answer is not obvious: Zaporijjia sits on the Dnieper, above a
+ *  reservoir wide enough that a basemap may well paint it.
+ */
+const SUBJECT_DOT_VIEW = (5 / NARROWEST_MAP) * VIEW;
+const OCCUPANCY = markOccupancy(
+  [{ kind: "disc", name: subject.name, x: subject.x * VIEW, y: subject.y * VIEW, r: SUBJECT_DOT_VIEW }],
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const facts = beatFacts(
   [{ key: "ZNPP", label: "Zaporijjia", value: biggest.capacity_mw }],
   {
@@ -306,9 +338,26 @@ console.log("");
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   console.log(id);
   try {
+  /** ONE RESOLUTION OF THIS BEAT'S COLOUR, AND IT IS THE ONE THAT REACHES THE PAINT.
+   *
+   *  What stood here was `readDirection()` straight to the paint, while `composeDirections` — the
+   *  only thing that had ever read this beat's own `PALETTE.md` — composed a colour, printed it in a
+   *  report above, and dropped it. The two resolutions disagreed silently and the one that got drawn
+   *  was the one that had never heard of the subject. `composeDirection` returns the single colour
+   *  that is both: the record owns the hue, the direction owns the value, and the floors are measured
+   *  against the grounds this beat's marks were MEASURED to occupy. It refuses rather than falling
+   *  back. */
+    const direction = resolveDirectionFamilies(
+      composeDirection({
+        direction: readDirection(join(DIRECTIONS, file)),
+        palette: newsroom,
+        grounds: plateGrounds(plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE }), OCCUPANCY),
+        textPerRegister,
+      }),
+      textPerRegister,
+    );
     await renderStill({
       element: createElement(DirectedLocator, {
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,

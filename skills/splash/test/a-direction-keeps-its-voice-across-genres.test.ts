@@ -91,12 +91,18 @@ function directedPages(): Page[] {
      *  its direction's own face joined a population of one level and was measured by nothing. One
      *  level down as well, which covers `render/` and `renders/` without naming either: a page joins
      *  by DECLARING `--title-family`, so widening the walk cannot pull an un-migrated beat in. */
+    /** NOT THE KEYED COPY. A live map beat writes `<direction>.local.html` beside its page — the
+     *  same bytes with the MapTiler key substituted, git-ignored, and present only after a render
+     *  has been run with a key in the environment. It is the same page measured twice, and its name
+     *  is not a filed direction's, so `directionOf` came back empty and every one of them failed
+     *  this guard for existing. Twenty-four files, forty-eight reds, none of them about a page. */
+    const keyed = /\.local\.html$/;
     const files: string[] = [];
     for (const file of readdirSync(dir, { withFileTypes: true })) {
-      if (file.isFile() && file.name.endsWith(".html")) files.push(file.name);
+      if (file.isFile() && file.name.endsWith(".html") && !keyed.test(file.name)) files.push(file.name);
       if (!file.isDirectory()) continue;
       for (const nested of readdirSync(join(dir, file.name)))
-        if (nested.endsWith(".html")) files.push(join(file.name, nested));
+        if (nested.endsWith(".html") && !keyed.test(nested)) files.push(join(file.name, nested));
     }
     for (const file of files) {
       const html = readFileSync(join(dir, file), "utf8");

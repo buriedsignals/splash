@@ -31,10 +31,12 @@ import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture, measureText } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirection, composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { waterFieldFromPng } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOnePool,
@@ -752,10 +754,138 @@ async function bakeFallback(pagePath, outFile, id) {
 // weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
 const LAND_DOSE = 0.07;
 
+/**
+ * THE GROUND UNDER THE CARTOGRAM, PHOTOGRAPHED — because this beat bakes no plate to read it off.
+ *
+ * Every other map beat in this tree has a `plate/`, and `plateWaterField` reads where the water is
+ * straight off the PNG its own bake wrote. This one has none: a hex cartogram is drawn as MapLibre
+ * layers over MapTiler's LIVE tiles and its only frozen picture is the fallback, which has the
+ * hexagons ON it and therefore hides the very ground the question is about.
+ *
+ * So the ground is photographed on its own: the same published style, the same window the page fits,
+ * the same box the stage gives the map — and the water and land layers painted in two colours
+ * nothing else on the frame can be confused with. MARKER COLOURS AND NOT THE DIRECTION'S TINTS, on
+ * purpose: the tints are a measured pair a sixth of a step apart, and what is wanted here is a MASK,
+ * not a picture. The camera it settles on is read back with `map.getBounds()`, not assumed from the
+ * window, because `fitBounds` widens whichever axis does not bind.
+ *
+ * IT IS ONE MAP LOAD PER RUN, not one per direction: where the coastline is does not depend on what
+ * colour the page is drawn in.
+ */
+const MASK = { water: "#0000FF", land: "#FF0000" };
+async function bakeGroundMask() {
+  if (!KEY)
+    throw new Error(
+      "this beat has no baked plate, so where its hexagons land is measured by photographing the " +
+        "same basemap the page draws — which needs a MapTiler key in the environment (MAPTILER_KEY). " +
+        "Without one the occupancy would have to be assumed, and an assumed occupancy is the thing " +
+        "this measurement exists to replace.",
+    );
+  const dir = mkdtempSync(join(tmpdir(), "mw-ground-"));
+  const out = join(dir, "ground.png");
+  const html =
+    `<!doctype html><meta charset="utf-8"><style>${MAPLIBRE_CSS}` +
+    `html,body{margin:0}#map{width:${STAGE.width}px;height:${STAGE.height}px}</style>` +
+    `<div id="map"></div><script>${MAPLIBRE_JS}<\/script>`;
+  const pagePath = join(dir, "ground.html");
+  await writeFile(pagePath, html);
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: STAGE.width, height: STAGE.height, deviceScaleFactor: 2 });
+    await page.goto(`file://${pagePath}`, { waitUntil: "networkidle0", timeout: 120000 });
+    const camera = await page.evaluate(
+      async (styleUrl, bounds, mask) => {
+        const map = new maplibregl.Map({
+          container: "map",
+          style: styleUrl,
+          bounds,
+          fitBoundsOptions: { padding: 0, animate: false },
+          interactive: false,
+          attributionControl: false,
+          fadeDuration: 0,
+        });
+        await new Promise((r) => map.once("style.load", r));
+        // The same two patterns `shared/map-beat/bake.mjs` paints a plate's pair by, so the mask and
+        // a plate agree about which layers are the sea.
+        for (const layer of map.getStyle().layers) {
+          if (layer.type === "background") map.setPaintProperty(layer.id, "background-color", mask.land);
+          else if (layer.type === "fill" && /water|ocean|sea|river|lake/i.test(layer.id))
+            map.setPaintProperty(layer.id, "fill-color", mask.water);
+          else if (layer.type === "fill" && /land|background|earth/i.test(layer.id))
+            map.setPaintProperty(layer.id, "fill-color", mask.land);
+          else if (layer.type !== "background") map.setLayoutProperty(layer.id, "visibility", "none");
+        }
+        await new Promise((r) => (map.loaded() && map.areTilesLoaded() ? r() : map.once("idle", r)));
+        const b = map.getBounds();
+        return {
+          frameCorners: { west: b.getWest(), east: b.getEast(), south: b.getSouth(), north: b.getNorth() },
+        };
+      },
+      `https://api.maptiler.com/maps/${MAP_STYLE}/style.json?key=${KEY}`,
+      [
+        [STUDY.west, STUDY.south],
+        [STUDY.east, STUDY.north],
+      ],
+      MASK,
+    );
+    await page.screenshot({ path: out, clip: { x: 0, y: 0, width: STAGE.width, height: STAGE.height } });
+    const field = waterFieldFromPng({ path: out, water: MASK.water, land: MASK.land, frame: STAGE });
+    return { field, camera };
+  } finally {
+    await browser.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** WHICH OF THE BASEMAP'S GROUNDS THESE HEXAGONS OCCUPY, MEASURED ON THAT MASK.
+ *
+ *  A cartogram is the one type whose marks carry no geography at all — the anchor is a seating, and
+ *  the page says so — which is exactly why the answer cannot be reasoned out from the type: the
+ *  seating puts thirty-two equal hexagons over a Europe-sized box, and how many of them come down on
+ *  the Mediterranean, the Atlantic or the North Sea is a fact about the layout and nothing else.
+ */
+const { field: groundMask, camera: maskCamera } = await bakeGroundMask();
+const toFrame = frameProjector({ frame: STAGE, frameCorners: maskCamera.frameCorners });
+const OCCUPANCY = markOccupancy(
+  cells.map((cell) => ({ kind: "area", name: cell.code, rings: [cell.ring.map(toFrame)] })),
+  groundMask,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filed = readDirection(join(DIRECTIONS, file));
+  /** ONE RESOLUTION OF THIS BEAT'S COLOUR, AND IT IS THE ONE THAT REACHES THE PAINT.
+   *
+   *  What stood here was `readDirection()` straight to the paint, while `composeDirections` — the
+   *  only thing that had ever read this beat's own `PALETTE.md` — composed a colour, printed it in a
+   *  report above, and dropped it. The two resolutions disagreed silently and the one that got drawn
+   *  was the one that had never heard of the subject. `composeDirection` returns the single colour
+   *  that is both: the record owns the hue, the direction owns the value, and the floors are measured
+   *  against the grounds this beat's marks were MEASURED to occupy. It refuses rather than falling
+   *  back. */
+  let base;
+  try {
+    base = composeDirection({
+      direction: filed,
+      palette: newsroom,
+      grounds: plateGrounds(plateTints(filed, { landDose: LAND_DOSE }), OCCUPANCY),
+      textPerRegister,
+    });
+  } catch (error) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    refused.push({ id, why: error.message });
+    console.log(`${id} REFUSED — ${error.message}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
   try {
     const tints = plateTints(base, { landDose: LAND_DOSE });

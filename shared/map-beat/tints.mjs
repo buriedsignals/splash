@@ -82,14 +82,34 @@ export function plateTints(direction, { landDose = LAND_INK_DOSE } = {}) {
  * paper. Handing these to the composer is what lets one call resolve a beat's whole colour system:
  * the floors are measured on the tints the style actually paints, and the water's own pigment is
  * what the mark's hue is held apart from.
+ *
+ * ONLY THE GROUNDS THE MARKS ACTUALLY OCCUPY, AND WHY THAT IS THE WHOLE OF THIS FUNCTION'S JOB.
+ * This used to hand back BOTH, always, which asserts that every map mark sits on water. Twelve beats
+ * whose fills, hexes, dots and pins are on LAND were refused at render time because the newsroom's
+ * house teal `#0B7A75` is 30.0° of hue from the filed water convention — a refusal about a ground
+ * the drawing never touches. A guard that refuses what is not there is not a stricter guard; it is a
+ * guard a producer learns to switch off.
+ *
+ * `occupancy` is `{ water, land }` and it is REQUIRED. A caller with nothing to say about where its
+ * marks land does not get a default: handing back both manufactures the refusal above, and handing
+ * back neither hollows out the rule that caught the blue-on-blue Danube. It gets an error naming
+ * `markOccupancy`, which measures it on the plate the beat itself baked.
  */
-export function plateGrounds(tints) {
-  return [
-    { name: "the basemap's water", colour: tints.water, pigment: tints.pigment ?? WATER_HUE },
-    // No pigment: the land is the direction's paper walked toward its ink, and carries no hue a
-    // reader could mistake a mark for.
-    { name: "the basemap's land", colour: tints.land },
-  ];
+export function plateGrounds(tints, occupancy) {
+  if (!occupancy || typeof occupancy.water !== "boolean" || typeof occupancy.land !== "boolean")
+    throw new Error(
+      "`plateGrounds` needs to be told which of the basemap's grounds this beat's marks occupy — " +
+        "`{ water, land }`, measured by `markOccupancy` on the plate the beat baked. A default here " +
+        "would either refuse a mark over a sea it never touches or stop holding a mark apart from " +
+        "the sea it is drawn on, and both have shipped.",
+    );
+  const grounds = [];
+  if (occupancy.water)
+    grounds.push({ name: "the basemap's water", colour: tints.water, pigment: tints.pigment ?? WATER_HUE });
+  // No pigment: the land is the direction's paper walked toward its ink, and carries no hue a
+  // reader could mistake a mark for.
+  if (occupancy.land) grounds.push({ name: "the basemap's land", colour: tints.land });
+  return grounds;
 }
 
 /** THE FLOOR A FRONTIER MUST CLEAR AGAINST THE LAND IT DIVIDES, and the ceiling it may not pass.

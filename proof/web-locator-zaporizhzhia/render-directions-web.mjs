@@ -34,11 +34,14 @@ import {
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirections, guardColour, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOneVantage,
@@ -570,8 +573,10 @@ function ensurePlate(id, water, land) {
       cached.frame?.width === PLATE_FRAME[0] &&
       cached.frame?.height === PLATE_FRAME[1] &&
       [b[0][0], b[0][1], b[1][0], b[1][1]].map((v) => v.toFixed(4)).join(",") === PLATE_BOUNDS &&
-      cached.water === water &&
-      cached.land === land;
+      // The pair the plate was PAINTED with, compared through the trunk rather than here: this beat
+      // had the only private copy of that comparison, and the twelve that did not have it shipped
+      // stale basemaps.
+      plateWasPaintedWith(dir, { water, land });
     if (same) return;
     console.log(`the ${id} plate was baked on another camera or another pair of tints — re-baking…`);
   }
@@ -697,6 +702,40 @@ const FALLBACK_DIR = join(HERE, "fallback");
  *  at, so each image is the delivered box's own shape and `slice` crops nothing there. At 2x, so it
  *  is not soft on the screen the owner reviews on. */
 const FALLBACK_WINDOW = { width: 1512, height: 860, scale: 2 };
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS LOCATOR'S PINS OCCUPY, MEASURED ON THE PLATE IT BAKED.
+ *
+ *  A locator's pins are places, and a place is on land — except that this one's places include
+ *  WATERS, named on the map, and a beat framed on a river station sits its camera over a reservoir
+ *  MapTiler paints as water. Measured, therefore, rather than assumed from the type: the pins go
+ *  back over the plate's own pixels at the literal screen radius each kind is drawn with, put in
+ *  the plate's units by the window the fallback photograph is taken in, which is the page's own
+ *  map box.
+ */
+const toFrame = frameProjector(plateFacts);
+const FRAME_PER_CSS = plateFacts.frame.width / FALLBACK_WINDOW.width;
+const PIN_RADIUS = { subject: 8, station: 5, place: 4 };
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")));
+const OCCUPANCY = markOccupancy(
+  // THE MARKS DRAWN IN THE ACCENT, AND NOT THE SETTLEMENTS. `paletteFor` gives the subject the
+  // accent itself and the other stations the subject's own hue one chroma down; the settlements are
+  // furniture, a step off the land toward the ink, with no hue at all. A ground a piece of furniture
+  // stands on is not a ground the accent sits on.
+  marks
+    .filter((mark) => mark.kind === "subject" || mark.kind === "station")
+    .map((mark) => {
+      const [x, y] = toFrame([mark.lon, mark.lat]);
+      return {
+        kind: "disc",
+        name: mark.name,
+        x,
+        y,
+        r: (PIN_RADIUS[mark.kind] ?? PIN_RADIUS.place) * FRAME_PER_CSS,
+      };
+    }),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
 const BLANK_PNG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 const KEY =
@@ -896,7 +935,31 @@ console.log("");
 const refused = [];
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filed = readDirection(join(DIRECTIONS, file));
+  /** THE GUARD REACHES THE PAINT, WHICH IS THE HALF OF THE DANUBE'S REPAIR THAT APPLIES HERE.
+   *
+   *  What this beat draws is `direction.accent`, and until now nothing measured that colour against
+   *  the basemap it is drawn over: `composeDirections` printed a report above and its result was
+   *  dropped on the floor. `guardColour` is the same rule the composer refuses on, run on the colour
+   *  that is actually painted, against the grounds this beat's marks were MEASURED to occupy.
+   *
+   *  NOT `composeDirection`, and the reason is this beat's own record. `PALETTE.md` here is
+   *  `origin: newsroom`, and a house palette is taken WHOLE by `colourAxis` — composing would paint
+   *  all three of these renders in one ground and one accent and collapse the bench they exist to
+   *  be. The four beats in this family whose marks ARE seated on water record a hue instead, and
+   *  those do compose. */
+  const base = filed;
+  const colourProblems = guardColour(base, plateGrounds(plateTints(base, { landDose: LAND_DOSE }), OCCUPANCY));
+  if (colourProblems.length) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    const why = `the ${id} direction cannot carry this beat's colour: ${colourProblems.join("; ")}`;
+    refused.push({ id, why });
+    console.log(`${id} REFUSED — ${why}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
   const p = paletteFor(base);
 
@@ -939,7 +1002,7 @@ for (const file of DIRECTION_FILES) {
     },
     /** EVERY RADIUS IS A LITERAL IN SCREEN PIXELS, identical at every zoom and at every remove — the
      *  one rule `types/locator.md` says this type breaks. Nothing here is a function of a value. */
-    radius: { subject: 8, station: 5, place: 4, ring: 2.6 },
+    radius: { ...PIN_RADIUS, ring: 2.6 },
     border: { colour: p.border, width: 0.8 },
     closest: { a: closest.a, b: closest.b, degrees: closest.degrees },
     locale: { title: "Carte", zoomIn: "Zoomer", zoomOut: "Dézoomer" },

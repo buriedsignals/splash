@@ -39,6 +39,9 @@ import { composeDirection, composeDirections, report } from "#shared/design-base
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
@@ -398,11 +401,22 @@ function ensurePlate(id, water, land) {
       b[1][0] >= STUDY.east && b[1][0] <= STUDY.east + AIR_DEG &&
       b[0][1] <= STUDY.south && b[0][1] >= STUDY.south - AIR_DEG &&
       b[1][1] >= STUDY.north && b[1][1] <= STUDY.north + AIR_DEG;
-    if (cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && snug) return;
+    // AND ON THE TINTS IT WAS PAINTED WITH. This beat's three plates were still carrying
+    // `#dae2e5` / `#edeadd` — the OLD accent-tinted pair — months after the trunk started computing
+    // `#cedde1` / `#f4f1e3` for the same direction: the page re-rendered and the plate under it
+    // never did, because nothing asked.
+    if (
+      plateWasPaintedWith(dir, { water, land }) &&
+      cached.frame?.width === PLATE_FRAME[0] &&
+      cached.frame?.height === PLATE_FRAME[1] &&
+      snug
+    )
+      return;
     console.log(
       `the ${id} plate was baked at ${cached.frame?.width}x${cached.frame?.height} on ` +
-        `${JSON.stringify(cached.bounds)}, which is not this course's own box ` +
-        `${JSON.stringify(STUDY)} to within ${AIR_DEG}° — re-baking…`,
+        `${JSON.stringify(cached.bounds)} in ${cached.water} / ${cached.land}; this run asks for ` +
+        `${PLATE_FRAME.join("x")} on this course's own box ${JSON.stringify(STUDY)} to within ` +
+        `${AIR_DEG}°, in ${water} / ${land} — re-baking…`,
     );
   }
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
@@ -454,6 +468,35 @@ if (!CORNERS || !(FRAME?.width > 0))
 const CAMERA_ASPECT = FRAME.width / FRAME.height;
 const width = SIZE;
 const height = Math.round((SIZE * FRAME.height) / FRAME.width);
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS RIVER OCCUPIES, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  It is not a given that a river is on water. At this camera MapTiler paints the Danube's own
+ *  channel as land for most of its course — the channel is thinner than a pixel — and paints the
+ *  DELTA and the reservoirs as water, which is where this ribbon genuinely runs on the sea's own
+ *  colour. `PALETTE.md` said as much in prose before anything measured it. So the occupancy is read
+ *  the same way for this beat as for the eleven whose marks never leave the land: from the plate's
+ *  own pixels, under the beat's own footprints, at the beat's own drawn width.
+ *
+ *  The widest width a stretch takes under ANY measure, because the control is on the page and the
+ *  reader can put every stretch at its widest.
+ */
+const toFrame = frameProjector(plateFacts);
+const FRAME_PER_CSS = FRAME.width / SIZE;
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")));
+const OCCUPANCY = markOccupancy(
+  [
+    ...CODES.map((code) => ({
+      kind: "band",
+      name: NAMES[code],
+      points: stretches[code].map(toFrame),
+      width: Math.max(...MEASURES.map((_, i) => widthOf(code, i))) * FRAME_PER_CSS,
+    })),
+    { kind: "disc", name: "la source", ...(([x, y]) => ({ x, y }))(toFrame(SPRING)), r: 6 * FRAME_PER_CSS },
+  ],
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
 
 /** THE WINDOW THE CAMERA WAS ASKED TO HOLD, which is what this is measured against — never the frame
  *  it ended up with. `fitBounds` widens the frame on whichever axis does not bind, so a declared
@@ -807,7 +850,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     base = composeDirection({
       direction: filedBase,
       palette: newsroom,
-      grounds: plateGrounds(tints),
+      grounds: plateGrounds(tints, OCCUPANCY),
       textPerRegister,
     });
   } catch (error) {

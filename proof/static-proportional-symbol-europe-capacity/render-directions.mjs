@@ -23,9 +23,12 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { composeDirections, guardColour, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedProportionalSymbol, worstCellInk } from "./DirectedProportionalSymbol.tsx";
 
@@ -147,7 +150,10 @@ const PLATE_SIZE = "1000x760";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on
+  // `existsSync` alone is blind to the pair it was baked in, so a change to the trunk's tints ships
+  // over a stale basemap in silence — which is exactly what happened to the Danube's three plates.
+  if (plateWasPaintedWith(dir, { water, land })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -238,6 +244,15 @@ const symbols = stations.map((s) => {
     subject: s.fuel === SUBJECT,
   };
 });
+
+/** MARKS AND GROUND IN ONE SPACE. `project` already puts a degree where the plate put it, in VIEW
+ *  units; the plate's pixels are FRAME.width wide on the same camera, so one multiply carries a mark
+ *  onto the ground under it. */
+const FRAME_PER_VIEW = FRAME.width / VIEW;
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")), {
+  scale: FRAME_PER_VIEW,
+});
+
 /** TWO REPÈRES, NOT THREE. A nested key's height is its largest circle plus one pushed label per
  *  entry, and three of them overran the panel in two directions of three — the component said so
  *  and refused rather than shrinking the map. Two circles still give a reader the scale's shape;
@@ -266,6 +281,23 @@ if (threshold === null)
 const drawnIdx = stations.map((s, i) => [s, i]).filter(([s]) => s.capacity_mw >= threshold);
 const shown = drawnIdx.map(([, i]) => symbols[i]);
 const shownStations = drawnIdx.map(([s]) => s);
+
+/** WHICH OF THE BASEMAP'S GROUNDS THESE CIRCLES OCCUPY, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  A circle sits on a station, and a station is on land — but a circle is not a point: the largest
+ *  here is 1,7 % of the map's width, so a coastal site's disc reaches well out to sea, and whether
+ *  that reach is a coastline or a seat is the whole question this measures rather than assumes.
+ *
+ *  THE CIRCLES THIS PLATE ACTUALLY DRAWS, not the 8 900 it counts: the beat climbs a capacity
+ *  threshold until the field is legible, and a station it dropped paints nothing to be picked out of
+ *  anything.
+ */
+const OCCUPANCY = markOccupancy(
+  shown.map((s) => ({ kind: "disc", x: s.x * VIEW, y: s.y * VIEW, r: s.r * VIEW })),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const mwShown = shownStations.reduce((a, s) => a + s.capacity_mw, 0);
 const shareShownSites = (shownStations.length / total) * 100;
 const shareShownMw = (mwShown / mwAll) * 100;
@@ -358,9 +390,28 @@ console.log("");
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   console.log(id);
   try {
+  /** THE GUARD REACHES THE PAINT, WHICH IS THE HALF OF THE DANUBE'S REPAIR THAT APPLIES HERE.
+   *
+   *  What this beat draws is `direction.accent`, and until now nothing measured that colour against
+   *  the basemap it is drawn over: `composeDirections` printed a report above and its result was
+   *  dropped on the floor. `guardColour` is the same rule the composer refuses on, run on the colour
+   *  that is actually painted, against the grounds this beat's marks were MEASURED to occupy.
+   *
+   *  NOT `composeDirection`, and the reason is this beat's own record. `PALETTE.md` here is
+   *  `origin: newsroom`, and a house palette is taken WHOLE by `colourAxis` — composing would paint
+   *  all three of these renders in one ground and one accent and collapse the bench they exist to
+   *  be. The four beats in this family whose marks ARE seated on water record a hue instead, and
+   *  those do compose. */
+    const filed = readDirection(join(DIRECTIONS, file));
+    const colourProblems = guardColour(
+      filed,
+      plateGrounds(plateTints(filed, { landDose: LAND_DOSE }), OCCUPANCY),
+    );
+    if (colourProblems.length)
+      throw new Error(`this beat's colour cannot be carried here: ${colourProblems.join("; ")}`);
+    const direction = resolveDirectionFamilies(filed, textPerRegister);
     await renderStill({
       element: createElement(DirectedProportionalSymbol, {
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,

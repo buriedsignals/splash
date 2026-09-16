@@ -53,6 +53,15 @@ const ROOT = join(import.meta.dirname, "..", "..", "..");
 const DIRECTIONS = join(ROOT, "shared", "design-base", "directions");
 const DANUBE = join(ROOT, "proof", "web-flow-map-danube");
 
+/** THE OCCUPANCY THESE CASES ARE ABOUT, FIXED ON PURPOSE.
+ *
+ *  `plateGrounds` now refuses to guess which of a basemap's grounds a beat's marks sit on — see
+ *  `a-mark-is-only-measured-against-the-ground-it-sits-on.test.ts`, which measures it. Every case
+ *  below is about the RULE that holds a mark apart from the water under it, so the water is put
+ *  under the mark here rather than measured: a test that let the occupancy vary would be testing
+ *  two things and reporting one. */
+const ON_BOTH = { water: true, land: true };
+
 const hueOf = (hex: string) => {
   const [r, g, b] = channels(hex);
   return hsl(r, g, b).h;
@@ -131,7 +140,7 @@ describe("the guard: a mark may not take the hue of the ground it sits on", () =
   it("should reach the guard through guardDirection's own grounds argument (MUTATION 4)", () => {
     const direction = readDirection(join(DIRECTIONS, "rapport.md"));
     const tints = plateTints(direction);
-    const grounds = plateGrounds(tints);
+    const grounds = plateGrounds(tints, ON_BOTH);
     // rapport's filed accent is a blue 1.4° from the water it would be drawn on, and it clears
     // every contrast floor there — which is exactly why nothing caught it.
     expect(contrast(direction.accent, tints.water)).toBeGreaterThan(3);
@@ -167,7 +176,7 @@ describe("the composition: the record owns the hue, the direction owns the value
         key: direction.accent,
         ground: direction.ground,
         registers: direction.registers,
-        grounds: plateGrounds(tints),
+        grounds: plateGrounds(tints, ON_BOTH),
       });
       expect(composed.accent, direction.id).not.toBeNull();
       // The hue is the argument and is never rotated…
@@ -190,7 +199,7 @@ describe("the composition: the record owns the hue, the direction owns the value
         key: direction.accent,
         ground: direction.ground,
         registers: direction.registers,
-        grounds: plateGrounds(plateTints(direction)),
+        grounds: plateGrounds(plateTints(direction), ON_BOTH),
       });
       expect([direction.id, composed.accent]).not.toEqual([
         direction.id,
@@ -214,7 +223,7 @@ describe("the composition: the record owns the hue, the direction owns the value
       key: direction.accent,
       ground: direction.ground,
       registers: direction.registers,
-      grounds: plateGrounds(plateTints(direction)),
+      grounds: plateGrounds(plateTints(direction), ON_BOTH),
     });
     expect(contrast(composed.accent!, direction.ground)).toBeGreaterThanOrEqual(
       4.5,
@@ -260,7 +269,7 @@ describe("one resolution reaches the paint", () => {
     const palette = readPalette(DANUBE, { stopAt: join(ROOT, "proof") });
     for (const direction of filed()) {
       const tints = plateTints(direction);
-      const grounds = plateGrounds(tints);
+      const grounds = plateGrounds(tints, ON_BOTH);
       const composed = composeDirection({
         direction,
         palette,

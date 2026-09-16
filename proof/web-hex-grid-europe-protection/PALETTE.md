@@ -1,14 +1,33 @@
 ---
 ground: "#FFFFFF"
-accent: "#0B7A75"
-origin: newsroom
+accent: "#0B7A5E"
+origin: journalist
 ---
 
-The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
-`ground: "#FFFFFF"`). `origin: newsroom` says who chose them. This is the palette
-`composeDirections` reconciles the three filed directions against; the delivered page is drawn in
-whichever direction governs it, never in this one.
+The answer recorded for this beat: the white ground the newsroom publishes on, and a hue of the
+beat's own for the marks.
+
+`origin: journalist`. The newsroom's house accent is `#0B7A75`, and it is **30,0° of hue from
+`#1F6FB2`**, the water convention `shared/map-beat/tints.mjs` paints every basemap's sea in — inside
+the 40° `readPixelPalette` counts as ONE pole. On a beat whose marks never leave the land that
+collision is a fact about two colours and not about the drawing, and `markOccupancy` says so. Not
+here: measured on this beat's own plate, 9 of its 32 cells (28,1 %) cover more water than land — a
+cartogram's seating is not a geolocation, so ISL, SWE, IRL, NLD, DEU, POL, BEL, PRT and CYP come
+down on the Atlantic, the North Sea and the Baltic. A mark seated on the sea and drawn in the
+sea's own pole is the blue-on-blue the Danube shipped, one beat over.
+
+**So the water convention is declined, and the hue recorded is the house accent moved the smallest
+distance that leaves the COMPOSED accent clear of the sea's pole in all three directions** — 12,4°
+of hue, `#0B7A75` → `#0B7A5E`, recorded at 164,9° against the water's 207,3°. The record's hue is not
+what is measured: `composeAccent` sets it in each direction's own key and the colour that reaches the
+paint reads **42,5° / 42,6° / 42,7°** from the water's pigment. A 10,0° rotation also clears the 40°,
+at 40,2° — a fifth of a degree of margin, which is inside the composition's own rounding, so it is not
+the number recorded. Not a colour chosen for its own sake and
+not one borrowed from a sibling: the newsroom's own colour, kept as close as a reader can still tell
+it from the water its hexagons cross. Only the HUE is recorded, and only the hue travels:
+`composeAccent` sets it in each direction's own saturation and lightness and walks the lightness
+until it clears the floors on the paper and on both grounds, so the three renders stay three
+directions rather than collapsing into one palette.
 
 **One hue, five steps in lightness, and the same five in all three states.** That is not a
 preference — it is the direct consequence of what this page's control does. `pool.ts` holds the

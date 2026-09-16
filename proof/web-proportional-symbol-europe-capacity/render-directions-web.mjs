@@ -30,12 +30,15 @@ import { contrast, mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirections, guardColour, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 // The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
 // nice-number ladder, not three fractions of a total. Its own header records why — a legend over
@@ -185,7 +188,10 @@ const PLATE_SIZE = "1824x1216";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on
+  // `existsSync` alone is blind to the pair it was baked in, so a change to the trunk's tints ships
+  // over a stale basemap in silence — which is exactly what happened to the Danube's three plates.
+  if (plateWasPaintedWith(dir, { water, land })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -533,6 +539,33 @@ const symbols = rows.map((r, index) => ({
     `${fr((r.old / r.mw) * 100)} %, vent + soleil ${fr((r.fresh / r.mw) * 100)} %`,
 }));
 
+/** WHICH OF THE BASEMAP'S GROUNDS THESE CIRCLES OCCUPY, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  A proportional-symbol map is the type that most obviously cannot be answered from its name: the
+ *  same circles over the same countries are on land here and on water on a map of ports. And the
+ *  seat is not a place a reader could check either — it is the capacity-weighted mean of a country's
+ *  own stations, which for a country whose fleet is coastal falls offshore. So the circles are put
+ *  back over the plate's pixels at the radius they are actually drawn, the LARGEST any area law
+ *  gives them, because the law is a control the reader works.
+ */
+const toFrame = frameProjector(plateFacts);
+const FRAME_PER_CSS = plateFacts.frame.width / REVIEW_BOX.width;
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")));
+const OCCUPANCY = markOccupancy(
+  symbols.map((symbol) => {
+    const [x, y] = toFrame([symbol.lon, symbol.lat]);
+    return {
+      kind: "disc",
+      name: symbol.name,
+      x,
+      y,
+      r: Math.max(...LAWS.map((law) => radiusFor(symbol.key, areaScaleSlugOf(law.key)))) * FRAME_PER_CSS,
+    };
+  }),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const keySizes = keyValues.map((k) => ({ key: k.key, label: `${fr(k.value / 1000, 0)} GW` }));
 
 const facts = beatFacts(
@@ -791,7 +824,31 @@ async function bakeFallback(pagePath, outFile, id) {
 const refused = [];
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filed = readDirection(join(DIRECTIONS, file));
+  /** THE GUARD REACHES THE PAINT, WHICH IS THE HALF OF THE DANUBE'S REPAIR THAT APPLIES HERE.
+   *
+   *  What this beat draws is `direction.accent`, and until now nothing measured that colour against
+   *  the basemap it is drawn over: `composeDirections` printed a report above and its result was
+   *  dropped on the floor. `guardColour` is the same rule the composer refuses on, run on the colour
+   *  that is actually painted, against the grounds this beat's marks were MEASURED to occupy.
+   *
+   *  NOT `composeDirection`, and the reason is this beat's own record. `PALETTE.md` here is
+   *  `origin: newsroom`, and a house palette is taken WHOLE by `colourAxis` — composing would paint
+   *  all three of these renders in one ground and one accent and collapse the bench they exist to
+   *  be. The four beats in this family whose marks ARE seated on water record a hue instead, and
+   *  those do compose. */
+  const base = filed;
+  const colourProblems = guardColour(base, plateGrounds(plateTints(base, { landDose: LAND_DOSE }), OCCUPANCY));
+  if (colourProblems.length) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    const why = `the ${id} direction cannot carry this beat's colour: ${colourProblems.join("; ")}`;
+    refused.push({ id, why });
+    console.log(`${id} REFUSED — ${why}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
   const furniture = deriveFurniture(base.ground);
   // THE LIVE STYLE IS PAINTED IN WHAT THE READER IS ACTUALLY LOOKING AT. The water is the plate's own

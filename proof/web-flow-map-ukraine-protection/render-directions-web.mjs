@@ -33,11 +33,14 @@ import { contrast, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirection, composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
@@ -398,7 +401,8 @@ function ensurePlate(id, water, land) {
       b[1][0] >= STUDY.east && b[1][0] <= STUDY.east + AIR_DEG &&
       b[0][1] <= STUDY.south && b[0][1] >= STUDY.south - AIR_DEG &&
       b[1][1] >= STUDY.north && b[1][1] <= STUDY.north + AIR_DEG;
-    if (cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && snug) return;
+    if (plateWasPaintedWith(dir, { water, land }) &&
+      cached.frame?.width === PLATE_FRAME[0] && cached.frame?.height === PLATE_FRAME[1] && snug) return;
     console.log(
       `the ${id} plate was baked at ${cached.frame?.width}x${cached.frame?.height} on ` +
         `${JSON.stringify(cached.bounds)}, which is not this fan's own box ` +
@@ -451,6 +455,27 @@ const CORNERS = plateFacts.frameCorners;
 if (!CORNERS || !(FRAME?.width > 0))
   throw new Error("this plate predates the camera facts: re-bake it with bake.mjs");
 const CAMERA_ASPECT = FRAME.width / FRAME.height;
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS FAN OCCUPIES, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  `PALETTE.md` has said in prose since this beat was written that "the bands are drawn over the sea
+ *  as much as over the land", and that the arms to Iceland, Cyprus and Malta "spend most of their
+ *  length" on water. This is that sentence measured, on the plate's own pixels, at the width each
+ *  band is actually drawn — the widest it takes under ANY of the three measures, because the control
+ *  is on the page and a reader can put every band at its widest.
+ */
+const toFrame = frameProjector(plateFacts);
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")));
+const OCCUPANCY = markOccupancy(
+  Object.entries(bandLines).map(([code, line]) => ({
+    kind: "band",
+    name: code,
+    points: line.map(toFrame),
+    width: Math.max(...MEASURES.map((_, i) => widthOf(code, i))) * (FRAME.width / SIZE),
+  })),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
 
 /** THE WINDOW THE CAMERA WAS ASKED TO HOLD, which is what this is measured against — never the frame
  *  it ended up with. `fitBounds` widens the frame on whichever axis does not bind, so a declared
@@ -787,7 +812,33 @@ async function bakeFallback(pagePath, outFile, id) {
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filed = readDirection(join(DIRECTIONS, file));
+  /** ONE RESOLUTION OF THIS BEAT'S COLOUR, AND IT IS THE ONE THAT REACHES THE PAINT.
+   *
+   *  What stood here was `readDirection()` straight to the paint, while `composeDirections` — the
+   *  only thing that had ever read this beat's own `PALETTE.md` — composed a colour, printed it in a
+   *  report above, and dropped it. The two resolutions disagreed silently and the one that got drawn
+   *  was the one that had never heard of the subject. `composeDirection` returns the single colour
+   *  that is both: the record owns the hue, the direction owns the value, and the floors are measured
+   *  against the grounds this beat's marks were MEASURED to occupy. It refuses rather than falling
+   *  back. */
+  let base;
+  try {
+    base = composeDirection({
+      direction: filed,
+      palette: newsroom,
+      grounds: plateGrounds(plateTints(filed, { landDose: LAND_DOSE }), OCCUPANCY),
+      textPerRegister,
+    });
+  } catch (error) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    refused.push({ id, why: error.message });
+    console.log(`${id} REFUSED — ${error.message}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
   const tints = plateTints(base, { landDose: LAND_DOSE });
   const furniture = deriveFurniture(base.ground);

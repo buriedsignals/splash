@@ -28,9 +28,12 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { composeDirections, guardColour, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedContourField } from "./DirectedContourField.tsx";
 
@@ -87,7 +90,10 @@ const PLATE_SIZE = "1000x760";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on
+  // `existsSync` alone is blind to the pair it was baked in, so a change to the trunk's tints ships
+  // over a stale basemap in silence — which is exactly what happened to the Danube's three plates.
+  if (plateWasPaintedWith(dir, { water, land })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -477,6 +483,35 @@ const summit = {
   label: `${n0(deepest)} km`,
 };
 
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS FIELD OCCUPIES, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  The quantity is DISTANCE FROM THE WATER, so the field is seeded by the coastline and ought to be
+ *  defined on the land alone — but "ought to" is an argument, and the isolines are traced on an
+ *  equal-area grid whose cells do not follow a coast, so a 100 km line runs along an estuary the
+ *  basemap paints. Every line of every level set is measured, because the level set is a control the
+ *  reader works, and so is the summit, which is the one mark drawn in the accent undiluted.
+ */
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")), {
+  scale: FRAME.width / VIEW,
+});
+/** The narrowest map the three filed directions draw this beat at — what the component's own
+ *  hairline is put in VIEW units against, a mark being smallest there. */
+const NARROWEST_MAP = 596;
+const ISOLINE_VIEW = (0.85 / NARROWEST_MAP) * VIEW;
+const OCCUPANCY = markOccupancy(
+  [
+    ...contourSets.flatMap((set) =>
+      set.flatMap((c) =>
+        c.lines.map((line) => ({ kind: "band", name: `${c.level} km`, points: line, width: ISOLINE_VIEW })),
+      ),
+    ),
+    { kind: "disc", name: "le sommet", x: summit.x, y: summit.y, r: (2.6 / NARROWEST_MAP) * VIEW },
+  ],
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const title = [
   `La moitié de l’Europe est à moins de ${n0(median)} km de la mer, et aucun point à plus de ${n0(deepest)} km`,
   `La moitié de l’Europe est à moins de ${n0(median)} km de la mer`,
@@ -521,9 +556,28 @@ console.log("");
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   console.log(id);
   try {
+  /** THE GUARD REACHES THE PAINT, WHICH IS THE HALF OF THE DANUBE'S REPAIR THAT APPLIES HERE.
+   *
+   *  What this beat draws is `direction.accent`, and until now nothing measured that colour against
+   *  the basemap it is drawn over: `composeDirections` printed a report above and its result was
+   *  dropped on the floor. `guardColour` is the same rule the composer refuses on, run on the colour
+   *  that is actually painted, against the grounds this beat's marks were MEASURED to occupy.
+   *
+   *  NOT `composeDirection`, and the reason is this beat's own record. `PALETTE.md` here is
+   *  `origin: newsroom`, and a house palette is taken WHOLE by `colourAxis` — composing would paint
+   *  all three of these renders in one ground and one accent and collapse the bench they exist to
+   *  be. The four beats in this family whose marks ARE seated on water record a hue instead, and
+   *  those do compose. */
+    const filed = readDirection(join(DIRECTIONS, file));
+    const colourProblems = guardColour(
+      filed,
+      plateGrounds(plateTints(filed, { landDose: LAND_DOSE }), OCCUPANCY),
+    );
+    if (colourProblems.length)
+      throw new Error(`this beat's colour cannot be carried here: ${colourProblems.join("; ")}`);
+    const direction = resolveDirectionFamilies(filed, textPerRegister);
     await renderStill({
       element: createElement(DirectedContourField, {
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,

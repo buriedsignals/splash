@@ -23,9 +23,12 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { plateTints } from "#shared/map-beat/tints.mjs";
+import { plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
+import { plateWasPaintedWith } from "#shared/map-beat/plate-cache.mjs";
+import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
+import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
-import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
+import { composeDirection, composeDirections, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedFlowMap } from "./DirectedFlowMap.tsx";
 
@@ -148,7 +151,10 @@ const PLATE_SIZE = "1000x760";
 const plateDir = (id) => join(HERE, "plate", id);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
-  if (existsSync(join(dir, "geometry.json")) && existsSync(join(dir, "plate.png"))) return;
+  // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on
+  // `existsSync` alone is blind to the pair it was baked in, so a change to the trunk's tints ships
+  // over a stale basemap in silence — which is exactly what happened to the Danube's three plates.
+  if (plateWasPaintedWith(dir, { water, land })) return;
   console.log(`baking the ${id} plate (MapTiler, ${PLATE_SIZE}, water ${water}, land ${land})…`);
   const result = spawnSync(
     "bun",
@@ -275,6 +281,38 @@ const bands = flows.map((f) => ({
   subject: f.code === SUBJECT,
 }));
 
+
+/** MARKS AND GROUND IN ONE SPACE. `project` already puts a degree where the plate put it, in VIEW
+ *  units; the plate's pixels are FRAME.width wide on the same camera, so one multiply carries a mark
+ *  onto the ground under it. */
+const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, "")), {
+  scale: FRAME.width / VIEW,
+});
+/** The narrowest map the three filed directions draw this beat at — the camera every component-side
+ *  length below is put in VIEW units against, because a mark is smallest there. */
+const NARROWEST_MAP = 596;
+
+/** WHICH OF THE BASEMAP'S GROUNDS THIS FAN OCCUPIES, MEASURED ON THE PLATE THIS BEAT BAKED.
+ *
+ *  `PALETTE.md` has said in prose since this beat was written that "the bands are drawn over the sea
+ *  as much as over the land". This is that sentence measured. The band's own BOW is a component
+ *  detail — a tenth of the chord, capped at 22 px — and is not reproduced here; what is measured is
+ *  the chord between the two seats at the widest weight the component gives a band, which is where a
+ *  band spends almost all of its length.
+ */
+const WIDEST_BAND = Math.min(NARROWEST_MAP * 0.05, 17);
+const BIGGEST_FLOW = Math.max(...bands.map((b) => b.people));
+const OCCUPANCY = markOccupancy(
+  bands.map((b) => ({
+    kind: "band",
+    name: b.name,
+    points: [seats[ORIGIN], b.seat],
+    width: ((b.people / BIGGEST_FLOW) * WIDEST_BAND * VIEW) / NARROWEST_MAP,
+  })),
+  waterField,
+);
+console.log(occupancyLine(OCCUPANCY));
+
 const title = [
   `${one(total / 1e6)} millions d’Ukrainiens sous protection temporaire — l’Allemagne et la Pologne en accueillent la moitié`,
   `${one(total / 1e6)} millions d’Ukrainiens sous protection temporaire en Europe`,
@@ -318,9 +356,26 @@ console.log("");
 
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   console.log(id);
   try {
+  /** ONE RESOLUTION OF THIS BEAT'S COLOUR, AND IT IS THE ONE THAT REACHES THE PAINT.
+   *
+   *  What stood here was `readDirection()` straight to the paint, while `composeDirections` — the
+   *  only thing that had ever read this beat's own `PALETTE.md` — composed a colour, printed it in a
+   *  report above, and dropped it. The two resolutions disagreed silently and the one that got drawn
+   *  was the one that had never heard of the subject. `composeDirection` returns the single colour
+   *  that is both: the record owns the hue, the direction owns the value, and the floors are measured
+   *  against the grounds this beat's marks were MEASURED to occupy. It refuses rather than falling
+   *  back. */
+    const direction = resolveDirectionFamilies(
+      composeDirection({
+        direction: readDirection(join(DIRECTIONS, file)),
+        palette: newsroom,
+        grounds: plateGrounds(plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE }), OCCUPANCY),
+        textPerRegister,
+      }),
+      textPerRegister,
+    );
     await renderStill({
       element: createElement(DirectedFlowMap, {
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,
