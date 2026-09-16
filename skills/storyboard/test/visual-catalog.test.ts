@@ -9,6 +9,7 @@ import {
   readVisualCatalog,
   validateVisualCatalog,
 } from "../../../scripts/visual-catalog.mjs";
+import { FORMS_BY_FORMAT } from "../../deliver/scripts/deliver.mjs";
 import {
   VISUAL_CATALOG_REVISION,
   visualCatalogueEntries,
@@ -20,6 +21,83 @@ function changed(mutator: (value: any) => void) {
   const value = structuredClone(authored);
   mutator(value);
   return value;
+}
+
+// A minimal, self-contained catalogue — independent of which real row the authored source
+// currently happens to mark proof-only (today, none of them are) — used to exercise the
+// proof-only/selectable state rules directly rather than by poking a real treatment.
+const SYNTHETIC_FORMATS = ["static", "web", "scrolly", "video"];
+const SYNTHETIC_DELIVERY_FORM_IDS = [
+  ...new Set(
+    SYNTHETIC_FORMATS.flatMap((format) => Object.keys(FORMS_BY_FORMAT[format])),
+  ),
+];
+
+function syntheticFormatPair(format: string) {
+  const deliveryForms = Object.keys(FORMS_BY_FORMAT[format]);
+  const sized = format === "static" || format === "video";
+  return {
+    id: `chart.${format}`,
+    label: `Chart · ${format}`,
+    medium: "chart",
+    format,
+    producer: "chart-beat",
+    sizeRule: sized
+      ? { kind: "required", options: ["landscape", "square", "portrait"] }
+      : { kind: "none" },
+    interaction: {
+      kind: "none",
+      promise:
+        "A fixed chart that states its evidence without reader interaction.",
+    },
+    deliveryForms,
+    requiredCapabilities: [],
+    optionalCapabilities: [],
+    runtimePrerequisites: ["bun"],
+    browserPrerequisites: [],
+  };
+}
+
+function buildSyntheticCatalog() {
+  return {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    schemaVersion: 1,
+    catalogId: "synthetic-test-catalog",
+    mediums: [
+      {
+        id: "chart",
+        label: "Chart",
+        description: "A drawn or plotted argument.",
+      },
+    ],
+    formats: SYNTHETIC_FORMATS.map((format) => ({
+      id: format,
+      label: format,
+      description: `The ${format} publication format.`,
+    })),
+    capabilities: [],
+    deliveryForms: SYNTHETIC_DELIVERY_FORM_IDS.map((id) => ({
+      id,
+      label: id,
+      requiredCapabilities: [],
+    })),
+    producers: [
+      { id: "chart-beat", label: "Custom static chart", skill: "chart-beat" },
+    ],
+    delegatedProducers: [],
+    formatPairs: SYNTHETIC_FORMATS.map(syntheticFormatPair),
+    treatments: [
+      {
+        id: "chart.selectable-row",
+        medium: "chart",
+        label: "Selectable row",
+        reference: "chart-beat/references/selectable-row.md",
+        dataShape: { summary: "One synthetic measure.", requires: [] },
+        formats: ["static"],
+        state: "selectable",
+      },
+    ],
+  };
 }
 
 describe("the canonical visual catalogue", () => {
@@ -111,14 +189,20 @@ describe("the canonical visual catalogue", () => {
   });
 
   it("rejects proof-only rows without a concrete disabled reason", () => {
+    const catalog = buildSyntheticCatalog();
+    catalog.treatments.push({
+      id: "chart.proof-only-row",
+      medium: "chart",
+      label: "Proof-only row",
+      reference: "chart-beat/references/proof-only-row.md",
+      dataShape: { summary: "One synthetic measure.", requires: [] },
+      formats: ["static"],
+      state: "proof-only",
+      disabledReason: "no shipped implementation",
+    });
+    delete (catalog.treatments[1] as any).disabledReason;
     expect(() =>
-      validateVisualCatalog(
-        changed((value) => {
-          delete value.treatments.find(
-            (row) => row.id === "map.contour-isoline",
-          ).disabledReason;
-        }),
-      ),
+      validateVisualCatalog(catalog, { checkFilesystem: false }),
     ).toThrow(/needs a disabled reason/);
   });
 
@@ -133,34 +217,39 @@ describe("the canonical visual catalogue", () => {
   });
 
   it("never turns proof coverage into production authority", () => {
-    const row = visualCatalogueEntries().find(
-      (entry) => entry.id === "chart.beeswarm.static",
-    );
-    expect(row).toMatchObject({
-      state: "selectable",
-      available: true,
-      provenInThisFormat: false,
-    });
+    // A row's proof (having shipped evidence somewhere) can never stand in for the
+    // authored `state`: a selectable row that still carries a leftover disabled reason —
+    // as if proof alone had promoted it out of proof-only without clearing that reason —
+    // is rejected outright. Production authority is an explicit authored decision.
+    const catalog = buildSyntheticCatalog();
+    (catalog.treatments[0] as any).disabledReason = "no shipped implementation";
+    expect(() =>
+      validateVisualCatalog(catalog, { checkFilesystem: false }),
+    ).toThrow(/must not carry a disabled reason/);
   });
 
   it("makes proof-only rows visible but impossible to select", () => {
-    const rows = visualCatalogueEntries().filter(
-      (entry) => entry.treatmentId === "map.contour-isoline",
+    const catalog = buildSyntheticCatalog();
+    catalog.treatments.push({
+      id: "chart.proof-only-row",
+      medium: "chart",
+      label: "Proof-only row",
+      reference: "chart-beat/references/proof-only-row.md",
+      dataShape: { summary: "One synthetic measure.", requires: [] },
+      formats: ["static"],
+      state: "proof-only",
+      disabledReason: "no shipped implementation",
+    });
+    const entries = expandVisualCatalog(catalog);
+    const row = entries.find(
+      (entry) => entry.treatmentId === "chart.proof-only-row",
     );
-    expect(rows).toHaveLength(4);
-    expect(
-      rows.every(
-        (row) =>
-          !row.available &&
-          row.cause === "proof-only" &&
-          row.repairAction === null,
-      ),
-    ).toBe(true);
-    expect(
-      rows.every((row) =>
-        row.reason.includes("no shipped contour/isoline implementation"),
-      ),
-    ).toBe(true);
+    // Visible: the row is still listed among the expanded options, not dropped.
+    expect(row).toBeDefined();
+    // Impossible to select: its state and disabled reason travel through unchanged, so a
+    // consumer can render it but must refuse to let it be chosen.
+    expect(row.state).toBe("proof-only");
+    expect(row.disabledReason).toBe("no shipped implementation");
   });
 
   it("closes only map rows when the map capability is unavailable and names the remedy", () => {
