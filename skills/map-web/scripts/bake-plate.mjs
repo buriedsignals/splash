@@ -338,6 +338,8 @@ const gate = await page.evaluate(
       attributionControl: false,
       fadeDuration: 0,
       // Without this the WebGL canvas is empty by the time a screenshot reads it (rule 6).
+      // Top-level here because this bake pins maplibre 4.7.1; from maplibre 5 the option moved
+      // under `canvasContextAttributes`, so a version bump must move it or the plates come out blank.
       preserveDrawingBuffer: true,
       bounds,
       fitBoundsOptions: { padding: 0, animate: false },
