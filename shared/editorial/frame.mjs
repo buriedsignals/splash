@@ -110,6 +110,32 @@ export function parseGesture(cell) {
     .filter((atom) => atom !== "");
 }
 
+/**
+ * THE STABLE HANDLE OF A RULE OR A DATUM, slugged from the words that state it.
+ *
+ * `requiredAssertions` returns a type sheet's own `## Precision to assert` bullets verbatim, because
+ * the sheet's sentence is what a person reads; a beat's `## Precision` states the same rule in its
+ * own words and its own order. The two are matched on this slug, so a checker can say "the beat
+ * covers `one-value-scale-from-zero`" without either side quoting the other's sentence.
+ *
+ * Deterministic, accent-blind, markup-blind, and capped at six words so a long bullet still yields a
+ * handle a person can read in a failure message. It NEVER decides whether two rules are the same
+ * rule — it only gives the same words the same name.
+ */
+export function assertionId(text) {
+  const plain = String(text ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[*_`]/g, "")
+    .split(/\s+[—–]\s+|:\s+/)[0]
+    .toLowerCase()
+    .replace(/[’']s\b/g, "")
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return plain.split(/\s+/).filter(Boolean).slice(0, 6).join("-");
+}
+
 /** The bullets under `## <heading>` in a sheet, each stripped of its marker. */
 function bulletsUnder(text, headingTest) {
   const lines = String(text).split(/\r?\n/);
