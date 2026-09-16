@@ -1,0 +1,428 @@
+{
+  "rowCount": 41,
+  "columns": [
+    {
+      "name": "entity",
+      "type": "text",
+      "missing": 0,
+      "distinct": 41,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "code",
+      "type": "text",
+      "missing": 0,
+      "distinct": 41,
+      "min": null,
+      "max": null,
+      "sum": null,
+      "gaps": null
+    },
+    {
+      "name": "year",
+      "type": "number",
+      "missing": 0,
+      "distinct": 1,
+      "min": 2024,
+      "max": 2024,
+      "sum": null,
+      "sumWithheld": "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything",
+      "gaps": []
+    },
+    {
+      "name": "other_renewables_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 9,
+      "min": 0,
+      "max": 10.2,
+      "sum": 23.49,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.01,
+          0.15,
+          0.3,
+          1,
+          7.5
+        ],
+        "counts": [
+          31,
+          2,
+          2,
+          1,
+          3,
+          1
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (31 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 9 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "bioenergy_stacked_generation__twh",
+      "type": "number",
+      "missing": 0,
+      "distinct": 36,
+      "min": 0,
+      "max": 51.08,
+      "sum": 208.74,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.01,
+          0.4,
+          1,
+          3,
+          10
+        ],
+        "counts": [
+          4,
+          8,
+          7,
+          7,
+          9,
+          6
+        ],
+        "over": "the 41 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (4 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 37 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "solar_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 40,
+      "min": 0.01,
+      "max": 74.13,
+      "sum": 358.8500000000001,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.4,
+          1,
+          2.5,
+          7.5,
+          20
+        ],
+        "counts": [
+          9,
+          6,
+          5,
+          8,
+          6,
+          6
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: quantiles of the 40 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "wind_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 37,
+      "min": 0,
+      "max": 141.6,
+      "sum": 632.8499999999999,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.01,
+          0.3,
+          1.5,
+          15,
+          30
+        ],
+        "counts": [
+          3,
+          9,
+          7,
+          10,
+          4,
+          7
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (3 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 37 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "hydro_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 39,
+      "min": 0,
+      "max": 210.54,
+      "sum": 885.9100000000001,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.02,
+          0.5,
+          4,
+          10,
+          50
+        ],
+        "counts": [
+          2,
+          8,
+          9,
+          6,
+          9,
+          6
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (2 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 38 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "nuclear_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 17,
+      "min": 0,
+      "max": 380.45,
+      "sum": 945.5600000000001,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          4,
+          20,
+          40,
+          75
+        ],
+        "counts": [
+          25,
+          6,
+          4,
+          3,
+          2
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (24 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 16 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "gas_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 36,
+      "min": 0,
+      "max": 545.78,
+      "sum": 1164.42,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.075,
+          1,
+          3,
+          10,
+          40
+        ],
+        "counts": [
+          6,
+          7,
+          7,
+          6,
+          7,
+          7
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (5 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 35 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "oil_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 36,
+      "min": 0,
+      "max": 20.39,
+      "sum": 119.63999999999999,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.01,
+          0.2,
+          1,
+          2,
+          5
+        ],
+        "counts": [
+          4,
+          8,
+          9,
+          5,
+          8,
+          6
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (4 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 36 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    },
+    {
+      "name": "coal_generation__twh",
+      "type": "number",
+      "missing": 1,
+      "distinct": 26,
+      "min": 0,
+      "max": 215.17,
+      "sum": 645.4999999999999,
+      "gaps": null,
+      "denominatorNotInThisTable": {
+        "says": "this table holds no denominator-shaped column, and a panel published one indicator per file keeps its denominator — population, area, households — in a different file; so nothing here can decide whether this column should be read per head, and this silence is not evidence that it should not be",
+        "reads": "English, French, Greek and Arabic"
+      },
+      "classBreaks": {
+        "breaks": [
+          0.02,
+          1,
+          2.5,
+          7.5,
+          25
+        ],
+        "counts": [
+          15,
+          5,
+          6,
+          6,
+          3,
+          5
+        ],
+        "over": "the 40 row(s) this column carries at \"year\" = 2024, the latest period this table holds — a beat painting another period must propose again",
+        "says": "a PROPOSAL, never a decision: a reported zero is its own first class (15 of these rows report one, and a zero is a reading, not an absence), then quantiles of the 25 value(s) above zero, each break rounded up to a step a reader can hold — so every class carries a comparable number of subjects rather than a comparable slice of the range, which is what an equal-interval scale cannot do on a distribution this skewed. The classes mean what the journalist says they mean"
+      }
+    }
+  ],
+  "duplicates": {
+    "count": 0,
+    "rows": []
+  },
+  "panel": {
+    "entity": "entity",
+    "period": "year",
+    "entities": 41,
+    "periods": 1,
+    "rowsPerPeriod": {
+      "min": 41,
+      "max": 41
+    },
+    "balanced": true,
+    "says": "one row per entity per period: every (\"entity\", \"year\") pair in this table is unique, so rowCount (41) counts readings, never subjects — there are 41 of those",
+    "decidedBy": "every (\"entity\", \"year\") pair is unique across all 41 rows, and \"entity\" holds no blank",
+    "coverage": {
+      "byPeriod": [
+        {
+          "period": 2024,
+          "entities": 41
+        }
+      ],
+      "fullest": {
+        "period": 2024,
+        "entities": 41
+      },
+      "thinnest": {
+        "period": 2024,
+        "entities": 41
+      },
+      "says": "a period's own step being present is not the same as every entity being present in it: the fullest period here carries 41 entities and the thinnest carries 41"
+    },
+    "aggregates": {
+      "says": "an aggregate here is a row of this table that is the SUM of other rows of the same table. byArithmetic is DECIDED from the numbers: the same set of rows adds up to it in every period. byStructure is a proposal and nothing more — a row whose code is shaped unlike the rest of the column, or missing from it — and it also sweeps in places whose code is merely unusual. Take a proposal as a question to put to the journalist, never as an answer.",
+      "byArithmetic": [],
+      "byStructure": [],
+      "arithmetic": {
+        "ran": false,
+        "reason": "this table carries 1 period, and a set of rows that adds up once is a coincidence rather than an aggregate — see AGGREGATE_MIN_PERIODS"
+      },
+      "structure": {
+        "column": "code",
+        "shape": "AAA",
+        "entitiesWithThatShape": 41,
+        "entitiesCoded": 41
+      }
+    }
+  },
+  "statedIncompleteness": {
+    "reads": "English and French",
+    "words": [
+      "incomplete",
+      "partial",
+      "partially",
+      "preliminary",
+      "provisional",
+      "year to date",
+      "year-to-date",
+      "underreported",
+      "under-reported",
+      "underreporting",
+      "under-reporting",
+      "undercount",
+      "undercounted",
+      "undercounting",
+      "under-count",
+      "under-counted",
+      "incomplet",
+      "incomplets",
+      "incomplète",
+      "incomplètes",
+      "partiel",
+      "partiels",
+      "partielle",
+      "partielles",
+      "préliminaire",
+      "préliminaires",
+      "provisoire",
+      "provisoires",
+      "sous-déclaration",
+      "sous-déclarations",
+      "sous-déclaré",
+      "sous-déclarés",
+      "sous-déclarée",
+      "sous-déclarées",
+      "sous-notification",
+      "sous-notifications",
+      "sous-notifié",
+      "sous-notifiés"
+    ],
+    "column": "year",
+    "readProse": true,
+    "claims": [],
+    "unplaced": [],
+    "says": "the frozen prose states no incompleteness in English and French; a dataset that states one in another language is not read here"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "article",
+      "path": "source/article.md",
+      "kind": "prose",
+      "digest": "sha256:742b34414af93d307ea6e3dbd38695f95af39d532d44ebf8640e26aa743e8312",
+      "sections": [
+        {
+          "id": "europe-s-low-carbon-electricity-leaders-and-the-gap-behind-them",
+          "level": 1,
+          "heading": "Europe's low-carbon electricity leaders, and the gap behind them",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "path": "source/data.csv",
+      "kind": "table",
+      "digest": "sha256:09a71681ce22f61559e0e01de57189b7ab099489cac5edd8633fe5652f7885b4",
+      "profile": "source/profile.json"
+    }
+  ]
+}
