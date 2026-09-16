@@ -33,6 +33,11 @@ one after the other (`skills/scrolly/references/directed-type-choreography.md`):
 - **The code inside its cell** in the ink or the ground, whichever reads on the fill at that moment of the cross-fade.
 - **Every sentence is asserted**: the layout checked both ways, Czechia first per inhabitant, the largest count not
   first, the largest count below fifth per inhabitant, the top count class holding exactly Germany and Poland.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered. `verify-scrolly.mjs` refused all
+  three at first (`c.handle.map` read on a null handle with no key in the page) — fixed the same way as the
+  sibling maps, checking `c.handle` first (`hex-drive.mjs`). Now clean; `verify-live-map-scrolly.mjs` clean
+  on all three; swap check on `creme` clean at both viewports (labels only, hexagon and border positions
+  match).
 
 ## Directions
 

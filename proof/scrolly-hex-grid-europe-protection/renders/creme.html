@@ -2043,7 +2043,7 @@ function applyHexState(root, state, context) {
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
   const lerp = (a, b, t) => a + (b - a) * t;
 
-  const shown = Boolean(c.handle.map && c.handle.ready);
+  const shown = Boolean(c.handle && c.handle.map && c.handle.ready);
   c.fallbacks.forEach((img) => {
     const opacity = !shown ? "1" : "0";
     if (img.style.opacity !== opacity) img.style.opacity = opacity;

@@ -1,0 +1,33 @@
+{
+  "planHash": "c79d1f40bac303f5ee8980e02b78617c7321df8f3d168ee247ca4303a98b1e7d",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1396,
+        "height": 558
+      },
+      "cards": [
+        {
+          "zoom": 2.499332904931572
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "zoom": 0.963926228684648
+        }
+      ]
+    }
+  },
+  "images": {
+    "rapport-wide@2x-1.webp": "a884162a78f43aa5b9bedc860467b5c8be8677f89096be92bde7620afeb273e6",
+    "rapport-wide@1x-1.webp": "53ceb8da6bbf9a4761fe1b40bce50c38e46adddcf846479c2d5484b73edfeef6",
+    "rapport-tall@2x-1.webp": "7229ee1505d7271104def5118475722cb680aad35473b23e5729e6bec01daf9a",
+    "rapport-tall@1x-1.webp": "b05e188c65d763e645ead4542d0d7246edaff6e4133bba15d4ce3d3e263e69cf"
+  }
+}
