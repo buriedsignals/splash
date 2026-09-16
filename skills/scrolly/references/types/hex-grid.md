@@ -20,6 +20,8 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - bin aggregation is computed once from the frozen events and held fixed across every card; every country is present beneath the grid
 
 ## Worked example
+**Data shape:** per-area — one row per named region (entity/code), no coordinates.
+
 `proof/scrolly-hex-grid-europe-protection/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, cameras, buckets, words), `plan.mjs` (the layers — this type's own marks and `$state` bindings), `DirectedHexScrolly.tsx` (the key/counter chrome around the live map) and `hex-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type hex-grid --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/map-beat/references/types/hex-grid.md` (read-only, other worktree) and its own video proof under `proof/` there (prefixes vary — `map-`, `mapvid-`, `mapgen-`, `video-`; search by the type's own name) — the same subject's camera moves are often the scrolly's own card-to-card travel, adapted to be scroll-driven rather than timed.

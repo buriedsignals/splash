@@ -20,6 +20,8 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - the route's drawn order matches the data's own sequence, asserted; every country beneath the route is present
 
 ## Worked example
+**Data shape:** per-area — one row per named region/month (entity/code), no coordinates.
+
 `proof/scrolly-flow-map-ukraine-protection/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, cameras, buckets, words), `plan.mjs` (the layers — this type's own marks and `$state` bindings), `DirectedFlowMapScrolly.tsx` (the key/counter chrome around the live map) and `flow-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type flow-map --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/map-beat/references/types/flow-map.md` (read-only, other worktree) and its own video proof under `proof/` there (prefixes vary — `map-`, `mapvid-`, `mapgen-`, `video-`; search by the type's own name) — the same subject's camera moves are often the scrolly's own card-to-card travel, adapted to be scroll-driven rather than timed.

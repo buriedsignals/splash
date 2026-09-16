@@ -20,6 +20,8 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - the threshold sweep is computed from the same frozen samples in every card, asserted monotonic
 
 ## Worked example
+**Data shape:** per-area — one row per named region (entity/code), no coordinates.
+
 `proof/scrolly-contour-europe-distance/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, cameras, buckets, words), `plan.mjs` (the layers — this type's own marks and `$state` bindings), `DirectedContourScrolly.tsx` (the key/counter chrome around the live map) and `contour-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type contour-isoline --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/map-beat/references/types/contour-isoline.md` (read-only, other worktree) and its own video proof under `proof/` there (prefixes vary — `map-`, `mapvid-`, `mapgen-`, `video-`; search by the type's own name) — the same subject's camera moves are often the scrolly's own card-to-card travel, adapted to be scroll-driven rather than timed.

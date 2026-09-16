@@ -20,6 +20,8 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - symbol area (never radius alone) stays proportional to the same asserted value in every card; the key's scale sample matches the camera's own zoom
 
 ## Worked example
+**Data shape:** points — per-station rows with real lon/lat and a sized value.
+
 `proof/scrolly-proportional-symbol-europe-capacity/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, cameras, buckets, words), `plan.mjs` (the layers — this type's own marks and `$state` bindings), `DirectedProportionalScrolly.tsx` (the key/counter chrome around the live map) and `symbol-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type proportional-symbol --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/map-beat/references/types/proportional-symbol.md` (read-only, other worktree) and its own video proof under `proof/` there (prefixes vary — `map-`, `mapvid-`, `mapgen-`, `video-`; search by the type's own name) — the same subject's camera moves are often the scrolly's own card-to-card travel, adapted to be scroll-driven rather than timed.
