@@ -71,6 +71,11 @@ immediately, by name, when it is missing.
    `scripts/verify-live-map-scrolly.mjs` for a map beat) — see "The one gotcha" above.
 6. **Final pass**: bake (drop `--no-bake` for a map beat) and run the guards
    (`test/scroll-integrity.test.ts`, `test/render-scrolly.test.ts`) before delivery.
+   `test/scroll-integrity.test.ts` sweeps every `proof/scrolly-*` beat's own renders by default (CI's own
+   contract), and that sweep grows past its own 600s ceiling as the catalogue grows. A run checks only ITS
+   OWN beat with `SCROLL_INTEGRITY_BEAT=<beat-folder-name> bun test skills/scrolly/test/scroll-integrity.test.ts`
+   (a bare name resolves under `proof/`; a path — a story's own `beats/<id>` — resolves as given). Never pass
+   `SCROLL_INTEGRITY_BEAT` to the unscoped suite; run it as its own named invocation.
 
 **ONE ART DIRECTION IN A PRODUCTION RUN**, not the three filed demo directions: the scaffolded
 runner composes one from the beat's own `PALETTE.md` and text (`composeDirections`,

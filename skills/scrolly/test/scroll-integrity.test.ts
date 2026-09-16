@@ -202,52 +202,44 @@
  *      working, and the fix is to re-run the beat's own `render.mjs`, never to add it to a list.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { verifyAll } from "../scripts/verify-scrolly.mjs";
 import { render } from "../scripts/render-scrolly.mjs";
+import {
+  SCOPE_ENV_VAR,
+  scopedBeatDir,
+  scrolliesUnder,
+} from "../scripts/scroll-integrity-scope.mjs";
 
 const SKILL = join(import.meta.dirname, "..");
 const PROOF = join(SKILL, "..", "..", "proof");
 
-/** Every rendered scrolly on disk, found by the vehicle's own markup rather than by a name pattern
- *  or a list — a new beat is guarded the moment its render lands, and a beat that stops being a
- *  scrolly drops out on its own. */
-function scrolliesOnDisk(): string[] {
-  const out: string[] = [];
-  // `renders/`, plural, is where a DIRECTED beat writes one page per filed direction; a guard that
-  // read only `render/` let every directed scrolly ship undriven.
-  for (const beat of readdirSync(PROOF).sort())
-    for (const sub of ["render", "renders"]) {
-      const dir = join(PROOF, beat, sub);
-      if (!existsSync(dir)) continue;
-      for (const file of readdirSync(dir).sort()) {
-        if (!file.endsWith(".html")) continue;
-        const path = join(dir, file);
-        const html = readFileSync(path, "utf8");
-        if (html.includes('class="scrolly"') && html.includes("scrolly-track"))
-          out.push(path);
-      }
-    }
-  return out;
-}
+// `SCROLL_INTEGRITY_BEAT=<beat>` scopes the sweep below to one beat's own renders — see
+// scroll-integrity-scope.mjs's own header for why, and skills/scrolly/SKILL.md, step 6, for how a run
+// checks only its own beat. Unset — the CI default — sweeps every proof/scrolly-* beat, unchanged.
+const SCOPED_DIR = scopedBeatDir(PROOF);
 
-describe("every scrolly on disk survives a continuous scroll", () => {
-  it("should hold the whole vehicle's contract on a real, driven, uninterrupted scroll", async () => {
-    const seedDir = await mkdtemp(join(tmpdir(), "scrolly-integrity-"));
-    const { outPath } = await render({ outDir: seedDir });
-    const files = [outPath, ...scrolliesOnDisk()];
-    expect(files.length).toBeGreaterThanOrEqual(2);
+describe(
+  SCOPED_DIR
+    ? `only ${process.env[SCOPE_ENV_VAR]} survives a continuous scroll`
+    : "every scrolly on disk survives a continuous scroll",
+  () => {
+    it("should hold the whole vehicle's contract on a real, driven, uninterrupted scroll", async () => {
+      const seedDir = await mkdtemp(join(tmpdir(), "scrolly-integrity-"));
+      const { outPath } = await render({ outDir: seedDir });
+      const files = [outPath, ...scrolliesUnder(PROOF, SCOPED_DIR)];
+      expect(files.length).toBeGreaterThanOrEqual(2);
 
-    const { failures, notes } = await verifyAll(files);
-    // Printed whether or not anything failed: the residues this guard deliberately does not assert
-    // are only useful if a person reads them, and a note nobody prints is a note nobody has.
-    for (const note of notes) console.log(`  note  ${note}`);
-    expect(
-      failures,
-      `driven across ${files.length} scrollies at three widths:\n  ${failures.join("\n  ")}`,
-    ).toEqual([]);
-  }, 600_000);
-});
+      const { failures, notes } = await verifyAll(files);
+      // Printed whether or not anything failed: the residues this guard deliberately does not assert
+      // are only useful if a person reads them, and a note nobody prints is a note nobody has.
+      for (const note of notes) console.log(`  note  ${note}`);
+      expect(
+        failures,
+        `driven across ${files.length} scrollies at three widths:\n  ${failures.join("\n  ")}`,
+      ).toEqual([]);
+    }, 600_000);
+  },
+);
