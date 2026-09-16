@@ -4,6 +4,7 @@ size: landscape
 type: lollipop
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a triplé son CO₂ par personne, l'écart avec les États-Unis est passé de 7,5 à 1,7 (video)
@@ -37,6 +38,75 @@ until they reach its head — seven and a half — then, at 2023, the same copie
 | `conclusion` | the whole comparison | **pull back** | the copies go; the four others come back — the whole chart; China's 2023 head ringed; the credit | — |
 | `hold` | the change | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "every-2000-level"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "compare by measuring"
+      ],
+      "start": 111,
+      "duration": 150,
+      "asserts": [
+        "7-5"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "move",
+        "re-measure"
+      ],
+      "start": 261,
+      "duration": 120,
+      "asserts": [
+        "1-7",
+        "china-3"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 381,
+      "duration": 90,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 471,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The unit, the dates, the values, « ×7,5 » and « ×1,7 ». No standfirst, no change row, no selection rule. A brisk rhythm:
@@ -45,3 +115,47 @@ The unit, the dates, the values, « ×7,5 » and « ×1,7 ». No standfirst, no 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-2000-level",
+    "7-5",
+    "1-7",
+    "china-3",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-2000-level"
+    ],
+    "reveal": [
+      "7-5"
+    ],
+    "subject": [
+      "1-7",
+      "china-3"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "one-zero-based-value-scale-for": null,
+    "the-stack-of-copies-is-cut": null,
+    "the-earlier-period-is-a-tint": null,
+    "asserted-per-shot": null
+  }
+}
+```

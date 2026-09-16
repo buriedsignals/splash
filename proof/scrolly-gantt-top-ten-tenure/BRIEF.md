@@ -3,6 +3,7 @@ format: scrolly
 type: gantt
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Six pays n'ont jamais quitté le top 10 des émetteurs depuis 1990 (scrolly)
@@ -26,6 +27,67 @@ A gantt is time laid flat; the scroll gives it back its time with a playhead (`s
 | 5 | two rows have a hole (Italy 1991, South Korea 1998–99); Kuwait, one year | **filter + outline** | the interrupted rows and the single year kept, each hole outlined |
 | 6 | the reading line | **name** | both years of every run written in its label — the static plate's form |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "sweep"
+      ],
+      "changes": [
+        "head"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "sweep"
+      ],
+      "changes": [
+        "head"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "six"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "filter",
+        "outline"
+      ],
+      "changes": [
+        "gaps",
+        "six"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "dates",
+        "gaps"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: the label column as wide as the widest label with its dates, measured once,
@@ -34,6 +96,25 @@ A gantt is time laid flat; the scroll gives it back its time with a playhead (`s
 - **Ticks that would touch are dropped**, the first and the last kept.
 - **Every event a card names is checked against the runs**: who left or entered in which half of the sweep, two
   interrupted rows, one single year, the United Kingdom in from the start.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "ticks-that-would-touch-are-dropped",
+    "every-event-a-card-names-is"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "a-bar-drawn-length-is-proportional": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

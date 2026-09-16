@@ -4,6 +4,7 @@ size: landscape
 type: line
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2024, la Suisse a émis moins de CO₂ sur son territoire qu'en 1967 (video)
@@ -37,6 +38,68 @@ way up — in 1967.
 | `conclusion` | — | — | the credit | — |
 | `hold` | the line, readable | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace"
+      ],
+      "start": 96,
+      "duration": 240,
+      "asserts": [
+        "peak-1973"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "name",
+        "rewind"
+      ],
+      "start": 336,
+      "duration": 150,
+      "asserts": [
+        "the-landing-between-1966-and-1967"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 486,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 546,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The tip label, « pic de 1973 », the year at the head. No rule named in advance: the rewind finds 1967. A brisk rhythm: 20,2 s.
@@ -44,3 +107,42 @@ The tip label, « pic de 1973 », the year at the head. No rule named in advance
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "peak-1973",
+    "the-landing-between-1966-and-1967",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [],
+    "reveal": [
+      "peak-1973"
+    ],
+    "subject": [
+      "the-landing-between-1966-and-1967"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "a-gap-in-the-series-breaks": null,
+    "the-peak-the-last-reading-and": null,
+    "the-traversal-is-linear-in-the": null,
+    "asserted-per-shot": null
+  }
+}
+```

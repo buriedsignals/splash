@@ -4,6 +4,7 @@ size: landscape
 type: pictogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Europe électrique est aux deux bouts : 6 pays seulement au milieu (video)
@@ -42,6 +43,85 @@ middle stops at 6 while the two ends climb to 18 and 16; the parts then close in
 | `conclusion` | only 6 in the middle | **pull back + name** | the parts close together, every square magnified by one factor about its block's corner, a cut in the middle of each gap; a ring closes round « 6 pays »; the credit | each block keeps its shape; 6 × 4 < 40 |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "trace"
+      ],
+      "start": 45,
+      "duration": 105,
+      "asserts": [
+        "40-squares",
+        "each-in-the-5-point-column",
+        "stacked-from-the-axis"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "cut",
+        "split"
+      ],
+      "start": 150,
+      "duration": 75,
+      "asserts": [
+        "every-square-left-of-60-in",
+        "right-of-75-in-the-right",
+        "the-middle-part-unmoved"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "gather",
+        "count up"
+      ],
+      "start": 225,
+      "duration": 195,
+      "asserts": [
+        "each-block-count-is-its-landed",
+        "18-6-16-40",
+        "the-middle-stops-first"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 420,
+      "duration": 90,
+      "asserts": [
+        "each-block-keeps-its-shape",
+        "6-4-40"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 510,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 0 % », « 60 % », « 75 % », « 100 % bas-carbone », the three counts. No key, no unit line, no standfirst, no sentence.
@@ -49,3 +129,62 @@ middle stops at 6 while the two ends climb to 18 and 16; the parts then close in
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "40-squares",
+    "each-in-the-5-point-column",
+    "stacked-from-the-axis",
+    "every-square-left-of-60-in",
+    "right-of-75-in-the-right",
+    "the-middle-part-unmoved",
+    "each-block-count-is-its-landed",
+    "18-6-16-40",
+    "the-middle-stops-first",
+    "each-block-keeps-its-shape",
+    "6-4-40",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "40-squares",
+      "each-in-the-5-point-column",
+      "stacked-from-the-axis"
+    ],
+    "reveal": [
+      "every-square-left-of-60-in",
+      "right-of-75-in-the-right",
+      "the-middle-part-unmoved"
+    ],
+    "subject": [
+      "each-block-count-is-its-landed",
+      "18-6-16-40",
+      "the-middle-stops-first"
+    ],
+    "conclusion": [
+      "each-block-keeps-its-shape",
+      "6-4-40"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "one-icon-always-equals-the-same": null,
+    "the-groups-are-exhaustive-and-disjoint": null,
+    "the-magnification-at-the-end-is": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -4,6 +4,7 @@ size: landscape
 type: proportional-symbol
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Un centième des sites porte plus d'un tiers de la puissance bas-carbone d'Europe (video)
@@ -60,6 +61,69 @@ is set beside the first: a comparison, not a sentence.
 
 The reveal is linear in rank (a measured order); each circle eases its own arrival.
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "reveal in order",
+        "count up"
+      ],
+      "start": 117,
+      "duration": 210,
+      "asserts": [
+        "100-8-900-2",
+        "share-33"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "compare"
+      ],
+      "start": 333,
+      "duration": 105,
+      "asserts": [
+        "the-two-shares-sum-to-100"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 438,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 498,
+      "duration": 90,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no note on the drawing threshold (the video draws no threshold: the rest are points).
@@ -68,3 +132,44 @@ The key is two counts and two named circles.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "100-8-900-2",
+    "share-33",
+    "the-two-shares-sum-to-100",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [],
+    "reveal": [
+      "100-8-900-2",
+      "share-33"
+    ],
+    "subject": [
+      "the-two-shares-sum-to-100"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "symbol-area-never-radius-alone-stays": null,
+    "every-symbol-is-fully-arrived-by": null,
+    "the-two-shares-are-derived-and": null,
+    "asserted-per-shot": null
+  }
+}
+```

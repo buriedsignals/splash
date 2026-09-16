@@ -4,6 +4,7 @@ size: landscape
 type: grouped-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Dans 5 de ces 6 pays l'éolien devance le solaire, la Suisse est l'exception (video)
@@ -36,6 +37,77 @@ time, wind's level carried across over solar.
 | `conclusion` | the whole comparison | **pull back** | every group comes back — the whole chart — Switzerland ringed; the credit on one line | — |
 | `hold` | the comparison | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "every-mix-adds-to-100"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split",
+        "rescale"
+      ],
+      "start": 111,
+      "duration": 150,
+      "asserts": [
+        "the-shares"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "compare",
+        "count",
+        "filter"
+      ],
+      "start": 261,
+      "duration": 150,
+      "asserts": [
+        "5-of-6",
+        "the-one-exception"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 411,
+      "duration": 75,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 486,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no « Solaire devant éolien » callout: the count stops at five and the one group left standing says why.
@@ -44,3 +116,47 @@ The shares print bare — with « % » each one is wider than its bar — the un
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-mix-adds-to-100",
+    "the-shares",
+    "5-of-6",
+    "the-one-exception",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-mix-adds-to-100"
+    ],
+    "reveal": [
+      "the-shares"
+    ],
+    "subject": [
+      "5-of-6",
+      "the-one-exception"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "one-shared-value-scale-from-zero": null,
+    "every-mix-is-asserted-to-add": null,
+    "the-count-of-groups-where-one": null,
+    "asserted-per-shot": null
+  }
+}
+```

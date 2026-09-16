@@ -4,6 +4,7 @@ size: landscape
 type: dot-density
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 72 réacteurs sur 8 900 centrales bas-carbone, et un tiers de la puissance (video)
@@ -60,6 +61,78 @@ capacity. Brisk: 17.4 s, a 2 s hold; the credit on one line, in the lowest corne
 | `conclusion` | — | — | the credit is set | — |
 | `hold` | the weighted map, readable | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order",
+        "count up"
+      ],
+      "start": 51,
+      "duration": 120,
+      "asserts": [
+        "8-900-stations"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "filter",
+        "name",
+        "measure"
+      ],
+      "start": 174,
+      "duration": 75,
+      "asserts": [
+        "72-sites",
+        "share-1"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "rescale",
+        "measure"
+      ],
+      "start": 252,
+      "duration": 150,
+      "asserts": [
+        "share-30",
+        "nuclear-the-highest-mw-per-site",
+        "the-bar-share-the-weights-share"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 408,
+      "duration": 54,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 462,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no note on the database's coverage. The key is three counts, « une centrale », « nucléaire »
@@ -74,3 +147,51 @@ frame, faces embedded, widths agreed (every text a count can show measured in Bu
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "8-900-stations",
+    "72-sites",
+    "share-1",
+    "share-30",
+    "nuclear-the-highest-mw-per-site",
+    "the-bar-share-the-weights-share",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "8-900-stations"
+    ],
+    "reveal": [
+      "72-sites",
+      "share-1"
+    ],
+    "subject": [
+      "share-30",
+      "nuclear-the-highest-mw-per-site",
+      "the-bar-share-the-weights-share"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "dot-positions-are-declared-synthetic-where": null,
+    "each-bucket-radius-is-the-quadratic": null,
+    "the-camera-fits-every-mark-not": null,
+    "asserted-per-shot": null
+  }
+}
+```

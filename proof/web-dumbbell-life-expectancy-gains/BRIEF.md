@@ -3,6 +3,7 @@ format: web
 type: dumbbell
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les dix ont tous gagné des années de vie depuis 2000 (web)
@@ -151,3 +152,47 @@ Two decisions the render made, not the plan:
 
 UN WPP via Our World in Data · life expectancy at birth, 2000 and 2023. `data.csv` is a byte-for-byte
 copy of `proof/more-dumbbell-life-expectancy-gains/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-drawn-connector-length-equals-the": null,
+    "the-beat-throws-if-any-category": null,
+    "the-page-still-fits-its-window": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-line",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

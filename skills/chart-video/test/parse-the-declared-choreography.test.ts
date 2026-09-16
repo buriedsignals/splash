@@ -25,6 +25,10 @@
  *     reported → RED on "should report no violation for this beat's own ladder". Restored → green.
  *   - NEGATIVE: replaced the fixture's gestures with a different legal set → stayed GREEN, as it
  *     must; a red here would mean a beat is being compared to an expected choreography.
+ *   - read the gesture from column three again instead of by its header → RED on "should find the
+ *     gesture and the asserted values by their own column headers" (2026-09-17). Restored → green.
+ *   - put `conclusion` back among the shots that owe a gesture → RED on "should reserve the
+ *     slideshow prohibition for the shots that carry the argument" (2026-09-17). Restored → green.
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -232,5 +236,57 @@ describe("precision, per shot", () => {
       data: { "11-7-12-3": 11.7 },
     });
     expect(gaps.map((v: { id: string }) => v.id)).toContain("claim-datum");
+  });
+
+  // ── two further corrections, found by running the harvest over all 40 ───────────────────────
+
+  // `proof/video-choropleth-europe-lowcarbon` writes a SIX-column table: it carries a `card`
+  // column beside the event, because a map video's shots and its scrolly sibling's cards are the
+  // same ladder. Read by position, its gesture column was a sentence.
+  it("should find the gesture and the asserted values by their own column headers", () => {
+    const six = [
+      "## The choreography",
+      "",
+      "| event | card | what the shot says | gesture | what moves | derived value asserted |",
+      "| --- | --- | --- | --- | --- | --- |",
+      "| `establish` | 1 | the question | — | the title card | — |",
+      "| `reference` | 2 | the ground | — (furniture) | the frame | — |",
+      "| `reveal` | 3 | the ten | **reveal in order** | the bars | the ten, 12,3 |",
+      "| `subject` | 4 | the one | **zoom + measure** | the accent | china 2024 |",
+      "| `conclusion` | 5 | the whole | **pull back** | the credit | — |",
+      "| `hold` | — | held | — (stillness) | nothing | hold = conclusion |",
+      "",
+    ].join("\n");
+    const parsed = parseChoreography(six, { timing: BAR_VIDEO_TIMING });
+    expect(parsed.shots[3].gesture).toEqual(["zoom", "measure"]);
+    expect(parsed.shots[3].asserts).toEqual(["china-2024"]);
+    expect(parsed.shots[1].gesture).toEqual([]);
+  });
+
+  // 17 of the 40 write `reference` as `— (furniture)` and 7 write `conclusion` as `—` with "the
+  // credit" as what moves. Neither is a frozen picture — `assertEventStates` proves that at render
+  // time, on the real states — so the violation is scoped to the two shots that carry the
+  // argument, and every other silent shot is reported as a note instead.
+  it("should reserve the slideshow prohibition for the shots that carry the argument", () => {
+    const frame = { prohibitions: [{ id: TIMER_PROHIBITION, says: "replay the static plate" }] };
+    const silentConclusion = {
+      ...declared,
+      shots: declared.shots.map((s: { shot: string }) =>
+        s.shot === "conclusion" ? { ...s, gesture: [] } : s,
+      ),
+    };
+    const onConclusion = checkChoreography(silentConclusion, frame);
+    expect(onConclusion.filter((v: { severity: string }) => v.severity === "violation")).toEqual([]);
+    expect(onConclusion.map((v: { id: string }) => v.id)).toContain("gesture-unnamed");
+
+    const silentReveal = {
+      ...declared,
+      shots: declared.shots.map((s: { shot: string }) =>
+        s.shot === "reveal" ? { ...s, gesture: [] } : s,
+      ),
+    };
+    expect(checkChoreography(silentReveal, frame).map((v: { id: string }) => v.id)).toContain(
+      TIMER_PROHIBITION,
+    );
   });
 });

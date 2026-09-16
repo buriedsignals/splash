@@ -4,6 +4,7 @@ size: landscape
 type: waterfall
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Allemagne a produit 143 TWh d'électricité de moins en 2024 qu'en 2015 (video)
@@ -40,6 +41,83 @@ the bridge.
 | `conclusion` | the net change | **pull back + bracket** | the seams close (the totals whole again); the bracket « −143,2 TWh » between the totals; the credit | net −143,2 |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal",
+        "carry"
+      ],
+      "start": 45,
+      "duration": 90,
+      "asserts": [
+        "opening-639-2"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split",
+        "morph",
+        "count"
+      ],
+      "start": 135,
+      "duration": 120,
+      "asserts": [
+        "closing-496-0",
+        "every-counter-text-is-the-stack"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "detach",
+        "slide"
+      ],
+      "start": 255,
+      "duration": 180,
+      "asserts": [
+        "each-part-lands-on-its-step",
+        "to",
+        "lengths-preserved"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "bracket"
+      ],
+      "start": 435,
+      "duration": 60,
+      "asserts": [
+        "net-143-2"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 495,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 2015 », « 2024 », the three names, the totals, the three changes, the bracket's « −143,2 TWh », the ticks. No standfirst,
@@ -48,3 +126,54 @@ no member values, no sentence.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "opening-639-2",
+    "closing-496-0",
+    "every-counter-text-is-the-stack",
+    "each-part-lands-on-its-step",
+    "to",
+    "lengths-preserved",
+    "net-143-2",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "opening-639-2"
+    ],
+    "reveal": [
+      "closing-496-0",
+      "every-counter-text-is-the-stack"
+    ],
+    "subject": [
+      "each-part-lands-on-its-step",
+      "to",
+      "lengths-preserved"
+    ],
+    "conclusion": [
+      "net-143-2"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-running-total-after-every-step": null,
+    "one-scale-from-zero-for-the": null,
+    "each-detached-part-lands-exactly-on": null,
+    "asserted-per-shot": null
+  }
+}
+```

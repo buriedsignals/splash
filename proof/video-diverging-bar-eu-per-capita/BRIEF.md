@@ -4,6 +4,7 @@ size: landscape
 type: diverging-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Croatie est le seul pays de l'UE à émettre plus de CO₂ par personne qu'en 1990 (video)
@@ -35,6 +36,76 @@ part becoming the change — and the one rise, too small to see, made visible by
 | `conclusion` | — | **pull back + name** | the whole chart again, nothing stepped back; Croatia ringed; the credit | — |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 51,
+      "duration": 90,
+      "asserts": [
+        "every-1990-level"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "shrink",
+        "count"
+      ],
+      "start": 141,
+      "duration": 150,
+      "asserts": [
+        "26-falls"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "transform",
+        "zoom"
+      ],
+      "start": 291,
+      "duration": 180,
+      "asserts": [
+        "exactly-one-rise"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 471,
+      "duration": 75,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 546,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 1990 », the count, the unit, « ×200 », the names and the changes. No standfirst, no « la seule hausse » note, no average.
@@ -42,3 +113,45 @@ part becoming the change — and the one rise, too small to see, made visible by
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-1990-level",
+    "26-falls",
+    "exactly-one-rise",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-1990-level"
+    ],
+    "reveal": [
+      "26-falls"
+    ],
+    "subject": [
+      "exactly-one-rise"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "all-categories-are-read-in-both": null,
+    "one-scale-pixels-per-unit-carries": null,
+    "the-magnification-factor-used-to-make": null,
+    "asserted-per-shot": null
+  }
+}
+```

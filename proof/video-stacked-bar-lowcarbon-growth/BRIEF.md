@@ -4,6 +4,7 @@ size: landscape
 type: stacked-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L’Espagne a ajouté plus d’électricité bas-carbone que la France depuis 2000 (video)
@@ -39,6 +40,82 @@ levels and set side by side from zero, Spain's is the longest and France's only 
 | `conclusion` | France still the largest | **pull back + name** | each added part slides back onto its level, the levels return — the whole stack; Spain and France ringed; the credit | gains land on their levels; France's total the longest |
 | `hold` | the stack | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 51,
+      "duration": 66,
+      "asserts": [
+        "the-2000-order"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "stack",
+        "count"
+      ],
+      "start": 117,
+      "duration": 105,
+      "asserts": [
+        "every-gain"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "copies to a ratio",
+        "detach",
+        "reorder"
+      ],
+      "start": 222,
+      "duration": 180,
+      "asserts": [
+        "copies-round-france-spain-5",
+        "their-end-within-1-of-france",
+        "the-order-of-gain"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 402,
+      "duration": 96,
+      "asserts": [
+        "gains-land-on-their-levels",
+        "france-total-the-longest"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 498,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The unit, the two key words, the names, the levels (once), the gains, « ×5 ». A brisk rhythm: 18,6 s.
@@ -46,3 +123,54 @@ The unit, the two key words, the names, the levels (once), the gains, « ×5 ».
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-2000-order",
+    "every-gain",
+    "copies-round-france-spain-5",
+    "their-end-within-1-of-france",
+    "the-order-of-gain",
+    "gains-land-on-their-levels",
+    "france-total-the-longest",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-2000-order"
+    ],
+    "reveal": [
+      "every-gain"
+    ],
+    "subject": [
+      "copies-round-france-spain-5",
+      "their-end-within-1-of-france",
+      "the-order-of-gain"
+    ],
+    "conclusion": [
+      "gains-land-on-their-levels",
+      "france-total-the-longest"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "one-zero-based-scale-for-the": null,
+    "shares-sum-to-the-same-asserted": null,
+    "the-ratio-counted-in-copies-is": null,
+    "asserted-per-shot": null
+  }
+}
+```

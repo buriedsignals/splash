@@ -3,6 +3,7 @@ format: scrolly
 type: calendar heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Genève a tenu 31 jours d'affilée au-dessus de 20 °C en 2024 (scrolly)
@@ -31,6 +32,71 @@ colour rules. The scroll tells the subject with its own gestures
 
 The warm-day count is derived and asserted in the runner; the monthly means are the static beat's own.
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "reveal in order"
+      ],
+      "changes": [
+        "fill",
+        "key"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "filter"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "zoom",
+        "trace",
+        "count"
+      ],
+      "changes": [
+        "outline",
+        "zoom"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "pull back",
+        "compare"
+      ],
+      "changes": [
+        "filter",
+        "means",
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "extremes"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **The zoom is row heights, not a transform.** The calendar is a grid; zooming interpolates its row
@@ -44,6 +110,27 @@ The warm-day count is derived and asserted in the runner; the monthly means are 
   unreadable.
 - **A number never parts from its unit** at a line end (`20 °C` with a no-break space).
 - **The title steps down a ladder of three forms** until the fixed header fits its share of the frame.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "the-zoom-is-row-heights-not",
+    "everything-is-placed-on-the-grid",
+    "values-on-a-filtered-day-are",
+    "a-number-never-parts-from-its",
+    "the-title-steps-down-a-ladder"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-colour-scale-domain-is-fixed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

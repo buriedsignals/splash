@@ -3,6 +3,7 @@ format: scrolly
 type: choropleth
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Sept pays européens dépassent 94 % d'électricité bas-carbone — six au nord-ouest, et l'Albanie (scrolly)
@@ -24,6 +25,70 @@ Each direction keeps its own palette and faces.
 | 4 | six are north or west | **name** | Iceland, Sweden, Norway, Finland, France, Switzerland named |
 | 5 | the seventh is Albania, 100 %, and its three neighbours are all under 60 % | **zoom + name** | the camera travels onto the Balkans; Albania ringed, Montenegro, North Macedonia and Greece named with their shares |
 | 6 | Ukraine has no reported production; Russia and Turkey coloured on their national share | **pull back** | Europe again, every class, the six named and Albania ringed; Ukraine in the neutral of the key, with no word on the map (owner, 2026-09-15) |
+
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "reveal in order"
+      ],
+      "changes": [
+        "classes"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter",
+        "count"
+      ],
+      "changes": [
+        "filter"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "top"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom",
+        "name"
+      ],
+      "changes": [
+        "filter",
+        "odd",
+        "top",
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "top",
+        "zoom"
+      ]
+    }
+  ]
+}
+```
 
 ## Precision
 
@@ -87,6 +152,33 @@ Each direction keeps its own palette and faces.
   through the frozen card images without a class ever arriving.
 - **The live guards** (`skills/scrolly/scripts/verify-live-map-scrolly.mjs`) hold on 1280 × 800 and 375 × 812 in all
   three directions: no frame with a missing tile at 30, 120 and 400 px per frame, no undrawn canvas at any card.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "a-live-maptiler-map-flat-web",
+    "fills-from-maptiler-countries-joined-by",
+    "the-coast-is-the-basemap",
+    "names-as-symbol-layers-at-the",
+    "cameras-from-the-beat-own-facts",
+    "one-frozen-image-per-card-baked",
+    "the-first-paint-is-card-1",
+    "the-first-scroll-is-read-on",
+    "the-live-guards"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "fills-come-from-maptiler-countries-joined": null,
+    "a-country-with-no-reported-value": null,
+    "the-join-against-real-tiles-check": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

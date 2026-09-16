@@ -4,6 +4,7 @@ size: landscape
 type: sankey
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le nucléaire de ces six pays est français à 84 % (video)
@@ -41,6 +42,87 @@ nuclear band for 84 % of its length.
 | `conclusion` | the whole sankey, the lesson marked | **slide back + pull back + name** | the copy slides back into the nuclear node, the other ribbons return; « 84 % » on the accent ribbon; the credit | nothing stepped back; the copy home |
 | `hold` | the sankey | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "grow",
+        "count"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "bar-height-total-scale"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split",
+        "pour"
+      ],
+      "start": 111,
+      "duration": 150,
+      "asserts": [
+        "node-heights-totals-one-scale",
+        "the-right-rail-fill-the-sum",
+        "every-node-the-sum-of-its"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "trace",
+        "slide",
+        "compare"
+      ],
+      "start": 261,
+      "duration": 210,
+      "asserts": [
+        "the-copy-keeps-its-height-455",
+        "its-french-part-the-landing-band",
+        "380-5-455-1-84"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "slide back",
+        "pull back",
+        "name"
+      ],
+      "start": 471,
+      "duration": 84,
+      "asserts": [
+        "nothing-stepped-back",
+        "the-copy-home"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 555,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The nodes' names and totals, « 1 638 TWh », « 84 % ». A brisk rhythm: under 22 s.
@@ -48,3 +130,58 @@ The nodes' names and totals, « 1 638 TWh », « 84 % ». A brisk rhythm: under 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "bar-height-total-scale",
+    "node-heights-totals-one-scale",
+    "the-right-rail-fill-the-sum",
+    "every-node-the-sum-of-its",
+    "the-copy-keeps-its-height-455",
+    "its-french-part-the-landing-band",
+    "380-5-455-1-84",
+    "nothing-stepped-back",
+    "the-copy-home",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "bar-height-total-scale"
+    ],
+    "reveal": [
+      "node-heights-totals-one-scale",
+      "the-right-rail-fill-the-sum",
+      "every-node-the-sum-of-its"
+    ],
+    "subject": [
+      "the-copy-keeps-its-height-455",
+      "its-french-part-the-landing-band",
+      "380-5-455-1-84"
+    ],
+    "conclusion": [
+      "nothing-stepped-back",
+      "the-copy-home"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-node-total-equals-the-sum": null,
+    "one-pixels-per-unit-scale-for": null,
+    "the-printed-share-is-the-ratio": null,
+    "asserted-per-shot": null
+  }
+}
+```

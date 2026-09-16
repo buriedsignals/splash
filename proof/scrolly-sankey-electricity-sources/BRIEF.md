@@ -3,6 +3,7 @@ format: scrolly
 type: sankey
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le nucléaire de ces six pays est français à 84 % (scrolly)
@@ -27,6 +28,74 @@ country's electricity comes from (`skills/scrolly/references/directed-type-chore
 | 5 | read back from Germany, the second producer: no nuclear; wind 28.5 %, coal 21.4 %, gas 15.8 % | **filter** | Germany's ribbons kept, the same way |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "note",
+        "shares",
+        "source"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "note",
+        "shares",
+        "web"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "focus0",
+        "note"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "focus0",
+        "focus1",
+        "note"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "focus1",
+        "note"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Conservation is drawn in the reader's pixels**: one scale for both rails, each rail spreading its own nodes over
@@ -37,6 +106,25 @@ country's electricity comes from (`skills/scrolly/references/directed-type-chore
   under its name and writes the shares without the source name or the TWh the rails already carry.
 - **Every sentence is asserted**: conservation on both rails, 54 flows, nuclear the largest source, France holding at
   least four fifths of it, no German nuclear, wind, coal and gas Germany's three largest sources in that order.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "conservation-is-drawn-in-the-reader",
+    "shares-are-written-where-they-can",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "flow-widths-stay-proportional-to-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

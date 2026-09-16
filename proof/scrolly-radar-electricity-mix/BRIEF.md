@@ -3,6 +3,7 @@ format: scrolly
 type: radar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La France et l'Allemagne produisent presque autant d'électricité, avec des mix opposés (scrolly)
@@ -27,6 +28,68 @@ what the shape is drawn from (`skills/scrolly/references/directed-type-choreogra
 | 5 | the scale tightened to 30 %: only French nuclear leaves the ring | **rescale** | the small shares open; the nuclear vertex rests on the ring, open |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "grow"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "bars",
+        "trace0"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "trace1"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "merge"
+      ],
+      "changes": [
+        "merge"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "merge",
+        "scale"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "scale"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: the wheel takes the radius the stage leaves once the spoke labels have their
@@ -38,6 +101,26 @@ what the shape is drawn from (`skills/scrolly/references/directed-type-choreogra
 - **Every sentence is asserted**: the totals within 25 %, no German nuclear, French nuclear over half, more German
   wind and solar, each country's families summing to 100 %, France leaning on nuclear and Germany on renewables,
   German fossil over four times France's, and at 30 % only nuclear leaving the ring.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "a-share-the-ceiling-cannot-hold",
+    "the-three-families-stand-a-third",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "every-axis-keeps-the-same-fixed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

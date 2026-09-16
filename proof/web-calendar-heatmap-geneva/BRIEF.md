@@ -3,6 +3,7 @@ format: web
 type: calendar-heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Genève a tenu 31 jours d'affilée à 20 °C ou plus en 2024 (web)
@@ -190,3 +191,47 @@ without the attribute takes the new path.
 Open-Meteo (ERA5 reanalysis), daily mean and maximum 2 m temperature, Geneva (46,20 N · 6,14 E),
 1 January – 31 December 2024. `data.csv` is a byte-for-byte copy of
 `proof/static-calendar-heatmap-geneva/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-day-of-the-period-is": null,
+    "the-run-at-every-offered-threshold": null,
+    "the-bins-are-fixed-once-from": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

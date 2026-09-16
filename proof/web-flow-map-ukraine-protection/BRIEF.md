@@ -3,6 +3,7 @@ format: web
 type: flow-map
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire en Europe (web)
@@ -191,3 +192,52 @@ geste en CSS pur.
 Eurostat `migr_asytpsm`, juin 2026 · population 2023 via Our World in Data · surfaces calculées sur
 les formes gelées du beat · fond MapTiler. `data.csv` et `shapes.geojson` sont des copies à l'octet
 de `proof/static-flow-map-ukraine-protection/` ; `population.csv` de celle du beat hex grid.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-route-drawn-order-matches-the": null,
+    "the-undrawn-bands-are-counted-and": null,
+    "on-a-fan-mercator-inflation-falls": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 3,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

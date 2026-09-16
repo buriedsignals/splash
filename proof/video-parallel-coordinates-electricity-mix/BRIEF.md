@@ -4,6 +4,7 @@ size: landscape
 type: parallel-coordinates
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 2 pays sur 16 ont plus de 25 % de nucléaire et plus de 20 % d’éolien (video)
@@ -48,6 +49,86 @@ difference in points, not an artefact of two ceilings. The floors (« 25 % », �
 | `conclusion` | the whole chart, the lesson marked | **pull back** | the rails close back to the overview, every line returns, the pair in the accent, the two floors marked on their rails; the credit | nothing stepped back |
 | `hold` | the chart | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "whole",
+        "split",
+        "stand",
+        "trace"
+      ],
+      "start": 51,
+      "duration": 135,
+      "asserts": [
+        "bar-100-scale",
+        "every-piece-length-share-scale-at",
+        "a-standing-piece-top-the-line"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace"
+      ],
+      "start": 186,
+      "duration": 105,
+      "asserts": [
+        "all-16-drawn",
+        "all-16-named"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "magnify",
+        "sweep",
+        "count"
+      ],
+      "start": 291,
+      "duration": 216,
+      "asserts": [
+        "count-lines-at-or-above-both",
+        "at-every-frame",
+        "5-then-2",
+        "vertex-heights-identical-in-the-close"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 507,
+      "duration": 78,
+      "asserts": [
+        "nothing-stepped-back"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 585,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 Rail names, country names, « 100 % », the two floors, « {n} pays ». A brisk rhythm: 21,5 s.
@@ -55,3 +136,60 @@ Rail names, country names, « 100 % », the two floors, « {n} pays ». A brisk 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "bar-100-scale",
+    "every-piece-length-share-scale-at",
+    "a-standing-piece-top-the-line",
+    "all-16-drawn",
+    "all-16-named",
+    "count-lines-at-or-above-both",
+    "at-every-frame",
+    "5-then-2",
+    "vertex-heights-identical-in-the-close",
+    "nothing-stepped-back",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "bar-100-scale",
+      "every-piece-length-share-scale-at",
+      "a-standing-piece-top-the-line"
+    ],
+    "reveal": [
+      "all-16-drawn",
+      "all-16-named"
+    ],
+    "subject": [
+      "count-lines-at-or-above-both",
+      "at-every-frame",
+      "5-then-2",
+      "vertex-heights-identical-in-the-close"
+    ],
+    "conclusion": [
+      "nothing-stepped-back"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-rail-carries-the-same-stated": null,
+    "the-count-is-recomputed-as-lines": null,
+    "vertex-heights-are-identical-between-the": null,
+    "asserted-per-shot": null
+  }
+}
+```

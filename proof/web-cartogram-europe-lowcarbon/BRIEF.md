@@ -3,6 +3,7 @@ format: web
 type: cartogram
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le lecteur rend à l'Europe la géographie que la grille lui a prise (web)
@@ -356,3 +357,47 @@ Ember, Energy Institute — Statistical Review of World Energy (2025), via Our W
 surfaces et centroïdes mesurés sur les mêmes formes gelées, dans la même projection équivalente.
 `data.csv` et `shapes.geojson` sont des copies octet pour octet de
 `proof/static-cartogram-europe-lowcarbon/`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "each-cell-area-is-asserted-against": null,
+    "every-stage-prints-the-price-of": null,
+    "mercator-is-answered-by-absence-and": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

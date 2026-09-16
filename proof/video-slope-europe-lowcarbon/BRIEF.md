@@ -4,6 +4,7 @@ size: landscape
 type: slope
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les seize pays ont tous gagné du bas-carbone depuis 2000 ; un seul a doublé la France (video)
@@ -44,6 +45,71 @@ lights and falls back under France until the last, Finland, ends above it.
 | `conclusion` | the whole slope | **pull back** | every line comes back — the whole chart — the pair in the accent; the credit | — |
 | `hold` | the slope | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "start": 111,
+      "duration": 150,
+      "asserts": [
+        "all-16-rose"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "test",
+        "count"
+      ],
+      "start": 261,
+      "duration": 180,
+      "asserts": [
+        "the-one-crossing-of-france"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 441,
+      "duration": 75,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 516,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The rails, names and values, and the two counts. A brisk rhythm: 19,2 s.
@@ -51,3 +117,42 @@ The rails, names and values, and the two counts. A brisk rhythm: 19,2 s.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "all-16-rose",
+    "the-one-crossing-of-france",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [],
+    "reveal": [
+      "all-16-rose"
+    ],
+    "subject": [
+      "the-one-crossing-of-france"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "both-end-columns-keep-the-same": null,
+    "every-line-carries-both-its-numbers": null,
+    "the-count-of-risers-and-the": null,
+    "asserted-per-shot": null
+  }
+}
+```

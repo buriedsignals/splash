@@ -3,6 +3,7 @@ format: web
 type: area
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié du CO₂ suisse depuis 1858 a été émise après 1986 (web)
@@ -164,3 +165,47 @@ Global Carbon Budget 2025, via Our World in Data · Switzerland, 1858–2024, 16
 readings. `data.csv` is a byte-for-byte copy of `proof/static-area-swiss-co2/data.csv` — the same
 frozen file, re-parsed independently here, per this tree's "duplicate, do not link" rule between
 beats.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-total-the-crossing-year-and": null,
+    "every-readings-a-control-reveals-years": null,
+    "the-untouched-state-label-names-the": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

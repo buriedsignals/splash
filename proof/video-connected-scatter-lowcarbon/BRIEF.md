@@ -4,6 +4,7 @@ size: landscape
 type: connected-scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Tous plus propres chez eux, 5 plus légers en Europe (video)
@@ -38,6 +39,80 @@ its 2024 disc, and the viewer sees every arc go up before any sentence says so.
 | `conclusion` | five weigh less, France most | **pull back + filter + name + release** | the whole axis again; the five that moved left picked out one after another, largest loss first, « {n} plus légers »; the rest step back; France's arc split into « −11,8 pts » across and « +4,2 pts » up; then every country comes back — the whole chart, the five and France still marked; the credit on one line | the five; France's two moves |
 | `hold` | the picture | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "explain"
+      ],
+      "start": 51,
+      "duration": 105,
+      "asserts": [
+        "france-the-heaviest"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "start": 156,
+      "duration": 180,
+      "asserts": [
+        "all-sixteen-higher"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "zoom"
+      ],
+      "start": 336,
+      "duration": 105,
+      "asserts": [
+        "only-france-and-germany-outside"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "filter",
+        "name",
+        "release"
+      ],
+      "start": 441,
+      "duration": 210,
+      "asserts": [
+        "the-five",
+        "france-two-moves"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 651,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line: the move happens on screen. The counters are the counts; the legs carry France's two
@@ -46,3 +121,50 @@ values; the names are names.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "france-the-heaviest",
+    "all-sixteen-higher",
+    "only-france-and-germany-outside",
+    "the-five",
+    "france-two-moves",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "france-the-heaviest"
+    ],
+    "reveal": [
+      "all-sixteen-higher"
+    ],
+    "subject": [
+      "only-france-and-germany-outside"
+    ],
+    "conclusion": [
+      "the-five",
+      "france-two-moves"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-drawn-order-of-each-path": null,
+    "the-zoom-window-is-stated-and": null,
+    "the-counts-how-many-rose-how": null,
+    "asserted-per-shot": null
+  }
+}
+```

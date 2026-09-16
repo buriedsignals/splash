@@ -3,6 +3,7 @@ format: scrolly
 type: dot strip
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le plancher européen est monté de 30 points, le plafond de 2 (scrolly)
@@ -27,6 +28,72 @@ plate's two (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | the spread closes from 95.1 to 67.6 points | **compare** | both years' floor-to-ceiling brackets under the strip |
 | 6 | the reading line | **split** | the strip opens into two, 2000 above and 2024 below on one scale, a leader from each pin to its later self |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "travel",
+        "count"
+      ],
+      "changes": [
+        "median",
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "focus",
+        "trace"
+      ],
+      "changes": [
+        "floor",
+        "median"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "focus",
+        "trace"
+      ],
+      "changes": [
+        "ceil",
+        "floor"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "compare"
+      ],
+      "changes": [
+        "ceil",
+        "spread"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "split"
+      ],
+      "changes": [
+        "split",
+        "spread"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Chips are stacked so none overlaps another**, once for the 2000 values and once for the 2024 values; a
@@ -38,6 +105,26 @@ plate's two (`skills/scrolly/references/directed-type-choreography.md`):
 - **Every sentence is asserted**: the floor rose over 20 points and the ceiling under 5; the spread closed by
   more than a fifth; the subject is the 2000 floor and still the floor in 2024; the 2000 ceiling is still the
   ceiling in 2024.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "chips-are-stacked-so-none-overlaps",
+    "the-strip-sits-low-in-the",
+    "both-strips-share-one-scale-object",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "point-positions-never-shift-to-avoid": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

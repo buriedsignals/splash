@@ -3,6 +3,7 @@ format: scrolly
 type: scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Au-delà de 30 000 $ par personne, l'espérance de vie tient dans une bande 3 fois plus étroite (scrolly)
@@ -27,6 +28,68 @@ measures each side of the break (`skills/scrolly/references/directed-type-choreo
 | 5 | above: 71.2 (Seychelles) to 85.1 (Hong Kong), 14 years, three times narrower | **measure + filter** | the band over the break; its extremes; the points below step back |
 | 6 | correlation, not causation | **pull back** | the static plate: the break, the band above, both claims |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "log"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "rule"
+      ],
+      "changes": [
+        "brk"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "measure",
+        "filter"
+      ],
+      "changes": [
+        "below"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "measure",
+        "filter"
+      ],
+      "changes": [
+        "above",
+        "below"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "above",
+        "all"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Placed in the reader's pixels**: the SVG's viewBox is the stage; point radius grows with the width.
@@ -34,6 +97,25 @@ measures each side of the break (`skills/scrolly/references/directed-type-choreo
   rounds to it. The 2022 artefact (a reading under 35 years) is refused, as in the static beat.
 - **On a narrow stage** the plot takes the larger band the resting card leaves free; the two claims take a line
   each and the axis name wraps.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "placed-in-the-reader-pixels",
+    "the-break-is-declared-the-spreads",
+    "on-a-narrow-stage"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "both-axes-keep-the-same-fixed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

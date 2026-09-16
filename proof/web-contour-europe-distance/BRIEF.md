@@ -3,6 +3,7 @@ format: web
 type: contour
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié de l'Europe est à moins de 133 km de la mer (web)
@@ -104,3 +105,52 @@ from the label's own box at this scale: 145 km. Measured: 178 km at the 50 km st
 
 Distance computed on the same Natural Earth shapes the sibling maps use. `countries.csv` and
 `shapes.geojson` are byte-for-byte copies of `proof/static-contour-europe-distance/`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-field-is-measured-on-an": null,
+    "the-picture-does-move-and-a": null,
+    "each-break-is-printed-on-its": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 3,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

@@ -3,6 +3,7 @@ format: scrolly
 type: proportional-symbol
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Un centième des sites porte plus d'un tiers de la puissance bas-carbone d'Europe (scrolly)
@@ -30,6 +31,72 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
 | 4 | nuclear alone: 72 sites, 0.8 %, 34.4 % of the power; France holds 19 | **filter + zoom** | the nuclear sites in the accent's fine stroke, the rest stepping back, the camera centred on France's |
 | 5 | every station, to the 8,900th: the field closes | **count** | thousands of small circles fill the west |
 | 6 | the plate's cut: 193 stations of 400 MW or more, 2.2 % of the sites, 54.5 % of the power; the reading line | **pull back** | the static plate, its key and its cut |
+
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal by datum"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "count"
+      ],
+      "changes": [
+        "level"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "count"
+      ],
+      "changes": [
+        "largest",
+        "level"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter",
+        "zoom"
+      ],
+      "changes": [
+        "subject",
+        "zoom"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "count"
+      ],
+      "changes": [
+        "level",
+        "subject",
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "cut",
+        "level"
+      ]
+    }
+  ]
+}
+```
 
 ## Precision
 
@@ -59,6 +126,31 @@ watches the weight pile up long before the count does (`skills/scrolly/reference
 
 - **Every page opened from disk has a live map**: each render writes `renders/<id>.local.html` with the key from the
   environment (git-ignored); the committed page keeps the placeholder.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "area-is-capacity",
+    "largest-first-with-constant-bindings",
+    "the-scroll-is-followed-not-jumped",
+    "the-counter-counts-what-is-drawn",
+    "the-key-states-the-scale-at",
+    "the-whole-map-holds-every-station",
+    "a-phone-keeps-the-largest-station",
+    "every-sentence-is-asserted",
+    "every-page-opened-from-disk-has"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "symbol-area-never-radius-alone-stays": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

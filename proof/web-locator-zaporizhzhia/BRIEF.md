@@ -3,6 +3,7 @@ format: web
 type: locator
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — À quelle distance faut-il reculer pour que « la plus grosse d'Europe » soit vraie ? (web)
@@ -125,3 +126,52 @@ WRI Global Power Plant Database v1.3.0 (`stations.csv`) · villes Natural Earth 
 direction. `shapes.geojson` sert à une seule chose : vérifier, par point-dans-polygone, que le sujet
 tombe bien en Ukraine — la phrase du titre, tenue contre une géométrie plutôt que contre une colonne
 de CSV.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "label-decluttering-is-deterministic-and-the": null,
+    "each-remove-states-what-the-frame": null,
+    "a-locator-is-read-by-distance": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 3,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

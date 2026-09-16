@@ -3,6 +3,7 @@ format: scrolly
 type: contour
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié de l'Europe est à moins de 132 km de la mer, et aucun point à plus de 682 km (scrolly)
@@ -26,6 +27,70 @@ A contour map measures everywhere; the scroll makes that measurement happen in f
 | 4 | at 400 km, 89 %; two islands left | **sweep + count** | the 200, 300 and 400 km lines left behind; two untouched islands remain |
 | 5 | the last point reached, in Belarus, 682 km from the sea | **zoom + trace** | the camera closes onto the last land while the fill closes over it; the summit marked with its number |
 | 6 | the plate's reading line | **pull back** | the fill withdraws; every line with its number, the summit marked |
+
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "sweep",
+        "count"
+      ],
+      "changes": [
+        "level"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "sweep",
+        "name"
+      ],
+      "changes": [
+        "level",
+        "median"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "sweep",
+        "count"
+      ],
+      "changes": [
+        "level"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom",
+        "trace"
+      ],
+      "changes": [
+        "level",
+        "summit"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "tint"
+      ]
+    }
+  ]
+}
+```
 
 ## Precision
 
@@ -55,6 +120,29 @@ A contour map measures everywhere; the scroll makes that measurement happen in f
   threshold catching this beat's own deliberately subtle land/sea step (`SEA_LAND_MIN`), not a blank canvas —
   left as observed, not changed, since fixing the shared guard's threshold is outside this beat. Swap check
   on `creme` clean at both viewports (labels only).
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "one-projection-for-everything-drawn",
+    "the-sweep-is-the-field-itself",
+    "every-number-is-on-its-own",
+    "the-close-up-centres-the-summit",
+    "land-rings-are-clipped-not-clamped",
+    "the-land-step-is-measured",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-threshold-sweep-is-computed-from": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

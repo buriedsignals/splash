@@ -3,6 +3,7 @@ format: scrolly
 type: streamgraph
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2016, le solaire est devenu la troisième source d'électricité suisse (scrolly)
@@ -28,6 +29,69 @@ giants so the thin layers fill the frame, marks the crossing, then gives the gia
 | 5 | in 2024 solar makes 5.7 TWh, 4.6 times oil; 0.01 in 2000 | **mark** | a rule at 2024 |
 | 6 | the reading line; 2025 excluded, a partial year | **pull back** | the giants return: the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "trace"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter",
+        "rescale"
+      ],
+      "changes": [
+        "retreat"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "cross"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "cross",
+        "end"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "end",
+        "retreat"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: a silhouette stack in d3's inside-out order, computed once in node, its
@@ -38,6 +102,25 @@ giants so the thin layers fill the frame, marks the crossing, then gives the gia
 - **Every sentence is asserted**: only Switzerland in the file, every year present, solar reaching rank 3 in 2016 and
   holding it, oil the one source it passed that year, hydropower and nuclear the two largest sources every year,
   solar more than four times oil in 2024.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-crossing-is-written-to-the",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-wiggle-baseline-is-computed-once": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

@@ -4,6 +4,7 @@ size: landscape
 type: beeswarm
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les 6 pays au-dessus de 20 t de CO₂ par personne pèsent 0,6 % de l'humanité (video)
@@ -41,6 +42,81 @@ copy of each of the six countries beyond 20 t flies into the outline of that sam
 | `conclusion` | the whole swarm | **pull back** | the copies fly back and vanish on their seats, the outline goes, « 0,6 % » travels under « 6 pays »; the credit | nothing stepped back, no copy left |
 | `hold` | the swarm | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 54,
+      "asserts": [
+        "the-disc-area-is-the-sum",
+        "its-x-is-the-population-weighted"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split",
+        "count"
+      ],
+      "start": 105,
+      "duration": 150,
+      "asserts": [
+        "the-disc-area-is-always-what",
+        "213-counted"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "name",
+        "compare"
+      ],
+      "start": 255,
+      "duration": 210,
+      "asserts": [
+        "the-six",
+        "above-20-t",
+        "merged-area-their-sum",
+        "merged-outline-0-55"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 465,
+      "duration": 75,
+      "asserts": [
+        "nothing-stepped-back",
+        "no-copy-left"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 540,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The ticks and the unit once, the average's value, « Monde », two names, the count, « 6 pays », « 0,6 % ». About 20 s.
@@ -48,3 +124,60 @@ The ticks and the unit once, the average's value, « Monde », two names, the co
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-disc-area-is-the-sum",
+    "its-x-is-the-population-weighted",
+    "the-disc-area-is-always-what",
+    "213-counted",
+    "the-six",
+    "above-20-t",
+    "merged-area-their-sum",
+    "merged-outline-0-55",
+    "nothing-stepped-back",
+    "no-copy-left",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-disc-area-is-the-sum",
+      "its-x-is-the-population-weighted"
+    ],
+    "reveal": [
+      "the-disc-area-is-always-what",
+      "213-counted"
+    ],
+    "subject": [
+      "the-six",
+      "above-20-t",
+      "merged-area-their-sum",
+      "merged-outline-0-55"
+    ],
+    "conclusion": [
+      "nothing-stepped-back",
+      "no-copy-left"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-disc-area-is-always-the": null,
+    "the-merged-disc-area-equals-the": null,
+    "the-average-position-is-the-population": null,
+    "asserted-per-shot": null
+  }
+}
+```

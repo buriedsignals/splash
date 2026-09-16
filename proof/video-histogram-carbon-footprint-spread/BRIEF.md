@@ -4,6 +4,7 @@ size: landscape
 type: histogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 6 pays sur 10 émettent moins de 4 tonnes de CO₂ par personne (video)
@@ -39,6 +40,82 @@ first bin, keeping every length, and cuts both into tenths of the 213: six again
 | `conclusion` | the whole distribution | **pull back** | the seams close; the tail's bins slide back into their slots, top first; the credit | every bin back at its count |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "trace"
+      ],
+      "start": 45,
+      "duration": 60,
+      "asserts": [
+        "213-ticks",
+        "each-inside-its-bin"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "fall",
+        "count"
+      ],
+      "start": 105,
+      "duration": 150,
+      "asserts": [
+        "each-bin-height-is-its-count",
+        "the-cells-sum-to-213"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "cut",
+        "stack",
+        "tenths"
+      ],
+      "start": 255,
+      "duration": 180,
+      "asserts": [
+        "86-213-127",
+        "6-tenths-and-4-tenths",
+        "6-the-title-share"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 435,
+      "duration": 90,
+      "asserts": [
+        "every-bin-back-at-its-count"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 525,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The ten bin names, the count ticks, « 127 », the column's count. No unit line, no standfirst, no sentence.
@@ -46,3 +123,56 @@ The ten bin names, the count ticks, « 127 », the column's count. No unit line,
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "213-ticks",
+    "each-inside-its-bin",
+    "each-bin-height-is-its-count",
+    "the-cells-sum-to-213",
+    "86-213-127",
+    "6-tenths-and-4-tenths",
+    "6-the-title-share",
+    "every-bin-back-at-its-count",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "213-ticks",
+      "each-inside-its-bin"
+    ],
+    "reveal": [
+      "each-bin-height-is-its-count",
+      "the-cells-sum-to-213"
+    ],
+    "subject": [
+      "86-213-127",
+      "6-tenths-and-4-tenths",
+      "6-the-title-share"
+    ],
+    "conclusion": [
+      "every-bin-back-at-its-count"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-observation-falls-in-exactly-one": null,
+    "one-count-scale-from-zero-for": null,
+    "the-threshold-count-and-its-complement": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -3,6 +3,7 @@ format: scrolly
 type: treemap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'eau et l'atome portent encore 77 % du bas-carbone européen — mais 10 pays ont déjà basculé (scrolly)
@@ -27,6 +28,66 @@ what the accent means before it lands on countries (`skills/scrolly/references/d
 | 5 | France, the largest rectangle, opened by fuel: 65 % nuclear, 14 % wind and solar | **zoom** | France's cell grows to the stage and divides into its fuels |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "split"
+      ],
+      "changes": [
+        "split"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "re-divide"
+      ],
+      "changes": [
+        "byLand"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "tipped"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom"
+      ],
+      "changes": [
+        "open"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "open"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels, squarified** (Bruls, Huizing & van Wijk) on every paint; the no-script picture is
@@ -38,6 +99,26 @@ what the accent means before it lands on countries (`skills/scrolly/references/d
 - **Every sentence is asserted**: water and the atom over 70 %, at least five tipped countries holding under a quarter,
   the largest cell France and not tipped, hydropower and nuclear the two largest fuels, a tipped country among the
   drawn cells, France under 20 % wind and solar.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "every-cell-carries-its-own-number",
+    "the-accent-marks-the-thread-never",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "tile-area-stays-proportional-to-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

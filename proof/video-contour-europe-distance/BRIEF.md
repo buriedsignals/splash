@@ -4,6 +4,7 @@ size: landscape
 type: contour
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié de l'Europe est à moins de 132 km de la mer (video)
@@ -67,6 +68,79 @@ so near the sea when its farthest point is so far.
 The sweep's traversal and the curve's head are linear in kilometres (a measured axis); everything that arrives eases.
 Brisk: 18.3 s, a 2 s hold.
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 45,
+      "asserts": [
+        "40-countries-measured",
+        "russia-out"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "sweep",
+        "trace",
+        "count"
+      ],
+      "start": 102,
+      "duration": 135,
+      "asserts": [
+        "within-100-42",
+        "within-132-50",
+        "the-head-on-the-curve-at"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "sweep",
+        "trace",
+        "name"
+      ],
+      "start": 243,
+      "duration": 165,
+      "asserts": [
+        "deepest-682-km-in-blr",
+        "within-400-89"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "withdraw"
+      ],
+      "start": 414,
+      "duration": 75,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 489,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line. The count is a number and a distance; the key is « hors mesure »; every line carries its
@@ -81,3 +155,53 @@ numbers floored against both the land and the fill), an empty `--env-file` on ev
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "40-countries-measured",
+    "russia-out",
+    "within-100-42",
+    "within-132-50",
+    "the-head-on-the-curve-at",
+    "deepest-682-km-in-blr",
+    "within-400-89",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "40-countries-measured",
+      "russia-out"
+    ],
+    "reveal": [
+      "within-100-42",
+      "within-132-50",
+      "the-head-on-the-curve-at"
+    ],
+    "subject": [
+      "deepest-682-km-in-blr",
+      "within-400-89"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-threshold-sweep-is-computed-from": null,
+    "the-field-is-computed-once-in": null,
+    "the-projected-seats-of-the-svg": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -4,6 +4,7 @@ size: landscape
 type: locator
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La plus grosse centrale bas-carbone d'Europe est en Ukraine (video)
@@ -60,6 +61,72 @@ place is ringed on it, and the camera closes in until the names that let a reade
 | `conclusion` | — | — | the credit | — |
 | `hold` | the located station | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "name"
+      ],
+      "start": 51,
+      "duration": 75,
+      "asserts": [
+        "largest-station-in-ukr"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "zoom"
+      ],
+      "start": 132,
+      "duration": 135,
+      "asserts": [
+        "the-naming-rules"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "name",
+        "count up"
+      ],
+      "start": 273,
+      "duration": 105,
+      "asserts": [
+        "capacity-6-000-mw"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 378,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 438,
+      "duration": 90,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## The focus country's regions
 
 The owner (2026-09-14): « si tu focus sur un pays il faut montrer les frontières des régions ». Once the camera closes on
@@ -75,3 +142,45 @@ nothing to encode.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "largest-station-in-ukr",
+    "the-naming-rules",
+    "capacity-6-000-mw",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "largest-station-in-ukr"
+    ],
+    "reveal": [
+      "the-naming-rules"
+    ],
+    "subject": [
+      "capacity-6-000-mw"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "marker-radius-stays-uniform-across-every": null,
+    "each-measured-camera-is-measured-separately": null,
+    "a-neighbour-name-keeps-a-stated": null,
+    "asserted-per-shot": null
+  }
+}
+```

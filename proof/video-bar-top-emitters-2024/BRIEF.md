@@ -4,6 +4,7 @@ size: landscape
 type: bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a émis plus de CO₂ que les cinq pays suivants réunis (video)
@@ -37,6 +38,79 @@ after China lining up under it and stopping short — and the tenth, Germany, sl
 | `conclusion` | the gap is more than Germany; the whole ranking | **compare + pull back** | the sum gives way; Germany slides into the gap between the five and China's end, and fits; then every bar returns to its row — the whole ranking — the five bracketed with « 11,7 Gt » under China's « 12,3 Gt »; the credit | 0,57 < 0,64 |
 | `hold` | the addition | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "the-ten-under-the-world"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split",
+        "rescale"
+      ],
+      "start": 111,
+      "duration": 180,
+      "asserts": [
+        "the-ranking"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "reorder",
+        "count"
+      ],
+      "start": 291,
+      "duration": 135,
+      "asserts": [
+        "the-five",
+        "11-7-12-3"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "compare",
+        "pull back"
+      ],
+      "start": 426,
+      "duration": 180,
+      "asserts": [
+        "0-57-0-64"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 606,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « Monde », the names, the counts. No standfirst, no world share, no « les cinq suivants » sentence, no « écart » label: the
@@ -47,3 +121,50 @@ bars say it.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-ten-under-the-world",
+    "the-ranking",
+    "the-five",
+    "11-7-12-3",
+    "0-57-0-64",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-ten-under-the-world"
+    ],
+    "reveal": [
+      "the-ranking"
+    ],
+    "subject": [
+      "the-five",
+      "11-7-12-3"
+    ],
+    "conclusion": [
+      "0-57-0-64"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "one-value-scale-from-zero-for": null,
+    "a-regrouped-bar-length-is-a": null,
+    "the-search-behind-the-headline-how": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -3,6 +3,7 @@ format: scrolly
 type: line
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2024, la Suisse a émis moins de CO₂ sur son territoire qu’en 1967 (scrolly)
@@ -27,6 +28,76 @@ back under it, then looks closely at the margin the headline rests on
 | 5 | close up: 32.0 Mt in 2023, 32.1 in 2024, still 0.5 Mt under 1967 | **zoom** | both scales travelling to 2015–2024, every year a dot and its value |
 | 6 | territorial emissions only | **pull back** | the static plate: the rule, the peak, the 2024 point |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "draw"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "draw"
+      ],
+      "changes": [
+        "peak",
+        "reach"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "band",
+        "reach",
+        "runner"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "draw"
+      ],
+      "changes": [
+        "band",
+        "cross",
+        "peak",
+        "reach",
+        "runner"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom"
+      ],
+      "changes": [
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "cross",
+        "end",
+        "peak",
+        "zoom"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: both scales interpolated between the wide view (from zero) and the close-up,
@@ -37,6 +108,26 @@ back under it, then looks closely at the margin the headline rests on
 - **Every sentence is asserted**: only Switzerland in the file, every year from 1950 present, the 1950→1967 ratio a
   tripling, 1973 the highest year of the whole series, 1991 the runner-up within 0.1 Mt, every year after 2010 below
   2010, 2023 the first year after 1967 under its level, 2024 under it and above 2023.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "values-rounded-to-tenths-before-formatting",
+    "furniture-labels-carry-numbers-only",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "a-gap-in-the-series-breaks": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

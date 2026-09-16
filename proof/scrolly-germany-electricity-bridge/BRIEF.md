@@ -3,6 +3,7 @@ format: scrolly
 type: waterfall
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Allemagne a produit 143 TWh d'électricité de moins en 2024 qu'en 2015 (scrolly)
@@ -27,6 +28,69 @@ A waterfall is a walk; the scroll takes it one step per card, then opens the ste
 | 5 | 2024: 496.0 TWh, 143.2 fewer | **measure** | the fossil step folds back; the closing total rises; the opening level carried across and the net change bracketed; step values step back |
 | 6 | the reading line | **pull back** | the whole bridge, every value on its bar |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "build"
+      ],
+      "changes": [
+        "ren"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "build"
+      ],
+      "changes": [
+        "nuc"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "build",
+        "unfold"
+      ],
+      "changes": [
+        "fos",
+        "unfold"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "measure"
+      ],
+      "changes": [
+        "closing",
+        "focus",
+        "net",
+        "unfold"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "focus"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **The bridge is replayed before it is drawn**, and every sentence asserted: renewables up, nuclear and fossil
@@ -38,6 +102,26 @@ A waterfall is a walk; the scroll takes it one step per card, then opens the ste
 - **On a narrow stage** the plot takes the larger of the two bands the resting card leaves free — above it or below
   it — so the levels the steps move through are never under the card. Totals still start at zero.
 - **One accent for every step**, as the static directed plate: the signs carry the direction.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "the-bridge-is-replayed-before-it",
+    "slots-in-the-reader-pixels",
+    "on-a-narrow-stage",
+    "one-accent-for-every-step"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-running-total-after-every-delta": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

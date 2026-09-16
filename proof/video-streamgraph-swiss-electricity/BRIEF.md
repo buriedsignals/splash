@@ -4,6 +4,7 @@ size: landscape
 type: streamgraph
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2016, le solaire est devenu la troisième source d'électricité suisse (video)
@@ -43,6 +44,74 @@ The stream is drawn on a curve that passes through the readings, so the lines cr
 | `conclusion` | — | **pull back** | lines back to bands, the magnification drops, the giants return; the credit | — |
 | `hold` | the stream | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 30,
+      "asserts": [
+        "25-complete-years",
+        "one-country"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace"
+      ],
+      "start": 81,
+      "duration": 165,
+      "asserts": []
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter, magnify, transform, count"
+      ],
+      "start": 252,
+      "duration": 246,
+      "asserts": [
+        "the-giants-hold-ranks-1-2",
+        "solar-under-oil-in-2015",
+        "over-it-in-2016",
+        "first-third-in-2016",
+        "held-since"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 498,
+      "duration": 69,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 567,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no values, no value axis: the rank riding the line and the rule are the claim. Only oil — the source solar
@@ -51,3 +120,52 @@ overtakes — is named in the lines.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "25-complete-years",
+    "one-country",
+    "the-giants-hold-ranks-1-2",
+    "solar-under-oil-in-2015",
+    "over-it-in-2016",
+    "first-third-in-2016",
+    "held-since",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "25-complete-years",
+      "one-country"
+    ],
+    "reveal": [],
+    "subject": [
+      "the-giants-hold-ranks-1-2",
+      "solar-under-oil-in-2015",
+      "over-it-in-2016",
+      "first-third-in-2016",
+      "held-since"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-wiggle-baseline-is-computed-once": null,
+    "every-period-in-the-range-is": null,
+    "the-rank-the-beat-claims-is": null,
+    "asserted-per-shot": null
+  }
+}
+```

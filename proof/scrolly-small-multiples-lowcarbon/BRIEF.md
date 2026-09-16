@@ -3,6 +3,7 @@ format: scrolly
 type: small-multiples
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Tous ont progressé, et les plus bas le plus vite (scrolly)
@@ -27,6 +28,69 @@ the panels into the one picture that measures the pattern (`skills/scrolly/refer
 | 5 | ordered by gain: Denmark +74, Sweden +2 | **reorder + highlight** | the panels come back in gain order, the extremes in the accent |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "grow"
+      ],
+      "changes": [
+        "grow"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "reorder"
+      ],
+      "changes": [
+        "byFrom"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "condense"
+      ],
+      "changes": [
+        "scatter"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reorder",
+        "highlight"
+      ],
+      "changes": [
+        "byGain",
+        "ends",
+        "scatter"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "ends"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: six panels a row on a wide stage, four on a narrow one; one scale, 0 to 100 %,
@@ -35,6 +99,25 @@ the panels into the one picture that measures the pattern (`skills/scrolly/refer
   fit, computed in node; a name beside a point turns left when the right would push it off the stage.
 - **Every sentence is asserted**: all sixteen rose, the correlation between the 2000 level and the gain below −0.5,
   the smallest gain belonging to the highest starter, the data inside the 0–100 % scale and the scatter's 0–80 axis.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-scatter-is-the-grid-own",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "every-panel-keeps-the-same-axis": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

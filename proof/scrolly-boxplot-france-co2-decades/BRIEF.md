@@ -3,6 +3,7 @@ format: scrolly
 type: boxplot
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les émissions de CO₂ par Français ont culminé dans les années 1970 (scrolly)
@@ -28,6 +29,68 @@ the summary, so the reader knows what a box is made of (`skills/scrolly/referenc
 | 5 | the 1980s spread widest, 6.9 to 9.5 t; the last box counts only 5 years | **filter** | those two boxes kept with their extents written, the rest stepping back |
 | 6 | the reading line and the whisker rule | **pull back** | the static plate, the rule written on it |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "regroup"
+      ],
+      "changes": [
+        "group"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "summarise"
+      ],
+      "changes": [
+        "box"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "connect"
+      ],
+      "changes": [
+        "medians"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "medians",
+        "spread"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "rule",
+        "spread"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: one fitted value scale for every picture (a position encoding, not anchored at
@@ -36,6 +99,26 @@ the summary, so the reader knows what a box is made of (`skills/scrolly/referenc
 - **Every sentence is asserted**: only France in the file, every year from 1950 present, the median peaking in the
   1970s and falling every decade since, only the last decade partial, 1973 the highest year, 1980 the one outlier the
   fence finds, the 1980s the widest extent.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "summaries-computed-in-node",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "quartiles-and-whiskers-are-computed-from": null,
+    "an-outlier-shown-on-a-zoomed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

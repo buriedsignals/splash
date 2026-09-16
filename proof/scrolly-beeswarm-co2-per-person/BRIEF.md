@@ -3,6 +3,7 @@ format: scrolly
 type: beeswarm
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les 6 pays au-dessus de 20 t de CO₂ par personne pèsent 0,6 % de l'humanité (scrolly)
@@ -27,6 +28,70 @@ the subject with its own gestures (`skills/scrolly/references/directed-type-chor
 | 5 | past 20 t, 6 countries, 0,6 % of humanity; the farthest, Qatar | **filter + count + name** | only the tail keeps its tint; its share counts up; Qatar named |
 | 6 | the plate's reading line | **pull back** | the whole field again, both cases named |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "rescale a channel"
+      ],
+      "changes": [
+        "grow"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "first"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter",
+        "count"
+      ],
+      "changes": [
+        "below",
+        "mean"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "filter",
+        "count",
+        "name"
+      ],
+      "changes": [
+        "below",
+        "far",
+        "tail"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "tail"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Two packings, one field**: dots of one radius and circles at population, both packed in the reader's
@@ -37,6 +102,27 @@ the subject with its own gestures (`skills/scrolly/references/directed-type-chor
 - **The tail's counter sits at the top of the band on the right**, clear of the dense field and of the
   travelling card; it wraps on a phone.
 - **Cards above the field, never over it; the block centred; the axis name wins over a tick.**
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "two-packings-one-field",
+    "counters-count-arriving-not-leaving",
+    "the-tail-counter-sits-at-the",
+    "cards-above-the-field-never-over"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "point-packing-no-overlap-is-recomputed": null,
+    "a-filtered-out-point-keeps-its": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

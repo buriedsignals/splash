@@ -4,6 +4,7 @@ size: landscape
 type: flow-map
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire ; l'Allemagne et la Pologne en accueillent la moitié (video)
@@ -58,6 +59,70 @@ while the count of people climbs — the total built band by band.
 | `conclusion` | — | — | the others return; the credit is set | — |
 | `hold` | the flow map, readable | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace",
+        "count up"
+      ],
+      "start": 117,
+      "duration": 210,
+      "asserts": [
+        "total-4-m"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "count up"
+      ],
+      "start": 333,
+      "duration": 120,
+      "asserts": [
+        "deu-largest",
+        "top-two-45-55"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 459,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 519,
+      "duration": 90,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line (« le tracé n'est pas un itinéraire »), no note on the hosts left unnamed. The key is two
@@ -66,3 +131,44 @@ counts and two widths; a host's label is its name and its number.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "total-4-m",
+    "deu-largest",
+    "top-two-45-55",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [],
+    "reveal": [
+      "total-4-m"
+    ],
+    "subject": [
+      "deu-largest",
+      "top-two-45-55"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-route-drawn-order-matches-the": null,
+    "a-band-width-is-the-quantity": null,
+    "the-camera-is-the-box-the": null,
+    "asserted-per-shot": null
+  }
+}
+```

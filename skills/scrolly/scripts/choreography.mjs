@@ -62,7 +62,7 @@ function cardTableRows(briefText) {
     }
     rows.push(cells);
   }
-  return rows;
+  return { header: header ?? [], rows };
 }
 
 /**
@@ -144,7 +144,7 @@ function changesPerCard(states) {
  * @returns {{ kind: "scroll", cards: Array<{ card: number, gesture: string[], changes: string[] }> }}
  */
 export function parseChoreography(briefText, ctx = {}) {
-  const rows = cardTableRows(briefText);
+  const { header, rows } = cardTableRows(briefText);
   if (rows.length === 0)
     throw new Error(
       "this beat declares no choreography: `## The choreography` carries no `| card |` table. " +
@@ -163,13 +163,20 @@ export function parseChoreography(briefText, ctx = {}) {
     );
 
   const changes = changesPerCard(states);
+  // The gesture column is found by its own HEADER, not by position: a map scrolly's table carries
+  // an extra column and every column after the first is then one to the right — the defect
+  // `proof/video-choropleth-europe-lowcarbon` exposed in the video half of this same reader.
+  const gestureAt = (() => {
+    const at = header.findIndex((cell) => /^gesture$/i.test(String(cell).replace(/[`*]/g, "").trim()));
+    return at < 0 ? 2 : at;
+  })();
   const cards = rows.map((cells, i) => {
     const card = Number(String(cells[0]).replace(/[^0-9]/g, ""));
     if (card !== i + 1)
       throw new Error(
         `card ${JSON.stringify(cells[0])} is row ${i + 1}: a scrolly's cards are 1..n, in order`,
       );
-    return { card, gesture: parseGesture(cells[2] ?? ""), changes: changes[i] };
+    return { card, gesture: parseGesture(cells[gestureAt] ?? ""), changes: changes[i] };
   });
   return { kind: "scroll", cards };
 }

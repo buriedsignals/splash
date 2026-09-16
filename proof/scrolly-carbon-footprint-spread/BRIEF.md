@@ -3,6 +3,7 @@ format: scrolly
 type: histogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 6 pays sur 10 émettent moins de 4 tonnes de CO₂ par personne (scrolly)
@@ -27,6 +28,71 @@ they are counted in (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | 9 countries above 16 t, mostly oil and gas producers | **name** | the tail's names listed above their columns |
 | 6 | the reading line | **pull back** | the columns become bars: the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "stack"
+      ],
+      "changes": [
+        "stack",
+        "tail"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "cut"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "median"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "cut",
+        "median",
+        "tail"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "bars",
+        "cut",
+        "tail"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: ten equal bins, the last open; a column holds its bin's countries a few to a row,
@@ -34,6 +100,25 @@ they are counted in (`skills/scrolly/references/directed-type-choreography.md`):
 - **A phone** lowers the dot strip below the resting card, labels every other bin and names only Qatar in the tail.
 - **Every sentence is asserted**: only 2023 rows, the bins accounting for every country, six in ten under 4 t, the
   median under the cut, the nine countries at 16 t or more exactly, Qatar the furthest out.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "a-phone",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "bin-edges-are-fixed-across-every": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

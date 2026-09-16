@@ -3,6 +3,7 @@ format: scrolly
 type: slope
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les seize pays ont tous gagné du bas-carbone depuis 2000 — un seul a doublé la France (scrolly)
@@ -27,6 +28,69 @@ and then points at what changed (`skills/scrolly/references/directed-type-choreo
 | 5 | the largest gains: Denmark +73.7, Portugal +55.4 | **highlight** | the two slopes in the ink, their changes written |
 | 6 | the reading line; the plate keeps the pair and the four largest producers | **pull back** | ten lines leave, the six re-seated with their changes: the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "grow"
+      ],
+      "changes": [
+        "right"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "cross"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "pair"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "cross",
+        "gains",
+        "pair"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "gains",
+        "six"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: one value scale for both rails; every label relaxed so no two touch, once for
@@ -35,6 +99,25 @@ and then points at what changed (`skills/scrolly/references/directed-type-choreo
   the run where the gap is zero, and its ring appears only once the slopes have grown past it.
 - **Every sentence is asserted**: all sixteen rose, Finland passed France, and it is the only country to have passed
   France.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "crossings-are-computed-not-drawn-by",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "both-end-columns-keep-the-same": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

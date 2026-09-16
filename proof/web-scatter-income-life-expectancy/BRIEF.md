@@ -3,6 +3,7 @@ format: web
 type: scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Au-delà de 30 000 $ par personne, le revenu n'achète presque plus d'années de vie (web)
@@ -168,3 +169,47 @@ so it behaves identically in both, which is checked rather than claimed.
 
 Our World in Data · life expectancy at birth and GDP per capita (constant international dollars),
 2021. `data.csv` is a byte-for-byte copy of `proof/static-income-life-expectancy/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "both-axes-keep-the-same-fixed": null,
+    "both-bands-are-measured-off-the": null,
+    "the-mark-size-scale-is-area": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

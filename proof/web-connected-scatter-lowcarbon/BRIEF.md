@@ -3,6 +3,7 @@ format: web
 type: connected-scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les seize ont tous nettoyé leur électricité, et cinq pèsent moins qu'avant (web)
@@ -353,3 +354,47 @@ Ember, Energy Institute — Statistical Review of World Energy (2025), via Our W
 `proof/static-connected-scatter-lowcarbon/data.csv`. Low-carbon is the sum of the file's own six
 low-carbon columns; a country's own mix is that sum over all nine generation columns; the European
 weight is that sum over the sixteen countries' total in the same year.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-path-drawn-order-matches-the": null,
+    "the-beat-refuses-to-render-if": null,
+    "each-option-decomposition-is-derived-from": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

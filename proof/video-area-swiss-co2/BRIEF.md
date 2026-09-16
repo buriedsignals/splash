@@ -4,6 +4,7 @@ size: landscape
 type: area
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié du CO₂ suisse depuis 1858 a été émise après 1986 (video)
@@ -45,6 +46,77 @@ heights), so the motion itself is honest.
 | `conclusion` | — | **pull back** | the blocks rise and sink back into the curve, the names riding to their seats; the credit | — |
 | `hold` | the two halves | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 36,
+      "asserts": [
+        "consecutive-years"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "fill",
+        "count up"
+      ],
+      "start": 87,
+      "duration": 195,
+      "asserts": [
+        "total"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "sweep",
+        "measure",
+        "flatten"
+      ],
+      "start": 288,
+      "duration": 186,
+      "asserts": [
+        "midpoint-1986",
+        "45-later-share-50",
+        "38-3-129",
+        "each-block-surface-its-half"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 480,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 552,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no share printed: the gauge's half mark says it. The names are years and lengths.
@@ -52,3 +124,51 @@ No standfirst, no reading line, no share printed: the gauge's half mark says it.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "consecutive-years",
+    "total",
+    "midpoint-1986",
+    "45-later-share-50",
+    "38-3-129",
+    "each-block-surface-its-half",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "consecutive-years"
+    ],
+    "reveal": [
+      "total"
+    ],
+    "subject": [
+      "midpoint-1986",
+      "45-later-share-50",
+      "38-3-129",
+      "each-block-surface-its-half"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-years-are-asserted-consecutive-before": null,
+    "every-outline-in-the-flatten-holds": null,
+    "the-midpoint-year-the-later-share": null,
+    "asserted-per-shot": null
+  }
+}
+```

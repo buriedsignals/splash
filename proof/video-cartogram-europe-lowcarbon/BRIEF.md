@@ -4,6 +4,7 @@ size: landscape
 type: cartogram
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Par pays 65,1 % ; au km² 44,9 % (video)
@@ -73,6 +74,81 @@ the columns strike (tested frame by frame).
 | `conclusion` | — | — | the credit | — |
 | `hold` | the cartogram, readable | — (stillness) | nothing | hold state = conclusion state |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 51,
+      "duration": 84,
+      "asserts": [
+        "class-counts-low-high",
+        "one-unreported-country",
+        "the-columns-fill-the-beam-height"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "focus",
+        "name",
+        "measure"
+      ],
+      "start": 141,
+      "duration": 84,
+      "asserts": [
+        "russia-the-widest-country",
+        "73-of-the-weight",
+        "below-the-country-mean",
+        "pivot-the-weighted-mean"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "morph",
+        "rebalance"
+      ],
+      "start": 231,
+      "duration": 180,
+      "asserts": [
+        "41-tiles",
+        "the-pivot-equals-the-columns-balance",
+        "gap-15-points"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 417,
+      "duration": 72,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 489,
+      "duration": 60,
+      "asserts": [
+        "hold-state-conclusion-state"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no note. The two pivots are a label and a number each (« au km² 44,9 % »,
@@ -108,6 +184,60 @@ ticks — the pivots say where it stands.
   measured.
 - Colours from the direction only; the composition types no size, weight, lead, tracking, family, style, case or
   colour.
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "class-counts-low-high",
+    "one-unreported-country",
+    "the-columns-fill-the-beam-height",
+    "russia-the-widest-country",
+    "73-of-the-weight",
+    "below-the-country-mean",
+    "pivot-the-weighted-mean",
+    "41-tiles",
+    "the-pivot-equals-the-columns-balance",
+    "gap-15-points",
+    "hold-state-conclusion-state"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "class-counts-low-high",
+      "one-unreported-country",
+      "the-columns-fill-the-beam-height"
+    ],
+    "reveal": [
+      "russia-the-widest-country",
+      "73-of-the-weight",
+      "below-the-country-mean",
+      "pivot-the-weighted-mean"
+    ],
+    "subject": [
+      "41-tiles",
+      "the-pivot-equals-the-columns-balance",
+      "gap-15-points"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-state-conclusion-state"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-state-conclusion-state"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-country-is-present-at-every": null,
+    "area-distortion-is-computed-from-the": null,
+    "the-projected-svg-shapes-are-tested": null,
+    "asserted-per-shot": null
+  }
+}
+```
 
 ## Directions
 

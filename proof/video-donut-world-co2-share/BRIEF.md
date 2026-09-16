@@ -4,6 +4,7 @@ size: landscape
 type: donut
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2000 les États-Unis émettaient un quart du CO₂ mondial et la Chine un septième ; en 2023, c'est l'inverse (video)
@@ -46,6 +47,80 @@ and the split keeps each arc on its own side.
 | `conclusion` | China is the subject | **name** | China's number ringed; the credit | nothing stepped back, no world ring left |
 | `hold` | the six rings | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "trace"
+      ],
+      "start": 45,
+      "duration": 60,
+      "asserts": [
+        "the-arcs-angles-are-the-2000",
+        "the-circumference-is-24-7-gt"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "grow"
+      ],
+      "start": 105,
+      "duration": 135,
+      "asserts": [
+        "radius-world-total",
+        "every-arc-length-its-tonnes-one",
+        "angles-at-the-end-the-2023"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "split"
+      ],
+      "start": 240,
+      "duration": 180,
+      "asserts": [
+        "an-arc-angle-never-changes-in",
+        "every-ring-lands-on-its-seat"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "name"
+      ],
+      "start": 420,
+      "duration": 60,
+      "asserts": [
+        "nothing-stepped-back",
+        "no-world-ring-left"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 480,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 Two names and their shares, twice; the world's tonnes, twice; then per ring its share, its name, its tonnes. About 18 s.
@@ -53,3 +128,58 @@ Two names and their shares, twice; the world's tonnes, twice; then per ring its 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-arcs-angles-are-the-2000",
+    "the-circumference-is-24-7-gt",
+    "radius-world-total",
+    "every-arc-length-its-tonnes-one",
+    "angles-at-the-end-the-2023",
+    "an-arc-angle-never-changes-in",
+    "every-ring-lands-on-its-seat",
+    "nothing-stepped-back",
+    "no-world-ring-left",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-arcs-angles-are-the-2000",
+      "the-circumference-is-24-7-gt"
+    ],
+    "reveal": [
+      "radius-world-total",
+      "every-arc-length-its-tonnes-one",
+      "angles-at-the-end-the-2023"
+    ],
+    "subject": [
+      "an-arc-angle-never-changes-in",
+      "every-ring-lands-on-its-seat"
+    ],
+    "conclusion": [
+      "nothing-stepped-back",
+      "no-world-ring-left"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "wedge-angles-sum-to-the-same": null,
+    "the-growing-ring-circumference-is-the": null,
+    "the-earlier-period-is-drawn-in": null,
+    "asserted-per-shot": null
+  }
+}
+```

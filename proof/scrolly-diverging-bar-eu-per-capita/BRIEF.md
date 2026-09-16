@@ -3,6 +3,7 @@ format: scrolly
 type: diverging bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Croatie est le seul pays de l'UE à émettre plus de CO₂ par personne qu'en 1990 (scrolly)
@@ -28,6 +29,74 @@ rise a length (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | the 26 others fall by 4.93 t on average; Luxembourg −20.48, Estonia −17.40 | **rule + filter** | the mean drawn down the chart; the eight countries past it kept, their values in bold |
 | 6 | the reading line | **pull back** | every row, Croatia in the accent, the mean |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "rescale",
+        "count"
+      ],
+      "changes": [
+        "fell",
+        "subject",
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "re-encode",
+        "reorder"
+      ],
+      "changes": [
+        "fell",
+        "swap"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "zoom"
+      ],
+      "changes": [
+        "note",
+        "zoom"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "rule",
+        "filter"
+      ],
+      "changes": [
+        "beyond",
+        "mean",
+        "note",
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "beyond"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: a row is the stage's height over 27; the name and value columns as
@@ -39,6 +108,27 @@ rise a length (`skills/scrolly/references/directed-type-choreography.md`):
   levels are the two largest falls (cards 1 and 5 name them), the close-up's domain holds the rise.
 - **French names**, with the article each sentence needs; the static plate prints English names.
 - `→` is not in the embedded faces, so the unit reads "variation de 1990 à 2024".
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-re-encoding-happens-in-two",
+    "every-sentence-is-asserted",
+    "french-names",
+    "is-not-in-the-embedded-faces"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-shared-zero-baseline-never-moves": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

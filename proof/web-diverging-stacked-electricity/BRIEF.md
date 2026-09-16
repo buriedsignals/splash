@@ -3,6 +3,7 @@ format: web
 type: diverging-stacked-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le nucléaire décide seul de quel côté penche la France (web)
@@ -378,3 +379,47 @@ creuse — refaite en `straddle: "gaz"`, elle rougit. Aucune mutation n'a plant�
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024.
 `data.csv` est une copie octet pour octet de `proof/static-diverging-stacked-electricity/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-row-sums-to-the-same": null,
+    "the-segment-order-is-the-response": null,
+    "the-rectangles-are-lengths-in-the": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

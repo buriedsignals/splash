@@ -79,8 +79,30 @@ export const EVENT_ORDER = Object.freeze([
   "hold",
 ]);
 
-/** The two events that legitimately play no gesture: the title card, and the frame held at the end. */
-const GESTURELESS = Object.freeze(["establish", "hold"]);
+/**
+ * WHICH SHOTS OWE A NAMED GESTURE, AND WHY IT IS TWO AND NOT SIX.
+ *
+ * The plan, and the first cut of this checker, read an empty gesture cell on any middle event as
+ * `no-replay-static-plate` — "the static plate switched on on a timer". Measured against the 40
+ * committed video beats, that read is wrong twice over:
+ *
+ *   17 of 40 write `reference` as `— (furniture)` — the shot that puts up the axes, the key and
+ *   the ground before any value is drawn;
+ *    7 of 40 write `conclusion` as `—` with "the credit" in the column that says what moves.
+ *
+ * Neither is a frozen picture, and the proof is not in the table: `assertEventStates`, at the top
+ * of this same file, refuses at RENDER TIME any event whose state equals the one before it. That
+ * is the guard on "every event transforms the picture", it runs on the beat's real states, and it
+ * passes on all 40. An empty gesture cell means "nothing from this type's vocabulary happens
+ * here", which is a different statement and a legitimate one.
+ *
+ * So the violation is scoped to the two shots that carry the argument — `reveal` and `subject`.
+ * A beat that names no gesture THERE has declared a slideshow whatever its states do. Every other
+ * gestureless middle shot is reported as a `note`, so nothing is hidden by the narrowing.
+ */
+const ARGUMENT_SHOTS = Object.freeze(["reveal", "subject"]);
+/** Where an empty gesture cell is the corpus's own convention rather than a finding. */
+const CONVENTIONALLY_SILENT = Object.freeze(["establish", "hold"]);
 
 /** The prohibition a middle event with no gesture breaks, in every one of the 40 video sheets. */
 export const TIMER_PROHIBITION = "no-replay-static-plate";
@@ -88,6 +110,21 @@ export const TIMER_PROHIBITION = "no-replay-static-plate";
 export const HOLD_PROHIBITION = "no-hold-event-computed";
 
 const CHOREOGRAPHY_HEADING = /^##\s+The choreography\b/i;
+
+/**
+ * WHICH COLUMN IS WHICH, BY ITS OWN HEADER — never by position.
+ *
+ * The plan read the gesture from column three and the asserted values from column five. Measured:
+ * `proof/video-choropleth-europe-lowcarbon` writes a SIX-column table — it carries a `card` column
+ * beside the event, because a map video's shots and its scrolly sibling's cards are the same
+ * ladder — and every column after the first is therefore one to the right. Reading by position
+ * gave that beat a sentence where its gesture should have been. The header is what the beat
+ * itself wrote down; it is what is read.
+ */
+function columnOf(header, test, fallback) {
+  const at = header.findIndex((cell) => test(String(cell).replace(/[`*]/g, "").trim().toLowerCase()));
+  return at < 0 ? fallback : at;
+}
 
 /** The rows of the first table under `## The choreography` whose first column is `event`. */
 function eventTableRows(briefText) {
@@ -119,7 +156,7 @@ function eventTableRows(briefText) {
     }
     rows.push(cells);
   }
-  return rows;
+  return { header: header ?? [], rows };
 }
 
 /**
@@ -148,7 +185,7 @@ export function parseAsserts(cell) {
  *   the beat's own timing contract — the object `checkTiming` validates, not a re-parse of the file
  */
 export function parseChoreography(briefText, ctx = {}) {
-  const rows = eventTableRows(briefText);
+  const { header, rows } = eventTableRows(briefText);
   if (rows.length === 0)
     throw new Error(
       "this beat declares no choreography: `## The choreography` carries no `| event |` table. " +
@@ -161,6 +198,8 @@ export function parseChoreography(briefText, ctx = {}) {
         "the table, they are in `timing-contract.ts`, and they are joined in rather than re-parsed.",
     );
 
+  const gestureAt = columnOf(header, (h) => h === "gesture", 2);
+  const assertsAt = columnOf(header, (h) => /derived value|asserted/.test(h), 4);
   const shots = rows.map((cells) => {
     const shot = String(cells[0]).replace(/[`*]/g, "").trim();
     const event = timing[shot];
@@ -171,10 +210,10 @@ export function parseChoreography(briefText, ctx = {}) {
       );
     return {
       shot,
-      gesture: parseGesture(cells[2] ?? ""),
+      gesture: parseGesture(cells[gestureAt] ?? ""),
       start: event.start,
       duration: event.duration,
-      asserts: parseAsserts(cells[4] ?? ""),
+      asserts: parseAsserts(cells[assertsAt] ?? ""),
     };
   });
   return { kind: "time", fps: timing.fps, shots };
@@ -220,17 +259,23 @@ export function checkChoreography(declared, frame = {}) {
       });
   }
 
-  // Every middle event owes a transformation of the picture before it: an event with no gesture is
-  // the static plate switched on on a timer.
-  const idle = shots.filter(
-    (s) => !GESTURELESS.includes(s.shot) && (s.gesture ?? []).length === 0,
-  );
+  // The two shots that carry the argument owe a named gesture; see `ARGUMENT_SHOTS` above for why
+  // the other four do not, and for what actually guards "every event transforms the picture".
+  const silent = shots.filter((s) => (s.gesture ?? []).length === 0);
+  const idle = silent.filter((s) => ARGUMENT_SHOTS.includes(s.shot));
   if (idle.length && stated.has(TIMER_PROHIBITION))
     out.push({
       id: TIMER_PROHIBITION,
       severity: "violation",
       says: `${idle.map((s) => s.shot).join(", ")} declare no gesture — ${stated.get(TIMER_PROHIBITION)}`,
     });
+  for (const shot of silent)
+    if (!ARGUMENT_SHOTS.includes(shot.shot) && !CONVENTIONALLY_SILENT.includes(shot.shot))
+      out.push({
+        id: "gesture-unnamed",
+        severity: "note",
+        says: `\`${shot.shot}\` names no gesture of this type's vocabulary — what moves there is furniture, a credit, or a change the table does not name`,
+      });
 
   // The last event of a beat plays no gesture of its own: it is the frame a viewer reads, held.
   const last = shots[shots.length - 1];

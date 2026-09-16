@@ -3,6 +3,7 @@ format: web
 type: column
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a émis plus de CO₂ en 2024 que les 5 pays suivants réunis (web)
@@ -323,3 +324,47 @@ Two findings from that battery, recorded rather than filed away:
 
 Global Carbon Budget 2025, via Our World in Data · 2024. `data.csv` is a byte-for-byte copy of
 `proof/static-bar-top-emitters-2024/data.csv`, re-parsed independently here.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-ten-are-a-ranking-derived": null,
+    "the-next-five-is-a-search": null,
+    "the-accent-is-measured-as-text": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

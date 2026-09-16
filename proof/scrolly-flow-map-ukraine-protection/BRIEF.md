@@ -3,6 +3,7 @@ format: scrolly
 type: flow map
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire ; l'Allemagne et la Pologne en accueillent la moitié (scrolly)
@@ -27,6 +28,70 @@ they carry (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | the 21 other countries, 19 %: a dot each | **reveal** | a dot at each smaller host in frame |
 | 6 | the bands are not itineraries; only width measures | **pull back** | everything, the two largest named in bold, the width key |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "changes": [
+        "bands"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "changes": [
+        "bands",
+        "pair"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "changes": [
+        "bands",
+        "pair"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": [
+        "others"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "key",
+        "pair"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Vectors in the equal-area projection**, land one step off the bare-ground sea (floored so the coast reads on
@@ -47,6 +112,28 @@ they carry (`skills/scrolly/references/directed-type-choreography.md`):
   viewport (`render-directions-scrolly.mjs`); the camera's own zoom and centre are unchanged, since neither
   depends on the reference's height. `verify-scrolly.mjs` and `verify-live-map-scrolly.mjs` clean on all
   three; the swap check on `creme` now reads 0.33 % (wide) and 0.11 % (tall), labels only.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "vectors-in-the-equal-area-projection",
+    "the-camera-is-the-static-beat",
+    "widths-in-pixels",
+    "on-a-narrow-stage",
+    "every-sentence-is-asserted",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-route-drawn-order-matches-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

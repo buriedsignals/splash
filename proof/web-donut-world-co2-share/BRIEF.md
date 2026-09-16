@@ -3,6 +3,7 @@ format: web
 type: donut
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2000, États-Unis 24,4 % du CO₂ mondial et Chine 14,7 % ; en 2023, l'inverse (web)
@@ -207,3 +208,47 @@ and off: **creme 141/0, rapport 135/0, nocturne 135/0.**
 Global Carbon Budget 2025 · populations 2000 and 2023, via Our World in Data. `data.csv` is a
 byte-for-byte copy of `proof/static-donut-world-co2-share/data.csv` — 213 rows, so "tous les autres"
 is 207 countries.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "wedge-angles-sum-to-the-same": null,
+    "the-beat-refuses-if-the-two": null,
+    "the-measured-span-of-every-wedge": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

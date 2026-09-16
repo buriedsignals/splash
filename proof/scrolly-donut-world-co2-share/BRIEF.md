@@ -3,6 +3,7 @@ format: scrolly
 type: pie and donut
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2000 les États-Unis émettaient un quart du CO₂ mondial et la Chine un septième ; en 2023, c'est l'inverse (scrolly)
@@ -27,6 +28,66 @@ The static plate draws six rings, one per country. The scroll starts from the on
 | 5 | Russia: share 6.0 → 4.7 %, tonnes 1.5 → 1.7 Gt | **isolate** | Russia alone, its 2000 arc on the 2000 ring beside its 2023 arc, its tonnes under its name |
 | 6 | the reading line | **split** | the ring breaks into one ring per country, 2000 outside, 2023 inside, tonnes underneath |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "pair"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "morph"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "grow",
+        "pair"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "isolate"
+      ],
+      "changes": [
+        "russia"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "split"
+      ],
+      "changes": [
+        "russia",
+        "split"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Built in the reader's pixels**: the SVG's viewBox is the stage, so rings stay round at every width.
@@ -40,6 +101,28 @@ The static plate draws six rings, one per country. The scroll starts from the on
   font embedding reads only the rendered page.
 - **Every sentence is asserted**: the swap, "a quarter" within 2.5 points, "a seventh" within 1.5, growth
   above a third, exactly one of the six whose share fell while its tonnes rose.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "built-in-the-reader-pixels",
+    "on-the-world-ring-countries-are",
+    "labels-outside-the-ring-relaxed-per",
+    "the-ring-hole-is-where-the",
+    "the-drawn-labels-faces-are-carried",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "wedge-angles-sum-to-the-same": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

@@ -3,6 +3,7 @@ format: web
 type: dot-density
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Sur 8 299 centrales bas-carbone européennes, 72 sont nucléaires (web)
@@ -161,3 +162,52 @@ densité surévaluée, et la page le dit.
 
 Global Power Plant Database (WRI) · fond de carte MapTiler. `stations.csv` and `shapes.geojson` are
 byte-for-byte copies of `proof/static-dot-density-europe-stations/`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "dot-positions-are-declared-synthetic-where": null,
+    "the-trap-is-measured-in-both": null,
+    "a-dot-has-no-area-to": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    },
+    {
+      "order": 3,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

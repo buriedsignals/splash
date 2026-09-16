@@ -3,6 +3,7 @@ format: scrolly
 type: dot density
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance (scrolly)
@@ -27,6 +28,69 @@ them one after the other, on the same dots (`skills/scrolly/references/directed-
 | 5 | France, 19 of the 72: 3,323 MW per nuclear site, 6.0 MW per solar site | **zoom** | the camera closes on France |
 | 6 | the reading line and the database's limit | **pull back** | one dot per station again, nuclear ringed |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "reveal",
+        "count"
+      ],
+      "changes": [
+        "arrive"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "reveal",
+        "filter"
+      ],
+      "changes": [
+        "fade",
+        "subject"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "re-encode"
+      ],
+      "changes": [
+        "fade",
+        "weight"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom"
+      ],
+      "changes": [
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "weight",
+        "zoom"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Vectors, not the MapTiler plate**: Natural Earth land in the equal-area projection the static plate's
@@ -50,6 +114,30 @@ them one after the other, on the same dots (`skills/scrolly/references/directed-
   by mixing the disc further toward the ink until it clears 1.5:1 from the dot (`render-directions-scrolly.mjs`).
   `verify-scrolly.mjs` and `verify-live-map-scrolly.mjs` clean on all three; a swap check on `creme` at
   1280×800 and 375×812 shows only the live map's own place labels added.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "vectors-not-the-maptiler-plate",
+    "the-lightest-land-and-sea-that",
+    "the-subject-in-the-ink-as",
+    "one-canvas",
+    "the-whole-map-view-is-the",
+    "sizes-in-pixels",
+    "every-sentence-is-asserted",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "dot-positions-are-declared-synthetic-never": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

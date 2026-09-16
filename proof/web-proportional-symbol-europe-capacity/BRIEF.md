@@ -3,6 +3,7 @@ format: web
 type: proportional-symbol
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Cinq pays portent 55 % de la capacité bas-carbone européenne (web)
@@ -474,3 +475,57 @@ arbitration) and a disclosure summary, where the pattern carries a legend strip.
 **What the wide box costs in ground: the frame shows 180° of longitude for a declared window 67°
 wide.** That is the arithmetic of a near-square study set in a 2,8:1 stage, and it is the same price
 the pattern pays (186°).
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "symbol-area-never-radius-alone-is": null,
+    "the-size-legend-is-drawn-by": null,
+    "the-marks-are-held-in-screen": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    },
+    {
+      "order": 3,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 4,
+      "gesture": "zoom-and-pan",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

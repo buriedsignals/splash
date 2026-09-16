@@ -27,6 +27,8 @@
  *     columns on the floor". Restored → green.
  *   - made `checkPrecision` skip the value comparison → RED on "should catch a declared number that
  *     has drifted from the frozen data". Restored → green.
+ *   - read the gesture column from position 2 again rather than by its header → "should find
+ *     the gesture column by its own header" red (2026-09-17). Restored → green.
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -230,5 +232,21 @@ describe("parsePrecision reads the beat's own rules, and checkPrecision does two
       data: { "china-2024": 12.3 },
     });
     expect(covered).toEqual([]);
+  });
+
+  // A map scrolly's table carries an extra column, so every column after the first is one to the
+  // right — the same defect the video half of this reader had. The header is what is read.
+  it("should find the gesture column by its own header, whatever its position", () => {
+    const wide = [
+      "## The choreography",
+      "",
+      "| card | stage | what the card says | gesture | what the reader sees move |",
+      "| --- | --- | --- | --- | --- |",
+      "| 1 | overview | the ground | — | the frame |",
+      "| 2 | close | the cut | **regroup + pull back** | the rows |",
+      "",
+    ].join("\n");
+    const parsed = parseChoreography(wide, { states: [{ a: 0 }, { a: 1 }] });
+    expect(parsed.cards[1].gesture).toEqual(["regroup", "pull back"]);
   });
 });

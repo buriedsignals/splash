@@ -4,6 +4,7 @@ size: landscape
 type: gantt
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Six pays n'ont jamais quitté le top 10 des émetteurs depuis 1990 (video)
@@ -37,6 +38,74 @@ stopping, and the count of the 1990 ten who never left falls at the very moment 
 | `conclusion` | the whole tenure | **release** | the ten others come back — the whole chart — the six kept in the accent; the credit on one line | — |
 | `hold` | the tenure | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 45,
+      "asserts": [
+        "the-1990-ten"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "sweep",
+        "trace",
+        "count"
+      ],
+      "start": 96,
+      "duration": 240,
+      "asserts": [
+        "10-to-6",
+        "ten-seats-a-year"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter"
+      ],
+      "start": 336,
+      "duration": 75,
+      "asserts": [
+        "the-six"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "release"
+      ],
+      "start": 411,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 471,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no span labels: the viewer has watched each bar grow and stop; the count names the claim.
@@ -44,3 +113,47 @@ No standfirst, no reading line, no span labels: the viewer has watched each bar 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-1990-ten",
+    "10-to-6",
+    "ten-seats-a-year",
+    "the-six",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-1990-ten"
+    ],
+    "reveal": [
+      "10-to-6",
+      "ten-seats-a-year"
+    ],
+    "subject": [
+      "the-six"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "a-bar-drawn-length-is-proportional": null,
+    "the-runs-are-computed-from-the": null,
+    "the-count-every-step-is-tied": null,
+    "asserted-per-shot": null
+  }
+}
+```

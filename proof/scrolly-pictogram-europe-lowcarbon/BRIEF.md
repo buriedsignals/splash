@@ -3,6 +3,7 @@ format: scrolly
 type: pictogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Europe électrique est aux deux bouts : 6 pays seulement au milieu (scrolly)
@@ -27,6 +28,77 @@ A unit grid is read by counting; the scroll first shows where each unit comes fr
 | 5 | the 34 at the two ends, each in the fill of its class | **recolour** | the middle steps back; the squares take the ramp, the key appears |
 | 6 | the reading line | **pull back** | the static plate and its key |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "place"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "floors",
+        "note"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "count"
+      ],
+      "changes": [
+        "counts",
+        "ends",
+        "floors",
+        "mode",
+        "note"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "middle",
+        "note"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "recolour"
+      ],
+      "changes": [
+        "classes",
+        "key",
+        "middle",
+        "note",
+        "sides"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "note",
+        "sides"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: the axis has one column per 2.5 points of share (per 5 points on a narrow
@@ -37,6 +109,25 @@ A unit grid is read by counting; the scroll first shows where each unit comes fr
   together.
 - **Every sentence is asserted**: the three blocks account for every country, the middle holds under a quarter of the
   field, exactly one country is unreported and it is Ukraine, every country has a French name.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-unit-stays-a-country",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "one-icon-always-equals-the-same": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

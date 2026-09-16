@@ -3,6 +3,7 @@ format: web
 type: choropleth
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La carte montre sept pays parce qu'on a choisi de couper à 94 % (web)
@@ -406,3 +407,52 @@ trois plaques sont vérifiées identiques en caméra avant le rendu.
 creux : sous elle on voit la terre de la plaque, pas le papier. Un pays sans donnée ressemble donc au
 reste du monde hors étude, ce qui est exactement ce qu'il est — et son contour reste en pointillé
 pour qu'on ne le confonde pas avec un pays hors cadre.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-region-is-present-at-the": null,
+    "the-legend-prints-the-actual-bin": null,
+    "web-mercator-inflates-the-value-the": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    },
+    {
+      "order": 3,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

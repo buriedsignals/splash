@@ -4,6 +4,7 @@ size: landscape
 type: treemap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L’eau et l’atome portent encore 77 % du bas-carbone européen, mais dix pays ont basculé (video)
@@ -40,6 +41,84 @@ France's cell alone, filling about two thirds of it.
 | `conclusion` | the whole, the lesson marked | **pull back + name** | the ten slide back to their own places, keeping their areas — the whole treemap; France ringed; the credit | every cell home; France not in the thread |
 | `hold` | the treemap | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "grow",
+        "count"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "the-total"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "split"
+      ],
+      "start": 111,
+      "duration": 84,
+      "asserts": [
+        "every-cell-area-its-share-of",
+        "the-cells-tile-the-block"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "fill",
+        "filter",
+        "gather"
+      ],
+      "start": 195,
+      "duration": 216,
+      "asserts": [
+        "fill-cell-share",
+        "ten-tipped",
+        "the-packed-cells-area-their-sum",
+        "under-france-0-68"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 411,
+      "duration": 90,
+      "asserts": [
+        "every-cell-home",
+        "france-not-in-the-thread"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 501,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The values and names in the cells, « 469 GW », « éolien + solaire », « 10 pays », « 65,8 GW ». A brisk rhythm: 18,7 s.
@@ -47,3 +126,58 @@ The values and names in the cells, « 469 GW », « éolien + solaire », « 10 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-total",
+    "every-cell-area-its-share-of",
+    "the-cells-tile-the-block",
+    "fill-cell-share",
+    "ten-tipped",
+    "the-packed-cells-area-their-sum",
+    "under-france-0-68",
+    "every-cell-home",
+    "france-not-in-the-thread",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-total"
+    ],
+    "reveal": [
+      "every-cell-area-its-share-of",
+      "the-cells-tile-the-block"
+    ],
+    "subject": [
+      "fill-cell-share",
+      "ten-tipped",
+      "the-packed-cells-area-their-sum",
+      "under-france-0-68"
+    ],
+    "conclusion": [
+      "every-cell-home",
+      "france-not-in-the-thread"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "tile-area-stays-proportional-to-the": null,
+    "the-packed-cells-total-area-equals": null,
+    "the-remainders-are-declared-and-their": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -4,6 +4,7 @@ size: landscape
 type: heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Trois chemins vers une électricité bas-carbone, 12 pays européens × 9 sources (video)
@@ -41,6 +42,81 @@ its cell — and regroups the seven so the nuclear column shows three routes.
 | `conclusion` | the whole matrix | **pull back** | the names and ring go, the blocks close, the two rows swap back, the others come back — the whole matrix in rank order, the seven bracketed, « 7 pays »; the credit on one line | rank order restored |
 | `hold` | the picture | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order",
+        "count"
+      ],
+      "start": 51,
+      "duration": 135,
+      "asserts": [
+        "7-countries-past-94",
+        "every-bar-segments-sum-to-the"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "transform"
+      ],
+      "start": 186,
+      "duration": 135,
+      "asserts": [
+        "every-segment-lands-on-its-cell",
+        "its-class-is-its-share"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "reorder",
+        "compare"
+      ],
+      "start": 321,
+      "duration": 150,
+      "asserts": [
+        "the-partition-3-3-1-7",
+        "only-one-pair-of-rows-moves"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 471,
+      "duration": 90,
+      "asserts": [
+        "rank-order-restored"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 561,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The country names, « 94 % », « 7 pays », the source heads and the three family names, the share column, the three route
@@ -49,3 +125,54 @@ names, the key's breaks. A brisk rhythm: 20,7 s.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "7-countries-past-94",
+    "every-bar-segments-sum-to-the",
+    "every-segment-lands-on-its-cell",
+    "its-class-is-its-share",
+    "the-partition-3-3-1-7",
+    "only-one-pair-of-rows-moves",
+    "rank-order-restored",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "7-countries-past-94",
+      "every-bar-segments-sum-to-the"
+    ],
+    "reveal": [
+      "every-segment-lands-on-its-cell",
+      "its-class-is-its-share"
+    ],
+    "subject": [
+      "the-partition-3-3-1-7",
+      "only-one-pair-of-rows-moves"
+    ],
+    "conclusion": [
+      "rank-order-restored"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-class-breaks-are-computed-once": null,
+    "every-segment-length-is-its-share": null,
+    "the-partition-the-claim-rests-on": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -4,6 +4,7 @@ size: landscape
 type: dumbbell
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Tous les dix ont gagné des années de vie ; la Pologne 5,0 ans, les États-Unis 2,5 (video)
@@ -41,6 +42,76 @@ shortest the United States'.
 | `conclusion` | the whole dumbbell | **pull back** | the copies slide back onto their dumbbells and merge, the start line goes, every row back at full ink; the credit | nothing stepped back |
 | `hold` | the dumbbell | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 54,
+      "asserts": [
+        "poland-last-in-2000"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "start": 105,
+      "duration": 120,
+      "asserts": [
+        "all-10-rose"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "reorder",
+        "compare"
+      ],
+      "start": 225,
+      "duration": 210,
+      "asserts": [
+        "the-ranks-by-gain",
+        "every-copy-starts-on-one-x"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 435,
+      "duration": 75,
+      "asserts": [
+        "nothing-stepped-back"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 510,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 Names, the axis values, the two years, the count, the gains. A brisk rhythm: 19 s.
@@ -48,3 +119,50 @@ Names, the axis values, the two years, the count, the gains. A brisk rhythm: 19 
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "poland-last-in-2000",
+    "all-10-rose",
+    "the-ranks-by-gain",
+    "every-copy-starts-on-one-x",
+    "nothing-stepped-back",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "poland-last-in-2000"
+    ],
+    "reveal": [
+      "all-10-rose"
+    ],
+    "subject": [
+      "the-ranks-by-gain",
+      "every-copy-starts-on-one-x"
+    ],
+    "conclusion": [
+      "nothing-stepped-back"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-drawn-connector-length-equals-the": null,
+    "every-copy-of-a-gap-starts": null,
+    "the-order-after-the-reorder-is": null,
+    "asserted-per-shot": null
+  }
+}
+```

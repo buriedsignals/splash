@@ -4,6 +4,7 @@ size: landscape
 type: radar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La France et l’Allemagne produisent presque autant d’électricité, avec des mix opposés (video)
@@ -47,6 +48,85 @@ that frame on, every length is a share on one scale — the bars' and the spokes
 | `conclusion` | the whole radar, nuclear marked | **close + name** | both outlines close and fill, the parts give way to the outlines' vertices; nuclear's two shares ringed; the credit | no bar or part left, every spoke labelled |
 | `hold` | the radar | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "grow"
+      ],
+      "start": 45,
+      "duration": 60,
+      "asserts": [
+        "lengths-twh-on-one-px-per",
+        "france-bar-is-100-long-on"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "rescale",
+        "split"
+      ],
+      "start": 105,
+      "duration": 90,
+      "asserts": [
+        "both-bars-px-per-the-wheel",
+        "every-part-length-share-that-scale",
+        "parts-sum-to-100"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "pull back",
+        "carry",
+        "trace"
+      ],
+      "start": 195,
+      "duration": 225,
+      "asserts": [
+        "a-part-length-share-px-per",
+        "each-lands-with-its-tip-at",
+        "an-edge-only-between-two-landed"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "close",
+        "name"
+      ],
+      "start": 420,
+      "duration": 75,
+      "asserts": [
+        "no-bar-or-part-left",
+        "every-spoke-labelled"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 495,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 Two names and two totals, « 100 % » twice; then per spoke its name and the two shares; the ceiling's « 70 % ». About 18,5 s.
@@ -54,3 +134,60 @@ Two names and two totals, « 100 % » twice; then per spoke its name and the two
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "lengths-twh-on-one-px-per",
+    "france-bar-is-100-long-on",
+    "both-bars-px-per-the-wheel",
+    "every-part-length-share-that-scale",
+    "parts-sum-to-100",
+    "a-part-length-share-px-per",
+    "each-lands-with-its-tip-at",
+    "an-edge-only-between-two-landed",
+    "no-bar-or-part-left",
+    "every-spoke-labelled",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "lengths-twh-on-one-px-per",
+      "france-bar-is-100-long-on"
+    ],
+    "reveal": [
+      "both-bars-px-per-the-wheel",
+      "every-part-length-share-that-scale",
+      "parts-sum-to-100"
+    ],
+    "subject": [
+      "a-part-length-share-px-per",
+      "each-lands-with-its-tip-at",
+      "an-edge-only-between-two-landed"
+    ],
+    "conclusion": [
+      "no-bar-or-part-left",
+      "every-spoke-labelled"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-spoke-keeps-the-same-fixed": null,
+    "the-bars-pixels-per-percent-equals": null,
+    "an-edge-is-drawn-only-between": null,
+    "asserted-per-shot": null
+  }
+}
+```

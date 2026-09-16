@@ -3,6 +3,7 @@ format: web
 type: line
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le CO₂ suisse est repassé sous son niveau de 1967, 57 ans effacés (web)
@@ -136,3 +137,42 @@ its headroom.
 
 Global Carbon Budget 2025, via Our World in Data · Switzerland, 1858–2024, 167 consecutive readings.
 `data.csv` is a byte-for-byte copy of `proof/co2-suisse/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-reference-year-is-found-not": null,
+    "a-gap-breaks-the-line-rather": null,
+    "every-revealed-reading-the-distance-from": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

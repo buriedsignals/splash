@@ -3,6 +3,7 @@ format: scrolly
 type: hex grid
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Par habitant, ce n'est pas l'Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants (scrolly)
@@ -27,6 +28,66 @@ one after the other (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | Czechia 36.1, Germany 14.8 | **zoom + ring** | back on the map, the camera closes on the two cells and centres them, both ringed with their rates |
 | 6 | the reading line | **pull back** | the grid by rate, its key and the note on Ukraine |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "fill"
+      ],
+      "changes": [
+        "fill"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "re-encode"
+      ],
+      "changes": [
+        "rate"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "reorder"
+      ],
+      "changes": [
+        "rank"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "zoom",
+        "ring"
+      ],
+      "changes": [
+        "pair",
+        "rank"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "pair"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Placed in the reader's pixels**: the designed map and the ranking are both sized to the stage and centred; the
@@ -40,6 +101,26 @@ one after the other (`skills/scrolly/references/directed-type-choreography.md`):
   sibling maps, checking `c.handle` first (`hex-drive.mjs`). Now clean; `verify-live-map-scrolly.mjs` clean
   on all three; swap check on `creme` clean at both viewports (labels only, hexagon and border positions
   match).
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "placed-in-the-reader-pixels",
+    "the-code-inside-its-cell",
+    "every-sentence-is-asserted",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "bin-aggregation-is-computed-once-from": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

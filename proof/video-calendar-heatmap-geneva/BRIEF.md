@@ -4,6 +4,7 @@ size: landscape
 type: calendar-heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 31 jours d'affilée au-dessus de 20 °C à Genève en 2024 (video)
@@ -37,6 +38,75 @@ the curve has become the calendar; then the run.
 | `conclusion` | the year | **pull back** | the colours come back — the whole calendar — the run still outlined; the credit | — |
 | `hold` | the picture | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "start": 51,
+      "duration": 180,
+      "asserts": [
+        "59-warm-days"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "transform"
+      ],
+      "start": 231,
+      "duration": 120,
+      "asserts": []
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "trace",
+        "count"
+      ],
+      "start": 351,
+      "duration": 150,
+      "asserts": [
+        "31-days",
+        "18-july"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 501,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 561,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 20 °C », the counts, the months, the day ticks, the key's breaks. A brisk rhythm: 20,7 s.
@@ -44,3 +114,44 @@ the curve has become the calendar; then the run.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "59-warm-days",
+    "31-days",
+    "18-july",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "59-warm-days"
+    ],
+    "reveal": [],
+    "subject": [
+      "31-days",
+      "18-july"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-day-of-the-period-is": null,
+    "the-bins-are-quantiles-of-the": null,
+    "the-run-length-the-count-above": null,
+    "asserted-per-shot": null
+  }
+}
+```

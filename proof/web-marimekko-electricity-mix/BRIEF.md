@@ -3,6 +3,7 @@ format: web
 type: marimekko
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les deux tuiles de charbon ont presque la même surface, et elles ne disent pas la même chose (web)
@@ -215,3 +216,47 @@ s'annulent. Elles n'apparaissent plus dans le compte ci-dessus parce que la `cre
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024.
 `data.csv` est une copie octet pour octet de `proof/static-marimekko-electricity-mix/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "column-width-is-on-one-unit": null,
+    "every-column-bands-sum-to-that": null,
+    "a-band-whose-share-rounds-to": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

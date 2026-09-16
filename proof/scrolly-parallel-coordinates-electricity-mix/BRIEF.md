@@ -3,6 +3,7 @@ format: scrolly
 type: parallel-coordinates
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Deux pays sur 16 font les deux : plus de 25 % de nucléaire et plus de 20 % d'éolien (scrolly)
@@ -27,6 +28,82 @@ that carry it, then unfolds the rest of the mix (`skills/scrolly/references/dire
 | 5 | Finland and Sweden followed: hydro and bioenergy complete their mix, gas and coal under 2 % each | **follow** | the two lines' values written on every axis |
 | 6 | the reading line | **pull back** | the static plate, every line named once |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "add",
+        "trace"
+      ],
+      "changes": [
+        "floorW",
+        "groupN",
+        "groupW",
+        "span"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter",
+        "highlight"
+      ],
+      "changes": [
+        "accent",
+        "retreat"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "unfold"
+      ],
+      "changes": [
+        "dots",
+        "floorN",
+        "floorW",
+        "groupW",
+        "mark",
+        "retreat",
+        "seats",
+        "span"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "follow"
+      ],
+      "changes": [
+        "follow",
+        "retreat"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "follow",
+        "retreat",
+        "seats"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: the axes stand as a block whose spacing is capped, left of the resting card on
@@ -36,6 +113,25 @@ that carry it, then unfolds the rest of the mix (`skills/scrolly/references/dire
   across another rail — except the two accented lines, which are always named and may cross a rail on their halo.
 - **Every sentence is asserted**: one to three countries clearing both floors, a real group behind each floor, a
   correlation below −0.2, gas and coal each under 2 % and hydro plus bioenergy at least 20 % for the accented countries.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-static-plate-naming-rule-kept",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "each-axis-keeps-its-own-fixed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

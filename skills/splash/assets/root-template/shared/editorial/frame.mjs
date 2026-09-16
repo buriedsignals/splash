@@ -98,16 +98,29 @@ function groundingVerdict(claim) {
  * Markdown emphasis is stripped before the split, because a beat that bolds its gesture cell has
  * not changed which gesture it declared — the same reading `read-direction.mjs` had to learn when
  * `**yes**` was being read as "no".
+ *
+ * FOUR SEPARATORS, ALL FOUR MEASURED IN THE CORPUS, and the plan named only the first. `+` joins
+ * gestures that play together (`zoom + measure`); `→` and `->` join gestures that play in sequence
+ * inside one shot (`whole → split → stand + trace`, six video beats); `, then` does the same in
+ * words. All four name the SAME thing to a reader of the declaration — which atoms this shot or
+ * card plays — and a parser that knew only `+` read a three-atom sequence as one atom five words
+ * long, which `assertNoProse` then refused as a sentence. That refusal was correct about what it
+ * was shown and wrong about the beat.
+ *
+ * A BRACKETED GLOSS IS NOT AN ATOM. `— (furniture)`, `— (stillness)`, `the floor rises (filter as
+ * time)`: the corpus annotates a gesture cell in brackets. The gloss is the journalist's sentence
+ * and belongs in the section's prose, so it is dropped rather than carried into a value block.
  */
 export function parseGesture(cell) {
   const plain = String(cell ?? "")
     .replace(/[*_`]/g, "")
+    .replace(/\s*\([^()]*\)/g, "")
     .trim();
   if (plain === "" || /^[—–-]+$/.test(plain)) return [];
   return plain
-    .split("+")
+    .split(/\s*(?:\+|→|->|,\s*then\b)\s*/i)
     .map((atom) => atom.trim())
-    .filter((atom) => atom !== "");
+    .filter((atom) => atom !== "" && !/^[—–-]+$/.test(atom));
 }
 
 /**

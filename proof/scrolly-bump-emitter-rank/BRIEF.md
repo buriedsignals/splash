@@ -3,6 +3,7 @@ format: scrolly
 type: bump
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Inde est passée du 8e au 3e rang mondial des émetteurs de CO2 (scrolly)
@@ -27,6 +28,71 @@ reaches each one, and it is ringed as it happens (`skills/scrolly/references/dir
 | 5 | two of the passed countries have since left the top ten: the United Kingdom after 2008, Ukraine after 1995 | **highlight** | their lines in the ink, where they stop written |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "trace",
+        "filter"
+      ],
+      "changes": [
+        "retreat",
+        "year"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "exit",
+        "rings"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "exit",
+        "retreat",
+        "rings"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: one row a rank, one column a year, names at the playhead; a line that leaves the
@@ -36,6 +102,25 @@ reaches each one, and it is ringed as it happens (`skills/scrolly/references/dir
 - **Every sentence is asserted**: every year present, India in the top ten throughout, 8th in 1990 and 3rd in 2024,
   the five passes and their years exactly, India 3rd every year from 2009, the United Kingdom and Ukraine the only
   passed countries no longer in the top ten.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "crossings-are-derived-from-the-values",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "rank-at-each-step-is-computed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

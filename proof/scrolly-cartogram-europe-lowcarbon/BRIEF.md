@@ -3,6 +3,7 @@ format: scrolly
 type: cartogram
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 % (scrolly)
@@ -28,6 +29,74 @@ weight, the electricity each country produces, so the reader sees that every mea
 | 4 | each tile sized to its production: Russia 1 209 TWh first, France 562 second, Malta and Luxembourg a dot; by kWh 61,3 % | **resize + count** | every tile becomes a square whose area is its production; "au kWh : 61,3 %" counts up |
 | 5 | three means, all true; each drawing shows one | **compare** | the tiles step back, the three means on one 0–100 % rule |
 | 6 | Ukraine has no 2024 reading; the layout is designed | **pull back + name** | the equal tiles again, Ukraine's hollow tile ringed and named |
+
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "focus",
+        "count"
+      ],
+      "changes": [
+        "area",
+        "subject"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "morph",
+        "count"
+      ],
+      "changes": [
+        "country",
+        "morph",
+        "subject"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "resize",
+        "count"
+      ],
+      "changes": [
+        "production",
+        "size"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "compare"
+      ],
+      "changes": [
+        "rule"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "changes": [
+        "missing",
+        "rule",
+        "size"
+      ]
+    }
+  ]
+}
+```
 
 ## Precision
 
@@ -59,6 +128,30 @@ weight, the electricity each country produces, so the reader sees that every mea
   so the fallback guard sees nothing duplicated. `verify-scrolly.mjs` refused all three at first (`c.handle.map`
   read on a null handle with no key) — fixed the same way as the sibling maps. Now clean;
   `verify-live-map-scrolly.mjs` clean on all three; swap check on `creme` clean at both viewports.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "one-coordinate-space",
+    "the-morph-is-an-affine-map",
+    "the-resize-is-the-same-affine",
+    "names-are-placed-through-the-svg",
+    "on-a-phone-the-frame-is",
+    "every-sentence-is-asserted",
+    "the-map-fills-its-own-row",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "every-country-is-present-at-every": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

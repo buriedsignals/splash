@@ -3,6 +3,7 @@ format: web
 type: slope
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les seize ont tous gagné de l'électricité bas-carbone, un seul a dépassé la France (web)
@@ -154,3 +155,47 @@ both fit; that is a fact about the data and the viewport, not about this composi
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2000 and
 2024. `data.csv` is a byte-for-byte copy of `proof/static-slope-europe-lowcarbon/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "both-end-columns-keep-the-same": null,
+    "the-beat-throws-if-any-category": null,
+    "the-crossing-parameter-t-is-solved": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-line",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

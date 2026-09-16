@@ -3,6 +3,7 @@ format: web
 type: stacked-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Espagne a ajouté plus d'électricité bas-carbone que la France depuis 2000 (web)
@@ -319,3 +320,47 @@ copies before anything was committed.
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2000 and
 2024. `data.csv` is a byte-for-byte copy of `proof/static-stacked-bar-lowcarbon-growth/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "one-zero-based-scale-for-every": null,
+    "shares-sum-to-the-same-asserted": null,
+    "the-four-claims-the-largest-adder": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

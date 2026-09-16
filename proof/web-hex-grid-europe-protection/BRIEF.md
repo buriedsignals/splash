@@ -3,6 +3,7 @@ format: web
 type: hex-grid
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le taux dépend de la case qu'on regarde : le Liechtenstein passe de 23,9 à 1,8 pour 1 000 sans qu'un seul pays bouge (web)
@@ -220,3 +221,52 @@ toujours deux choses que le lecteur voit, et une case isolée comme l'Islande n'
 seule. Ce qui relie les morceaux épars d'un même bloc est ce qui l'a toujours fait et qui se lit :
 **toutes les cases d'un bloc portent le MÊME chiffre**, donc la même teinte. Un refus tient la règle.
 Et la phrase du grain dit maintenant ce que les blocs SONT, en les nommant.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "bin-aggregation-is-computed-from-the": null,
+    "the-cells-are-rigorously-equal-because": null,
+    "area-inflates-by-1-cos-lat": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "open-the-full-table",
+      "input": "tap"
+    },
+    {
+      "order": 3,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

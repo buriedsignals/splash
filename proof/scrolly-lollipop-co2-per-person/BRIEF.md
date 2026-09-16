@@ -3,6 +3,7 @@ format: scrolly
 type: lollipop
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a triplé son CO₂ par personne depuis 2000 ; l'Américain moyen n'en émet plus que 1,7 fois plus (scrolly)
@@ -27,6 +28,69 @@ the one gap the headline is about (`skills/scrolly/references/directed-type-chor
 | 5 | four up, two down | **reveal** | the six return with their triangles and percentages |
 | 6 | the reading line; the six are 63.9 % of the world | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "grow"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "grow"
+      ],
+      "changes": [
+        "after"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter",
+        "move"
+      ],
+      "changes": [
+        "pair"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "measure"
+      ],
+      "changes": [
+        "ratio"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": [
+        "change",
+        "pair",
+        "ratio"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "share"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: six slots, two stems each, head radius with the slot width; on a narrow slot
@@ -35,6 +99,25 @@ the one gap the headline is about (`skills/scrolly/references/directed-type-chor
 - **One hue, two chromas**: the earlier stem is a tint of the later one's hue, floored against the ground.
 - **Every sentence is asserted**: China and the United States among the computed six, China at least ×2.5, the ratio
   from above five to between one and two and a half, the American average down, the six above 55 % of the world.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "one-hue-two-chromas",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "stem-length-is-proportional-to-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

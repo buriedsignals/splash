@@ -3,6 +3,7 @@ format: scrolly
 type: area
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La population mondiale a dépassé 8 milliards en 2022 (scrolly)
@@ -27,6 +28,70 @@ shows the rate the level hides (`skills/scrolly/references/directed-type-choreog
 | 5 | growth peaked at 2.2 % a year in 1964; 0.9 % in 2023 | **rescale** | the area's outline morphs from the population into its annual growth rate, the peak marked |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "trace"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "trace"
+      ],
+      "changes": [
+        "last",
+        "year"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "transform"
+      ],
+      "changes": [
+        "gaps",
+        "last"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "gaps",
+        "rate"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "last",
+        "rate"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: one column a year, 0 to 9 billion up; the rate reuses the same columns on its own
@@ -35,6 +100,27 @@ shows the rate the level hides (`skills/scrolly/references/directed-type-choreog
 - **Every sentence is asserted**: only World rows, every year 1800–2023, the first billion in 1805 and the eighth in
   2022, the second billion over a century and each of the last five 15 years or less, the growth peak in the 1960s and
   the 2023 rate under half of it and still positive.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "every-year-is-read-off-the",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-window-is-a-viewbox-travel": null,
+    "a-word-waits-for-its-own": null,
+    "the-value-axis-keeps-its-zero": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

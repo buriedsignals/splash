@@ -3,6 +3,7 @@ format: scrolly
 type: locator
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La plus grosse centrale bas-carbone d'Europe est en Ukraine (scrolly)
@@ -27,6 +28,65 @@ A locator answers "where"; the scroll starts from the whole continent and closes
 | 5 | Zaporizhzhia, on the Dnieper, 6,000 MW installed | **ring** | the station ringed and named in the accent |
 | 6 | installed capacity, never output | **pull back** | the camera eases back part-way, every label kept |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "isolate"
+      ],
+      "changes": [
+        "country",
+        "tops"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "zoom"
+      ],
+      "changes": [
+        "zoom"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "name"
+      ],
+      "changes": [
+        "places"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "ring"
+      ],
+      "changes": [
+        "subject"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "limit"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Vectors in the equal-area projection**, one camera for land, stations, towns and water; the land and sea take
@@ -39,6 +99,26 @@ A locator answers "where"; the scroll starts from the whole continent and closes
 - **Batch pass (2026-09-16)**: all three directions baked and rendered, `verify-scrolly.mjs` and
   `verify-live-map-scrolly.mjs` clean on all three, a frozen-image-to-live-map swap check on `creme` at
   1280×800 and 375×812 shows only the live map's own place labels added — no other check failed.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "vectors-in-the-equal-area-projection",
+    "the-camera-travels-in-log-scale",
+    "every-sentence-is-asserted",
+    "batch-pass-2026-09-16"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "marker-radius-stays-uniform-across-every": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## The regions
 

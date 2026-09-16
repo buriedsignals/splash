@@ -3,6 +3,7 @@ format: scrolly
 type: dumbbell
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Pologne a gagné 5,0 ans d’espérance de vie depuis 2000, les États-Unis 2,5 (scrolly)
@@ -29,6 +30,73 @@ including the step back the two ends of the plate hide (`skills/scrolly/referenc
 | 5 | sorted by gain, the United States last: +2.5, 79.3 years; only Poland lives shorter | **reorder** + **filter** | the rows travel into gain order, the United States kept, the rest stepping back |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "scrub"
+      ],
+      "changes": [
+        "year"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "reverse"
+      ],
+      "changes": [
+        "ghost",
+        "loss",
+        "year"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "complete"
+      ],
+      "changes": [
+        "gain",
+        "ghost",
+        "loss",
+        "year"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reorder",
+        "filter"
+      ],
+      "changes": [
+        "focus",
+        "sort"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "focus"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: names in a left column, gain (or loss) in a right column, one fitted value
@@ -39,6 +107,25 @@ including the step back the two ends of the plate hide (`skills/scrolly/referenc
 - **Every sentence is asserted**: every year 2000–2023 present for all ten; Japan highest and Poland lowest in 2000;
   all ten above 2000 in 2019; most fell 2019–2021, the United States then Poland the largest losses; all ten gained by
   2023, Poland most and the United States least; Poland then the United States the two lowest in 2023.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "between-two-years-the-head-is",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-gap-length-drawn-between-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

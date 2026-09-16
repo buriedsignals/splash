@@ -295,8 +295,16 @@ export async function harvest(beat, root = ROOT) {
 
 const SECTION_OF = { choreography: /^##\s+The choreography\b/i, precision: /^##\s+Precision\b/i };
 
-/** Inserts `block` at the end of the named section, or appends the section when it has none. */
+/**
+ * Inserts `block` at the end of the named section, or appends the section when it has none.
+ *
+ * A block of that name already in the file is REPLACED rather than joined by a second — the
+ * harvest has to be re-runnable after a parser correction, and `readDerivedBlock` refuses two
+ * blocks of one name rather than choosing between them.
+ */
 export function insertBlock(briefText, name, block) {
+  const existing = new RegExp("```json splash:" + name + "\\r?\\n[\\s\\S]*?\\r?\\n```");
+  if (existing.test(briefText)) return briefText.replace(existing, block);
   const lines = briefText.split(/\r?\n/);
   let start = -1;
   let end = lines.length;
@@ -414,7 +422,7 @@ export async function runWorklist({ root = ROOT, out = WORKLIST } = {}) {
   const lines = [
     "# Declarations owed — the beats a person writes, export by export",
     "",
-    `Emitted by \`bun scripts/migrate-briefs.mjs --worklist\` on ${new Date().toISOString().slice(0, 10)}.`,
+    `Emitted by \`bun scripts/migrate-briefs.mjs --worklist\` on ${new Date().toLocaleDateString("en-CA")}.`,
     "Regenerate it rather than editing it by hand; a beat leaves this list by declaring, not by being struck out.",
     "",
     "Spec: `docs/splash/2026-09-17-editorial-chain-spec.md` (R-D — the choreography is authored, per",

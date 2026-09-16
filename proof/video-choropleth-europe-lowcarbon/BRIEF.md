@@ -4,6 +4,7 @@ type: choropleth
 size: landscape
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Sept pays européens dépassent 94 % d'électricité bas-carbone — six au nord-ouest, et l'Albanie (video)
@@ -151,6 +152,89 @@ Rules the composition keeps:
   easing its own arrival.
 - **Every event but the hold changes the state** (`assertEventStates`).
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": [
+        "reported-value-size-40",
+        "unreported-1-ukraine"
+      ]
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 45,
+      "duration": 72,
+      "asserts": [
+        "class-counts-low-high-8-6",
+        "summing-to-40"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "the floor rises",
+        "name"
+      ],
+      "start": 120,
+      "duration": 144,
+      "asserts": [
+        "counts-at-or-above-each-borne",
+        "stepped-back-33",
+        "named-6",
+        "each-north-or-west-of-albania"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "zoom",
+        "measure"
+      ],
+      "start": 267,
+      "duration": 165,
+      "asserts": [
+        "albania-above-at-100",
+        "measured-neighbours-3",
+        "the-highest-montenegro-59-5-60",
+        "kosovo-the-one-ring-neighbour-without"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 435,
+      "duration": 84,
+      "asserts": [
+        "conclusion-camera-establish-camera"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 519,
+      "duration": 60,
+      "asserts": [
+        "hold-state-conclusion-state",
+        "hold-60-frames"
+      ]
+    }
+  ]
+}
+```
+
 ## Video constraints
 
 - Every word at 30 px or more at 1920 × 1080 — the scrolly's 12–14 px pills become the video
@@ -173,6 +257,71 @@ Rules the composition keeps:
   `<text>` carries the width Bun measured (`data-width`) and Chrome's width must agree.
 - Colours from the direction only: `rampFor`, `plateTints`, `deriveFurniture`, `adjustToContrast`.
   The composition types no size, weight, lead, tracking, family, style, case or colour.
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "reported-value-size-40",
+    "unreported-1-ukraine",
+    "class-counts-low-high-8-6",
+    "summing-to-40",
+    "counts-at-or-above-each-borne",
+    "stepped-back-33",
+    "named-6",
+    "each-north-or-west-of-albania",
+    "albania-above-at-100",
+    "measured-neighbours-3",
+    "the-highest-montenegro-59-5-60",
+    "kosovo-the-one-ring-neighbour-without",
+    "conclusion-camera-establish-camera",
+    "hold-state-conclusion-state",
+    "hold-60-frames"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [
+      "reported-value-size-40",
+      "unreported-1-ukraine"
+    ],
+    "reference": [
+      "class-counts-low-high-8-6",
+      "summing-to-40"
+    ],
+    "reveal": [
+      "counts-at-or-above-each-borne",
+      "stepped-back-33",
+      "named-6",
+      "each-north-or-west-of-albania"
+    ],
+    "subject": [
+      "albania-above-at-100",
+      "measured-neighbours-3",
+      "the-highest-montenegro-59-5-60",
+      "kosovo-the-one-ring-neighbour-without"
+    ],
+    "conclusion": [
+      "conclusion-camera-establish-camera"
+    ],
+    "hold": [
+      "hold-state-conclusion-state",
+      "hold-60-frames"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-state-conclusion-state",
+    "hold-60-frames"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "fills-come-from-maptiler-countries-joined": null,
+    "a-region-with-no-reported-value": null,
+    "the-join-against-real-tiles-check": null,
+    "asserted-per-shot": null
+  }
+}
+```
 
 ## Directions
 

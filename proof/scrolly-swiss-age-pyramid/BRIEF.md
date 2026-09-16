@@ -3,6 +3,7 @@ format: scrolly
 type: population-pyramid
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les femmes passent devant les hommes à partir de 60-64 ans (scrolly)
@@ -28,6 +29,73 @@ tipping point is a change of side rather than a small difference in length
 | 5 | the oldest: 2.1 women per man at 90-94, 2.9 at 95-99, 4.1 at 100+ | **filter** | the pyramid again, the three oldest bands kept and their ratios written |
 | 6 | the reading line | **pull back** | the static plate |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "grow"
+      ],
+      "changes": [
+        "note",
+        "women"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "transform"
+      ],
+      "changes": [
+        "diff",
+        "note"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "mark"
+      ],
+      "changes": [
+        "cross",
+        "note"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "cross",
+        "diff",
+        "note",
+        "old"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "note",
+        "old"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: one band a row, the ages in a centre gutter, one mirrored zero-anchored scale;
@@ -36,6 +104,25 @@ tipping point is a change of side rather than a small difference in length
   while men are at least as many in every younger one.
 - **Every sentence is asserted**: the 21 five-year bands in natural order, all 2023; the tipping band 60-64; the
   women-to-men ratio climbing across the three oldest bands and above four at 100+.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-tipping-point-is-derived-both",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-shared-centre-axis-never-moves": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

@@ -4,6 +4,7 @@ size: landscape
 type: marimekko
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le charbon, 12 % de l’électricité de six pays, tient dans deux colonnes (video)
@@ -40,6 +41,78 @@ across all six: 12,3 % high, and almost all of its length is Germany's and Polan
 | `conclusion` | the whole chart | **pull back + name** | the strip's words go, each piece flies back into its hole, area kept; the bands and totals return; Germany's and Poland's coal ringed; the credit | — |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "split"
+      ],
+      "start": 45,
+      "duration": 105,
+      "asserts": [
+        "the-six-widths-sum-to-the",
+        "one-px-per-twh"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 150,
+      "duration": 120,
+      "asserts": [
+        "every-column-bands-sum-to-100"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "pour"
+      ],
+      "start": 270,
+      "duration": 180,
+      "asserts": [
+        "strip-height-12-3-of-100",
+        "each-piece-area-its-cell",
+        "germany-poland-99-5-of-the"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 450,
+      "duration": 90,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 540,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 1 638 TWh », the six names, the six totals, « 2024 », the nine source names, « Allemagne », « Pologne », « 12,3 % ». No
@@ -48,3 +121,51 @@ standfirst, no reading line, no share printed in a cell.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-six-widths-sum-to-the",
+    "one-px-per-twh",
+    "every-column-bands-sum-to-100",
+    "strip-height-12-3-of-100",
+    "each-piece-area-its-cell",
+    "germany-poland-99-5-of-the",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-six-widths-sum-to-the",
+      "one-px-per-twh"
+    ],
+    "reveal": [
+      "every-column-bands-sum-to-100"
+    ],
+    "subject": [
+      "strip-height-12-3-of-100",
+      "each-piece-area-its-cell",
+      "germany-poland-99-5-of-the"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "column-width-is-on-one-unit": null,
+    "each-poured-piece-area-equals-its": null,
+    "the-narrowest-column-stays-wide-enough": null,
+    "asserted-per-shot": null
+  }
+}
+```

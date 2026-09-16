@@ -3,6 +3,7 @@ format: web
 type: boxplot
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le CO₂ par personne des Français a culminé dans les années 1970 (web)
@@ -178,3 +179,47 @@ full answer on `aria-label`, baked in at build time.
 
 Global Carbon Budget 2025, via Our World in Data · France, 1950–2024, 75 annual readings. `data.csv`
 is a byte-for-byte copy of `proof/more-boxplot-france-co2-decades/data.csv`, re-parsed here.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-summary-is-computed-from-the": null,
+    "a-partial-category-states-its-n": null,
+    "the-overlap-counts-the-sentence-reports": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

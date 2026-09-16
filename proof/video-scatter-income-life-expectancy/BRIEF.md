@@ -4,6 +4,7 @@ size: landscape
 type: scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Au-delà de 30 000 $ par personne, l'espérance de vie tient dans une bande 3 fois plus étroite (video)
@@ -42,6 +43,83 @@ and fits three times.
 | `conclusion` | the whole cloud | **pull back** | the dots unfold back to their incomes, the copies and « 3 fois » go; the credit | nothing stepped back, every dot on its seat, the bars and their values still there |
 | `hold` | the cloud | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 54,
+      "asserts": [
+        "each-dot-at-its-life-expectancy",
+        "no-two-dots-overlapping-in-the"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "unfold",
+        "count"
+      ],
+      "start": 105,
+      "duration": 150,
+      "asserts": [
+        "a-dot-height-never-changes",
+        "165-counted"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "filter",
+        "fold",
+        "stack"
+      ],
+      "start": 255,
+      "duration": 210,
+      "asserts": [
+        "124-41-on-each-side",
+        "bar-heights-the-spans-on-the",
+        "copy-height-the-short-bar",
+        "three-copies-the-rounded-ratio"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 465,
+      "duration": 75,
+      "asserts": [
+        "nothing-stepped-back",
+        "every-dot-on-its-seat",
+        "the-bars-and-their-values-still"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 540,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The ticks, two axis names, « 30 000 $ », the count, « 41 ans », « 14 ans », « 3 fois ». 20 s.
@@ -49,3 +127,62 @@ The ticks, two axis names, « 30 000 $ », the count, « 41 ans », « 14 ans »
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "each-dot-at-its-life-expectancy",
+    "no-two-dots-overlapping-in-the",
+    "a-dot-height-never-changes",
+    "165-counted",
+    "124-41-on-each-side",
+    "bar-heights-the-spans-on-the",
+    "copy-height-the-short-bar",
+    "three-copies-the-rounded-ratio",
+    "nothing-stepped-back",
+    "every-dot-on-its-seat",
+    "the-bars-and-their-values-still",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "each-dot-at-its-life-expectancy",
+      "no-two-dots-overlapping-in-the"
+    ],
+    "reveal": [
+      "a-dot-height-never-changes",
+      "165-counted"
+    ],
+    "subject": [
+      "124-41-on-each-side",
+      "bar-heights-the-spans-on-the",
+      "copy-height-the-short-bar",
+      "three-copies-the-rounded-ratio"
+    ],
+    "conclusion": [
+      "nothing-stepped-back",
+      "every-dot-on-its-seat",
+      "the-bars-and-their-values-still"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "both-axes-keep-the-same-fixed": null,
+    "the-break-is-a-declared-editorial": null,
+    "the-bar-heights-are-the-real": null,
+    "asserted-per-shot": null
+  }
+}
+```

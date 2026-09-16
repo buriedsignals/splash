@@ -4,6 +4,7 @@ size: landscape
 type: boxplot
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les émissions de CO2 par personne en France ont culminé dans les années 1970 (video)
@@ -45,6 +46,81 @@ then **compares** the summaries with one mark sliding from median to median.
 | `conclusion` | the whole box plot | **pull back** | the walking median dissolves into the 2020s' own; the credit | every box at its place, the readings beside it |
 | `hold` | the box plot | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 51,
+      "duration": 75,
+      "asserts": [
+        "every-reading-at-y-value",
+        "2020-24-fills-half-its-slot"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "gather",
+        "split"
+      ],
+      "start": 126,
+      "duration": 165,
+      "asserts": [
+        "quartiles-and-whiskers-from-summarizedecade",
+        "the-ring-on-1980-9-54",
+        "the-only-reading-past-a-whisker"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "compare"
+      ],
+      "start": 291,
+      "duration": 165,
+      "asserts": [
+        "two-climbs-then-five-drops",
+        "each-landing-on-the-next-median"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back"
+      ],
+      "start": 456,
+      "duration": 60,
+      "asserts": [
+        "every-box-at-its-place",
+        "the-readings-beside-it"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 516,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The ticks (the unit « t » on the top one), the decade names (the partial one named by its years, « 2020–24 »), « 10,0 »
@@ -53,3 +129,58 @@ and « 4,3 ». No standfirst, no reading line, no « n = »: the half-filled slo
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-reading-at-y-value",
+    "2020-24-fills-half-its-slot",
+    "quartiles-and-whiskers-from-summarizedecade",
+    "the-ring-on-1980-9-54",
+    "the-only-reading-past-a-whisker",
+    "two-climbs-then-five-drops",
+    "each-landing-on-the-next-median",
+    "every-box-at-its-place",
+    "the-readings-beside-it",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-reading-at-y-value",
+      "2020-24-fills-half-its-slot"
+    ],
+    "reveal": [
+      "quartiles-and-whiskers-from-summarizedecade",
+      "the-ring-on-1980-9-54",
+      "the-only-reading-past-a-whisker"
+    ],
+    "subject": [
+      "two-climbs-then-five-drops",
+      "each-landing-on-the-next-median"
+    ],
+    "conclusion": [
+      "every-box-at-its-place",
+      "the-readings-beside-it"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "quartiles-the-tukey-fence-and-the": null,
+    "a-ringed-outlier-is-a-real": null,
+    "the-number-of-readings-the-count": null,
+    "asserted-per-shot": null
+  }
+}
+```

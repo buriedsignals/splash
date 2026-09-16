@@ -4,6 +4,7 @@ size: landscape
 type: bullet
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Pologne : +17,3 points de bas-carbone depuis 2015, toujours la seule sous la moitié (video)
@@ -37,6 +38,77 @@ line between its low-carbon part and its fossil rest moves — then the rows re-
 | `conclusion` | still the only one under half | **reference line + name** | the 50 % line drops through the whole chart; Poland alone ends short of it, ringed; the credit | the only one under 50 % |
 | `hold` | the ranking | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal"
+      ],
+      "start": 51,
+      "duration": 75,
+      "asserts": [
+        "the-2015-order"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "move the frontier",
+        "count"
+      ],
+      "start": 126,
+      "duration": 120,
+      "asserts": [
+        "every-gain"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "reorder"
+      ],
+      "start": 246,
+      "duration": 150,
+      "asserts": [
+        "the-order-of-gain"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "reference line",
+        "name"
+      ],
+      "start": 396,
+      "duration": 90,
+      "asserts": [
+        "the-only-one-under-50"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 486,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The unit, the three key words, the names, the gains. A brisk rhythm: 18,2 s.
@@ -44,3 +116,48 @@ The unit, the three key words, the names, the gains. A brisk rhythm: 18,2 s.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "the-2015-order",
+    "every-gain",
+    "the-order-of-gain",
+    "the-only-one-under-50",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "the-2015-order"
+    ],
+    "reveal": [
+      "every-gain"
+    ],
+    "subject": [
+      "the-order-of-gain"
+    ],
+    "conclusion": [
+      "the-only-one-under-50"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-target-marker-position-is-computed": null,
+    "each-row-parts-sum-to-the": null,
+    "the-final-order-is-the-asserted": null,
+    "asserted-per-shot": null
+  }
+}
+```

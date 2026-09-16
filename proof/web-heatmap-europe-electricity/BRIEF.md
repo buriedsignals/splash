@@ -3,6 +3,7 @@ format: web
 type: heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 7 pays européens tirent plus de 94 % de leur électricité de sources bas-carbone (web)
@@ -166,3 +167,47 @@ cells" goes red in all three directions and in both scripting states, and nothin
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024,
 40 European countries measured, 7 above the floor. `data.csv` is a byte-for-byte copy of
 `proof/static-heatmap-europe-electricity/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-colour-scale-domain-is-fixed": null,
+    "the-routes-the-claim-names-are": null,
+    "the-survivors-share-of-each-row": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "filter-to-a-subset",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

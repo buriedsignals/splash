@@ -4,6 +4,7 @@ size: landscape
 type: bump
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂ (video)
@@ -36,6 +37,75 @@ it as the clock runs, every line in the top ten named at its tip, so each pass h
 | `conclusion` | the whole ranking | **release** | every line comes back; the credit | — |
 | `hold` | the ranking | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "india-8th-in-1990"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "track",
+        "trace",
+        "name"
+      ],
+      "start": 111,
+      "duration": 270,
+      "asserts": [
+        "india-3rd-in-2024",
+        "every-pass"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "pull back",
+        "filter"
+      ],
+      "start": 381,
+      "duration": 90,
+      "asserts": [
+        "the-three-still-in-the-top"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "release"
+      ],
+      "start": 471,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 531,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 The names, the year, India's rank. A brisk rhythm: 19,7 s.
@@ -43,3 +113,47 @@ The names, the year, India's rank. A brisk rhythm: 19,7 s.
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "india-8th-in-1990",
+    "india-3rd-in-2024",
+    "every-pass",
+    "the-three-still-in-the-top",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "india-8th-in-1990"
+    ],
+    "reveal": [
+      "india-3rd-in-2024",
+      "every-pass"
+    ],
+    "subject": [
+      "the-three-still-in-the-top"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "rank-at-each-period-is-computed": null,
+    "every-pass-named-in-the-words": null,
+    "the-tracking-camera-zoom-is-a": null,
+    "asserted-per-shot": null
+  }
+}
+```

@@ -3,6 +3,7 @@ format: scrolly
 type: heatmap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le charbon a reculé dans les douze pays européens qui en dépendaient le plus ; seule la Pologne reste au-dessus de la moitié (scrolly)
@@ -28,6 +29,72 @@ rows into a ranking (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | sorted by fall, the United Kingdom first at −98 %; Poland −38 % | **reorder** | the rows travel into their relative fall, the fall written in the value column |
 | 6 | the twelve are a selection by 2010 dependence, not a picture of Europe | **pull back** | the 2010 order again, the 2010 values beside the 2024 ones |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "scrub",
+        "count"
+      ],
+      "changes": [
+        "reach"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "crisis",
+        "reach"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "crisis",
+        "focus",
+        "reach"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reorder"
+      ],
+      "changes": [
+        "focus",
+        "sort"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "both",
+        "sort"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Five classes whose breaks are the thresholds the cards read** (10 %, 25 %, 50 %, 75 %); the palest stop walks from
@@ -37,6 +104,25 @@ rows into a ranking (`skills/scrolly/references/directed-type-choreography.md`):
 - **Every sentence is asserted**: twelve countries, every year 2010–2024 present, Poland first in 2010, the countries
   under 10 % in 2021 counted, exactly three jumps above 3 points in 2022 and Greece alone back over 10 %, all twelve
   below 2010 in 2024, six under 10 %, Poland alone above half, the United Kingdom the steepest relative fall.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "five-classes-whose-breaks-are-the",
+    "laid-out-in-the-reader-pixels",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-colour-scale-domain-is-fixed": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

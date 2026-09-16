@@ -3,6 +3,7 @@ format: scrolly
 type: connected scatter
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les 16 pays ont tous nettoyé leur électricité, 5 pèsent pourtant moins dans le bas-carbone européen (scrolly)
@@ -28,6 +29,72 @@ subject in the accent. The scroll tells the subject with its own gestures
 | 5 | closed onto 0–12 %, the crowd near the origin opens: 11 of the 14 gained weight | **rescale** | the x domain closes, France and Germany leave the frame, the ticks change set, every small country named |
 | 6 | the plate's reading line | **pull back** | the whole axis again, France in the accent |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "trace",
+        "count"
+      ],
+      "changes": [
+        "travel",
+        "up"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "filter"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "focus",
+        "count"
+      ],
+      "changes": [
+        "subject"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "filter",
+        "subject",
+        "zoom"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "subject",
+        "zoom"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Circles stay circles**: the field is laid out in the plot's own pixels on every paint
@@ -39,6 +106,26 @@ subject in the accent. The scroll tells the subject with its own gestures
   ticks and the x name below it; every row wraps on a phone instead of pushing the plot past the frame.
 - **Every sentence is asserted**: all cleaner, a minority lighter, France lighter and producing more, France
   the heaviest in 2000, and exactly the two heaviest outside the close-up's domain.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "circles-stay-circles",
+    "names-are-seated-never-piled",
+    "counters-and-axis-names-in-rows",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "the-path-drawn-order-matches-the": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

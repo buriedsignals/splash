@@ -3,6 +3,7 @@ format: web
 type: bump
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Inde est passée du 8e au 3e rang mondial des émetteurs de CO₂ (web)
@@ -241,3 +242,47 @@ the three `annotation-reads-over-what-it-crosses` findings name `static-bar-top-
 
 Global Carbon Budget 2025, via Our World in Data · 1990–2024. `data.csv` is a byte-for-byte copy of
 `proof/static-bump-emitter-rank/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "ranks-are-computed-over-all-209": null,
+    "the-beat-throws-if-the-subject": null,
+    "the-drawn-set-is-a-stated": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

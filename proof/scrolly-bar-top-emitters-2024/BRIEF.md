@@ -3,6 +3,7 @@ format: scrolly
 type: bar and column
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a émis plus de CO₂ en 2024 que les cinq pays suivants réunis (scrolly)
@@ -27,6 +28,67 @@ sum out as lengths (`skills/scrolly/references/directed-type-choreography.md`):
 | 5 | the next five end to end: 11.7, less than China alone | **stack** | five bars slide end to end into the second row, China's length ruled down, the rest stepping back |
 | 6 | territorial accounting | **pull back** | the ten and the others, every value written |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "regroup"
+      ],
+      "changes": [
+        "rest",
+        "spread"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "reveal in order"
+      ],
+      "changes": [
+        "rank"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "highlight"
+      ],
+      "changes": [
+        "subject"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "stack"
+      ],
+      "changes": [
+        "stack"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "stack"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Bars in rows at every width**, so no name is ever rotated or cut; one value scale from zero for every picture.
@@ -35,6 +97,26 @@ sum out as lengths (`skills/scrolly/references/directed-type-choreography.md`):
 - **Every sentence is asserted**: every country's value numeric, a French name for each of the ten, China first (the
   cards agree "seule" with it), the search behind the headline finding five, the 205 others below China, the ten's
   share of the world total a share.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "bars-in-rows-at-every-width",
+    "laid-out-in-the-reader-pixels",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "one-value-scale-from-zero-across": null,
+    "a-regrouped-bar-length-is-a": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

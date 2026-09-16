@@ -4,6 +4,7 @@ size: landscape
 type: population-pyramid
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les femmes passent devant les hommes à partir de 60-64 ans (video)
@@ -43,6 +44,80 @@ change places. The video shows it by **comparing the halves on one side**, **kee
 | `conclusion` | the whole pyramid, rebuilt | **pull back + rebuild** | the camera returns ×1; the shared part grows back out of the spine on both sides, pushing each difference out to its bar's end — the whole pyramid, the rule kept; the credit | every band back to its two lengths |
 | `hold` | the pyramid | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 51,
+      "duration": 60,
+      "asserts": [
+        "every-band-two-lengths-on-one"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "compare",
+        "split"
+      ],
+      "start": 111,
+      "duration": 150,
+      "asserts": [
+        "each-difference"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "zoom",
+        "name"
+      ],
+      "start": 261,
+      "duration": 120,
+      "asserts": [
+        "men-ahead-to-55-59",
+        "women-from-60-64",
+        "5-136-and-841"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "rebuild"
+      ],
+      "start": 381,
+      "duration": 90,
+      "asserts": [
+        "every-band-back-to-its-two"
+      ]
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 471,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « Hommes », « Femmes », the band names, the ticks, « ×10 » and the two values at the crossing. No standfirst, no « Femmes
@@ -51,3 +126,52 @@ devant dès 60-64 » callout: the differences change side under the rule, and th
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-band-two-lengths-on-one",
+    "each-difference",
+    "men-ahead-to-55-59",
+    "women-from-60-64",
+    "5-136-and-841",
+    "every-band-back-to-its-two",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-band-two-lengths-on-one"
+    ],
+    "reveal": [
+      "each-difference"
+    ],
+    "subject": [
+      "men-ahead-to-55-59",
+      "women-from-60-64",
+      "5-136-and-841"
+    ],
+    "conclusion": [
+      "every-band-back-to-its-two"
+    ],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "the-shared-centre-never-moves-and": null,
+    "each-difference-drawn-is-the-absolute": null,
+    "the-bands-sum-to-the-asserted": null,
+    "asserted-per-shot": null
+  }
+}
+```

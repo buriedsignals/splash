@@ -3,6 +3,7 @@ format: web
 type: pictogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Seize pays sur quarante sont au-dessus de 75 % bas-carbone, et ils ne font qu'un tiers de l'électricité (web)
@@ -433,3 +434,47 @@ Ember, Energy Institute — Statistical Review of World Energy (2025), via Our W
 is the sum of the file's own six low-carbon columns; fossil is the sum of its three fossil columns;
 a country's share is the first over the two. Ukraine reports no 2024 generation and is not drawn —
 a unit grid counts things, and a square for a country with no reading would be counted.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "one-icon-always-equals-the-same": null,
+    "the-beat-refuses-to-render-if": null,
+    "the-fractional-remainder-is-clipped-at": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

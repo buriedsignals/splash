@@ -19,6 +19,10 @@
  *     forbid asserting the claim's datum when the grounding is unverifiable" red.
  *   - make `parseGesture` split on whitespace rather than `+` → "should read a gesture cell as its
  *     atoms" red.
+ *   - drop `→` from `parseGesture`'s separator class → "should read a sequence of atoms however the
+ *     beat joins them" red (2026-09-17). Restored → green.
+ *   - keep the bracketed gloss instead of dropping it → "should drop a gesture cell's bracketed
+ *     gloss" red (2026-09-17). Restored → green.
  *   - have `choreographyFrame` carry the worked example's own cards into `constrains` → "should
  *     return no choreography of its own" red, naming the key.
  */
@@ -57,6 +61,33 @@ describe("parseGesture", () => {
     expect(parseGesture("—")).toEqual([]);
     expect(parseGesture("")).toEqual([]);
     expect(parseGesture("–")).toEqual([]);
+  });
+
+  // THE PLAN NAMED ONE SEPARATOR; THE CORPUS WRITES FOUR. Six video beats join their gesture atoms
+  // with an arrow rather than a plus — a sequence inside one shot rather than atoms playing
+  // together — and one writes it in words. Read with `+` alone, `whole → split → stand` was one
+  // atom five words long, which `assertNoProse` then refused as a sentence: correct about what it
+  // was shown, wrong about the beat.
+  it("should read a sequence of atoms however the beat joins them", () => {
+    expect(parseGesture("**whole → split → stand + trace**")).toEqual([
+      "whole",
+      "split",
+      "stand",
+      "trace",
+    ]);
+    expect(parseGesture("fill -> filter")).toEqual(["fill", "filter"]);
+    expect(parseGesture("**the floor rises**, then **name**")).toEqual([
+      "the floor rises",
+      "name",
+    ]);
+  });
+
+  // A BRACKETED GLOSS IS THE JOURNALIST'S SENTENCE, NOT AN ATOM. `— (furniture)`, `— (stillness)`
+  // and `the floor rises (filter as time)` are all real cells in the video corpus.
+  it("should drop a gesture cell's bracketed gloss rather than carry it into a block", () => {
+    expect(parseGesture("— (furniture)")).toEqual([]);
+    expect(parseGesture("— (stillness)")).toEqual([]);
+    expect(parseGesture("**the floor rises** (filter as time)")).toEqual(["the floor rises"]);
   });
 });
 

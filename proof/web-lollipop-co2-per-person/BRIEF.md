@@ -3,6 +3,7 @@ format: web
 type: lollipop
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a triplé son CO₂ par personne ; l'écart avec l'Américain moyen est passé de 7,5 à 1,7 (web)
@@ -168,3 +169,47 @@ The value axis includes zero: `yTicks[0] !== 0` throws, and the ticks are 0 · 5
 
 Global Carbon Budget 2025 · population 2023, via Our World in Data. `data.csv` is a byte-for-byte copy
 of `proof/static-lollipop-co2-per-person/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "one-zero-based-value-scale-for": null,
+    "the-six-are-a-computed-rule": null,
+    "every-revealed-ratio-is-derived-in": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```

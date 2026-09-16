@@ -3,6 +3,7 @@ format: scrolly
 type: diverging stacked bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le nucléaire tient le centre : en France il pèse plus que le fossile et le renouvelable réunis (scrolly)
@@ -27,6 +28,69 @@ The form's own move is re-anchoring a 100 % bar on its neutral; the scroll perfo
 | 5 | France: 67.7 % nuclear against 5.1 + 27.2 = 32.3 % | **compare** | France climbs to the first row and opens two lanes: nuclear above, fossil and renewables laid end to end below from the same start |
 | 6 | the reading line | **pull back** | every row and total, France in the accent |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "re-anchor"
+      ],
+      "changes": [
+        "centre"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter",
+        "name"
+      ],
+      "changes": [
+        "left"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "filter",
+        "name"
+      ],
+      "changes": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "compare"
+      ],
+      "changes": [
+        "compare",
+        "right"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "all",
+        "compare"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Laid out in the reader's pixels**: the name and total columns as wide as their widest text; below 520 px
@@ -38,6 +102,27 @@ The form's own move is re-anchoring a 100 % bar on its neutral; the scroll perfo
 - **Every sentence is asserted**: every source classified, each row summing to 100 %, the neutral outweighing
   both sides in the subject, the rightmost country carrying no nuclear.
 - The legend is its own row under the chart: each camp's name, its ramp from the centre outward, nuclear.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "laid-out-in-the-reader-pixels",
+    "the-comparison-climbs-to-the-first",
+    "the-neutral-is-floored",
+    "every-sentence-is-asserted",
+    "the-legend-is-its-own-row"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "segment-shares-sum-to-the-same": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

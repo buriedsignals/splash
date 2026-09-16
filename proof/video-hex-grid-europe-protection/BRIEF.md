@@ -4,6 +4,7 @@ size: landscape
 type: hex-grid
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Par habitant, ce n'est pas l'Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants (video)
@@ -56,6 +57,75 @@ ranking turning over in front of the viewer.
 | `conclusion` | — | — | the credit | — |
 | `hold` | the grid per inhabitant | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "morph"
+      ],
+      "start": 51,
+      "duration": 144,
+      "asserts": [
+        "grid-data-both-ways",
+        "every-country-lands-on-its-hexagon"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "reveal",
+        "name"
+      ],
+      "start": 201,
+      "duration": 120,
+      "asserts": [
+        "deu-largest-by-count"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "rescale",
+        "name"
+      ],
+      "start": 327,
+      "duration": 180,
+      "asserts": [
+        "cze-leads-per-inhabitant",
+        "deu-rank-5"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [],
+      "start": 507,
+      "duration": 60,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 567,
+      "duration": 90,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 No standfirst, no reading line, no note on the origin beyond « origine » in the key.
@@ -63,3 +133,49 @@ No standfirst, no reading line, no note on the origin beyond « origine » in th
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "grid-data-both-ways",
+    "every-country-lands-on-its-hexagon",
+    "deu-largest-by-count",
+    "cze-leads-per-inhabitant",
+    "deu-rank-5",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "grid-data-both-ways",
+      "every-country-lands-on-its-hexagon"
+    ],
+    "reveal": [
+      "deu-largest-by-count"
+    ],
+    "subject": [
+      "cze-leads-per-inhabitant",
+      "deu-rank-5"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "bin-aggregation-is-computed-once-from": null,
+    "the-designed-grid-is-checked-both": null,
+    "the-projected-svg-shapes-are-tested": null,
+    "asserted-per-shot": null
+  }
+}
+```

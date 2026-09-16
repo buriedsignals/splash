@@ -4,6 +4,7 @@ size: landscape
 type: diverging-stacked-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En France, le nucléaire pèse plus que le fossile et le renouvelable réunis (video)
@@ -39,6 +40,74 @@ the six whole mixes laid from one left edge, slides each, keeping every length, 
 | `conclusion` | the whole chart | **pull back + name** | France's sides slide back and the bar closes; the five return; France's nuclear ringed; the credit | — |
 | `hold` | the answer | — | nothing | hold = conclusion |
 
+```json splash:choreography
+{
+  "kind": "time",
+  "fps": 30,
+  "shots": [
+    {
+      "shot": "establish",
+      "gesture": [],
+      "start": 0,
+      "duration": 45,
+      "asserts": []
+    },
+    {
+      "shot": "reference",
+      "gesture": [
+        "reveal in order"
+      ],
+      "start": 45,
+      "duration": 90,
+      "asserts": [
+        "every-row-sums-to-100"
+      ]
+    },
+    {
+      "shot": "reveal",
+      "gesture": [
+        "re-anchor"
+      ],
+      "start": 135,
+      "duration": 120,
+      "asserts": [
+        "every-nuclear-centred-on-the-anchor"
+      ]
+    },
+    {
+      "shot": "subject",
+      "gesture": [
+        "compare"
+      ],
+      "start": 255,
+      "duration": 180,
+      "asserts": [
+        "67-7-5-1-27-2"
+      ]
+    },
+    {
+      "shot": "conclusion",
+      "gesture": [
+        "pull back",
+        "name"
+      ],
+      "start": 435,
+      "duration": 90,
+      "asserts": []
+    },
+    {
+      "shot": "hold",
+      "gesture": [],
+      "start": 525,
+      "duration": 60,
+      "asserts": [
+        "hold-conclusion"
+      ]
+    }
+  ]
+}
+```
+
 ## Write as little as the picture allows
 
 « 2024 », « 100 % », « Fossile », « Nucléaire », « Renouvelable », the names, the totals, the nuclear shares, « 32,3 ».
@@ -47,3 +116,45 @@ No standfirst, no reading line, no axis ticks (every length carries its value).
 ## Directions
 
 `creme`, `nocturne`, `rapport` — `renders/<id>.mp4`, `renders/<id>-final-frame.png`, `renders/<id>-props.json`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "time",
+  "rounding": null,
+  "asserts": [
+    "every-row-sums-to-100",
+    "every-nuclear-centred-on-the-anchor",
+    "67-7-5-1-27-2",
+    "hold-conclusion"
+  ],
+  "values": {},
+  "perShot": {
+    "establish": [],
+    "reference": [
+      "every-row-sums-to-100"
+    ],
+    "reveal": [
+      "every-nuclear-centred-on-the-anchor"
+    ],
+    "subject": [
+      "67-7-5-1-27-2"
+    ],
+    "conclusion": [],
+    "hold": [
+      "hold-conclusion"
+    ]
+  },
+  "onlyOnHold": [
+    "hold-conclusion"
+  ],
+  "covers": {
+    "claim-datum": null,
+    "every-row-sums-to-the-same": null,
+    "one-scale-pixels-per-point-for": null,
+    "the-compared-sum-is-arithmetic-on": null,
+    "asserted-per-shot": null
+  }
+}
+```

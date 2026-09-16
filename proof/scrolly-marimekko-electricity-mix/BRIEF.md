@@ -3,6 +3,7 @@ format: scrolly
 type: marimekko
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le charbon fait 12 % de l'électricité de ces six pays, et il tient dans deux colonnes (scrolly)
@@ -27,6 +28,69 @@ source the headline is about (`skills/scrolly/references/directed-type-choreogra
 | 5 | every source back in its place | **reverse** | the bands return, the sources named again |
 | 6 | the reading line | **pull back** | the static plate, shares written inside the bands that hold them |
 
+```json splash:choreography
+{
+  "kind": "scroll",
+  "cards": [
+    {
+      "card": 1,
+      "gesture": [
+        "reveal"
+      ],
+      "changes": []
+    },
+    {
+      "card": 2,
+      "gesture": [
+        "rescale"
+      ],
+      "changes": [
+        "width"
+      ]
+    },
+    {
+      "card": 3,
+      "gesture": [
+        "filter"
+      ],
+      "changes": [
+        "tracked"
+      ]
+    },
+    {
+      "card": 4,
+      "gesture": [
+        "gather"
+      ],
+      "changes": [
+        "labels",
+        "stack"
+      ]
+    },
+    {
+      "card": 5,
+      "gesture": [
+        "reverse"
+      ],
+      "changes": [
+        "labels",
+        "stack",
+        "tracked"
+      ]
+    },
+    {
+      "card": 6,
+      "gesture": [
+        "pull back"
+      ],
+      "changes": [
+        "pct"
+      ]
+    }
+  ]
+}
+```
+
 ## Precision
 
 - **Area kept**: the gathered column is the coal share of the plot wide and the whole plot tall, so a TWh is the same
@@ -36,6 +100,25 @@ source the headline is about (`skills/scrolly/references/directed-type-choreogra
   their column when it is too narrow to hold them.
 - **Every sentence is asserted**: every source stacked, the bands summing to each column, coal at 12 % of the six, the
   two largest holders at 95 % of the coal or more.
+
+```json splash:precision
+{
+  "kind": "scroll",
+  "rounding": null,
+  "asserts": [
+    "area-kept",
+    "laid-out-in-the-reader-pixels",
+    "every-sentence-is-asserted"
+  ],
+  "values": {},
+  "perCard": {},
+  "covers": {
+    "claim-datum": null,
+    "both-axes-column-width-and-tile": null,
+    "asserted-per-card": null
+  }
+}
+```
 
 ## Directions
 

@@ -3,6 +3,7 @@ format: web
 type: histogram
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 127 pays sur 213 émettent moins de 4 tonnes de CO₂ par personne (web)
@@ -187,3 +188,47 @@ by looking at the three captures with the band operated.
 
 Global Carbon Budget 2025, via Our World in Data · 2023, 213 countries. `data.csv` is a byte-for-byte
 copy of `proof/static-carbon-footprint-spread/data.csv`.
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-threshold-the-headline-counts-must": null,
+    "bin-edges-are-fixed-across-every": null,
+    "the-beat-throws-if-the-share": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
+
+## The choreography
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
