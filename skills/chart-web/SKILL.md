@@ -165,7 +165,7 @@ all — their generality is asserted, not demonstrated.
 | `brush.ts` | chooses WHICH SPAN OF AN AXIS is selected — a named band between two bounds, drawn on the rail it cuts | parallel coordinates |
 | `carry.ts` | chooses WHICH MEMBER OF A REPEATED SET is carried into every other member's frame — one series stamped into every panel of a facet grid, unchanged | small multiples |
 | `count.ts` | chooses WHICH OF A CLOSED SHAPE'S TERMS ARE COUNTED IN IT, and what the outline becomes when it closes over the rest | radar |
-| `cutoff.ts` | chooses WHERE THE CLAIM'S OWN LINE IS DRAWN, and which region of the plate that line selects | calendar heatmap |
+| `cutoff.ts` | chooses WHERE THE CLAIM'S OWN LINE IS DRAWN, and which region of the plate that line selects | calendar heatmap, heatmap (`proof/web-heatmap-coal-share-europe`, the second worked example under that type — see `references/types/heatmap.md`) |
 | `datum.ts` | chooses WHAT THE PICTURE IS MEASURED FROM — which level is subtracted before anything is drawn, i.e. where a diverging zero sits | diverging bar |
 | `descend.ts` | chooses WHAT BECOMES THE WHOLE — one branch of a hierarchy given the entire frame, children re-laid at a scale they never had, and a way back out | treemap |
 | `entrance.ts` | *not a control*: the beat's ARRIVAL, in the video's own six-event vocabulary rather than a second grammar | read off the markup, never declared |

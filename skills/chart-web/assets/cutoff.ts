@@ -11,13 +11,23 @@
 //
 // WHY A FOURTH FILE, and the three refusals that made it one.
 //
-//   - A FILTER cannot do it. `filter.ts`'s own header names the case — "a threshold → keys:
-//     rows.filter(r => r.value >= 5e6)" — and a filter's whole mechanism is that the marks outside
-//     the set LEAVE. A cutoff removes nothing: every datum stays drawn, in the ink it always had,
-//     and what moves is the outline around the part of the plate the line selects. On a type whose
-//     one channel IS the filtered variable — a heatmap, a calendar heatmap, a choropleth — filtering
-//     on it deletes the bottom of the chart's own ramp, and `directed-interaction.md` reaches for a
-//     filter only when the part is ORTHOGONAL to the encoded variable.
+//   - A FILTER cannot do it WHEN THE COLUMNS THEMSELVES ARE THE AXIS THE LINE MOVES ALONG.
+//     `filter.ts`'s own header names the threshold case — "a threshold → keys: rows.filter(r =>
+//     r.value >= 5e6)" — and a filter's whole mechanism is that the marks outside the set LEAVE. On
+//     an unordered grid that is exactly right: `references/types/heatmap.md`'s worked example
+//     (`proof/web-heatmap-europe-electricity`) spends a threshold-shaped `filter.ts` on nine
+//     unordered source columns, and a survivor list is the correct answer to "which of these still
+//     matter". It stops being right the moment the columns are CONSECUTIVE and the encoded variable
+//     is the one both a filter and a cutoff would move along — `proof/web-heatmap-coal-share-europe`'s
+//     fifteen years, `proof/web-calendar-heatmap-geneva`'s days. There, filtering on it deletes the
+//     bottom of the chart's own ramp AND erases the shape a reader needs: a cell that crosses back
+//     above the line (a relapse) just leaves with the rest, and nothing on the page marks that it was
+//     ever there to leave. A cutoff removes nothing: every datum stays drawn, in the ink it always
+//     had, and what moves is the outline around the part of the plate the line selects — which is
+//     also why it, and not a filter, can draw a run's ragged right edge as the answer.
+//     `directed-interaction.md` reaches for a filter only when the part taken away is ORTHOGONAL to
+//     the encoded variable; a same-channel threshold on an ORDERED axis is not, and that is the
+//     precise test, not the type's name.
 //   - A LEVEL cannot do it. `level.ts`'s primitive is a reference drawn AT A COORDINATE — `y`, `x`
 //     or `angle` — and it refuses a mark that declares none. A calendar grid, a treemap, a cartogram
 //     and a hexgrid all carry a quantity with no axis to draw it on: there is no y at which "20 °C"
@@ -77,7 +87,12 @@
 import { controlChromeCss } from "./control-chrome.ts";
 
 /** One rectangle of the plate an option selects, in the geometry's own units. */
-export type CutoffSpan = { x: number; y: number; width: number; height: number };
+export type CutoffSpan = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 /** The line the beat's own title was written at. Always first, always checked, and it IS the plate,
  *  which is why — alone among the options — it owes the reader no sentence. */

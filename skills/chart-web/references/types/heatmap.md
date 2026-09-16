@@ -17,3 +17,12 @@ Worked example: `proof/web-heatmap-europe-electricity` (2026-09-15), from `proof
   carry magnitude. Rows order by low-carbon share, columns group renewables-first, so the three routes
   the headline names are three shapes rather than three facts to assemble. The pointer resolves by CELL
   (`data-hit="cell"`) — seven rows share every x.
+- **`filter.ts` is the right mechanism here because the columns are an unordered set.** Nine sources
+  carry no sequence, so a floor that removes the rounding-error cells leaves exactly what the question
+  asks for: a list of survivors. That stops being true the moment a heatmap's columns are consecutive
+  and the reader's question is about crossing a line rather than surviving one — `proof/web-heatmap-coal-share-europe`
+  is the same type with fifteen columns of consecutive years, and there a filter would delete a
+  relapse (a country crossing back above the line) with nothing on the page marking that it ever
+  happened. That beat builds with `chart-web/assets/cutoff.ts` instead, for exactly that reason — read
+  its own `BRIEF.md`, "The gesture, argued", before assuming this sheet's mechanism transfers to a
+  time-columned grid.
