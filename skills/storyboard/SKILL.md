@@ -14,6 +14,16 @@ first, and end the turn. Only the user's next message may supply `format:`. Befo
 not run the reference loop, choose a palette or treatment, write `reachable: yes`, or dispatch a
 producer.
 
+**After every slot has its G2a/G2b/G2c triple, three more gates run as separate passes across all
+slots, in this order: G2-intent, G2-treatment, G2-producer.** `openGate` (`scripts/gate-contract.mjs`)
+is the single source of this order — read it before assuming G2b is the last question a slot is
+asked. G2-intent asks, per slot, which narrow intent from `references/chart-choice.md` guided the
+treatment choice (recorded as the slot's `intent`, REQUIRED — issue #48: treatment selection was the
+only major decision with nothing written down). G2-treatment is the candidate proposal and the
+journalist's `chosen` answer. G2-producer is the conditional Datawrapper-or-custom question, asked
+only when the chosen treatment has a mapped Datawrapper type. Stop the turn at each of these exactly
+as at G2b.
+
 When Goose can render the Splash app, Storyboard mode may show that same gate through the shared
 chooser. `recommendVisualChoice` ranks only the currently reachable U7 options against confirmed
 Storyboard fields and the frozen profile, names unresolved requirements and transparent ties, and
@@ -112,10 +122,30 @@ rule anywhere else.
    The order is the argument: each movement depends on the one before it. This is prose conducted
    in conversation — this skill's reference is what governs it, not code.
 2. **The exchange writes `STORYBOARD.md`**: YAML front matter (`takeaway`, the hand-of-the-journalist
-   fields, the two recorded verdicts `grounding` and `reference`, `language`, and
-   `slots: [{id, proves, medium, format, size, reachable, candidates, chosen, producer,
+   fields, the recorded verdict `grounding`, `language`, optionally `reference` (movement ⑧ — see
+   below) and optionally the recorded-claim block (`claimShape`, `claimColumn`, `claimEntity`,
+   `claimVersus`, `claimDirection` — see below), and
+   `slots: [{id, proves, medium, format, size, reachable, intent, candidates, chosen, producer,
    datawrapperType}, ...]`) above the prose
-   the journalist actually reads.
+   the journalist actually reads. **`intent` is REQUIRED on every slot** (`REQUIRED_SLOT_FIELDS`,
+   `scripts/gate-contract.mjs`) — the one-field record that the chooser was actually consulted,
+   asked in its own G2-intent pass after every slot's G2a/b/c triple closes (see "Stop at every
+   human gate" above).
+
+   **`reference` is OFFERED, not required** (movement ⑧, `exchange.md`) — it is no longer in
+   `REQUIRED_SCALARS` and there is no `G2-reference` gate; Gate 2 closes without it. When the
+   journalist takes the reference loop, the answer is recorded in `reference:` exactly as before.
+
+   **The recorded-claim block is OPTIONAL, and absent is a complete answer** — a storyboard that
+   records none of `claimShape`/`claimColumn`/`claimEntity`/`claimVersus`/`claimDirection` closes
+   Gate 1 exactly as if the block did not exist. What is refused is a HALF-recorded answer: G1 asks,
+   for a confirmed takeaway, whether it is a `maximum`, `minimum`, `comparison`, `total`, or `none`
+   of those shape (`RECORDED_CLAIM_SHAPES`) and about which column — because a superlative is
+   grammar (`the most`, `le plus`, `أكثر من غيرها`, `najwięcej`), and no pattern table covers every
+   language `groundTakeaway` might be asked to verify. `claimColumn` is required by every shape but
+   `none`; `claimEntity` by `maximum`/`minimum`/`comparison`; `claimVersus` and `claimDirection`
+   (`"greater"` or `"less"`) by `comparison` only. `recordedClaimGaps(meta)`
+   (`scripts/gate-contract.mjs`) is what refuses the half-recorded case.
 
    **`language` is the story's own, as a code** (`fr`, `de-CH`) — ruling R4: it follows the ARTICLE
    rather than the newsroom's configuration, and is confirmed with the journalist against the
@@ -136,16 +166,18 @@ rule anywhere else.
    a quoted element, e.g. `["a, b", "c"]`, does not split it — a naive `.split(",")` would silently
    fragment a candidate name that happens to contain one).
 4. **`checkStoryboard(meta)`** names every reason the gate has not closed: a missing or unconfirmed
-   takeaway, any missing hand-of-the-journalist field, a missing or unresolved `grounding` verdict,
-   a missing `reference`, zero slots (nothing would be produced), a slot missing its `medium`,
-   `format` or `size` (Gate 2's three sub-gates), a slot whose `reachable` is not `yes`, a slot with
-   nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify it against
-   (malformed — a real choice can only be confirmed from a list that was actually shown), or a slot
-   whose `chosen` value is not one of its own listed `candidates`, or an eligible chart treatment
-   whose custom-or-Datawrapper decision is missing or inconsistent. `datawrapperType` is required
-   only for `producer: datawrapper`; unmapped treatments skip this human question and carry no
-   producer fields — absence is their canonical custom state. An empty array is the only
-   "yes" — Gate 2 closes into this file, or it has not closed.
+   takeaway, any missing hand-of-the-journalist field, a missing or unresolved `grounding` verdict
+   (`reference` is NOT checked here — it is offered, not required, see above), a half-recorded
+   claim-shape block (`recordedClaimGaps`), zero slots
+   (nothing would be produced), a slot missing its `medium`, `format`, `size` (Gate 2's three
+   sub-gates) or **`intent`**, a slot whose `reachable` is not `yes`, a slot with nothing chosen, a
+   slot whose `chosen` value has no `candidates` ever listed to verify it against (malformed — a
+   real choice can only be confirmed from a list that was actually shown), or a slot whose `chosen`
+   value is not one of its own listed `candidates`, or an eligible chart treatment whose
+   custom-or-Datawrapper decision is missing or inconsistent. `datawrapperType` is required only for
+   `producer: datawrapper`; unmapped treatments skip this human question and carry no producer
+   fields — absence is their canonical custom state. An empty array is the only "yes" — Gate 2
+   closes into this file, or it has not closed.
 
    **It takes ONE argument, and that is load-bearing.** It used to accept a `profile` and a
    `capabilities` argument and re-derive three expensive semantic checks from them —
@@ -256,8 +288,9 @@ const errors = checkStoryboard(meta);
 
 if (errors.length > 0) {
   // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. An
-  // ungrounded takeaway, an unanswered reference loop, and a slot whose medium/format/size were
-  // never chosen or never confirmed reachable are all among these reasons.
+  // ungrounded takeaway and a slot whose medium/format/size/intent were never chosen or never
+  // confirmed reachable are among these reasons. The reference loop is offered, not required, and
+  // is never one of them.
 } else {
   // meta.slots[*].chosen names the candidate production reads.
 }
