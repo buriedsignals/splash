@@ -102,7 +102,7 @@ export function Cold2CoalShareEuropeFrame(props: Cold2CoalShareEuropeFrameProps 
                 <Word line={n.name} register={r.feature} fill={colours.ink} halo={{ colour: colours.ground, width: props.halo }} />
                 <rect x={n.gauge.x - props.halo / 2} y={n.gauge.y - props.halo / 2} width={n.gauge.width + props.halo} height={n.gauge.height + props.halo} fill={colours.ground} />
                 <rect x={n.gauge.x} y={n.gauge.y} width={n.gauge.width} height={n.gauge.height} fill={colours.track} />
-                <rect x={n.gauge.x} y={n.gauge.y} width={n.gauge.width * reading.fill} height={n.gauge.height} fill={colours.gauge} />
+                <rect x={n.gauge.x} y={n.gauge.y} width={n.gauge.width * scene.gauges[n.code]} height={n.gauge.height} fill={colours.gauge} />
                 <rect x={n.gauge.x + n.gauge.width * n.gauge.notch - 1.5} y={n.gauge.y - n.gauge.height * 0.6} width={3} height={n.gauge.height * 2.2} fill={colours.ink} />
                 <Word line={{ text: reading.text, x: n.shareAt.x, y: n.shareAt.y, width: n.shareWidths[scene.year] }} register={r.area} fill={colours.ink} halo={{ colour: colours.ground, width: props.halo }} />
               </g>

@@ -2,9 +2,16 @@
 // in Mercator fields and the plan's bound fields, both from `mapStateAt` (`scene.mjs`). The plan's MapTiler URLs
 // carry a key PLACEHOLDER, never the key: the runner's local proxy strips it (`throughProxy`) and holds the key.
 //
-// ONE FILL LAYER PER COUNTRY, because each country steps through its own class year by year: its `fill-color` is a
-// `step` over its own bound class field (`k_<iso2>`), data-constant, and its `fill-opacity` arrives with its 2010
-// class, lowest first (`arrive`). Outside the twelve there is no layer: the basemap's own land.
+// ONE FILL LAYER PER COUNTRY, because each country travels its own classes year by year: its `fill-color` is an
+// `interpolate` over its own bound class POSITION (`k_<iso2>`, a float from `scene.mjs`), data-constant, and its
+// `fill-opacity` arrives with its 2010 class, lowest first (`arrive`). Outside the twelve there is no layer: the
+// basemap's own land.
+//
+// AN `interpolate`, NOT A `step`. MapLibre animates nothing here by design — the frame owns time — so a paint bound to
+// a whole class number changes in ONE frame, and the map strobed: twelve fills still for ten frames, then a country
+// swapping its entire colour at once. The ramp turns the same class scale into a colour a fractional class can be read
+// at, so the change is carried by the frames between two years. The stops are the class colours themselves, so at a
+// whole year every country is painted exactly the class the key names.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -63,7 +70,7 @@ export function mapPlanFor({ direction, subject, cameras }) {
   const palest = contrast(fills[0], tints.land);
   if (palest < PALEST_OVER_LAND) throw new Error(`the palest class ${fills[0]} reads ${palest.toFixed(2)}:1 on the land, under ${PALEST_OVER_LAND}:1 — a low reading would read as outside the twelve`);
   const level0 = (codes) => ["all", ["==", ["get", "level"], 0], ["match", ["get", "iso_a2"], codes, true, false]];
-  const step = (field) => ["step", { $state: field }, fills[0], ...fills.slice(1).flatMap((f, i) => [i + 1, f])];
+  const ramp = (field) => ["interpolate", ["linear"], { $state: field }, ...fills.flatMap((f, i) => [i, f])];
   const countryLayers = subject.countries.map((c) => ({
     id: `fill-${c.iso2}`,
     type: "fill",
@@ -73,7 +80,7 @@ export function mapPlanFor({ direction, subject, cameras }) {
     filter: level0([c.iso2]),
     paint: { "fill-color": fills[c.classes[0]], "fill-opacity": 0 },
     bindings: {
-      "fill-color": step(`k_${c.iso2}`),
+      "fill-color": ramp(`k_${c.iso2}`),
       "fill-opacity": ["max", 0, ["min", 1, ["-", ["*", { $state: "arrive" }, fills.length], c.classes[0]]]],
     },
   }));
