@@ -86,8 +86,8 @@ const RING_RADII = Array.from(
   (_, i) => Math.round((i + 1) * RING_STEP_KM * 100) / 100,
 );
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -232,7 +232,7 @@ const gate = await page.evaluate(
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       bounds,
       fitBoundsOptions: { padding: 0, animate: false },
     });

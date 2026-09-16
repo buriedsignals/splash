@@ -63,8 +63,8 @@ export async function digestOf(path) {
   return createHash("sha256").update(Buffer.from(bytes)).digest("hex");
 }
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {

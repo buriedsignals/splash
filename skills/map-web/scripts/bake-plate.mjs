@@ -71,8 +71,8 @@ const BEAT = {
   tints: { water: "#aac9e0" },
 };
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -340,7 +340,7 @@ const gate = await page.evaluate(
       // Without this the WebGL canvas is empty by the time a screenshot reads it (rule 6).
       // Top-level here because this bake pins maplibre 4.7.1; from maplibre 5 the option moved
       // under `canvasContextAttributes`, so a version bump must move it or the plates come out blank.
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       bounds,
       fitBoundsOptions: { padding: 0, animate: false },
     });
