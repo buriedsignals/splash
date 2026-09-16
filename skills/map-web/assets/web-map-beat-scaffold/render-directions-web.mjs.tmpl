@@ -1,8 +1,8 @@
 // %%BEAT_PATH%%/render-directions-web.mjs — SCAFFOLDED PLUMBING PLUS NAMED HOLES.
 //
-// Every line that is not marked SCAFFOLD below was measured verbatim-identical across the three
-// validated map × web beats. Every line that IS marked SCAFFOLD is this beat's own work and the
-// generator refused to guess it: the argument, the data, the words, the gesture, the refusals.
+// Every line that is not marked SCAFFOLD below was measured shared across the seven shipped live-map
+// web beats. Every line that IS marked SCAFFOLD is this beat's own work and the generator refused to
+// guess it: the argument, the data, the words, the gesture's content, the colours, the refusals.
 //
 // Usage:  bun %%BEAT_PATH%%/render-directions-web.mjs
 //
@@ -35,12 +35,21 @@ import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/ren
 import { CHANGE_MS, Directed%%Name%%Web } from "./Directed%%Name%%Web.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
+/**
+ * A HOLE THE SCAFFOLD REFUSED TO GUESS. It throws where a value would have been, so an unfinished
+ * beat cannot render something that merely looks finished. DELETE THIS FUNCTION once the last hole
+ * is closed; `grep -n SCAFFOLD` is then empty and the beat is its own.
+ */
+const SCAFFOLD = (what) => {
+  throw new Error(`SCAFFOLD: %%BEAT%% has no ${what} yet`);
+};
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 const SIZE = 900;
 // SCAFFOLD · THE EYEBROW, one short strand: subject · place.
-const EYEBROW = "SCAFFOLD";
+const EYEBROW = SCAFFOLD("eyebrow");
 
 const plain = (s) => plainSpaces(s);
 const fr = (v, d = 1) =>
@@ -54,7 +63,7 @@ const fr = (v, d = 1) =>
 //   const STUDY = { west, south, east, north };  // the union of the held boxes
 // The browser must never compute a break, apportion a dot, or format a number: everything the page
 // says is derived here and baked in.
-throw new Error("SCAFFOLD: %%BEAT%% has no data read yet");
+SCAFFOLD("data read");
 
 // ── THE PLATE, ONE PER FILED DIRECTION ────────────────────────────────────────────────────────
 const PLATE_FRAME = [1600, 1216];
@@ -150,23 +159,39 @@ const ASKED = {
 //
 // Every one of these is derived from the numbers above, never typed as a claim the data does not
 // make. `alt` describes the picture a sighted reader gets, including what the gesture does.
-const title = "SCAFFOLD";
-const caveat = "SCAFFOLD";
-const source = "SCAFFOLD · Source : … · fond MapTiler";
-const readingLine = "SCAFFOLD";
-const claimNote = "SCAFFOLD";
-const liveHint = "SCAFFOLD";
-const ALT = "SCAFFOLD";
+const title = SCAFFOLD("title");
+const caveat = SCAFFOLD("caveat");
+const source = SCAFFOLD("source line (… · fond MapTiler)");
+const readingLine = SCAFFOLD("reading");
+const claimNote = SCAFFOLD("claim note");
+const liveHint = SCAFFOLD("live hint");
+const ALT = SCAFFOLD("alt text");
 
-// ── SCAFFOLD · THE GESTURE, DECLARED ──────────────────────────────────────────────────────────
+// ── THE GESTURE, DECLARED ─────────────────────────────────────────────────────────────────────
 //
-// It was argued in BRIEF.md before this file was opened. The declaration goes here, and the live
-// plan/script are built from the SAME derivation the component draws from — a second derivation is
-// how half a beat ends up showing one rule and the other half the rule before it.
-const interaction = null;
+// It was argued in BRIEF.md before this file was opened. THE SHAPE IS THE FORMAT'S CONTRACT — a
+// control that changes nothing is refused before the page is written, and `interaction-plan.ts`
+// reads this declaration — but WHICH questions a reader arrives with, and how many, is the beat's.
+// Every `gesture` must name one of `interaction-plan.ts`'s `GESTURES`; a control nobody can
+// describe in that vocabulary is refused at the declaration. Add or remove controls freely: a beat
+// that hands the reader one question is not a lesser beat than one that hands them three.
+const interaction = {
+  // SCAFFOLD · what THIS page does that a still and a video cannot, in this subject's own terms.
+  earns: SCAFFOLD("argument for why it earns the web genre"),
+  controls: [
+    {
+      // SCAFFOLD · the question in the reader's own words, and what the page does when they ask it.
+      question: SCAFFOLD("question a reader arrives with"),
+      gesture: SCAFFOLD("gesture named from interaction-plan.ts's GESTURES"),
+      changes: SCAFFOLD("account of what the page does when that question is asked"),
+    },
+  ],
+};
 
-const facts = beatFacts(/* SCAFFOLD */);
+// SCAFFOLD · the beat's own facts, in `beatFacts`'s own terms.
+const facts = beatFacts(SCAFFOLD("beat facts"));
 const offered = applicableTreatments(facts);
+console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
 // ── THE FROZEN FALLBACK, BAKED FROM THE PAGE ITSELF ───────────────────────────────────────────
 //
@@ -186,9 +211,12 @@ const KEY = process.env.MAPTILER_KEY ?? process.env.REMOTION_MAPTILER_KEY ?? pro
 const PLACEHOLDER = `__MAPTILER${"_KEY__"}`;
 const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
 
-// SCAFFOLD · the table's caption and columns, in this beat's own words.
-const TABLE_CAPTION = "SCAFFOLD";
-const COLUMNS = ["SCAFFOLD"];
+// SCAFFOLD · the table's caption, its columns and its rows, in this beat's own words. A row carries
+// at least `{ key, name, detail }` — the seam the component's `Row` declares — and whatever cells,
+// ranks or slugs the drawing prints beside them.
+const TABLE_CAPTION = SCAFFOLD("table caption");
+const COLUMNS = SCAFFOLD("table columns");
+const tableRows = SCAFFOLD("table rows");
 
 const textPerRegister = {
   display: title,
@@ -340,8 +368,15 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       props: {
         plate,
         plateLand: tints.land,
-        // SCAFFOLD · the beat's own readings, its live plan and its live script go here, built from
-        // the ONE derivation above.
+        rows: tableRows,
+        // BOTH HALVES ARE BUILT FROM THE ONE `live` OBJECT ABOVE. The plan is what the page embeds
+        // as `application/json`; the script is the live layer's own mount, and it travels `style.mjs`
+        // as source because a page script cannot import.
+        // SCAFFOLD · `live<Type>Plan(live)` and `live<Type>Script(live, { scope: ".chart-figure",
+        // styleModule: STYLE_MODULE, … })` from this type's own `live-<type>.ts`. The scope and the
+        // style module are the seam; which mount is called is the beat's.
+        livePlan: SCAFFOLD("live plan"),
+        liveScript: SCAFFOLD("live script"),
         liveHint,
         maplibreCss: MAPLIBRE_CSS,
         maplibreJs: MAPLIBRE_JS,

@@ -1,8 +1,9 @@
 // %%BEAT_PATH%%/Directed%%Name%%Web.tsx — THE SHELL IS SCAFFOLDED. THE DRAWING IS NOT.
 //
 // This file is the beat's own composition and it is NOT a component to import or parameterise. The
-// scaffold writes the props seam, the two colour rules every map × web beat is held to, and the
-// arrangement — nothing that decides what the reader sees.
+// scaffold writes the props seam, the arrangement, the table shell and the two script tags — every
+// block measured verbatim-identical across the seven shipped live-map web beats. It writes NOTHING
+// that decides what the reader sees.
 //
 // THE TWO-LAYER ARRANGEMENT, and it is not optional:
 //   1. a LIVE MapLibre map on MapTiler tiles, flat Web Mercator (never a globe), which the reader
@@ -12,7 +13,23 @@
 // Marks are MapLibre LAYERS on the live map, interrogated with `queryRenderedFeatures` — never SVG
 // drawn over a plate, which would drift the moment the reader pans.
 //
-// grep -n SCAFFOLD this file.
+// grep -n SCAFFOLD this file. Nothing renders until every hole is closed.
+
+/**
+ * SCAFFOLD · THE HEADER BLOCK IS THE BEAT'S ARGUMENT AND THE SCAFFOLD REFUSED TO GUESS IT.
+ *
+ * Write, in this beat's own words and not the type sheet's wording:
+ *   · THE GESTURE — which decision the author would otherwise take in silence is handed to the
+ *     reader, and why THIS subject deserves it. A type that deserves none of the listed
+ *     vocabularies, or deserves a new one, is a legitimate outcome and is better than borrowing a
+ *     neighbour's.
+ *   · WHAT THE LAYERS HAVE TO GET RIGHT — the radius strategy this beat's marks take, and what the
+ *     other two would lie about here (`assets/mount.mjs`, `radiusPaintOf`).
+ *   · WHAT WEB MERCATOR COSTS **THIS** SUBJECT, measured rather than asserted.
+ *   · WHAT ANSWERS A POINTER, and what it says that the plate does not already print.
+ *
+ * A beat that looks like its neighbour has failed even if every test is green.
+ */
 
 import {
   mix,
@@ -26,12 +43,27 @@ import { controlChromeCss } from "../../skills/chart-web/assets/control-chrome.t
 // is in map-web/SKILL.md, "The map vocabularies"; the type sheet names the one its worked example
 // spent. None, or a new one, is a legitimate answer.
 
+/**
+ * A HOLE THE SCAFFOLD REFUSED TO GUESS. It throws where a value would have been, so an unfinished
+ * beat cannot render something that merely looks finished — and it types as `never`, so it also
+ * stands in a value position. DELETE THIS FUNCTION once the last hole is closed; `grep -n SCAFFOLD`
+ * is then empty and the beat is its own.
+ */
+function SCAFFOLD(what: string): never {
+  throw new Error(`SCAFFOLD: Directed%%Name%%Web has no ${what} yet`);
+}
+
 /** The scope every generated rule is written inside. */
 const SCOPE = ".chart-figure";
+/** SCAFFOLD · THE CONTROL'S CLASS STEM — lowercase letters, digits and hyphens. It becomes
+ *  `.chart-<stem>` on the fieldset and `.<stem>-notes` on the sentence row, and the vocabulary the
+ *  beat spends declares its own (`stack`, `classing`, `measure`, `vantage`, …). A beat that hands
+ *  the reader NO control deletes the fieldset, the notes row and this line together. */
+const CONTROL_NAME = "SCAFFOLD";
 /** SCAFFOLD · the id prefix every radio carries. It is the FORMAT'S DISCOVERY CONTRACT for a control
  *  that changes the picture and owes the reader a sentence — never a copy-paste from another beat,
  *  and never squatted on another vocabulary's prefix to be discovered. */
-const CONTROL_ID_PREFIX = "SCAFFOLD";
+export const CONTROL_ID_PREFIX = "SCAFFOLD";
 /** How long a mark takes to cross from one state to the next, in ms. Honoured only under
  *  `no-preference` — the travel is the reading, so a reader who asked for no motion gets the new
  *  state instantly rather than not at all. The live map is given the SAME number, so the map and the
@@ -45,15 +77,30 @@ export const CHANGE_MS = 260;
 const STEP_MIN = NaN;
 const MARK_SEPARATION = NaN;
 
+/** THE ROW SEAM THE TABLE AND THE MAP SHARE, and it is the only part of a row the scaffold knows.
+ *  `key` is what both halves join on — the same string the live plan puts on the feature, so
+ *  `data-mark` in the table and `queryRenderedFeatures` on the canvas name one mark. `detail` is
+ *  what the pointer answers with, and it must be a reading the plate does not already print. A beat
+ *  widens this type with its own cells, ranks, swatches and slugs. */
+export type Row = {
+  key: string;
+  name: string;
+  detail: string;
+};
+
 // ── SCAFFOLD · THE BEAT'S OWN TYPES AND ITS ONE COLOUR DERIVATION ─────────────────────────────
 //
 // Export the derivation the RUNNER also reads, so the drawing and the live map's paint expressions
 // come from one array rather than two that agree today. Measure every step against `plateLand` —
-// the colour the plate was actually baked in — and not against the direction's ground.
+// the colour the plate was actually baked in — and not against the direction's ground. `STEP_MIN`
+// and `MARK_SEPARATION` above are the floors it searches against; refuse rather than hope.
 
 export function Directed%%Name%%Web({
   plate,
   plateLand,
+  rows,
+  livePlan,
+  liveScript,
   liveHint,
   maplibreCss,
   maplibreJs,
@@ -68,6 +115,7 @@ export function Directed%%Name%%Web({
   alt,
   reading,
   claimNote,
+  interaction,
   direction,
   ground,
   accent,
@@ -80,6 +128,11 @@ export function Directed%%Name%%Web({
   /** The LAND colour that plate was baked in — what the page actually paints behind every mark, and
    *  therefore the only honest thing to measure the lightest state against. */
   plateLand: string;
+  rows: Row[];
+  /** The plan the live layer reads, embedded as `application/json`. */
+  livePlan: Record<string, unknown>;
+  /** The live layer's own script, built from the SAME derivation this component draws from. */
+  liveScript: string;
   /** What the live map's controls do, shown ONLY once the live map is actually up. */
   liveHint: string;
   maplibreCss: string;
@@ -95,25 +148,258 @@ export function Directed%%Name%%Web({
   alt: string;
   reading: string;
   claimNote: string;
-  direction: Record<string, unknown>;
+  interaction: unknown;
+  direction: any;
   ground: string;
   accent: string;
-  ink?: string;
-  muted?: string;
-  grid?: string;
+  ink: string;
+  muted: string;
+  grid: string;
 }) {
-  // ── SCAFFOLD · THE STORY ────────────────────────────────────────────────────────────────────
-  //
-  // Everything below this line is this beat's own. Write:
-  //   · the figure, with the live map box and the fallback `<image>` underneath it;
-  //   · the HTML overlay carrying every word and every control (text is HTML, never SVG);
-  //   · the reader's own answer on every mark — hover, tap AND keyboard focus, one order, one
-  //     vocabulary shared with the accessible table;
-  //   · the accessible table, decided deliberately (read the discipline file's "The accessibility
-  //     question" before leaving it off);
-  //   · the drawing's guaranteed share of the height — `MAP_DRAWING_SHARE` is declared in the trunk
-  //     and refused there; the words give way, the map does not.
-  //
-  // A beat that looks like its neighbour has failed even if every test is green.
-  throw new Error("SCAFFOLD: Directed%%Name%%Web has no drawing yet");
+  // EVERY MODULE-LEVEL HOLE, REFUSED AT RENDER rather than at import — so the holes can be closed in
+  // any order and the one still open is the one named. Delete a line as its hole closes.
+  if (CONTROL_NAME === "SCAFFOLD") SCAFFOLD("control class stem");
+  if (CONTROL_ID_PREFIX === "SCAFFOLD") SCAFFOLD("control id prefix");
+  if (Number.isNaN(STEP_MIN)) SCAFFOLD("searched separation between neighbouring states");
+  if (Number.isNaN(MARK_SEPARATION)) SCAFFOLD("searched separation for a pointed-at mark");
+
+  const regs = webRegisters(direction, { ink: { ink, muted, accent } });
+
+  const width = aspect >= 1 ? size : size * aspect;
+  const height = aspect >= 1 ? size / aspect : size;
+
+  // SCAFFOLD · THE ONE DERIVATION OF THIS BEAT'S INKS, and the vocabulary's own options and notes
+  // built from the declaration the runner passes. Both halves of the page read this, never two.
+  const options: { id: string; slug: string; label: string; announce: string; isDefault: boolean }[] =
+    SCAFFOLD("control's options");
+  const notes: { slug: string; text: string }[] = SCAFFOLD("control's sentences");
+
+  const css = [
+    controlChromeCss({
+      scope: SCOPE,
+      name: CONTROL_NAME,
+      notes: { reserve: null, stacked: true },
+    }),
+    // SCAFFOLD · this beat's own vocabulary CSS and its `live-<type>.ts` CSS, plus whatever key,
+    // rail or swatch the drawing needs. The tooltip's width is a beat decision too. Replace this one
+    // entry with as many rules as the drawing owes.
+    SCAFFOLD("own stylesheet"),
+    // THE TABLE IS THE GESTURE WITHOUT SCRIPT, so it is a real table and not a grid of divs: a screen
+    // reader is given rows and columns.
+    `${SCOPE} .mw-table { width: 100%; border-collapse: collapse; margin: 6px 0 0; }`,
+    `${SCOPE} .mw-table th, ${SCOPE} .mw-table td { text-align: left; padding: 2px 10px 2px 0; border-bottom: 1px solid ${grid}; white-space: nowrap; }`,
+    `${SCOPE} .mw-table td.num { text-align: right; }`,
+    // A ROW HEADING IS STILL A HEADING to a screen reader and still a plain cell to the eye: the
+    // browser's own bold on `th` would make every row's name the heaviest ink on the page. Named
+    // literally, because the font machine cannot resolve `inherit` into a weight to cut.
+    `${SCOPE} .mw-table th.rowhead { font-weight: ${regs.axis.fontWeight}; }`,
+    `${SCOPE} details.mw-readings { margin: 8px 0 0; }`,
+    `${SCOPE} details.mw-readings > summary { cursor: pointer; }`,
+    `${SCOPE} .mw-scroll { max-height: 40vh; overflow: auto; }`,
+  ].join("\n\n");
+
+  return (
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--grid" as string]: grid,
+        ...figureVars(regs),
+      }}
+    >
+      {/* MapLibre's own stylesheet, INLINED rather than linked: a `<link>` would trade the payload
+          for a SECOND third-party host, and the honest reading of the live-map ruling keeps the
+          count at one — api.maptiler.com. */}
+      <style dangerouslySetInnerHTML={{ __html: maplibreCss }} />
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
+      <div className="chart-header">
+        <p
+          className="chart-eyebrow"
+          style={{ ...regs.eyebrow, margin: "0 0 6px" }}
+        >
+          {eyebrow}
+        </p>
+        <h2
+          className="chart-title"
+          style={{ ...regs.display, margin: "0 0 6px" }}
+        >
+          {title}
+        </h2>
+        <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>
+          {caveat}
+        </p>
+      </div>
+
+      {/* SCAFFOLD · THE KEY, THE RAIL, THE LEGEND — whatever this drawing owes the reader before the
+          map, in the unit of the thing in force. This is the beat's own furniture and no two of the
+          shipped beats carry the same: a width scale, a class ramp, a dot value, a distance ring. A
+          beat that owes none deletes this hole. */}
+      {SCAFFOLD("key")}
+
+      {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>`: a radio group to the
+          keyboard and to a screen reader before this page's stylesheet does anything to it, and
+          `aria-label` carries the option's full name where the pill carries its short one. */}
+      <fieldset className={`chart-${CONTROL_NAME}`}>
+        <legend>{SCAFFOLD("legend for its control")}</legend>
+        <div className="options">
+          {options.map((option) => (
+            <label key={option.id}>
+              <input
+                id={option.id}
+                type="radio"
+                name={CONTROL_ID_PREFIX}
+                value={option.slug}
+                aria-label={option.announce}
+                defaultChecked={option.isDefault}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* WHAT THE CHOSEN OPTION DOES TO THE READING. Every sentence sits in one grid cell, so the
+          row is always as tall as the longest of them and choosing never moves the map. */}
+      <div className={`${CONTROL_NAME}-notes`} role="status">
+        {notes.map((note) => (
+          // `data-stack-note` IS THE FORMAT'S DISCOVERY CONTRACT and not a copy-paste slip from the
+          // stack vocabulary: `interaction-plan.ts` reads a control's sentence off this attribute and
+          // excludes it from the default printed text. Every vocabulary emits it, whatever its stem.
+          <p
+            data-stack-note={note.slug}
+            key={note.slug}
+            style={{ ...regs.annot, margin: 0 }}
+          >
+            {note.text}
+          </p>
+        ))}
+      </div>
+
+      <div
+        className="chart-plot"
+        style={{
+          ["--y-gutter" as string]: "0px",
+          ["--x-axis-h" as string]: "0px",
+          // The aspect-ratio is the box's BASIS, not its law: the format makes `.chart-plot` the one
+          // shrinkable item under the figure's `max-height: 100dvh`, so this box takes the width it
+          // is given and the height the window leaves. The two layers then COVER it; neither is
+          // stretched.
+          aspectRatio: `${width} / ${height}`,
+        }}
+      >
+        <div className="y-axis" />
+        {/* THE FALLBACK. One `<svg class="chart">` carrying one thing: the frozen photograph of this
+            page's own live map, in this direction's own tints. It is the format's cell contract and
+            it is the whole picture when the live map cannot be shown. */}
+        <svg
+          role="img"
+          aria-label={title}
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${width} ${height}`}
+          // COVER, never stretch and never letterbox: `slice` is SVG's `object-fit: cover`.
+          preserveAspectRatio="xMidYMid slice"
+          data-plate=""
+        >
+          <desc>{alt}</desc>
+          <image
+            href={plate}
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            preserveAspectRatio="none"
+          />
+        </svg>
+        {/* THE LIVE MAP'S BOX — empty and invisible until MapLibre says it has drawn. It takes the
+            plot's whole track rather than the cell, which IS the ruling: a live map has no viewBox to
+            be bound by, so it fills the width the figure has. */}
+        <div className="map-layer" aria-hidden="true" />
+        <div className="x-axis" />
+      </div>
+
+      {/* THE CLAIM, printed at rest rather than revealed, and in ONE paragraph: every line of chrome
+          on this page comes straight off the height of the map. */}
+      <p className="chart-reading" style={{ ...regs.annot, margin: "8px 0 0" }}>
+        {claimNote}
+      </p>
+      {/* SHOWN ONLY WHEN THE LIVE MAP IS UP. With no script, no key or no tiles, a sentence about
+          dragging a map that cannot be dragged is a dead control, and this arrangement exists
+          precisely not to ship one. */}
+      <p
+        className="live-hint"
+        hidden
+        style={{ ...regs.annot, margin: "4px 0 0" }}
+      >
+        {liveHint}
+      </p>
+      <p className="chart-reading" style={{ ...regs.body, margin: "6px 0 0" }}>
+        {reading}
+      </p>
+
+      {/* EVERY READING, AS TEXT, WITH AND WITHOUT SCRIPT — and the gesture with it, in pure CSS, even
+          when the map cannot carry it. A native `<details>`: it opens with the keyboard, it opens
+          with no script, and it is the one control on this page that was never at risk. Read the
+          discipline file's "The accessibility question" before leaving it off. */}
+      <details className="mw-readings">
+        <summary style={{ ...regs.axis }}>{tableCaption}</summary>
+        <div className="mw-scroll">
+          <table className="mw-table" style={{ ...regs.axis }}>
+            <thead>
+              <tr>
+                {columns.map((column, i) => (
+                  <th
+                    key={column}
+                    scope="col"
+                    // Which columns are numbers is this beat's own — adjust the test.
+                    className={
+                      i > 0 && i < columns.length - 1 ? "num" : undefined
+                    }
+                  >
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                // `data-mark` AND `data-detail` ARE THE CROSSING BETWEEN THE TWO HALVES: the same
+                // key the live plan puts on the feature, and the same answer the pointer gives on
+                // the canvas. Two vocabularies here is how the table answers one question and the
+                // map a different one.
+                <tr key={row.key} data-mark={row.key} data-detail={row.detail}>
+                  <th scope="row" className="rowhead">
+                    {row.name}
+                  </th>
+                  {/* SCAFFOLD · this beat's own cells, in `columns` order after the row heading —
+                      and its own swatch, sample or per-option span if the gesture is carried in the
+                      table too. A number is `className="num"`. */}
+                  {SCAFFOLD("table cells")}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>
+        {source}
+      </p>
+
+      {/* THE PLAN THE LIVE LAYER READS, as `application/json` — which is also what the font machine
+          reads when it decides which characters this page can display, so MapLibre's own control
+          names are cut into the embedded faces like every other word. */}
+      <script
+        id="mw-live-plan"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(livePlan) }}
+      />
+      <script dangerouslySetInnerHTML={{ __html: maplibreJs }} />
+      <script dangerouslySetInnerHTML={{ __html: liveScript }} />
+    </figure>
+  );
 }

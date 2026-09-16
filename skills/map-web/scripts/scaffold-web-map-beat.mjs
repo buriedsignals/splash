@@ -15,17 +15,26 @@
 // So: **THIS SCAFFOLD REMOVES TYPING, NOT THINKING.** A beat that looks like its neighbour has
 // failed even if every test is green.
 //
-// WHAT IT GENERATES — measured verbatim-identical across `proof/web-choropleth-europe-lowcarbon`,
-// `proof/web-dot-density-europe-stations` and `proof/web-contour-europe-distance`; the parts nobody
-// would ever write differently on purpose:
+// WHAT IT GENERATES — measured shared across all SEVEN shipped live-map web beats
+// (`web-choropleth-europe-lowcarbon`, `web-contour-europe-distance`, `web-dot-density-europe-stations`,
+// `web-flow-map-danube`, `web-flow-map-ukraine-protection`, `web-locator-zaporizhzhia`,
+// `web-proportional-symbol-europe-capacity`); the parts nobody would ever write differently on purpose:
 //   bake.mjs                     the camera gate, the frame/bounds asserts, the basemap capture per
 //                                filed direction, the cull-and-thin, `geometry.json`
 //   camera.ts                    the sampled projected border, one scale for both axes, the unit box
 //   render-directions-web.mjs    the imports, the plate cache keyed on the frame, `plateTints`, the
 //                                three-plate camera agreement, `ASKED`, the MapLibre/style inlining,
 //                                `bakeFallback`, the fallback hash cache, the keyed `.local.html`
-//                                copy, the direction loop, the refusal cleanup and exit code
-//   Directed<Name>Web.tsx        the props seam, the two-layer arrangement, the colour-rule seam
+//                                copy, the direction loop, `applicableTreatments`, the `interaction`
+//                                SHAPE (a control that changes nothing is refused before the page is
+//                                written), the live plan/script seam, the refusal cleanup and exit code
+//   Directed<Name>Web.tsx        the props seam, the `{ key, name, detail }` row seam the table and
+//                                the map join on, the figure and its two `<style>` tags, the header,
+//                                the fieldset/`role="status"` notes pair the discovery contract needs,
+//                                the `.chart-plot` box with its fallback `<svg data-plate>` and
+//                                `.map-layer`, the claim/hint/reading stack, the `<details>` table
+//                                shell with `data-mark`/`data-detail`, the source line, the three
+//                                script tags
 //   BRIEF.md                     the headings an author fills, gesture first
 //   PALETTE.md                   copied from the static sibling
 //
@@ -36,7 +45,16 @@
 //   · THE GESTURE. Which decision the author otherwise takes in silence is handed to the reader is
 //     the beat's design decision. The vocabularies are listed in `SKILL.md` as a MENU; a type that
 //     deserves none of them, or deserves a new one, is a legitimate outcome, and it is better than
-//     borrowing a neighbour's.
+//     borrowing a neighbour's. The fieldset/notes MARKUP is written because it is the format's
+//     discovery contract (`interaction-plan.ts` reads `data-stack-note`); its stem, its legend, its
+//     options and its sentences are holes, and a beat with no control deletes the block outright.
+//   · THE KEY, THE RAIL, THE LEGEND. No two shipped beats carry the same furniture before the map —
+//     a width scale, a class ramp, a dot value, a distance ring — so the scaffold writes none.
+//   · THE ROW'S CELLS. The `<tr>` seam is shared because `data-mark`/`data-detail` is the crossing
+//     between the table half and the canvas half; what a row PRINTS is the beat's.
+//   · THE BASEMAP'S COUNTRIES. Six of the seven call `countryGround`; the seventh paints the
+//     countries itself. Whether a reader needs national ground under these marks is a design
+//     decision about this subject, so it is not generated.
 //   · THE WORDS — title, caveat, reading, claim note, alt, source.
 //   · THE PALETTE REASONING and the per-beat contrast floors. A dose is searched against this beat's
 //     own renders in all three directions; a number found on another dataset transfers silently and
