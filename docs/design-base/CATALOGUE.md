@@ -67,10 +67,10 @@ branch `quality/scrolly`: the directed scrolly beats the owner validated in that
 
 **Maps: 8 of 8 done in static, 8 of 8 in scrolly, 0 in web or video.**
 
-The eight map scrolly beats listed below were drawn in SVG from a Natural Earth extract clipped to a fixed window, so
-countries outside it are missing as soon as the view leaves it. The owner ruled on 2026-09-15 that they are redone
-through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.md` and its 2026-09-15 addendum): unticked
-until then. The choropleth is the first redone and validated.
+The eight map scrolly beats were first drawn in SVG from a Natural Earth extract clipped to a fixed window, so
+countries outside it went missing as soon as the view left it. The owner ruled on 2026-09-15 that they be redone
+through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.md` and its 2026-09-15 addendum).
+All eight are now live MapTiler on a flat Web Mercator map, baked in the three directions, guards clean.
 
 ## What is done, beat by beat
 
@@ -148,13 +148,13 @@ until then. The choropleth is the first redone and validated.
 | Streamgraph | scrolly | `proof/scrolly-streamgraph-swiss-electricity` |
 | Treemap | scrolly | `proof/scrolly-treemap-europe-capacity` |
 | Waterfall | scrolly | `proof/scrolly-germany-electricity-bridge` |
-| Cartogram | scrolly | `proof/scrolly-cartogram-europe-lowcarbon` — live MapTiler, flat map (validated 2026-09-16; final bake pending) |
+| Cartogram | scrolly | `proof/scrolly-cartogram-europe-lowcarbon` — live MapTiler, flat map (validated 2026-09-16; baked, three directions, guards clean) |
 | Choropleth | scrolly | `proof/scrolly-choropleth-europe-lowcarbon` — live MapTiler, flat map (pilot, validated 2026-09-15) |
-| Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` — live MapTiler, flat map (validated 2026-09-16; final bake pending) |
-| Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` — live MapTiler, flat map (validated 2026-09-15; final bake pending) |
-| Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` — live MapTiler, flat map (validated 2026-09-16; final bake pending) |
-| Hex grid | scrolly | `proof/scrolly-hex-grid-europe-protection` — live MapTiler, flat map (validated 2026-09-16; final bake pending) |
-| Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` — live MapTiler, flat map (validated 2026-09-15; final bake pending) |
+| Contour / isoline | scrolly | `proof/scrolly-contour-europe-distance` — live MapTiler, flat map (validated 2026-09-16; baked, three directions, guards clean) |
+| Dot density | scrolly | `proof/scrolly-dot-density-europe-stations` — live MapTiler, flat map (validated 2026-09-15; baked, three directions, guards clean) |
+| Flow map | scrolly | `proof/scrolly-flow-map-ukraine-protection` — live MapTiler, flat map (validated 2026-09-16; baked, three directions, guards clean) |
+| Hex grid | scrolly | `proof/scrolly-hex-grid-europe-protection` — live MapTiler, flat map (validated 2026-09-16; baked, three directions, guards clean) |
+| Locator | scrolly | `proof/scrolly-locator-zaporizhzhia` — live MapTiler, flat map (validated 2026-09-15; baked, three directions, guards clean) |
 | Proportional symbol | scrolly | `proof/scrolly-proportional-symbol-europe-capacity` — live MapTiler, flat map (validated 2026-09-15) |
 
 ## What is next, by how much evidence backs it
