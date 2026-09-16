@@ -20,6 +20,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - every panel keeps the same axis scale across every card, asserted equal
 
+## Devices the worked example implements
+- **Panels condense into one summary chart** — `scatter` collapses every panel into a single point on a derived plot (its first-year level across, its gain up), a fitted line drawn through them — small multiples' own re-encode from "many little pictures" to "one picture summarising them," rather than only reordering the panels.
+
 ## Worked example
 `proof/scrolly-small-multiples-lowcarbon/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedMultiplesScrolly.tsx` (the marks) and `multiples-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type small-multiples --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

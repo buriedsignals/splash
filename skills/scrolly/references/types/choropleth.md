@@ -26,6 +26,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
   unconditionally, `--no-bake` included: it is one query against already-open tiles (`cards.mapPage()`), not
   part of the bake, so there is no fast-mode cut that removes it.
 
+## Devices the worked example implements
+- **Odd-one ring, revealed at two travel moments** — one named outlier gets a stroked ring, its opacity the MAX of `arrived` (camera has just closed in — the last quarter of an eased travel) and `atRest` (camera sits still — its own first 8%), so it never shows mid-travel. Compare the contour worked example's "summit" and the locator's "subject ring" — the same one-point callout.
+- **Two-moment word reveal** (`arrived`/`atRest`, both eased curves over `$state.zoom`) — a name only shows once its camera has EITHER just arrived at a close-up or is sitting still at the whole map, never while the camera is moving between them. Use for any label bound to a travelling camera.
+- **No-data fill arrives WITH the classes** — the missing-fill layer's opacity is bound to the same `$state.classes` field the colour classes use (`clamp(classes × classFills.length)`), so a no-data country's neutral tint appears exactly when the first class does, not before.
+
 ## Worked example
 **Data shape:** per-area — one row per named region (entity/code), no coordinates.
 

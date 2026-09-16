@@ -19,6 +19,12 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - dot positions are declared synthetic (never geocoded to a real address) and every country is present under them
 
+## Devices the worked example implements
+- **Size buckets for a data-constant radius** — points are grouped into buckets by the root-mean-square of their own weight (`bucketsOf`), each bucket ONE layer with one radius, so growth never reads a per-feature value (`validateScrollyPlan` refuses that). The general answer to "vary a mark's size across many points on a live map."
+- **Count → weight re-encode in one layer** — a bucket's radius travels continuously from its count-mode dot size to its weight-encoded size, bound to a single `$state.weight` field (`grownRadius`, area interpolated linearly) — no cross-fade between a separate "count" and "weight" layer. This is the "re-encode" gesture the type sheet's own gesture list does not otherwise name.
+- **Subject isolation with a floor** — every non-subject dot steps back when the subject (nuclear) is isolated, but never below `STEPPED_BACK` (18%) — the field stays legible as "everything else," never disappears. Compare the proportional-symbol worked example's identical rule for its own "nuclear" isolation.
+- **Ring that hugs a growing disc** — the subject's ring radius and stroke width both bound to the same growth state, the ring's own radius always the grown disc's radius minus half its (thinning) stroke, since MapLibre strokes outside `circle-radius`.
+
 ## Worked example
 **Data shape:** points — per-station rows with real lon/lat (weighted synthetic scatter).
 

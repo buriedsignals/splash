@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - one shared value scale from zero across every card and every group
 
+## Devices the worked example implements
+- **Pair collapses into a signed difference bar** — two grouped bars (`wind`, `solar`) collapse into ONE bar either side of zero (`gap`), coloured by whichever source leads — the group's own re-encode from "two values side by side" to "one signed difference," the same family as the diverging-bar's level-to-change morph.
+- **Ghost of a prior year, dashed** — the previous year's same computed value (its own `gap`) is drawn as a dashed outline behind the current bar, its value written (`ghost`). Compare the dumbbell worked example's identical device.
+
 ## Worked example
 `proof/scrolly-wind-vs-solar/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedWindSolarScrolly.tsx` (the marks) and `windsolar-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type grouped-bar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

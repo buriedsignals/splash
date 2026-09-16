@@ -20,6 +20,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - quartiles and whiskers are computed from the frozen data in the runner, never eyeballed
 - an outlier shown on a zoomed box is a real point in the file, plotted at its true value
 
+## Devices the worked example implements
+- **Points regroup into a box, outliers stay as points** — every raw point travels from its place in time to its decade's column (`group`); the column then closes into a box — quartiles, median, whiskers — and every point steps back EXCEPT the outliers, which stay visible as points against the closed box (`box`). Use whenever a summary shape should not erase the raw evidence a reader would ask to see.
+
 ## Worked example
 `proof/scrolly-boxplot-france-co2-decades/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBoxplotScrolly.tsx` (the marks) and `boxplot-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type boxplot --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

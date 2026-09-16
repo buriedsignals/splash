@@ -19,6 +19,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - a gap in the series breaks the line rather than being bridged across missing readings
 
+## Devices the worked example implements
+- **Both scales travel together for a focus window** — `zoom` interpolates BOTH axes' domains at once (whole series → last ten years), every mark and label following the moving scales, the plot clipped so the close-up genuinely hides what it leaves out — never a hard cut to a second, separately-scaled chart.
+
 ## Worked example
 `proof/scrolly-line-swiss-co2/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedLineScrolly.tsx` (the marks) and `line-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type line --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

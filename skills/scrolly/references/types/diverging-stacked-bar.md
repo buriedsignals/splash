@@ -20,6 +20,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - segment shares sum to the same asserted total in every card
 
+## Devices the worked example implements
+- **One row opens into a sub-layout** — the subject row's `compare` field splits it into two lanes (nuclear above, the other two camps laid end to end below it from the same start), the row climbing to the first slot while every other row steps back. Use when one row's own composition needs a beat of its own without leaving the shared chart.
+
 ## Worked example
 `proof/scrolly-diverging-stacked-electricity/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedDivergingStackScrolly.tsx` (the marks) and `diverging-stack-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type diverging-stacked-bar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

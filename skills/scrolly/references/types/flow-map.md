@@ -19,6 +19,13 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the route's drawn order matches the data's own sequence, asserted; every country beneath the route is present
 
+## Devices the worked example implements
+- **HTML labels driven by the live projection** — host/origin names are NOT MapTiler place labels (wrong language) or MapLibre symbol layers (cannot bold one name per card without a second style layer): `flow-drive.mjs` positions plain HTML labels every frame from the map's own projection. Use whenever a name needs per-card styling MapLibre's own label layers cannot give it.
+- **Rank-arrival opacity** — bands/seats arrive largest rank first, each gated by `$state.bands` passing its own index (`arrivedOf`) — the same staggered-reveal shape as the hex-grid's buckets and the proportional-symbol's bands, applied to line/point pairs instead of areas.
+- **Paired highlight on state alone** — the top two bands switch to a richer colour once `$state.pair` passes 0.5 (`pairedColour`, a literal `case` MapLibre reads directly — never a per-feature match). Use to call out exactly two co-leading entities together.
+- **Long tail as one aggregate dot cluster** — every non-top origin collapses into a single low-opacity `others` layer rather than being drawn (or named) individually, faded in as one mass on `$state.others`.
+- **Label collision nudge** — `keepApart` (in `flow-drive.mjs`) steps a later label straight down, a few px at a time, until it clears every earlier label's box by a small pad; use it whenever several driven labels can crowd into the same screen space.
+
 ## Worked example
 **Data shape:** per-area — one row per named region/month (entity/code), no coordinates.
 

@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - every axis keeps the same fixed scale across every card so area is never a silently changing unit
 
+## Devices the worked example implements
+- **Progressive polygon trace** — `trace0`/`trace1` draw each country's polygon spoke by spoke, clockwise from twelve o'clock, rather than the whole shape fading in at once — the radar's own "reveal in order" gesture applied to a closed shape instead of a line.
+- **Spokes merge to a shared family angle, area kept** — `merge` travels every spoke to its family's own angle and its value to the family's own sum, the same "regroup while conserving what a reader measures" discipline as the marimekko worked example's area-kept column gather, applied to angle and share instead of width.
+
 ## Worked example
 `proof/scrolly-radar-electricity-mix/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedRadarScrolly.tsx` (the marks) and `radar-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type radar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

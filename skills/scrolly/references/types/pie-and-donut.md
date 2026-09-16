@@ -20,6 +20,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - wedge angles sum to the same asserted total (360°) in every card
 
+## Devices the worked example implements
+- **Ring area follows the total, past value ghosted** — `grow` scales the ring's own area to the world total as it changes across years, the earlier year's ring left behind as a dashed outline (`donut-drive.mjs`) — the pie's own instance of the "ghost of a prior state" device (compare the dumbbell and grouped-bar worked examples).
+- **One ring breaks into several** — `split` breaks the single shared ring into one ring per country, the static plate's own form — the same "one becomes many, continuously" family as the dot-strip's and diverging-stacked-bar's own splits.
+
 ## Worked example
 `proof/scrolly-donut-world-co2-share/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedDonutScrolly.tsx` (the marks) and `donut-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type pie-and-donut --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

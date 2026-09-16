@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - one icon always equals the same asserted unit value across every card
 
+## Devices the worked example implements
+- **Position-mode / count-mode re-encode** — `mode` re-encodes the same squares from a position on a 0–100% axis (each stacked in its share's column, a crowd reading as a tower) to a counted block, rather than replacing one picture with another. The pictogram's own instance of the count↔weight family (compare the dot-density and the hex-grid worked examples).
+- **Largest-square rung selection** — a block's own row width is picked from a fixed ladder of rungs (20/16/13/10/8 icons per row) — whichever rung gives the LARGEST icon for that block's own count, rather than one fixed row width for every block.
+
 ## Worked example
 `proof/scrolly-pictogram-europe-lowcarbon/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedPictogramScrolly.tsx` (the marks) and `pictogram-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type pictogram --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

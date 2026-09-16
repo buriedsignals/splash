@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - a bar's drawn length is proportional to its real duration in every card, never compressed for fit
 
+## Devices the worked example implements
+- **Playhead draws every run up to it, unentered rows stay faint** — `head` (in real years) draws every bar up to that year; a row whose run has not started yet stays faint rather than absent, so the full cast is visible from card one. Compare the bump worked example's identical playhead-by-year device for lines instead of bars.
+- **Interrupted runs show their own gap** — a row with a hole in its run (`gaps`) draws the hole outlined rather than as a silent break in the bar, so an interruption reads as a fact about the row, not a rendering gap.
+
 ## Worked example
 `proof/scrolly-gantt-top-ten-tenure/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedGanttScrolly.tsx` (the marks) and `gantt-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type gantt --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

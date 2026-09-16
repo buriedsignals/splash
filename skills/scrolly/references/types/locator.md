@@ -19,6 +19,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - marker radius stays uniform across every card — size never carries a value; label decluttering is deterministic
 
+## Devices the worked example implements
+- **`keepLabels` — native basemap labels, not beat-drawn ones** — the plan names which of MapTiler's OWN label layers (`"^Country labels$"`, `"^City labels$"`, …) survive the trunk's sweep; the beat's driver (`locator-drive.mjs`) then filters and drives THEIR opacity, rather than re-drawing every place name as a symbol layer. Use whenever the basemap already carries the label treatment the card needs (capitals, settlements, water) — the other seven worked examples all draw their own labels instead, at real cost.
+- **Icon-only dot beside a native label** — `place-dots` draws just the marker MapTiler's place labels lack (they carry no icon), leaving the name itself to the native layer above. Pairs with `keepLabels`.
+- **Ring that grows on naming** — the subject's ring radius interpolates from a resting size to a "named" size on `$state.subject` (`subjectRadiusPx.rest` → `.named`) — compare the choropleth worked example's "odd ring" and the contour worked example's "summit" callout, the same one-point device with a simpler (interpolate, not case-gated) radius.
+
 ## Worked example
 **Data shape:** points — named places with real lon/lat.
 

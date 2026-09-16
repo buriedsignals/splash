@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - point positions never shift to avoid overlap without the shift being visible as jitter, not a silent move
 
+## Devices the worked example implements
+- **Row-stacking that itself animates** — chips avoid overlap by stacking into rows (a few to a row); a chip's OWN row slides between its two states' stacking as the pin moves (`dot-strip-drive.mjs`), so decluttering is not a static pre-layout but part of the scrubbed motion.
+- **One strip splits into two** — `split` opens the single shared strip into the static plate's own two (2000 above, 2024 below), leaders named between them. The same "one becomes several, in one continuous move" family as the diverging-stacked-bar's row-opens-into-lanes.
+
 ## Worked example
 `proof/scrolly-dot-strip-lowcarbon-spread/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedDotStripScrolly.tsx` (the marks) and `dot-strip-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type dot-strip --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

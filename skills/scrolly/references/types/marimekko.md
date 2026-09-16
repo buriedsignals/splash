@@ -19,6 +19,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - both axes (column width and tile height) stay proportional to their own asserted totals in every card
 
+## Devices the worked example implements
+- **Area kept when bands regroup** — the tracked source's bands leave their own columns for ONE gathered column (`stack`); the gathered column's WIDTH is set to the tracked share of the whole plot, so its height is the plot's own full height and one TWh still draws the same area it did split across columns. The honesty check this type's own regroup gesture needs — a naive regroup that keeps width fixed and only grows height silently lies about area.
+
 ## Worked example
 `proof/scrolly-marimekko-electricity-mix/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedMarimekkoScrolly.tsx` (the marks) and `marimekko-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type marimekko --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

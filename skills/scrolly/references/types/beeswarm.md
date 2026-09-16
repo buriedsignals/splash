@@ -20,6 +20,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - point packing (no overlap) is recomputed at every card's frame, not just the last one
 - a filtered-out point keeps its position — it steps back in colour, never in place
 
+## Devices the worked example implements
+- **Two packings, one field** — every circle is packed TWICE on each resize: once at one radius (position is the only channel) and once at its real population (the static plate's own size ladder). `grow` interpolates each circle continuously between its own two seats, so the same marks swell and push each other apart — never a cut between two separately-computed layouts (`swarm-layout.mjs`'s `layoutSwarm`/`packSwarm`).
+
 ## Worked example
 `proof/scrolly-beeswarm-co2-per-person/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBeeswarmScrolly.tsx` (the marks) and `swarm-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type beeswarm --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

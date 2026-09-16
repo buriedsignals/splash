@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the shared centre axis never moves and both sides keep the same scale in every card
 
+## Devices the worked example implements
+- **Two mirrored bars re-encode into one difference bar** — `diff` turns each band's men/women pair into a single bar for the surplus sex alone, on a scale fitted to the largest difference across bands — the pyramid's own instance of the level-to-change re-encode family (compare the diverging-bar and grouped-bar worked examples).
+- **Filter to a ratio, the rest stepping back** — `old` re-reads the oldest bands as a women-to-men RATIO rather than raw counts, every other band stepping back on the same field — a "re-encode a subset to a different unit, drop the rest" device.
+
 ## Worked example
 `proof/scrolly-swiss-age-pyramid/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedPyramidScrolly.tsx` (the marks) and `pyramid-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type population-pyramid --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

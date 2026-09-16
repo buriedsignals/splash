@@ -19,6 +19,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - every country is present at every card, including the ones the claim ignores; area distortion is computed from the same asserted value at every step
 
+## Devices the worked example implements
+- **Missing/unreported hollow cell** — a country with no class (`classIndex === null`) fills neutral, edged dashed (`missing-edge`, `line-dasharray`) — the same "outside the measure" device the hex-grid worked example names `origin`. Lives in `cartogramMapPlan`'s `missing` fill + `missing-edge` layer.
+- **Widest-role spotlight** — the single widest country never dims (`OTHERS_OPACITY = 1 − 0.7 × $state.subject` applies to every OTHER country only); its own name arrives on the same `subject` binding (`withWidestName`). Use when one entity is the card's own named subject and the rest are context.
+- **Live map projected into a distorted grid** — `cartogramGeometry` clips (Sutherland–Hodgman, not clamped, to avoid folding a country across the frame) each country's polygon at the live camera's own projection, then places it into a `col`/`row` tile grid at up to a 2.5:1 cell ratio. This IS the type's own mechanism, not an optional add-on — read it before changing the grid layout.
+
 ## Worked example
 **Data shape:** per-area — one row per named region (entity/code), no coordinates.
 

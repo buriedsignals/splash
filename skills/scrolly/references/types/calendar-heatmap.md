@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the colour scale's domain is fixed across every card so a cell's tint never means something different mid-scroll
 
+## Devices the worked example implements
+- **Zoom as grid row-track sizes** — the calendar is a CSS grid; zooming interpolates its own row track sizes between the overview (every month equal) and the focus (the named months growing, the rest folded to zero) rather than a transform on the whole picture. Every word is a grid item, so it follows without being scaled or blurred.
+- **Value printed only where it fits** — a number is drawn inside a focused cell only where that cell, at full zoom, measures wider and taller than the value's own box — measured on every resize, never assumed from a fixed breakpoint.
+
 ## Worked example
 `proof/scrolly-calendar-heatmap-geneva/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedCalendarScrolly.tsx` (the marks) and `calendar-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type calendar-heatmap --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

@@ -20,6 +20,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - rank at each step is computed from the frozen data, asserted strictly ordered with no ties silently dropped
 
+## Devices the worked example implements
+- **Playhead draws every line up to it** — one `year` field is the playhead: every line is drawn only up to that year, each named at its own current head (`bump-drive.mjs`). Reusable wherever a "trace over time, all series at once" gesture needs one shared scrub value instead of one per line.
+- **Exit, frozen and labelled where it left** — a line that drops out of the tracked top-N stops drawing at the last year it held a place and is labelled there, in the base ink, rather than removed — an "an entity leaves the frame, so mark where" device.
+
 ## Worked example
 `proof/scrolly-bump-emitter-rank/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBumpScrolly.tsx` (the marks) and `bump-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type bump --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

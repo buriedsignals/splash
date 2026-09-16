@@ -19,6 +19,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - stem length is proportional to the same zero-based value scale in every card
 
+## Devices the worked example implements
+- **Exactly-two comparison, measured** — `pair` draws the subject and one comparison country to the centre, the other four stepping back; `ratio` then measures the gap between the two directly — a rule at the smaller head, a span reaching to the larger. Use whenever the claim is about exactly two named entities, not the whole set.
+
 ## Worked example
 `proof/scrolly-lollipop-co2-per-person/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedLollipopScrolly.tsx` (the marks) and `lollipop-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type lollipop --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

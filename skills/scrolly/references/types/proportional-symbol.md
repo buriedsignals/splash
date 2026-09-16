@@ -19,6 +19,12 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - symbol area (never radius alone) stays proportional to the same asserted value in every card; the key's scale sample matches the camera's own zoom
 
+## Devices the worked example implements
+- **Radius true at every zoom, set once** — a symbol's area ∝ value; its screen radius is one `["exponential", 2^GROWTH]` interpolation between two zoom stops (`radiusExpression`), which is exact at every zoom a camera travel passes through — never a per-frame recompute, and never reads a feature in a binding.
+- **Overlapping rank-bucket arrival stretch** (`arrivalsFor`, `OVERLAP = 0.45`) — buckets fade in largest-first over SHARED, overlapping stretches of the scroll rather than each popping the instant its rank is passed, so the last bucket lands exactly on its own card. The general answer to this type's (and the hex-grid's, the dot-density's, the locator's) own "staggered reveal" gesture.
+- **Isolate by dimming the rest, not by highlighting the one** — when the subject (nuclear) is isolated, every OTHER station steps back; the subject itself stands in its ordinary accent and stroke weight, unchanged. Compare the dot-density worked example's identical rule (`STEPPED_BACK`) and the cartogram's `OTHERS_OPACITY`.
+- **Leading label pinned beside a growing mark** — the largest station's name is translated by the mark's own current radius at every zoom (`nameOffset`, a paint `text-translate` interpolation) so it stays clear of the circle as it grows, without being re-seated per frame.
+
 ## Worked example
 **Data shape:** points — per-station rows with real lon/lat and a sized value.
 

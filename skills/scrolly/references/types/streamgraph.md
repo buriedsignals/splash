@@ -20,6 +20,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the wiggle baseline is computed once and held fixed across every card, not recentred per card
 
+## Devices the worked example implements
+- **Withdraw the giants, refit to what's left** — `retreat` thins the two dominant bands to nothing and refits the scale to the remaining, smaller bands — the only way their own texture becomes readable at all, since a shared scale sized for the giants would flatten them to hairlines.
+- **A band names itself where it is thickest** — each band's own label sits inside it at the year it is thickest, and only when it is thick enough there to hold the name — never a fixed legend position independent of the band's own shape.
+
 ## Worked example
 `proof/scrolly-streamgraph-swiss-electricity/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedStreamScrolly.tsx` (the marks) and `stream-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type streamgraph --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

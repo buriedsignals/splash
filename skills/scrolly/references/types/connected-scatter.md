@@ -19,6 +19,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the path's drawn order matches the data's own ordering axis exactly, asserted in the runner
 
+## Devices the worked example implements
+- **Eight-offset label placement, degrading to a code** — each point's name tries eight offsets around its own disc in priority order (subject first, then the current card's own countries, then the rest by weight); a name that fits nowhere degrades to its three-letter code, and is dropped only when neither fits (`scatter-drive.mjs`). The general point-label declutter rule for any crowded point field.
+
 ## Worked example
 `proof/scrolly-connected-scatter-lowcarbon/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedScatterScrolly.tsx` (the marks) and `scatter-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type connected-scatter --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

@@ -19,6 +19,9 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - both end columns keep the same shared scale across every card
 
+## Devices the worked example implements
+- **Two precomputed label layouts, crossfaded** — labels are seated TWICE (once relaxed for all sixteen lines, once for the six the static plate keeps) and the card crossfades between the two precomputed seatings, rather than re-relaxing labels live as lines drop out — keeps a set change from ever producing a mid-transition label collision.
+
 ## Worked example
 `proof/scrolly-slope-europe-lowcarbon/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedSlopeScrolly.tsx` (the marks) and `slope-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type slope --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

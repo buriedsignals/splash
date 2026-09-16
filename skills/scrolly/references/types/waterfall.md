@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the running total after every delta is computed and asserted arithmetically consistent with the frozen data
 
+## Devices the worked example implements
+- **One slot unfolds into several** — `unfold` widens a single step's column into three (one bar per fuel) as it opens, rather than cutting to a separate breakdown chart — the waterfall's own instance of the "one becomes many, continuously" family (compare the dot-strip's split and the diverging-stacked-bar's opened row).
+- **Net-change bracket spans the middle steps** — `net` draws a bracket carrying the opening level across to the closing total, bypassing the intermediate steps visually while they step back — a "connect a start and an end across steps that are momentarily not the point" device.
+
 ## Worked example
 `proof/scrolly-germany-electricity-bridge/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBridgeScrolly.tsx` (the marks) and `bridge-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type waterfall --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

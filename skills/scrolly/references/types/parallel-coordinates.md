@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - each axis keeps its own fixed scale across every card so a line's slope always means the same thing
 
+## Devices the worked example implements
+- **The axis set itself grows** — `span` adds axes one at a time (one to all seven), the lines growing toward each new axis as it arrives and the whole block widening continuously to make room — not only the lines animate, the coordinate system itself does.
+- **Intersection of two filters, accented** — `accent` picks only the lines clearing BOTH named floors (`groupN` and `groupW`'s own thresholds), drawn thicker in the accent while every other line retreats — a "combine two single-axis filters into one accented set" device.
+
 ## Worked example
 `proof/scrolly-parallel-coordinates-electricity-mix/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedParallelScrolly.tsx` (the marks) and `parallel-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type parallel-coordinates --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

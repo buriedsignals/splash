@@ -19,6 +19,12 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the threshold sweep is computed from the same frozen samples in every card, asserted monotonic
 
+## Devices the worked example implements
+- **Study land vs. outside-the-measurement land** — land inside the field's own study window gets one neutral fill (`study`); land outside it (cut by the frame, e.g. Russia) gets the basemap's own land colour, named `SWEEP_BENEATH` so the sweep's canvas texture mounts beneath it and its own border edge stays crisp. The continuous-field sibling of the hex-grid's discrete "origin" cell.
+- **Median-proximity crossfade** — the line/label nearest the current reading (`L === medianLevel`) fades IN as `$state.median` reaches it while its immediate neighbours (`near`, within 50 of it) fade OUT on the same binding — a "highlight what's closest right now" device, not a fixed highlight.
+- **Static seat chosen for the crowded case** — `bestSeatOf` picks each label's seat ONCE, from candidates, by the room it has against every OTHER level's lines simultaneously — valid whichever subset of lines the scroll has drawn so far (fewer visible lines only frees room), so no seat is recomputed per frame.
+- **Extremum callout (ring + dot + offset label)** — a found point (`summit`, e.g. the farthest place) gets a ring, a dot and an offset-anchored label, all bound to one `$state.summit` field so they arrive together. Compare the choropleth worked example's "odd ring" and the locator's "subject ring" — the same one-point callout, three implementations.
+
 ## Worked example
 **Data shape:** per-area — one row per named region (entity/code), no coordinates.
 

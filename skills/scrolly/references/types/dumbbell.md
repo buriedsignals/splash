@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the gap length drawn between the two dots equals the asserted computed difference
 
+## Devices the worked example implements
+- **Playhead reads a value between two years** — a `year` field between two real years positions each row's head dot by interpolating between the actual values at the years either side, not by a straight visual tween — the read stays true at any scrub position, not just at the two named years.
+- **Ghost of a past value, dashed** — the 2019 value is left behind as a dashed ring once the head dot moves on (`ghost`), so a reader still sees where a row used to be. Compare the wind-vs-solar (grouped-bar) worked example's identical device for a prior year's same metric.
+
 ## Worked example
 `proof/scrolly-dumbbell-life-expectancy-gains/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedDumbbellScrolly.tsx` (the marks) and `dumbbell-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type dumbbell --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - flow widths stay proportional to the same asserted values in every card; node totals balance
 
+## Devices the worked example implements
+- **One scale for both rails** — ribbon width is computed from a single shared scale so the ribbons out of a node always sum exactly to that node on EITHER rail — never two independently-fitted scales that could drift apart.
+- **Flip which rail a share reads against** — `focus0`/`focus1` keep only the ribbons into one focused country, and write each ribbon's share of THAT COUNTRY at the source's own rail (the opposite of `shares`, which writes a source's ribbons' share of ITSELF at the country's rail). The same flow, read from either end.
+
 ## Worked example
 `proof/scrolly-sankey-electricity-sources/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedSankeyScrolly.tsx` (the marks) and `sankey-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type sankey --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

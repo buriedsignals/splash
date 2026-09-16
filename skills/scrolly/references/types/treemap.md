@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - tile area stays proportional to the same asserted value in every card, including during a zoom
 
+## Devices the worked example implements
+- **Squarified layout** (Bruls, Huizing & van Wijk) — `squarify` in `treemap-drive.mjs` keeps cells in each row as near square as the running total allows, because a sliver reads as a shape whose area cannot be judged; this is the type's OWN mechanism, not an optional add-on — read it before changing how cells are laid out.
+- **Text degrades basis first, value last** — a shrinking cell gives up its content in a fixed order (basis, then subject, then value), so the LAST thing a reader loses is the number itself — a general graceful-degrade rule for any label whose box shrinks with its own mark.
+
 ## Worked example
 `proof/scrolly-treemap-europe-capacity/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedTreemapScrolly.tsx` (the marks) and `treemap-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type treemap --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

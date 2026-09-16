@@ -22,6 +22,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - a word waits for its own line — it appears once the trace reaches it
 - the value axis keeps its zero baseline in every card
 
+## Devices the worked example implements
+- **Line before surface** — the curve draws itself as a plain line (`line`) before the fill (`fill`) replaces it as the surface, rather than the filled area appearing directly — lets the trace read as a measured line first, the "how much" reading arriving second.
+- **Window travel, words mapped through it** — `rescale` moves the SVG's own viewBox from the whole series to a recent span; every word maps its year through that SAME window, so a word and the geometry beneath it can never disagree, and a word whose year leaves the window fades rather than sliding into a gutter.
+
 ## Worked example
 `proof/scrolly-area-swiss-co2/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedAreaScrolly.tsx` (the marks) and `area-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type area --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

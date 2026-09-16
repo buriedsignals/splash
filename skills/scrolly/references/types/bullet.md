@@ -20,6 +20,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - the target marker's position is computed from the same data as the bar, asserted equal
 - qualitative bands keep a fixed, asserted order across every card
 
+## Devices the worked example implements
+- **Zoom as a domain, not a stretch** — every bar length is recomputed as `(value − lo) / (ceiling − lo)`, `lo` travelling from 0 to the zoom's own start — never a scale transform on a fixed-domain bar. A value that falls under the new floor has no length at all and its row steps back, rather than being visually clipped.
+- **Measured reorder** — the row pitch is read on every resize, and each row's name, track and value travel together from their starting order to their sorted place (`bullet-drive.mjs`'s own `reorder`), so the reorder is exact in the reader's own pixels at any width, not an assumed constant offset.
+
 ## Worked example
 `proof/scrolly-bullet-low-carbon-share/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBulletScrolly.tsx` (the marks) and `bullet-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type bullet --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 

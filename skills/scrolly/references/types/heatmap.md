@@ -19,6 +19,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - the colour scale's domain is fixed across every card
 
+## Devices the worked example implements
+- **Playhead fills the grid one column at a time** — `reach` (a real year) fills the matrix column by column, the value column reading that same year, rather than revealing cells in an arbitrary bucket order.
+- **Before/after paired column** — a second value column, the FIRST year's figures, is set beside the last year's (`both`), the two read together rather than requiring a reader to hold the first year in memory while scanning to the last.
+
 ## Worked example
 `proof/scrolly-heatmap-coal-share-europe/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedCoalHeatmapScrolly.tsx` (the marks) and `coal-heatmap-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type heatmap --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
